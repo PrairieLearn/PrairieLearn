@@ -1,13 +1,13 @@
 import { html } from '@prairielearn/html';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 
 export const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals })}
+        ${HeadContents({ resLocals })}
         <style>
           .continue-card-container {
             width: 100%;

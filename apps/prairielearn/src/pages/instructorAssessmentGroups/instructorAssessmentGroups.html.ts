@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
@@ -33,7 +33,7 @@ export function InstructorAssessmentGroups({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals })}
+        ${HeadContents({ resLocals })}
         <link
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
           rel="stylesheet"

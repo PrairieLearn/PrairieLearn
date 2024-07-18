@@ -4,7 +4,7 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import {
   CourseInstancePermissionSchema,
   CoursePermissionSchema,
@@ -55,7 +55,7 @@ export function InstructorEffectiveUser({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, pageTitle: 'Change Effective User' })}
+        ${HeadContents({ resLocals, pageTitle: 'Change Effective User' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {

@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { config } from '../../lib/config.js';
 import type { JobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
 
@@ -20,7 +20,7 @@ export function EditError({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, pageTitle: 'Edit Failure' })}
+        ${HeadContents({ resLocals, pageTitle: 'Edit Failure' })}
       </head>
 
       <body>

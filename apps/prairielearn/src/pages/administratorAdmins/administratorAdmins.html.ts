@@ -1,7 +1,7 @@
 import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { User } from '../../lib/db-types.js';
 
 export function AdministratorAdmins({
@@ -15,7 +15,7 @@ export function AdministratorAdmins({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals })}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         <script>

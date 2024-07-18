@@ -1,14 +1,14 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 
 export function AdministratorSettings({ resLocals }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals })}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         <script>

@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { AssessmentSet } from '../../lib/db-types.js';
 
 export function InstructorCourseAdminSets({
@@ -15,7 +15,7 @@ export function InstructorCourseAdminSets({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, pageTitle: 'Assessment Sets' })}
+        ${HeadContents({ resLocals, pageTitle: 'Assessment Sets' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}

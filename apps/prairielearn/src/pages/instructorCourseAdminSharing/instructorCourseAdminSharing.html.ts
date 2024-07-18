@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 
 export const SharingSetRowSchema = z.object({
@@ -168,7 +168,7 @@ export function InstructorCourseAdminSharing({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals })}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         <script>

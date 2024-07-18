@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 
 export function Workspace({
@@ -28,7 +28,7 @@ export function Workspace({
     <!doctype html>
     <html lang="en" class="h-100">
       <head>
-        ${Head({ resLocals, pageNote, pageTitle })}
+        ${HeadContents({ resLocals, pageNote, pageTitle })}
         <link href="${resLocals.asset_path('stylesheets/workspace.css')}" rel="stylesheet" />
         ${compiledScriptTag('workspaceClient.ts')}
       </head>

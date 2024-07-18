@@ -6,7 +6,7 @@ import type {
   BatchedMigrationStatus,
 } from '@prairielearn/migrations';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 
 export function AdministratorBatchedMigrations({
   batchedMigrations,
@@ -20,7 +20,7 @@ export function AdministratorBatchedMigrations({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals })}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -72,7 +72,7 @@ export function AdministratorBatchedMigration({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals })}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {

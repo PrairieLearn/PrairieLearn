@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import {
   AuthzAccessRuleSchema,
@@ -49,7 +49,7 @@ export function StudentAssessments({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals })}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         <script>

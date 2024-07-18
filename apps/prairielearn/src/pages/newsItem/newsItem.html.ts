@@ -2,7 +2,7 @@ import { formatDateYMD } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import type { NewsItem } from '../../lib/db-types.js';
 
 export function NewsItem({
@@ -22,7 +22,7 @@ export function NewsItem({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, pageNote: formattedDate, pageTitle: newsItem.title })}
+        ${HeadContents({ resLocals, pageNote: formattedDate, pageTitle: newsItem.title })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {

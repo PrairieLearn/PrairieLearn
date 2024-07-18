@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../../components/Head.html.js';
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
 
 export const AdministratorInstitutionSso = ({
@@ -24,7 +24,7 @@ export const AdministratorInstitutionSso = ({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, navPage: 'administrator_institution', pageTitle: 'SSO' })}
+        ${HeadContents({ resLocals, navPage: 'administrator_institution', pageTitle: 'SSO' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {

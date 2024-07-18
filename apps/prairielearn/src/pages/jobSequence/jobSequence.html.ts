@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import type { JobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
 
@@ -16,7 +16,10 @@ export function JobSequence({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, pageTitle: `${job_sequence.description} #${job_sequence.number}` })}
+        ${HeadContents({
+          resLocals,
+          pageTitle: `${job_sequence.description} #${job_sequence.number}`,
+        })}
         <script src="${nodeModulesAssetPath('socket.io-client/dist/socket.io.min.js')}"></script>
       </head>
       <body>

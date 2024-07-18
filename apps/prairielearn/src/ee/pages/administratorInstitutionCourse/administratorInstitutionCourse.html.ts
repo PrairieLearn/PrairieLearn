@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../../components/Head.html.js';
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { type Institution, type Course, CourseInstanceSchema } from '../../../lib/db-types.js';
 
 export const CourseInstanceRowSchema = z.object({
@@ -27,7 +27,7 @@ export function AdministratorInstitutionCourse({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, navPage: 'administrator_institution', pageTitle: 'Courses' })}
+        ${HeadContents({ resLocals, navPage: 'administrator_institution', pageTitle: 'Courses' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {

@@ -6,7 +6,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { formatQueryWithErrorPosition } from '@prairielearn/postgres';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { config } from '../../lib/config.js';
 
 function formatJson(value: any): string {
@@ -46,7 +46,7 @@ export function ErrorPage({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, pageTitle: `Error ${error.status}` })}
+        ${HeadContents({ resLocals, pageTitle: `Error ${error.status}` })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {

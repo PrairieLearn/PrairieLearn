@@ -3,7 +3,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.html.js';
@@ -20,7 +20,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals })} ${compiledScriptTag('question.ts')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('question.ts')}
         ${resLocals.assessment.type === 'Exam'
           ? html`
               ${compiledScriptTag('examTimeLimitCountdown.ts')}

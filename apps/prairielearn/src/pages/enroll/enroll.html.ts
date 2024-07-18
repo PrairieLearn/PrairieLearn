@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 
 export const CourseInstanceRowSchema = z.object({
   label: z.string(),
@@ -30,7 +30,7 @@ export function Enroll({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, navPage: 'enroll', pageTitle: 'Courses' })}
+        ${HeadContents({ resLocals, navPage: 'enroll', pageTitle: 'Courses' })}
       </head>
       <body>
         <script>
@@ -244,7 +244,7 @@ export function EnrollLtiMessage({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, navPage: 'enroll', pageTitle: 'Courses' })}
+        ${HeadContents({ resLocals, navPage: 'enroll', pageTitle: 'Courses' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -288,7 +288,7 @@ export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: Recor
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, navPage: 'enroll', pageTitle: 'Courses' })}
+        ${HeadContents({ resLocals, navPage: 'enroll', pageTitle: 'Courses' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {

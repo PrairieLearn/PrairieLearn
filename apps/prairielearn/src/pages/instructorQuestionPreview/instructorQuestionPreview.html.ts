@@ -1,7 +1,7 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
@@ -11,7 +11,7 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, pageNote: 'Preview', pageTitle: resLocals.question.qid })}
+        ${HeadContents({ resLocals, pageNote: 'Preview', pageTitle: resLocals.question.qid })}
         ${compiledScriptTag('question.ts')}
         <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
         <script>

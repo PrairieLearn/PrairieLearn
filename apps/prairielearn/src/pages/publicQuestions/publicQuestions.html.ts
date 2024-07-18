@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
 import { QuestionsPageData } from '../../models/questions.js';
 
@@ -22,7 +22,7 @@ export const QuestionsPage = ({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals })} ${QuestionsTableHead()}
+        ${HeadContents({ resLocals })} ${QuestionsTableHead()}
       </head>
 
       <body>

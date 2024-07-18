@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../../components/Head.html.js';
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { User } from '../../../lib/db-types.js';
 
 export function Terms({ user, resLocals }: { user: User; resLocals: Record<string, any> }) {
@@ -9,7 +9,7 @@ export function Terms({ user, resLocals }: { user: User; resLocals: Record<strin
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, pageTitle: 'Terms and conditions' })}
+        ${HeadContents({ resLocals, pageTitle: 'Terms and conditions' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {

@@ -2,7 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../../components/Head.html.js';
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
 
@@ -27,7 +27,7 @@ export function AdministratorInstitutionLti13({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, navPage: 'administrator_institution', pageTitle: 'LTI 1.3' })}
+        ${HeadContents({ resLocals, navPage: 'administrator_institution', pageTitle: 'LTI 1.3' })}
         ${compiledScriptTag('administratorInstitutionLti13Client.ts')}
       </head>
       <body>

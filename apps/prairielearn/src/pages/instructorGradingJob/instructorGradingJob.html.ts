@@ -4,7 +4,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { GradingJobSchema, QuestionSchema, UserSchema } from '../../lib/db-types.js';
 
 export const GradingJobRowSchema = z.object({
@@ -35,7 +35,7 @@ export function InstructorGradingJob({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, pageTitle: `Grading Job ${gradingJobRow.grading_job.id}` })}
+        ${HeadContents({ resLocals, pageTitle: `Grading Job ${gradingJobRow.grading_job.id}` })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {

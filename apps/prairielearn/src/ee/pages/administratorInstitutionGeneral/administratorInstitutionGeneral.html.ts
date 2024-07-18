@@ -4,7 +4,7 @@ import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../../components/Head.html.js';
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { type PlanGrant, type Institution } from '../../../lib/db-types.js';
 import { formatTimezone, Timezone } from '../../../lib/timezones.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
@@ -33,7 +33,7 @@ export function AdministratorInstitutionGeneral({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, navPage: 'administrator_institution', pageTitle: 'General' })}
+        ${HeadContents({ resLocals, navPage: 'administrator_institution', pageTitle: 'General' })}
         ${compiledScriptTag('administratorInstitutionGeneralClient.ts')}
         <style>
           .card-grid {

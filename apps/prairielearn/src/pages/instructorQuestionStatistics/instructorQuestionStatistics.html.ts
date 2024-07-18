@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   AssessmentQuestionSchema,
@@ -45,7 +45,7 @@ export function InstructorQuestionStatistics({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, pageNote: resLocals.question.qid })}
+        ${HeadContents({ resLocals, pageNote: resLocals.question.qid })}
         ${compiledScriptTag('instructorQuestionStatisticsClient.ts')}
       </head>
       <body>

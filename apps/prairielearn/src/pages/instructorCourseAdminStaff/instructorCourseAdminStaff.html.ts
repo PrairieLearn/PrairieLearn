@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   CourseInstance,
@@ -58,7 +58,7 @@ export function InstructorCourseAdminStaff({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({ resLocals })}
+        ${HeadContents({ resLocals })}
         <style>
           .popover {
             max-width: 35%;

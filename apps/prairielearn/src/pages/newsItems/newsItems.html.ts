@@ -4,7 +4,7 @@ import { formatDateYMD } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Head } from '../../components/Head.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { NewsItemSchema } from '../../lib/db-types.js';
 
 export const NewsItemRowSchema = NewsItemSchema.extend({
@@ -29,7 +29,7 @@ export function NewsItems({
     <!doctype html>
     <html lang="en">
       <head>
-        ${Head({
+        ${HeadContents({
           resLocals,
           pageTitle: 'News',
           pageNote:

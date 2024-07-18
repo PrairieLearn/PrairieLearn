@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { Head } from '../../../components/Head.html.js';
+import { HeadContents } from '../../../components/HeadContents.html.js';
 
 export const SamlTest = ({
   uid,
@@ -42,7 +42,7 @@ export const SamlTest = ({
     <!DOCTYPE html>
     <html lang="en">
       <head>
-        ${Head({ resLocals, pageTitle: 'SAML test' })}
+        ${HeadContents({ resLocals, pageTitle: 'SAML test' })}
       </head>
       <body>
         <main class="container mb-4">
