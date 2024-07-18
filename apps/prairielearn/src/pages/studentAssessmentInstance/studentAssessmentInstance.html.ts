@@ -2,9 +2,14 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import {
+  RegenerateInstanceAlert,
+  RegenerateInstanceModal,
+} from '../../components/AssessmentRegenerate.html.js';
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import {
   ExamQuestionAvailablePoints,
   ExamQuestionScore,
@@ -12,6 +17,7 @@ import {
   InstanceQuestionPoints,
   QuestionAwardedPoints,
 } from '../../components/QuestionScore.html.js';
+import { Scorebar } from '../../components/Scorebar.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -30,9 +36,11 @@ export function StudentAssessmentInstance({
   groupConfig,
   groupInfo,
   userCanAssignRoles,
+  userCanDeleteAssessmentInstance,
   resLocals,
 }: {
   showTimeLimitExpiredModal: boolean;
+  userCanDeleteAssessmentInstance: boolean;
   resLocals: Record<string, any>;
 } & (
   | {
@@ -63,6 +71,10 @@ export function StudentAssessmentInstance({
         ${compiledScriptTag('studentAssessmentInstanceClient.ts')}
       </head>
       <body>
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
+          ...resLocals,
+          navPage: 'assessment_instance',
+        })}
         ${resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
           ? ConfirmFinishModal({
               instance_questions: resLocals.instance_questions,
@@ -70,16 +82,19 @@ export function StudentAssessmentInstance({
             })
           : ''}
         ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'assessment_instance',
-        })}
+        ${userCanDeleteAssessmentInstance
+          ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
+          : ''}
+
         <main id="content" class="container">
+          ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_set.abbreviation}${resLocals.assessment.number}:
-              ${resLocals.assessment.title}
-              ${resLocals.assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+              <span>
+                ${resLocals.assessment_set.abbreviation}${resLocals.assessment.number}:
+                ${resLocals.assessment.title}
+                ${resLocals.assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
+              </span>
             </div>
 
             <div class="card-body">
@@ -137,9 +152,7 @@ export function StudentAssessmentInstance({
                           : ''}
                       </div>
                       <div class="col-md-3 col-sm-6">
-                        ${renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
-                          score: resLocals.assessment_instance.score_perc,
-                        })}
+                        ${Scorebar(resLocals.assessment_instance.score_perc)}
                       </div>
                       <div class="col-md-6 col-sm-12">
                         ${AssessmentStatus({
@@ -488,12 +501,14 @@ export function StudentAssessmentInstance({
             </div>
           </div>
 
-          ${renderEjs(
-            import.meta.url,
-            // TODO: convert to TypeScript component
-            "<%- include('../partials/attachFilePanel') %>",
-            resLocals,
-          )}
+          ${PersonalNotesPanel({
+            fileList: resLocals.file_list,
+            context: 'assessment',
+            courseInstanceId: resLocals.course_instance.id,
+            assessment_instance: resLocals.assessment_instance,
+            csrfToken: resLocals.__csrf_token,
+            authz_result: resLocals.authz_result,
+          })}
           ${InstructorInfoPanel({
             course: resLocals.course,
             course_instance: resLocals.course_instance,

@@ -3,7 +3,9 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -86,11 +88,13 @@ export function InstructorAssessmentQuestions({
               <button type="submit" class="btn btn-danger">Reset question variants</button>
             `,
           })}
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            assessment: resLocals.assessment,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -288,18 +292,9 @@ function AssessmentQuestionsTable({
                     : ''}
                 </td>
                 <td>
-                  ${question.other_assessments
-                    ? question.other_assessments.map((assessment) => {
-                        return html`${renderEjs(
-                          import.meta.url,
-                          "<%- include('../partials/assessment'); %>",
-                          {
-                            urlPrefix,
-                            assessment,
-                          },
-                        )}`;
-                      })
-                    : ''}
+                  ${question.other_assessments?.map((assessment) =>
+                    AssessmentBadge({ urlPrefix, assessment }),
+                  )}
                 </td>
                 <td class="text-right">
                   <div class="dropdown js-question-actions">

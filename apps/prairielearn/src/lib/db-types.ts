@@ -88,12 +88,13 @@ export const DateFromISOString = z
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
 
+// Result of assessments_format_for_question sproc
 export const AssessmentsFormatForQuestionSchema = z.array(
   z.object({
-    label: z.string().nullable(),
+    label: z.string(),
     assessment_id: IdSchema,
     course_instance_id: IdSchema,
-    color: z.string().nullable(),
+    color: z.string(),
   }),
 );
 
@@ -393,6 +394,17 @@ export const CourseInstanceSchema = z.object({
 });
 export type CourseInstance = z.infer<typeof CourseInstanceSchema>;
 
+export const CourseInstanceAccessRuleSchema = z.object({
+  course_instance_id: IdSchema,
+  end_date: DateFromISOString.nullable(),
+  id: IdSchema,
+  institution: z.string().nullable(),
+  number: z.number().nullable(),
+  start_date: DateFromISOString.nullable(),
+  uids: z.string().array().nullable(),
+});
+export type CourseInstanceAccessRule = z.infer<typeof CourseInstanceAccessRuleSchema>;
+
 export const CourseInstancePermissionSchema = z.object({
   course_instance_id: IdSchema,
   course_instance_role: z.enum(['None', 'Student Data Viewer', 'Student Data Editor']).nullable(),
@@ -440,6 +452,23 @@ export const EnrollmentSchema = z.object({
   user_id: IdSchema,
 });
 export type Enrollment = z.infer<typeof EnrollmentSchema>;
+
+export const FileSchema = z.object({
+  assessment_id: IdSchema.nullable(),
+  assessment_instance_id: IdSchema.nullable(),
+  created_at: DateFromISOString,
+  created_by: IdSchema.nullable(),
+  deleted_at: DateFromISOString.nullable(),
+  deleted_by: IdSchema.nullable(),
+  display_filename: z.string(),
+  id: IdSchema,
+  instance_question_id: IdSchema.nullable(),
+  storage_filename: z.string(),
+  storage_type: z.enum(['FileSystem', 'S3']),
+  type: z.string(),
+  user_id: IdSchema.nullable(),
+});
+export type File = z.infer<typeof FileSchema>;
 
 export const GradingJobSchema = z.object({
   auth_user_id: IdSchema.nullable(),
@@ -646,13 +675,25 @@ export const JobSequenceSchema = z.object({
 });
 export type JobSequence = z.infer<typeof JobSequenceSchema>;
 
+export const Lti13CourseInstanceSchema = z.object({
+  context_id: z.string(),
+  context_label: z.string().nullable(),
+  context_title: z.string().nullable(),
+  course_instance_id: IdSchema,
+  created_at: DateFromISOString,
+  deployment_id: z.string(),
+  id: IdSchema,
+  lti13_instance_id: IdSchema,
+});
+export type Lti13CourseInstance = z.infer<typeof Lti13CourseInstanceSchema>;
+
 export const Lti13InstanceSchema = z.object({
-  access_token_expires_at: z.date().nullable(),
+  access_token_expires_at: DateFromISOString.nullable(),
   access_tokenset: z.any().nullable(),
   client_params: z.any().nullable(),
-  created_at: z.date(),
+  created_at: DateFromISOString,
   custom_fields: z.any().nullable(),
-  deleted_at: z.date().nullable(),
+  deleted_at: DateFromISOString.nullable(),
   email_attribute: z.string().nullable(),
   id: IdSchema,
   institution_id: IdSchema,
@@ -706,6 +747,14 @@ export const PlanGrantSchema = z.object({
   user_id: IdSchema.nullable(),
 });
 export type PlanGrant = z.infer<typeof PlanGrantSchema>;
+
+export const QuestionGenerationContextEmbeddingSchema = z.object({
+  id: IdSchema,
+  doc_text: z.string(),
+  doc_path: z.string(),
+  embedding: z.string(),
+  chunk_id: z.string(),
+});
 
 export const QuestionSchema = z.object({
   client_files: z.array(z.string()).nullable(),
