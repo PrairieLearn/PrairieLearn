@@ -1,6 +1,7 @@
 import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { encodePath } from '../../lib/uri-util.js';
@@ -15,10 +16,7 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
           name="ace-base-path"
           content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
         />
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: `Edit ${fileEdit?.fileName}`,
-        })}
+        ${HeadContents({ resLocals, pageTitle: `Edit ${fileEdit?.fileName}` })}
         ${compiledScriptTag('instructorFileEditorClient.ts')}
       </head>
 
