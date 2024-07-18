@@ -4,6 +4,7 @@ import { HtmlValue, html, joinHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
+import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
 import { AssessmentQuestionSchema } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 
@@ -52,14 +53,11 @@ export function ManualGradingAssessment({
             course: resLocals.course,
             urlPrefix: resLocals.urlPrefix,
           })}
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../../partials/assessmentOpenInstancesAlert') %>",
-            {
-              ...resLocals,
-              num_open_instances,
-            },
-          )}
+          ${AssessmentOpenInstancesAlert({
+            numOpenInstances: num_open_instances,
+            assessmentId: resLocals.assessment.id,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Manual Grading Queue
