@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { Modal } from '../../components/Modal.html';
+import { Modal } from '../../components/Modal.html.js';
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
 
 export function FindQIDModal({

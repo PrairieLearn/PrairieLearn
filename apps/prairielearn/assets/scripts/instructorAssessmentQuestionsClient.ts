@@ -597,7 +597,7 @@ import { EditAssessmentQuestionsTable } from './lib/editAssessmentQuestionsTable
     const zonesInput = form.querySelector('input[name="zones"]') as HTMLInputElement;
     const zoneMap = zones
       .filter((zone: AssessmentQuestionZone) => zone.questions.length > 0)
-      .map((zone: AssessmentQuestionZone) => {
+      .map((zone) => {
         if (zone.questions.length === 0) return;
         zone.questions = zone.questions.map((question) => {
           const questionData = {
