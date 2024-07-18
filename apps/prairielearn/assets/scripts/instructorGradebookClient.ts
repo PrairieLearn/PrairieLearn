@@ -117,6 +117,7 @@ onDocumentReady(() => {
           </a>
         `.toString(),
         class: 'text-nowrap',
+        searchable: false,
         sortable: true,
         sortOrder: 'desc',
         formatter: (score: number | null, row: GradebookRow) => {
