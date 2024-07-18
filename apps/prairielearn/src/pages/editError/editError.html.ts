@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
 import { config } from '../../lib/config.js';
 import type { JobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
 
@@ -89,11 +90,7 @@ export function EditError({
           </div>
 
           <div class="collapse" id="job-sequence-results">
-            ${renderEjs(import.meta.url, "<%- include('../partials/jobSequenceResults'); %>", {
-              ...resLocals,
-              job_sequence: jobSequence,
-              job_sequence_enable_live_update: false,
-            })}
+            ${JobSequenceResults({ jobSequence })}
           </div>
         </main>
       </body>

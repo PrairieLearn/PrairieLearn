@@ -1,7 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { nodeModulesAssetPath } from '../../lib/assets.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import type { JobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
 
 export function JobSequence({
@@ -19,7 +20,7 @@ export function JobSequence({
           ...resLocals,
           pageTitle: `${job_sequence.description} #${job_sequence.number}`,
         })}
-        <script src="${nodeModulesAssetPath('socket.io-client/dist/socket.io.min.js')}"></script>
+        ${compiledScriptTag('jobSequenceClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -35,11 +36,7 @@ export function JobSequence({
               </a>
             </div>
           </div>
-          ${renderEjs(import.meta.url, "<%- include('../partials/jobSequenceResults') %>", {
-            ...resLocals,
-            job_sequence,
-            job_sequence_enable_live_update: true,
-          })}
+          ${JobSequenceResults({ jobSequence: job_sequence })}
         </main>
       </body>
     </html>
