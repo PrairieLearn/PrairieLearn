@@ -2,7 +2,7 @@ CREATE FUNCTION
     check_assessment_access (
         IN assessment_id bigint,
         IN authz_mode enum_mode,
-        IN authz_mode_reason text,
+        IN authz_mode_reason enum_mode_reason,
         IN course_role enum_course_role,
         IN course_instance_role enum_course_instance_role,
         IN user_id bigint,

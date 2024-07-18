@@ -268,7 +268,7 @@ describe('sproc check_assessment_access* tests', function () {
       const authorized = await checkAssessmentAccess({
         assessment_id: '11',
         authz_mode: 'Exam',
-        authz_mode_reason: 'Other',
+        authz_mode_reason: 'Network',
         course_role: 'None',
         course_instance_role: 'None',
         user_id: '1000',

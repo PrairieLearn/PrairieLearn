@@ -1,18 +1,10 @@
 -- BLOCK select_authz_data
-WITH
-  access_mode AS (
-    SELECT
-      mode,
-      mode_reason
-    FROM
-      ip_to_mode ($ip, $req_date, $user_id)
-  )
 SELECT
-  coalesce($req_mode, (access_mode.mode)) AS mode,
+  coalesce($req_mode, access_mode.mode) AS mode,
   (
     CASE
       WHEN $req_mode IS NOT NULL THEN 'Override'
-      ELSE (access_mode.mode_reason)
+      ELSE access_mode.mode_reason
     END
   ) AS mode_reason,
   to_jsonb(c.*) AS course,
@@ -42,7 +34,7 @@ FROM
     $req_date,
     $req_course_instance_role
   ) AS permissions_course_instance ON TRUE
-  JOIN access_mode ON TRUE
+  JOIN ip_to_mode ($ip, $req_date, $user_id) AS access_mode ON TRUE
 WHERE
   c.id = coalesce($course_id, ci.course_id)
   AND c.deleted_at IS NULL

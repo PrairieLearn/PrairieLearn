@@ -4,7 +4,7 @@ CREATE FUNCTION
         IN date timestamptz,
         IN authn_user_id bigint,
         OUT mode enum_mode,
-        OUT mode_reason text
+        OUT mode_reason enum_mode_reason
     )
 AS $$
 DECLARE
@@ -12,6 +12,7 @@ DECLARE
 BEGIN
     -- Default to 'Public' mode.
     mode := 'Public';
+    mode_reason := 'Default';
 
     -- Is the user accessing via an exam mode network?
     PERFORM *
@@ -84,6 +85,7 @@ BEGIN
             END IF;
 
             mode := 'Public';
+            mode_reason := 'Default';
             CONTINUE;
         END IF;
 
@@ -105,6 +107,7 @@ BEGIN
             -- 'Public', but continue looping to see if we have any other
             -- reservations that might put us in 'Exam' mode.
             mode := 'Public';
+            mode_reason := 'Default';
             CONTINUE;
         END IF;
     END LOOP;
