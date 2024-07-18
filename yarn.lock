@@ -3547,6 +3547,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@sentry/node": "npm:^8.18.0"
+    "@sentry/utils": "npm:^8.18.0"
     "@types/node": "npm:^20.14.9"
     execa: "npm:^9.3.0"
     tsx: "npm:^4.16.2"
@@ -3860,7 +3861,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/utils@npm:8.18.0":
+"@sentry/utils@npm:8.18.0, @sentry/utils@npm:^8.18.0":
   version: 8.18.0
   resolution: "@sentry/utils@npm:8.18.0"
   dependencies:

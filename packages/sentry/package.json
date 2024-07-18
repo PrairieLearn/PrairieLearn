@@ -20,6 +20,7 @@
   },
   "dependencies": {
     "@sentry/node": "^8.18.0",
+    "@sentry/utils": "^8.18.0",
     "execa": "^9.3.0"
   }
 }
