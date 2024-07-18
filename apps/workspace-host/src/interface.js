@@ -1,6 +1,4 @@
 // @ts-check
-import './lib/instrument.js';
-
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as net from 'node:net';
@@ -20,6 +18,7 @@ import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
 import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
+import yargsParser from 'yargs-parser';
 
 import { cache } from '@prairielearn/cache';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
@@ -29,8 +28,9 @@ import * as Sentry from '@prairielearn/sentry';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
 import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws.js';
-import { config } from './lib/config.js';
+import { config, loadConfig } from './lib/config.js';
 import { parseDockerLogs } from './lib/docker.js';
+import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths.js';
 import * as socketServer from './lib/socket-server.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -38,6 +38,7 @@ const debug = debugfn('prairielearn:interface');
 const docker = new Docker();
 
 const app = express();
+app.use(Sentry.requestHandler());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -101,6 +102,25 @@ let workspace_server_settings = {};
 async
   .series([
     async () => {
+      // For backwards compatibility, we'll default to trying to load config
+      // files from both the application and repository root.
+      //
+      // We'll put the app config file second so that it can override anything
+      // in the repository root config file.
+      let configPaths = [
+        path.join(REPOSITORY_ROOT_PATH, 'config.json'),
+        path.join(APP_ROOT_PATH, 'config.json'),
+      ];
+
+      // If a config file was specified on the command line, we'll use that
+      // instead of the default locations.
+
+      const argv = yargsParser(process.argv.slice(2));
+      if ('config' in argv) {
+        configPaths = [argv['config']];
+      }
+
+      await loadConfig(configPaths);
       if (config.runningInEc2) {
         // copy discovered variables into workspace_server_settings
         workspace_server_settings.instance_id = config.instanceId;

@@ -3324,7 +3324,6 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@sa11y/format": "npm:^6.7.0"
-    "@sentry/profiling-node": "npm:^8.18.0"
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@types/archiver": "npm:^6.0.2"
     "@types/async": "npm:^3.2.24"
@@ -3798,7 +3797,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/node@npm:8.18.0, @sentry/node@npm:^8.18.0":
+"@sentry/node@npm:^8.18.0":
   version: 8.18.0
   resolution: "@sentry/node@npm:8.18.0"
   dependencies:
@@ -3851,23 +3850,6 @@ __metadata:
     "@opentelemetry/sdk-trace-base": ^1.25.1
     "@opentelemetry/semantic-conventions": ^1.25.1
   checksum: 10c0/5f54623604759ba8170e9681dd80765c8a6478973ccaa095cabc4b62f13daaf8fdfa2f86dea528dae490c258ebdadb72e7d0d5a0e8747cd0a4afaf5448fdbb83
-  languageName: node
-  linkType: hard
-
-"@sentry/profiling-node@npm:^8.18.0":
-  version: 8.18.0
-  resolution: "@sentry/profiling-node@npm:8.18.0"
-  dependencies:
-    "@sentry/core": "npm:8.18.0"
-    "@sentry/node": "npm:8.18.0"
-    "@sentry/types": "npm:8.18.0"
-    "@sentry/utils": "npm:8.18.0"
-    detect-libc: "npm:^2.0.2"
-    node-abi: "npm:^3.61.0"
-    node-gyp: "npm:latest"
-  bin:
-    sentry-prune-profiler-binaries: scripts/prune-profiler-binaries.js
-  checksum: 10c0/2f274129d1437640ce9087c0572f1c7a0dbf52a45b053da8d676215594513acf56c5fc04ac3242bbb59cdf2d24776a482bef947c0984ce65ea31a8f83f621d6f
   languageName: node
   linkType: hard
 
@@ -7849,13 +7831,6 @@ __metadata:
   version: 6.1.0
   resolution: "detect-indent@npm:6.1.0"
   checksum: 10c0/dd83cdeda9af219cf77f5e9a0dc31d828c045337386cfb55ce04fad94ba872ee7957336834154f7647b89b899c3c7acc977c57a79b7c776b506240993f97acc7
-  languageName: node
-  linkType: hard
-
-"detect-libc@npm:^2.0.2":
-  version: 2.0.2
-  resolution: "detect-libc@npm:2.0.2"
-  checksum: 10c0/a9f4ffcd2701525c589617d98afe5a5d0676c8ea82bcc4ed6f3747241b79f781d36437c59a5e855254c864d36a3e9f8276568b6b531c28d6e53b093a15703f11
   languageName: node
   linkType: hard
 
@@ -11884,15 +11859,6 @@ __metadata:
     just-extend: "npm:^6.2.0"
     path-to-regexp: "npm:^6.2.1"
   checksum: 10c0/aacb6b937a5a00e1b5e1f92b4ee60b9e6e96f65e2b2205249e9bf34a77a1ef473e86883f94e9b20aa75ba314280c4a09858cbe3f06c6cf210229f4b409faa098
-  languageName: node
-  linkType: hard
-
-"node-abi@npm:^3.61.0":
-  version: 3.62.0
-  resolution: "node-abi@npm:3.62.0"
-  dependencies:
-    semver: "npm:^7.3.5"
-  checksum: 10c0/62e11264cbb51387cf4599b04e0418c7eba725afe3a228504ade957d61f579a5cb24df79dad9d338b9beb58d723643d40c9fcae2cfc2fe775c0ef56bb0fd0ec8
   languageName: node
   linkType: hard
 
