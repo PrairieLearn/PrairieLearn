@@ -5,6 +5,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { html, joinHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Pager } from '../../components/Pager.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
@@ -197,13 +198,7 @@ export function InstructorIssues({
               : html`
                   <div class="list-group list-group-flush">
                     ${issues.map((row) =>
-                      IssueRow({
-                        issue: row,
-                        urlPrefix,
-                        authz_data,
-                        csrfToken: __csrf_token,
-                        resLocals,
-                      }),
+                      IssueRow({ issue: row, urlPrefix, authz_data, csrfToken: __csrf_token }),
                     )}
                   </div>
                 `}
@@ -231,13 +226,11 @@ function IssueRow({
   urlPrefix,
   authz_data,
   csrfToken,
-  resLocals,
 }: {
   issue: IssueComputedRow;
   urlPrefix: string;
   authz_data: Record<string, any>;
   csrfToken: string;
-  resLocals: Record<string, any>;
 }) {
   const plainUrlPrefix = config.urlPrefix;
   const mailtoLink = `mailto:${
@@ -306,18 +299,13 @@ function IssueRow({
         ${issue.manually_reported
           ? html`<span class="badge badge-info">Manually reported</span>`
           : html`<span class="badge badge-warning">Automatically reported</span>`}
-        ${issue.assessment
-          ? html`
-              ${renderEjs(import.meta.url, "<%- include('../partials/assessment') %>", {
-                ...resLocals,
-                assessment: {
-                  ...issue.assessment,
-                  hide_link: issue.hideAssessmentLink,
-                  // Construct the URL prefix with the appropriate course instance
-                  urlPrefix: `${plainUrlPrefix}/course_instance/${issue.course_instance_id}/instructor`,
-                },
-              })}
-            `
+        ${issue.assessment && issue.course_instance_id
+          ? AssessmentBadge({
+              plainUrlPrefix,
+              course_instance_id: issue.course_instance_id,
+              hideLink: issue.hideAssessmentLink,
+              assessment: issue.assessment,
+            })
           : ''}
         ${issue.course_instance_short_name
           ? html`<span class="badge badge-dark">${issue.course_instance_short_name}</span>`
