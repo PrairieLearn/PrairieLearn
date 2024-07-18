@@ -52,7 +52,7 @@ router.get(
         try {
           data = await ecr.describeImages({
             repositoryName: repository.getRepository(),
-            imageIds: [{ imageTag: repository.getTag() }],
+            imageIds: [{ imageTag: repository.getTag() ?? 'latest' }],
           });
         } catch (err) {
           if (err.name === 'InvalidParameterException') {
