@@ -8,6 +8,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Pager } from '../../components/Pager.html.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import {
@@ -73,7 +74,7 @@ export function InstructorIssues({
   closedCount: number;
   chosenPage: number;
 }) {
-  const { authz_data, __csrf_token, urlPrefix } = resLocals;
+  const { authz_data, __csrf_token, urlPrefix, course } = resLocals;
   const issueCount = issues[0]?.issue_count ?? 0;
   return html`
     <!doctype html>
@@ -90,11 +91,7 @@ export function InstructorIssues({
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/courseSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })}
           ${authz_data.has_course_permission_edit
             ? CloseMatchingIssuesModal({
                 openFilteredIssuesCount,

@@ -1,6 +1,7 @@
 import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { config } from '../../lib/config.js';
 import type { LtiCredentials, User } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
@@ -13,6 +14,9 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
     __csrf_token: csrfToken,
     lti_links,
     assessments,
+    course_instance: courseInstance,
+    course,
+    urlPrefix,
   } = resLocals;
 
   return html`
@@ -39,11 +43,7 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
         </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${CourseInstanceSyncErrorsAndWarnings({ authz_data, courseInstance, course, urlPrefix })}
           ${!authz_data.has_course_permission_edit
             ? html`
                 <div class="card mb-4">
