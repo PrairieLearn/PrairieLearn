@@ -1,4 +1,3 @@
-// @ts-check
 import { assert } from 'chai';
 
 import { parseDockerLogs } from './docker.js';

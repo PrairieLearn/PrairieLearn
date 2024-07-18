@@ -1,4 +1,3 @@
-// @ts-check
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as net from 'node:net';
@@ -19,6 +18,7 @@ import _ from 'lodash';
 import fetch from 'node-fetch';
 import { v4 as uuidv4 } from 'uuid';
 import yargsParser from 'yargs-parser';
+import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
@@ -96,8 +96,8 @@ app.post(
 
 app.use(Sentry.Handlers.errorHandler());
 
-let server;
-let workspace_server_settings = {};
+let server: http.Server;
+const workspace_server_settings: Record<string, any> = {};
 
 async
   .series([
@@ -305,7 +305,7 @@ async function pruneRunawayContainers() {
   const db_workspaces_uuid_set = new Set(
     db_workspaces.rows.map((ws) => `workspace-${ws.launch_uuid}`),
   );
-  let running_workspaces;
+  let running_workspaces: Docker.ContainerInfo[];
   try {
     running_workspaces = await docker.listContainers({ all: true });
   } catch (err) {
@@ -455,8 +455,8 @@ async function _allocateContainerPort(workspace) {
   // Spin up a server to check if a port is free
   async function check_port_server(port) {
     return new Promise((res) => {
-      var server = net.createServer();
-      server.listen(port, function (_) {
+      const server = net.createServer();
+      server.listen(port, function () {
         server.once('close', function () {
           res(true);
         });
@@ -509,7 +509,7 @@ function _checkServer(workspace) {
   const healthCheckTimeout = config.workspaceHealthCheckTimeoutSec * 1000;
 
   const startTime = new Date().getTime();
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     function checkWorkspace() {
       fetch(
         `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
@@ -578,6 +578,29 @@ async function _getWorkspaceSettings(workspace_id) {
   return settings;
 }
 
+const ProgressDetailsSchema = z.record(
+  z.string(),
+  z.object({
+    current: z.number(),
+    total: z.number(),
+  }),
+);
+type ProgressDetails = z.infer<typeof ProgressDetailsSchema>;
+
+async function getImageProgressDetails(image: string) {
+  const cachedValue = (await cache.get(`workspaceProgressInit:${image}`)) ?? {};
+  const parsedValue = z
+    .record(
+      z.string(),
+      z.object({
+        current: z.number(),
+        total: z.number(),
+      }),
+    )
+    .safeParse(cachedValue);
+  return parsedValue.success ? parsedValue.data : {};
+}
+
 async function _pullImage(workspace) {
   if (!config.workspacePullImagesFromDockerHub) {
     logger.info('Not pulling docker image');
@@ -620,14 +643,14 @@ async function _pullImage(workspace) {
   // progress reporting, we cache the layer details after
   // the first successful pull. This allows us to reference
   // the previously pulled layers and provide a more accurate
-  // percantage calculation on any subsequent pulls.
-  let progressDetails = (await cache.get(`workspaceProgressInit:${workspace_image}`)) || {};
-  let progressDetailsInit = {};
+  // percentage calculation on any subsequent pulls.
+  const progressDetails = await getImageProgressDetails(workspace_image);
+  const progressDetailsInit: ProgressDetails = {};
   let current = 0;
   let total = 0;
   let fraction = 0;
-  let currentBase;
-  let fractionBase;
+  let currentBase: number;
+  let fractionBase: number;
   let outputCount = 0;
   let percentCache = -1;
   let dateCache = Date.now() - 1e6;
