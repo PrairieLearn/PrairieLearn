@@ -33,20 +33,24 @@ interface ServerJobExecOptions {
   env?: NodeJS.ProcessEnv;
 }
 
+export interface ServerJobResult {
+  data: Record<string, any>;
+}
+
 export interface ServerJob {
   fail(msg: string): never;
   error(msg: string): void;
   warn(msg: string): void;
   info(msg: string): void;
   verbose(msg: string): void;
-  exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<void>;
+  exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<ServerJobResult>;
   data: Record<string, unknown>;
 }
 
 export interface ServerJobExecutor {
   jobSequenceId: string;
-  execute(fn: ServerJobExecutionFunction): Promise<void>;
-  executeUnsafe(fn: ServerJobExecutionFunction): Promise<void>;
+  execute(fn: ServerJobExecutionFunction): Promise<ServerJobResult>;
+  executeUnsafe(fn: ServerJobExecutionFunction): Promise<ServerJobResult>;
   executeInBackground(fn: ServerJobExecutionFunction): void;
 }
 
@@ -139,7 +143,11 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     this.addToOutput(chalkDim(msg) + '\n');
   }
 
-  async exec(file: string, args: string[] = [], options: ServerJobExecOptions): Promise<void> {
+  async exec(
+    file: string,
+    args: string[] = [],
+    options: ServerJobExecOptions,
+  ): Promise<ServerJobResult> {
     this.addToOutput(chalk.blueBright(`Command: ${file} ${args.join(' ')}\n`));
     this.addToOutput(chalk.blueBright(`Working directory: ${options.cwd}\n`));
 
@@ -168,15 +176,18 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       const duration = (performance.now() - start).toFixed(2);
       this.addToOutput(chalkDim(`Command completed in ${duration}ms`) + '\n\n');
     }
+
+    return { data: this.data };
   }
 
   /**
    * Runs the job sequence and returns a Promise that resolves when the job
    * sequence has completed, even if an error is encountered.
    */
-  async execute(fn: ServerJobExecutionFunction): Promise<void> {
+  async execute(fn: ServerJobExecutionFunction): Promise<ServerJobResult> {
     this.checkAndMarkStarted();
     await this.executeInternal(fn, false);
+    return { data: this.data };
   }
 
   /**
@@ -184,9 +195,10 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
    * sequence has completed. The returned promise will reject if the job
    * sequence fails.
    */
-  async executeUnsafe(fn: ServerJobExecutionFunction): Promise<void> {
+  async executeUnsafe(fn: ServerJobExecutionFunction): Promise<ServerJobResult> {
     this.checkAndMarkStarted();
     await this.executeInternal(fn, true);
+    return { data: this.data };
   }
 
   /**

@@ -4,6 +4,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import {
   compiledScriptTag,
   compiledStylesheetTag,
@@ -64,11 +65,12 @@ export function InstructorGradebook({
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${CourseInstanceSyncErrorsAndWarnings({
+            authz_data,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix,
+          })}
           ${!authz_data.has_course_instance_permission_view
             ? StudentDataViewMissing({
                 courseOwners,

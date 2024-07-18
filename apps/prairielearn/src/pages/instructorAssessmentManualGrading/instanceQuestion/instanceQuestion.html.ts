@@ -7,6 +7,7 @@ import { HeadContents } from '../../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.html.js';
 import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.html.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
+import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { GradingJobSchema, User } from '../../../lib/db-types.js';
 
@@ -62,11 +63,12 @@ export function InstanceQuestion({
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
         <div class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../../partials/questionSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${QuestionSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            question: resLocals.question,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
         </div>
         ${RubricSettingsModal({ resLocals })}
         <main id="content" class="container-fluid">
