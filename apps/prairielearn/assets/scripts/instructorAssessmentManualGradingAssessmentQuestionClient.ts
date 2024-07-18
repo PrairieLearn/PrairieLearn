@@ -33,6 +33,8 @@ onDocumentReady(() => {
     classes: 'table table-sm table-bordered',
     url: instancesUrl,
     responseHandler: (res: { instance_questions: InstanceQuestionRow[] }) =>
+      // Add a stable, user-friendly index that is used to identify an instance
+      // question anonymously but retain its value in case of sorting/filters
       res.instance_questions.map((row, index) => ({ ...row, index })),
     escape: true,
     uniqueId: 'id',
