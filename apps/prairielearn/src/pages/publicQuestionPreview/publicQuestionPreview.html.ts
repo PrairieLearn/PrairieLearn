@@ -2,6 +2,7 @@ import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../components/Head.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
@@ -11,11 +12,7 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
-          ...resLocals,
-          pageNote: 'Preview',
-          pageTitle: resLocals.question.qid,
-        })}
+        ${Head({ resLocals, pageNote: 'Preview', pageTitle: resLocals.question.qid })}
         ${compiledScriptTag('question.ts')}
         <script src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
         <script>

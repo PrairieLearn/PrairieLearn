@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../components/Head.html.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 
 export const AdministratorQueryResultSchema = z.object({
@@ -153,7 +154,7 @@ export function AdministratorQuery({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", resLocals)}
+        ${Head({ resLocals })}
         <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
         <link
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"

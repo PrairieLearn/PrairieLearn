@@ -6,6 +6,7 @@ import { html, joinHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
+import { Head } from '../../components/Head.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Pager } from '../../components/Pager.html.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
@@ -79,8 +80,7 @@ export function InstructorIssues({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledStylesheetTag('instructorIssues.css')}
+        ${Head({ resLocals })} ${compiledStylesheetTag('instructorIssues.css')}
         <script>
           $(() => {
             $('[data-toggle=tooltip]').tooltip();

@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../components/Head.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 
@@ -9,7 +10,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${Head({ resLocals })}
 
         <script src="${nodeModulesAssetPath(
             'bootstrap-table/dist/bootstrap-table.min.js',

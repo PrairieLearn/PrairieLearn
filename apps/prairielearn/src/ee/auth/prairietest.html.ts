@@ -1,12 +1,13 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
+
+import { Head } from '../../components/Head.html.js';
 
 export const AuthPrairieTest = ({ jwt, prairieTestCallback, resLocals }) => {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${Head({ resLocals })}
         <style>
           .continue-card-container {
             width: 100%;

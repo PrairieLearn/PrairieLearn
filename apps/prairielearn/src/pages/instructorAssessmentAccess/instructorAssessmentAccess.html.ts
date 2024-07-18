@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../components/Head.html.js';
+
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),
   uids: z.string(),
@@ -31,7 +33,7 @@ export function InstructorAssessmentAccess({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${Head({ resLocals })}
       </head>
       <body>
         <script>

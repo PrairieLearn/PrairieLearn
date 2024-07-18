@@ -1,6 +1,6 @@
 import { html, type HtmlValue } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../components/Head.html.js';
 import { assetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
@@ -28,7 +28,7 @@ function LoginPageContainer({
     <!doctype html>
     <html lang="en" class="bg-dark">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${Head({ resLocals })}
         <style>
           html,
           body {

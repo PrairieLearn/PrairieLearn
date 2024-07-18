@@ -1,6 +1,7 @@
 import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../components/Head.html.js';
 import { User } from '../../lib/db-types.js';
 
 export function AdministratorAdmins({
@@ -14,7 +15,7 @@ export function AdministratorAdmins({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${Head({ resLocals })}
       </head>
       <body>
         <script>

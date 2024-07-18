@@ -4,6 +4,7 @@ import { formatDateYMD } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../components/Head.html.js';
 import { NewsItemSchema } from '../../lib/db-types.js';
 
 export const NewsItemRowSchema = NewsItemSchema.extend({
@@ -28,8 +29,8 @@ export function NewsItems({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
-          ...resLocals,
+        ${Head({
+          resLocals,
           pageTitle: 'News',
           pageNote:
             newsItemNotificationCount ?? 0 > 0 ? `${newsItemNotificationCount} Unread` : undefined,

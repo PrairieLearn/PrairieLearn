@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../../components/Head.html.js';
 import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.html.js';
 import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.html.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
@@ -32,11 +33,13 @@ export function InstanceQuestion({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../partials/head') %>", {
-          ...resLocals,
+        ${Head({
+          resLocals: {
+            ...resLocals,
+            // instance_question_info is reset to keep the default title from showing the student question number
+            instance_question_info: undefined,
+          },
           pageNote: `Instance - question ${resLocals.instance_question_info.instructor_question_number}`,
-          // instance_question_info is reset to keep the default title from showing the student question number
-          instance_question_info: undefined,
         })}
         ${compiledScriptTag('question.ts')}
         <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>

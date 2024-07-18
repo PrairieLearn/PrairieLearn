@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../components/Head.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentInstanceSchema, AssessmentSchema, Assessment } from '../../lib/db-types.js';
 
@@ -62,10 +63,7 @@ export function InstructorAssessmentStatistics({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Statistics',
-        })}
+        ${Head({ resLocals, pageTitle: 'Statistics' })}
         ${compiledScriptTag('instructorAssessmentStatisticsClient.ts')}
       </head>
       <body>

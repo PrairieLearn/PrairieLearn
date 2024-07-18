@@ -1,6 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../components/Head.html.js';
+
 export interface Filenames {
   scoresCsvFilename: string;
   scoresAllCsvFilename: string;
@@ -40,7 +42,7 @@ export function InstructorAssessmentDownloads({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${Head({ resLocals })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", resLocals)}

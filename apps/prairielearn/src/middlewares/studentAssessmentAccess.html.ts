@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../components/Head.html.js';
 import { Scorebar } from '../components/Scorebar.html.js';
 import { TimeLimitExpiredModal } from '../components/TimeLimitExpiredModal.html.js';
 import type { Assessment, AssessmentInstance, AssessmentSet } from '../lib/db-types.js';
@@ -25,7 +26,7 @@ export function StudentAssessmentAccess({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../pages/partials/head') %>", resLocals)}
+        ${Head({ resLocals })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../pages/partials/navbar'); %>", {

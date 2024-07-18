@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
+import { Head } from '../../components/Head.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 
@@ -20,8 +21,7 @@ export function InstructorInstanceAdminSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('instructorInstanceAdminSettingsClient.ts')}
+        ${Head({ resLocals })} ${compiledScriptTag('instructorInstanceAdminSettingsClient.ts')}
         <style>
           .popover {
             max-width: 50%;

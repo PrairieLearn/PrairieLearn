@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../../components/Head.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Course,
@@ -27,11 +28,7 @@ export function AdministratorInstitutionCourseInstance({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          navPage: 'administrator_institution',
-          pageTitle: 'Courses',
-        })}
+        ${Head({ resLocals, navPage: 'administrator_institution', pageTitle: 'Courses' })}
         ${compiledScriptTag('administratorInstitutionCourseInstanceClient.ts')}
       </head>
       <body>

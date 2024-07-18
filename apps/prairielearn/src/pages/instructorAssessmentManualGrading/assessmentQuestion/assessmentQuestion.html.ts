@@ -3,6 +3,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
+import { Head } from '../../../components/Head.html.js';
 import { Modal } from '../../../components/Modal.html.js';
 import {
   compiledStylesheetTag,
@@ -36,10 +37,7 @@ export function AssessmentQuestion({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../partials/head') %>", {
-          ...resLocals,
-          pageNote: `Question ${number_in_alternative_group}`,
-        })}
+        ${Head({ resLocals, pageNote: `Question ${number_in_alternative_group}` })}
         <!-- Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
         from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way. -->
         <script src="${nodeModulesAssetPath(

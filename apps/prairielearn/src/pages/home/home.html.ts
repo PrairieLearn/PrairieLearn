@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../components/Head.html.js';
 import { config } from '../../lib/config.js';
 import { CourseInstanceSchema, CourseSchema } from '../../lib/db-types.js';
 
@@ -42,7 +43,7 @@ export function Home({
     <!doctype html>
     <html lang="en" class="h-100">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${Head({ resLocals })}
       </head>
 
       <body class="d-flex flex-column h-100">

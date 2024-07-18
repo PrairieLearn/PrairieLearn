@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.html.js';
+import { Head } from '../../components/Head.html.js';
 import { CourseRequestRow } from '../../lib/course-request.js';
 import { Institution } from '../../lib/db-types.js';
 
@@ -20,7 +21,7 @@ export function AdministratorCourseRequests({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", { ...resLocals })}
+        ${Head({ resLocals })}
       </head>
       <body>
         <script>

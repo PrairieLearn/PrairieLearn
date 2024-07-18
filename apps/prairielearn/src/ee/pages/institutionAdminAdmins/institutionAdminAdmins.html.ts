@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../../components/Head.html.js';
 import { type Institution } from '../../../lib/db-types.js';
 
 export function InstitutionAdminAdmins({
@@ -14,10 +15,7 @@ export function InstitutionAdminAdmins({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          pageTitle: `Admins — ${institution.short_name}`,
-        })}
+        ${Head({ resLocals, pageTitle: `Admins — ${institution.short_name}` })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {

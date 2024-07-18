@@ -3,6 +3,7 @@ import { filesize } from 'filesize';
 import { escapeHtml, html, type HtmlValue, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../components/Head.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { User } from '../../lib/db-types.js';
@@ -94,10 +95,7 @@ export function InstructorFileBrowserNoPermission({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Files',
-        })}
+        ${Head({ resLocals, pageTitle: 'Files' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
@@ -153,10 +151,7 @@ export function InstructorFileBrowser({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Files',
-        })}
+        ${Head({ resLocals, pageTitle: 'Files' })}
         <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
         ${compiledScriptTag('instructorFileBrowserClient.ts')}
         <style>

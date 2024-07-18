@@ -6,6 +6,7 @@ import { formatInterval } from '@prairielearn/formatter';
 import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../components/Head.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
@@ -46,8 +47,7 @@ export function InstructorAssessments({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('instructorAssessmentsClient.ts')}
+        ${Head({ resLocals })} ${compiledScriptTag('instructorAssessmentsClient.ts')}
         ${EncodedData<StatsUpdateData>(
           { assessmentIdsNeedingStatsUpdate, urlPrefix },
           'stats-update-data',

@@ -1,5 +1,6 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
+
+import { Head } from '../../../components/Head.html.js';
 
 export const SamlTest = ({
   uid,
@@ -41,10 +42,7 @@ export const SamlTest = ({
     <!DOCTYPE html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          pageTitle: 'SAML test',
-        })}
+        ${Head({ resLocals, pageTitle: 'SAML test' })}
       </head>
       <body>
         <main class="container mb-4">

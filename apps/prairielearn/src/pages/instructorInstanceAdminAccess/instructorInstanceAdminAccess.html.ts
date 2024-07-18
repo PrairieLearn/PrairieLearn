@@ -2,6 +2,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Head } from '../../components/Head.html.js';
 import { CourseInstanceAccessRule } from '../../lib/db-types.js';
 
 export function InstructorInstanceAdminAccess({
@@ -17,7 +18,7 @@ export function InstructorInstanceAdminAccess({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${Head({ resLocals })}
       </head>
       <body>
         <script>

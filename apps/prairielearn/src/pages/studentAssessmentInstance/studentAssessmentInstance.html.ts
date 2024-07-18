@@ -3,6 +3,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
+import { Head } from '../../components/Head.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
@@ -48,7 +49,7 @@ export function StudentAssessmentInstance({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${Head({ resLocals })}
         ${resLocals.assessment.type === 'Exam'
           ? html`${compiledScriptTag('examTimeLimitCountdown.ts')}
             ${EncodedData(

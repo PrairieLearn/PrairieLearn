@@ -4,6 +4,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.html.js';
+import { Head } from '../../components/Head.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
@@ -75,7 +76,7 @@ export function InstructorAssessmentInstance({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", { ...resLocals })}
+        ${Head({ resLocals })}
         <link
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
           rel="stylesheet"

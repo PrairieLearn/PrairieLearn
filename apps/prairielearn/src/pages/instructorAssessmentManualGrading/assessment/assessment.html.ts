@@ -4,6 +4,7 @@ import { HtmlValue, html, joinHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
+import { Head } from '../../../components/Head.html.js';
 import { AssessmentQuestionSchema } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 
@@ -40,7 +41,7 @@ export function ManualGradingAssessment({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../partials/head') %>", resLocals)}
+        ${Head({ resLocals })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
