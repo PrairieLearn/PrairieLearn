@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
@@ -288,18 +289,9 @@ function AssessmentQuestionsTable({
                     : ''}
                 </td>
                 <td>
-                  ${question.other_assessments
-                    ? question.other_assessments.map((assessment) => {
-                        return html`${renderEjs(
-                          import.meta.url,
-                          "<%- include('../partials/assessment'); %>",
-                          {
-                            urlPrefix,
-                            assessment,
-                          },
-                        )}`;
-                      })
-                    : ''}
+                  ${question.other_assessments?.map((assessment) =>
+                    AssessmentBadge({ urlPrefix, assessment }),
+                  )}
                 </td>
                 <td class="text-right">
                   <div class="dropdown js-question-actions">
