@@ -71,8 +71,8 @@ onDocumentReady(() => {
       text += html`<a
         class="badge badge-pill badge-danger ml-1"
         href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
-          question.qid,
-        )}"
+        question.qid,
+      )}"
         >${question.open_issue_count}</a
       >`;
     }
@@ -174,7 +174,7 @@ onDocumentReady(() => {
         },
       },
     },
-    onPreBody() {},
+    onPreBody() { },
     onResetView() {
       $('.js-sync-popover[data-toggle="popover"]')
         .popover({

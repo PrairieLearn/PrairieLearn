@@ -1,9 +1,7 @@
 import { html } from '@prairielearn/html';
 
-import { Modal } from '../../../src/components/Modal.html';
-import { TagBadgeList } from '../../../src/components/TagBadge.html';
-import { TopicBadge } from '../../../src/components/TopicBadge.html';
-import { AssessmentQuestionRow } from '../../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types';
+import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
+import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
 
 function maxPoints({
   max_auto_points,
@@ -11,6 +9,12 @@ function maxPoints({
   points_list,
   init_points,
   assessmentType,
+}: {
+  max_auto_points: number;
+  max_manual_points: number;
+  points_list: number[];
+  init_points: number;
+  assessmentType: string;
 }) {
   if (max_auto_points || !max_manual_points) {
     if (assessmentType === 'Exam') {
@@ -23,6 +27,7 @@ function maxPoints({
     return html`&mdash;`;
   }
 }
+
 export function EditAssessmentQuestionsTable({
   zones,
   assessmentType,
@@ -32,13 +37,15 @@ export function EditAssessmentQuestionsTable({
   assessmentType: string;
   showAdvanceScorePercCol: boolean;
 }) {
-  const nTableCols = showAdvanceScorePercCol ? 12 : 11;
+  // TO DO: Add advance score percentage column
+  const nTableCols = showAdvanceScorePercCol ? 13 : 12;
 
   return html`
     <div class="table-responsive js-assessment-questions-table">
       <table class="table table-sm table-hover">
         <thead>
           <tr>
+            <th></th>
             <th></th>
             <th></th>
             <th></th>
@@ -78,7 +85,16 @@ export function EditAssessmentQuestionsTable({
                     </button>
                   </div>
                 </td>
-                <th colspan="${nTableCols - 1}" class="align-content-center">
+                <td class="editButtonCell align-content-center">
+                  <button
+                    class="btn btn-sm btn-secondary edit-zone-button"
+                    type="button"
+                    data-zone-index="${zoneIndex}"
+                  >
+                    <i class="fa fa-edit" aria-hidden="true"></i>
+                  </button>
+                </td>
+                <th colspan="${nTableCols - 2}" class="align-content-center">
                   Zone ${zoneIndex + 1}. ${zone.title}
                   ${zone.numberChoose == null
                     ? '(Choose all questions)'
@@ -86,10 +102,10 @@ export function EditAssessmentQuestionsTable({
                       ? '(Choose 1 question)'
                       : `(Choose ${zone.numberChoose} questions)`}
                   ${zone.maxPoints ? `(maximum ${zone.maxPoints} points)` : ''}
-                  ${zone.bestQuestions ? `(best ${zone.BestQuestions} questions)` : ''}
+                  ${zone.bestQuestions ? `(best ${zone.bestQuestions} questions)` : ''}
                 </th>
               </tr>
-              ${zone.questions.map((question, questionIndex) => {
+              ${zone.questions.map((question, questionIndex: number) => {
                 return html`
                   ${question.is_alternative_group
                     ? html`
@@ -163,13 +179,23 @@ export function EditAssessmentQuestionsTable({
                             alternativeIndex,
                             showAdvanceScorePercCol,
                             assessmentType,
+                            // For the alternative groups, pass in points from the alternative group level rather than off the specific question itself
+                            init_points: question.init_points,
+                            points_list: question.points_list,
+                            max_manual_points: question.max_manual_points,
+                            max_auto_points: question.max_auto_points,
                           });
                         })}
                         <tr>
                           <td></td>
                           <td></td>
                           <td colspan="${nTableCols - 2}">
-                            <button class="btn btn-sm addQuestion">
+                            <button
+                              class="btn btn-sm addQuestion"
+                              data-zone-index="${zoneIndex}"
+                              data-question-index="${questionIndex}"
+                              data-alternative-index="${question.alternatives.length}"
+                            >
                               <i class="fa fa-add" aria-hidden="true"></i> Add Question to Group
                             </button>
                           </td>
@@ -181,13 +207,21 @@ export function EditAssessmentQuestionsTable({
                         questionIndex,
                         showAdvanceScorePercCol,
                         assessmentType,
+                        init_points: question.init_points,
+                        points_list: question.points_list,
+                        max_manual_points: question.max_manual_points,
+                        max_auto_points: question.max_auto_points,
                       })}
                 `;
               })}
               <tr>
                 <td></td>
                 <td colspan="${nTableCols - 1}">
-                  <button class="btn btn-sm addQuestion">
+                  <button
+                    class="btn btn-sm add-question"
+                    data-zone-index="${zoneIndex}"
+                    data-question-index="${zone.questions.length}"
+                  >
                     <i class="fa fa-add" aria-hidden="true"></i> Add Question to Zone
                   </button>
                 </td>
@@ -196,7 +230,7 @@ export function EditAssessmentQuestionsTable({
           })}
           <tr>
             <td colspan="${nTableCols}">
-              <button class="btn btn-sm">
+              <button class="btn btn-sm add-zone" data-zone-index="${zones.length}">
                 <i class="fa fa-add" aria-hidden="true"></i> Add Zone
               </button>
             </td>
@@ -214,6 +248,10 @@ function questionRow({
   alternativeIndex,
   showAdvanceScorePercCol,
   assessmentType,
+  init_points,
+  points_list,
+  max_manual_points,
+  max_auto_points,
 }: {
   question: Record<string, any>;
   zoneIndex: number;
@@ -221,10 +259,15 @@ function questionRow({
   alternativeIndex?: number;
   showAdvanceScorePercCol: boolean;
   assessmentType: string;
+  init_points: number;
+  points_list: number[];
+  max_manual_points: number;
+  max_auto_points: number;
 }) {
   return html`
     <tr>
       <td></td>
+      ${question.is_alternative_group ? html`<td></td>` : ''}
       <td class="arrowButtonsCell align-content-center">
         <div ${question.is_alternative_group ? 'class="ml-3"' : ''}>
           <button
@@ -280,7 +323,7 @@ function questionRow({
           <i class="fa fa-trash" aria-hidden="true"></i>
         </button>
       </td>
-      <td class="align-content-center">
+      <td class="align-content-center" colspan="${question.is_alternative_group ? '1' : '2'}">
         ${!question.is_alternative_group
           ? `${question.alternative_group_number}.`
           : html`
@@ -290,19 +333,19 @@ function questionRow({
             `}
         ${question.title}
       </td>
-      <td class="align-content-center">${question.display_name}</td>
+      <td class="align-content-center">${question.qid}</td>
       <td>${TopicBadge(question.topic)}</td>
       <td>${TagBadgeList(question.tags)}</td>
       <td class="align-content-center">
         ${maxPoints({
-          max_auto_points: question.max_auto_points,
-          max_manual_points: question.max_manual_points,
-          points_list: question.points_list,
-          init_points: question.init_points,
+          max_auto_points,
+          max_manual_points,
+          points_list,
+          init_points,
           assessmentType,
         })}
       </td>
-      <td class="align-content-center">${question.max_manual_points || '—'}</td>
+      <td class="align-content-center">${max_manual_points || '—'}</td>
       ${showAdvanceScorePercCol
         ? html`
             <td

@@ -9,14 +9,17 @@ import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/as
 
 import { DeleteQuestionModal } from './deleteQuestionModal.html.js';
 import { EditQuestionModal } from './editQuestionModal.html.js';
+import { EditZoneModal } from './editZoneModal.html.js';
 import { AssessmentQuestionRow } from './instructorAssessmentQuestions.types.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,
   questions,
+  origHash,
 }: {
   resLocals: Record<string, any>;
   questions: AssessmentQuestionRow[];
+  origHash: string;
 }) {
   return html`
     <!doctype html>
@@ -70,7 +73,20 @@ export function InstructorAssessmentQuestions({
             `,
           })}
           ${DeleteQuestionModal({ zoneNumber: 0, questionNumber: 0 })}
-          ${EditQuestionModal({ newQuestion: false })}
+          ${EditQuestionModal({
+            newQuestion: true,
+            zoneIndex: 0,
+            questionIndex: 0,
+            assessmentType: resLocals.assessment.type,
+          })}
+          ${EditZoneModal({ zone: {}, newZone: false, zoneIndex: 0 })}
+          <div id="findQIDModal"></div>
+          <form method="POST" id="zonesForm">
+            <input type="hidden" name="__action" value="edit_assessment_questions" />
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <input type="hidden" name="__orig_hash" value="${origHash}" />
+            <input type="hidden" name="zones" value="" />
+          </form>
           ${renderEjs(
             import.meta.url,
             "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
@@ -102,9 +118,19 @@ export function InstructorAssessmentQuestions({
               questions,
               assessmentType: resLocals.assessment.type,
               urlPrefix: resLocals.urlPrefix,
+              csrfToken: resLocals.__csrf_token,
+              assessmentInstanceId: resLocals.assessment.id,
               hasCourseInstancePermissionEdit:
                 resLocals.authz_data.has_course_instance_permission_edit,
             })}
+            <div class="card-footer">
+              <p>
+                For more information on question settings, see the
+                <a href="https://prairielearn.readthedocs.io/en/latest/assessment/" target="_blank"
+                  >documentation</a
+                >.
+              </p>
+            </div>
           </div>
         </main>
       </body>
@@ -116,11 +142,15 @@ function AssessmentQuestionsTable({
   questions,
   urlPrefix,
   assessmentType,
+  csrfToken,
+  assessmentInstanceId,
   hasCourseInstancePermissionEdit,
 }: {
   questions: AssessmentQuestionRow[];
   assessmentType: string;
   urlPrefix: string;
+  csrfToken: string;
+  assessmentInstanceId: string;
   hasCourseInstancePermissionEdit: boolean;
 }) {
   // If at least one question has a nonzero unlock score, display the Advance Score column
@@ -141,11 +171,13 @@ function AssessmentQuestionsTable({
       return html`&mdash;`;
     }
   }
-
   return html`
     <div
       class="table-responsive js-assessment-questions-table"
       data-assessment-type="${assessmentType}"
+      data-url-prefix="${urlPrefix}"
+      data-csrfToken="${csrfToken}"
+      data-assessment-instance-id="${assessmentInstanceId}"
     >
       <table class="table table-sm table-hover">
         <thead>
