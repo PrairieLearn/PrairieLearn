@@ -5,12 +5,19 @@ import _ from 'lodash';
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
+import { AssessmentBadge } from '../../../src/components/AssessmentBadge.html.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
 
 onDocumentReady(() => {
-  const { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix } =
-    decodeData('questions-table-data');
+  const {
+    course_instance_ids,
+    showAddQuestionButton,
+    showAiGenerateQuestionButton,
+    qidPrefix,
+    urlPrefix,
+    plainUrlPrefix,
+  } = decodeData('questions-table-data');
   window.topicList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.topic.name));
@@ -126,19 +133,15 @@ onDocumentReady(() => {
     return !!values;
   };
 
-  let assessmentsByCourseInstanceFormatter = function (ci_id, question) {
-    var ci_assessments = _.filter(
-      question.assessments ?? [],
-      (assessment) => assessment.course_instance_id.toString() === ci_id.toString(),
-    );
-    return _.map(ci_assessments, (assessment) =>
-      html`<a
-        href="${plainUrlPrefix}/course_instance/${ci_id}/instructor/assessment/${assessment.assessment_id}"
-        class="badge color-${assessment.color} color-hover"
-        onclick="event.stopPropagation();"
-        ><span>${assessment.label}</span></a
-      >`.toString(),
-    ).join(' ');
+  let assessmentsByCourseInstanceFormatter = function (course_instance_id, question) {
+    return (question.assessments ?? [])
+      .filter(
+        (assessment) => assessment.course_instance_id.toString() === course_instance_id.toString(),
+      )
+      .map((assessment) =>
+        AssessmentBadge({ plainUrlPrefix, course_instance_id, assessment }).toString(),
+      )
+      .join(' ');
   };
 
   let assessmentsByCourseInstanceList = function (ci_id) {
@@ -194,6 +197,17 @@ onDocumentReady(() => {
       event: () => {
         $('form[name=add-question-form]').submit();
       },
+    };
+  }
+
+  if (showAiGenerateQuestionButton) {
+    tableSettings.buttons.aiGenerateQuestion = {
+      html: html`
+        <a class="btn btn-secondary" href="${urlPrefix}/ai_generate_question">
+          <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
+          Generate Question with AI
+        </a>
+      `.toString(),
     };
   }
 

@@ -161,7 +161,7 @@ describe('sproc check_assessment_access* tests', function () {
     });
 
     describe('with checked-in reservation', () => {
-      before(`create checked-in reservation for student`, async () => {
+      before('create checked-in reservation for student', async () => {
         await sqldb.queryAsync(sql.insert_pt_reservation, { exam_id: 1 });
       });
 

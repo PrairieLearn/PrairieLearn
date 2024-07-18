@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { Scorebar } from '../../components/Scorebar.html.js';
 import {
   AuthzAccessRuleSchema,
   StudentAccessRulesPopover,
@@ -157,9 +158,7 @@ export function StudentAssessments({
 function AssessmentScore(row: StudentAssessmentsRow) {
   if (row.assessment_instance_id == null) return 'Not started';
   if (!row.show_closed_assessment_score) return 'Score not shown';
-  return renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
-    score: row.assessment_instance_score_perc,
-  });
+  return Scorebar(row.assessment_instance_score_perc);
 }
 
 function NewInstanceButton({ urlPrefix, row }: { urlPrefix: string; row: StudentAssessmentsRow }) {

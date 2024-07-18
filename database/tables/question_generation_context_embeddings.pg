@@ -1,0 +1,11 @@
+columns
+    chunk_id: text
+    doc_path: character varying(1024)
+    doc_text: text
+    embedding: vector(1536)
+    id: bigint not null default nextval('question_generation_context_embeddings_id_seq'::regclass)
+
+indexes
+    question_generation_context_embeddings_pkey: PRIMARY KEY (id) USING btree (id)
+    question_generation_context_embeddings_doc_path_chunk_id_key: UNIQUE (doc_path, chunk_id) USING btree (doc_path, chunk_id)
+    question_generation_context_embeddings_embedding_idx: USING hnsw (embedding vector_cosine_ops)

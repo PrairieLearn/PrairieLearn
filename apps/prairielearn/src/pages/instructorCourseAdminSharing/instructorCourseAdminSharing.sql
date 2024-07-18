@@ -1,12 +1,3 @@
--- BLOCK get_course_sharing_info
-SELECT
-  sharing_name,
-  sharing_token
-FROM
-  pl_courses
-WHERE
-  id = $course_id;
-
 -- BLOCK select_sharing_sets
 SELECT
   ss.name,

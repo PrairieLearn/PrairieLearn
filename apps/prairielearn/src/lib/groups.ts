@@ -209,7 +209,7 @@ export async function addUserToGroup({
       GroupForUpdateSchema,
     );
     if (group == null) {
-      throw new GroupOperationError(`Group does not exist.`);
+      throw new GroupOperationError('Group does not exist.');
     }
 
     const user = await selectUserByUid(uid);
@@ -245,7 +245,7 @@ export async function addUserToGroup({
     }
 
     if (enforceGroupSize && group.max_size != null && group.cur_size >= group.max_size) {
-      throw new GroupOperationError(`Group is already full.`);
+      throw new GroupOperationError('Group is already full.');
     }
 
     // Find a group role. If none of the roles can be assigned, assign no role.
