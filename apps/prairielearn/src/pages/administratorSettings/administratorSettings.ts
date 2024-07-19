@@ -5,10 +5,10 @@ import OpenAI from 'openai';
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 
-import { syncContextDocuments } from '../../ee/lib/contextEmbeddings.js';
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
+import { isEnterprise } from '../../lib/license.js';
 
 import { AdministratorSettings } from './administratorSettings.html.js';
 
@@ -44,12 +44,13 @@ router.post(
       }
       const jobSequenceId = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
       res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + jobSequenceId);
-    } else if (req.body.__action === 'sync_context_documents') {
+    } else if (req.body.__action === 'sync_context_documents' && isEnterprise()) {
       const client = new OpenAI({
         apiKey: config.openAiApiKey ? config.openAiApiKey : undefined,
         organization: config.openAiOrganization,
       });
 
+      const { syncContextDocuments } = await import('../../ee/lib/contextEmbeddings.js');
       const jobSequenceId = await syncContextDocuments(client, res.locals.authn_user.user_id);
       res.redirect('/pl/jobSequence/' + jobSequenceId);
     } else {
