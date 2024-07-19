@@ -11,6 +11,7 @@ const featureNames = [
   // Can only be applied to institutions.
   'lti13',
   'terms-clickthrough',
+  'assessment-questions-editor',
 ] as const;
 
 const features = new FeatureManager(featureNames);

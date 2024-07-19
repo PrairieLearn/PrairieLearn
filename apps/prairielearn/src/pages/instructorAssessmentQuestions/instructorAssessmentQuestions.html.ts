@@ -16,10 +16,12 @@ export function InstructorAssessmentQuestions({
   resLocals,
   questions,
   origHash,
+  assessmentQuestionEditorEnabled,
 }: {
   resLocals: Record<string, any>;
   questions: AssessmentQuestionRow[];
   origHash: string;
+  assessmentQuestionEditorEnabled: boolean;
 }) {
   return html`
     <!doctype html>
@@ -96,7 +98,8 @@ export function InstructorAssessmentQuestions({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions
-              ${resLocals.authz_data.has_course_instance_permission_edit
+              ${resLocals.authz_data.has_course_instance_permission_edit &&
+              assessmentQuestionEditorEnabled
                 ? html`
                     <div class="ml-auto">
                       <button id="enableEditButton" class="btn btn-sm btn-light">

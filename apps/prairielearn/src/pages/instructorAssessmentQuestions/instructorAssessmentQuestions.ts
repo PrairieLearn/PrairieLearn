@@ -12,6 +12,7 @@ import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { FileModifyEditor } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions.js';
@@ -57,7 +58,19 @@ router.get(
       origHash = sha256(b64EncodeUnicode(await fs.readFile(assessmentPath, 'utf8'))).toString();
     }
 
-    res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions, origHash }));
+    const assessmentQuestionEditorEnabled = await features.enabledFromLocals(
+      'assessment-questions-editor',
+      res.locals,
+    );
+
+    res.send(
+      InstructorAssessmentQuestions({
+        resLocals: res.locals,
+        questions,
+        origHash,
+        assessmentQuestionEditorEnabled,
+      }),
+    );
   }),
 );
 
