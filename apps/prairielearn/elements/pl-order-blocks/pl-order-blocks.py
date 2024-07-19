@@ -66,6 +66,7 @@ class OrderBlocksAnswerData(TypedDict):
     group_info: GroupInfo  # only used with DAG grader
     distractor_bin: NotRequired[str]
     distractor_feedback: Optional[str]
+    disorder_feedback: Optional[str]
     uuid: str
 
 
@@ -193,7 +194,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         and feedback_type is not FeedbackType.NONE
     ):
         raise Exception(
-            f"feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
+            "feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
         )
 
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
@@ -251,6 +252,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     "indent",
                     "distractor-feedback",
                     "distractor-for",
+                    "disorder-feedback",
                 ],
             )
 
@@ -262,6 +264,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         ranking = pl.get_integer_attrib(html_tags, "ranking", -1)
         distractor_feedback = pl.get_string_attrib(
             html_tags, "distractor-feedback", None
+        )
+        disorder_feedback = pl.get_string_attrib(
+            html_tags, "disorder-feedback", None
         )
 
         distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
@@ -303,6 +308,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "depends": depends,  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
             "distractor_feedback": distractor_feedback,
+            "disorder_feedback": disorder_feedback,
             "uuid": pl.get_uuid(),
         }
         if is_correct:
@@ -546,6 +552,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "badge_type": attempt.get("badge_type", ""),
                 "icon": attempt.get("icon", ""),
                 "distractor_feedback": attempt.get("distractor_feedback", ""),
+                "disorder_feedback": attempt.get("disorder_feedback", ""),
+                "is_disordered": attempt.get("is_disordered", False),
             }
             for attempt in data["submitted_answers"].get(answer_name, [])
         ]
@@ -696,6 +704,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             answer["tag"] = (
                 matching_block["tag"] if matching_block is not None else None
             )
+            answer["is_disordered"] = False
             if grading_method is GradingMethodType.RANKING:
                 answer["ranking"] = (
                     matching_block["ranking"] if matching_block is not None else None
@@ -708,6 +717,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                     if block["inner_html"] == answer["inner_html"]
                 )
             answer["distractor_feedback"] = matching_block["distractor_feedback"]
+            answer["disorder_feedback"] = matching_block.get("disorder_feedback", "")
 
     if grading_method is GradingMethodType.EXTERNAL:
         for html_tags in element:
@@ -848,12 +858,19 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         elif grading_method is GradingMethodType.DAG:
             depends_graph, group_belonging = extract_dag(true_answer_list)
 
-        num_initial_correct, true_answer_length = grade_dag(
+        result = grade_dag(
             submission, depends_graph, group_belonging
         )
+        num_initial_correct = result[0]
+        true_answer_length = result[1]
+        disordered_lines = result[2]
+
         first_wrong = (
             None if num_initial_correct == len(submission) else num_initial_correct
-        )
+        )   
+
+        for i in disordered_lines:
+            student_answer[i]["is_disordered"] = True
 
         if feedback_type in FIRST_WRONG_TYPES:
             for block in student_answer[:num_initial_correct]:
@@ -872,9 +889,11 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                     block["icon"] = ""
                     block["distractor_feedback"] = ""
 
-        num_initial_correct, true_answer_length = grade_dag(
+        result = grade_dag(
             submission, depends_graph, group_belonging
         )
+        num_initial_correct = result[0]
+        true_answer_length = result[1]
 
         if partial_credit_type is PartialCreditType.NONE:
             if num_initial_correct == true_answer_length:
@@ -898,12 +917,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                     data["params"][answer_name], data["correct_answers"][answer_name]
                 )
             )
-            feedback = construct_feedback(
+            feedback += construct_feedback(
                 feedback_type,
                 first_wrong,
                 group_belonging,
                 check_indentation,
-                first_wrong_is_distractor,
+                first_wrong_is_distractor
             )
 
     data["partial_scores"][answer_name] = {
@@ -911,6 +930,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         "feedback": feedback,
         "weight": answer_weight,
     }
+
 
 
 def get_default_partial_credit_type(

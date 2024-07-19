@@ -55,19 +55,22 @@ def solve_dag(
     return sort
 
 
-def check_topological_sorting(submission: list[str], graph: nx.DiGraph) -> int:
+def check_topological_sorting(submission: list[str], graph: nx.DiGraph) -> list[int]:
     """
     :param submission: candidate for topological sorting
     :param graph: graph to check topological sorting over
-    :return: index of first element not topologically sorted, or length of list if sorted
+    :return: list of indices of all disordered lines, or [-1] if all are sorted
     """
     seen = set()
+    disordered = []
     for i, node in enumerate(submission):
         if node is None or not all(u in seen for (u, _) in graph.in_edges(node)):
-            return i
+            disordered.append(i)
         seen.add(node)
-    return len(submission)
-
+    if not disordered:
+        return [-1]
+    else:
+        return disordered
 
 def check_grouping(
     submission: list[str], group_belonging: Mapping[str, Optional[str]]
@@ -148,12 +151,11 @@ def add_edges_for_groups(
     for group_tag in groups:
         graph.remove_node(group_tag)
 
-
 def grade_dag(
     submission: list[str],
     depends_graph: Mapping[str, list[str]],
     group_belonging: Mapping[str, Optional[str]],
-) -> tuple[int, int]:
+) -> tuple[int, int, list[int]]:
     """In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
     as one another must all appear contiguously.
@@ -161,15 +163,20 @@ def grade_dag(
     :param depends_graph: The dependency graph between blocks specified in the question
     :param group_belonging: which pl-block-group each block belongs to, specified in the question
     :return: tuple containing length of list that meets both correctness conditions, starting from the beginning,
-    and the length of any correct solution
+    and the length of any correct solution, and the list that containd the indices of all disordered lines.
     """
     graph = dag_to_nx(depends_graph, group_belonging)
 
-    top_sort_correctness = check_topological_sorting(submission, graph)
+    disordered_lines = check_topological_sorting(submission, graph)
+    if disordered_lines and disordered_lines[0] != -1:
+        top_sort_correctness = disordered_lines[0]
+    else:
+        top_sort_correctness = len(submission)
+        
     grouping_correctness = check_grouping(submission, group_belonging)
-
-    return min(top_sort_correctness, grouping_correctness), graph.number_of_nodes()
-
+    top_sort_correctness = min(top_sort_correctness, grouping_correctness)
+    
+    return top_sort_correctness, graph.number_of_nodes(), disordered_lines if disordered_lines[0] != -1 else []
 
 def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     """this function from
