@@ -1,5 +1,15 @@
 # @prairielearn/formatter
 
+## 1.3.0
+
+### Minor Changes
+
+- 5f4f45d: Add option to format dates with milliseconds
+
+### Patch Changes
+
+- 24a93b8: Upgrade all JavaScript dependencies
+
 ## 1.2.0
 
 ### Minor Changes

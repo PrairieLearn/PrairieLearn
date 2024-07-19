@@ -2041,7 +2041,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.equal(
       syncedAssessment?.sync_errors,
-      `"multipleInstance" cannot be used for Homework-type assessments`,
+      '"multipleInstance" cannot be used for Homework-type assessments',
     );
   });
 

@@ -26,6 +26,7 @@ export function QuestionsTableHead() {
 export function QuestionsTable({
   questions,
   showAddQuestionButton = false,
+  showAiGenerateQuestionButton = false,
   showSharingSets = false,
   current_course_instance,
   course_instances = [],
@@ -37,6 +38,7 @@ export function QuestionsTable({
 }: {
   questions: QuestionsPageDataAnsified[];
   showAddQuestionButton?: boolean;
+  showAiGenerateQuestionButton?: boolean;
   showSharingSets?: boolean;
   current_course_instance?: CourseInstance;
   course_instances?: CourseInstance[];
@@ -50,7 +52,14 @@ export function QuestionsTable({
   const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);
   return html`
     ${EncodedData(
-      { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix },
+      {
+        course_instance_ids,
+        showAddQuestionButton,
+        showAiGenerateQuestionButton,
+        qidPrefix,
+        urlPrefix,
+        plainUrlPrefix,
+      },
       'questions-table-data',
     )}
 

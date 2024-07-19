@@ -2,7 +2,9 @@ import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
 import { HttpStatusError } from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment.js';
@@ -67,9 +69,9 @@ async function ensureUpToDate(locals: Record<string, any>) {
 }
 
 async function processFileUpload(req: Request, res: Response) {
-  if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
+  if (!res.locals.assessment_instance.open) throw new Error('Assessment is not open');
   if (!res.locals.authz_result.active) {
-    throw new Error(`This assessment is not accepting submissions at this time.`);
+    throw new Error('This assessment is not accepting submissions at this time.');
   }
   if (!req.file) {
     throw new HttpStatusError(400, 'Upload requested but no file provided');
@@ -87,9 +89,9 @@ async function processFileUpload(req: Request, res: Response) {
 }
 
 async function processTextUpload(req: Request, res: Response) {
-  if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
+  if (!res.locals.assessment_instance.open) throw new Error('Assessment is not open');
   if (!res.locals.authz_result.active) {
-    throw new Error(`This assessment is not accepting submissions at this time.`);
+    throw new Error('This assessment is not accepting submissions at this time.');
   }
   await uploadFile({
     display_filename: req.body.filename,
@@ -104,9 +106,9 @@ async function processTextUpload(req: Request, res: Response) {
 }
 
 async function processDeleteFile(req: Request, res: Response) {
-  if (!res.locals.assessment_instance.open) throw new Error(`Assessment is not open`);
+  if (!res.locals.assessment_instance.open) throw new Error('Assessment is not open');
   if (!res.locals.authz_result.active) {
-    throw new Error(`This assessment is not accepting submissions at this time.`);
+    throw new Error('This assessment is not accepting submissions at this time.');
   }
 
   // Check the requested file belongs to the current assessment instance
@@ -205,6 +207,19 @@ router.post(
         res.locals.authn_user.user_id,
       );
       res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'regenerate_instance') {
+      if (!assessment.canDeleteAssessmentInstance(res.locals)) {
+        throw new error.HttpStatusError(403, 'Access denied');
+      }
+
+      await assessment.deleteAssessmentInstance(
+        res.locals.assessment.id,
+        res.locals.assessment_instance.id,
+        res.locals.authn_user.user_id,
+      );
+
+      flash('success', 'Your previous assessment instance was deleted.');
+      res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
     } else {
       next(new HttpStatusError(400, `unknown __action: ${req.body.__action}`));
     }
@@ -260,7 +275,13 @@ router.get(
     const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
 
     if (!res.locals.assessment.group_work) {
-      res.send(StudentAssessmentInstance({ showTimeLimitExpiredModal, resLocals: res.locals }));
+      res.send(
+        StudentAssessmentInstance({
+          showTimeLimitExpiredModal,
+          userCanDeleteAssessmentInstance: assessment.canDeleteAssessmentInstance(res.locals),
+          resLocals: res.locals,
+        }),
+      );
       return;
     }
 
@@ -294,10 +315,11 @@ router.get(
     res.send(
       StudentAssessmentInstance({
         showTimeLimitExpiredModal,
-        resLocals: res.locals,
         groupConfig,
         groupInfo,
         userCanAssignRoles,
+        userCanDeleteAssessmentInstance: assessment.canDeleteAssessmentInstance(res.locals),
+        resLocals: res.locals,
       }),
     );
   }),

@@ -115,7 +115,7 @@ export abstract class Editor {
 
     // Do not allow users to edit the exampleCourse
     if (this.course.example_course) {
-      throw new HttpStatusError(403, `Access denied (cannot edit the example course)`);
+      throw new HttpStatusError(403, 'Access denied (cannot edit the example course)');
     }
   }
 
@@ -365,7 +365,7 @@ export abstract class Editor {
 
   getNamesForCopy(oldShortName, shortNames, oldLongName, longNames) {
     function getBaseShortName(oldname) {
-      const found = oldname.match(new RegExp(`^(.*)_copy[0-9]+$`));
+      const found = oldname.match(new RegExp('^(.*)_copy[0-9]+$'));
       if (found) {
         return found[1];
       } else {
@@ -376,7 +376,7 @@ export abstract class Editor {
     function getBaseLongName(oldname) {
       if (!_.isString(oldname)) return 'Unknown';
       debug(oldname);
-      const found = oldname.match(new RegExp(`^(.*) \\(copy [0-9]+\\)$`));
+      const found = oldname.match(new RegExp('^(.*) \\(copy [0-9]+\\)$'));
       debug(found);
       if (found) {
         return found[1];
@@ -429,7 +429,7 @@ export abstract class Editor {
     function getNumberShortName(oldnames) {
       let number = 1;
       oldnames.forEach((oldname) => {
-        const found = oldname.match(new RegExp(`^New_([0-9]+)$`));
+        const found = oldname.match(new RegExp('^New_([0-9]+)$'));
         if (found) {
           const foundNumber = parseInt(found[1]);
           if (foundNumber >= number) {
@@ -444,7 +444,7 @@ export abstract class Editor {
       let number = 1;
       oldnames.forEach((oldname) => {
         if (!_.isString(oldname)) return;
-        const found = oldname.match(new RegExp(`^New \\(([0-9]+)\\)$`));
+        const found = oldname.match(new RegExp('^New \\(([0-9]+)\\)$'));
         if (found) {
           const foundNumber = parseInt(found[1]);
           if (foundNumber >= number) {
@@ -502,7 +502,7 @@ export class AssessmentCopyEditor extends Editor {
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
-    debug(`Generate TID and Title`);
+    debug('Generate TID and Title');
     const names = this.getNamesForCopy(
       this.assessment.tid,
       oldNamesShort,
@@ -518,10 +518,10 @@ export class AssessmentCopyEditor extends Editor {
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
-    debug(`Read infoAssessment.json`);
+    debug('Read infoAssessment.json');
     const infoJson = await fs.readJson(path.join(assessmentPath, 'infoAssessment.json'));
 
-    debug(`Write infoAssessment.json with new title and uuid`);
+    debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
     infoJson.uuid = this.uuid;
     await fs.writeJson(path.join(assessmentPath, 'infoAssessment.json'), infoJson, {
@@ -640,13 +640,13 @@ export class AssessmentAddEditor extends Editor {
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
-    debug(`Generate TID and Title`);
+    debug('Generate TID and Title');
     const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
     const tid = names.shortName;
     const assessmentTitle = names.longName;
     const assessmentPath = path.join(assessmentsPath, tid);
 
-    debug(`Write infoAssessment.json`);
+    debug('Write infoAssessment.json');
 
     const infoJson = {
       uuid: this.uuid,
@@ -705,7 +705,7 @@ export class CourseInstanceCopyEditor extends Editor {
       'infoCourseInstance.json',
     );
 
-    debug(`Generate short_name and long_name`);
+    debug('Generate short_name and long_name');
     const names = this.getNamesForCopy(
       this.course_instance.short_name,
       oldNamesShort,
@@ -720,10 +720,10 @@ export class CourseInstanceCopyEditor extends Editor {
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
-    debug(`Read infoCourseInstance.json`);
+    debug('Read infoCourseInstance.json');
     const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
 
-    debug(`Write infoCourseInstance.json with new longName and uuid`);
+    debug('Write infoCourseInstance.json with new longName and uuid');
     infoJson.longName = names.longName;
     infoJson.uuid = this.uuid;
     await fs.writeJson(path.join(courseInstancePath, 'infoCourseInstance.json'), infoJson, {
@@ -799,7 +799,7 @@ export class CourseInstanceAddEditor extends Editor {
   constructor(params: BaseEditorOptions) {
     super(params);
 
-    this.description = `Add course instance`;
+    this.description = 'Add course instance';
 
     this.uuid = uuidv4();
   }
@@ -820,12 +820,12 @@ export class CourseInstanceAddEditor extends Editor {
       'infoCourseInstance.json',
     );
 
-    debug(`Generate short_name and long_name`);
+    debug('Generate short_name and long_name');
     const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
     const short_name = names.shortName;
     const courseInstancePath = path.join(courseInstancesPath, short_name);
 
-    debug(`Write infoCourseInstance.json`);
+    debug('Write infoCourseInstance.json');
 
     const infoJson = {
       uuid: this.uuid,
@@ -851,12 +851,15 @@ export class CourseInstanceAddEditor extends Editor {
 export class QuestionAddEditor extends Editor {
   public readonly uuid: string;
 
-  constructor(params: BaseEditorOptions) {
+  files?: Record<string, string>;
+
+  constructor(params: BaseEditorOptions & { files?: Record<string, string> }) {
     super(params);
 
-    this.description = `Add question`;
+    this.description = 'Add question';
 
     this.uuid = uuidv4();
+    this.files = params.files;
   }
 
   async write() {
@@ -872,22 +875,58 @@ export class QuestionAddEditor extends Editor {
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
-    debug(`Generate qid and title`);
+    debug('Generate qid and title');
     const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
     const qid = names.shortName;
     const questionPath = path.join(questionsPath, qid);
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
     const toPath = questionPath;
+
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
-    debug(`Read info.json`);
+    if (this.files != null) {
+      debug('Remove template files when file texts provided');
+      await fs.remove(path.join(toPath, 'question.html'));
+      await fs.remove(path.join(toPath, 'server.py'));
+
+      if ('info.json' in this.files) {
+        await fs.remove(path.join(toPath, 'info.json'));
+      }
+
+      debug('Load files from text');
+      for (const file of Object.keys(this.files)) {
+        const newPath = path.join(toPath, file);
+
+        // Ensure that files are fully contained in the question directory.
+        if (contains(toPath, newPath)) {
+          await fs.writeFile(newPath, this.files[file]);
+        } else {
+          throw new AugmentedError('Invalid file path', {
+            info: html`
+              <p>The path of the file to add</p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
+              </div>
+              <p>must be inside the root directory</p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">${toPath}</pre>
+              </div>
+            `,
+          });
+        }
+      }
+    }
+
+    debug('Read info.json');
     const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
 
-    debug(`Write info.json with new title and uuid`);
+    debug('Write info.json with new title and uuid');
     infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
+    // The template question contains tags that shouldn't be copied to the new question.
+    delete infoJson.tags;
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1033,7 +1072,7 @@ export class QuestionCopyEditor extends Editor {
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
-    debug(`Generate qid and title`);
+    debug('Generate qid and title');
     const names = this.getNamesForCopy(
       this.question.qid,
       oldNamesShort,
@@ -1048,10 +1087,10 @@ export class QuestionCopyEditor extends Editor {
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
-    debug(`Read info.json`);
+    debug('Read info.json');
     const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
 
-    debug(`Write info.json with new title and uuid`);
+    debug('Write info.json with new title and uuid');
     infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
 
@@ -1097,7 +1136,7 @@ export class QuestionTransferEditor extends Editor {
     debug('QuestionTransferEditor: write()');
     const questionsPath = path.join(this.course.path, 'questions');
 
-    debug(`Get title of question that is being copied`);
+    debug('Get title of question that is being copied');
     const sourceInfoJson = await fs.readJson(path.join(this.from_path, 'info.json'));
     const from_title = sourceInfoJson.title || 'Empty Title';
 
@@ -1110,7 +1149,7 @@ export class QuestionTransferEditor extends Editor {
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
-    debug(`Generate qid and title`);
+    debug('Generate qid and title');
     let qid = this.from_qid;
     let questionTitle = from_title;
     if (oldNamesShort.includes(this.from_qid) || oldNamesLong.includes(from_title)) {
@@ -1125,12 +1164,18 @@ export class QuestionTransferEditor extends Editor {
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
-    debug(`Read info.json`);
+    debug('Read info.json');
     const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
 
-    debug(`Write info.json with new title and uuid`);
+    debug('Write info.json with new title and uuid');
     infoJson.title = questionTitle;
     infoJson.uuid = this.uuid;
+
+    // When transferring a question from an example/template course, drop the tags. They
+    // are likely undesirable in the template course.
+    if (this.course.example_course || this.course.template_course) {
+      delete infoJson.tags;
+    }
 
     // We do not want to preserve sharing settings when copying a question to another course
     delete infoJson['sharingSets'];
@@ -1315,10 +1360,10 @@ export class FileRenameEditor extends Editor {
   async write() {
     debug('FileRenameEditor: write()');
 
-    debug(`ensure path exists`);
+    debug('ensure path exists');
     await fs.ensureDir(path.dirname(this.newPath));
 
-    debug(`rename file`);
+    debug('rename file');
     await fs.rename(this.oldPath, this.newPath);
 
     return {
@@ -1423,10 +1468,10 @@ export class FileUploadEditor extends Editor {
   async write() {
     debug('FileUploadEditor: write()');
 
-    debug(`ensure path exists`);
+    debug('ensure path exists');
     await fs.ensureDir(path.dirname(this.filePath));
 
-    debug(`write file`);
+    debug('write file');
     await fs.writeFile(this.filePath, this.fileContents);
 
     return {
@@ -1534,10 +1579,10 @@ export class FileModifyEditor extends Editor {
   async write() {
     debug('FileModifyEditor: write()');
 
-    debug(`ensure path exists`);
+    debug('ensure path exists');
     await fs.ensureDir(path.dirname(this.filePath));
 
-    debug(`verify disk hash matches orig hash`);
+    debug('verify disk hash matches orig hash');
     const diskContentsUTF = await fs.readFile(this.filePath, 'utf8');
     const diskContents = b64Util.b64EncodeUnicode(diskContentsUTF);
     const diskHash = this.getHash(diskContents);
@@ -1545,7 +1590,7 @@ export class FileModifyEditor extends Editor {
       throw new Error('Another user made changes to the file you were editing.');
     }
 
-    debug(`write file`);
+    debug('write file');
     await fs.writeFile(this.filePath, b64Util.b64DecodeUnicode(this.editContents));
 
     return {
@@ -1561,7 +1606,7 @@ export class CourseInfoCreateEditor extends Editor {
   constructor(params: BaseEditorOptions & { infoJson: any }) {
     super(params);
 
-    this.description = `Create infoCourse.json`;
+    this.description = 'Create infoCourse.json';
     this.infoJson = params.infoJson;
   }
 
@@ -1576,7 +1621,7 @@ export class CourseInfoCreateEditor extends Editor {
 
     return {
       pathsToAdd: [infoPath],
-      commitMessage: `create infoCourse.json`,
+      commitMessage: 'create infoCourse.json',
     };
   }
 }

@@ -2,9 +2,14 @@ import { Router, type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import { gradeAssessmentInstance } from '../../lib/assessment.js';
+import {
+  gradeAssessmentInstance,
+  canDeleteAssessmentInstance,
+  deleteAssessmentInstance,
+} from '../../lib/assessment.js';
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { uploadFile, deleteFile } from '../../lib/file-store.js';
@@ -52,10 +57,10 @@ async function getValidVariantId(req: Request, res: Response): Promise<string> {
 
 async function processFileUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
-    throw new HttpStatusError(403, `Assessment is not open`);
+    throw new HttpStatusError(403, 'Assessment is not open');
   }
   if (!res.locals.authz_result.active) {
-    throw new HttpStatusError(403, `This assessment is not accepting submissions at this time.`);
+    throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
   if (!req.file) {
     throw new HttpStatusError(400, 'No file uploaded');
@@ -75,10 +80,10 @@ async function processFileUpload(req: Request, res: Response) {
 
 async function processTextUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
-    throw new HttpStatusError(403, `Assessment is not open`);
+    throw new HttpStatusError(403, 'Assessment is not open');
   }
   if (!res.locals.authz_result.active) {
-    throw new HttpStatusError(403, `This assessment is not accepting submissions at this time.`);
+    throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
   await uploadFile({
     display_filename: req.body.filename,
@@ -95,10 +100,10 @@ async function processTextUpload(req: Request, res: Response) {
 
 async function processDeleteFile(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
-    throw new HttpStatusError(403, `Assessment is not open`);
+    throw new HttpStatusError(403, 'Assessment is not open');
   }
   if (!res.locals.authz_result.active) {
-    throw new HttpStatusError(403, `This assessment is not accepting submissions at this time.`);
+    throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
 
   // Check the requested file belongs to the current instance question
@@ -210,6 +215,19 @@ router.post(
       res.redirect(
         `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
       );
+    } else if (req.body.__action === 'regenerate_instance') {
+      if (!canDeleteAssessmentInstance(res.locals)) {
+        throw new HttpStatusError(403, 'Access denied');
+      }
+
+      await deleteAssessmentInstance(
+        res.locals.assessment.id,
+        res.locals.assessment_instance.id,
+        res.locals.authn_user.user_id,
+      );
+
+      flash('success', 'Your previous assessment instance was deleted.');
+      res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
@@ -257,7 +275,12 @@ router.get(
         IdSchema,
       );
       if (last_variant_id == null) {
-        res.status(403).send(StudentInstanceQuestion({ resLocals: res.locals }));
+        res.status(403).send(
+          StudentInstanceQuestion({
+            resLocals: res.locals,
+            userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+          }),
+        );
         return;
       }
 
@@ -296,7 +319,12 @@ router.get(
       }
     }
     setRendererHeader(res);
-    res.send(StudentInstanceQuestion({ resLocals: res.locals }));
+    res.send(
+      StudentInstanceQuestion({
+        resLocals: res.locals,
+        userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
+      }),
+    );
   }),
 );
 

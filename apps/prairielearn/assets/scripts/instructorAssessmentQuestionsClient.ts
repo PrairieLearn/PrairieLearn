@@ -12,7 +12,19 @@ import {
 } from '../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
 
 import { EditAssessmentQuestionsTable } from './lib/editAssessmentQuestionsTable.js';
--onDocumentReady(() => {
+import { histmini } from './lib/histmini.js';
+
+onDocumentReady(() => {
+  $('[data-toggle="popover"]').popover({ sanitize: false });
+
+  $('.js-sync-popover[data-toggle="popover"]')
+    .popover({ sanitize: false })
+    .on('show.bs.popover', function () {
+      $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
+    });
+
+  document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => histmini(element));
+
   const enableEditButton = document.getElementById('enableEditButton');
   const editModeButtons = document.getElementById('editModeButtons');
   const assessmentQuestionsTable = document.querySelector('.js-assessment-questions-table');
@@ -80,7 +92,7 @@ import { EditAssessmentQuestionsTable } from './lib/editAssessmentQuestionsTable
       }).toString(),
     );
   }
-  console.log(zones);
+
   enableEditButton?.addEventListener('click', () => {
     enableEditButton.style.display = 'none';
     editModeButtons?.style.removeProperty('display');
