@@ -4,6 +4,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
 import { Modal } from '../../../components/Modal.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import {
   compiledStylesheetTag,
   compiledScriptTag,
@@ -30,6 +31,8 @@ export function AssessmentQuestion({
     assessment_question,
     course_staff,
     num_open_instances,
+    course_instance,
+    course,
   } = resLocals;
 
   return html`
@@ -75,6 +78,13 @@ export function AssessmentQuestion({
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
         ${GradingConflictModal()}
         <main id="content" class="container-fluid">
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data,
+            assessment,
+            courseInstance: course_instance,
+            course,
+            urlPrefix,
+          })}
           ${AssessmentOpenInstancesAlert({
             numOpenInstances: num_open_instances,
             assessmentId: assessment.id,
@@ -88,11 +98,6 @@ export function AssessmentQuestion({
             <i class="fas fa-arrow-left"></i>
             Back to ${assessment_set.name} ${assessment.number} Overview
           </a>
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../../partials/assessmentSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
           ${botGradingEnabled
             ? html`
                 <form name="start-bot-grading" method="POST" id="bot-grading">
