@@ -33,7 +33,7 @@ export function AdministratorInstitutionGeneral({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, navPage: 'administrator_institution', pageTitle: 'General' })}
+        ${HeadContents({ resLocals, pageTitle: 'Institution Administration' })}
         ${compiledScriptTag('administratorInstitutionGeneralClient.ts')}
         <style>
           .card-grid {

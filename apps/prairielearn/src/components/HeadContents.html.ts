@@ -17,7 +17,6 @@ interface TitleOptions {
   };
   pageTitle?: string;
   pageNote?: string;
-  navPage?: string;
 }
 
 export function HeadContents(titleOptions: TitleOptions) {
@@ -52,7 +51,7 @@ function displayFriendlyPage(page: string) {
     .join(' ');
 }
 
-function getTitle({ resLocals, pageTitle, pageNote, navPage }: TitleOptions) {
+function getTitle({ resLocals, pageTitle, pageNote }: TitleOptions) {
   if (config.titleOverride) {
     return config.titleOverride;
   }
@@ -62,10 +61,10 @@ function getTitle({ resLocals, pageTitle, pageNote, navPage }: TitleOptions) {
     instance_question_info,
     course,
     course_instance,
+    navPage,
     navSubPage,
     navbarType,
   } = resLocals;
-  if (navPage == null) navPage = resLocals.navPage;
 
   const navTrace: string[] = [];
 

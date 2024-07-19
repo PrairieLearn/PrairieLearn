@@ -30,7 +30,7 @@ export function Enroll({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, navPage: 'enroll', pageTitle: 'Courses' })}
+        ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
       </head>
       <body>
         <script>
@@ -244,7 +244,7 @@ export function EnrollLtiMessage({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, navPage: 'enroll', pageTitle: 'Courses' })}
+        ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -288,7 +288,7 @@ export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: Recor
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, navPage: 'enroll', pageTitle: 'Courses' })}
+        ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {

@@ -17,7 +17,7 @@ export function AdministratorInstitutionCourses({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, navPage: 'administrator_institution', pageTitle: 'Courses' })}
+        ${HeadContents({ resLocals, pageTitle: 'Institution Administrator - Courses' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {

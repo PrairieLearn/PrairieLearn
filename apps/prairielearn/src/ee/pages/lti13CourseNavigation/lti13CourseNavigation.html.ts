@@ -20,7 +20,7 @@ export function Lti13CourseNavigationInstructor({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, navPage: 'lti13_course_navigation', pageTitle: 'Course' })}
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
@@ -169,7 +169,7 @@ export function Lti13CourseNavigationNotReady({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, navPage: 'lti13_course_navigation', pageTitle: 'Course' })}
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
@@ -203,7 +203,7 @@ export function Lti13CourseNavigationDone({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, navPage: 'lti13_course_navigation', pageTitle: 'Course' })}
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
