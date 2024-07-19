@@ -41,7 +41,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     source_dir = pl.get_string_attrib(element, ATTR_SOURCE_DIRECTORY, ".")
     if source_dir not in SOURCE_DIRECTORY_MAP:
         raise RuntimeError(
-            f"{source_dir=} has to be one of {list(SOURCE_DIRECTORY_MAP.keys())}"
+            f"{source_dir=} must be one of {list(SOURCE_DIRECTORY_MAP.keys())}"
         )
 
 
