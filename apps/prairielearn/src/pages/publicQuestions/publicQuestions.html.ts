@@ -22,7 +22,7 @@ export const QuestionsPage = ({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })} ${QuestionsTableHead()}
+        ${HeadContents({ resLocals, pageTitle: 'Public Questions' })} ${QuestionsTableHead()}
       </head>
 
       <body>

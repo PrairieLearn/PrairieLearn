@@ -12,7 +12,11 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, pageNote: 'Preview', pageTitle: resLocals.question.qid })}
+        ${HeadContents({
+          resLocals,
+          pageNote: 'Public Preview',
+          pageTitle: resLocals.question.qid,
+        })}
         ${compiledScriptTag('question.ts')}
         <script src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
         <script>
