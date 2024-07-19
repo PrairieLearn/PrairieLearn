@@ -39,11 +39,12 @@ router.get(
     let navTitle: string, pageTitle: string | undefined, pageNote: string | undefined;
     if (res.locals.assessment == null) {
       // instructor preview
-      pageNote = 'Preview';
-      pageTitle = res.locals.question_qid;
-      navTitle = res.locals.pageTitle;
+      pageTitle = 'Workspace Preview';
+      pageNote = res.locals.question_qid;
+      navTitle = res.locals.question_qid;
     } else {
       // student assessment
+      pageTitle = 'Workspace';
       navTitle = `${res.locals.instance_question_info.question_number} - ${res.locals.course.short_name}`;
     }
 

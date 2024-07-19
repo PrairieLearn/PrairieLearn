@@ -168,12 +168,22 @@ export function InstructorFileBrowser({
                 urlPrefix,
               })
             : '';
+  const pageTitle =
+    navPage === 'course_admin'
+      ? 'Course Files'
+      : navPage === 'instance_admin'
+        ? 'Course Instance Files'
+        : navPage === 'assessment'
+          ? 'Assessment Files'
+          : navPage === 'question'
+            ? `Files (${resLocals.question.qid})`
+            : 'Files';
 
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, pageTitle: 'Files' })}
+        ${HeadContents({ resLocals, pageTitle })}
         <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
         ${compiledScriptTag('instructorFileBrowserClient.ts')}
         <style>
