@@ -51,6 +51,15 @@ function displayFriendlyPage(page: string) {
     .join(' ');
 }
 
+/**
+ * The title of the page is composed of the following parts, in this order:
+ * 1. The custom `pageTitle`, or a friendly version of `navSubPage` if the `pageTitle` is not provided.
+ *    - If `pageNote` is provided, it is appended in parenthesis after the first part.
+ * 2. The assessment (including instance question info) if available.
+ * 3. The course (including course instance if the user is an instructor) if available.
+ * 4. A friendly version of `navPage` if neither of the options above is available.
+ * 5. The string "PrairieLearn" (fixed).
+ */
 function getTitle({ resLocals, pageTitle, pageNote }: TitleOptions) {
   if (config.titleOverride) {
     return config.titleOverride;
