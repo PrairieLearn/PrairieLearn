@@ -91,7 +91,7 @@ export function AdministratorSettings({ resLocals }) {
               </script>
             </div>
           </div>
-          ${isEnterprise() && (config.openAiApiKey || config.openAiOrganization)
+          ${isEnterprise() && (config.openAiApiKey && config.openAiOrganization)
             ? html` <div class="card mb-4">
                 <div class="card-header bg-primary text-white">LLM Context Documents</div>
                 <div class="card-body">
