@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 
 export function AdministratorSettings({ resLocals }) {
@@ -90,7 +91,7 @@ export function AdministratorSettings({ resLocals }) {
               </script>
             </div>
           </div>
-          ${isEnterprise()
+          ${isEnterprise() && (config.openAiApiKey || config.openAiOrganization)
             ? html` <div class="card mb-4">
                 <div class="card-header bg-primary text-white">LLM Context Documents</div>
                 <div class="card-body">
