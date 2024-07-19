@@ -23,7 +23,7 @@ export function InstructorAssessmentAccess({
     <html lang="en">
       <head>
         ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('instructorAssessmentAccessClient.js')}
+        ${compiledScriptTag('instructorAssessmentAccessClient.ts')}
       </head>
       <body>
         ${EncodedData(accessRules, 'access-rules-data')}

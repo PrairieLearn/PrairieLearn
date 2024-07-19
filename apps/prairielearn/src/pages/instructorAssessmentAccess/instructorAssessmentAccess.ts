@@ -75,7 +75,7 @@ router.post(
         'infoAssessment.json',
       );
 
-      const paths = getPaths(req, res);
+      const paths = getPaths(undefined, res.locals);
 
       const assessmentInfo = JSON.parse(await fs.readFile(assessmentPath, 'utf8'));
 
