@@ -1,4 +1,3 @@
-// @ts-check
 import type { Root as MdastRoot, Code, Html } from 'mdast';
 import { visit } from 'unist-util-visit';
 
