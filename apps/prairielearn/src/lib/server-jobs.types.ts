@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { type Job, JobSchema, JobSequenceSchema, UserSchema } from './db-types.js';
+import { JobSchema, JobSequenceSchema, UserSchema } from './db-types.js';
 
 const JobRowSchema = JobSchema.extend({
   start_date_formatted: z.string().nullable(),
@@ -20,16 +20,8 @@ export const JobSequenceWithJobsSchema = JobSequenceSchema.extend({
 });
 export type JobSequenceWithJobs = z.infer<typeof JobSequenceWithJobsSchema>;
 
-type JobWithToken = JobRow & { token: string };
+export type JobWithToken = JobRow & { token: string };
 export type JobSequenceWithTokens = Omit<JobSequenceWithJobs, 'jobs'> & {
   token: string;
   jobs: JobWithToken[];
-};
-
-export type JobWithFormattedOutput = Omit<JobWithToken, 'output'> & {
-  output: string;
-  output_raw: Job['output'];
-};
-export type JobSequenceWithFormattedOutput = Omit<JobSequenceWithTokens, 'jobs'> & {
-  jobs: JobWithFormattedOutput[];
 };

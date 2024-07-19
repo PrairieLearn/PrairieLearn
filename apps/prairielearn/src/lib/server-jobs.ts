@@ -13,11 +13,7 @@ import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-toke
 import { chalk, chalkDim } from './chalk.js';
 import { config } from './config.js';
 import { IdSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
-import {
-  type JobSequenceWithTokens,
-  type JobSequenceWithFormattedOutput,
-  JobSequenceWithJobsSchema,
-} from './server-jobs.types.js';
+import { type JobSequenceWithTokens, JobSequenceWithJobsSchema } from './server-jobs.types.js';
 import * as socketServer from './socket-server.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -476,25 +472,5 @@ export async function getJobSequence(
       const jobTokenData = { jobId: job.id.toString() };
       return { ...job, token: generateSignedToken(jobTokenData, config.secretKey) };
     }),
-  };
-}
-
-/**
- * Resolves with a job sequence, where each job's output has been turned into
- * markup with `ansi_up`.
- */
-export async function getJobSequenceWithFormattedOutput(
-  job_sequence_id: string,
-  course_id: string | null,
-): Promise<JobSequenceWithFormattedOutput> {
-  const jobSequence = await getJobSequence(job_sequence_id, course_id);
-  const ansiup = new AnsiUp();
-  return {
-    ...jobSequence,
-    jobs: jobSequence.jobs.map((job) => ({
-      ...job,
-      output_raw: job.output,
-      output: job.output ? ansiup.ansi_to_html(job.output) : '',
-    })),
   };
 }

@@ -1,25 +1,22 @@
+import { AnsiUp } from 'ansi_up';
+
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import type {
-  JobWithFormattedOutput,
-  JobSequenceWithFormattedOutput,
-} from '../lib/server-jobs.types.js';
+import type { JobWithToken, JobSequenceWithTokens } from '../lib/server-jobs.types.js';
 
 export interface JobSequenceResultsData {
   jobSequenceId: string;
   token: string;
   jobCount: number;
-  jobs: Pick<JobWithFormattedOutput, 'id' | 'status' | 'token'>[];
+  jobs: Pick<JobWithToken, 'id' | 'status' | 'token'>[];
 }
 
 // If you want live updates, you also need to import lib/jobSequenceResults.js in the page's JavaScript asset.
-export function JobSequenceResults({
-  jobSequence,
-}: {
-  jobSequence: JobSequenceWithFormattedOutput;
-}) {
+export function JobSequenceResults({ jobSequence }: { jobSequence: JobSequenceWithTokens }) {
+  const ansiup = new AnsiUp();
+
   return html`
     ${EncodedData<JobSequenceResultsData>(
       {
@@ -96,7 +93,7 @@ export function JobSequenceResults({
                 class="text-white rounded p-3 mb-0 mt-3"
                 style="background-color: black;"
               >
-${unsafeHtml(job.output)}</pre
+${unsafeHtml(job.output ? ansiup.ansi_to_html(job.output) : '')}</pre
               >
             </li>
           </div>

@@ -3,7 +3,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
 import { config } from '../../lib/config.js';
-import type { JobSequenceWithFormattedOutput } from '../../lib/server-jobs.types.js';
+import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
 export function EditError({
   resLocals,
@@ -11,7 +11,7 @@ export function EditError({
   failedSync,
 }: {
   resLocals: any;
-  jobSequence: JobSequenceWithFormattedOutput;
+  jobSequence: JobSequenceWithTokens;
   failedSync: boolean;
 }) {
   const { __csrf_token } = resLocals;
