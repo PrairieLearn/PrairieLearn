@@ -12,25 +12,25 @@
   "studentGroupLeave": true,
   "shuffleQuestions": false,
   "groupRoles": [
-      {
-          "name": "Manager",
-          "minimum": 1,
-          "maximum": 1,
-          "canAssignRoles": true
-      },
-      {
-          "name": "Recorder",
-          "minimum": 1,
-          "maximum": 1
-      },
-      {
-          "name": "Reflector",
-          "minimum": 1,
-          "maximum": 1
-      },
-      {
-          "name": "Contributor"
-      }
+    {
+      "name": "Manager",
+      "minimum": 1,
+      "maximum": 1,
+      "canAssignRoles": true
+    },
+    {
+      "name": "Recorder",
+      "minimum": 1,
+      "maximum": 1
+    },
+    {
+      "name": "Reflector",
+      "minimum": 1,
+      "maximum": 1
+    },
+    {
+      "name": "Contributor"
+    }
   ],
   "allowAccess": [
     {
@@ -44,9 +44,9 @@
       "canSubmit": ["Recorder"],
       "title": "Hard questions",
       "questions": [
-          {"id": "demo/demoNewton-page1",          "points": 1},
-          {"id": "demo/demoNewton-page2",        "points": 1, "canView": ["Recorder"]},
-          {"id": "addNumbers",        "points": 1, "canView": ["Reflector"], "canSubmit": ["Reflector"]}
+        { "id": "demo/demoNewton-page1", "points": 1 },
+        { "id": "demo/demoNewton-page2", "points": 1, "canView": ["Recorder"] },
+        { "id": "addNumbers", "points": 1, "canView": ["Reflector"], "canSubmit": ["Reflector"] }
       ]
     }
   ]
