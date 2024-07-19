@@ -2,13 +2,16 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import type { JobSequenceWithFormattedOutput } from '../lib/server-jobs.js';
+import type {
+  JobWithFormattedOutput,
+  JobSequenceWithFormattedOutput,
+} from '../lib/server-jobs.types.js';
 
 export interface JobSequenceResultsData {
   jobSequenceId: string;
   token: string;
   jobCount: number;
-  jobs: Pick<JobSequenceWithFormattedOutput['jobs'][0], 'id' | 'status' | 'token'>[];
+  jobs: Pick<JobWithFormattedOutput, 'id' | 'status' | 'token'>[];
 }
 
 // If you want live updates, you also need to import lib/jobSequenceResults.js in the page's JavaScript asset.

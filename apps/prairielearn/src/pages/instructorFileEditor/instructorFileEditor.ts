@@ -20,10 +20,8 @@ import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
-import {
-  getJobSequenceWithFormattedOutput,
-  type JobSequenceWithFormattedOutput,
-} from '../../lib/server-jobs.js';
+import { getJobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
+import type { JobSequenceWithFormattedOutput } from '../../lib/server-jobs.types.js';
 
 import { InstructorFileEditor } from './instructorFileEditor.html.js';
 

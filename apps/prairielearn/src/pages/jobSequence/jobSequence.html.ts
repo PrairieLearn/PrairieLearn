@@ -3,7 +3,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import type { JobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
+import type { JobSequenceWithFormattedOutput } from '../../lib/server-jobs.types.js';
 
 export function JobSequence({
   resLocals,
