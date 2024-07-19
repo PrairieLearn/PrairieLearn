@@ -137,6 +137,17 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                               <i class="far fa-question-circle" aria-hidden="true"></i>
                               <span id="help-button-label">Show help</span>
                             </button>
+                            ${fileEdit.aceMode === 'ace/mode/json'
+                              ? html`
+                                  <button
+                                    type="button"
+                                    class="btn btn-light btn-sm js-reformat-file"
+                                  >
+                                    <i class="fas fa-paintbrush" aria-hidden="true"></i>
+                                    Reformat
+                                  </button>
+                                `
+                              : ''}
                             <button
                               id="file-editor-save-button"
                               name="__action"

@@ -1,7 +1,38 @@
 import ace from 'ace-builds';
 import CryptoJS from 'crypto-js';
+import prettierBabelPlugin from 'prettier/plugins/babel';
+import prettierEstreePlugin from 'prettier/plugins/estree';
+import * as prettier from 'prettier/standalone';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
+
+/**
+ * Given an Ace cursor position (consisting of a row and column) and the lines
+ * of the document, returns a cursor offset from the start of the document.
+ */
+function getCursorOffsetFromCursorPosition(position: ace.Ace.Point, lines: string[]): number {
+  const cursorOffset = lines.slice(0, position.row).reduce((acc, line) => acc + line.length + 1, 0);
+  return cursorOffset + position.column;
+}
+
+/**
+ * Given a cursor offset from the start of the document and the lines of the
+ * document, returns an Ace cursor position (consisting of a row and column).
+ */
+function getCursorPositionFromCursorOffset(cursorOffset: number, lines: string[]): ace.Ace.Point {
+  let row = 0;
+  let column = 0;
+  let offset = 0;
+  for (const line of lines) {
+    if (offset + line.length >= cursorOffset) {
+      column = cursorOffset - offset;
+      break;
+    }
+    offset += line.length + 1;
+    row += 1;
+  }
+  return { row, column };
+}
 
 class InstructorFileEditor {
   element: HTMLElement;
@@ -57,6 +88,13 @@ class InstructorFileEditor {
     });
 
     this.editor.getSession().on('change', () => this.onChange());
+
+    if (aceMode === 'ace/mode/json') {
+      this.editor.getSession().setTabSize(2);
+      document
+        .querySelector<HTMLButtonElement>('.js-reformat-file')
+        ?.addEventListener('click', () => this.reformatJSONFile());
+    }
   }
 
   setEditorContents(contents: string) {
@@ -116,6 +154,36 @@ class InstructorFileEditor {
     this.editor.setReadOnly(false);
     this.checkDiff();
     this.editor.resize();
+  }
+
+  reformatJSONFile() {
+    const contents = this.editor.getValue();
+    const cursorOffset = getCursorOffsetFromCursorPosition(
+      this.editor.getCursorPosition(),
+      this.editor.getSession().getDocument().getAllLines(),
+    );
+    prettier
+      .formatWithCursor(contents, {
+        cursorOffset,
+        parser: 'json',
+        plugins: [prettierBabelPlugin, prettierEstreePlugin],
+      })
+      .then(({ formatted, cursorOffset }) => {
+        // We use this instead of `this.setEditorContents` so that this change
+        // is added to the undo stack.
+        this.editor.setValue(formatted, -1);
+        this.editor.moveCursorToPosition(
+          getCursorPositionFromCursorOffset(
+            cursorOffset,
+            this.editor.getSession().getDocument().getAllLines(),
+          ),
+        );
+        this.editor.focus();
+      })
+      .catch((err) => {
+        // The document probably has invalid JSON syntax. Just do nothing.
+        console.error(err);
+      });
   }
 }
 
