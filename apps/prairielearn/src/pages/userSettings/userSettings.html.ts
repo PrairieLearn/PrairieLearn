@@ -42,7 +42,7 @@ export function UserSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'User Settings' })}
       </head>
       <body>
         <script>
