@@ -67,7 +67,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # Answer must have a file attribute
             if not pl.has_attrib(element, ATTR_SOURCE_FILE_NAME):
                 raise RuntimeError(
-                    f"Answer drawing '{drawing_name}' does not have a `file` argument"
+                    f"Answer drawing '{drawing_name}' does not have a `{ATTR_SOURCE_FILE_NAME}` argument"
                 )
             initial_content = load_file_content(element, data)
         case "question":
