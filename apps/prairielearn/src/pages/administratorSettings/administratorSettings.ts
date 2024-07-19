@@ -46,7 +46,7 @@ router.post(
       res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'sync_context_documents' && isEnterprise()) {
       const client = new OpenAI({
-        apiKey: config.openAiApiKey ? config.openAiApiKey : undefined,
+        apiKey: config.openAiApiKey ?? undefined,
         organization: config.openAiOrganization,
       });
 
