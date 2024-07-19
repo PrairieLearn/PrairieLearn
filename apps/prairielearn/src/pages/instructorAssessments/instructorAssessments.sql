@@ -15,28 +15,7 @@ WITH
       a.id
   )
 SELECT
-  a.id,
-  a.tid,
-  a.course_instance_id,
-  a.type,
-  a.number as assessment_number,
-  a.title,
-  a.group_work AS group_work,
-  a.assessment_set_id,
-  a.sync_errors,
-  a.sync_warnings,
-  a.score_stat_number,
-  a.score_stat_mean,
-  a.score_stat_std,
-  a.score_stat_min,
-  a.score_stat_max,
-  a.score_stat_median,
-  a.score_stat_n_zero,
-  a.score_stat_n_hundred,
-  a.score_stat_n_zero_perc,
-  a.score_stat_n_hundred_perc,
-  a.score_stat_hist,
-  format_interval (a.duration_stat_mean) AS duration_stat_mean_formatted,
+  a.*,
   EXISTS (
     SELECT
       1
@@ -105,11 +84,7 @@ ORDER BY
 
 -- BLOCK select_assessment
 SELECT
-  a.id,
-  a.score_stat_number,
-  a.score_stat_mean,
-  a.score_stat_hist,
-  format_interval (a.duration_stat_mean) AS duration_stat_mean_formatted
+  a.*
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)

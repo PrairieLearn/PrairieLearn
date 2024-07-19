@@ -13,6 +13,7 @@ import { config } from '../lib/config.js';
 import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 
+import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import { syncCourseData, type GroupRole } from './sync/util.js';
 
@@ -289,14 +290,8 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('displays error for too few recorders/reflectors', function () {
-    elemList = locals.$(
-      '.alert:contains(1 more student needs to be assigned to the role "Reflector")',
-    );
-    assert.lengthOf(elemList, 1);
-    elemList = locals.$(
-      '.alert:contains(1 more student needs to be assigned to the role "Recorder")',
-    );
-    assert.lengthOf(elemList, 1);
+    assertAlert(locals.$, '1 more student needs to be assigned to the role "Recorder"');
+    assertAlert(locals.$, '1 more student needs to be assigned to the role "Reflector"');
   });
 
   step('cannot select the contributor role', function () {
@@ -360,10 +355,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('displays error for too few reflectors', function () {
-    elemList = locals.$(
-      '.alert:contains(1 more student needs to be assigned to the role "Reflector")',
-    );
-    assert.lengthOf(elemList, 1);
+    assertAlert(locals.$, '1 more student needs to be assigned to the role "Reflector"');
   });
 
   step('first user sees group role select table with two rows', async function () {
@@ -398,10 +390,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('should have error displayed for requiring all users have a role', function () {
-    elemList = locals.$(
-      '.alert:contains(At least one user does not have a role. All users must have a role.)',
-    );
-    assert.lengthOf(elemList, 1);
+    assertAlert(locals.$, 'At least one user does not have a role. All users must have a role.');
   });
 
   step('should not be able to start assessment', function () {
@@ -473,10 +462,8 @@ describe('Test group based assessments with custom group roles from student side
   );
 
   step('displays errors for incorrect number of role assignments', function () {
-    elemList = locals.$('.alert:contains(less student needs to be assigned)');
-    assert.lengthOf(elemList, 1);
-    elemList = locals.$('.alert:contains(more student needs to be assigned)');
-    assert.lengthOf(elemList, 2);
+    assertAlert(locals.$, 'less student needs to be assigned');
+    assertAlert(locals.$, 'more student needs to be assigned', 2);
   });
 
   step('should not be able to start assessment', function () {
@@ -529,8 +516,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('displays no role assignment error', function () {
-    elemList = locals.$('.alert:contains(needs to be assigned)');
-    assert.lengthOf(elemList, 0);
+    assertAlert(locals.$, 'needs to be assigned', 0);
   });
 
   step('first user can edit role table to make two users recorder', async function () {
@@ -552,14 +538,8 @@ describe('Test group based assessments with custom group roles from student side
 
   step('displays error for too few reflectors and too many recorders', async function () {
     await switchUserAndLoadAssessment(locals.studentUsers[2], locals.assessmentUrl, '00000003', 2);
-    elemList = locals.$(
-      '.alert:contains(more student needs to be assigned to the role "Reflector")',
-    );
-    assert.lengthOf(elemList, 1);
-    elemList = locals.$(
-      '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
-    );
-    assert.lengthOf(elemList, 1);
+    assertAlert(locals.$, '1 more student needs to be assigned to the role "Reflector"');
+    assertAlert(locals.$, '1 less student needs to be assigned to the role "Recorder"');
   });
 
   step('cannot start assessment as minimum roles are incomplete', function () {
@@ -636,8 +616,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('displays no errors when role config is correct', function () {
-    elemList = locals.$('.alert:contains(needs to be assigned)');
-    assert.lengthOf(elemList, 0);
+    assertAlert(locals.$, 'needs to be assigned', 0);
   });
 
   step('should be able to start assessment when role config is correct', function () {
@@ -682,10 +661,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('displays error for too many recorders', function () {
-    elemList = locals.$(
-      '.alert:contains(1 less student needs to be assigned to the role "Recorder")',
-    );
-    assert.lengthOf(elemList, 1);
+    assertAlert(locals.$, '1 less student needs to be assigned to the role "Recorder"');
   });
 
   step('first user can update roles to have two contributors', async function () {
@@ -720,8 +696,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('displays error for a student having too many roles', function () {
-    elemList = locals.$('.alert:contains(too many roles)');
-    assert.lengthOf(elemList, 1);
+    assertAlert(locals.$, 'too many roles');
   });
 
   step('should not be able to start assessment with unbalanced role config', function () {
@@ -1220,14 +1195,8 @@ describe('Test group role reassignments with role of minimum > 1', function () {
   });
 
   step('should display correct errors for too few role assignments', function () {
-    elemList = locals.$(
-      '.alert:contains(1 more student needs to be assigned to the role "Reflector")',
-    );
-    assert.lengthOf(elemList, 1);
-    elemList = locals.$(
-      '.alert:contains(1 more student needs to be assigned to the role "Recorder")',
-    );
-    assert.lengthOf(elemList, 1);
+    assertAlert(locals.$, '1 more student needs to be assigned to the role "Reflector"');
+    assertAlert(locals.$, '1 more student needs to be assigned to the role "Recorder"');
   });
 
   step('third user should be able to join group', async function () {
@@ -1255,15 +1224,11 @@ describe('Test group role reassignments with role of minimum > 1', function () {
   });
 
   step('displays error for too few recorders', function () {
-    elemList = locals.$(
-      '.alert:contains(1 more student needs to be assigned to the role "Recorder")',
-    );
-    assert.lengthOf(elemList, 1);
+    assertAlert(locals.$, '1 more student needs to be assigned to the role "Recorder"');
   });
 
   step('displays no errors for reflector', function () {
-    elemList = locals.$('.alert:contains(Reflector)');
-    assert.lengthOf(elemList, 0);
+    assertAlert(locals.$, 'Reflector', 0);
   });
 
   step('first user can see group role table with four users', async function () {
@@ -1302,8 +1267,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
   });
 
   step('displays no role assignment errors', function () {
-    elemList = locals.$('.alert:contains(needs to be assigned)');
-    assert.lengthOf(elemList, 0);
+    assertAlert(locals.$, 'needs to be assigned', 0);
   });
 
   step('should not enable the group role table for non-assigner', function () {
@@ -1369,12 +1333,8 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     );
 
     step('should have no errors displayed', function () {
-      elemList = locals.$('.alert:contains(to be assigned)');
-      assert.lengthOf(elemList, 0);
-      elemList = locals.$(
-        '.alert:contains(At least one user does not have a role. All users must have a role.)',
-      );
-      assert.lengthOf(elemList, 0);
+      assertAlert(locals.$, 'to be assigned', 0);
+      assertAlert(locals.$, 'At least one user does not have a role', 0);
     });
 
     step('first user should not be able to select the contributor role', function () {
@@ -1420,12 +1380,12 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     });
 
     step('should have no errors displayed', function () {
-      elemList = locals.$('.alert:contains(to be assigned)');
-      assert.lengthOf(elemList, 0);
-      elemList = locals.$(
-        '.alert:contains(At least one user does not have a role. All users must have a role.)',
+      assertAlert(locals.$, 'to be assigned', 0);
+      assertAlert(
+        locals.$,
+        'At least one user does not have a role. All users must have a role.',
+        0,
       );
-      assert.lengthOf(elemList, 0);
     });
 
     step('first user should be able to select the contributor role', function () {
@@ -1468,8 +1428,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     });
 
     step('should have correct errors displayed', function () {
-      elemList = locals.$('.alert:contains(student has too many roles)');
-      assert.lengthOf(elemList, 1);
+      assertAlert(locals.$, 'student has too many roles');
     });
 
     step('should not be able to start assessment', function () {
@@ -1516,14 +1475,11 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     });
 
     step('should have correct errors displayed', function () {
-      elemList = locals.$(
-        '.alert:contains(1 more student needs to be assigned to the role "Recorder" (Found 1, expected exactly 2).)',
+      assertAlert(
+        locals.$,
+        '1 more student needs to be assigned to the role "Recorder" (1 assigned, 2 expected)',
       );
-      assert.lengthOf(elemList, 0);
-      elemList = locals.$(
-        '.alert:contains(At least one user does not have a role. All users must have a role.)',
-      );
-      assert.lengthOf(elemList, 1);
+      assertAlert(locals.$, 'At least one user does not have a role. All users must have a role.');
     });
 
     step('should not be able to start assessment', function () {
@@ -1562,16 +1518,9 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     });
 
     step('should have correct errors displayed', function () {
-      elemList = locals.$('.alert:contains(to be assigned to the role "Recorder")');
-      assert.lengthOf(elemList, 0);
-
-      elemList = locals.$(
-        '.alert:contains(At least one user does not have a role. All users must have a role.)',
-      );
-      assert.lengthOf(elemList, 1);
-
-      elemList = locals.$('.alert:contains(student has too many roles)');
-      assert.lengthOf(elemList, 1);
+      assertAlert(locals.$, 'to be assigned to the role "Recorder"', 0);
+      assertAlert(locals.$, 'At least one user does not have a role. All users must have a role.');
+      assertAlert(locals.$, 'student has too many roles');
     });
 
     step('should not be able to start assessment', function () {

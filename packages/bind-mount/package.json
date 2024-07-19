@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/bind-mount",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "main": "index.js",
   "types": "index.d.ts",
   "repository": {
@@ -10,7 +10,7 @@
   },
   "dependencies": {
     "bindings": "^1.5.0",
-    "nan": "^2.19.0",
+    "nan": "^2.20.0",
     "node-gyp": "^10.1.0"
   },
   "scripts": {

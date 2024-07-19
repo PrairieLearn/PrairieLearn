@@ -32,7 +32,7 @@ const elements = parseHTML(
     <div>Goodbye, world</div>
   `,
 );
-const div = parseHTMLElement(document, html`<div>Hello, world</div>`);
+const div = parseHTMLElement<HTMLDivElement>(document, html`<div>Hello, world</div>`);
 ```
 
 ### `EncodedData` and `decodeData`
