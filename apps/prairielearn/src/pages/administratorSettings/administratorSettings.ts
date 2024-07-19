@@ -45,6 +45,10 @@ router.post(
       const jobSequenceId = await chunks.generateAllChunksForCourseList(course_ids, authn_user_id);
       res.redirect(res.locals.urlPrefix + '/administrator/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'sync_context_documents' && isEnterprise()) {
+      if (!config.openAiApiKey || !config.openAiOrganization) {
+        throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
+      }
+
       const client = new OpenAI({
         apiKey: config.openAiApiKey ? config.openAiApiKey : undefined,
         organization: config.openAiOrganization,
