@@ -12,7 +12,8 @@ import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-toke
 
 import { chalk, chalkDim } from './chalk.js';
 import { config } from './config.js';
-import { IdSchema, Job, JobSchema, JobSequenceSchema, UserSchema } from './db-types.js';
+import { IdSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
+import { type JobSequenceWithTokens, JobSequenceWithJobsSchema } from './server-jobs.types.js';
 import * as socketServer from './socket-server.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -55,38 +56,6 @@ export interface ServerJobExecutor {
 }
 
 export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
-
-const JobRowSchema = JobSchema.extend({
-  start_date_formatted: z.string().nullable(),
-  finish_date_formatted: z.string().nullable(),
-  user_uid: UserSchema.shape.uid.nullable(),
-  authn_user_uid: UserSchema.shape.uid.nullable(),
-});
-type JobRow = z.infer<typeof JobRowSchema>;
-
-const JobSequenceWithJobsSchema = JobSequenceSchema.extend({
-  start_date_formatted: z.string().nullable(),
-  finish_date_formatted: z.string().nullable(),
-  user_uid: UserSchema.shape.uid.nullable(),
-  authn_user_uid: UserSchema.shape.uid.nullable(),
-  job_count: z.coerce.number(),
-  jobs: JobRowSchema.array(),
-});
-type JobSequenceWithJobs = z.infer<typeof JobSequenceWithJobsSchema>;
-
-type JobWithToken = JobRow & { token: string };
-export type JobSequenceWithTokens = Omit<JobSequenceWithJobs, 'jobs'> & {
-  token: string;
-  jobs: JobWithToken[];
-};
-
-type JobWithFormattedOutput = Omit<JobWithToken, 'output'> & {
-  output: string;
-  output_raw: Job['output'];
-};
-export type JobSequenceWithFormattedOutput = Omit<JobSequenceWithTokens, 'jobs'> & {
-  jobs: JobWithFormattedOutput[];
-};
 
 /**
  * Store currently active job information in memory. This is used
@@ -503,25 +472,5 @@ export async function getJobSequence(
       const jobTokenData = { jobId: job.id.toString() };
       return { ...job, token: generateSignedToken(jobTokenData, config.secretKey) };
     }),
-  };
-}
-
-/**
- * Resolves with a job sequence, where each job's output has been turned into
- * markup with `ansi_up`.
- */
-export async function getJobSequenceWithFormattedOutput(
-  job_sequence_id: string,
-  course_id: string | null,
-): Promise<JobSequenceWithFormattedOutput> {
-  const jobSequence = await getJobSequence(job_sequence_id, course_id);
-  const ansiup = new AnsiUp();
-  return {
-    ...jobSequence,
-    jobs: jobSequence.jobs.map((job) => ({
-      ...job,
-      output_raw: job.output,
-      output: job.output ? ansiup.ansi_to_html(job.output) : '',
-    })),
   };
 }
