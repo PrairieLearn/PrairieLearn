@@ -50,7 +50,7 @@ router.post(
       }
 
       const client = new OpenAI({
-        apiKey: config.openAiApiKey ? config.openAiApiKey : undefined,
+        apiKey: config.openAiApiKey ?? undefined,
         organization: config.openAiOrganization,
       });
 
