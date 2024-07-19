@@ -1,15 +1,16 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { nodeModulesAssetPath } from '../../lib/assets.js';
-import type { JobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
+import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
 export function JobSequence({
   resLocals,
   job_sequence,
 }: {
   resLocals: Record<string, any>;
-  job_sequence: JobSequenceWithFormattedOutput;
+  job_sequence: JobSequenceWithTokens;
 }) {
   return html`
     <!doctype html>
@@ -19,7 +20,7 @@ export function JobSequence({
           ...resLocals,
           pageTitle: `${job_sequence.description} #${job_sequence.number}`,
         })}
-        <script src="${nodeModulesAssetPath('socket.io-client/dist/socket.io.min.js')}"></script>
+        ${compiledScriptTag('jobSequenceClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -35,11 +36,7 @@ export function JobSequence({
               </a>
             </div>
           </div>
-          ${renderEjs(import.meta.url, "<%- include('../partials/jobSequenceResults') %>", {
-            ...resLocals,
-            job_sequence,
-            job_sequence_enable_live_update: true,
-          })}
+          ${JobSequenceResults({ course: resLocals.course, jobSequence: job_sequence })}
         </main>
       </body>
     </html>

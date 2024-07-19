@@ -20,10 +20,8 @@ import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
-import {
-  getJobSequenceWithFormattedOutput,
-  type JobSequenceWithFormattedOutput,
-} from '../../lib/server-jobs.js';
+import { getJobSequence } from '../../lib/server-jobs.js';
+import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
 import { InstructorFileEditor } from './instructorFileEditor.html.js';
 
@@ -40,7 +38,7 @@ interface FileEdit {
   fileName: string;
   fileNameForDisplay: string;
   aceMode: string;
-  jobSequence?: JobSequenceWithFormattedOutput;
+  jobSequence?: JobSequenceWithTokens;
   diskContents?: string;
   diskHash?: string;
   jobSequenceId?: string;
@@ -126,10 +124,7 @@ router.get(
 
     if (fileEdit.jobSequenceId != null) {
       debug('Read job sequence');
-      fileEdit.jobSequence = await getJobSequenceWithFormattedOutput(
-        fileEdit.jobSequenceId,
-        res.locals.course.id,
-      );
+      fileEdit.jobSequence = await getJobSequence(fileEdit.jobSequenceId, res.locals.course.id);
     }
 
     const data = await getErrorsAndWarningsForFilePath(res.locals.course.id, relPath);

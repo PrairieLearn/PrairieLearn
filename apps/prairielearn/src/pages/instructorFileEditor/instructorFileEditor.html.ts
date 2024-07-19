@@ -1,6 +1,7 @@
 import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { encodePath } from '../../lib/uri-util.js';
@@ -214,15 +215,10 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                                     ? html`
                                         <div class="row collapse mt-4" id="job-sequence-results">
                                           <div class="card card-body">
-                                            ${renderEjs(
-                                              import.meta.url,
-                                              "<%- include('../partials/jobSequenceResults'); %>",
-                                              {
-                                                ...resLocals,
-                                                job_sequence: fileEdit.jobSequence,
-                                                job_sequence_enable_live_update: false,
-                                              },
-                                            )}
+                                            ${JobSequenceResults({
+                                              course,
+                                              jobSequence: fileEdit.jobSequence,
+                                            })}
                                           </div>
                                         </div>
                                       `
