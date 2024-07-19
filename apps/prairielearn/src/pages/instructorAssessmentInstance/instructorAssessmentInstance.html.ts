@@ -77,7 +77,10 @@ export function InstructorAssessmentInstance({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({
+          resLocals,
+          pageTitle: resLocals.instance_group?.name || resLocals.instance_user?.uid,
+        })}
         <link
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
           rel="stylesheet"
