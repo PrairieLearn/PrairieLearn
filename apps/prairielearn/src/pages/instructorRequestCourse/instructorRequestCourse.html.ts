@@ -23,7 +23,7 @@ export function RequestCourse({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'Request a Course' })}
         <script>
           $(function () {
             $('input[name=cr-role]').change(function () {
