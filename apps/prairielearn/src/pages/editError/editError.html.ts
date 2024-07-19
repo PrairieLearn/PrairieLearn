@@ -14,7 +14,7 @@ export function EditError({
   jobSequence: JobSequenceWithTokens;
   failedSync: boolean;
 }) {
-  const { __csrf_token } = resLocals;
+  const { course, __csrf_token } = resLocals;
 
   return html`
     <!doctype html>
@@ -90,7 +90,7 @@ export function EditError({
           </div>
 
           <div class="collapse" id="job-sequence-results">
-            ${JobSequenceResults({ jobSequence })}
+            ${JobSequenceResults({ course, jobSequence })}
           </div>
         </main>
       </body>

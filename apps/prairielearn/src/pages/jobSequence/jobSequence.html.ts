@@ -36,7 +36,7 @@ export function JobSequence({
               </a>
             </div>
           </div>
-          ${JobSequenceResults({ jobSequence: job_sequence })}
+          ${JobSequenceResults({ course: resLocals.course, jobSequence: job_sequence })}
         </main>
       </body>
     </html>

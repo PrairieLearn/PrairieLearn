@@ -1,9 +1,11 @@
 import { AnsiUp } from 'ansi_up';
 
 import { EncodedData } from '@prairielearn/browser-utils';
+import { formatDate } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import type { Course } from '../lib/db-types.js';
 import type { JobWithToken, JobSequenceWithTokens } from '../lib/server-jobs.types.js';
 
 export interface JobSequenceResultsData {
@@ -14,8 +16,15 @@ export interface JobSequenceResultsData {
 }
 
 // If you want live updates, you also need to import lib/jobSequenceResults.js in the page's JavaScript asset.
-export function JobSequenceResults({ jobSequence }: { jobSequence: JobSequenceWithTokens }) {
+export function JobSequenceResults({
+  course,
+  jobSequence,
+}: {
+  course: Course | undefined;
+  jobSequence: JobSequenceWithTokens;
+}) {
   const ansiup = new AnsiUp();
+  const timeZone = course?.display_timezone || 'UTC';
 
   return html`
     ${EncodedData<JobSequenceResultsData>(
@@ -60,13 +69,13 @@ export function JobSequenceResults({ jobSequence }: { jobSequence: JobSequenceWi
                   `
                 : ''}
               <p class="mb-1">
-                Started at ${job.start_date_formatted}
+                Started ${job.start_date ? `at ${formatDate(job.start_date, timeZone)}` : ''}
                 ${jobSequence.user_uid ? `by ${jobSequence.user_uid}` : ''}
                 ${jobSequence.authn_user_uid !== jobSequence.user_uid
                   ? `(really ${jobSequence.authn_user_uid})`
                   : ''}
-                ${job.finish_date_formatted
-                  ? html`&mdash; finished at ${job.finish_date_formatted}`
+                ${job.finish_date
+                  ? html`&mdash; finished at ${formatDate(job.finish_date, timeZone)}`
                   : ''}
               </p>
               <p class="mb-1">

@@ -216,6 +216,7 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                                         <div class="row collapse mt-4" id="job-sequence-results">
                                           <div class="card card-body">
                                             ${JobSequenceResults({
+                                              course,
                                               jobSequence: fileEdit.jobSequence,
                                             })}
                                           </div>
