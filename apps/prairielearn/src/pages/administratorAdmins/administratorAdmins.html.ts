@@ -15,7 +15,7 @@ export function AdministratorAdmins({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'Administrators' })}
       </head>
       <body>
         <script>

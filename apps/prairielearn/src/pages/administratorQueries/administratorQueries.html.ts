@@ -37,7 +37,7 @@ export function AdministratorQueries({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'Administrator Queries' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {

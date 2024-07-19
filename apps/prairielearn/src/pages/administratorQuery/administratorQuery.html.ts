@@ -154,7 +154,7 @@ export function AdministratorQuery({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: sqlFilename })}
         <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
         <link
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"

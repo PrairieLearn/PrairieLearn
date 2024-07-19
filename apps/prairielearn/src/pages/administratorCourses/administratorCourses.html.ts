@@ -31,7 +31,7 @@ export function AdministratorCourses({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'Courses' })}
       </head>
       <body>
         <script>

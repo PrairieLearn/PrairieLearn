@@ -36,7 +36,7 @@ export function AdministratorWorkspaces({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'Workspaces' })}
       </head>
       <body>
         <script>

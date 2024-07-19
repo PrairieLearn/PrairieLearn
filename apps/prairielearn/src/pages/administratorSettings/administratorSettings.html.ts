@@ -8,7 +8,7 @@ export function AdministratorSettings({ resLocals }) {
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'Administrator Settings' })}
       </head>
       <body>
         <script>

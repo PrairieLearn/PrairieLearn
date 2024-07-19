@@ -21,7 +21,7 @@ export function AdministratorCourseRequests({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        ${HeadContents({ resLocals, pageTitle: 'Course Requests' })}
       </head>
       <body>
         <script>
