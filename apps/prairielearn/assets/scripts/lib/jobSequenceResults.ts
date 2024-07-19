@@ -15,7 +15,10 @@ onDocumentReady(() => {
     window.location.reload();
   });
   socket.on('change:output', function (msg) {
-    $(`#output-${msg.job_id}`).html(msg.output);
+    const jobOutputElement = document.getElementById(`output-${msg.job_id}`);
+    if (jobOutputElement) {
+      jobOutputElement.innerHTML = msg.output;
+    }
   });
 
   // Join the rooms for the job_sequence and for each individual job.
@@ -41,7 +44,10 @@ onDocumentReady(() => {
         if (msg.status !== job.status) {
           window.location.reload();
         }
-        $(`#output-${job.id}`).html(msg.output);
+        const jobOutputElement = document.getElementById(`output-${job.id}`);
+        if (jobOutputElement) {
+          jobOutputElement.innerHTML = msg.output;
+        }
       },
     );
   });
