@@ -2,6 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 
@@ -22,8 +23,7 @@ export function InstructorAssessmentAccess({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('instructorAssessmentAccessClient.ts')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('instructorAssessmentAccessClient.ts')}
       </head>
       <body>
         ${EncodedData(accessRules, 'access-rules-data')}

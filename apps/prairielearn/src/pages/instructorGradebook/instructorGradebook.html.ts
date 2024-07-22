@@ -2,6 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import {
@@ -29,7 +30,7 @@ export function InstructorGradebook({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
         <!-- Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
         from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way. -->
         <script src="${nodeModulesAssetPath(

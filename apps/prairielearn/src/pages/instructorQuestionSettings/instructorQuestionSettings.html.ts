@@ -5,6 +5,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
@@ -72,10 +73,7 @@ export function InstructorQuestionSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          pageNote: resLocals.question.qid,
-          ...resLocals,
-        })}
+        ${HeadContents({ resLocals, pageNote: resLocals.question.qid })}
         ${compiledScriptTag('instructorQuestionSettingsClient.ts')}
         <style>
           .popover {
