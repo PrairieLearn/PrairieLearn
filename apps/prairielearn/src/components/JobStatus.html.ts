@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { Job, JobSequence } from '../lib/db-types.js';
+import type { Job, JobSequence } from '../lib/db-types.js';
 
 export function JobStatus({ status }: { status: Job['status'] | JobSequence['status'] }) {
   if (status === 'Running') {
