@@ -18,7 +18,7 @@ export function EditAccessRuleModal({
   rowNumber: number;
 }) {
   return Modal({
-    id: `editAccessRuleModal`,
+    id: 'editAccessRuleModal',
     title: `${addAccessRule ? 'Add Access Rule' : `Edit Access Rule ${rowNumber + 1}`}`,
     body: html`
       <div class="form-group">
