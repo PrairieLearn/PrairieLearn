@@ -1,6 +1,6 @@
 {
-    "controller": "example-logo.py",
-    "dependencies": {
-        "extensionScripts": ["example-logo.js"]
-    }
+  "controller": "example-logo.py",
+  "dependencies": {
+    "extensionScripts": ["example-logo.js"]
+  }
 }
