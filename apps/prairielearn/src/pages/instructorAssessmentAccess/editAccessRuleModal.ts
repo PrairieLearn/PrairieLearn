@@ -19,7 +19,7 @@ export function EditAccessRuleModal({
 }) {
   return Modal({
     id: 'editAccessRuleModal',
-    title: `${addAccessRule ? 'Add Access Rule' : `Edit Access Rule ${rowNumber + 1}`}`,
+    title: `${addAccessRule ? 'Add access rule' : 'Edit access rule'}`,
     body: html`
       <div class="form-group">
         <input type="hidden" name="row" class="access-rule-row" value="${rowNumber}" />
@@ -278,7 +278,7 @@ export function EditAccessRuleModal({
     `,
     footer: html`
       <button type="button" class="btn btn-primary js-save-access-rule-button" data-dismiss="modal">
-        ${addAccessRule ? 'Add Access Rule' : 'Update Access Rule'}
+        ${addAccessRule ? 'Add access rule' : 'Update access rule'}
       </button>
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
     `,
