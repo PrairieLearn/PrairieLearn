@@ -68,6 +68,7 @@ onDocumentReady(() => {
     ) as HTMLInputElement;
     if (!assessmentAccessRulesInput) return;
     const accessRulesMap = accessRulesData.map((accessRule: Record<string, any>) => {
+      // TODO: is this `adjustedDate` bit necessary?
       const startDate = accessRule.assessment_access_rule.start_date
         ? adjustedDate(formatDate(new Date(accessRule.assessment_access_rule.start_date), timezone))
             .toISOString()
@@ -78,6 +79,10 @@ onDocumentReady(() => {
             .toISOString()
             .slice(0, 19)
         : null;
+
+      // TODO: retain property order of the original object. This will probably
+      // have to happen on he backend when we're constructing the JSON string to
+      // write to the file.
       const rule = {
         mode: accessRule.assessment_access_rule.mode,
         uids: accessRule.assessment_access_rule.uids
@@ -97,10 +102,10 @@ onDocumentReady(() => {
           ? null
           : false,
       };
-      const filteredRules = Object.fromEntries(
+      const filteredRule = Object.fromEntries(
         Object.entries(rule).filter(([_, value]) => value || value === false),
       );
-      return filteredRules;
+      return filteredRule;
     });
     assessmentAccessRulesInput.value = JSON.stringify(accessRulesMap);
     form.submit();
