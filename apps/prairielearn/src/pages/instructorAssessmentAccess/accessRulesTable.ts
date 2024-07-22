@@ -196,24 +196,7 @@ export function AccessRulesTable({
           })}
           <tr ${editMode ? '' : 'hidden'}>
             <td colspan="12">
-              <button
-                class="btn btn-sm js-add-rule-button"
-                type="button"
-                data-row="${accessRules.length}"
-                data-toggle="modal"
-                data-target="editAccessRuleModal"
-                data-access-rule-mode=""
-                data-access-rule-uids=""
-                data-access-rule-start-date="${adjustedDate(new Date()).toISOString().slice(0, 19)}"
-                data-access-rule-end-date="${adjustedDate(new Date()).toISOString().slice(0, 19)}"
-                data-access-rule-active="true"
-                data-access-rule-credit=""
-                data-access-rule-time-limit=""
-                data-access-rule-password=""
-                data-access-rule-exam-uuid=""
-                data-title-text="Add Access Rule"
-                data-submit-text="Add Access Rule"
-              >
+              <button class="btn btn-sm js-add-rule-button" type="button">
                 <i class="fa fa-plus" aria-hidden="true"></i> Add Access Rule
               </button>
             </td>

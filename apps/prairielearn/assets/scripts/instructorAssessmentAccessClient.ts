@@ -2,7 +2,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
 import morphdom from 'morphdom';
 
-import { onDocumentReady, decodeData, parseHTML } from '@prairielearn/browser-utils';
+import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
