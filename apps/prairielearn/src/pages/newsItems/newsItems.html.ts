@@ -32,7 +32,9 @@ export function NewsItems({
           ...resLocals,
           pageTitle: 'News',
           pageNote:
-            newsItemNotificationCount ?? 0 > 0 ? `${newsItemNotificationCount} Unread` : undefined,
+            (newsItemNotificationCount ?? 0 > 0)
+              ? `${newsItemNotificationCount} Unread`
+              : undefined,
         })}
       </head>
       <body>

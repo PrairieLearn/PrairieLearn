@@ -54,7 +54,6 @@ export default asyncHandler(async (req, res, next) => {
     };
 
     await authnLib.loadUser(req, res, authnParams, {
-      pl_authn_cookie: false,
       redirect: false,
     });
 
@@ -79,7 +78,7 @@ export default asyncHandler(async (req, res, next) => {
   // - Use the "bypass" authentication option on the login page to log in as
   //   the user configured by `config.authUid` etc (see `pages/authLoginDev`).
   // - Log in as a specific UID/name/UIN (see `pages/authLogin`).
-  if (config.devMode && !req.cookies.pl2_disable_auto_authn && !req.cookies.pl2_authn) {
+  if (config.devMode && !req.cookies.pl2_disable_auto_authn && req.session.user_id == null) {
     var uid = config.authUid;
     var name = config.authName;
     var uin = config.authUin;
@@ -107,33 +106,12 @@ export default asyncHandler(async (req, res, next) => {
 
     await authnLib.loadUser(req, res, authnParams, {
       redirect: false,
-      pl_authn_cookie: true,
     });
     return next();
   }
 
-  var authnData = null;
-
-  // `authnLib.loadUser` will migrate data into the session. If that data is
-  // already available, use it instead of the cookie.
-  if (req.session.user_id && req.session.authn_provider_name) {
-    authnData = {
-      user_id: req.session.user_id,
-      authn_provider_name: req.session.authn_provider_name,
-    };
-  }
-
-  if (!authnData && req.cookies.pl2_authn) {
-    // If we have a authn cookie then we try and unpack it. If we fail to
-    // unpack the cookie's data, then authnData will be null and we'll
-    // treat the user as though they're not authenticated.
-    authnData = getCheckedSignedTokenData(req.cookies.pl2_authn, config.secretKey, {
-      maxAge: config.authnCookieMaxAgeMilliseconds,
-    });
-  }
-
-  if (authnData == null) {
-    // We failed to authenticate, so bounce to the login page.
+  if (req.session.user_id == null || req.session.authn_provider_name == null) {
+    // The user is not authenticated.
 
     // Clear the auth cookie in case it was bad
     clearCookie(res, ['pl_authn', 'pl2_authn']);
@@ -176,13 +154,12 @@ export default asyncHandler(async (req, res, next) => {
   }
 
   let authnParams = {
-    user_id: authnData.user_id,
-    provider: authnData.authn_provider_name,
+    user_id: req.session.user_id,
+    provider: req.session.authn_provider_name,
   };
+
   await authnLib.loadUser(req, res, authnParams, {
     redirect: false,
-    // Cookie is being set here again to reset the cookie timeout (#2268)
-    pl_authn_cookie: true,
   });
 
   next();

@@ -169,11 +169,11 @@ function UserDropdownMenu({ resLocals }: { resLocals: Record<string, any> }) {
         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
           ${authn_is_administrator
             ? html`
-                <a class="dropdown-item" id="navbar-administrator-toggle">
+                <button type="button" class="dropdown-item" id="navbar-administrator-toggle">
                   ${access_as_administrator
                     ? 'Turn off administrator access'
                     : 'Turn on administrator access'}
-                </a>
+                </button>
 
                 <div class="dropdown-divider"></div>
               `
@@ -365,35 +365,27 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
     <h6 class="dropdown-header">${headingAuthnViewTypeMenu}</h6>
 
     <a class="dropdown-item" href="${instructorLink}" id="navbar-user-view-authn-instructor">
-      <div class="d-flex flex-row justify-content-left">
-        <div class="col-1 px-0">
-          ${authnViewTypeMenuChecked === 'instructor' ? html`&check;` : ''}
-        </div>
-        <div class="col pl-0">
-          ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
-            ? 'Modified staff'
-            : 'Staff'}
-          view <span class="badge badge-success">staff</span>
-        </div>
+      <span class="${authnViewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">&check;</span>
+      <div class="pl-3">
+        ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
+          ? 'Modified staff'
+          : 'Staff'}
+        view <span class="badge badge-success">staff</span>
       </div>
     </a>
 
     <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student">
-      <div class="d-flex flex-row justify-content-left">
-        <div class="col-1 px-0">${authnViewTypeMenuChecked === 'student' ? html`&check;` : ''}</div>
-        <div class="col pl-0">Student view <span class="badge badge-warning">student</span></div>
-      </div>
+      <span class="${authnViewTypeMenuChecked !== 'student' ? 'invisible' : ''}">&check;</span>
+      <div class="pl-3">Student view <span class="badge badge-warning">student</span></div>
     </a>
 
     <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student-no-rules">
-      <div class="d-flex flex-row justify-content-left">
-        <div class="col-1 px-0">
-          ${authnViewTypeMenuChecked === 'student-no-rules' ? html`&check;` : ''}
-        </div>
-        <div class="col pl-0">
-          Student view without access restrictions
-          <span class="badge badge-warning">student</span>
-        </div>
+      <span class="${authnViewTypeMenuChecked !== 'student-no-rules' ? 'invisible' : ''}">
+        &check;
+      </span>
+      <div class="pl-3">
+        Student view without access restrictions
+        <span class="badge badge-warning">student</span>
       </div>
     </a>
 
@@ -405,32 +397,24 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
           ${authz_data.user_with_requested_uid_has_instructor_access_to_course_instance
             ? html`
                 <a class="dropdown-item" href="${instructorLink}" id="navbar-user-view-instructor">
-                  <div class="d-flex flex-row justify-content-left">
-                    <div class="col-1 px-0">
-                      ${viewTypeMenuChecked === 'instructor' ? html`&check;` : ''}
-                    </div>
-                    <div class="col pl-0">Staff view</div>
-                  </div>
+                  <span class="${viewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">
+                    &check;
+                  </span>
+                  <div class="pl-3">Staff view</div>
                 </a>
               `
             : ''}
 
           <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-student">
-            <div class="d-flex flex-row justify-content-left">
-              <div class="col-1 px-0">
-                ${viewTypeMenuChecked === 'student' ? html`&check;` : ''}
-              </div>
-              <div class="col pl-0">Student view</div>
-            </div>
+            <span class="${viewTypeMenuChecked !== 'student' ? 'invisible' : ''}"> &check; </span>
+            <div class="pl-3">Student view</div>
           </a>
 
           <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-student-no-rules">
-            <div class="d-flex flex-row justify-content-left">
-              <div class="col-1 px-0">
-                ${viewTypeMenuChecked === 'student-no-rules' ? html`&check;` : ''}
-              </div>
-              <div class="col pl-0">Student view without access restrictions</div>
-            </div>
+            <span class="${viewTypeMenuChecked !== 'student-no-rules' ? 'invisible' : ''}">
+              &check;
+            </span>
+            <div class="pl-3">Student view without access restrictions</div>
           </a>
         `
       : ''}

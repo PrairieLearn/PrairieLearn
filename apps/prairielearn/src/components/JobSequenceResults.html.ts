@@ -3,10 +3,11 @@ import { AnsiUp } from 'ansi_up';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatDate } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import type { Course } from '../lib/db-types.js';
 import type { JobWithToken, JobSequenceWithTokens } from '../lib/server-jobs.types.js';
+
+import { JobStatus } from './JobStatus.html.js';
 
 export interface JobSequenceResultsData {
   jobSequenceId: string;
@@ -79,9 +80,7 @@ export function JobSequenceResults({
                   : ''}
               </p>
               <p class="mb-1">
-                ${renderEjs(import.meta.url, "<%- include('../pages/partials/jobStatus'); %>", {
-                  status: job.status,
-                })}
+                ${JobStatus({ status: job.status })}
                 ${job.status === 'Running' ? html`<i class="fa fa-sync fa-spin fa-fw"></i>` : ''}
               </p>
               ${jobSequence.legacy
