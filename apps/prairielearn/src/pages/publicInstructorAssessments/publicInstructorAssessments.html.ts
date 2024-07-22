@@ -2,11 +2,9 @@ import { AnsiUp } from 'ansi_up';
 import { z } from 'zod';
 
 import { EncodedData } from '@prairielearn/browser-utils';
-import { formatInterval } from '@prairielearn/formatter';
-import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { Scorebar } from '../../components/Scorebar.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
 
@@ -15,7 +13,6 @@ import { StatsUpdateData } from './publicInstructorAssessments.types.js';
 export const AssessmentStatsRowSchema = AssessmentSchema.extend({
   needs_statistics_update: z.boolean().optional(),
 });
-type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
 
 export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
   AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
@@ -27,13 +24,10 @@ export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
 });
 type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
-const ansiUp = new AnsiUp();
-
 export function InstructorAssessments({
   resLocals,
   rows,
   assessmentIdsNeedingStatsUpdate,
-  csvFilename,
 }: {
   resLocals: Record<string, any>;
   rows: AssessmentRow[];
