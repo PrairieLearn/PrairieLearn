@@ -91,14 +91,10 @@ class InstructorFileEditor {
 
     if (aceMode === 'ace/mode/json') {
       this.editor.getSession().setTabSize(2);
+      $('#js-json-reformat-error').toast({ delay: 5000 });
       document
         .querySelector<HTMLButtonElement>('.js-reformat-file')
-        ?.addEventListener('click', () =>
-          this.reformatJSONFile().catch((err) => {
-            // The document probably has invalid JSON syntax. Just do nothing.
-            console.error(err);
-          }),
-        );
+        ?.addEventListener('click', () => this.reformatJSONFile());
     }
   }
 
@@ -162,25 +158,30 @@ class InstructorFileEditor {
   }
 
   async reformatJSONFile() {
-    const { formatted, cursorOffset } = await prettier.formatWithCursor(this.editor.getValue(), {
-      cursorOffset: getCursorOffsetFromCursorPosition(
-        this.editor.getCursorPosition(),
-        this.editor.getSession().getDocument().getAllLines(),
-      ),
-      parser: 'json',
-      plugins: [prettierBabelPlugin, prettierEstreePlugin],
-    });
+    try {
+      const { formatted, cursorOffset } = await prettier.formatWithCursor(this.editor.getValue(), {
+        cursorOffset: getCursorOffsetFromCursorPosition(
+          this.editor.getCursorPosition(),
+          this.editor.getSession().getDocument().getAllLines(),
+        ),
+        parser: 'json',
+        plugins: [prettierBabelPlugin, prettierEstreePlugin],
+      });
 
-    // We use this instead of `this.setEditorContents` so that this change
-    // is added to the undo stack.
-    this.editor.setValue(formatted, -1);
-    this.editor.moveCursorToPosition(
-      getCursorPositionFromCursorOffset(
-        cursorOffset,
-        this.editor.getSession().getDocument().getAllLines(),
-      ),
-    );
-    this.editor.focus();
+      // We use this instead of `this.setEditorContents` so that this change
+      // is added to the undo stack.
+      this.editor.setValue(formatted, -1);
+      this.editor.moveCursorToPosition(
+        getCursorPositionFromCursorOffset(
+          cursorOffset,
+          this.editor.getSession().getDocument().getAllLines(),
+        ),
+      );
+      this.editor.focus();
+    } catch (err) {
+      console.error(err);
+      $('#js-json-reformat-error').toast('show');
+    }
   }
 }
 
