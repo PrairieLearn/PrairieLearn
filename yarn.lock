@@ -3337,7 +3337,7 @@ __metadata:
     plist: "npm:^3.1.0"
     popper.js: "npm:^1.16.1"
     postgres-interval: "npm:^4.0.2"
-    prettier: "npm:3.3.3"
+    prettier: "npm:3.3.2"
     qrcode-svg: "npm:^1.1.0"
     qs: "npm:^6.12.3"
     quill: "npm:^2.0.2"
@@ -3382,7 +3382,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^20.14.9"
-    prettier: "npm:3.3.3"
+    prettier: "npm:3.3.2"
     sql-formatter: "npm:^15.3.2"
     typescript: "npm:^5.5.3"
   languageName: unknown
@@ -12618,7 +12618,7 @@ __metadata:
     globby: "npm:^14.0.1"
     htmlhint: "npm:^1.1.4"
     node-gyp: "npm:^10.1.0"
-    prettier: "npm:3.3.3"
+    prettier: "npm:3.3.2"
     pyright: "npm:^1.1.370"
     s3rver: "npm:^3.7.1"
     turbo: "npm:^2.0.6"
@@ -12645,12 +12645,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"prettier@npm:3.3.3":
-  version: 3.3.3
-  resolution: "prettier@npm:3.3.3"
+"prettier@npm:3.3.2":
+  version: 3.3.2
+  resolution: "prettier@npm:3.3.2"
   bin:
     prettier: bin/prettier.cjs
-  checksum: 10c0/b85828b08e7505716324e4245549b9205c0cacb25342a030ba8885aba2039a115dbcf75a0b7ca3b37bc9d101ee61fab8113fc69ca3359f2a226f1ecc07ad2e26
+  checksum: 10c0/39ed27d17f0238da6dd6571d63026566bd790d3d0edac57c285fbab525982060c8f1e01955fe38134ab10f0951a6076da37f015db8173c02f14bc7f0803a384c
   languageName: node
   linkType: hard
 
