@@ -1,12 +1,14 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../../components/HeadContents.html.js';
+
 export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body hx-ext="loading-states">
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {

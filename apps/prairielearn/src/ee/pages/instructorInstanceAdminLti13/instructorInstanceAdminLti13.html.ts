@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Lti13CourseInstance, Lti13Instance } from '../../../lib/db-types.js';
 
 interface Lti13FullInstance {
@@ -21,9 +22,7 @@ export function InstructorInstanceAdminLti13({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-        })}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         <script>

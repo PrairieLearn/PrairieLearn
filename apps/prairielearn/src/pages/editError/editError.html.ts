@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
 import { config } from '../../lib/config.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
@@ -20,10 +21,7 @@ export function EditError({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Edit Failure',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Edit Failure' })}
       </head>
 
       <body>

@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { HtmlValue, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
 
 export const CourseRequestRowSchema = z.object({
@@ -22,9 +23,7 @@ export function RequestCourse({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head')%>", {
-          ...resLocals,
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Request a Course' })}
         <script>
           $(function () {
             $('input[name=cr-role]').change(function () {

@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { formatTimezone, type Timezone } from '../../lib/timezones.js';
@@ -22,9 +23,7 @@ export function InstructorCourseAdminSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-        })}
+        ${HeadContents({ resLocals })}
         ${compiledScriptTag('instructorCourseAdminSettingsClient.ts')}
       </head>
       <body>
