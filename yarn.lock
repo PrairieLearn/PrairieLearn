@@ -3270,7 +3270,7 @@ __metadata:
     strip-ansi: "npm:^7.1.0"
     stripe: "npm:^16.2.0"
     tablesorter: "npm:^2.31.3"
-    tabulator-tables: "npm:^6.2.4"
+    tabulator-tables: "npm:^6.2.5"
     tar: "npm:^7.4.0"
     three: "npm:0.160.1"
     tmp: "npm:^0.2.3"
@@ -14050,10 +14050,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tabulator-tables@npm:^6.2.4":
-  version: 6.2.4
-  resolution: "tabulator-tables@npm:6.2.4"
-  checksum: 10c0/da1e60d8badf813ebdfd3f02e4c83f778337e99acf5b8f6d0797a09ffbd24812fabd7deb1849add066cac5d28c421287282de482353433ae5b5b12e17cbb9da1
+"tabulator-tables@npm:^6.2.5":
+  version: 6.2.5
+  resolution: "tabulator-tables@npm:6.2.5"
+  checksum: 10c0/c05e766b3c9b510dc0295e99167e837da20683300ec1f520c0f1efd559bd2e6197a7b1659a20ae817faa7bf54513d4f57a972aa0a8dd50d024946d9540c818fd
   languageName: node
   linkType: hard
 

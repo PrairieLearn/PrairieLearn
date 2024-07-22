@@ -170,7 +170,7 @@
     "strip-ansi": "^7.1.0",
     "stripe": "^16.2.0",
     "tablesorter": "^2.31.3",
-    "tabulator-tables": "^6.2.4",
+    "tabulator-tables": "^6.2.5",
     "tar": "^7.4.0",
     "three": "0.160.1",
     "tmp": "^0.2.3",
