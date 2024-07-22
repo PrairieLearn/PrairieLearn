@@ -10,10 +10,9 @@ export async function formatJsonWithPrettier(json: string): Promise<string> {
   const prettierEstreePlugin = await import('prettier/plugins/estree');
 
   // We round-trip the JSON through the JS parser/stringifier to ensure that
-  // objects always start on a new line. This ensures Prettier doesn't collapse
-  // everything onto one line:
+  // we use the most compact formatting possible:
   // https://prettier.io/docs/en/rationale.html#multi-line-objects
-  json = JSON.stringify(JSON.parse(json), null, 2);
+  json = JSON.stringify(JSON.parse(json));
 
   return prettier.format(json, {
     parser: 'json',
