@@ -12,6 +12,8 @@ const BOOTSTRAP_LEGACY_ATTRIBUTES = [
   'dismiss',
 ];
 
+const BOOTSTRAP_BREAKPOINTS = ['sm', 'md', 'lg', 'xl', 'xxl'];
+
 onDocumentReady(() => {
   BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
     $(`[data-${attr}]`).each((i, el) => {
@@ -22,13 +24,125 @@ onDocumentReady(() => {
     });
   });
 
+  // Bootstrap 5 replaced "left"/"right" with "start"/"end" for RTL support.
+  const SPACING_PREFIX_MAP: Record<string, any> = { ml: 'ms', mr: 'me', pl: 'ps', pr: 'pe' };
+  const SPACING_SUFFIXES = ['0', '1', '2', '3', '4', '5', 'auto'];
+  const SPACING_CLASSES = Object.keys(SPACING_PREFIX_MAP)
+    .flatMap((prefix) =>
+      SPACING_SUFFIXES.map((suffix) => `.${prefix}-${suffix}`).concat(
+        BOOTSTRAP_BREAKPOINTS.flatMap((bp) =>
+          SPACING_SUFFIXES.map((suffix) => `.${bp}-${prefix}-${suffix}`),
+        ),
+      ),
+    )
+    .join(', ');
+  const SPACING_CLASS_REGEXP = /^[mp][lr]-((sm|md|lg|xl|xxl)-)?([0-5]|auto)$/;
+  observe(SPACING_CLASSES, {
+    add(el) {
+      el.classList.forEach((cls) => {
+        if (!SPACING_CLASS_REGEXP.test(cls)) return;
+
+        const [prefix, suffix] = cls.split('-');
+        const newPrefix = SPACING_PREFIX_MAP[prefix];
+        if (!newPrefix) return;
+
+        const newClass = `${newPrefix}-${suffix}`;
+        if (el.classList.contains(newClass)) return;
+        el.classList.add(newClass);
+
+        console.warn(
+          `Bootstrap 5 replaced the ${cls} class with the ${newClass} class. Please update your HTML.`,
+          el,
+        );
+      });
+    },
+  });
+
+  observe('.float-left, .float-right', {
+    add(el) {
+      if (el.classList.contains('float-left')) {
+        el.classList.add('float-start');
+        console.warn(
+          'Bootstrap 5 replaced .float-left with .float-start. Please update your HTML.',
+          el,
+        );
+      } else {
+        el.classList.add('float-end');
+        console.warn(
+          'Bootstrap 5 replaced .float-right with .float-end. Please update your HTML.',
+          el,
+        );
+      }
+    },
+  });
+
+  observe('.border-left, .border-right', {
+    add(el) {
+      if (el.classList.contains('border-left')) {
+        el.classList.add('border-start');
+        console.warn(
+          'Bootstrap 5 replaced .border-left with .border-start. Please update your HTML.',
+          el,
+        );
+      } else {
+        el.classList.add('border-end');
+        console.warn(
+          'Bootstrap 5 replaced .border-right with .border-end. Please update your HTML.',
+          el,
+        );
+      }
+    },
+  });
+
+  observe('.rounded-left, .rounded-right', {
+    add(el) {
+      if (el.classList.contains('rounded-left')) {
+        el.classList.add('rounded-start');
+        console.warn(
+          'Bootstrap 5 replaced .rounded-left with .rounded-start. Please update your HTML.',
+          el,
+        );
+      } else {
+        el.classList.add('rounded-end');
+        console.warn(
+          'Bootstrap 5 replaced .rounded-right with .rounded-end. Please update your HTML.',
+          el,
+        );
+      }
+    },
+  });
+
+  const TEXT_ALIGN_CLASSES = ['left', 'right']
+    .flatMap((align) =>
+      [`text-${align}`].concat(BOOTSTRAP_BREAKPOINTS.map((bp) => `.text-${bp}-${align}`)),
+    )
+    .join(', ');
+  const TEXT_ALIGN_REGEXP = /^text-(sm|md|lg|xl|xxl)-(left|right)$/;
+  observe(TEXT_ALIGN_CLASSES, {
+    add(el) {
+      Array.from(el.classList)
+        .filter((cls) => TEXT_ALIGN_REGEXP.test(cls))
+        .forEach((cls) => {
+          const classComponents = cls.split('-');
+          const newAlignment = classComponents[2] === 'left' ? 'start' : 'end';
+          const newClass = `text-${classComponents[1]}-${newAlignment}`;
+          if (el.classList.contains(newClass)) return;
+          el.classList.add(newClass);
+
+          console.warn(
+            `Bootstrap 5 replaced the ${cls} class with the ${newClass} class. Please update your HTML.`,
+            el,
+          );
+        });
+    },
+  });
+
   // In Bootstrap 5, elements can be added as direct children of `.input-group`
   // without using a wrapping `.input-group-prepend` or `.input-group-append`.
   // This bit of JavaScript will re-parent the children of `.input-group-*` into
   // the containing `.input-group` element.
   observe('.input-group-prepend, .input-group-append', {
     add(el) {
-      if (!(el instanceof HTMLElement)) return;
       if (!el.parentElement?.classList.contains('input-group')) return;
 
       for (const child of Array.from(el.children)) {
@@ -53,8 +167,6 @@ onDocumentReady(() => {
   // provided by `.form-group`.
   observe('.form-group', {
     add(el) {
-      if (!(el instanceof HTMLElement)) return;
-
       el.classList.add('mb-3');
       console.warn('Bootstrap 5 replaced .form-group with .mb-3. Please update your HTML.', el);
     },
@@ -78,17 +190,30 @@ onDocumentReady(() => {
       if (!(el instanceof HTMLElement)) return;
       if (!el.classList.contains('badge')) return;
 
+      // Temporarily set `transition` to `none` to prevent an animated color change.
+      const originalTransition = el.style.transition;
+      el.style.transition = 'none';
+
       const color = BADGE_COLORS.find((color) => el.classList.contains(`badge-${color}`));
       el.classList.remove(`badge-${color}`);
-      el.classList.add(`text-bg-${color}`);
-      console.warn('Bootstrap 5 replaced .badge-* with .text-bg-*. Please update your HTML.', el);
+
+      // If this element is an anchor or a button, we need to use a different
+      // set of classes to support hover/focus styles.
+      if (el.tagName === 'A' || el.tagName === 'BUTTON') {
+        el.classList.add('btn', `btn-${color}`);
+      } else {
+        el.classList.add(`text-bg-${color}`);
+        console.warn('Bootstrap 5 replaced .badge-* with .text-bg-*. Please update your HTML.', el);
+      }
+
+      // Restore the original `transition` value.
+      setTimeout(() => (el.style.transition = originalTransition), 0);
     },
   });
 
   // The `.badge-pill` was replaced by `.rounded-pill`.
   observe('.badge-pill', {
     add(el) {
-      if (!(el instanceof HTMLElement)) return;
       if (!el.classList.contains('badge')) return;
 
       el.classList.add('rounded-pill');
@@ -103,7 +228,6 @@ onDocumentReady(() => {
   // by `.dropdown-menu-start` and `.dropdown-menu-end`, respectively.
   observe('.dropdown-menu-right, .dropdown-menu-left', {
     add(el) {
-      if (!(el instanceof HTMLElement)) return;
       if (!el.classList.contains('dropdown-menu')) return;
 
       const position = el.classList.contains('dropdown-menu-right') ? 'end' : 'start';
@@ -119,7 +243,6 @@ onDocumentReady(() => {
   // must be added to form labels.
   observe('label', {
     add(el) {
-      if (!(el instanceof HTMLElement)) return;
       if (el.closest('.form-group') == null) return;
 
       el.classList.add('form-label');
@@ -132,8 +255,6 @@ onDocumentReady(() => {
 
   observe('.custom-select', {
     add(el) {
-      if (!(el instanceof HTMLElement)) return;
-
       el.classList.add('form-select');
       console.warn(
         'Bootstrap 5 replaced the .custom-select class with .form-select. Please update your HTML.',
@@ -151,8 +272,6 @@ onDocumentReady(() => {
   ];
   observe(FONT_WEIGHT_CLASSES.map((cls) => `.${cls}`).join(', '), {
     add(el) {
-      if (!(el instanceof HTMLElement)) return;
-
       const fontWeightClasses = FONT_WEIGHT_CLASSES.filter((cls) => el.classList.contains(cls));
       for (const cls of fontWeightClasses) {
         const newClass = cls.replace('font-weight', 'fw');
@@ -168,8 +287,6 @@ onDocumentReady(() => {
 
   observe('.text-monospace', {
     add(el) {
-      if (!(el instanceof HTMLElement)) return;
-
       el.classList.add('font-monospace');
       console.warn(
         'Bootstrap 5 replaced .text-monospace with .font-monospace. Please update your HTML.',
@@ -180,8 +297,6 @@ onDocumentReady(() => {
 
   observe('.sr-only', {
     add(el) {
-      if (!(el instanceof HTMLElement)) return;
-
       el.classList.add('visually-hidden');
       console.warn(
         'Bootstrap 5 replaced .sr-only with .visually-hidden. Please update your HTML.',
@@ -192,8 +307,6 @@ onDocumentReady(() => {
 
   observe('.sr-only-focusable', {
     add(el) {
-      if (!(el instanceof HTMLElement)) return;
-
       el.classList.add('visually-hidden-focusable');
       console.warn(
         'Bootstrap 5 replaced .sr-only-focusable with .visually-hidden-focusable. Please update your HTML.',
@@ -204,8 +317,6 @@ onDocumentReady(() => {
 
   observe('.form-row', {
     add(el) {
-      if (!(el instanceof HTMLElement)) return;
-
       el.classList.add('row');
       console.warn('Bootstrap 5 replaced .form-row with .row. Please update your HTML.', el);
     },
@@ -213,8 +324,6 @@ onDocumentReady(() => {
 
   observe('button.close', {
     add(el) {
-      if (!(el instanceof HTMLElement)) return;
-
       el.classList.add('btn-close');
       console.warn('Bootstrap 5 replaced .close with .btn-close. Please update your HTML.', el);
     },
@@ -222,9 +331,6 @@ onDocumentReady(() => {
 
   observe('button.close', {
     add(el) {
-      if (!(el instanceof HTMLElement)) return;
-
-      console.log(el.children);
       if (
         el.children.length !== 1 ||
         el.children[0].tagName !== 'SPAN' ||

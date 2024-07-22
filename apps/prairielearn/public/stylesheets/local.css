@@ -227,11 +227,6 @@ a.badge {
   padding-top: 0.4rem;
 }
 
-/* Used to help vertically center badges in table cells */
-table td > .badge {
-  transform: translate(0, -12.5%);
-}
-
 /* Used to give table rows the same padding as Bootstrap card headers */
 .card > table tr td:first-child,
 .card > table tr th:first-child,
