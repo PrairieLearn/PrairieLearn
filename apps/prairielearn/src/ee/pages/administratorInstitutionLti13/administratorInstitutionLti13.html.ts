@@ -27,7 +27,7 @@ export function AdministratorInstitutionLti13({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, pageTitle: 'Institution Administration - LTI 1.3' })}
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Institution Admin' })}
         ${compiledScriptTag('administratorInstitutionLti13Client.ts')}
       </head>
       <body>

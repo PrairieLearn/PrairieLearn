@@ -24,7 +24,7 @@ export const AdministratorInstitutionSso = ({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, pageTitle: 'Institution Administration - SSO' })}
+        ${HeadContents({ resLocals, pageTitle: 'SSO - Institution Admin' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {

@@ -29,7 +29,7 @@ export function AdministratorInstitutionCourse({
       <head>
         ${HeadContents({
           resLocals,
-          pageTitle: `Institution Administration - ${course.short_name}`,
+          pageTitle: `${course.short_name} - Institution Admin`,
         })}
       </head>
       <body>

@@ -30,7 +30,7 @@ export function AdministratorInstitutionCourseInstance({
       <head>
         ${HeadContents({
           resLocals,
-          pageTitle: `Institution Administration - ${course.short_name}, ${course_instance.short_name}`,
+          pageTitle: `${course.short_name}, ${course_instance.short_name} - Institution Admin`,
         })}
         ${compiledScriptTag('administratorInstitutionCourseInstanceClient.ts')}
       </head>

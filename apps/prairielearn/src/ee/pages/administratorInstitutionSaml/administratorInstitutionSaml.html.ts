@@ -34,7 +34,7 @@ export function AdministratorInstitutionSaml({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals, pageTitle: 'Institution Administration - SAML' })}
+        ${HeadContents({ resLocals, pageTitle: 'SAML - Institution Admin' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
