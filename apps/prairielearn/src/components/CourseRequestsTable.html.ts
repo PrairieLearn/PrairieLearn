@@ -1,8 +1,9 @@
 import { html, escapeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { CourseRequestRow } from '../lib/course-request.js';
 import { Institution } from '../lib/db-types.js';
+
+import { JobStatus } from './JobStatus.html.js';
 
 export function CourseRequestsTable({
   rows,
@@ -168,13 +169,7 @@ export function CourseRequestsTable({
                                       <td>${job.start_date.toISOString()}</td>
                                       <td>${job.finish_date?.toISOString()}</td>
                                       <td>${job.authn_user_name}</td>
-                                      <td>
-                                        ${renderEjs(
-                                          import.meta.url,
-                                          "<%- include('../pages/partials/jobStatus') %>",
-                                          { status: job.status },
-                                        )}
-                                      </td>
+                                      <td>${JobStatus({ status: job.status })}</td>
                                       <td>
                                         <a
                                           href="${urlPrefix}/administrator/jobSequence/${job.id}"
