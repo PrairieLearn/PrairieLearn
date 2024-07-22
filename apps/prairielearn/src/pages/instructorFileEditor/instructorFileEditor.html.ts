@@ -137,6 +137,17 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                               <i class="far fa-question-circle" aria-hidden="true"></i>
                               <span id="help-button-label">Show help</span>
                             </button>
+                            ${fileEdit.aceMode === 'ace/mode/json'
+                              ? html`
+                                  <button
+                                    type="button"
+                                    class="btn btn-light btn-sm js-reformat-file"
+                                  >
+                                    <i class="fas fa-paintbrush" aria-hidden="true"></i>
+                                    Reformat
+                                  </button>
+                                `
+                              : ''}
                             <button
                               id="file-editor-save-button"
                               name="__action"
@@ -277,7 +288,7 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                                   </div>
                                 `
                               : ''}
-                            <div class="card-body p-0">
+                            <div class="card-body p-0 position-relative">
                               <input
                                 type="hidden"
                                 name="file_edit_user_id"
@@ -295,6 +306,34 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                               />
                               <input type="hidden" name="file_edit_contents" />
                               <div class="editor"></div>
+                              <div
+                                aria-live="polite"
+                                aria-atomic="true"
+                                class="position-absolute m-3"
+                                style="top: 0; right: 0; z-index: 10;"
+                              >
+                                <div
+                                  id="js-json-reformat-error"
+                                  class="toast hide bg-danger text-white border-0"
+                                  role="alert"
+                                  aria-live="assertive"
+                                  aria-atomic="true"
+                                >
+                                  <div class="d-flex">
+                                    <div class="toast-body">
+                                      Error formatting JSON. Please check your JSON syntax.
+                                    </div>
+                                    <button
+                                      type="button"
+                                      class="mr-2 close"
+                                      data-dismiss="toast"
+                                      aria-label="Close"
+                                    >
+                                      <span aria-hidden="true">&times;</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
