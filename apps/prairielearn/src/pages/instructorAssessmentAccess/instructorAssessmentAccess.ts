@@ -12,6 +12,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { formatJsonWithPrettier } from '../../lib/prettier.js';
 
 import { InstructorAssessmentAccess } from './instructorAssessmentAccess.html.js';
 import { AssessmentAccessRulesSchema } from './instructorAssessmentAccess.types.js';
@@ -57,8 +58,8 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
     if (res.locals.course.example_course) {
@@ -78,10 +79,8 @@ router.post(
       const paths = getPaths(undefined, res.locals);
 
       const assessmentInfo = JSON.parse(await fs.readFile(assessmentPath, 'utf8'));
-
-      const origHash = req.body.__orig_hash;
-
       assessmentInfo.allowAccess = JSON.parse(req.body.assessment_access_rules);
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
       const editor = new FileModifyEditor({
         locals: res.locals,
@@ -90,8 +89,8 @@ router.post(
           invalidRootPaths: paths.invalidRootPaths,
         },
         filePath: assessmentPath,
-        editContents: b64EncodeUnicode(JSON.stringify(assessmentInfo, null, 2)),
-        origHash,
+        editContents: b64EncodeUnicode(formattedJson),
+        origHash: req.body.__orig_hash,
       });
 
       const serverJob = await editor.prepareServerJob();

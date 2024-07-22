@@ -6,6 +6,8 @@ import * as prettier from 'prettier/standalone';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+import { PRETTIER_CONFIG } from '../../src/lib/prettier.js';
+
 /**
  * Given an Ace cursor position (consisting of a row and column) and the lines
  * of the document, returns a cursor offset from the start of the document.
@@ -166,6 +168,7 @@ class InstructorFileEditor {
         ),
         parser: 'json',
         plugins: [prettierBabelPlugin, prettierEstreePlugin],
+        ...PRETTIER_CONFIG,
       });
 
       // We use this instead of `this.setEditorContents` so that this change
