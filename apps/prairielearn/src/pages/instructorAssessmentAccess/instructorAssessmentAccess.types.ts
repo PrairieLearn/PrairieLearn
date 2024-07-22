@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { AssessmentAccessRuleSchema, IdSchema } from '../../lib/db-types.js';
 
-export const AssessmentAccessRulesSchema = z.object({
+export const AssessmentAccessRuleRowSchema = z.object({
   assessment_access_rule: AssessmentAccessRuleSchema,
   pt_course: z
     .object({
@@ -19,4 +19,4 @@ export const AssessmentAccessRulesSchema = z.object({
     })
     .nullable(),
 });
-export type AssessmentAccessRules = z.infer<typeof AssessmentAccessRulesSchema>;
+export type AssessmentAccessRuleRow = z.infer<typeof AssessmentAccessRuleRowSchema>;

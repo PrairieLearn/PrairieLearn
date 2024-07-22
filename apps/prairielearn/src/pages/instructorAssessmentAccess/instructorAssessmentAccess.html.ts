@@ -7,8 +7,7 @@ import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndW
 import { compiledScriptTag } from '../../lib/assets.js';
 
 import { AccessRulesTable } from './accessRulesTable.js';
-import { EditAccessRuleModal } from './editAccessRuleModal.js';
-import { AssessmentAccessRules } from './instructorAssessmentAccess.types.js';
+import { AssessmentAccessRuleRow } from './instructorAssessmentAccess.types.js';
 
 export function InstructorAssessmentAccess({
   resLocals,
@@ -16,7 +15,7 @@ export function InstructorAssessmentAccess({
   origHash,
 }: {
   resLocals: Record<string, any>;
-  accessRules: AssessmentAccessRules[];
+  accessRules: AssessmentAccessRuleRow[];
   origHash: string;
 }) {
   return html`
@@ -41,13 +40,8 @@ export function InstructorAssessmentAccess({
             course: resLocals.course,
             urlPrefix: resLocals.urlPrefix,
           })}
-          ${EditAccessRuleModal({
-            accessRule: accessRules[0] ?? { assessment_access_rule: {} },
-            addAccessRule: false,
-            timeZoneName: resLocals.course_instance.display_timezone,
-            rowNumber: 0,
-          })}
-          <div class="js-delete-access-rule-modal"></div>
+          <div class="js-edit-access-rule-modal-container"></div>
+          <div class="js-delete-access-rule-modal-container"></div>
           <form method="POST" id="accessRulesForm">
             <input type="hidden" name="__action" value="edit_access_rules" />
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
@@ -66,11 +60,11 @@ export function InstructorAssessmentAccess({
               ${resLocals.authz_data.has_course_instance_permission_edit
                 ? html`
                     <div class="ml-auto">
-                      <button id="enableEditButton" class="btn btn-sm btn-light">
+                      <button class="btn btn-sm btn-light js-enable-edit-button">
                         <i class="fa fa-edit" aria-hidden="true"></i> Edit Access Rules
                       </button>
-                      <span id="editModeButtons" style="display: none">
-                        <button id="saveAndSyncButton" class="btn btn-sm btn-light" type="button">
+                      <span class="js-edit-buttons-container" style="display: none">
+                        <button class="btn btn-sm btn-light js-save-and-sync-button" type="button">
                           <i class="fa fa-save" aria-hidden="true"></i> Save and sync
                         </button>
                         <button class="btn btn-sm btn-light" onclick="window.location.reload()">

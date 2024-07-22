@@ -1,7 +1,7 @@
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
-import { AssessmentAccessRules } from './instructorAssessmentAccess.types.js';
+import { AssessmentAccessRuleRow } from './instructorAssessmentAccess.types.js';
 
 /**
  *
@@ -23,7 +23,7 @@ export function AccessRulesTable({
   editMode,
   timezone,
 }: {
-  accessRules: AssessmentAccessRules[];
+  accessRules: AssessmentAccessRuleRow[];
   ptHost: string;
   devMode: boolean;
   hasCourseInstancePermissionView: boolean;
@@ -33,7 +33,6 @@ export function AccessRulesTable({
   return html`
     <div
       class="table-responsive js-access-rules-table"
-      id="table-responsive"
       data-pt-host="${ptHost}"
       data-dev-mode="${devMode}"
       data-has-course-instance-permission-view="${hasCourseInstancePermissionView}"
@@ -41,10 +40,10 @@ export function AccessRulesTable({
     >
       <table class="table table-sm">
         <thead>
-          <tr id="tableHeaderRow">
-            <th id="arrowButtonsHeader" ${editMode ? '' : 'hidden'}></th>
-            <th id="editButtonHeader" ${editMode ? '' : 'hidden'}></th>
-            <th id="deleteButtonHeader" ${editMode ? '' : 'hidden'}></th>
+          <tr>
+            <th ${editMode ? '' : 'hidden'}></th>
+            <th ${editMode ? '' : 'hidden'}></th>
+            <th ${editMode ? '' : 'hidden'}></th>
             <th>Mode</th>
             <th>UIDs</th>
             <th>Start date</th>
@@ -67,10 +66,10 @@ export function AccessRulesTable({
             // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
             return html`
               <tr>
-                <td class="arrowButtonsCell align-content-center" ${editMode ? '' : 'hidden'}>
+                <td class="align-content-center" ${editMode ? '' : 'hidden'}>
                   <div>
                     <button
-                      class="btn btn-xs btn-secondary up-arrow-button"
+                      class="btn btn-xs btn-secondary js-up-arrow-button"
                       type="button"
                       data-row="${index}"
                       ${index === 0 ? 'disabled' : ''}
@@ -80,7 +79,7 @@ export function AccessRulesTable({
                   </div>
                   <div>
                     <button
-                      class="btn btn-xs btn-secondary down-arrow-button"
+                      class="btn btn-xs btn-secondary js-down-arrow-button"
                       type="button"
                       data-row="${index}"
                       ${index === accessRules.length - 1 ? 'disabled' : ''}
@@ -89,9 +88,9 @@ export function AccessRulesTable({
                     </button>
                   </div>
                 </td>
-                <td class="editButtonCell align-content-center" ${editMode ? '' : 'hidden'}>
+                <td class="align-content-center" ${editMode ? '' : 'hidden'}>
                   <button
-                    class="btn btn-sm btn-secondary editButton"
+                    class="btn btn-sm btn-secondary js-edit-access-rule-button"
                     type="button"
                     data-row="${index}"
                     data-toggle="modal"
@@ -100,9 +99,9 @@ export function AccessRulesTable({
                     <i class="fa fa-edit" aria-hidden="true"></i>
                   </button>
                 </td>
-                <td class="deleteButtonCell align-content-center" ${editMode ? '' : 'hidden'}>
+                <td class="align-content-center" ${editMode ? '' : 'hidden'}>
                   <button
-                    class="btn btn-sm btn-danger deleteButton"
+                    class="btn btn-sm btn-danger js-delete-access-rule-button"
                     type="button"
                     data-row="${index}"
                     data-toggle="modal"
@@ -198,8 +197,7 @@ export function AccessRulesTable({
           <tr ${editMode ? '' : 'hidden'}>
             <td colspan="12">
               <button
-                id="addRuleButton"
-                class="btn btn-sm"
+                class="btn btn-sm js-add-rule-button"
                 type="button"
                 data-row="${accessRules.length}"
                 data-toggle="modal"

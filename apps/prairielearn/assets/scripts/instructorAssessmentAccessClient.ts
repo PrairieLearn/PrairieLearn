@@ -2,7 +2,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
 import morphdom from 'morphdom';
 
-import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
+import { onDocumentReady, decodeData, parseHTML } from '@prairielearn/browser-utils';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
@@ -13,30 +13,35 @@ import {
   adjustedDate,
 } from '../../src/pages/instructorAssessmentAccess/accessRulesTable.js';
 import { EditAccessRuleModal } from '../../src/pages/instructorAssessmentAccess/editAccessRuleModal.js';
-import { AssessmentAccessRulesSchema } from '../../src/pages/instructorAssessmentAccess/instructorAssessmentAccess.types.js';
+import { AssessmentAccessRuleRowSchema } from '../../src/pages/instructorAssessmentAccess/instructorAssessmentAccess.types.js';
 
 onDocumentReady(() => {
-  const enableEditButton = document.getElementById('enableEditButton');
-  const editModeButtons = document.getElementById('editModeButtons');
-  const accessRulesTable = document.querySelector('.js-access-rules-table');
-  const deleteAccessRuleModal = document.querySelector('.js-delete-access-rule-modal');
-  const addRuleButton = document.getElementById('addRuleButton');
+  const editButtonsContainer = document.querySelector('.js-edit-buttons-container') as HTMLElement;
+  const enableEditButton = document.querySelector('.js-enable-edit-button') as HTMLButtonElement;
+  const accessRulesTable = document.querySelector('.js-access-rules-table') as HTMLElement;
+  const editAccessRuleModalContainer = document.querySelector(
+    '.js-edit-access-rule-modal-container',
+  ) as HTMLElement;
+  const deleteAccessRuleModalContainer = document.querySelector(
+    '.js-delete-access-rule-modal-container',
+  ) as HTMLElement;
+  const addRuleButton = document.querySelector('.js-add-rule-button') as HTMLButtonElement;
 
-  const accessRulesData = AssessmentAccessRulesSchema.array().parse(
+  const accessRulesData = AssessmentAccessRuleRowSchema.array().parse(
     decodeData('access-rules-data'),
   );
 
-  const ptHost = (accessRulesTable as HTMLElement)?.dataset.ptHost ?? '';
-  const devMode = (accessRulesTable as HTMLElement)?.dataset.devMode === 'true';
+  const ptHost = accessRulesTable.dataset.ptHost ?? '';
+  const devMode = accessRulesTable.dataset.devMode === 'true';
   const hasCourseInstancePermissionView =
-    (accessRulesTable as HTMLElement)?.dataset.hasCourseInstancePermissionView === 'true';
-  const timezone = (accessRulesTable as HTMLElement)?.dataset.timezone ?? 'UTC';
+    accessRulesTable.dataset.hasCourseInstancePermissionView === 'true';
+  const timezone = accessRulesTable.dataset.timezone ?? 'UTC';
 
   let editMode = false;
 
   function refreshTable() {
     morphdom(
-      accessRulesTable as Node,
+      accessRulesTable,
       AccessRulesTable({
         accessRules: accessRulesData,
         ptHost,
@@ -48,15 +53,15 @@ onDocumentReady(() => {
     );
   }
 
-  enableEditButton?.addEventListener('click', () => {
+  enableEditButton.addEventListener('click', () => {
     editMode = true;
     enableEditButton.style.display = 'none';
-    editModeButtons?.style.removeProperty('display');
-    addRuleButton?.style.removeProperty('display');
+    editButtonsContainer.style.removeProperty('display');
+    addRuleButton.style.removeProperty('display');
     refreshTable();
   });
 
-  on('click', '#saveAndSyncButton', () => {
+  on('click', '.js-save-and-sync-button', () => {
     const form = document.getElementById('accessRulesForm') as HTMLFormElement;
     const assessmentAccessRulesInput = form.querySelector(
       'input[name="assessment_access_rules"]',
@@ -154,25 +159,22 @@ onDocumentReady(() => {
     refreshTable();
   }
 
-  on('click', '.editButton', (e) => {
+  on('click', '.js-edit-access-rule-button', (e) => {
     const editButton = (e.target as HTMLElement).closest('button');
     if (!editButton) return;
 
     const rowNumber = parseInt(editButton.dataset.row ?? '0');
 
-    $('#editAccessRuleModal').replaceWith(
-      (document.createElement('div').innerHTML = EditAccessRuleModal({
-        accessRule: accessRulesData[rowNumber],
-        addAccessRule: false,
-        timeZoneName: timezone,
-        rowNumber,
-      }).toString()),
-    );
-
+    editAccessRuleModalContainer.innerHTML = EditAccessRuleModal({
+      accessRule: accessRulesData[rowNumber],
+      addAccessRule: false,
+      timeZoneName: timezone,
+      rowNumber,
+    }).toString();
     $('#editAccessRuleModal').modal('show');
   });
 
-  on('click', '#updateAccessRuleButton', (e) => {
+  on('click', '.js-save-access-rule-button', (e) => {
     const form = (e.target as HTMLElement).closest('form');
     if (!form) return;
     handleUpdateAccessRule(form);
@@ -185,60 +187,57 @@ onDocumentReady(() => {
     refreshTable();
   }
 
-  on('click', '.up-arrow-button', (e) => {
+  on('click', '.js-up-arrow-button', (e) => {
     const row = parseInt((e.target as HTMLElement).closest('button')?.dataset.row ?? '0');
     if (!row) return;
     swapRows(row, row - 1);
   });
 
-  on('click', '.down-arrow-button', (e) => {
+  on('click', '.js-down-arrow-button', (e) => {
     const row = parseInt((e.target as HTMLElement).closest('button')?.dataset.row ?? '0');
     if (row === accessRulesData.length - 1) return;
     swapRows(row, row + 1);
   });
 
-  on('click', '#addRuleButton', () => {
-    const addRuleButton = document.getElementById('addRuleButton');
-    if (!addRuleButton) return;
-
+  on('click', '.js-add-rule-button', () => {
     const rowNumber = accessRulesData.length;
-    $('#editAccessRuleModal').replaceWith(
-      (document.createElement('div').innerHTML = EditAccessRuleModal({
-        accessRule: {
-          assessment_access_rule: {
-            mode: null,
-            uids: null,
-            start_date: null,
-            end_date: null,
-            active: true,
-            credit: null,
-            time_limit_min: null,
-            password: null,
-            exam_uuid: null,
-            show_closed_assessment: true,
-            show_closed_assessment_score: true,
-            id: '0',
-            assessment_id: '0',
-            number: 0,
-          },
-          pt_course: null,
-          pt_exam: null,
+
+    editAccessRuleModalContainer.innerHTML = EditAccessRuleModal({
+      accessRule: {
+        assessment_access_rule: {
+          mode: null,
+          uids: null,
+          start_date: null,
+          end_date: null,
+          active: true,
+          credit: null,
+          time_limit_min: null,
+          password: null,
+          exam_uuid: null,
+          show_closed_assessment: true,
+          show_closed_assessment_score: true,
+          id: '0',
+          assessment_id: '0',
+          number: 0,
         },
-        addAccessRule: true,
-        timeZoneName: timezone,
-        rowNumber,
-      }).toString()),
-    );
+        pt_course: null,
+        pt_exam: null,
+      },
+      addAccessRule: true,
+      timeZoneName: timezone,
+      rowNumber,
+    }).toString();
 
     $('#editAccessRuleModal').modal('show');
   });
 
-  on('click', '.deleteButton', (e) => {
+  on('click', '.js-delete-access-rule-button', (e) => {
     const row = parseInt((e.target as HTMLElement).closest('button')?.dataset.row ?? '0');
-    morphdom(deleteAccessRuleModal as Node, DeleteConfirmationModal({ row }).toString());
+    deleteAccessRuleModalContainer.innerHTML = DeleteConfirmationModal({ row }).toString();
     $('#deleteAccessRuleModal').modal('show');
   });
-  on('click', '#confirmDeleteButton', (e) => {
+
+  on('click', '.js-confirm-delete-access-rule-button', (e) => {
     const row = parseInt((e.target as HTMLElement).dataset.row ?? '0');
     accessRulesData.splice(row, 1);
     refreshTable();
@@ -253,8 +252,7 @@ function DeleteConfirmationModal({ row }: { row: number }) {
     footer: html`
       <button
         type="button"
-        class="btn btn-danger"
-        id="confirmDeleteButton"
+        class="btn btn-danger js-confirm-delete-access-rule-button"
         data-dismiss="modal"
         data-row="${row}"
       >

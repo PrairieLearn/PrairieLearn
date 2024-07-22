@@ -15,7 +15,7 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 
 import { InstructorAssessmentAccess } from './instructorAssessmentAccess.html.js';
-import { AssessmentAccessRulesSchema } from './instructorAssessmentAccess.types.js';
+import { AssessmentAccessRuleRowSchema } from './instructorAssessmentAccess.types.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -26,7 +26,7 @@ router.get(
     const accessRules = await queryRows(
       sql.assessment_access_rules,
       { assessment_id: res.locals.assessment.id },
-      AssessmentAccessRulesSchema,
+      AssessmentAccessRuleRowSchema,
     );
 
     const assessmentPath = path.join(

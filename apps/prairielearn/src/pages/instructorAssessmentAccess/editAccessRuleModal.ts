@@ -4,7 +4,7 @@ import { html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.html.js';
 
-import { AssessmentAccessRules } from './instructorAssessmentAccess.types.js';
+import { AssessmentAccessRuleRow } from './instructorAssessmentAccess.types.js';
 
 export function EditAccessRuleModal({
   accessRule,
@@ -12,7 +12,7 @@ export function EditAccessRuleModal({
   timeZoneName,
   rowNumber,
 }: {
-  accessRule: AssessmentAccessRules;
+  accessRule: AssessmentAccessRuleRow;
   addAccessRule: boolean;
   timeZoneName: string;
   rowNumber: number;
@@ -277,12 +277,7 @@ export function EditAccessRuleModal({
       </div>
     `,
     footer: html`
-      <button
-        type="button"
-        class="btn btn-primary updateAccessRuleButton"
-        id="updateAccessRuleButton"
-        data-dismiss="modal"
-      >
+      <button type="button" class="btn btn-primary js-save-access-rule-button" data-dismiss="modal">
         ${addAccessRule ? 'Add Access Rule' : 'Update Access Rule'}
       </button>
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
