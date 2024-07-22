@@ -5,8 +5,6 @@ import * as error from '@prairielearn/error';
 import { html } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
 
-import { encodePath } from './uri-util.js';
-
 /** @typedef {ReturnType<typeof getPaths>} InstructorFilePaths */
 
 /**
@@ -168,8 +166,6 @@ export function getPaths(requestedPath, locals) {
       name: path.basename(curPath),
       path: path.relative(coursePath, curPath),
       canView: contains(rootPath, curPath),
-      // Kept while in use in instructorFileEditor, to be replaced with a call to encodePath there once converted from EJS
-      encodedPath: encodePath(path.relative(coursePath, curPath)),
     },
     ...path
       .relative(coursePath, workingPath)
@@ -181,8 +177,6 @@ export function getPaths(requestedPath, locals) {
           name: path.basename(curPath),
           path: path.relative(coursePath, curPath),
           canView: contains(rootPath, curPath),
-          // Kept while in use in instructorFileEditor, to be replaced with a call to encodePath there once converted from EJS
-          encodedPath: encodePath(path.relative(coursePath, curPath)),
         };
       }),
   ];

@@ -4,6 +4,7 @@ import { type CellComponent, type FormatterParams } from 'tabulator-tables';
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
+import { AssessmentBadge } from '../../../src/components/AssessmentBadge.html.js';
 import type { EncodedQuestionsData } from '../../../src/components/QuestionsTable.types.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
@@ -165,13 +166,11 @@ onDocumentReady(() => {
         formatter: (cell: CellComponent) =>
           (cell.getValue() as AssessmentsFormatForQuestion)
             ?.map((assessment) =>
-              html`<a
-                href="${plainUrlPrefix}/course_instance/${ci.id}/instructor/assessment/${assessment.assessment_id}"
-                class="badge color-${assessment.color} color-hover"
-                onclick="event.stopPropagation();"
-              >
-                <span>${assessment.label}</span>
-              </a>`.toString(),
+              AssessmentBadge({
+                plainUrlPrefix,
+                course_instance_id: assessment.course_instance_id,
+                assessment,
+              }).toString(),
             )
             .join(' '),
         headerFilter: 'list' as const,

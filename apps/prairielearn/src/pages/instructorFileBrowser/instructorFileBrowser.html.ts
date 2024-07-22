@@ -3,6 +3,12 @@ import { filesize } from 'filesize';
 import { escapeHtml, html, type HtmlValue, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import {
+  AssessmentSyncErrorsAndWarnings,
+  CourseInstanceSyncErrorsAndWarnings,
+  CourseSyncErrorsAndWarnings,
+  QuestionSyncErrorsAndWarnings,
+} from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { User } from '../../lib/db-types.js';
@@ -137,16 +143,32 @@ export function InstructorFileBrowser({
   | { isFile: true; fileInfo: FileInfo; directoryListings?: undefined }
   | { isFile: false; directoryListings: DirectoryListings; fileInfo?: undefined }
 )) {
-  const { navPage, __csrf_token: csrfToken } = resLocals;
-  const syncErrorsPartial =
+  const { navPage, __csrf_token: csrfToken, authz_data, course, urlPrefix } = resLocals;
+  const syncErrorsAndWarnings =
     navPage === 'course_admin'
-      ? 'courseSyncErrorsAndWarnings'
+      ? CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })
       : navPage === 'instance_admin'
-        ? 'courseInstanceSyncErrorsAndWarnings'
+        ? CourseInstanceSyncErrorsAndWarnings({
+            authz_data,
+            courseInstance: resLocals.course_instance,
+            course,
+            urlPrefix,
+          })
         : navPage === 'assessment'
-          ? 'assessmentSyncErrorsAndWarnings'
+          ? AssessmentSyncErrorsAndWarnings({
+              authz_data,
+              assessment: resLocals.assessment,
+              courseInstance: resLocals.course_instance,
+              course,
+              urlPrefix,
+            })
           : navPage === 'question'
-            ? 'questionSyncErrorsAndWarnings'
+            ? QuestionSyncErrorsAndWarnings({
+                authz_data,
+                question: resLocals.question,
+                course,
+                urlPrefix,
+              })
             : '';
 
   return html`
@@ -168,11 +190,7 @@ export function InstructorFileBrowser({
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            `<%- include('../partials/${syncErrorsPartial}') %>`,
-            resLocals,
-          )}
+          ${syncErrorsAndWarnings}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               <div class="row align-items-center justify-content-between">
