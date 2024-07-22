@@ -19,7 +19,9 @@ export async function formatJsonWithPrettier(json: string): Promise<string> {
     parser: 'json',
     plugins: [
       prettierBabelPlugin,
-      // @ts-expect-error: https://github.com/prettier/prettier/issues/16501
+      // @ts-expect-error -- See below issues:
+      // https://github.com/prettier/prettier/issues/16501
+      // https://github.com/privatenumber/tsx/issues/617
       prettierEstreePlugin,
     ],
     ...PRETTIER_CONFIG,
