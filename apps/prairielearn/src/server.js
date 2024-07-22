@@ -2022,13 +2022,14 @@ export async function initExpress() {
       coreElements: false,
     }),
   );
+  // Public Assessments Page
   app.use(
     '/pl/public/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/questions',
     [
       function (req, res, next) {  
         res.locals.course_instance_id = req.params.course_instance_id;
         res.locals.assessment_id = req.params.assessment_id;
-        res.locals.navPage = 'public_question'
+        res.locals.navPage = 'public_question';
         res.locals.navSubPage = 'questions'; // TEST, use?
         next();
       },
@@ -2039,6 +2040,16 @@ export async function initExpress() {
       ).default,
     ],
   );
+  // Public Course Instructor Assessments Page TEST
+  app.use('/pl/public/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments', [
+    function (req, res, next) {
+      res.locals.navPage = 'assessments';
+      res.locals.course_instance_id = req.params.course_instance_id;
+      //res.locals.course_instance = course_instance_id; // TEST
+      next();
+    },
+    (await import('./pages/publicInstructorAssessments/publicInstructorAssessments.js')).default,
+  ]);
 
   // Client files for questions
   app.use(
