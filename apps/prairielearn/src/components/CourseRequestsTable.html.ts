@@ -73,7 +73,7 @@ export function CourseRequestsTable({
                     ? html`
                         <td class="align-middle">
                           ${row.approved_status !== 'pending'
-                            ? row.approved_by_name ?? 'Automatically Approved'
+                            ? (row.approved_by_name ?? 'Automatically Approved')
                             : ''}
                         </td>
                       `
