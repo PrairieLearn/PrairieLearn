@@ -41,9 +41,7 @@ export function AccessRulesTable({
       <table class="table table-sm">
         <thead>
           <tr>
-            <th ${editMode ? '' : 'hidden'}></th>
-            <th ${editMode ? '' : 'hidden'}></th>
-            <th ${editMode ? '' : 'hidden'}></th>
+            ${editMode ? html`<th>Actions</th>` : ''}
             <th>Mode</th>
             <th>UIDs</th>
             <th>Start date</th>
@@ -57,6 +55,7 @@ export function AccessRulesTable({
         </thead>
         <tbody>
           ${accessRules.map((access_rule, index) => {
+            console.log(access_rule);
             // Only users with permission to view student data are allowed
             // to see the list of uids associated with an access rule. Note,
             // however, that any user with permission to view course code
@@ -65,51 +64,47 @@ export function AccessRulesTable({
             // in course code. This should be changed in future, to protect
             // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
             return html`
-              <tr>
-                <td class="align-content-center" ${editMode ? '' : 'hidden'}>
-                  <div>
-                    <button
-                      class="btn btn-xs btn-secondary js-up-arrow-button"
-                      type="button"
-                      data-row="${index}"
-                      ${index === 0 ? 'disabled' : ''}
-                    >
-                      <i class="fa fa-arrow-up" aria-hidden="true"></i>
-                    </button>
-                  </div>
-                  <div>
-                    <button
-                      class="btn btn-xs btn-secondary js-down-arrow-button"
-                      type="button"
-                      data-row="${index}"
-                      ${index === accessRules.length - 1 ? 'disabled' : ''}
-                    >
-                      <i class="fa fa-arrow-down" aria-hidden="true"></i>
-                    </button>
-                  </div>
-                </td>
-                <td class="align-content-center" ${editMode ? '' : 'hidden'}>
-                  <button
-                    class="btn btn-sm btn-secondary js-edit-access-rule-button"
-                    type="button"
-                    data-row="${index}"
-                    data-toggle="modal"
-                    data-target="editAccessRuleModal"
-                  >
-                    <i class="fa fa-edit" aria-hidden="true"></i>
-                  </button>
-                </td>
-                <td class="align-content-center" ${editMode ? '' : 'hidden'}>
-                  <button
-                    class="btn btn-sm btn-danger js-delete-access-rule-button"
-                    type="button"
-                    data-row="${index}"
-                    data-toggle="modal"
-                    data-target="deleteAccessRuleModal"
-                  >
-                    <i class="fa fa-trash" aria-hidden="true"></i>
-                  </button>
-                </td>
+              <tr data-index="${index}" id="rule:${JSON.stringify(access_rule)}">
+                ${editMode
+                  ? html`
+                      <td class="align-content-center">
+                        <div class="d-flex flex-row align-items-center">
+                          <div class="d-flex flex-column">
+                            <button
+                              class="btn btn-xs btn-secondary js-up-arrow-button mb-1"
+                              type="button"
+                              ${index === 0 ? 'disabled' : ''}
+                            >
+                              <i class="fa fa-arrow-up" aria-hidden="true"></i>
+                            </button>
+                            <button
+                              class="btn btn-xs btn-secondary js-down-arrow-button"
+                              type="button"
+                              ${index === accessRules.length - 1 ? 'disabled' : ''}
+                            >
+                              <i class="fa fa-arrow-down" aria-hidden="true"></i>
+                            </button>
+                          </div>
+                          <button
+                            class="btn btn-sm btn-secondary ml-2 js-edit-access-rule-button"
+                            type="button"
+                            data-toggle="modal"
+                            data-target="editAccessRuleModal"
+                          >
+                            <i class="fa fa-edit" aria-hidden="true"></i>
+                          </button>
+                          <button
+                            class="btn btn-sm btn-danger ml-2 js-delete-access-rule-button"
+                            type="button"
+                            data-toggle="modal"
+                            data-target="deleteAccessRuleModal"
+                          >
+                            <i class="fa fa-trash" aria-hidden="true"></i>
+                          </button>
+                        </div>
+                      </td>
+                    `
+                  : ''}
                 <td class="align-content-center">
                   ${access_rule.assessment_access_rule.mode !== null
                     ? access_rule.assessment_access_rule.mode

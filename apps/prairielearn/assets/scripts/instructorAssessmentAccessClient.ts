@@ -163,7 +163,7 @@ onDocumentReady(() => {
     const editButton = (e.target as HTMLElement).closest('button');
     if (!editButton) return;
 
-    const rowNumber = parseInt(editButton.dataset.row ?? '0');
+    const rowNumber = parseInt(editButton.closest('tr')?.dataset.index ?? '0');
 
     editAccessRuleModalContainer.innerHTML = EditAccessRuleModal({
       accessRule: accessRulesData[rowNumber],
@@ -188,15 +188,15 @@ onDocumentReady(() => {
   }
 
   on('click', '.js-up-arrow-button', (e) => {
-    const row = parseInt((e.target as HTMLElement).closest('button')?.dataset.row ?? '0');
-    if (!row) return;
-    swapRows(row, row - 1);
+    const index = parseInt((e.target as HTMLElement).closest('tr')?.dataset.index ?? '0');
+    if (!index) return;
+    swapRows(index, index - 1);
   });
 
   on('click', '.js-down-arrow-button', (e) => {
-    const row = parseInt((e.target as HTMLElement).closest('button')?.dataset.row ?? '0');
-    if (row === accessRulesData.length - 1) return;
-    swapRows(row, row + 1);
+    const index = parseInt((e.target as HTMLElement).closest('tr')?.dataset.index ?? '0');
+    if (index === accessRulesData.length - 1) return;
+    swapRows(index, index + 1);
   });
 
   on('click', '.js-add-rule-button', () => {
@@ -232,19 +232,19 @@ onDocumentReady(() => {
   });
 
   on('click', '.js-delete-access-rule-button', (e) => {
-    const row = parseInt((e.target as HTMLElement).closest('button')?.dataset.row ?? '0');
-    deleteAccessRuleModalContainer.innerHTML = DeleteConfirmationModal({ row }).toString();
+    const index = parseInt((e.target as HTMLElement).closest('tr')?.dataset.index ?? '0');
+    deleteAccessRuleModalContainer.innerHTML = DeleteConfirmationModal({ index }).toString();
     $('#deleteAccessRuleModal').modal('show');
   });
 
   on('click', '.js-confirm-delete-access-rule-button', (e) => {
-    const row = parseInt((e.target as HTMLElement).dataset.row ?? '0');
-    accessRulesData.splice(row, 1);
+    const index = parseInt((e.target as HTMLElement).dataset.index ?? '0');
+    accessRulesData.splice(index, 1);
     refreshTable();
   });
 });
 
-function DeleteConfirmationModal({ row }: { row: number }) {
+function DeleteConfirmationModal({ index }: { index: number }) {
   return Modal({
     id: 'deleteAccessRuleModal',
     title: 'Delete Access Rule',
@@ -254,7 +254,7 @@ function DeleteConfirmationModal({ row }: { row: number }) {
         type="button"
         class="btn btn-danger js-confirm-delete-access-rule-button"
         data-dismiss="modal"
-        data-row="${row}"
+        data-index="${index}"
       >
         Delete Access Rule
       </button>
