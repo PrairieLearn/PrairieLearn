@@ -93,7 +93,12 @@ class InstructorFileEditor {
       this.editor.getSession().setTabSize(2);
       document
         .querySelector<HTMLButtonElement>('.js-reformat-file')
-        ?.addEventListener('click', () => this.reformatJSONFile());
+        ?.addEventListener('click', () =>
+          this.reformatJSONFile().catch((err) => {
+            // The document probably has invalid JSON syntax. Just do nothing.
+            console.error(err);
+          }),
+        );
     }
   }
 
@@ -156,34 +161,26 @@ class InstructorFileEditor {
     this.editor.resize();
   }
 
-  reformatJSONFile() {
-    const contents = this.editor.getValue();
-    const cursorOffset = getCursorOffsetFromCursorPosition(
-      this.editor.getCursorPosition(),
-      this.editor.getSession().getDocument().getAllLines(),
-    );
-    prettier
-      .formatWithCursor(contents, {
+  async reformatJSONFile() {
+    const { formatted, cursorOffset } = await prettier.formatWithCursor(this.editor.getValue(), {
+      cursorOffset: getCursorOffsetFromCursorPosition(
+        this.editor.getCursorPosition(),
+        this.editor.getSession().getDocument().getAllLines(),
+      ),
+      parser: 'json',
+      plugins: [prettierBabelPlugin, prettierEstreePlugin],
+    });
+
+    // We use this instead of `this.setEditorContents` so that this change
+    // is added to the undo stack.
+    this.editor.setValue(formatted, -1);
+    this.editor.moveCursorToPosition(
+      getCursorPositionFromCursorOffset(
         cursorOffset,
-        parser: 'json',
-        plugins: [prettierBabelPlugin, prettierEstreePlugin],
-      })
-      .then(({ formatted, cursorOffset }) => {
-        // We use this instead of `this.setEditorContents` so that this change
-        // is added to the undo stack.
-        this.editor.setValue(formatted, -1);
-        this.editor.moveCursorToPosition(
-          getCursorPositionFromCursorOffset(
-            cursorOffset,
-            this.editor.getSession().getDocument().getAllLines(),
-          ),
-        );
-        this.editor.focus();
-      })
-      .catch((err) => {
-        // The document probably has invalid JSON syntax. Just do nothing.
-        console.error(err);
-      });
+        this.editor.getSession().getDocument().getAllLines(),
+      ),
+    );
+    this.editor.focus();
   }
 }
 
