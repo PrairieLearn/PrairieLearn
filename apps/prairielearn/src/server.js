@@ -2028,7 +2028,8 @@ export async function initExpress() {
       function (req, res, next) {  
         res.locals.course_instance_id = req.params.course_instance_id;
         res.locals.assessment_id = req.params.assessment_id;
-        res.locals.navSubPage = 'questions';
+        res.locals.navPage = 'public_question'
+        res.locals.navSubPage = 'questions'; // TEST, use?
         next();
       },
       (

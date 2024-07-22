@@ -61,6 +61,7 @@ export function InstructorAssessmentQuestions({
         ${compiledScriptTag('publicInstructorAssessmentQuestionsClient.ts')}
       </head>
       <body>
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${Modal({
             id: 'resetQuestionVariantsModal',
@@ -168,7 +169,7 @@ function AssessmentQuestionsTable({
                 : ''}
               <tr>
                 <td>
-                  <a href="${urlPrefix}/course/${course_id}/question/${question.question_id}/">
+                  <a href="${urlPrefix}/public/course/${course_id}/question/${question.question_id}/preview">
                     ${question.alternative_group_size === 1
                       ? `${question.alternative_group_number}.`
                       : html`
