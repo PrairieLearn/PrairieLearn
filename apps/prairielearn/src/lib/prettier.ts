@@ -11,7 +11,11 @@ export async function formatJsonWithPrettier(json: string): Promise<string> {
 
   return prettier.format(json, {
     parser: 'json',
-    plugins: [prettierBabelPlugin.default, prettierEstreePlugin.default],
+    plugins: [
+      prettierBabelPlugin,
+      // @ts-expect-error: https://github.com/prettier/prettier/issues/16501
+      prettierEstreePlugin,
+    ],
     ...PRETTIER_CONFIG,
   });
 }
