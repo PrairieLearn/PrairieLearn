@@ -123,6 +123,19 @@ onDocumentReady(() => {
       updatedAccessRules.show_closed_assessment === 'true';
     updatedAccessRules.show_closed_assessment_score =
       updatedAccessRules.show_closed_assessment_score === 'true';
+
+    if ('credit' in updatedAccessRules) {
+      if (updatedAccessRules.credit !== '') {
+        updatedAccessRules.credit = parseInt(updatedAccessRules.credit);
+      } else {
+        updatedAccessRules.credit = null;
+      }
+    } else {
+      // The input was disabled, presumably because `"active": false` was selected.
+      // Zero out the credit, which is enforced by JSON validation on the backend.
+      updatedAccessRules.credit = 0;
+    }
+
     updatedAccessRules.credit !== ''
       ? (updatedAccessRules.credit = parseInt(updatedAccessRules.credit))
       : (updatedAccessRules.credit = null);
@@ -173,6 +186,24 @@ onDocumentReady(() => {
     }).toString();
     $('#editAccessRuleModal').modal('show');
   });
+
+  // Disable the "credit" input if the access rule is inactive.
+  on('change', '#editAccessRuleModal .js-access-rule-active', (e) => {
+    const active = (e.target as HTMLInputElement).checked;
+
+    const creditInput = document.querySelector(
+      '#editAccessRuleModal .js-access-rule-credit',
+    ) as HTMLInputElement;
+    if (active) {
+      creditInput.removeAttribute('disabled');
+      creditInput.value = creditInput.defaultValue;
+    } else {
+      creditInput.setAttribute('disabled', 'disabled');
+      creditInput.value = '0';
+    }
+  });
+
+  // TODO: add validation that start date is before end date.
 
   on('click', '.js-save-access-rule-button', (e) => {
     const form = (e.target as HTMLElement).closest('form');

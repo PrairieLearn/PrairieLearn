@@ -55,7 +55,6 @@ export function AccessRulesTable({
         </thead>
         <tbody>
           ${accessRules.map((access_rule, index) => {
-            console.log(access_rule);
             // Only users with permission to view student data are allowed
             // to see the list of uids associated with an access rule. Note,
             // however, that any user with permission to view course code

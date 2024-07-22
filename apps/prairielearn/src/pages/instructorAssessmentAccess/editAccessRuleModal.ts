@@ -23,6 +23,7 @@ export function EditAccessRuleModal({
     body: html`
       <div class="form-group">
         <input type="hidden" name="row" class="access-rule-row" value="${rowNumber}" />
+        <!-- TODO: are these necessary? -->
         <input
           type="hidden"
           name="id"
@@ -143,20 +144,18 @@ export function EditAccessRuleModal({
         >
       </div>
       <div class="form-group">
-        <label for="active">Active</label>
-        <select
-          class="form-control access-rule-active"
-          id="active"
-          name="active"
-          aria-describedby="activeHelp"
-        >
-          <option value="true" ${accessRule.assessment_access_rule.active ? 'selected' : ''}>
-            True
-          </option>
-          <option value="false" ${accessRule.assessment_access_rule.active ? '' : 'selected'}>
-            False
-          </option>
-        </select>
+        <div class="form-check">
+          <input
+            type="checkbox"
+            class="form-check-input js-access-rule-active"
+            id="active"
+            name="active"
+            value="true"
+            ${accessRule.assessment_access_rule.active ? 'checked' : ''}
+            aria-describedby="activeHelp"
+          />
+          <label for="active" class="form-check-label">Active</label>
+        </div>
         <small id="activeHelp" class="form-text text-muted">
           Whether the student can create a new assessment instance and submit answers to questions.
         </small>
@@ -166,7 +165,7 @@ export function EditAccessRuleModal({
         <div class="input-group">
           <input
             type="number"
-            class="form-control access-rule-credit"
+            class="form-control js-access-rule-credit"
             id="credit"
             name="credit"
             aria-describedby="creditHelp"
@@ -228,49 +227,36 @@ export function EditAccessRuleModal({
         </small>
       </div>
       <div class="form-group">
-        <label for="show_closed_assessment">Show closed assessment</label>
-        <select
-          class="form-control access-rule-show-closed-assessment"
-          name="show_closed_assessment"
-          aria-describedby="showClosedAssessmentHelp"
-        >
-          <option
+        <div class="form-check">
+          <input
+            type="checkbox"
+            class="form-check-input access-rule-show-closed-assessment"
+            id="show_closed_assessment"
+            name="show_closed_assessment"
             value="true"
-            ${accessRule.assessment_access_rule.show_closed_assessment ? 'selected' : ''}
-          >
-            True
-          </option>
-          <option
-            value="false"
-            ${accessRule.assessment_access_rule.show_closed_assessment ? '' : 'selected'}
-          >
-            False
-          </option>
-        </select>
+            ${accessRule.assessment_access_rule.show_closed_assessment ? 'checked' : ''}
+            aria-describedby="showClosedAssessmentHelp"
+          />
+          <label for="show_closed_assessment">Show closed assessment</label>
+        </div>
+
         <small id="showClosedAssessmentHelp" class="form-text text-muted">
           Whether to allow viewing of assessment contents when closed.
         </small>
       </div>
       <div class="form-group">
-        <label for="show_closed_assessment_score">Show closed assessment score</label>
-        <select
-          class="form-control access access-rule-show-closed-assessment-score"
-          name="show_closed_assessment_score"
-          aria-describedby="showClosedAssessmentScoreHelp"
-        >
-          <option
+        <div class="form-check">
+          <input
+            type="checkbox"
+            class="form-check-input access-rule-show-closed-assessment-score"
+            id="show_closed_assessment_score"
+            name="show_closed_assessment_score"
             value="true"
-            ${accessRule.assessment_access_rule.show_closed_assessment_score ? 'selected' : ''}
-          >
-            True
-          </option>
-          <option
-            value="false"
-            ${accessRule.assessment_access_rule.show_closed_assessment_score ? '' : 'selected'}
-          >
-            False
-          </option>
-        </select>
+            ${accessRule.assessment_access_rule.show_closed_assessment_score ? 'checked' : ''}
+            aria-describedby="showClosedAssessmentScoreHelp"
+          />
+          <label for="show_closed_assessment_score">Show closed assessment score</label>
+        </div>
         <small id="showClosedAssessmentScoreHelp" class="form-text text-muted">
           Whether to allow viewing of the score of a closed assessment.
         </small>
