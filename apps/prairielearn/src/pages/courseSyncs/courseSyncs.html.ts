@@ -6,6 +6,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { JobStatus } from '../../components/JobStatus.html.js';
 import { config } from '../../lib/config.js';
 import {
   Course,
@@ -130,12 +131,7 @@ export function CourseSyncs({
                         </td>
                         <td>${jobSequence.description}</td>
                         <td>${jobSequence.user_uid ?? '(System)'}</td>
-                        <td>
-                          ${renderEjs(import.meta.url, "<%- include('../partials/jobStatus'); %>", {
-                            ...resLocals,
-                            status: jobSequence.status,
-                          })}
-                        </td>
+                        <td>${JobStatus({ status: jobSequence.status })}</td>
                         <td>
                           <a
                             href="${urlPrefix}/jobSequence/${jobSequence.id}"
