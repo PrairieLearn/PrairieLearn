@@ -43,17 +43,7 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
                   Create question
                 </button>
               </form>
-              <hr />
               <div id="generation-results"></div>
-              <p>
-                On intitial setup, and when the example course or PrairieLearn docs change, click
-                the button below:
-              </p>
-              <form class="" name="sync-context-form" method="POST">
-                <input type="hidden" name="__action" value="sync_context_documents" />
-                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                <button class="btn btn-primary">Resync Documents</button>
-              </form>
             </div>
           </div>
         </main>
@@ -71,6 +61,7 @@ export const GenerationResults = (
   if (generatedHTML === undefined) {
     return html`
       <div id="generation-results">
+        <hr />
         <h1>Generation Failed</h1>
         <p>The generated code did not include a question.html file.</p>
         <a href="${resLocals.urlPrefix + '/jobSequence/' + seqId}" target="_blank">
@@ -81,6 +72,7 @@ export const GenerationResults = (
   }
   return html`
     <div id="generation-results">
+      <hr />
       <p>Generation Results:</p>
       <a href="${resLocals.urlPrefix + '/jobSequence/' + seqId}" target="_blank">
         [DEBUG] See Job Logs
@@ -140,7 +132,6 @@ ${generatedPython}
           <button class="btn btn-primary">Save Question</button>
         </form>
       </div>
-      <hr />
     </div>
   `.toString();
 };

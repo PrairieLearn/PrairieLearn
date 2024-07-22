@@ -2,6 +2,8 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { config } from '../../lib/config.js';
+import { isEnterprise } from '../../lib/license.js';
 
 export function AdministratorSettings({ resLocals }) {
   return html`
@@ -90,6 +92,20 @@ export function AdministratorSettings({ resLocals }) {
               </script>
             </div>
           </div>
+          ${isEnterprise() && config.openAiApiKey && config.openAiOrganization
+            ? html`
+                <div class="card mb-4">
+                  <div class="card-header bg-primary text-white">LLM Context Documents</div>
+                  <div class="card-body">
+                    <form class="" name="sync-context-form" method="POST">
+                      <input type="hidden" name="__action" value="sync_context_documents" />
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <button class="btn btn-primary">Resync Documents</button>
+                    </form>
+                  </div>
+                </div>
+              `
+            : ''}
         </main>
       </body>
     </html>
