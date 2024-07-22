@@ -227,23 +227,23 @@
               <% if (authz_data.user_with_requested_uid_has_instructor_access_to_course_instance) { %>
                 <a class="dropdown-item" href="<%= instructorLink %>" id="navbar-user-view-instructor">
                   <div class="d-flex flex-row justify-content-left">
-                    <div class="col-1 px-0"><% if (viewTypeMenuChecked == 'instructor') { %>&check;<% } %></div>
-                    <div class="col pl-0">Staff view</div>
+                    <span class="<% if (viewTypeMenuChecked != 'instructor') { %>invisible<% } %>">&check;</span>
+                    <div class="pl-3">Staff view</div>
                   </div>
                 </a>
               <% } %>
 
               <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-student">
                 <div class="d-flex flex-row justify-content-left">
-                  <div class="col-1 px-0"><% if (viewTypeMenuChecked == 'student') { %>&check;<% } %></div>
-                  <div class="col pl-0">Student view</div>
+                  <span class="<% if (viewTypeMenuChecked != 'student') { %>invisible<% } %>">&check;</span>
+                  <div class="pl-3">Student view</div>
                 </div>
               </a>
 
               <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-student-no-rules">
                 <div class="d-flex flex-row justify-content-left">
-                  <div class="col-1 px-0"><% if (viewTypeMenuChecked == 'student-no-rules') { %>&check;<% } %></div>
-                  <div class="col pl-0">Student view without access restrictions</div>
+                  <span class="<% if (viewTypeMenuChecked != 'student-no-rules') { %>invisible<% } %>">&check;</span>
+                  <div class="pl-3">Student view without access restrictions</div>
                 </div>
               </a>
 
