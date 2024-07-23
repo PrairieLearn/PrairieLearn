@@ -334,9 +334,10 @@
   </div>
 </nav>
 
-<% if (typeof course !== 'undefined' && course.banner_html && course.banner_color) { %>
-  <div class="alert alert-<%= course.banner_color %> mb-0 rounded-0 text-center">
-    <%- course.banner_html %>
+<% // Course announcements are shown only to instructors. %>
+<% if (if navbarType === 'instructor' && typeof course !== 'undefined' && course.announcement_html && course.announcement_color) { %>
+  <div class="alert alert-<%= course.announcement_color %> mb-0 rounded-0 text-center">
+    <%- course.announcement_html %>
   </div>
 <% } %>
 

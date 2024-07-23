@@ -352,8 +352,8 @@ export const ClientFingerprintSchema = z.object({
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
 export const CourseSchema = z.object({
-  banner_color: z.string().nullable(),
-  banner_html: z.string().nullable(),
+  announcement_color: z.string().nullable(),
+  announcement_html: z.string().nullable(),
   branch: z.string(),
   commit_hash: z.string().nullable(),
   course_instance_enrollment_limit: z.number().nullable(),
