@@ -84,7 +84,8 @@ export function AdministratorFeature({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })} ${compiledScriptTag('administratorFeaturesClient.ts')}
+        ${HeadContents({ resLocals, pageTitle: 'Features' })}
+        ${compiledScriptTag('administratorFeaturesClient.ts')}
         <style>
           .list-inline-item:not(:first-child):before {
             margin-right: 0.5rem;
