@@ -342,9 +342,6 @@ export async function authzCourseOrInstance(req, res) {
     res.locals.is_administrator = res.locals.authz_data.is_administrator;
 
     res.locals.authz_data.mode = effectiveParams.req_mode;
-    res.locals.authz_data.mode_reason = req.cookies.pl_requested_mode
-      ? 'Requested'
-      : res.locals.authz_data.mode_reason;
     res.locals.req_date = req_date;
     return;
   }

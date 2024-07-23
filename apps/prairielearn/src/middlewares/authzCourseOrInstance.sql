@@ -1,12 +1,7 @@
 -- BLOCK select_authz_data
 SELECT
   coalesce($req_mode, access_mode.mode) AS mode,
-  (
-    CASE
-      WHEN $req_mode IS NOT NULL THEN 'Override'
-      ELSE access_mode.mode_reason
-    END
-  ) AS mode_reason,
+  access_mode.mode_reason AS mode_reason,
   to_jsonb(c.*) AS course,
   to_jsonb(i.*) AS institution,
   to_jsonb(ci.*) AS course_instance,

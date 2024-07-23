@@ -119,7 +119,7 @@ export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
 export type EnumMode = z.infer<typeof EnumModeSchema>;
 
-export const EnumModeReasonSchema = z.enum(['Default', 'PrairieTest', 'Network', 'Override']);
+export const EnumModeReasonSchema = z.enum(['Default', 'PrairieTest', 'Network']);
 export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
 
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
