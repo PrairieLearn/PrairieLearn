@@ -252,7 +252,7 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       iconClasses: 'fas fa-bug',
       tabLabel: 'Issues',
       htmlSuffix: (resLocals) =>
-        renderEjs(import.meta.url, "<%- include('../issueBadge') %>", {
+        renderEjs(import.meta.url, "<%- include('../pages/partials/issueBadge') %>", {
           ...resLocals,
           count: resLocals.open_issue_count,
           suppressLink: true,

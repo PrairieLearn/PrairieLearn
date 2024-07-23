@@ -103,12 +103,7 @@ function NavbarByType({
   } else if (navbarType === 'student') {
     return NavbarStudent({ resLocals, navPage });
   } else if (navbarType === 'instructor') {
-    return renderEjs(import.meta.url, "<%- include('../pages/partials/navbarInstructor'); %>", {
-      ...resLocals,
-      navPage,
-      navSubPage,
-      navbarType,
-    });
+    return NavbarInstructor({ resLocals, navPage, navSubPage });
   } else if (navbarType === 'administrator_institution') {
     return renderEjs(
       import.meta.url,
@@ -481,7 +476,7 @@ function AuthnOverrides({
   const { authz_data, urlPrefix, course_instance, course } = resLocals;
   if (
     !authz_data?.authn_has_course_permission_preview &&
-    authz_data?.authn_has_course_instance_permission_view
+    !authz_data?.authn_has_course_instance_permission_view
   ) {
     return '';
   }
@@ -605,5 +600,234 @@ function NavbarStudent({
           </li>
         `
       : ''}
+  `;
+}
+
+function NavbarInstructor({
+  resLocals,
+  navPage,
+  navSubPage,
+}: {
+  resLocals: Record<string, any>;
+  navPage: NavPage;
+  navSubPage?: NavSubPage;
+}) {
+  const {
+    course,
+    course_instance,
+    assessment,
+    assessment_label,
+    assessments,
+    navbarOpenIssueCount,
+    authz_data,
+    urlPrefix,
+  } = resLocals;
+
+  return html`
+    <li class="nav-item btn-group" id="navbar-course-switcher">
+      <a
+        class="nav-link ${navPage === 'course_admin' &&
+        !(navSubPage === 'issues' || navSubPage === 'questions' || navSubPage === 'syncs')
+          ? 'active'
+          : ''} ${!authz_data.has_course_permission_view ? 'disabled' : ''}"
+        href="${urlPrefix}/course_admin"
+      >
+        ${course.short_name}
+      </a>
+      <a
+        class="nav-link dropdown-toggle dropdown-toggle-split"
+        href="#"
+        id="navbarDropdownMenuCourseAdminLink"
+        role="button"
+        data-toggle="dropdown"
+        aria-label="Change course"
+        aria-haspopup="true"
+        aria-expanded="false"
+        ${!authz_data.overrides
+          ? `
+              hx-get="/pl/navbar/course/${course.id}/switcher"
+              hx-trigger="show-course-switcher once delay:200ms"
+              hx-target="#navbarDropdownMenuCourseAdmin"
+            `
+          : ''}
+      >
+      </a>
+      <div
+        class="dropdown-menu"
+        aria-labelledby="navbarDropdownMenuCourseAdminLink"
+        id="navbarDropdownMenuCourseAdmin"
+      >
+        ${authz_data.overrides
+          ? html`
+              <span class="dropdown-item-text small"
+                >Effective users may not switch between courses</span
+              >
+            `
+          : html`
+              <div class="d-flex justify-content-center">
+                <div class="spinner-border spinner-border-sm" role="status">
+                  <span class="sr-only">Loading courses...</span>
+                </div>
+              </div>
+            `}
+      </div>
+    </li>
+
+    <li class="nav-item ${navPage === 'course_admin' && navSubPage === 'issues' ? 'active' : ''}">
+      <a class="nav-link" href="${urlPrefix}/course_admin/issues">
+        Issues
+        ${renderEjs(import.meta.url, "<%- include('../pages/partials/issueBadge') %>", {
+          ...resLocals,
+          count: navbarOpenIssueCount,
+          suppressLink: true,
+        })}
+      </a>
+    </li>
+    <li
+      class="nav-item ${navPage === 'course_admin' && navSubPage === 'questions' ? 'active' : ''}"
+    >
+      <a class="nav-link" href="${urlPrefix}/course_admin/questions">Questions</a>
+    </li>
+    <li class="nav-item ${navPage === 'course_admin' && navSubPage === 'syncs' ? 'active' : ''}">
+      <a class="nav-link" href="${urlPrefix}/course_admin/syncs">Sync</a>
+    </li>
+
+    ${course_instance
+      ? html`
+          <li class="navbar-text mx-2 no-select">/</li>
+          <li class="nav-item btn-group" id="navbar-course-instance-switcher">
+            <a
+              class="nav-link ${navPage === 'instance_admin' &&
+              !(navSubPage === 'assessments' || navSubPage === 'gradebook')
+                ? 'active'
+                : ''}"
+              href="${config.urlPrefix}/course_instance/${course_instance.id}/instructor/instance_admin"
+            >
+              ${course_instance.short_name}
+            </a>
+            <a
+              class="nav-link dropdown-toggle dropdown-toggle-split"
+              href="#"
+              id="navbarDropdownMenuInstanceAdminLink"
+              role="button"
+              data-toggle="dropdown"
+              aria-label="Change course instance"
+              aria-haspopup="true"
+              aria-expanded="false"
+              hx-get="/pl/navbar/course/${course.id}/course_instance_switcher/${course_instance.id}"
+              hx-trigger="show-course-instance-switcher once delay:200ms"
+              hx-target="#navbarDropdownMenuInstanceAdmin"
+            ></a>
+            <div
+              class="dropdown-menu"
+              aria-labelledby="navbarDropdownMenuInstanceAdminLink"
+              id="navbarDropdownMenuInstanceAdmin"
+            >
+              <div class="d-flex justify-content-center">
+                <div class="spinner-border spinner-border-sm" role="status">
+                  <span class="sr-only">Loading course instances...</span>
+                </div>
+              </div>
+            </div>
+          </li>
+
+          <li
+            class="nav-item ${navPage === 'instance_admin' && navSubPage === 'assessments'
+              ? 'active'
+              : ''}"
+          >
+            <a class="nav-link" href="${urlPrefix}/instance_admin/assessments">Assessments</a>
+          </li>
+
+          <li
+            class="nav-item ${navPage === 'instance_admin' && navSubPage === 'gradebook'
+              ? 'active'
+              : ''}"
+          >
+            <a class="nav-link" href="${urlPrefix}/instance_admin/gradebook">Gradebook</a>
+          </li>
+
+          ${assessment_label != null && assessment != null
+            ? html`
+                <li class="navbar-text mx-2 no-select">/</li>
+                <li class="nav-item btn-group">
+                  <a
+                    class="nav-link ${navPage === 'assessment' ? 'active' : ''}"
+                    href="${urlPrefix}/assessment/${assessment.id}"
+                  >
+                    ${assessment_label}
+                  </a>
+                  ${assessments != null
+                    ? html`
+                        <a
+                          class="nav-link dropdown-toggle dropdown-toggle-split"
+                          href="#"
+                          id="navbarDropdownMenuLink"
+                          role="button"
+                          data-toggle="dropdown"
+                          aria-haspopup="true"
+                          aria-expanded="false"
+                          aria-label="Change assessment"
+                        >
+                        </a>
+                        <div
+                          class="dropdown-menu"
+                          aria-labelledby="navbarDropdownMenuLink"
+                          id="navbarDropwdownMenuInstructorAssessment"
+                        >
+                          ${assessments.map(
+                            (a) => html`
+                              <a
+                                class="dropdown-item ${navPage === 'assessment' &&
+                                assessment.id === a.id
+                                  ? 'active'
+                                  : ''}"
+                                href="${urlPrefix}/assessment/${a.id}${navPage === 'assessment' &&
+                                navSubPage !== 'file_edit'
+                                  ? `/${navSubPage}`
+                                  : ''}"
+                              >
+                                ${a.assessment_label}
+                              </a>
+                            `,
+                          )}
+                        </div>
+                      `
+                    : ''}
+                </li>
+              `
+            : ''}
+        `
+      : html`
+          <li class="navbar-text mx-2 no-select">/</li>
+
+          <li class="nav-item dropdown" id="navbar-course-instance-switcher">
+            <a
+              class="nav-link dropdown-toggle"
+              href="#"
+              id="navbarDropdownMenuInstanceChooseLink"
+              role="button"
+              data-toggle="dropdown"
+              aria-haspopup="true"
+              aria-expanded="false"
+              hx-get="/pl/navbar/course/${course.id}/course_instance_switcher"
+              hx-trigger="show-course-instance-switcher once delay:200ms"
+              hx-target="#navbarDropdownMenuInstanceChoose"
+            >
+              Choose course instance...
+            </a>
+            <div
+              class="dropdown-menu"
+              aria-labelledby="navbarDropdownMenuInstanceChooseLink"
+              id="navbarDropdownMenuInstanceChoose"
+            >
+              <div class="d-flex justify-content-center">
+                <div class="spinner-border spinner-border-sm" role="status">
+                  <span class="sr-only">Loading course instances...</span>
+                </div>
+              </div>
+            </div>
+          </li>
+        `}
   `;
 }
