@@ -11,33 +11,13 @@
   "studentGroupJoin": true,
   "studentGroupLeave": true,
   "groupRoles": [
-    {
-      "name": "Manager",
-      "minimum": 1,
-      "maximum": 1,
-      "canAssignRoles": true
-    },
-    {
-      "name": "Recorder",
-      "minimum": 1,
-      "maximum": 1
-    },
-    {
-      "name": "Reflector",
-      "minimum": 1,
-      "maximum": 1
-    },
-    {
-      "name": "Contributor"
-    }
+    { "name": "Manager", "minimum": 1, "maximum": 1, "canAssignRoles": true },
+    { "name": "Recorder", "minimum": 1, "maximum": 1 },
+    { "name": "Reflector", "minimum": 1, "maximum": 1 },
+    { "name": "Contributor" }
   ],
   "allowAccess": [
-    {
-      "mode": "Public",
-      "credit": 100,
-      "timeLimitMin": 50,
-      "showClosedAssessment": false
-    }
+    { "mode": "Public", "credit": 100, "timeLimitMin": 50, "showClosedAssessment": false }
   ],
   "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
   "canSubmit": ["Recorder"],

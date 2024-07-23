@@ -1,6 +1,7 @@
 import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { config } from '../../lib/config.js';
 import type { LtiCredentials, User } from '../../lib/db-types.js';
@@ -23,10 +24,7 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'LTI',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'LTI' })}
       </head>
       <body>
         <script>

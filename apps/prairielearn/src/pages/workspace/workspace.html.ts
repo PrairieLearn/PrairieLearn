@@ -1,9 +1,11 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
-import { compiledScriptTag } from '../../lib/assets.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { assetPath, compiledScriptTag } from '../../lib/assets.js';
 
 export function Workspace({
+  pageTitle,
+  pageNote,
   navTitle,
   navTitleHref,
   showLogs,
@@ -12,6 +14,8 @@ export function Workspace({
   socketToken,
   resLocals,
 }: {
+  pageTitle?: string;
+  pageNote?: string;
   navTitle: string;
   navTitleHref: string;
   showLogs: boolean;
@@ -24,8 +28,8 @@ export function Workspace({
     <!doctype html>
     <html lang="en" class="h-100">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        <link href="${resLocals.asset_path('stylesheets/workspace.css')}" rel="stylesheet" />
+        ${HeadContents({ resLocals, pageNote, pageTitle })}
+        <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />
         ${compiledScriptTag('workspaceClient.ts')}
       </head>
 

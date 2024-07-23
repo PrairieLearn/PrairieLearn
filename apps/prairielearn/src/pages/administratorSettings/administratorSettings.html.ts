@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 
@@ -9,7 +10,7 @@ export function AdministratorSettings({ resLocals }) {
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals, pageTitle: 'Administrator Settings' })}
       </head>
       <body>
         <script>

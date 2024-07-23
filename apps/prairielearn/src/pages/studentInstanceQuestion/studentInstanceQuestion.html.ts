@@ -7,6 +7,7 @@ import {
   RegenerateInstanceAlert,
 } from '../../components/AssessmentRegenerate.html.js';
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.html.js';
@@ -29,8 +30,7 @@ export function StudentInstanceQuestion({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('question.ts')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('question.ts')}
         ${resLocals.assessment.type === 'Exam'
           ? html`
               ${compiledScriptTag('examTimeLimitCountdown.ts')}
