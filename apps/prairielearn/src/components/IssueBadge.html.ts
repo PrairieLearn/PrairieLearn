@@ -21,7 +21,8 @@ export function IssueBadge({
       issueQid?: string | null;
     }
 )) {
-  if (count === 0) return '';
+  // Convert explicitly to a number because some unvalidated queries still return a string (via bigint)
+  if (Number(count) === 0) return '';
 
   if (suppressLink) {
     return html`<span class="badge badge-pill badge-danger ${className ?? ''}">${count}</span>`;
