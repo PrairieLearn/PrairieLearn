@@ -156,7 +156,7 @@ ${samlProvider?.certificate ?? ''}</textarea
                 id="validate_audience"
                 name="validate_audience"
                 value="1"
-                ${samlProvider?.validate_audience ?? true ? 'checked' : ''}
+                ${(samlProvider?.validate_audience ?? true) ? 'checked' : ''}
                 aria-describedBy="validateAudienceHelp"
               />
               <label class="form-check-label" for="validate_audience">Validate audience</label>
@@ -173,7 +173,7 @@ ${samlProvider?.certificate ?? ''}</textarea
                 id="want_assertions_signed"
                 name="want_assertions_signed"
                 value="1"
-                ${samlProvider?.want_assertions_signed ?? true ? 'checked' : ''}
+                ${(samlProvider?.want_assertions_signed ?? true) ? 'checked' : ''}
                 aria-describedBy="wantAssertionsSignedHelp"
               />
               <label class="form-check-label" for="want_assertions_signed">
@@ -192,7 +192,7 @@ ${samlProvider?.certificate ?? ''}</textarea
                 id="want_authn_response_signed"
                 name="want_authn_response_signed"
                 value="1"
-                ${samlProvider?.want_authn_response_signed ?? true ? 'checked' : ''}
+                ${(samlProvider?.want_authn_response_signed ?? true) ? 'checked' : ''}
                 aria-describedBy="wantAuthnResponseSignedHelp"
               />
               <label class="form-check-label" for="want_authn_response_signed">
