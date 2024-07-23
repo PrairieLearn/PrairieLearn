@@ -116,7 +116,6 @@ function enterpriseOnlyMiddleware(load) {
 export async function initExpress() {
   const app = express();
   app.set('views', path.join(import.meta.dirname, 'pages'));
-  app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
 
   // These should come first so that we get instrumentation on all our requests.
