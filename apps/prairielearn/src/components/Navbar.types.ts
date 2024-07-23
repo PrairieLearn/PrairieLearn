@@ -29,4 +29,7 @@ export type NavPage =
   | 'user_settings'
   | undefined;
 
+// This type is provisionally very lenient, to avoid problems with existing
+// code. A future version where navSubPage is more strictly defined can set
+// this to a more specific enum-like type.
 export type NavSubPage = string | undefined;
