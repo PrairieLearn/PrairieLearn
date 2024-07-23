@@ -18,7 +18,7 @@ export function Navbar({
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
 }) {
-  const { __csrf_token, urlPrefix, homeUrl } = resLocals;
+  const { __csrf_token, course, urlPrefix, homeUrl } = resLocals;
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
@@ -82,6 +82,13 @@ export function Navbar({
       </div>
     </nav>
 
+    ${navbarType === 'instructor' && course?.announcement_html && course.announcement_color
+      ? html`
+          <div class="alert alert-${course.announcement_color} mb-0 rounded-0 text-center">
+            ${unsafeHtml(course.announcement_html)}
+          </div>
+        `
+      : ''}
     ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
   `;
 }
