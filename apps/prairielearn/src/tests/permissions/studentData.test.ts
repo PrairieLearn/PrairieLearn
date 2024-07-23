@@ -477,7 +477,7 @@ describe('student data access', function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_requested_uid=student@example.com; pl2_requested_mode=Exam',
+          'pl_test_user=test_instructor; pl2_requested_uid=student@example.com; pl_test_mode=Exam',
       };
       let response = await helperClient.fetchCheerio(context.examAssessmentInstanceUrl, {
         headers,
@@ -504,7 +504,7 @@ describe('student data access', function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_requested_uid=student@example.com; pl2_requested_mode=Exam',
+          'pl_test_user=test_instructor; pl2_requested_uid=student@example.com; pl_test_mode=Exam',
       };
       let response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers });
       assert.isTrue(response.ok);

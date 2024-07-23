@@ -1,6 +1,8 @@
 import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { encodePath } from '../../lib/uri-util.js';
@@ -15,10 +17,7 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
           name="ace-base-path"
           content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
         />
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: `Edit ${fileEdit?.fileName}`,
-        })}
+        ${HeadContents({ resLocals, pageTitle: `Edit ${fileEdit?.fileName}` })}
         ${compiledScriptTag('instructorFileEditorClient.ts')}
       </head>
 
@@ -136,6 +135,17 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                               <i class="far fa-question-circle" aria-hidden="true"></i>
                               <span id="help-button-label">Show help</span>
                             </button>
+                            ${fileEdit.aceMode === 'ace/mode/json'
+                              ? html`
+                                  <button
+                                    type="button"
+                                    class="btn btn-light btn-sm js-reformat-file"
+                                  >
+                                    <i class="fas fa-paintbrush" aria-hidden="true"></i>
+                                    Reformat
+                                  </button>
+                                `
+                              : ''}
                             <button
                               id="file-editor-save-button"
                               name="__action"
@@ -214,15 +224,10 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                                     ? html`
                                         <div class="row collapse mt-4" id="job-sequence-results">
                                           <div class="card card-body">
-                                            ${renderEjs(
-                                              import.meta.url,
-                                              "<%- include('../partials/jobSequenceResults'); %>",
-                                              {
-                                                ...resLocals,
-                                                job_sequence: fileEdit.jobSequence,
-                                                job_sequence_enable_live_update: false,
-                                              },
-                                            )}
+                                            ${JobSequenceResults({
+                                              course,
+                                              jobSequence: fileEdit.jobSequence,
+                                            })}
                                           </div>
                                         </div>
                                       `
@@ -281,7 +286,7 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                                   </div>
                                 `
                               : ''}
-                            <div class="card-body p-0">
+                            <div class="card-body p-0 position-relative">
                               <input
                                 type="hidden"
                                 name="file_edit_user_id"
@@ -299,6 +304,34 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
                               />
                               <input type="hidden" name="file_edit_contents" />
                               <div class="editor"></div>
+                              <div
+                                aria-live="polite"
+                                aria-atomic="true"
+                                class="position-absolute m-3"
+                                style="top: 0; right: 0; z-index: 10;"
+                              >
+                                <div
+                                  id="js-json-reformat-error"
+                                  class="toast hide bg-danger text-white border-0"
+                                  role="alert"
+                                  aria-live="assertive"
+                                  aria-atomic="true"
+                                >
+                                  <div class="d-flex">
+                                    <div class="toast-body">
+                                      Error formatting JSON. Please check your JSON syntax.
+                                    </div>
+                                    <button
+                                      type="button"
+                                      class="mr-2 close"
+                                      data-dismiss="toast"
+                                      aria-label="Close"
+                                    >
+                                      <span aria-hidden="true">&times;</span>
+                                    </button>
+                                  </div>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
