@@ -82,7 +82,7 @@ export function Navbar({
       </div>
     </nav>
 
-    ${navbarType === 'instructor' && course?.announcement_html && course.announcement_color
+    ${navbarType === 'instructor' && course && course.announcement_html && course.announcement_color
       ? html`
           <div class="alert alert-${course.announcement_color} mb-0 rounded-0 text-center">
             ${unsafeHtml(course.announcement_html)}
@@ -475,7 +475,7 @@ function AuthnOverrides({
 
   let effectiveUserUrl = `${urlPrefix}/effectiveUser`;
   if (navbarType !== 'student' && navbarType !== 'instructor') {
-    // The only way for auhz_data to exist, for authn_has_course_permission_preview to be true,
+    // The only way for authz_data to exist, for authn_has_course_permission_preview to be true,
     // and for navbarType to be neither student nor instructor, is if we are in a course or course
     // instance and if the effective user does not have access.
     //
@@ -552,8 +552,7 @@ function AuthnOverrides({
 }
 
 function NavbarPlain({ resLocals, navPage }: { resLocals: Record<string, any>; navPage: NavPage }) {
-  const { is_administrator } = resLocals;
-  if (!is_administrator) return '';
+  if (!resLocals.is_administrator) return '';
   return html`
     <li class="nav-item ${navPage === 'admin' ? 'active' : ''}">
       <a class="nav-link" href="${config.urlPrefix}/administrator/admins">Admin</a>
