@@ -121,7 +121,7 @@ class LoadEstimator {
           startMS: info.startMS,
           startTimestamp: new Date(info.startMS).toISOString(),
         };
-        logger.error(`load._warnOldJobs(): job exceeded max response time`, details);
+        logger.error('load._warnOldJobs(): job exceeded max response time', details);
         info.warned = true;
       }
     });

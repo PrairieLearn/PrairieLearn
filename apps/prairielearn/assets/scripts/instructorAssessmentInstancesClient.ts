@@ -1,6 +1,7 @@
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
+import { Scorebar } from '../../src/components/Scorebar.html.js';
 import { AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 declare global {
@@ -394,7 +395,7 @@ onDocumentReady(() => {
             />`
           : ''}
         <select
-          class="form-control select-time-limit"
+          class="custom-select select-time-limit"
           name="plus_minus"
           onchange="
             $(this).parents('form').find('.time-limit-field').toggle(this.value !== 'unlimited' && this.value !== 'expire');
@@ -429,7 +430,7 @@ onDocumentReady(() => {
             style="width: 5em"
             value="5"
           />
-          <select class="form-control time-limit-field" name="time_ref">
+          <select class="custom-select time-limit-field" name="time_ref">
             <option value="minutes">minutes</option>
             ${row.time_remaining_sec !== null
               ? html`<option value="percent">% total limit</option>`
@@ -466,24 +467,8 @@ onDocumentReady(() => {
     `.toString();
   }
 
-  function scorebarFormatter(score: number) {
-    if (score != null) {
-      return html`
-        <div class="progress bg" style="min-width: 5em; max-width: 20em;">
-          <div class="progress-bar bg-success" style="width: ${Math.floor(Math.min(100, score))}%">
-            ${score >= 50 ? `${Math.floor(score)}%` : ''}
-          </div>
-          <div
-            class="progress-bar bg-danger"
-            style="width: ${100 - Math.floor(Math.min(100, score))}%"
-          >
-            ${score < 50 ? `${Math.floor(score)}%` : ''}
-          </div>
-        </div>
-      `;
-    } else {
-      return '';
-    }
+  function scorebarFormatter(score: number | null) {
+    return Scorebar(score).toString();
   }
 
   function listFormatter(list: string[]) {

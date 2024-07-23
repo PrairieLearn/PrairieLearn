@@ -39,8 +39,8 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                               value="false"
                               required
                               data-max-points="${resLocals.assessment_question.max_manual_points}"
-                              ${rubric_data?.replace_auto_points ??
-                              !resLocals.assessment_question.max_manual_points
+                              ${(rubric_data?.replace_auto_points ??
+                              !resLocals.assessment_question.max_manual_points)
                                 ? ''
                                 : 'checked'}
                             />
@@ -68,8 +68,8 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                               value="true"
                               required
                               data-max-points="${resLocals.assessment_question.max_points}"
-                              ${rubric_data?.replace_auto_points ??
-                              !resLocals.assessment_question.max_manual_points
+                              ${(rubric_data?.replace_auto_points ??
+                              !resLocals.assessment_question.max_manual_points)
                                 ? 'checked'
                                 : ''}
                             />
@@ -267,7 +267,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
 }
 
 function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number) {
-  const namePrefix = item ? `rubric_item[cur${item.id}]` : `rubric_item[new]`;
+  const namePrefix = item ? `rubric_item[cur${item.id}]` : 'rubric_item[new]';
   return html`
     <tr>
       <td class="text-nowrap">

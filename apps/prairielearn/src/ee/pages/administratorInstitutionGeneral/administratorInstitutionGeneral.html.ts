@@ -4,6 +4,7 @@ import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { type PlanGrant, type Institution } from '../../../lib/db-types.js';
 import { formatTimezone, Timezone } from '../../../lib/timezones.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
@@ -32,11 +33,7 @@ export function AdministratorInstitutionGeneral({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          navPage: 'administrator_institution',
-          pageTitle: 'General',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Institution Administration' })}
         ${compiledScriptTag('administratorInstitutionGeneralClient.ts')}
         <style>
           .card-grid {
@@ -102,7 +99,7 @@ export function AdministratorInstitutionGeneral({
             <div class="form-group">
               <label for="display_timezone">Timezone</label>
               <select
-                class="form-control"
+                class="custom-select"
                 id="display_timezone"
                 name="display_timezone"
                 value="${institution.display_timezone}"

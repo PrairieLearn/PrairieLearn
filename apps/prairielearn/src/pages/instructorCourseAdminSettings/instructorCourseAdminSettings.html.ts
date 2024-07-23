@@ -1,6 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { formatTimezone, type Timezone } from '../../lib/timezones.js';
 
@@ -21,9 +23,7 @@ export function InstructorCourseAdminSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-        })}
+        ${HeadContents({ resLocals })}
         ${compiledScriptTag('instructorCourseAdminSettingsClient.ts')}
       </head>
       <body>
@@ -31,13 +31,12 @@ export function InstructorCourseAdminSettings({
           ...resLocals,
         })}
         <main id="content" class="container">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/courseSyncErrorsAndWarnings'); %>",
-            {
-              ...resLocals,
-            },
-          )}
+          ${CourseSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
+
           <div class="card  mb-4">
             <div class="card-header bg-primary text-white d-flex">Course Settings</div>
             <div class="card-body">
@@ -93,7 +92,7 @@ export function InstructorCourseAdminSettings({
                 <div class="form-group">
                   <label for="display_timezone">Timezone</label>
                   <select
-                    class="form-control"
+                    class="custom-select"
                     id="display_timezone"
                     name="display_timezone"
                     ${courseInfoExists &&
@@ -148,14 +147,27 @@ export function InstructorCourseAdminSettings({
                 </div>
                 <div class="form-group">
                   <label for="repository">Repository</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="repository"
-                    name="repository"
-                    value="${resLocals.course.repository}"
-                    disabled
-                  />
+                  <span class="input-group">
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="repository"
+                      name="repository"
+                      value="${resLocals.course.repository}"
+                      disabled
+                    />
+                    <div class="input-group-append">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary btn-copy"
+                        data-clipboard-text="${resLocals.course.repository}"
+                        aria-label="Copy repository"
+                        ${resLocals.course.repository ? '' : 'disabled'}
+                      >
+                        <i class="far fa-clipboard"></i>
+                      </button>
+                    </div>
+                  </span>
                   <small class="form-text text-muted">
                     The Github repository that can be used to sync course files.
                   </small>

@@ -2,7 +2,7 @@ import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import { parse as csvParse } from 'csv-parse/sync';
 import _ from 'lodash';
-import request from 'request';
+import fetch from 'node-fetch';
 
 import * as helperExam from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -50,22 +50,15 @@ describe('Instructor Assessment Downloads', function () {
   });
 
   describe('2. GET to instructorAssessmentDownloads URL', function () {
-    it('should succeed', function (callback) {
+    it('should succeed', async () => {
       locals.instructorAssessmentDownloadsUrl =
         locals.courseInstanceBaseUrl +
         '/instructor/assessment/' +
         locals.assessment_id +
         '/downloads';
-      request({ url: locals.instructorAssessmentDownloadsUrl }, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-        }
-        page = body;
-        callback(null);
-      });
+      const res = await fetch(locals.instructorAssessmentDownloadsUrl);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -77,17 +70,10 @@ describe('Instructor Assessment Downloads', function () {
       elemList = locals.$("a:contains('scores.csv')");
       assert.lengthOf(elemList, 1);
     });
-    it('should succeed to download', function (callback) {
-      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should succeed to download', async () => {
+      const res = await fetch(locals.siteUrl + elemList[0].attribs.href);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
@@ -101,17 +87,10 @@ describe('Instructor Assessment Downloads', function () {
       elemList = locals.$("a:contains('scores_by_username.csv')");
       assert.lengthOf(elemList, 1);
     });
-    it('should succeed to download', function (callback) {
-      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should succeed to download', async () => {
+      const res = await fetch(locals.siteUrl + elemList[0].attribs.href);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
@@ -125,17 +104,10 @@ describe('Instructor Assessment Downloads', function () {
       elemList = locals.$("a:contains('points.csv')");
       assert.lengthOf(elemList, 1);
     });
-    it('should succeed to download', function (callback) {
-      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should succeed to download', async () => {
+      const res = await fetch(locals.siteUrl + elemList[0].attribs.href);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
@@ -149,17 +121,10 @@ describe('Instructor Assessment Downloads', function () {
       elemList = locals.$("a:contains('points_by_username.csv')");
       assert.lengthOf(elemList, 1);
     });
-    it('should succeed to download', function (callback) {
-      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should succeed to download', async () => {
+      const res = await fetch(locals.siteUrl + elemList[0].attribs.href);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
@@ -173,17 +138,10 @@ describe('Instructor Assessment Downloads', function () {
       elemList = locals.$("a:contains('instances.csv')");
       assert.lengthOf(elemList, 1);
     });
-    it('should succeed to download', function (callback) {
-      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should succeed to download', async () => {
+      const res = await fetch(locals.siteUrl + elemList[0].attribs.href);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
@@ -201,17 +159,10 @@ describe('Instructor Assessment Downloads', function () {
       elemList = locals.$("a:contains('instance_questions.csv')");
       assert.lengthOf(elemList, 1);
     });
-    it('should succeed to download', function (callback) {
-      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should succeed to download', async () => {
+      const res = await fetch(locals.siteUrl + elemList[0].attribs.href);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
@@ -228,17 +179,10 @@ describe('Instructor Assessment Downloads', function () {
       elemList = locals.$("a:contains('submissions_for_manual_grading.csv')");
       assert.lengthOf(elemList, 1);
     });
-    it('should succeed to download', function (callback) {
-      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should succeed to download', async () => {
+      const res = await fetch(locals.siteUrl + elemList[0].attribs.href);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
@@ -252,17 +196,10 @@ describe('Instructor Assessment Downloads', function () {
       elemList = locals.$("a:contains('all_submissions.csv')");
       assert.lengthOf(elemList, 1);
     });
-    it('should succeed to download', function (callback) {
-      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should succeed to download', async () => {
+      const res = await fetch(locals.siteUrl + elemList[0].attribs.href);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
@@ -278,17 +215,10 @@ describe('Instructor Assessment Downloads', function () {
       elemList = locals.$("a:contains('final_submissions.csv')");
       assert.lengthOf(elemList, 1);
     });
-    it('should succeed to download', function (callback) {
-      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should succeed to download', async () => {
+      const res = await fetch(locals.siteUrl + elemList[0].attribs.href);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
@@ -306,17 +236,10 @@ describe('Instructor Assessment Downloads', function () {
       elemList = locals.$("a:contains('best_submissions.csv')");
       assert.lengthOf(elemList, 1);
     });
-    it('should succeed to download', function (callback) {
-      request({ url: locals.siteUrl + elemList[0].attribs.href }, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should succeed to download', async () => {
+      const res = await fetch(locals.siteUrl + elemList[0].attribs.href);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should contain correct data', function () {
       const data = csvParse(page, { columns: true, cast: true });
