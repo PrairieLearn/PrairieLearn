@@ -259,44 +259,6 @@ export function InstructorEffectiveUser({
             : ''}
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Effective mode</div>
-
-            <div class="card-body">
-              <p><strong>Effective mode:</strong> ${authz_data.mode}</p>
-
-              <div class="alert alert-secondary mb-0">
-                <form class="form-inline" id="changeModeForm" method="POST">
-                  <div class="form-group">
-                    <label class="mr-2" for="changeMode">Change effective mode to:</label>
-                    <select class="custom-select mr-2" id="changeMode" name="pl_requested_mode">
-                      ${authz_data.mode === 'Public'
-                        ? html`<option value="Public" selected>Public (current)</option>`
-                        : html`<option value="Public">Public</option>`}
-                      ${authz_data.mode === 'Exam'
-                        ? html`<option value="Exam" selected>Exam (current)</option>`
-                        : html`<option value="Exam">Exam</option>`}
-                    </select>
-                  </div>
-                  <input type="hidden" name="__action" value="changeMode" />
-                  <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                  <button type="submit" class="btn btn-primary">Change mode</button>
-                </form>
-              </div>
-            </div>
-
-            <div class="card-footer">
-              <small>
-                The <em>mode</em> of the server determines which assessments are available. The
-                <em>Public</em> mode is used when PrairieLearn is accessed from the general internet
-                (on campus, at home, etc). The <em>Exam</em> mode is used when the user is
-                physically sitting at a computer in the CBTF (Computer-Based Testing Facility). The
-                options above allow you to test out the different modes to see which assessments
-                will be seen in either Public or Exam mode.
-              </small>
-            </div>
-          </div>
-
-          <div class="card mb-4">
             <div class="card-header bg-primary text-white">Effective date</div>
 
             <div class="card-body">
