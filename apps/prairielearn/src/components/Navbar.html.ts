@@ -4,6 +4,8 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { config } from '../lib/config.js';
 
+import { ContextNavigation } from './NavbarContext.js';
+
 export function Navbar({ resLocals }: { resLocals: Record<string, any> }) {
   const { __csrf_token, urlPrefix, navbarType, homeUrl } = resLocals;
 
@@ -66,7 +68,7 @@ export function Navbar({ resLocals }: { resLocals: Record<string, any> }) {
       </div>
     </nav>
 
-    ${NavPageTabs({ resLocals })} ${FlashMessages()}
+    ${ContextNavigation({ resLocals })} ${FlashMessages()}
   `;
 }
 
@@ -508,29 +510,4 @@ function AuthnOverrides({ resLocals }: { resLocals: Record<string, any> }) {
 
     <div class="dropdown-divider"></div>
   `;
-}
-
-function NavPageTabs({ resLocals }: { resLocals: Record<string, any> }) {
-  const { navPage } = resLocals;
-  // Mapping navPage to navtab sets
-  const navPagesTabs = {
-    instance_admin: 'navTabs/instructorInstanceAdmin',
-    course_admin: 'navTabs/instructorCourseAdmin',
-    assessment: 'navTabs/instructorAssessment',
-    question: 'navTabs/instructorQuestion',
-    admin: 'navTabs/administrator',
-    administrator_institution: 'navTabs/administratorInstitution',
-    institution_admin: 'navTabs/institutionAdmin',
-  };
-
-  return navPage && navPagesTabs[navPage]
-    ? html`
-        <!-- Instructor navigation tabs -->
-        <nav>
-          <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
-            ${renderEjs(import.meta.url, `<%- include(${navPagesTabs[navPage]}); %>`, resLocals)}
-          </ul>
-        </nav>
-      `
-    : '';
 }
