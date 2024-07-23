@@ -364,8 +364,14 @@ const navPagesTabs: Record<string, TabInfo[]> = {
   ],
 };
 
-export function ContextNavigation({ resLocals }: { resLocals: Record<string, any> }) {
-  const { navPage } = resLocals;
+export function ContextNavigation({
+  resLocals,
+  navPage,
+}: {
+  resLocals: Record<string, any>;
+  navPage: string | undefined;
+}) {
+  if (!navPage) return '';
   const navPageTabs = navPagesTabs[navPage];
   if (!navPageTabs) return '';
 
