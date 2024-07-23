@@ -137,7 +137,7 @@ function UserDropdownMenu({
     course_instance,
     urlPrefix,
     access_as_administrator,
-    news_item_notification_count,
+    news_item_notification_count: newsCount,
     authn_is_administrator,
   } = resLocals;
 
@@ -187,11 +187,9 @@ function UserDropdownMenu({
           aria-expanded="false"
         >
           ${displayedName} ${userBadge}
-          ${news_item_notification_count
+          ${newsCount
             ? html`
-                <span class="badge badge-pill badge-primary news-item-count">
-                  ${news_item_notification_count}
-                </span>
+                <span class="badge badge-pill badge-primary news-item-count">${newsCount}</span>
               `
             : ''}
         </a>
@@ -229,18 +227,14 @@ function UserDropdownMenu({
           <a
             class="dropdown-item news-item-link"
             href="${urlPrefix}/news_items"
-            ${news_item_notification_count
-              ? html`
-                  title="News (${news_item_notification_count} unread)" aria-label="News
-                  (${news_item_notification_count} unread)"
-                `
-              : html`title="News" aria-label="News"`}
+            title="News${newsCount ? ` (${newsCount} unread)` : ''}"
+            aria-label="News${newsCount ? ` (${newsCount} unread)` : ''}"
           >
             News
-            ${news_item_notification_count
+            ${newsCount
               ? html`
                   <span class="badge badge-pill badge-primary news-item-link-count">
-                    ${news_item_notification_count}
+                    ${newsCount}
                   </span>
                 `
               : ''}
