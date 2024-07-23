@@ -13,7 +13,10 @@ import {
   adjustedDate,
 } from '../../src/pages/instructorAssessmentAccess/accessRulesTable.js';
 import { EditAccessRuleModal } from '../../src/pages/instructorAssessmentAccess/editAccessRuleModal.js';
-import { AssessmentAccessRuleRowSchema } from '../../src/pages/instructorAssessmentAccess/instructorAssessmentAccess.types.js';
+import {
+  AssessmentAccessRuleRowSchema,
+  JsonAssessmentAccessRuleSchema,
+} from '../../src/pages/instructorAssessmentAccess/instructorAssessmentAccess.types.js';
 
 function configureEditValidation(modal: HTMLElement) {
   const activeInput = modal.querySelector('.js-access-rule-active') as HTMLInputElement;
@@ -152,12 +155,16 @@ onDocumentReady(() => {
     const row = parseInt(updatedAccessRules.row.toString());
     updatedAccessRules.number = parseInt(updatedAccessRules.number);
     updatedAccessRules.mode = updatedAccessRules.mode === '' ? null : updatedAccessRules.mode;
-    updatedAccessRules.uids === ''
-      ? (updatedAccessRules.uids = null)
-      : (updatedAccessRules.uids = updatedAccessRules.uids
-          .toString()
-          .split(',')
-          .map((uid: string) => uid.trim()));
+
+    if (updatedAccessRules.uids !== '') {
+      updatedAccessRules.uids = updatedAccessRules.uids
+        .toString()
+        .split(',')
+        .map((uid: string) => uid.trim());
+    } else {
+      updatedAccessRules.uids = null;
+    }
+
     updatedAccessRules.active = updatedAccessRules.active === 'true';
     updatedAccessRules.show_closed_assessment =
       updatedAccessRules.show_closed_assessment === 'true';
@@ -176,39 +183,46 @@ onDocumentReady(() => {
       updatedAccessRules.credit = 0;
     }
 
-    updatedAccessRules.credit !== ''
-      ? (updatedAccessRules.credit = parseInt(updatedAccessRules.credit))
-      : (updatedAccessRules.credit = null);
-    updatedAccessRules.time_limit_min !== ''
-      ? (updatedAccessRules.time_limit_min = parseInt(updatedAccessRules.time_limit_min))
-      : (updatedAccessRules.time_limit_min = null);
-    updatedAccessRules.start_date !== ''
-      ? (updatedAccessRules.start_date = DateFromISOString.parse(
-          new Date(
-            Temporal.PlainDateTime.from(updatedAccessRules.start_date)
-              .toZonedDateTime(timezone)
-              .toInstant().epochMilliseconds,
-          ).toISOString(),
-        ))
-      : (updatedAccessRules.start_date = null);
-    updatedAccessRules.end_date !== ''
-      ? (updatedAccessRules.end_date = DateFromISOString.parse(
-          new Date(
-            Temporal.PlainDateTime.from(updatedAccessRules.end_date)
-              .toZonedDateTime(timezone)
-              .toInstant().epochMilliseconds,
-          ).toISOString(),
-        ))
-      : (updatedAccessRules.end_date = null);
+    if (updatedAccessRules.time_limit_min !== '') {
+      updatedAccessRules.time_limit_min = parseInt(updatedAccessRules.time_limit_min);
+    } else {
+      updatedAccessRules.time_limit_min = null;
+    }
 
-    accessRulesData[row]
-      ? (accessRulesData[row].assessment_access_rule =
-          AssessmentAccessRuleSchema.parse(updatedAccessRules))
-      : (accessRulesData[row] = {
-          assessment_access_rule: AssessmentAccessRuleSchema.parse(updatedAccessRules),
-          pt_course: null,
-          pt_exam: null,
-        });
+    if (updatedAccessRules.start_date !== '') {
+      updatedAccessRules.start_date = DateFromISOString.parse(
+        new Date(
+          Temporal.PlainDateTime.from(updatedAccessRules.start_date)
+            .toZonedDateTime(timezone)
+            .toInstant().epochMilliseconds,
+        ).toISOString(),
+      );
+    } else {
+      updatedAccessRules.start_date = null;
+    }
+
+    if (updatedAccessRules.end_date !== '') {
+      updatedAccessRules.end_date = DateFromISOString.parse(
+        new Date(
+          Temporal.PlainDateTime.from(updatedAccessRules.end_date)
+            .toZonedDateTime(timezone)
+            .toInstant().epochMilliseconds,
+        ).toISOString(),
+      );
+    } else {
+      updatedAccessRules.end_date = null;
+    }
+
+    if (accessRulesData[row]) {
+      accessRulesData[row].assessment_access_rule =
+        JsonAssessmentAccessRuleSchema.parse(updatedAccessRules);
+    } else {
+      accessRulesData[row] = {
+        assessment_access_rule: AssessmentAccessRuleSchema.parse(updatedAccessRules),
+        pt_course: null,
+        pt_exam: null,
+      };
+    }
 
     refreshTable();
   }
@@ -277,9 +291,6 @@ onDocumentReady(() => {
           exam_uuid: null,
           show_closed_assessment: true,
           show_closed_assessment_score: true,
-          id: '0',
-          assessment_id: '0',
-          number: 0,
         },
         pt_course: null,
         pt_exam: null,

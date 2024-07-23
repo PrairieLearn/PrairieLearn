@@ -2,8 +2,23 @@ import { z } from 'zod';
 
 import { AssessmentAccessRuleSchema, IdSchema } from '../../lib/db-types.js';
 
+export const JsonAssessmentAccessRuleSchema = AssessmentAccessRuleSchema.pick({
+  mode: true,
+  uids: true,
+  start_date: true,
+  end_date: true,
+  active: true,
+  credit: true,
+  time_limit_min: true,
+  password: true,
+  exam_uuid: true,
+  show_closed_assessment: true,
+  show_closed_assessment_score: true,
+});
+export type JsonAssessmentAccessRule = z.infer<typeof JsonAssessmentAccessRuleSchema>;
+
 export const AssessmentAccessRuleRowSchema = z.object({
-  assessment_access_rule: AssessmentAccessRuleSchema,
+  assessment_access_rule: JsonAssessmentAccessRuleSchema,
   pt_course: z
     .object({
       id: IdSchema,

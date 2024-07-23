@@ -12,6 +12,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 
 import { InstructorAssessmentAccess } from './instructorAssessmentAccess.html.js';
@@ -79,7 +80,8 @@ router.post(
       const paths = getPaths(undefined, res.locals);
 
       const assessmentInfo = JSON.parse(await fs.readFile(assessmentPath, 'utf8'));
-      assessmentInfo.allowAccess = JSON.parse(req.body.assessment_access_rules);
+      const newAllowAccess = JSON.parse(req.body.assessment_access_rules);
+      assessmentInfo.allowAccess = applyKeyOrder(assessmentInfo.allowAccess, newAllowAccess);
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
       const editor = new FileModifyEditor({

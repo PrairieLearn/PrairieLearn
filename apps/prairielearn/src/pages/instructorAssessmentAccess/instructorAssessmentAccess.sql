@@ -11,4 +11,4 @@ FROM
 WHERE
   a.id = $assessment_id
 ORDER BY
-  aar.number;
+  aar.number ASC;

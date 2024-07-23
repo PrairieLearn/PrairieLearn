@@ -23,25 +23,6 @@ export function EditAccessRuleModal({
     body: html`
       <div class="form-group">
         <input type="hidden" name="row" class="access-rule-row" value="${rowNumber}" />
-        <!-- TODO: are these necessary? -->
-        <input
-          type="hidden"
-          name="id"
-          class="access-rule-id"
-          value="${accessRule.assessment_access_rule.id}"
-        />
-        <input
-          type="hidden"
-          name="assessment_id"
-          class="access-rule-assessment-id"
-          value="${accessRule.assessment_access_rule.assessment_id}"
-        />
-        <input
-          type="hidden"
-          name="number"
-          class="access-rule-number"
-          value="${accessRule.assessment_access_rule.number}"
-        />
         <label for="mode">Mode</label>
         <select
           class="form-control access-rule-mode"
@@ -67,6 +48,8 @@ export function EditAccessRuleModal({
         </select>
         <small id="modeHelp" class="form-text text-muted">
           Used to restrict access to assessments based on the current mode. In general, it is best
+          to use "Public" for any homework and "Exam" for exams proctored with PrairieTest. See the
+          <a
             href="https://prairielearn.readthedocs.io/en/latest/accessControl/#server-modes"
             target="_blank"
             >documentation</a
@@ -74,6 +57,7 @@ export function EditAccessRuleModal({
           for more information.
         </small>
       </div>
+
       <div class="form-group">
         <label for="uids">UIDs</label>
         <input
@@ -89,6 +73,7 @@ export function EditAccessRuleModal({
           blank to allow all enrolled students to access.
         </small>
       </div>
+
       <div class="form-group">
         <label for="start_date">Start date</label>
         <div class="input-group">
@@ -99,14 +84,12 @@ export function EditAccessRuleModal({
             id="start_date"
             name="start_date"
             aria-describedby="startDateHelp"
-            value="${
-              accessRule.assessment_access_rule.start_date
-                ? Temporal.Instant.from(accessRule.assessment_access_rule.start_date.toISOString())
-                    .toZonedDateTimeISO(timeZoneName)
-                    .toString()
-                    .slice(0, 19)
-                : ''
-            }"
+            value="${accessRule.assessment_access_rule.start_date
+              ? Temporal.Instant.from(accessRule.assessment_access_rule.start_date.toISOString())
+                  .toZonedDateTimeISO(timeZoneName)
+                  .toString()
+                  .slice(0, 19)
+              : ''}"
           />
           <div class="input-group-append">
             <span id="startDateHelp" class="input-group-text">${timeZoneName}</span>
@@ -117,6 +100,7 @@ export function EditAccessRuleModal({
           instance.</small
         >
       </div>
+
       <div class="form-group">
         <label for="end_date">End date</label>
         <div class="input-group">
@@ -127,14 +111,12 @@ export function EditAccessRuleModal({
             id="end_date"
             name="end_date"
             aria-describedby="endDateHelp"
-            value="${
-              accessRule.assessment_access_rule.end_date
-                ? Temporal.Instant.from(accessRule.assessment_access_rule.end_date.toISOString())
-                    .toZonedDateTimeISO(timeZoneName)
-                    .toString()
-                    .slice(0, 19)
-                : ''
-            }"
+            value="${accessRule.assessment_access_rule.end_date
+              ? Temporal.Instant.from(accessRule.assessment_access_rule.end_date.toISOString())
+                  .toZonedDateTimeISO(timeZoneName)
+                  .toString()
+                  .slice(0, 19)
+              : ''}"
           />
           <div class="input-group-append">
             <span class="input-group-text">${timeZoneName}</span>
@@ -145,6 +127,7 @@ export function EditAccessRuleModal({
           instance.</small
         >
       </div>
+
       <div class="form-group">
         <div class="form-check">
           <input
@@ -162,6 +145,7 @@ export function EditAccessRuleModal({
           Whether the student can create a new assessment instance and submit answers to questions.
         </small>
       </div>
+
       <div class="form-group">
         <label for="credit">Credit</label>
         <div class="input-group">
@@ -181,6 +165,7 @@ export function EditAccessRuleModal({
           Maximum credit as percentage of full credit (can be more than 100).
         </small>
       </div>
+
       <div class="form-group">
         <label for="time_limit_min">Time limit</label>
         <div class="input-group">
@@ -200,6 +185,7 @@ export function EditAccessRuleModal({
           Time limit in minutes to complete an assessment.
         </small>
       </div>
+
       <div class="form-group">
         <label for="password">Password</label>
         <input
@@ -214,6 +200,7 @@ export function EditAccessRuleModal({
           Password required to start an assessment.
         </small>
       </div>
+
       <div class="form-group">
         <label for="exam_uuid">PrairieTest Exam UUID</label>
         <input
@@ -223,11 +210,13 @@ export function EditAccessRuleModal({
           name="exam_uuid"
           aria-describedby="examUuidHelp"
           value="${accessRule.assessment_access_rule.exam_uuid}"
+          pattern="[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"
         />
         <small id="examUuidHelp" class="form-text text-muted">
           Links this assessment to a PrairieTest exam.
         </small>
       </div>
+
       <div class="form-group">
         <div class="form-check">
           <input
@@ -239,13 +228,16 @@ export function EditAccessRuleModal({
             ${accessRule.assessment_access_rule.show_closed_assessment ? 'checked' : ''}
             aria-describedby="showClosedAssessmentHelp"
           />
-          <label for="show_closed_assessment">Show closed assessment</label>
+          <label for="show_closed_assessment" class="form-check-label">
+            Show closed assessment
+          </label>
         </div>
 
         <small id="showClosedAssessmentHelp" class="form-text text-muted">
           Whether to allow viewing of assessment contents when closed.
         </small>
       </div>
+
       <div class="form-group">
         <div class="form-check">
           <input
@@ -257,7 +249,9 @@ export function EditAccessRuleModal({
             ${accessRule.assessment_access_rule.show_closed_assessment_score ? 'checked' : ''}
             aria-describedby="showClosedAssessmentScoreHelp"
           />
-          <label for="show_closed_assessment_score">Show closed assessment score</label>
+          <label for="show_closed_assessment_score" class="form-check-label">
+            Show closed assessment score
+          </label>
         </div>
         <small id="showClosedAssessmentScoreHelp" class="form-text text-muted">
           Whether to allow viewing of the score of a closed assessment.

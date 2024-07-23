@@ -63,7 +63,7 @@ export function AccessRulesTable({
             // in course code. This should be changed in future, to protect
             // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
             return html`
-              <tr data-index="${index}" id="rule:${JSON.stringify(access_rule)}">
+              <tr data-index="${index}">
                 ${editMode
                   ? html`
                       <td class="align-content-center">
