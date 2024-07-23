@@ -1,5 +1,5 @@
 CREATE TYPE enum_mode_reason AS ENUM(
-  -- The user is in public mode.
+  -- The user is in Public mode.
   'Default',
   -- The user is in Exam mode because of a PrairieTest reservation.
   'PrairieTest',
