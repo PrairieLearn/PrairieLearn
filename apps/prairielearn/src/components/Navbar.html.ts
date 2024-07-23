@@ -629,10 +629,9 @@ function NavbarInstructor({
         aria-haspopup="true"
         aria-expanded="false"
         ${!authz_data.overrides
-          ? `
-              hx-get="/pl/navbar/course/${course.id}/switcher"
-              hx-trigger="show-course-switcher once delay:200ms"
-              hx-target="#navbarDropdownMenuCourseAdmin"
+          ? html`
+              hx-get="/pl/navbar/course/${course.id}/switcher" hx-trigger="show-course-switcher once
+              delay:200ms" hx-target="#navbarDropdownMenuCourseAdmin"
             `
           : ''}
       >
