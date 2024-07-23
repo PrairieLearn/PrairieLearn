@@ -5,10 +5,6 @@
 // dependencies like `pg` and `express`.
 import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
-
-// `@sentry/tracing` must be imported before `@sentry/profiling-node`.
-import '@sentry/tracing';
-import { ProfilingIntegration } from '@sentry/profiling-node';
 /* eslint-enable import-x/order */
 
 import * as fs from 'node:fs';
@@ -121,11 +117,7 @@ export async function initExpress() {
 
   // These should come first so that we get instrumentation on all our requests.
   if (config.sentryDsn) {
-    app.use(Sentry.Handlers.requestHandler());
-
-    if (config.sentryTracesSampleRate) {
-      app.use(Sentry.Handlers.tracingHandler());
-    }
+    app.use(Sentry.requestHandler());
 
     app.use((await import('./lib/sentry.js')).enrichSentryEventMiddleware);
   }
@@ -140,19 +132,7 @@ export async function initExpress() {
   // all pages including the error page (which we could jump to at
   // any point.
   app.use((req, res, next) => {
-    res.locals.asset_path = assets.assetPath;
-    res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
-    res.locals.compiled_script_tag = assets.compiledScriptTag;
-    res.locals.compiled_stylesheet_tag = assets.compiledStylesheetTag;
-    res.locals.compiled_script_path = assets.compiledScriptPath;
-    res.locals.compiled_stylesheet_path = assets.compiledStylesheetPath;
-    next();
-  });
-  app.use(function (req, res, next) {
     res.locals.config = config;
-    next();
-  });
-  app.use(function (req, res, next) {
     setLocalsFromConfig(res.locals);
     next();
   });
@@ -725,7 +705,6 @@ export async function initExpress() {
       res.locals.navbarType = 'student';
       next();
     },
-    (await import('./middlewares/ansifySyncErrorsAndWarnings.js')).default,
   ]);
 
   // Some course instance student pages only require course instance authorization (already checked)
@@ -787,7 +766,6 @@ export async function initExpress() {
   // all pages under /pl/course require authorization
   app.use('/pl/course/:course_id(\\d+)', [
     (await import('./middlewares/authzCourseOrInstance.js')).default, // set res.locals.course
-    (await import('./middlewares/ansifySyncErrorsAndWarnings.js')).default,
     (await import('./middlewares/selectOpenIssueCount.js')).default,
     function (req, res, next) {
       res.locals.navbarType = 'instructor';
@@ -906,7 +884,6 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)',
     [
       (await import('./middlewares/selectAndAuthzAssessment.js')).default,
-      (await import('./middlewares/ansifySyncErrorsAndWarnings.js')).default,
       (await import('./middlewares/selectAssessments.js')).default,
     ],
   );
@@ -1153,10 +1130,10 @@ export async function initExpress() {
   );
 
   // single question
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)', [
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)',
     (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
-    (await import('./middlewares/ansifySyncErrorsAndWarnings.js')).default,
-  ]);
+  );
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/question\/[0-9]+)\/?$/,
     (req, res, _next) => {
@@ -1731,10 +1708,10 @@ export async function initExpress() {
 
   // single question
 
-  app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)', [
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)',
     (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
-    (await import('./middlewares/ansifySyncErrorsAndWarnings.js')).default,
-  ]);
+  );
   app.use(/^(\/pl\/course\/[0-9]+\/question\/[0-9]+)\/?$/, (req, res, _next) => {
     // Redirect legacy question URLs to their preview page.
     // We need to maintain query parameters like `variant_id` so that the
@@ -2168,7 +2145,7 @@ export async function initExpress() {
   });
 
   // The Sentry error handler must come before our own.
-  app.use(Sentry.Handlers.errorHandler());
+  app.use(Sentry.expressErrorHandler());
 
   app.use((await import('./pages/error/error.js')).default);
 
@@ -2319,18 +2296,9 @@ if (esMain(import.meta) && config.startServer) {
 
         // Same with Sentry configuration.
         if (config.sentryDsn) {
-          const integrations = [];
-          if (config.sentryTracesSampleRate && config.sentryProfilesSampleRate) {
-            integrations.push(new ProfilingIntegration());
-          }
-
           await Sentry.init({
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
-            integrations,
-            tracesSampleRate: config.sentryTracesSampleRate ?? undefined,
-            // This is relative to `tracesSampleRate`.
-            profilesSampleRate: config.sentryProfilesSampleRate ?? undefined,
             beforeSend: (event) => {
               // This will be necessary until we can consume the following change:
               // https://github.com/chimurai/http-proxy-middleware/pull/823

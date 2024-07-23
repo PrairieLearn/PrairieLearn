@@ -143,13 +143,6 @@ export async function authzCourseOrInstance(req, res) {
       cookie: 'pl2_requested_course_instance_role',
     });
   }
-  if (req.cookies.pl2_requested_mode) {
-    overrides.push({
-      name: 'Mode',
-      value: req.cookies.pl2_requested_mode,
-      cookie: 'pl2_requested_mode',
-    });
-  }
   if (req.cookies.pl2_requested_date) {
     overrides.push({
       name: 'Date',
@@ -302,7 +295,7 @@ export async function authzCourseOrInstance(req, res) {
     allow_example_course_override: false,
     ip: req.ip,
     req_date,
-    req_mode: req.cookies.pl2_requested_mode || res.locals.authz_data.mode,
+    req_mode: res.locals.authz_data.mode,
     req_course_role: req.cookies.pl2_requested_course_role || null,
     req_course_instance_role: req.cookies.pl2_requested_course_instance_role || null,
   };

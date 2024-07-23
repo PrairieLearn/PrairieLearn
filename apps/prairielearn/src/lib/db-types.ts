@@ -88,12 +88,13 @@ export const DateFromISOString = z
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
 
+// Result of assessments_format_for_question sproc
 export const AssessmentsFormatForQuestionSchema = z.array(
   z.object({
-    label: z.string().nullable(),
+    label: z.string(),
     assessment_id: IdSchema,
     course_instance_id: IdSchema,
-    color: z.string().nullable(),
+    color: z.string(),
   }),
 );
 
