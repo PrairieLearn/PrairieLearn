@@ -97,7 +97,7 @@ export function EditAccessRuleModal({
           <input
             type="datetime-local"
             step="1"
-            class="form-control access-rule-start-date"
+            class="form-control js-access-rule-start-date"
             id="start_date"
             name="start_date"
             aria-describedby="startDateHelp"
@@ -123,7 +123,7 @@ export function EditAccessRuleModal({
           <input
             type="datetime-local"
             step="1"
-            class="form-control access-rule-end-date"
+            class="form-control js-access-rule-end-date"
             id="end_date"
             name="end_date"
             aria-describedby="endDateHelp"
@@ -184,7 +184,7 @@ export function EditAccessRuleModal({
         <div class="input-group">
           <input
             type="number"
-            class="form-control access-rule-time-limit"
+            class="form-control"
             id="time_limit_min"
             name="time_limit_min"
             aria-describedby="timeLimitHelp"
@@ -202,7 +202,7 @@ export function EditAccessRuleModal({
         <label for="password">Password</label>
         <input
           type="text"
-          class="form-control access-rule-password"
+          class="form-control"
           id="password"
           name="password"
           aria-describedby="passwordHelp"
@@ -216,7 +216,7 @@ export function EditAccessRuleModal({
         <label for="exam_uuid">PrairieTest Exam UUID</label>
         <input
           type="text"
-          class="form-control access-rule-exam-uuid"
+          class="form-control"
           id="exam_uuid"
           name="exam_uuid"
           aria-describedby="examUuidHelp"
@@ -230,7 +230,7 @@ export function EditAccessRuleModal({
         <div class="form-check">
           <input
             type="checkbox"
-            class="form-check-input access-rule-show-closed-assessment"
+            class="form-check-input"
             id="show_closed_assessment"
             name="show_closed_assessment"
             value="true"
@@ -248,7 +248,7 @@ export function EditAccessRuleModal({
         <div class="form-check">
           <input
             type="checkbox"
-            class="form-check-input access-rule-show-closed-assessment-score"
+            class="form-check-input"
             id="show_closed_assessment_score"
             name="show_closed_assessment_score"
             value="true"

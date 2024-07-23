@@ -15,6 +15,40 @@ import {
 import { EditAccessRuleModal } from '../../src/pages/instructorAssessmentAccess/editAccessRuleModal.js';
 import { AssessmentAccessRuleRowSchema } from '../../src/pages/instructorAssessmentAccess/instructorAssessmentAccess.types.js';
 
+function configureEditValidation(modal: HTMLElement) {
+  const activeInput = modal.querySelector('.js-access-rule-active') as HTMLInputElement;
+  const creditInput = modal.querySelector('.js-access-rule-credit') as HTMLInputElement;
+  const startDateInput = modal.querySelector('.js-access-rule-start-date') as HTMLInputElement;
+  const endDateInput = modal.querySelector('.js-access-rule-end-date') as HTMLInputElement;
+
+  function handleActiveChange() {
+    const active = activeInput?.checked;
+
+    if (active) {
+      creditInput?.removeAttribute('disabled');
+      creditInput.value = creditInput?.defaultValue ?? '';
+    } else {
+      creditInput?.setAttribute('disabled', 'disabled');
+      creditInput.value = '0';
+    }
+  }
+
+  function handleStartDateChange() {
+    const startDate = startDateInput?.value;
+    if (startDate) {
+      endDateInput?.setAttribute('min', startDate);
+    }
+  }
+
+  // Disable the "credit" input if the access rule is inactive.
+  activeInput.addEventListener('change', handleActiveChange);
+  handleActiveChange();
+
+  // Ensure that the end date is always after the start date.
+  startDateInput.addEventListener('change', handleStartDateChange);
+  handleStartDateChange();
+}
+
 onDocumentReady(() => {
   const editButtonsContainer = document.querySelector('.js-edit-buttons-container') as HTMLElement;
   const enableEditButton = document.querySelector('.js-enable-edit-button') as HTMLButtonElement;
@@ -66,7 +100,7 @@ onDocumentReady(() => {
     const assessmentAccessRulesInput = form.querySelector(
       'input[name="assessment_access_rules"]',
     ) as HTMLInputElement;
-    if (!assessmentAccessRulesInput) return;
+
     const accessRulesMap = accessRulesData.map((accessRule: Record<string, any>) => {
       // TODO: is this `adjustedDate` bit necessary?
       const startDate = accessRule.assessment_access_rule.start_date
@@ -103,10 +137,11 @@ onDocumentReady(() => {
           : false,
       };
       const filteredRule = Object.fromEntries(
-        Object.entries(rule).filter(([_, value]) => value || value === false),
+        Object.entries(rule).filter(([_, value]) => value != null),
       );
       return filteredRule;
     });
+
     assessmentAccessRulesInput.value = JSON.stringify(accessRulesMap);
     form.submit();
   });
@@ -174,6 +209,7 @@ onDocumentReady(() => {
           pt_course: null,
           pt_exam: null,
         });
+
     refreshTable();
   }
 
@@ -190,25 +226,8 @@ onDocumentReady(() => {
       rowNumber,
     }).toString();
     $('#editAccessRuleModal').modal('show');
+    configureEditValidation(editAccessRuleModalContainer);
   });
-
-  // Disable the "credit" input if the access rule is inactive.
-  on('change', '#editAccessRuleModal .js-access-rule-active', (e) => {
-    const active = (e.target as HTMLInputElement).checked;
-
-    const creditInput = document.querySelector(
-      '#editAccessRuleModal .js-access-rule-credit',
-    ) as HTMLInputElement;
-    if (active) {
-      creditInput.removeAttribute('disabled');
-      creditInput.value = creditInput.defaultValue;
-    } else {
-      creditInput.setAttribute('disabled', 'disabled');
-      creditInput.value = '0';
-    }
-  });
-
-  // TODO: add validation that start date is before end date.
 
   on('click', '.js-save-access-rule-button', (e) => {
     const form = (e.target as HTMLElement).closest('form');
@@ -265,6 +284,7 @@ onDocumentReady(() => {
     }).toString();
 
     $('#editAccessRuleModal').modal('show');
+    configureEditValidation(editAccessRuleModalContainer);
   });
 
   on('click', '.js-delete-access-rule-button', (e) => {

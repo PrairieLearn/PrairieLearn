@@ -61,7 +61,7 @@ export function InstructorAssessmentAccess({
                 ? html`
                     <div class="ml-auto">
                       <button class="btn btn-sm btn-light js-enable-edit-button">
-                        <i class="fa fa-edit" aria-hidden="true"></i> Edit Access Rules
+                        <i class="fa fa-edit" aria-hidden="true"></i> Edit access rules
                       </button>
                       <span class="js-edit-buttons-container" style="display: none">
                         <button class="btn btn-sm btn-light js-save-and-sync-button" type="button">
