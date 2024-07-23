@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
@@ -25,10 +25,7 @@ export function EditError({
       </head>
 
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'error',
-        })}
+        ${Navbar({ resLocals, navPage: 'error' })}
 
         <main id="content" class="container">
           <script>

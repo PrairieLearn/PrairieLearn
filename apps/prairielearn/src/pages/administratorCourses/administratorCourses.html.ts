@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
 import { CourseRequestRow } from '../../lib/course-request.js';
 import { CourseSchema, Institution, InstitutionSchema } from '../../lib/db-types.js';
@@ -39,11 +39,7 @@ export function AdministratorCourses({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'courses',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'courses' })}
         <main id="content" class="container-fluid">
           ${CourseRequestsTable({
             rows: course_requests,

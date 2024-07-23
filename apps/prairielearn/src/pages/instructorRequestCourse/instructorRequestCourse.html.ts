@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { HtmlValue, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
 
 export const CourseRequestRowSchema = z.object({
@@ -48,10 +48,7 @@ export function RequestCourse({
         </script>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar')%>", {
-          ...resLocals,
-          navPage: 'request_course',
-        })}
+        ${Navbar({ resLocals, navPage: 'request_course' })}
         <main id="content" class="container">
           ${CourseRequestsCard({ rows })}
           ${CourseNewRequestCard({ csrfToken: resLocals.__csrf_token })}

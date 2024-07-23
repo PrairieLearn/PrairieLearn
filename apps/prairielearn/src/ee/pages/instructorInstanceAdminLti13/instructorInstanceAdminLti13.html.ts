@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { Lti13CourseInstance, Lti13Instance } from '../../../lib/db-types.js';
 
 interface Lti13FullInstance {
@@ -35,10 +35,7 @@ export function InstructorInstanceAdminLti13({
             });
           });
         </script>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
-          ...resLocals,
-          navSubPage: 'lti13',
-        })}
+        ${Navbar({ resLocals, navSubPage: 'lti13' })}
         <main class="container-fluid mb-4">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">LTI 1.3 configuration</div>

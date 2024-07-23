@@ -3,10 +3,10 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobStatus } from '../../components/JobStatus.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
 import {
   Course,
@@ -55,7 +55,7 @@ export function CourseSyncs({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Repository status</div>

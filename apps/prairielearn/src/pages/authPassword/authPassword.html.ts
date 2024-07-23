@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 
 export function AuthPassword({
   resLocals,
@@ -17,10 +17,7 @@ export function AuthPassword({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: '',
-        })}
+        ${Navbar({ resLocals })}
         <main class="container">
           <div class="card mb-4">
             <div class="card-body">

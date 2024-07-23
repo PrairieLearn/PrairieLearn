@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobStatus } from '../../components/JobStatus.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
@@ -31,7 +31,7 @@ export function InstructorAssessmentUploads({
         ${HeadContents({ resLocals })} ${compiledScriptTag('instructorAssessmentUploadsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,

@@ -1,20 +1,27 @@
-import { flash, FlashMessageType } from '@prairielearn/flash';
+import { flash, type FlashMessageType } from '@prairielearn/flash';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { config } from '../lib/config.js';
 
-import { ContextNavigation } from './NavbarContext.js';
+import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
+import { ContextNavigation } from './NavbarContext.html.js';
 
 export function Navbar({
   resLocals,
   navPage,
+  navSubPage,
+  navbarType,
 }: {
   resLocals: Record<string, any>;
-  navPage?: string;
+  navPage?: NavPage;
+  navSubPage?: NavSubPage;
+  navbarType?: NavbarType;
 }) {
   const { __csrf_token, urlPrefix, homeUrl } = resLocals;
   navPage ??= resLocals.navPage;
+  navSubPage ??= resLocals.navSubPage;
+  navbarType ??= resLocals.navbarType;
 
   return html`
     ${config.devMode && __csrf_token
@@ -57,7 +64,7 @@ export function Navbar({
       </button>
       <div id="course-nav" class="collapse navbar-collapse">
         <ul class="nav navbar-nav mr-auto" id="main-nav">
-          ${NavbarByType({ resLocals, navPage })}
+          ${NavbarByType({ resLocals, navPage, navSubPage, navbarType })}
         </ul>
 
         ${config.devMode
@@ -71,49 +78,70 @@ export function Navbar({
               </a>
             `
           : ''}
-        ${UserDropdownMenu({ resLocals, navPage })}
+        ${UserDropdownMenu({ resLocals, navPage, navbarType })}
       </div>
     </nav>
 
-    ${ContextNavigation({ resLocals, navPage })} ${FlashMessages()}
+    ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
   `;
 }
 
 function NavbarByType({
   resLocals,
   navPage,
+  navSubPage,
+  navbarType,
 }: {
   resLocals: Record<string, any>;
-  navPage: string | undefined;
+  navPage: NavPage;
+  navSubPage: NavSubPage;
+  navbarType: NavbarType;
 }) {
-  const navbarType = resLocals.navbarType ?? 'plain';
+  navbarType ??= 'plain';
   if (navbarType === 'plain') {
     return NavbarPlain({ resLocals, navPage });
   } else if (navbarType === 'student') {
     return NavbarStudent({ resLocals, navPage });
   } else if (navbarType === 'instructor') {
-    return renderEjs(import.meta.url, "<%- include('navbarInstructor'); %>", resLocals);
+    return renderEjs(import.meta.url, "<%- include('../pages/partials/navbarInstructor'); %>", {
+      ...resLocals,
+      navPage,
+      navSubPage,
+      navbarType,
+    });
   } else if (navbarType === 'administrator_institution') {
     return renderEjs(
       import.meta.url,
-      "<%- include('navbarAdministratorInstitution'); %>",
-      resLocals,
+      "<%- include('../pages/partials/navbarAdministratorInstitution'); %>",
+      { ...resLocals, navPage, navSubPage, navbarType },
     );
   } else if (navbarType === 'institution') {
-    return renderEjs(import.meta.url, "<%- include('navbarInstitution'); %>", resLocals);
+    return renderEjs(import.meta.url, "<%- include('../pages/partials/navbarInstitution'); %>", {
+      ...resLocals,
+      navPage,
+      navSubPage,
+      navbarType,
+    });
   } else if (navbarType === 'public') {
-    return renderEjs(import.meta.url, "<%- include('navbarPublic'); %>", resLocals);
+    return renderEjs(import.meta.url, "<%- include('../pages/partials/navbarPublic'); %>", {
+      ...resLocals,
+      navPage,
+      navSubPage,
+      navbarType,
+    });
   } else {
-    throw new Error('Unknown navbarType: ' + navbarType);
+    throw new Error(`Unknown navbarType: ${navbarType}`);
   }
 }
 
 function UserDropdownMenu({
   resLocals,
   navPage,
+  navbarType,
 }: {
   resLocals: Record<string, any>;
-  navPage: string | undefined;
+  navPage: NavPage;
+  navbarType: NavbarType;
 }) {
   const {
     authz_data,
@@ -121,7 +149,6 @@ function UserDropdownMenu({
     viewType,
     course_instance,
     urlPrefix,
-    navbarType,
     access_as_administrator,
     news_item_notification_count,
     authn_is_administrator,
@@ -193,7 +220,7 @@ function UserDropdownMenu({
                 <div class="dropdown-divider"></div>
               `
             : ''}
-          ${ViewTypeMenu({ resLocals })} ${AuthnOverrides({ resLocals })}
+          ${ViewTypeMenu({ resLocals })} ${AuthnOverrides({ resLocals, navbarType })}
           ${authz_data?.mode === 'Exam'
             ? html`
                 <div class="dropdown-item-text">
@@ -269,17 +296,19 @@ function FlashMessages() {
 }
 
 function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
-  const { viewType, course_instance, authz_data, assessment, question, assessment_instance } =
-    resLocals;
+  const {
+    viewType,
+    course_instance,
+    authz_data,
+    assessment,
+    question,
+    assessment_instance,
+    urlPrefix,
+  } = resLocals;
 
   // Only show "View type" menu(s) if the following two things are true:
   // - The authn user was given access to a course instance (so, both viewType and authz_data also exist).
   // - In particular, the authn user has instructor access to this course instance.
-  //
-  // Note that the effective user may still have been denied access. In this
-  // case, urlPrefix may not be consistent with the page that the effective user
-  // was trying to access (instead, it will be consistent with a "plain" page).
-  // So, to be safe, we use config.urlPrefix and construct all full URLs by hand.
   if (
     viewType == null ||
     !course_instance ||
@@ -291,6 +320,10 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
     return '';
   }
 
+  // Note that the effective user may still have been denied access. In this
+  // case, urlPrefix may not be consistent with the page that the effective user
+  // was trying to access (instead, it will be consistent with a "plain" page).
+  // So, to be safe, we use config.urlPrefix and construct all full URLs by hand.
   let instructorLink = '#';
   let studentLink = '#';
   if (viewType === 'instructor') {
@@ -301,11 +334,11 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
     }
   } else {
     if (question?.id) {
-      instructorLink = `${config.urlPrefix}/instructor/question/${question.id}`;
+      instructorLink = `${urlPrefix}/instructor/question/${question.id}`;
     } else if (assessment_instance?.assessment_id) {
-      instructorLink = `${config.urlPrefix}/instructor/assessment/${assessment_instance.assessment_id}`;
+      instructorLink = `${urlPrefix}/instructor/assessment/${assessment_instance.assessment_id}`;
     } else {
-      instructorLink = `${config.urlPrefix}/instructor/instance_admin`;
+      instructorLink = `${urlPrefix}/instructor/instance_admin`;
     }
   }
 
@@ -438,8 +471,14 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
   `;
 }
 
-function AuthnOverrides({ resLocals }: { resLocals: Record<string, any> }) {
-  const { authz_data, navbarType, urlPrefix, course_instance, course } = resLocals;
+function AuthnOverrides({
+  resLocals,
+  navbarType,
+}: {
+  resLocals: Record<string, any>;
+  navbarType: NavbarType;
+}) {
+  const { authz_data, urlPrefix, course_instance, course } = resLocals;
   if (
     !authz_data?.authn_has_course_permission_preview &&
     authz_data?.authn_has_course_instance_permission_view
@@ -525,13 +564,7 @@ function AuthnOverrides({ resLocals }: { resLocals: Record<string, any> }) {
   `;
 }
 
-function NavbarPlain({
-  resLocals,
-  navPage,
-}: {
-  resLocals: Record<string, any>;
-  navPage: string | undefined;
-}) {
+function NavbarPlain({ resLocals, navPage }: { resLocals: Record<string, any>; navPage: NavPage }) {
   const { is_administrator } = resLocals;
   if (!is_administrator) return '';
   return html`
@@ -546,7 +579,7 @@ function NavbarStudent({
   navPage,
 }: {
   resLocals: Record<string, any>;
-  navPage: string | undefined;
+  navPage: NavPage;
 }) {
   const { course, course_instance, assessment_instance, assessment_instance_label, urlPrefix } =
     resLocals;

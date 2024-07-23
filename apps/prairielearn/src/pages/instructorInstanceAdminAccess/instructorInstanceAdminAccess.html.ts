@@ -1,8 +1,8 @@
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { CourseInstanceAccessRule } from '../../lib/db-types.js';
 
@@ -27,7 +27,7 @@ export function InstructorInstanceAdminAccess({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseInstanceSyncErrorsAndWarnings({
             authz_data,

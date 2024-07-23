@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { Course, CourseInstance, Institution } from '../../lib/db-types.js';
 
 export const FeatureGrantRowSchema = z.object({
@@ -40,11 +40,7 @@ export function AdministratorFeatures({
         ${HeadContents({ resLocals, pageTitle: 'Features' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'features',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'features' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Features</div>
@@ -100,11 +96,7 @@ export function AdministratorFeature({
         </style>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'features',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'features' })}
         ${AddFeatureGrantModal({ feature, institutions, csrfToken: resLocals.__csrf_token })}
         <main id="content" class="container">
           <div class="card mb-4">

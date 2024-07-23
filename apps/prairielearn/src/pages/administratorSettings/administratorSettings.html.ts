@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 
@@ -18,11 +18,7 @@ export function AdministratorSettings({ resLocals }) {
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'settings',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'settings' })}
         <main id="content" class="container-fluid">
           <!-- Chunk generation -->
           <div class="card mb-4">

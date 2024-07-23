@@ -1,8 +1,10 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { NavPage, NavSubPage } from './Navbar.types.js';
+
 interface TabInfo {
-  activeSubPage: string | string[];
+  activeSubPage: NavSubPage | NavSubPage[];
   urlSuffix: string | ((resLocals: Record<string, any>) => string);
   iconClasses: string;
   tabLabel: string;
@@ -11,7 +13,7 @@ interface TabInfo {
 }
 
 // Mapping navPage to navtab sets
-const navPagesTabs: Record<string, TabInfo[]> = {
+const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
   instance_admin: [
     {
       activeSubPage: 'access',
@@ -367,9 +369,11 @@ const navPagesTabs: Record<string, TabInfo[]> = {
 export function ContextNavigation({
   resLocals,
   navPage,
+  navSubPage,
 }: {
   resLocals: Record<string, any>;
-  navPage: string | undefined;
+  navPage: NavPage;
+  navSubPage: NavSubPage;
 }) {
   if (!navPage) return '';
   const navPageTabs = navPagesTabs[navPage];
@@ -378,14 +382,22 @@ export function ContextNavigation({
   return html`
     <nav>
       <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
-        ${navPageTabs.map((tabInfo) => NavbarTab({ resLocals, tabInfo }))}
+        ${navPageTabs.map((tabInfo) => NavbarTab({ navSubPage, resLocals, tabInfo }))}
       </ul>
     </nav>
   `;
 }
 
-function NavbarTab({ resLocals, tabInfo }: { resLocals: Record<string, any>; tabInfo: TabInfo }) {
-  const { navSubPage, urlPrefix } = resLocals;
+function NavbarTab({
+  navSubPage,
+  resLocals,
+  tabInfo,
+}: {
+  navSubPage: NavSubPage;
+  resLocals: Record<string, any>;
+  tabInfo: TabInfo;
+}) {
+  const { urlPrefix } = resLocals;
   const { activeSubPage, iconClasses, tabLabel, htmlSuffix, renderCondition } = tabInfo;
 
   if (renderCondition != null && !renderCondition(resLocals)) return '';
@@ -395,7 +407,7 @@ function NavbarTab({ resLocals, tabInfo }: { resLocals: Record<string, any>; tab
 
   const activeClasses =
     navSubPage === activeSubPage ||
-    (Array.isArray(activeSubPage) && activeSubPage.includes(navSubPage))
+    (Array.isArray(activeSubPage) && navSubPage != null && activeSubPage.includes(navSubPage))
       ? 'active text-dark'
       : 'text-secondary';
 

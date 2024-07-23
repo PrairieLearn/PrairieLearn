@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
 
 export function AdministratorInstitutionSaml({
@@ -37,9 +37,8 @@ export function AdministratorInstitutionSaml({
         ${HeadContents({ resLocals, pageTitle: 'SAML - Institution Admin' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
-          ...resLocals,
-          institution,
+        ${Navbar({
+          resLocals: { ...resLocals, institution },
           navbarType: 'administrator_institution',
           navPage: 'administrator_institution',
           navSubPage: 'saml',
@@ -157,7 +156,7 @@ ${samlProvider?.certificate ?? ''}</textarea
                 id="validate_audience"
                 name="validate_audience"
                 value="1"
-                ${(samlProvider?.validate_audience ?? true) ? 'checked' : ''}
+                ${samlProvider?.validate_audience ?? true ? 'checked' : ''}
                 aria-describedBy="validateAudienceHelp"
               />
               <label class="form-check-label" for="validate_audience">Validate audience</label>
@@ -174,7 +173,7 @@ ${samlProvider?.certificate ?? ''}</textarea
                 id="want_assertions_signed"
                 name="want_assertions_signed"
                 value="1"
-                ${(samlProvider?.want_assertions_signed ?? true) ? 'checked' : ''}
+                ${samlProvider?.want_assertions_signed ?? true ? 'checked' : ''}
                 aria-describedBy="wantAssertionsSignedHelp"
               />
               <label class="form-check-label" for="want_assertions_signed">
@@ -193,7 +192,7 @@ ${samlProvider?.certificate ?? ''}</textarea
                 id="want_authn_response_signed"
                 name="want_authn_response_signed"
                 value="1"
-                ${(samlProvider?.want_authn_response_signed ?? true) ? 'checked' : ''}
+                ${samlProvider?.want_authn_response_signed ?? true ? 'checked' : ''}
                 aria-describedBy="wantAuthnResponseSignedHelp"
               />
               <label class="form-check-label" for="want_authn_response_signed">

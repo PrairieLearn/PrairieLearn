@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
 import { CourseInstanceSchema, CourseSchema } from '../../lib/db-types.js';
 
@@ -47,12 +47,7 @@ export function Home({
       </head>
 
       <body class="d-flex flex-column h-100">
-        <header>
-          ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-            ...resLocals,
-            navPage: 'home',
-          })}
-        </header>
+        <header>${Navbar({ resLocals, navPage: 'home' })}</header>
 
         <main class="flex-grow-1">
           ${ActionsHeader()}

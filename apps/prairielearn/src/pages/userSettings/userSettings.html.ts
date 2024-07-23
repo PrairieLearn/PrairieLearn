@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.html.js';
 import { type Purchase } from '../../ee/lib/billing/purchases.js';
 import { IdSchema, Institution, User } from '../../lib/db-types.js';
@@ -50,10 +50,7 @@ export function UserSettings({
             $('[data-toggle="popover"]').popover({ sanitize: false });
           });
         </script>
-        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/navbar') %>", {
-          ...resLocals,
-          navPage: 'user_settings',
-        })}
+        ${Navbar({ resLocals, navPage: 'user_settings' })}
         <main id="content" class="container">
           <h1 class="mb-4">Settings</h1>
           <div class="card mb-4">

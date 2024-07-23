@@ -1,8 +1,8 @@
 import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { encodePath } from '../../lib/uri-util.js';
@@ -22,7 +22,7 @@ export function InstructorFileEditor({ resLocals }: { resLocals: Record<string, 
       </head>
 
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
 
         <main id="content" class="container-fluid">
           ${!authz_data.has_course_permission_edit
