@@ -1,6 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { CourseInstanceAuthz } from '../../models/course-instances.js';
 
 export type CourseInstanceAuthzRow = CourseInstanceAuthz & { enrollment_count?: number };
@@ -16,10 +18,7 @@ export function InstructorCourseAdminInstances({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Course Instances',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Course Instances' })}
       </head>
       <body>
         <script>
@@ -34,11 +33,11 @@ export function InstructorCourseAdminInstances({
         </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/courseSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${CourseSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           <div class="card mb-4">
             <div class="card-header bg-primary">
               <div class="row align-items-center justify-content-between">

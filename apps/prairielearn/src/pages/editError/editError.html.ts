@@ -1,8 +1,10 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
 import { config } from '../../lib/config.js';
-import type { JobSequenceWithFormattedOutput } from '../../lib/server-jobs.js';
+import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
 export function EditError({
   resLocals,
@@ -10,19 +12,16 @@ export function EditError({
   failedSync,
 }: {
   resLocals: any;
-  jobSequence: JobSequenceWithFormattedOutput;
+  jobSequence: JobSequenceWithTokens;
   failedSync: boolean;
 }) {
-  const { __csrf_token } = resLocals;
+  const { course, __csrf_token } = resLocals;
 
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Edit Failure',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Edit Failure' })}
       </head>
 
       <body>
@@ -89,11 +88,7 @@ export function EditError({
           </div>
 
           <div class="collapse" id="job-sequence-results">
-            ${renderEjs(import.meta.url, "<%- include('../partials/jobSequenceResults'); %>", {
-              ...resLocals,
-              job_sequence: jobSequence,
-              job_sequence_enable_live_update: false,
-            })}
+            ${JobSequenceResults({ course, jobSequence })}
           </div>
         </main>
       </body>

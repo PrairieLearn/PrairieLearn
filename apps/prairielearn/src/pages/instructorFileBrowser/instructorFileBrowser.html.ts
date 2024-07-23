@@ -3,6 +3,13 @@ import { filesize } from 'filesize';
 import { escapeHtml, html, type HtmlValue, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import {
+  AssessmentSyncErrorsAndWarnings,
+  CourseInstanceSyncErrorsAndWarnings,
+  CourseSyncErrorsAndWarnings,
+  QuestionSyncErrorsAndWarnings,
+} from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { User } from '../../lib/db-types.js';
@@ -94,10 +101,7 @@ export function InstructorFileBrowserNoPermission({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Files',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Files' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
@@ -137,26 +141,49 @@ export function InstructorFileBrowser({
   | { isFile: true; fileInfo: FileInfo; directoryListings?: undefined }
   | { isFile: false; directoryListings: DirectoryListings; fileInfo?: undefined }
 )) {
-  const { navPage, __csrf_token: csrfToken } = resLocals;
-  const syncErrorsPartial =
+  const { navPage, __csrf_token: csrfToken, authz_data, course, urlPrefix } = resLocals;
+  const syncErrorsAndWarnings =
     navPage === 'course_admin'
-      ? 'courseSyncErrorsAndWarnings'
+      ? CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })
       : navPage === 'instance_admin'
-        ? 'courseInstanceSyncErrorsAndWarnings'
+        ? CourseInstanceSyncErrorsAndWarnings({
+            authz_data,
+            courseInstance: resLocals.course_instance,
+            course,
+            urlPrefix,
+          })
         : navPage === 'assessment'
-          ? 'assessmentSyncErrorsAndWarnings'
+          ? AssessmentSyncErrorsAndWarnings({
+              authz_data,
+              assessment: resLocals.assessment,
+              courseInstance: resLocals.course_instance,
+              course,
+              urlPrefix,
+            })
           : navPage === 'question'
-            ? 'questionSyncErrorsAndWarnings'
+            ? QuestionSyncErrorsAndWarnings({
+                authz_data,
+                question: resLocals.question,
+                course,
+                urlPrefix,
+              })
             : '';
+  const pageTitle =
+    navPage === 'course_admin'
+      ? 'Course Files'
+      : navPage === 'instance_admin'
+        ? 'Course Instance Files'
+        : navPage === 'assessment'
+          ? 'Assessment Files'
+          : navPage === 'question'
+            ? `Files (${resLocals.question.qid})`
+            : 'Files';
 
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Files',
-        })}
+        ${HeadContents({ resLocals, pageTitle })}
         <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
         ${compiledScriptTag('instructorFileBrowserClient.ts')}
         <style>
@@ -168,11 +195,7 @@ export function InstructorFileBrowser({
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            `<%- include('../partials/${syncErrorsPartial}') %>`,
-            resLocals,
-          )}
+          ${syncErrorsAndWarnings}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               <div class="row align-items-center justify-content-between">
