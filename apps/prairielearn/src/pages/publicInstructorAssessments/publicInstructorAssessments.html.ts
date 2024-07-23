@@ -1,14 +1,11 @@
-import { AnsiUp } from 'ansi_up';
 import { z } from 'zod';
 
-import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
-
-import { StatsUpdateData } from './publicInstructorAssessments.types.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 
 export const AssessmentStatsRowSchema = AssessmentSchema.extend({
   needs_statistics_update: z.boolean().optional(),
@@ -27,7 +24,6 @@ type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 export function InstructorAssessments({
   resLocals,
   rows,
-  assessmentIdsNeedingStatsUpdate,
 }: {
   resLocals: Record<string, any>;
   rows: AssessmentRow[];
@@ -40,12 +36,8 @@ export function InstructorAssessments({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
         ${compiledScriptTag('instructorAssessmentsClient.ts')}
-        ${EncodedData<StatsUpdateData>(
-          { assessmentIdsNeedingStatsUpdate, urlPrefix },
-          'stats-update-data',
-        )}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
