@@ -67,13 +67,11 @@ export function EditAccessRuleModal({
         </select>
         <small id="modeHelp" class="form-text text-muted">
           Used to restrict access to assessments based on the current mode. In general, it is best
-          to use "Public" for any homework and "Exam" for exams proctored with PrairieTest. (See the
-          <a
             href="https://prairielearn.readthedocs.io/en/latest/accessControl/#server-modes"
             target="_blank"
             >documentation</a
           >
-          for more information.)
+          for more information.
         </small>
       </div>
       <div class="form-group">
@@ -101,12 +99,14 @@ export function EditAccessRuleModal({
             id="start_date"
             name="start_date"
             aria-describedby="startDateHelp"
-            value="${accessRule.assessment_access_rule.start_date
-              ? Temporal.Instant.from(accessRule.assessment_access_rule.start_date.toISOString())
-                  .toZonedDateTimeISO(timeZoneName)
-                  .toString()
-                  .slice(0, 19)
-              : ''}"
+            value="${
+              accessRule.assessment_access_rule.start_date
+                ? Temporal.Instant.from(accessRule.assessment_access_rule.start_date.toISOString())
+                    .toZonedDateTimeISO(timeZoneName)
+                    .toString()
+                    .slice(0, 19)
+                : ''
+            }"
           />
           <div class="input-group-append">
             <span id="startDateHelp" class="input-group-text">${timeZoneName}</span>
@@ -127,12 +127,14 @@ export function EditAccessRuleModal({
             id="end_date"
             name="end_date"
             aria-describedby="endDateHelp"
-            value="${accessRule.assessment_access_rule.end_date
-              ? Temporal.Instant.from(accessRule.assessment_access_rule.end_date.toISOString())
-                  .toZonedDateTimeISO(timeZoneName)
-                  .toString()
-                  .slice(0, 19)
-              : ''}"
+            value="${
+              accessRule.assessment_access_rule.end_date
+                ? Temporal.Instant.from(accessRule.assessment_access_rule.end_date.toISOString())
+                    .toZonedDateTimeISO(timeZoneName)
+                    .toString()
+                    .slice(0, 19)
+                : ''
+            }"
           />
           <div class="input-group-append">
             <span class="input-group-text">${timeZoneName}</span>
@@ -263,7 +265,7 @@ export function EditAccessRuleModal({
       </div>
     `,
     footer: html`
-      <button type="button" class="btn btn-primary js-save-access-rule-button" data-dismiss="modal">
+      <button type="button" class="btn btn-primary js-save-access-rule-button">
         ${addAccessRule ? 'Add access rule' : 'Update access rule'}
       </button>
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>

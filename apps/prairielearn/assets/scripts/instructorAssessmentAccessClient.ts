@@ -137,7 +137,7 @@ onDocumentReady(() => {
           : false,
       };
       const filteredRule = Object.fromEntries(
-        Object.entries(rule).filter(([_, value]) => value != null),
+        Object.entries(rule).filter(([_, value]) => value != null && !Number.isNaN(value)),
       );
       return filteredRule;
     });
@@ -232,7 +232,13 @@ onDocumentReady(() => {
   on('click', '.js-save-access-rule-button', (e) => {
     const form = (e.target as HTMLElement).closest('form');
     if (!form) return;
-    handleUpdateAccessRule(form);
+
+    if (form.checkValidity()) {
+      handleUpdateAccessRule(form);
+      $('#editAccessRuleModal').modal('hide');
+    } else {
+      form.reportValidity();
+    }
   });
 
   function swapRows(row: number, targetRow: number) {
