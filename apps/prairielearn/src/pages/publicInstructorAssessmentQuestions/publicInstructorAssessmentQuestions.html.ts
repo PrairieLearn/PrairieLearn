@@ -4,6 +4,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
@@ -227,14 +228,10 @@ function AssessmentQuestionsTable({
                   ${question.other_assessments
                     ? question.other_assessments.map((assessment) => {
                         const urlPrefixAssessments = `${urlPrefix}/course_instance/${course_instance_id}`
-                        return html`${renderEjs(
-                          import.meta.url,
-                          "<%- include('../partials/assessment'); %>",
-                          {
-                            urlPrefix: urlPrefixAssessments,
-                            assessment,
-                          },
-                        )}`;
+                        return html`${AssessmentBadge({
+                          assessment,
+                          urlPrefix: urlPrefixAssessments,
+                        })}`;
                       })
                     : ''}
                 </td>
