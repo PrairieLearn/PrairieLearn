@@ -7,7 +7,7 @@ import { config } from '../lib/config.js';
 import { ContextNavigation } from './NavbarContext.js';
 
 export function Navbar({ resLocals }: { resLocals: Record<string, any> }) {
-  const { __csrf_token, urlPrefix, navbarType, homeUrl } = resLocals;
+  const { __csrf_token, urlPrefix, homeUrl } = resLocals;
 
   return html`
     ${config.devMode && __csrf_token
@@ -50,7 +50,7 @@ export function Navbar({ resLocals }: { resLocals: Record<string, any> }) {
       </button>
       <div id="course-nav" class="collapse navbar-collapse">
         <ul class="nav navbar-nav mr-auto" id="main-nav">
-          ${NavbarByType({ navbarType, resLocals })}
+          ${NavbarByType({ resLocals })}
         </ul>
 
         ${config.devMode
@@ -72,17 +72,12 @@ export function Navbar({ resLocals }: { resLocals: Record<string, any> }) {
   `;
 }
 
-function NavbarByType({
-  navbarType,
-  resLocals,
-}: {
-  navbarType: string;
-  resLocals: Record<string, any>;
-}) {
-  if (navbarType == null || navbarType === 'plain') {
-    return renderEjs(import.meta.url, "<%- include('navbarPlain'); %>", resLocals);
+function NavbarByType({ resLocals }: { resLocals: Record<string, any> }) {
+  const navbarType = resLocals.navbarType ?? 'plain';
+  if (navbarType === 'plain') {
+    return NavbarPlain({ resLocals });
   } else if (navbarType === 'student') {
-    return renderEjs(import.meta.url, "<%- include('navbarStudent'); %>", resLocals);
+    return NavbarStudent({ resLocals });
   } else if (navbarType === 'instructor') {
     return renderEjs(import.meta.url, "<%- include('navbarInstructor'); %>", resLocals);
   } else if (navbarType === 'administrator_institution') {
@@ -509,5 +504,49 @@ function AuthnOverrides({ resLocals }: { resLocals: Record<string, any> }) {
     <a class="dropdown-item" href="${effectiveUserUrl}">Customize&hellip;</a>
 
     <div class="dropdown-divider"></div>
+  `;
+}
+
+function NavbarPlain({ resLocals }: { resLocals: Record<string, any> }) {
+  const { navPage, is_administrator } = resLocals;
+  if (!is_administrator) return '';
+  return html`
+    <li class="nav-item ${navPage === 'admin' ? 'active' : ''}">
+      <a class="nav-link" href="${config.urlPrefix}/administrator/admins">Admin</a>
+    </li>
+  `;
+}
+
+function NavbarStudent({ resLocals }: { resLocals: Record<string, any> }) {
+  const {
+    course,
+    course_instance,
+    assessment_instance,
+    assessment_instance_label,
+    navPage,
+    urlPrefix,
+  } = resLocals;
+
+  return html`
+    <li class="nav-item navbar-text mr-4">
+      ${course?.short_name ?? ''}, ${course_instance?.short_name ?? ''}
+    </li>
+
+    <li class="nav-item ${navPage === 'assessments' ? 'active' : ''}">
+      <a class="nav-link" href="${urlPrefix}/assessments">Assessments</a>
+    </li>
+    <li class="nav-item ${navPage === 'gradebook' ? 'active' : ''}">
+      <a class="nav-link" href="${urlPrefix}/gradebook">Gradebook</a>
+    </li>
+
+    ${assessment_instance_label != null && assessment_instance != null
+      ? html`
+          <li class="nav-item ${navPage === 'assessment_instance' ? 'active' : ''}">
+            <a class="nav-link" href="${urlPrefix}/assessment_instance/${assessment_instance.id}">
+              ${assessment_instance_label}
+            </a>
+          </li>
+        `
+      : ''}
   `;
 }
