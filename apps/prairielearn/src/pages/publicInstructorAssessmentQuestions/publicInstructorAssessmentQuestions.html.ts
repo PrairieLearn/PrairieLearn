@@ -5,7 +5,6 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
-import { Modal } from '../../components/Modal.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -65,29 +64,6 @@ export function InstructorAssessmentQuestions({
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${Modal({
-            id: 'resetQuestionVariantsModal',
-            title: 'Confirm reset question variants',
-            body: html`
-              <p>
-                Are your sure you want to reset all current variants of this question?
-                <strong>All ungraded attempts will be lost.</strong>
-              </p>
-              <p>Students will receive a new variant the next time they view this question.</p>
-            `,
-            footer: html`
-              <input type="hidden" name="__action" value="reset_question_variants" />
-              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-              <input
-                type="hidden"
-                name="unsafe_assessment_question_id"
-                class="js-assessment-question-id"
-                value=""
-              />
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-              <button type="submit" class="btn btn-danger">Reset question variants</button>
-            `,
-          })}
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">

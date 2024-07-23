@@ -4,14 +4,9 @@ import { pipeline } from 'node:stream/promises';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
-import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import {
-  updateAssessmentStatisticsForCourseInstance,
-} from '../../lib/assessment.js';
-import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import { selectCourseById, selectCourseIdByInstanceId } from '../../models/course.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 
@@ -24,10 +19,6 @@ import {
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function buildCsvFilename(locals) {
-  return `${courseInstanceFilenamePrefix(locals.course_instance, locals.course)}assessment_stats.csv`;
-}
-
 
 router.get(
   '/',
@@ -36,21 +27,39 @@ router.get(
     res.locals.course = await selectCourseById(courseId)
     res.locals.course_instance = await selectCourseInstanceById(res.locals.course_instance_id)
 
-    const csvFilename = await buildCsvFilename(res.locals);
+    try {
+      const isPublic = await new Promise((resolve, reject) => {
+        sqldb.queryOneRow(sql.check_is_public, {
+          course_instance_id: res.locals.course_instance_id.toString(),
+        }, (err, result) => {
+          if (err) {
+            console.error('Error checking if course instance is public', err);
+            reject(err);
+          } else {
+            resolve(result);
+          }
+        });
+      });
+    
+      if (!isPublic) {
+        throw new error.HttpStatusError(404, `Course instance not public.`);
+      }
+    
+    } catch (err) {
+      console.error('Error checking if course instance is public', err); // TEST
+      throw err;
+    }
 
     const rows = await sqldb.queryRows(
       sql.select_assessments,
       {
         course_instance_id: res.locals.course_instance.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
         assessments_group_by: res.locals.course_instance.assessments_group_by,
       },
       AssessmentRowSchema,
     );
 
     const assessmentIdsNeedingStatsUpdate = rows
-      .filter((row) => row.needs_statistics_update)
       .map((row) => row.id);
 
     res.send(
@@ -58,7 +67,6 @@ router.get(
         resLocals: res.locals,
         rows,
         assessmentIdsNeedingStatsUpdate,
-        csvFilename,
       }),
     );
   }),

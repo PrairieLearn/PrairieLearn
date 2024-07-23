@@ -7,7 +7,6 @@ import { queryRow, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { Assessment, AssessmentSchema } from '../../lib/db-types.js';
 import { selectCourseById, selectCourseIdByInstanceId } from '../../models/course.js';
-import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
 import {
   InstructorAssessmentQuestions,
@@ -25,6 +24,23 @@ async function selectAssessmentById(assessment_id: string): Promise<Assessment> 
   );
 }
 
+class BooleanModel { // TEST
+  static parse(value: any): boolean {
+    // Assuming the query returns a truthy or falsy value that can be directly converted to boolean
+    // Adjust the implementation based on the actual data structure returned by the query
+    return Boolean(value);
+  }
+}
+
+async function checkCourseInstancePublic(course_instance_id: string): Promise<boolean> {
+  const isPublic = await queryRow(
+    sql.check_course_instance_is_public,
+    { course_instance_id },
+    BooleanModel, // Use the custom BooleanModel that directly handles boolean values
+  );
+  return isPublic;
+}
+
 const ansiUp = new AnsiUp();
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -35,6 +51,15 @@ router.get(
 
     const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString()); // TEST, req.params
     const course = await selectCourseById(courseId); // TEST, req.params
+
+    const isCourseInstancePublic = await checkCourseInstancePublic(res.locals.course_instance_id); // TEST, req.params
+
+    console.log('isCourseInstancePublic', isCourseInstancePublic); // TEST
+
+    if (!isCourseInstancePublic) {
+      throw new error.HttpStatusError(404, `The course instance that owns this assessment is not public.`);
+    }
+
     res.locals.course = course; // TEST, req.params
     res.locals.assessment = await selectAssessmentById(res.locals.assessment_id); // TEST, req.params
     const questionRows = await queryRows(
@@ -51,22 +76,6 @@ router.get(
       return row;
     });
     res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions }));
-  }),
-);
-
-router.post(
-  '/',
-  asyncHandler(async (req, res) => {
-    if (req.body.__action === 'reset_question_variants') {
-      await resetVariantsForAssessmentQuestion({
-        assessment_id: res.locals.assessment.id,
-        unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
-        authn_user_id: res.locals.authn_user.user_id,
-      });
-      res.redirect(req.originalUrl);
-    } else {
-      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
-    }
   }),
 );
 

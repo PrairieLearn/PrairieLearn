@@ -6,6 +6,15 @@ FROM
 where
   id = $assessment_id;
 
+-- BLOCK check_course_instance_is_public
+SELECT
+  ci.shared_publicly
+FROM
+  course_instances AS ci
+WHERE
+  ci.id = $course_instance_id;
+
+
 -- BLOCK questions
 WITH
   issue_count AS (

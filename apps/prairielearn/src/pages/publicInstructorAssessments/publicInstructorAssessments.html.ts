@@ -14,10 +14,8 @@ export const AssessmentStatsRowSchema = AssessmentSchema.extend({
 export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
   AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
 ).extend({
-  start_new_assessment_group: z.boolean(),
   assessment_group_heading: AssessmentSetSchema.shape.heading,
   label: z.string(),
-  open_issue_count: z.coerce.number(),
 });
 type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
@@ -28,7 +26,6 @@ export function InstructorAssessments({
   resLocals: Record<string, any>;
   rows: AssessmentRow[];
   assessmentIdsNeedingStatsUpdate: string[];
-  csvFilename: string;
 }) {
   const { urlPrefix, course, __csrf_token } = resLocals;
 
@@ -63,13 +60,7 @@ export function InstructorAssessments({
                 <tbody>
                   ${rows.map(
                     (row) => html`
-                      ${row.start_new_assessment_group
-                        ? html`
-                            <tr>
-                              <th colspan="7">${row.assessment_group_heading}</th>
-                            </tr>
-                          `
-                        : ''}
+
                       <tr id="row-${row.id}">
                         <td class="align-middle" style="width: 1%">
                           <a
@@ -86,11 +77,7 @@ export function InstructorAssessments({
                               ? html` <i class="fas fa-users" aria-hidden="true"></i> `
                               : ''}</a
                           >
-                          ${renderEjs(
-                            import.meta.url,
-                            "<%- include('../partials/issueBadge'); %>",
-                            { ...resLocals, count: row.open_issue_count },
-                          )}
+
                         </td>
 
                         <td class="align-middle">${row.tid}</td>
