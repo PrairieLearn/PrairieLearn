@@ -29,7 +29,7 @@ export function StudentAssessmentAccess({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${Navbar({ resLocals })}
+        ${Navbar({ resLocals, navPage: 'assessment_instance' })}
         ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
         <main id="content" class="container">
           <div class="card mb-4">
