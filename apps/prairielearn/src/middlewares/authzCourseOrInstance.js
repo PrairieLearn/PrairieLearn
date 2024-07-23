@@ -70,6 +70,7 @@ export async function authzCourseOrInstance(req, res) {
   res.locals.authz_data = {
     authn_user: _.cloneDeep(res.locals.authn_user),
     authn_mode: result.rows[0].mode,
+    authn_mode_reason: result.rows[0].mode_reason,
     authn_is_administrator: res.locals.is_administrator,
     authn_course_role: permissions_course.course_role,
     authn_has_course_permission_preview: permissions_course.has_course_permission_preview,
@@ -78,6 +79,7 @@ export async function authzCourseOrInstance(req, res) {
     authn_has_course_permission_own: permissions_course.has_course_permission_own,
     user: _.cloneDeep(res.locals.authn_user),
     mode: result.rows[0].mode,
+    mode_reason: result.rows[0].mode_reason,
     is_administrator: res.locals.is_administrator,
     course_role: permissions_course.course_role,
     has_course_permission_preview: permissions_course.has_course_permission_preview,
@@ -567,6 +569,7 @@ export async function authzCourseOrInstance(req, res) {
   res.locals.is_administrator = res.locals.authz_data.is_administrator;
 
   res.locals.authz_data.mode = effectiveResult.rows[0].mode;
+  res.locals.authz_data.mode_reason = effectiveResult.rows[0].mode_reason;
   res.locals.req_date = req_date;
 }
 
