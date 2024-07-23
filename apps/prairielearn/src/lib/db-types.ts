@@ -88,12 +88,13 @@ export const DateFromISOString = z
 // Miscellaneous schemas; keep these alphabetized.
 // *******************************************************************************
 
+// Result of assessments_format_for_question sproc
 export const AssessmentsFormatForQuestionSchema = z.array(
   z.object({
-    label: z.string().nullable(),
+    label: z.string(),
     assessment_id: IdSchema,
     course_instance_id: IdSchema,
-    color: z.string().nullable(),
+    color: z.string(),
   }),
 );
 
@@ -117,6 +118,9 @@ export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 
 export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
 export type EnumMode = z.infer<typeof EnumModeSchema>;
+
+export const EnumModeReasonSchema = z.enum(['Default', 'PrairieTest', 'Network']);
+export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
 
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
@@ -351,6 +355,8 @@ export const ClientFingerprintSchema = z.object({
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
 export const CourseSchema = z.object({
+  announcement_color: z.string().nullable(),
+  announcement_html: z.string().nullable(),
   branch: z.string(),
   commit_hash: z.string().nullable(),
   course_instance_enrollment_limit: z.number().nullable(),

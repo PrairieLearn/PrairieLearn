@@ -1,4 +1,3 @@
-// @ts-check
 import { parseISO, isValid } from 'date-fns';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -67,7 +66,6 @@ router.post(
       clearCookie(res, ['pl_requested_uid', 'pl2_requested_uid']);
       clearCookie(res, ['pl_requested_course_role', 'pl2_requested_course_role']);
       clearCookie(res, ['pl_requested_course_instance_role', 'pl2_requested_course_instance_role']);
-      clearCookie(res, ['pl_requested_mode', 'pl2_requested_mode']);
       clearCookie(res, ['pl_requested_date', 'pl2_requested_date']);
       setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
       res.redirect(req.originalUrl);
@@ -93,12 +91,6 @@ router.post(
         req.body.pl_requested_course_instance_role,
         { maxAge: 60 * 60 * 1000 },
       );
-      setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'changeMode') {
-      setCookie(res, ['pl_requested_mode', 'pl2_requested_mode'], req.body.pl_requested_mode, {
-        maxAge: 60 * 60 * 1000,
-      });
       setCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'changeDate') {

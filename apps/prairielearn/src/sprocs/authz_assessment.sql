@@ -28,6 +28,7 @@ BEGIN
         check_assessment_access(
             assessment_id,
             (authz_data->>'mode')::enum_mode,
+            (authz_data->>'mode_reason')::enum_mode_reason,
             (authz_data->>'course_role')::enum_course_role,
             (authz_data->>'course_instance_role')::enum_course_instance_role,
             (authz_data->'user'->>'user_id')::bigint,

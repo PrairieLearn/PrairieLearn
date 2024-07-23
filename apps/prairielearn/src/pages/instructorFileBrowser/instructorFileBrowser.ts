@@ -15,10 +15,17 @@ import { contains } from '@prairielearn/path-utils';
 import { getCourseOwners } from '../../lib/course.js';
 import * as editorUtil from '../../lib/editorUtil.js';
 import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors.js';
-import { getPaths } from '../../lib/instructorFiles.js';
+import { getPaths, type InstructorFilePaths } from '../../lib/instructorFiles.js';
 import { encodePath } from '../../lib/uri-util.js';
 
-import { InstructorFileBrowser } from './instructorFileBrowser.html.js';
+import {
+  type DirectoryListings,
+  type DirectoryEntryDirectory,
+  type DirectoryEntryFile,
+  type FileInfo,
+  InstructorFileBrowser,
+  InstructorFileBrowserNoPermission,
+} from './instructorFileBrowser.html.js';
 
 const router = Router();
 
@@ -26,8 +33,12 @@ function isHidden(item: string) {
   return item[0] === '.';
 }
 
-async function browseDirectory(file_browser) {
-  const filenames = await fs.readdir(file_browser.paths.workingPath);
+async function browseDirectory({
+  paths,
+}: {
+  paths: InstructorFilePaths;
+}): Promise<DirectoryListings> {
+  const filenames = await fs.readdir(paths.workingPath);
   const ansiUp = new AnsiUp();
   const all_files = await async.mapLimit(
     filenames
@@ -35,87 +46,99 @@ async function browseDirectory(file_browser) {
       .map((name, index) => ({ name, index }))
       .filter((f) => !isHidden(f.name)),
     3,
-    async (file) => {
-      const filepath = path.join(file_browser.paths.workingPath, file.name);
+    async (file: { name: string; index: number }) => {
+      const filepath = path.join(paths.workingPath, file.name);
       const stats = await fs.lstat(filepath);
       if (stats.isFile()) {
         const editable = !(await isBinaryFile(filepath));
-        const movable = !file_browser.paths.cannotMove.includes(filepath);
-        const relative_path = path.relative(file_browser.paths.coursePath, filepath);
+        const movable = !paths.cannotMove.includes(filepath);
+        const relative_path = path.relative(paths.coursePath, filepath);
         const sync_data = await editorUtil.getErrorsAndWarningsForFilePath(
-          file_browser.paths.courseId,
+          paths.courseId,
           relative_path,
         );
         return {
           id: file.index,
           name: file.name,
           isFile: true,
-          encodedName: encodePath(file.name),
           path: relative_path,
-          encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
-          dir: file_browser.paths.workingPath,
-          canEdit:
-            editable && file_browser.has_course_permission_edit && !file_browser.example_course,
-          canUpload: file_browser.has_course_permission_edit && !file_browser.example_course,
+          dir: paths.workingPath,
+          canEdit: editable && paths.hasEditPermission,
+          canUpload: paths.hasEditPermission,
           canDownload: true, // we already know the user is a course Viewer (checked on GET)
-          canRename:
-            movable && file_browser.has_course_permission_edit && !file_browser.example_course,
-          canDelete:
-            movable && file_browser.has_course_permission_edit && !file_browser.example_course,
-          canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
+          canRename: movable && paths.hasEditPermission,
+          canDelete: movable && paths.hasEditPermission,
+          canView: !paths.invalidRootPaths.some((invalidRootPath) =>
             contains(invalidRootPath, filepath),
           ),
           sync_errors: sync_data.errors,
           sync_errors_ansified: ansiUp.ansi_to_html(sync_data.errors ?? ''),
           sync_warnings: sync_data.warnings,
           sync_warnings_ansified: ansiUp.ansi_to_html(sync_data.warnings ?? ''),
-        };
+        } as DirectoryEntryFile;
       } else if (stats.isDirectory()) {
         return {
           id: file.index,
           name: file.name,
-          isDirectory: true,
-          encodedName: encodePath(file.name),
-          path: path.relative(file_browser.paths.coursePath, filepath),
-          encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
-          canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
+          isFile: false,
+          path: path.relative(paths.coursePath, filepath),
+          canView: !paths.invalidRootPaths.some((invalidRootPath) =>
             contains(invalidRootPath, filepath),
           ),
-        };
+        } as DirectoryEntryDirectory;
       } else {
         return null;
       }
     },
   );
-  file_browser.files = all_files.filter((f) => f?.isFile);
-  file_browser.dirs = all_files.filter((f) => f?.isDirectory);
+  return {
+    files: all_files.filter((f) => f?.isFile === true),
+    dirs: all_files.filter((f) => f?.isFile === false),
+  };
 }
 
-async function browseFile(file_browser) {
-  const isBinary = await isBinaryFile(file_browser.paths.workingPath);
-  file_browser.isBinary = isBinary;
-  if (isBinary) {
-    const type = await fileTypeFromFile(file_browser.paths.workingPath);
+async function browseFile({ paths }: { paths: InstructorFilePaths }): Promise<FileInfo> {
+  const filepath = paths.workingPath;
+  const movable = !paths.cannotMove.includes(filepath);
+  const file: FileInfo = {
+    id: 0,
+    name: path.basename(paths.workingPath),
+    path: path.relative(paths.coursePath, filepath),
+    dir: path.dirname(paths.workingPath),
+    canEdit: false, // will be overridden only if the file is a text file
+    canUpload: paths.hasEditPermission,
+    canDownload: true, // we already know the user is a course Viewer (checked on GET)
+    canRename: movable && paths.hasEditPermission,
+    canDelete: movable && paths.hasEditPermission,
+    canView: !paths.invalidRootPaths.some((invalidRootPath) => contains(invalidRootPath, filepath)),
+    isBinary: await isBinaryFile(paths.workingPath),
+    isImage: false,
+    isPDF: false,
+    isText: false,
+  };
+
+  if (file.isBinary) {
+    const type = await fileTypeFromFile(paths.workingPath);
     if (type) {
       if (type?.mime.startsWith('image')) {
-        file_browser.isImage = true;
+        file.isImage = true;
       } else if (type?.mime === 'application/pdf') {
-        file_browser.isPDF = true;
+        file.isPDF = true;
       }
     }
   } else {
     // This is probably a text file. If it's is larger that 1MB, don't
     // attempt to read it; treat it like an opaque binary file.
-    const { size } = await fs.stat(file_browser.paths.workingPath);
+    const { size } = await fs.stat(paths.workingPath);
     if (size > 1 * 1024 * 1024) {
-      file_browser.isBinary = true;
-      return;
+      return { ...file, isBinary: true };
     }
 
-    file_browser.isText = true;
+    file.isText = true;
+    file.canEdit = paths.hasEditPermission;
 
-    const contents = await fs.readFile(file_browser.paths.workingPath);
-    const stringifiedContents = contents.toString('utf8');
+    const fileContents = await fs.readFile(paths.workingPath);
+    const stringifiedContents = fileContents.toString('utf8');
 
     // Try to guess the language from the file extension. This takes
     // advantage of the fact that Highlight.js includes common file extensions
@@ -130,39 +153,19 @@ async function browseFile(file_browser) {
     // and LiveScript/Lasso, respectively). For more details, see
     // https://highlightjs.readthedocs.io/en/latest/supported-languages.html
     let language: string | undefined = undefined;
-    const extension = path.extname(file_browser.paths.workingPath).substring(1);
+    const extension = path.extname(paths.workingPath).substring(1);
     if (!['ml', 'ls'].includes(extension) && hljs.getLanguage(extension)) {
       language = extension;
     } else {
       const result = hljs.highlightAuto(stringifiedContents.slice(0, 2000));
       language = result.language;
     }
-    file_browser.contents = hljs.highlight(stringifiedContents, {
+    file.contents = hljs.highlight(stringifiedContents, {
       language: language ?? 'plaintext',
     }).value;
   }
 
-  const filepath = file_browser.paths.workingPath;
-  const movable = !file_browser.paths.cannotMove.includes(filepath);
-  file_browser.file = {
-    id: 0,
-    name: path.basename(file_browser.paths.workingPath),
-    encodedName: encodePath(path.basename(file_browser.paths.workingPath)),
-    path: path.relative(file_browser.paths.coursePath, filepath),
-    encodedPath: encodePath(path.relative(file_browser.paths.coursePath, filepath)),
-    dir: path.dirname(file_browser.paths.workingPath),
-    canEdit:
-      file_browser.isText &&
-      file_browser.has_course_permission_edit &&
-      !file_browser.example_course,
-    canUpload: file_browser.has_course_permission_edit && !file_browser.example_course,
-    canDownload: true, // we already know the user is a course Viewer (checked on GET)
-    canRename: movable && file_browser.has_course_permission_edit && !file_browser.example_course,
-    canDelete: movable && file_browser.has_course_permission_edit && !file_browser.example_course,
-    canView: !file_browser.paths.invalidRootPaths.some((invalidRootPath) =>
-      contains(invalidRootPath, filepath),
-    ),
-  };
+  return file;
 }
 
 router.get(
@@ -171,43 +174,48 @@ router.get(
     if (!res.locals.authz_data.has_course_permission_view) {
       // Access denied, but instead of sending them to an error page, we'll show
       // them an explanatory message and prompt them to get view permissions.
-      res.locals.course_owners = await getCourseOwners(res.locals.course.id);
-      res.status(403).send(InstructorFileBrowser({ resLocals: res.locals }));
+      const courseOwners = await getCourseOwners(res.locals.course.id);
+      res
+        .status(403)
+        .send(InstructorFileBrowserNoPermission({ resLocals: res.locals, courseOwners }));
       return;
     }
 
-    // TODO: Use better type
-    const file_browser: any = {
-      has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-      example_course: res.locals.course.example_course,
-    };
-
-    file_browser.paths = getPaths(req, res);
+    const paths = getPaths(req.params[0], res.locals);
 
     try {
-      const stats = await fs.lstat(file_browser.paths.workingPath);
+      const stats = await fs.lstat(paths.workingPath);
       if (stats.isDirectory()) {
-        file_browser.isFile = false;
-        await browseDirectory(file_browser);
+        res.send(
+          InstructorFileBrowser({
+            resLocals: res.locals,
+            paths,
+            isFile: false,
+            directoryListings: await browseDirectory({ paths }),
+          }),
+        );
       } else if (stats.isFile()) {
-        file_browser.isFile = true;
-        await browseFile(file_browser);
+        res.send(
+          InstructorFileBrowser({
+            resLocals: res.locals,
+            paths,
+            isFile: true,
+            fileInfo: await browseFile({ paths }),
+          }),
+        );
       } else {
         throw new Error(
-          `Invalid working path - ${file_browser.paths.workingPath} is neither a directory nor a file`,
+          `Invalid working path - ${paths.workingPath} is neither a directory nor a file`,
         );
       }
     } catch (err) {
-      if (err.code === 'ENOENT' && file_browser.paths.branch.length > 1) {
-        res.redirect(`${req.baseUrl}/${encodePath(file_browser.paths.branch.slice(-2)[0].path)}`);
+      if (err.code === 'ENOENT' && paths.branch.length > 1) {
+        res.redirect(`${req.baseUrl}/${encodePath(paths.branch.slice(-2)[0].path)}`);
         return;
       }
 
       throw err;
     }
-
-    res.locals.file_browser = file_browser;
-    res.send(InstructorFileBrowser({ resLocals: res.locals }));
   }),
 );
 
@@ -218,7 +226,7 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied (must be a course Editor)');
     }
 
-    const paths = getPaths(req, res);
+    const paths = getPaths(req.params[0], res.locals);
     const container = {
       rootPath: paths.rootPath,
       invalidRootPaths: paths.invalidRootPaths,
@@ -229,7 +237,7 @@ router.post(
     // applied to a file and not to a directory.
 
     if (req.body.__action === 'delete_file') {
-      let deletePath;
+      let deletePath: string;
       try {
         deletePath = path.join(res.locals.course.path, req.body.file_path);
       } catch (err) {
@@ -249,7 +257,7 @@ router.post(
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'rename_file') {
-      let oldPath;
+      let oldPath: string;
       try {
         oldPath = path.join(req.body.working_path, req.body.old_file_name);
       } catch (err) {
@@ -269,7 +277,7 @@ router.post(
           `Invalid new file name (did not match required pattern): ${req.body.new_file_name}`,
         );
       }
-      let newPath;
+      let newPath: string;
       try {
         newPath = path.join(req.body.working_path, req.body.new_file_name);
       } catch (err) {
@@ -309,7 +317,7 @@ router.post(
     } else if (req.body.__action === 'upload_file') {
       if (!req.file) throw new Error('No file uploaded');
 
-      let filePath;
+      let filePath: string;
       if (req.body.file_path) {
         try {
           filePath = path.join(res.locals.course.path, req.body.file_path);
