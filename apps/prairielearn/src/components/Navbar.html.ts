@@ -97,33 +97,18 @@ function NavbarByType({
   navSubPage: NavSubPage;
   navbarType: NavbarType;
 }) {
-  navbarType ??= 'plain';
-  if (navbarType === 'plain') {
+  if (navbarType == null || navbarType === 'plain') {
     return NavbarPlain({ resLocals, navPage });
   } else if (navbarType === 'student') {
     return NavbarStudent({ resLocals, navPage });
   } else if (navbarType === 'instructor') {
     return NavbarInstructor({ resLocals, navPage, navSubPage });
   } else if (navbarType === 'administrator_institution') {
-    return renderEjs(
-      import.meta.url,
-      "<%- include('../pages/partials/navbarAdministratorInstitution'); %>",
-      { ...resLocals, navPage, navSubPage, navbarType },
-    );
+    return NavbarAdministratorInstitution({ resLocals });
   } else if (navbarType === 'institution') {
-    return renderEjs(import.meta.url, "<%- include('../pages/partials/navbarInstitution'); %>", {
-      ...resLocals,
-      navPage,
-      navSubPage,
-      navbarType,
-    });
+    return NavbarInstitution({ resLocals });
   } else if (navbarType === 'public') {
-    return renderEjs(import.meta.url, "<%- include('../pages/partials/navbarPublic'); %>", {
-      ...resLocals,
-      navPage,
-      navSubPage,
-      navbarType,
-    });
+    return NavbarPublic({ resLocals });
   } else {
     throw new Error(`Unknown navbarType: ${navbarType}`);
   }
@@ -829,5 +814,46 @@ function NavbarInstructor({
             </div>
           </li>
         `}
+  `;
+}
+
+function NavbarPublic({ resLocals }: { resLocals: Record<string, any> }) {
+  const { course, urlPrefix } = resLocals;
+  return html`
+    <li class="nav-item btn-group">
+      <a
+        class="nav-link"
+        aria-label="Link to page showing all public questions for the course."
+        href="${urlPrefix}/questions"
+      >
+        ${course?.short_name ?? ''}
+      </a>
+    </li>
+  `;
+}
+
+function NavbarInstitution({ resLocals }: { resLocals: Record<string, any> }) {
+  const { institution } = resLocals;
+  return html`
+    <li class="nav-item">
+      <a class="nav-link" href="/pl/institution/${institution.id}/admin/courses">
+        ${institution.short_name} (${institution.long_name})
+      </a>
+    </li>
+  `;
+}
+
+function NavbarAdministratorInstitution({ resLocals }: { resLocals: Record<string, any> }) {
+  const { institution } = resLocals;
+  return html`
+    <li class="nav-item">
+      <a class="nav-link" href="/pl/administrator/institutions">Admin</a>
+    </li>
+
+    <li class="nav-item">
+      <a class="nav-link" href="/pl/administrator/institution/${institution.id}">
+        ${institution.short_name}
+      </a>
+    </li>
   `;
 }
