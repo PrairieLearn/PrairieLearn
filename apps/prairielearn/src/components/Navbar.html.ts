@@ -1,9 +1,9 @@
 import { flash, type FlashMessageType } from '@prairielearn/flash';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { config } from '../lib/config.js';
 
+import { IssueBadge } from './IssueBadge.html.js';
 import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
 
@@ -659,12 +659,7 @@ function NavbarInstructor({
 
     <li class="nav-item ${navPage === 'course_admin' && navSubPage === 'issues' ? 'active' : ''}">
       <a class="nav-link" href="${urlPrefix}/course_admin/issues">
-        Issues
-        ${renderEjs(import.meta.url, "<%- include('../pages/partials/issueBadge') %>", {
-          ...resLocals,
-          count: navbarOpenIssueCount,
-          suppressLink: true,
-        })}
+        Issues ${IssueBadge({ count: navbarOpenIssueCount, suppressLink: true })}
       </a>
     </li>
     <li

@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
@@ -28,7 +28,7 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   assessment_question_advance_score_perc: AlternativeGroupSchema.shape.advance_score_perc,
   display_name: z.string().nullable(),
   number: z.string().nullable(),
-  open_issue_count: z.string().nullable(),
+  open_issue_count: z.coerce.number().nullable(),
   other_assessments: AssessmentsFormatForQuestionSchema.nullable(),
   sync_errors_ansified: z.string().optional(),
   sync_errors: QuestionSchema.shape.sync_errors,
@@ -212,9 +212,9 @@ function AssessmentQuestionsTable({
                           </span>
                         `}
                     ${question.title}
-                    ${renderEjs(import.meta.url, "<%- include('../partials/issueBadge') %>", {
+                    ${IssueBadge({
                       urlPrefix,
-                      count: question.open_issue_count,
+                      count: question.open_issue_count ?? 0,
                       issueQid: question.qid,
                     })}
                   </a>

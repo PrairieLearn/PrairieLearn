@@ -1,6 +1,6 @@
 import { html, type HtmlValue } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { IssueBadge } from './IssueBadge.html.js';
 import { NavPage, NavSubPage } from './Navbar.types.js';
 
 interface TabInfo {
@@ -252,12 +252,7 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       iconClasses: 'fas fa-bug',
       tabLabel: 'Issues',
       htmlSuffix: (resLocals) =>
-        renderEjs(import.meta.url, "<%- include('../pages/partials/issueBadge') %>", {
-          ...resLocals,
-          count: resLocals.open_issue_count,
-          suppressLink: true,
-          className: 'ml-2',
-        }),
+        IssueBadge({ count: resLocals.open_issue_count, suppressLink: true, className: 'ml-2' }),
       renderCondition: ({ course, question }) => question.course_id === course.id,
     },
   ],

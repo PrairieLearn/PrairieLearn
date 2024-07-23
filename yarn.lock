@@ -2919,7 +2919,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/html-ejs@workspace:^, @prairielearn/html-ejs@workspace:packages/html-ejs":
+"@prairielearn/html-ejs@workspace:packages/html-ejs":
   version: 0.0.0-use.local
   resolution: "@prairielearn/html-ejs@workspace:packages/html-ejs"
   dependencies:
@@ -3166,7 +3166,6 @@ __metadata:
     "@prairielearn/express-test-utils": "workspace:^"
     "@prairielearn/flash": "workspace:^"
     "@prairielearn/html": "workspace:^"
-    "@prairielearn/html-ejs": "workspace:^"
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/markdown": "workspace:^"
     "@prairielearn/migrations": "workspace:^"

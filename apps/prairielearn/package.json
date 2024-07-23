@@ -36,7 +36,6 @@
     "@prairielearn/express-test-utils": "workspace:^",
     "@prairielearn/flash": "workspace:^",
     "@prairielearn/html": "workspace:^",
-    "@prairielearn/html-ejs": "workspace:^",
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/markdown": "workspace:^",
     "@prairielearn/migrations": "workspace:^",
