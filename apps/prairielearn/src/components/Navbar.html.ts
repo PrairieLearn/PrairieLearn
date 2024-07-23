@@ -366,27 +366,27 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
 
     <a class="dropdown-item" href="${instructorLink}" id="navbar-user-view-authn-instructor">
       <span class="${authnViewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">&check;</span>
-      <div class="pl-3">
+      <span class="pl-3">
         ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
           ? 'Modified staff'
           : 'Staff'}
         view <span class="badge badge-success">staff</span>
-      </div>
+      </span>
     </a>
 
     <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student">
       <span class="${authnViewTypeMenuChecked !== 'student' ? 'invisible' : ''}">&check;</span>
-      <div class="pl-3">Student view <span class="badge badge-warning">student</span></div>
+      <span class="pl-3">Student view <span class="badge badge-warning">student</span></span>
     </a>
 
     <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-authn-student-no-rules">
       <span class="${authnViewTypeMenuChecked !== 'student-no-rules' ? 'invisible' : ''}">
         &check;
       </span>
-      <div class="pl-3">
+      <span class="pl-3">
         Student view without access restrictions
         <span class="badge badge-warning">student</span>
-      </div>
+      </span>
     </a>
 
     ${authz_data.authn_user.uid !== authz_data.user.uid
@@ -400,21 +400,21 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
                   <span class="${viewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">
                     &check;
                   </span>
-                  <div class="pl-3">Staff view</div>
+                  <span class="pl-3">Staff view</span>
                 </a>
               `
             : ''}
 
           <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-student">
             <span class="${viewTypeMenuChecked !== 'student' ? 'invisible' : ''}"> &check; </span>
-            <div class="pl-3">Student view</div>
+            <span class="pl-3">Student view</span>
           </a>
 
           <a class="dropdown-item" href="${studentLink}" id="navbar-user-view-student-no-rules">
             <span class="${viewTypeMenuChecked !== 'student-no-rules' ? 'invisible' : ''}">
               &check;
             </span>
-            <div class="pl-3">Student view without access restrictions</div>
+            <span class="pl-3">Student view without access restrictions</span>
           </a>
         `
       : ''}
