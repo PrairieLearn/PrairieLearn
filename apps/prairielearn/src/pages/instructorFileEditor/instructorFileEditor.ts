@@ -9,7 +9,6 @@ import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
 
 import * as error from '@prairielearn/error';
-import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util.js';
@@ -126,46 +125,34 @@ router.get(
           return;
         }
 
-        // No draft is older than 24 hours, so it is safe to assume that no
-        // job sequence is legacy... but, just in case, we will check and log
-        // a warning if we find one. We will treat the corresponding draft as
-        // if it was neither saved nor synced.
-        if (draftEdit.jobSequence.legacy) {
-          debug('Found a legacy job sequence');
-          logger.warn(
-            `Found a legacy job sequence (id=${draftEdit.jobSequence.id}) ` +
-              `in a file edit (id=${draftEdit.fileEdit.id})`,
-          );
-        } else {
-          const job = draftEdit.jobSequence.jobs[0];
+        const job = draftEdit.jobSequence.jobs[0];
 
-          debug('Found a job sequence');
-          debug(` saveAttempted=${job.data.saveAttempted}`);
-          debug(` saveSucceeded=${job.data.saveSucceeded}`);
-          debug(` syncAttempted=${job.data.syncAttempted}`);
-          debug(` syncSucceeded=${job.data.syncSucceeded}`);
+        debug('Found a job sequence');
+        debug(` saveAttempted=${job.data.saveAttempted}`);
+        debug(` saveSucceeded=${job.data.saveSucceeded}`);
+        debug(` syncAttempted=${job.data.syncAttempted}`);
+        debug(` syncSucceeded=${job.data.syncSucceeded}`);
 
-          // We check for the presence of a `saveSucceeded` key to know if
-          // the edit was saved (i.e., written to disk in the case of no git,
-          // or written to disk and then pushed in the case of git). If this
-          // key exists, its value will be true.
-          if (job.data.saveSucceeded) {
-            draftEdit.didSave = true;
+        // We check for the presence of a `saveSucceeded` key to know if
+        // the edit was saved (i.e., written to disk in the case of no git,
+        // or written to disk and then pushed in the case of git). If this
+        // key exists, its value will be true.
+        if (job.data.saveSucceeded) {
+          draftEdit.didSave = true;
 
-            // We check for the presence of a `syncSucceeded` key to know
-            // if the sync was successful. If this key exists, its value will
-            // be true. Note that the cause of sync failure could be a file
-            // other than the one being edited.
-            //
-            // By "the sync" we mean "the sync after a successfully saved
-            // edit." Remember that, if using git, we pull before we push.
-            // So, if we error on save, then we still try to sync whatever
-            // was pulled from the remote repository, even though changes
-            // made by the edit will have been discarded. We ignore this
-            // in the UI for now.
-            if (job.data.syncSucceeded) {
-              draftEdit.didSync = true;
-            }
+          // We check for the presence of a `syncSucceeded` key to know
+          // if the sync was successful. If this key exists, its value will
+          // be true. Note that the cause of sync failure could be a file
+          // other than the one being edited.
+          //
+          // By "the sync" we mean "the sync after a successfully saved
+          // edit." Remember that, if using git, we pull before we push.
+          // So, if we error on save, then we still try to sync whatever
+          // was pulled from the remote repository, even though changes
+          // made by the edit will have been discarded. We ignore this
+          // in the UI for now.
+          if (job.data.syncSucceeded) {
+            draftEdit.didSync = true;
           }
         }
       }
