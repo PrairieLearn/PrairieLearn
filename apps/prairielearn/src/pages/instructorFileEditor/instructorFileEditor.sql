@@ -8,7 +8,7 @@ WHERE
   AND fe.course_id = $course_id
   AND fe.dir_name = $dir_name
   AND fe.file_name = $file_name
-  AND fe.created_at > (NOW() - make_interval(secs => $max_age))
+  AND fe.created_at > (NOW() - make_interval(secs => $max_age_sec))
   AND fe.deleted_at IS NULL
 ORDER BY
   fe.created_at DESC
