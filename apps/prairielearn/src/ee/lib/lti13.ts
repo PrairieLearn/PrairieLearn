@@ -290,13 +290,8 @@ export async function access_token(lti13_instance_id: string) {
   }
 }
 
-/////////////////////////////////////////////////////////////////////////////////////////////////
-export async function sync_lineitems(instance: any, job: ServerJob) {
+export async function get_lineitems(instance: any) {
   const token = await access_token(instance.lti13_instance.id);
-
-  job.info(
-    `Polling for external assignments in ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
-  );
 
   const response = await fetch(instance.lti13_course_instance.lineitems, {
     method: 'GET',
@@ -305,6 +300,17 @@ export async function sync_lineitems(instance: any, job: ServerJob) {
   checkStatus(response);
 
   const data = (await response.json()) as Lti13LineitemType[];
+  console.log(data);
+  return data;
+}
+
+/////////////////////////////////////////////////////////////////////////////////////////////////
+export async function sync_lineitems(instance: any, job: ServerJob) {
+  job.info(
+    `Polling for external assignments in ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
+  );
+
+  const data = await get_lineitems(instance);
 
   await runInTransactionAsync(async () => {
     await queryAsync(sql.create_lineitems_temp, {});
@@ -378,7 +384,7 @@ export async function create_lineitem(
   checkStatus(response);
   const item = (await response.json()) as Lti13LineitemType;
 
-  job.info('Associating PrairieLearn assessment with new assignment');
+  job.info('Associating PrairieLearn assessment with the new assignment');
 
   await queryAsync(sql.update_lineitem_with_assessment, {
     lti13_course_instance_id: instance.lti13_course_instance.id,
@@ -453,7 +459,11 @@ function checkStatus(response: Response) {
   if (response.ok) {
     return response;
   } else {
-    // TODO: Check for throttling here
+    // TODO: Check for throttling
+    // https://canvas.instructure.com/doc/api/file.throttling.html
+    // 403 Forbidden (Rate Limit Exceeded)
+    // X-Request-Cost
+    // X-Rate-Limit-Remaining
     throw new HttpStatusError(response.status, response.statusText + hint);
   }
 }

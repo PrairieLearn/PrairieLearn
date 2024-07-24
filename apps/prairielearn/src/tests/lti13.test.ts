@@ -160,7 +160,7 @@ describe('LTI 1.3', () => {
       body: new URLSearchParams({
         iss: siteUrl,
         login_hint: 'fef15674-ae78-4763-b915-6fe3dbf42c67',
-        target_link_uri: `${siteUrl}//pl/lti13_instance/1/course_navigation`,
+        target_link_uri: `${siteUrl}/pl/lti13_instance/1/course_navigation`,
       }),
       redirect: 'manual',
     });
@@ -205,7 +205,7 @@ describe('LTI 1.3', () => {
       'https://purl.imsglobal.org/spec/lti/claim/deployment_id':
         '7fdce954-4c33-47c9-97b4-e435dbbed9bb',
       // This MUST match the value in the login request.
-      'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': `${siteUrl}//pl/lti13_instance/1/course_navigation`,
+      'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': `${siteUrl}/pl/lti13_instance/1/course_navigation`,
       'https://purl.imsglobal.org/spec/lti/claim/resource_link': {
         id: 'f6bc7a50-448c-4469-94f7-54d6ea882c2a',
         title: 'Test Course',
@@ -225,6 +225,17 @@ describe('LTI 1.3', () => {
       email: 'test-user@example.com',
       'https://purl.imsglobal.org/spec/lti/claim/custom': {
         uin: '123456789',
+      },
+      'https://purl.imsglobal.org/spec/lti-ags/claim/endpoint': {
+        scope: [
+          'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/score',
+        ],
+        errors: {
+          errors: {},
+        },
+        lineitems: `https://localhost:${oidcProviderPort}/api/lti/courses/1/line_items`,
+        validation_context: null,
       },
     })
       .setProtectedHeader({ alg: 'RS256' })
@@ -251,17 +262,13 @@ describe('LTI 1.3', () => {
           state,
           id_token: fakeIdToken,
         }),
-        redirect: 'manual',
       });
     });
 
-    // The page that we're being redirected to doesn't exist yet. Just assert
-    // that we were redirected to the right place.
-    assert.equal(finishLoginResponse.status, 302);
-    assert.equal(
-      finishLoginResponse.headers.get('location'),
-      `${siteUrl}//pl/lti13_instance/1/course_navigation`,
-    );
+    assert.equal(finishLoginResponse.status, 200);
+    // Inspect more into this response for output that is for Instructors vs for Students
+    // Setup link to a course instance (database modification)
+    // Confirm the redirect passes through to the course
 
     const repeatLoginTestNonce = await withServer(app, oidcProviderPort, async () => {
       return await fetchWithCookies(redirectUri, {
@@ -313,7 +320,7 @@ describe('LTI 1.3', () => {
           iss: siteUrl,
           // Missing required login_hint
           //login_hint: 'fef15674-ae78-4763-b915-6fe3dbf42c67',
-          target_link_uri: `${siteUrl}//pl/lti13_instance/1/course_navigation`,
+          target_link_uri: `${siteUrl}/pl/lti13_instance/1/course_navigation`,
         }),
         redirect: 'manual',
       },
@@ -326,7 +333,7 @@ describe('LTI 1.3', () => {
       body: new URLSearchParams({
         iss: siteUrl,
         login_hint: 'fef15674-ae78-4763-b915-6fe3dbf42c67',
-        target_link_uri: `${siteUrl}//pl/lti13_instance/1/course_navigation`,
+        target_link_uri: `${siteUrl}/pl/lti13_instance/1/course_navigation`,
       }),
       redirect: 'manual',
     });

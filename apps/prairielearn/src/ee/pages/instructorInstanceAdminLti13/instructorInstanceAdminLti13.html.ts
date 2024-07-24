@@ -11,6 +11,7 @@ import {
   AssessmentSetSchema,
   Lti13Lineitems,
 } from '../../../lib/db-types.js';
+import { Modal } from '../../../components/Modal.html.js';
 
 interface Lti13FullInstance {
   lti13_course_instance: Lti13CourseInstance;
@@ -112,8 +113,8 @@ export function InstructorInstanceAdminLti13({
                       <thead>
                         <tr>
                           <th colspan="2">PrairieLearn Assessment</th>
-                          <th>${instance.lti13_instance.name} Assignment</th>
                           <th>Actions</th>
+                          <th>${instance.lti13_instance.name} Assignment</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -148,11 +149,19 @@ export function InstructorInstanceAdminLti13({
                                 >
                               </td>
                               <td>
-                                ${lineitems_linked.map((item) =>
-                                  lineItem(item, resLocals.__csrf_token),
-                                )}
-                              </td>
-                              <td>
+                                ${Modal({
+                                  body: html`Hello`,
+                                  footer: html`<button
+                                    type="button"
+                                    class="btn btn-primary"
+                                    data-dismiss="modal"
+                                  >
+                                    Close
+                                  </button>`,
+                                  id: `assignment-${row.id}`,
+                                  title: `Configure ${row.title} in ${instance.lti13_course_instance.context_label}`,
+                                })}
+
                                 <form method="POST">
                                   <input
                                     type="hidden"
@@ -162,24 +171,36 @@ export function InstructorInstanceAdminLti13({
                                   <input type="hidden" name="assessment_id" value="${row.id}" />
                                   ${lineitems_linked.length === 0
                                     ? html`<button
-                                        class="btn btn-sm btn-success"
-                                        name="__action"
-                                        value="create_lineitem"
-                                      >
-                                        Create ${instance.lti13_course_instance.context_label}
-                                        assignment
-                                      </button>`
+                                          class="btn btn-sm btn-success"
+                                          name="__action"
+                                          value="create_lineitem"
+                                        >
+                                          Create ${instance.lti13_course_instance.context_label}
+                                          assignment
+                                        </button>
+                                        <button
+                                          class="btn btn-med-light"
+                                          type="button"
+                                          data-toggle="modal"
+                                          data-target="#assignment-${row.id}"
+                                        >
+                                          Configure
+                                        </button> `
                                     : html`
-                                        <!-- <button
-                                        class="btn btn-info"
-                                        name="__action"
-                                        value="send_grades"
-                                      >
-                                        Send grades to ${instance.lti13_instance.name}
-                                      </button>
-                                      -->
+                                        <button
+                                          class="btn btn-info"
+                                          name="__action"
+                                          value="send_grades"
+                                        >
+                                          Send grades to ${instance.lti13_instance.name}
+                                        </button>
                                       `}
                                 </form>
+                              </td>
+                              <td>
+                                ${lineitems_linked.map((item) =>
+                                  lineItem(item, resLocals.__csrf_token),
+                                )}
                               </td>
                             </tr>
                           `;
@@ -235,9 +256,7 @@ function lineItem(item: Lti13Lineitems, csrf: string, assessments: AssessmentRow
       <input type="hidden" name="lineitem_id" value="${item.lineitem_id}" />
       <span title="${item.lineitem_id}">${item.lineitem.label}</span>
       ${item.assessment_id
-        ? html`<button class="btn btn-xs btn-warning" name="__action" value="disassociate_lineitem">
-            Disassociate
-          </button>`
+        ? ''
         : html`<div class="input-group">
             <div class="input-group-prepend">
               <label class="input-group-text" for="${inputUuid}">
@@ -256,16 +275,21 @@ function lineItem(item: Lti13Lineitems, csrf: string, assessments: AssessmentRow
               </button>
             </div>
           </div> `}
-      <button class="btn btn-xs btn-danger" name="__action" value="delete_lineitem">
-        Delete from LMS
-      </button>
       <button
         class="btn btn-xs"
         onClick="event.preventDefault();$(this).next('.lineitem-detail').toggle();"
       >
         ...
       </button>
-      <pre class="lineitem-detail" style="display:none;">${JSON.stringify(item, null, 2)}</pre>
+      <div class="lineitem-detail" style="display:none;">
+        <button class="btn btn-xs btn-warning" name="__action" value="disassociate_lineitem">
+          Disassociate
+        </button>
+        <button class="btn btn-xs btn-danger" name="__action" value="delete_lineitem">
+          Delete from LMS
+        </button>
+        <pre>${JSON.stringify(item, null, 2)}</pre>
+      </div>
     </form>
   `;
 }

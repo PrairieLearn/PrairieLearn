@@ -93,6 +93,13 @@ router.get(
   }),
 );
 
+router.get(
+  '/:unsafe_lti13_course_instance_id/lineitems',
+  asyncHandler(async (req, res) => {
+    res.send('<p>Something included</p>');
+  }),
+);
+
 router.post(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
