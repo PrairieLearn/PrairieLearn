@@ -1,14 +1,20 @@
 import * as path from 'path';
 
-import * as modelist from 'ace-code/src/ext/modelist.js';
+import { getModeForPath } from 'ace-code/src/ext/modelist.js';
 import sha256 from 'crypto-js/sha256.js';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
 
-import * as error from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
+import { HttpStatusError } from '@prairielearn/error';
+import {
+  loadSqlEquiv,
+  queryOptionalRow,
+  queryRows,
+  queryAsync,
+  queryRow,
+} from '@prairielearn/postgres';
 
 import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
@@ -27,8 +33,8 @@ import {
   InstructorFileEditorNoPermission,
 } from './instructorFileEditor.html.js';
 
-const router = express.Router();
-const sql = sqldb.loadSqlEquiv(import.meta.url);
+const router = Router();
+const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/*',
@@ -82,7 +88,7 @@ router.get(
     const editorData: FileEditorData = {
       fileName: path.basename(relPath),
       normalizedFileName: path.normalize(relPath),
-      aceMode: modelist.getModeForPath(relPath).mode,
+      aceMode: getModeForPath(relPath).mode,
       diskContents: encodedContents,
       diskHash: getHash(encodedContents),
       sync_errors,
@@ -154,7 +160,7 @@ router.post(
   '/*',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a course Editor)');
+      throw new HttpStatusError(403, 'Access denied (must be a course Editor)');
     }
 
     const paths = getPaths(req.params[0], res.locals);
@@ -200,7 +206,7 @@ router.post(
 
       res.redirect(req.originalUrl);
     } else {
-      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
@@ -222,7 +228,7 @@ async function readDraftEdit({
   file_name: string;
   authn_user_id: string;
 }): Promise<DraftEdit | null> {
-  const fileEdit = await sqldb.queryOptionalRow(
+  const fileEdit = await queryOptionalRow(
     sql.select_file_edit,
     { user_id, course_id, dir_name, file_name, max_age_sec: 24 * 60 * 60 },
     FileEditSchema,
@@ -232,7 +238,7 @@ async function readDraftEdit({
   // contents of whatever draft we found, because we don't want to get
   // in a situation where the user is trapped with an unreadable draft.
   // We accept the possibility that a draft will occasionally be lost.
-  const deletedFileEdits = await sqldb.queryRows(
+  const deletedFileEdits = await queryRows(
     sql.soft_delete_file_edit,
     { user_id, course_id, dir_name, file_name },
     IdSchema.nullable(),
@@ -258,7 +264,7 @@ async function readDraftEdit({
 }
 
 async function updateJobSequenceId(edit_id: string, job_sequence_id: string) {
-  await sqldb.queryAsync(sql.update_job_sequence_id, { id: edit_id, job_sequence_id });
+  await queryAsync(sql.update_job_sequence_id, { id: edit_id, job_sequence_id });
 }
 
 async function writeDraftEdit({
@@ -278,7 +284,7 @@ async function writeDraftEdit({
   orig_hash: string;
   editContents: string;
 }) {
-  const deletedFileEdits = await sqldb.queryRows(
+  const deletedFileEdits = await queryRows(
     sql.soft_delete_file_edit,
     { user_id, course_id, dir_name, file_name },
     IdSchema.nullable(),
@@ -300,7 +306,7 @@ async function writeDraftEdit({
     authn_user_id,
   });
 
-  const editID = await sqldb.queryRow(
+  const editID = await queryRow(
     sql.insert_file_edit,
     { user_id, course_id, dir_name, file_name, orig_hash, file_id },
     IdSchema,
