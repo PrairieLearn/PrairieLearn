@@ -475,6 +475,22 @@ export const FileSchema = z.object({
 });
 export type File = z.infer<typeof FileSchema>;
 
+export const FileEditSchema = z.object({
+  course_id: IdSchema,
+  created_at: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
+  did_save: z.boolean().nullable(),
+  did_sync: z.boolean().nullable(),
+  dir_name: z.string(),
+  file_id: IdSchema.nullable(),
+  file_name: z.string(),
+  id: IdSchema,
+  job_sequence_id: IdSchema.nullable(),
+  orig_hash: z.string(),
+  user_id: IdSchema,
+});
+export type FileEdit = z.infer<typeof FileEditSchema>;
+
 export const GradingJobSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   auto_points: z.number().nullable(),

@@ -7,35 +7,29 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
-import type { User } from '../../lib/db-types.js';
-import { InstructorFilePaths } from '../../lib/instructorFiles.js';
+import type { FileEdit, User } from '../../lib/db-types.js';
+import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 
-export interface FileEdit {
-  userID: string;
-  authnUserId: string;
-  courseID: string;
-  dirName: string;
+export interface FileEditorData {
   fileName: string;
-  fileNameForDisplay: string;
+  normalizedFileName: string;
   aceMode: string;
-  jobSequenceId?: string;
+  diskContents: string;
+  diskHash: string;
+  sync_errors: string | null;
+  sync_warnings: string | null;
+}
+
+export interface DraftEdit {
+  fileEdit: FileEdit;
+  contents: string | undefined;
+  hash: string | undefined;
   jobSequence?: JobSequenceWithTokens;
-  diskContents?: string;
-  diskHash?: string;
-  sync_errors?: string | null;
-  sync_warnings?: string | null;
   alertChoice?: boolean;
   didSave?: boolean;
   didSync?: boolean;
-  fileID?: string;
-  editID?: string;
-  editContents?: string;
-  editHash?: string;
-  origHash?: string;
-  alertResults?: boolean;
-  hasSameHash?: boolean;
 }
 
 export function InstructorFileEditorNoPermission({
@@ -87,14 +81,16 @@ export function InstructorFileEditorNoPermission({
 
 export function InstructorFileEditor({
   resLocals,
-  fileEdit,
+  editorData,
   paths,
+  draftEdit,
 }: {
   resLocals: Record<string, any>;
-  fileEdit: FileEdit;
+  editorData: FileEditorData;
   paths: InstructorFilePaths;
+  draftEdit: DraftEdit | null;
 }) {
-  const { course, __csrf_token } = resLocals;
+  const { course, user, __csrf_token } = resLocals;
   const ansiUp = new AnsiUp();
 
   return html`
@@ -105,7 +101,7 @@ export function InstructorFileEditor({
           name="ace-base-path"
           content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
         />
-        ${HeadContents({ resLocals, pageTitle: `Edit ${fileEdit?.fileName}` })}
+        ${HeadContents({ resLocals, pageTitle: `Edit ${editorData?.fileName}` })}
         ${compiledScriptTag('instructorFileEditorClient.ts')}
       </head>
 
@@ -113,7 +109,7 @@ export function InstructorFileEditor({
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
 
         <main id="content" class="container-fluid">
-          ${fileEdit.sync_errors
+          ${editorData.sync_errors
             ? html`
                 <div class="alert alert-danger" role="alert">
                   <h2 class="h5 alert-heading">Sync error</h2>
@@ -125,11 +121,11 @@ export function InstructorFileEditor({
                   <pre
                     class="text-white rounded p-3 mb-0"
                     style="background-color: black;"
-                  ><code>${unsafeHtml(ansiUp.ansi_to_html(fileEdit.sync_errors))}</code></pre>
+                  ><code>${unsafeHtml(ansiUp.ansi_to_html(editorData.sync_errors))}</code></pre>
                 </div>
               `
             : ''}
-          ${fileEdit.sync_warnings
+          ${editorData.sync_warnings
             ? html`
                 <div class="alert alert-warning" role="alert">
                   <h2 class="h5 alert-heading">Sync warning</h2>
@@ -141,7 +137,7 @@ export function InstructorFileEditor({
                   <pre
                     class="text-white rounded p-3 mb-0"
                     style="background-color: black;"
-                  ><code>${unsafeHtml(ansiUp.ansi_to_html(fileEdit.sync_warnings))}</code></pre>
+                  ><code>${unsafeHtml(ansiUp.ansi_to_html(editorData.sync_warnings))}</code></pre>
                 </div>
               `
             : ''}
@@ -172,7 +168,7 @@ export function InstructorFileEditor({
                     </span>
                   </div>
                   <div
-                    class="col-auto collapse ${!fileEdit.alertChoice ? 'show' : ''}"
+                    class="col-auto collapse ${!draftEdit?.alertChoice ? 'show' : ''}"
                     id="buttons"
                   >
                     <button
@@ -186,7 +182,7 @@ export function InstructorFileEditor({
                       <i class="far fa-question-circle" aria-hidden="true"></i>
                       <span id="help-button-label">Show help</span>
                     </button>
-                    ${fileEdit.aceMode === 'ace/mode/json'
+                    ${editorData.aceMode === 'ace/mode/json'
                       ? html`
                           <button type="button" class="btn btn-light btn-sm js-reformat-file">
                             <i class="fas fa-paintbrush" aria-hidden="true"></i>
@@ -209,7 +205,7 @@ export function InstructorFileEditor({
               </div>
               <div class="collapse" id="help">
                 <div class="card-body">
-                  You are editing the file <code>${fileEdit.fileNameForDisplay}</code>. To save
+                  You are editing the file <code>${editorData.normalizedFileName}</code>. To save
                   changes, click <strong>Save and sync</strong> or use
                   <strong>Ctrl-S</strong> (Windows/Linux) or <strong>Cmd-S</strong> (Mac).
                   ${config.fileEditorUseGit
@@ -227,23 +223,23 @@ export function InstructorFileEditor({
               </div>
               <div class="card-body p-0 row">
                 <div class="container-fluid">
-                  ${fileEdit.alertResults
+                  ${draftEdit != null
                     ? html`
                         <div
-                          class="alert ${fileEdit.didSave && fileEdit.didSync
+                          class="alert ${draftEdit.didSave && draftEdit.didSync
                             ? 'alert-success'
                             : 'alert-danger'} alert-dismissible fade show m-2"
                           role="alert"
                         >
                           <div class="row align-items-center">
                             <div class="col-auto">
-                              ${fileEdit.didSave
-                                ? fileEdit.didSync
+                              ${draftEdit.didSave
+                                ? draftEdit.didSync
                                   ? 'File was both saved and synced successfully.'
                                   : 'File was saved, but failed to sync.'
                                 : 'Failed to save and sync file.'}
                             </div>
-                            ${fileEdit.jobSequence != null
+                            ${draftEdit?.jobSequence != null
                               ? html`
                                   <div class="col-auto">
                                     <button
@@ -267,13 +263,13 @@ export function InstructorFileEditor({
                               <span aria-hidden="true">&times;</span>
                             </button>
                           </div>
-                          ${fileEdit.jobSequence != null
+                          ${draftEdit.jobSequence != null
                             ? html`
                                 <div class="row collapse mt-4" id="job-sequence-results">
                                   <div class="card card-body">
                                     ${JobSequenceResults({
                                       course,
-                                      jobSequence: fileEdit.jobSequence,
+                                      jobSequence: draftEdit.jobSequence,
                                     })}
                                   </div>
                                 </div>
@@ -282,13 +278,13 @@ export function InstructorFileEditor({
                         </div>
                       `
                     : ''}
-                  ${fileEdit.alertChoice
+                  ${draftEdit?.alertChoice
                     ? html`
                         <div
                           class="alert alert-danger alert-dismissible fade show m-2 js-version-choice-content"
                           role="alert"
                         >
-                          ${fileEdit.hasSameHash
+                          ${draftEdit.fileEdit.orig_hash === editorData.diskHash
                             ? 'You were editing this file and made changes.'
                             : 'Both you and another user made changes to this file.'}
                           You may choose either to continue editing your draft or to discard your
@@ -314,12 +310,12 @@ export function InstructorFileEditor({
                 <div
                   id="file-editor-draft"
                   class="col"
-                  data-contents="${fileEdit.editContents}"
-                  data-ace-mode="${fileEdit.aceMode}"
-                  data-read-only="${fileEdit.alertChoice}"
+                  data-contents="${draftEdit?.contents ?? editorData.diskContents}"
+                  data-ace-mode="${editorData.aceMode}"
+                  data-read-only="${!!draftEdit?.alertChoice}"
                 >
                   <div class="card p-0">
-                    ${fileEdit.alertChoice
+                    ${draftEdit?.alertChoice
                       ? html`
                           <div class="card-header text-center js-version-choice-content">
                             <h4 class="mb-4">My version</h4>
@@ -334,16 +330,12 @@ export function InstructorFileEditor({
                         `
                       : ''}
                     <div class="card-body p-0 position-relative">
-                      <input type="hidden" name="file_edit_user_id" value="${fileEdit.userID}" />
-                      <input
-                        type="hidden"
-                        name="file_edit_course_id"
-                        value="${fileEdit.courseID}"
-                      />
+                      <input type="hidden" name="file_edit_user_id" value="${user.user_id}" />
+                      <input type="hidden" name="file_edit_course_id" value="${course.id}" />
                       <input
                         type="hidden"
                         name="file_edit_orig_hash"
-                        value="${fileEdit.diskHash}"
+                        value="${editorData.diskHash}"
                       />
                       <input type="hidden" name="file_edit_contents" />
                       <div class="editor"></div>
@@ -378,13 +370,13 @@ export function InstructorFileEditor({
                     </div>
                   </div>
                 </div>
-                ${fileEdit.alertChoice
+                ${draftEdit?.alertChoice
                   ? html`
                       <div
                         id="file-editor-disk"
                         class="col js-version-choice-content"
-                        data-contents="${fileEdit.diskContents}"
-                        data-ace-mode="${fileEdit.aceMode}"
+                        data-contents="${editorData.diskContents}"
+                        data-ace-mode="${editorData.aceMode}"
                       >
                         <div class="card p-0">
                           <div class="card-header text-center">

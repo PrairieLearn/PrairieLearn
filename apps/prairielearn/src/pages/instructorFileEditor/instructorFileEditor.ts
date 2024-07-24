@@ -14,7 +14,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { FileEditSchema, IdSchema } from '../../lib/db-types.js';
 import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
@@ -23,7 +23,8 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
 
 import {
-  FileEdit,
+  type DraftEdit,
+  type FileEditorData,
   InstructorFileEditor,
   InstructorFileEditorNoPermission,
 } from './instructorFileEditor.html.js';
@@ -69,27 +70,9 @@ router.get(
 
     const fullPath = paths.workingPath;
     const relPath = paths.workingPathRelativeToCourse;
-    const fileEdit: FileEdit = {
-      userID: res.locals.user.user_id,
-      authnUserId: res.locals.authn_user.user_id,
-      courseID: res.locals.course.id,
-      dirName: path.dirname(relPath),
-      fileName: path.basename(relPath),
-      fileNameForDisplay: path.normalize(relPath),
-      aceMode: modelist.getModeForPath(relPath).mode,
-      alertChoice: false,
-      didSave: false,
-      didSync: false,
-    };
-
-    debug('Read from db');
-    await readDraftEdit(fileEdit);
 
     debug('Read from disk');
     const contents = await fs.readFile(fullPath);
-    fileEdit.diskContents = b64EncodeUnicode(contents.toString('utf8'));
-    fileEdit.diskHash = getHash(fileEdit.diskContents);
-
     const binary = await isBinaryFile(contents);
     debug(`isBinaryFile: ${binary}`);
     if (binary) {
@@ -99,85 +82,101 @@ router.get(
       debug('found a text file');
     }
 
-    if (fileEdit.jobSequenceId != null) {
-      debug('Read job sequence');
-      fileEdit.jobSequence = await getJobSequence(fileEdit.jobSequenceId, res.locals.course.id);
-    }
+    const encodedContents = b64EncodeUnicode(contents.toString('utf8'));
+    const { errors: sync_errors, warnings: sync_warnings } = await getErrorsAndWarningsForFilePath(
+      res.locals.course.id,
+      relPath,
+    );
 
-    const data = await getErrorsAndWarningsForFilePath(res.locals.course.id, relPath);
-    fileEdit.sync_errors = data.errors;
-    fileEdit.sync_warnings = data.warnings;
+    const editorData: FileEditorData = {
+      fileName: path.basename(relPath),
+      normalizedFileName: path.normalize(relPath),
+      aceMode: modelist.getModeForPath(relPath).mode,
+      diskContents: encodedContents,
+      diskHash: getHash(encodedContents),
+      sync_errors,
+      sync_warnings,
+    };
 
-    if (fileEdit && fileEdit.jobSequence?.status === 'Running') {
-      // Because of the redirect, if the job sequence ends up failing to save,
-      // then the corresponding draft will be lost (all drafts are soft-deleted
-      // from the database on readDraftEdit).
-      debug('Job sequence is still running - redirect to status page');
-      res.redirect(`${res.locals.urlPrefix}/jobSequence/${fileEdit.jobSequenceId}`);
-      return;
-    }
+    debug('Read from db');
+    const draftEdit = await readDraftEdit({
+      user_id: res.locals.user.user_id,
+      authn_user_id: res.locals.authn_user.user_id,
+      course_id: res.locals.course.id,
+      dir_name: path.dirname(relPath),
+      file_name: editorData.fileName,
+    });
 
-    if (fileEdit.jobSequence) {
-      // No draft is older than 24 hours, so it is safe to assume that no
-      // job sequence is legacy... but, just in case, we will check and log
-      // a warning if we find one. We will treat the corresponding draft as
-      // if it was neither saved nor synced.
-      if (fileEdit.jobSequence.legacy) {
-        debug('Found a legacy job sequence');
-        logger.warn(
-          `Found a legacy job sequence (id=${fileEdit.jobSequenceId}) ` +
-            `in a file edit (id=${fileEdit.editID})`,
+    if (draftEdit != null) {
+      if (draftEdit.fileEdit.job_sequence_id != null) {
+        debug('Read job sequence');
+        draftEdit.jobSequence = await getJobSequence(
+          draftEdit.fileEdit.job_sequence_id,
+          res.locals.course.id,
         );
-      } else {
-        const job = fileEdit.jobSequence.jobs[0];
+      }
 
-        debug('Found a job sequence');
-        debug(` saveAttempted=${job.data.saveAttempted}`);
-        debug(` saveSucceeded=${job.data.saveSucceeded}`);
-        debug(` syncAttempted=${job.data.syncAttempted}`);
-        debug(` syncSucceeded=${job.data.syncSucceeded}`);
+      if (draftEdit.jobSequence) {
+        if (draftEdit.jobSequence?.status === 'Running') {
+          // Because of the redirect, if the job sequence ends up failing to save,
+          // then the corresponding draft will be lost (all drafts are soft-deleted
+          // from the database on readDraftEdit).
+          debug('Job sequence is still running - redirect to status page');
+          res.redirect(`${res.locals.urlPrefix}/jobSequence/${draftEdit.jobSequence.id}`);
+          return;
+        }
 
-        // We check for the presence of a `saveSucceeded` key to know if
-        // the edit was saved (i.e., written to disk in the case of no git,
-        // or written to disk and then pushed in the case of git). If this
-        // key exists, its value will be true.
-        if (job.data.saveSucceeded) {
-          fileEdit.didSave = true;
+        // No draft is older than 24 hours, so it is safe to assume that no
+        // job sequence is legacy... but, just in case, we will check and log
+        // a warning if we find one. We will treat the corresponding draft as
+        // if it was neither saved nor synced.
+        if (draftEdit.jobSequence.legacy) {
+          debug('Found a legacy job sequence');
+          logger.warn(
+            `Found a legacy job sequence (id=${draftEdit.jobSequence.id}) ` +
+              `in a file edit (id=${draftEdit.fileEdit.id})`,
+          );
+        } else {
+          const job = draftEdit.jobSequence.jobs[0];
 
-          // We check for the presence of a `syncSucceeded` key to know
-          // if the sync was successful. If this key exists, its value will
-          // be true. Note that the cause of sync failure could be a file
-          // other than the one being edited.
-          //
-          // By "the sync" we mean "the sync after a successfully saved
-          // edit." Remember that, if using git, we pull before we push.
-          // So, if we error on save, then we still try to sync whatever
-          // was pulled from the remote repository, even though changes
-          // made by the edit will have been discarded. We ignore this
-          // in the UI for now.
-          if (job.data.syncSucceeded) {
-            fileEdit.didSync = true;
+          debug('Found a job sequence');
+          debug(` saveAttempted=${job.data.saveAttempted}`);
+          debug(` saveSucceeded=${job.data.saveSucceeded}`);
+          debug(` syncAttempted=${job.data.syncAttempted}`);
+          debug(` syncSucceeded=${job.data.syncSucceeded}`);
+
+          // We check for the presence of a `saveSucceeded` key to know if
+          // the edit was saved (i.e., written to disk in the case of no git,
+          // or written to disk and then pushed in the case of git). If this
+          // key exists, its value will be true.
+          if (job.data.saveSucceeded) {
+            draftEdit.didSave = true;
+
+            // We check for the presence of a `syncSucceeded` key to know
+            // if the sync was successful. If this key exists, its value will
+            // be true. Note that the cause of sync failure could be a file
+            // other than the one being edited.
+            //
+            // By "the sync" we mean "the sync after a successfully saved
+            // edit." Remember that, if using git, we pull before we push.
+            // So, if we error on save, then we still try to sync whatever
+            // was pulled from the remote repository, even though changes
+            // made by the edit will have been discarded. We ignore this
+            // in the UI for now.
+            if (job.data.syncSucceeded) {
+              draftEdit.didSync = true;
+            }
           }
         }
       }
-    }
 
-    if (fileEdit.editID) {
-      // There is a recently saved draft ...
-      fileEdit.alertResults = true;
-      if (!fileEdit.didSave && fileEdit.editHash !== fileEdit.diskHash) {
-        // ...that was not written to disk and that differs from what is on disk.
-        fileEdit.alertChoice = true;
-        fileEdit.hasSameHash = fileEdit.origHash === fileEdit.diskHash;
+      if (!draftEdit.didSave) {
+        // There is a recently saved draft that was not written to disk and that differs from what is on disk.
+        draftEdit.alertChoice = true;
       }
     }
 
-    if (!fileEdit.alertChoice) {
-      fileEdit.editContents = fileEdit.diskContents;
-      fileEdit.origHash = fileEdit.diskHash;
-    }
-
-    res.send(InstructorFileEditor({ resLocals: res.locals, fileEdit, paths }));
+    res.send(InstructorFileEditor({ resLocals: res.locals, editorData, paths, draftEdit }));
   }),
 );
 
@@ -244,60 +243,64 @@ function getHash(contents: string) {
   return sha256(contents).toString();
 }
 
-async function readDraftEdit(fileEdit: FileEdit) {
+async function readDraftEdit({
+  user_id,
+  course_id,
+  dir_name,
+  file_name,
+  authn_user_id,
+}: {
+  user_id: string;
+  course_id: string;
+  dir_name: string;
+  file_name: string;
+  authn_user_id: string;
+}): Promise<DraftEdit | null> {
   debug('Looking for previously saved drafts');
-  const draftResult = await sqldb.queryAsync(sql.select_file_edit, {
-    user_id: fileEdit.userID,
-    course_id: fileEdit.courseID,
-    dir_name: fileEdit.dirName,
-    file_name: fileEdit.fileName,
-  });
-  if (draftResult.rows.length > 0) {
-    debug(
-      `Found ${draftResult.rows.length} saved drafts, the first of which has id ${draftResult.rows[0].id}`,
-    );
-    if (draftResult.rows[0].age < 24) {
-      fileEdit.editID = draftResult.rows[0].id;
-      fileEdit.origHash = draftResult.rows[0].orig_hash;
-      fileEdit.jobSequenceId = draftResult.rows[0].job_sequence_id;
-      fileEdit.fileID = draftResult.rows[0].file_id;
-    } else {
-      debug(`Rejected this draft, which had age ${draftResult.rows[0].age} >= 24 hours`);
-    }
+  const fileEdit = await sqldb.queryOptionalRow(
+    sql.select_file_edit,
+    { user_id, course_id, dir_name, file_name, max_age: 24 * 60 * 60 * 1000 },
+    FileEditSchema,
+  );
+  if (fileEdit) {
+    debug(`Found a saved draft with id ${fileEdit.id}`);
   } else {
-    debug('Found no saved drafts');
+    debug('Found no recent saved drafts');
   }
 
   // We are choosing to soft-delete all drafts *before* reading the
   // contents of whatever draft we found, because we don't want to get
   // in a situation where the user is trapped with an unreadable draft.
   // We accept the possibility that a draft will occasionally be lost.
-  const result = await sqldb.queryAsync(sql.soft_delete_file_edit, {
-    user_id: fileEdit.userID,
-    course_id: fileEdit.courseID,
-    dir_name: fileEdit.dirName,
-    file_name: fileEdit.fileName,
-  });
-  debug(`Deleted ${result.rowCount} previously saved drafts`);
-  for (const row of result.rows) {
-    if (fileEdit.fileID != null && idsEqual(row.file_id, fileEdit.fileID)) {
-      debug(`Defer removal of file_id=${row.file_id} from file store until after reading contents`);
+  const deletedFileEdits = await sqldb.queryRows(
+    sql.soft_delete_file_edit,
+    { user_id, course_id, dir_name, file_name },
+    IdSchema,
+  );
+  debug(`Deleted ${deletedFileEdits.length} previously saved drafts`);
+  for (const file_id of deletedFileEdits) {
+    if (fileEdit?.file_id != null && idsEqual(file_id, fileEdit.file_id)) {
+      debug(`Defer removal of file_id=${file_id} from file store until after reading contents`);
     } else {
-      debug(`Remove file_id=${row.file_id} from file store`);
-      await deleteFile(row.file_id, fileEdit.userID);
+      debug(`Remove file_id=${file_id} from file store`);
+      await deleteFile(file_id, authn_user_id);
     }
   }
+  if (fileEdit == null) return null;
 
-  if (fileEdit.editID && fileEdit.fileID) {
+  let contents: string | undefined;
+  let hash: string | undefined;
+  if (fileEdit.file_id != null) {
     debug('Read contents of file edit');
-    const result = await getFile(fileEdit.fileID);
-    const contents = b64EncodeUnicode(result.contents.toString('utf8'));
-    fileEdit.editContents = contents;
-    fileEdit.editHash = getHash(fileEdit.editContents);
+    const result = await getFile(fileEdit.file_id);
+    contents = b64EncodeUnicode(result.contents.toString('utf8'));
+    hash = getHash(contents);
 
-    debug(`Remove file_id=${fileEdit.fileID} from file store`);
-    await deleteFile(fileEdit.fileID, fileEdit.userID);
+    debug(`Remove file_id=${fileEdit.file_id} from file store`);
+    await deleteFile(fileEdit.file_id, authn_user_id);
   }
+
+  return { fileEdit, contents, hash };
 }
 
 async function updateJobSequenceId(edit_id: string, job_sequence_id: string) {
@@ -330,7 +333,7 @@ async function writeDraftEdit({
   debug(`Deleted ${deletedFileEdits.length} previously saved drafts`);
   for (const file_id of deletedFileEdits) {
     debug(`Remove file_id=${file_id} from file store`);
-    await deleteFile(file_id, user_id);
+    await deleteFile(file_id, authn_user_id);
   }
 
   debug('Write contents to file store');
