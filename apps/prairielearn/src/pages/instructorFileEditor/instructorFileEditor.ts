@@ -170,7 +170,7 @@ router.get(
         }
       }
 
-      if (!draftEdit.didSave) {
+      if (!draftEdit.didSave && draftEdit.hash !== editorData.diskHash) {
         // There is a recently saved draft that was not written to disk and that differs from what is on disk.
         draftEdit.alertChoice = true;
       }
