@@ -42,7 +42,7 @@ export function InstructorCourseInstanceBilling({
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           ${!editable
             ? html`
                 <div class="alert alert-warning">

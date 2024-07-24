@@ -230,7 +230,7 @@ export function Workspace({
           </div>
         </nav>
 
-        <main class="d-flex flex-column flex-grow h-100">
+        <main id="content" class="d-flex flex-column flex-grow h-100">
           <div
             id="loading"
             class="d-flex h-100 flex-grow justify-content-center align-items-center"
