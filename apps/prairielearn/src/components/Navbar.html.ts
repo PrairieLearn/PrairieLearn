@@ -1,5 +1,5 @@
 import { flash, type FlashMessageType } from '@prairielearn/flash';
-import { html, unsafeHtml } from '@prairielearn/html';
+import { html, HtmlValue, unsafeHtml } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 
@@ -141,7 +141,7 @@ function UserDropdownMenu({
     authn_is_administrator,
   } = resLocals;
 
-  let displayedName: string;
+  let displayedName: HtmlValue;
   if (authz_data) {
     displayedName = authz_data.user.name || authz_data.user.uid;
 
@@ -154,17 +154,18 @@ function UserDropdownMenu({
     displayedName = '(no user)';
   }
 
-  const userBadge =
+  if (
     navbarType === 'student' &&
     course_instance &&
     (authz_data.authn_has_course_permission_preview ||
       authz_data.authn_has_course_instance_permission_view)
-      ? html`<span class="badge badge-warning">student</span>`
-      : authz_data?.overrides
-        ? html`<span class="badge badge-warning">modified</span>`
-        : navbarType === 'instructor'
-          ? html`<span class="badge badge-success">staff</span>`
-          : '';
+  ) {
+    displayedName = html`${displayedName} <span class="badge badge-warning">student</span>`;
+  } else if (authz_data?.overrides) {
+    displayedName = html`${displayedName} <span class="badge badge-warning">modified</span>`;
+  } else if (navbarType === 'instructor') {
+    displayedName = html`${displayedName} <span class="badge badge-success">staff</span>`;
+  }
 
   return html`
     <ul
@@ -185,11 +186,9 @@ function UserDropdownMenu({
           aria-haspopup="true"
           aria-expanded="false"
         >
-          ${displayedName} ${userBadge}
+          ${displayedName}
           ${newsCount
-            ? html`
-                <span class="badge badge-pill badge-primary news-item-count">${newsCount}</span>
-              `
+            ? html`<span class="badge badge-pill badge-primary news-item-count">${newsCount}</span>`
             : ''}
         </button>
         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
