@@ -177,11 +177,10 @@ function UserDropdownMenu({
       data-has-instructor-access="${authz_data?.user_with_requested_uid_has_instructor_access_to_course_instance?.toString()}"
     >
       <li class="nav-item dropdown mb-2 mb-md-0 mr-2 ${navPage === 'effective' ? 'active' : ''}">
-        <a
-          class="nav-link dropdown-toggle"
-          href="#"
+        <button
+          class="btn nav-link dropdown-toggle"
           id="navbarDropdown"
-          role="button"
+          type="button"
           data-toggle="dropdown"
           aria-haspopup="true"
           aria-expanded="false"
@@ -192,7 +191,7 @@ function UserDropdownMenu({
                 <span class="badge badge-pill badge-primary news-item-count">${newsCount}</span>
               `
             : ''}
-        </a>
+        </button>
         <div class="dropdown-menu dropdown-menu-right" aria-labelledby="navbarDropdown">
           ${authn_is_administrator
             ? html`
@@ -619,11 +618,10 @@ function NavbarInstructor({
       >
         ${course.short_name}
       </a>
-      <a
-        class="nav-link dropdown-toggle dropdown-toggle-split"
-        href="#"
+      <button
+        class="btn nav-link dropdown-toggle dropdown-toggle-split"
         id="navbarDropdownMenuCourseAdminLink"
-        role="button"
+        type="button"
         data-toggle="dropdown"
         aria-label="Change course"
         aria-haspopup="true"
@@ -634,8 +632,7 @@ function NavbarInstructor({
               delay:200ms" hx-target="#navbarDropdownMenuCourseAdmin"
             `
           : ''}
-      >
-      </a>
+      ></button>
       <div
         class="dropdown-menu"
         aria-labelledby="navbarDropdownMenuCourseAdminLink"
@@ -684,11 +681,10 @@ function NavbarInstructor({
             >
               ${course_instance.short_name}
             </a>
-            <a
-              class="nav-link dropdown-toggle dropdown-toggle-split"
-              href="#"
+            <button
+              class="btn nav-link dropdown-toggle dropdown-toggle-split"
               id="navbarDropdownMenuInstanceAdminLink"
-              role="button"
+              type="button"
               data-toggle="dropdown"
               aria-label="Change course instance"
               aria-haspopup="true"
@@ -696,7 +692,7 @@ function NavbarInstructor({
               hx-get="/pl/navbar/course/${course.id}/course_instance_switcher/${course_instance.id}"
               hx-trigger="show-course-instance-switcher once delay:200ms"
               hx-target="#navbarDropdownMenuInstanceAdmin"
-            ></a>
+            ></button>
             <div
               class="dropdown-menu"
               aria-labelledby="navbarDropdownMenuInstanceAdminLink"
@@ -738,17 +734,15 @@ function NavbarInstructor({
                   </a>
                   ${assessments != null
                     ? html`
-                        <a
-                          class="nav-link dropdown-toggle dropdown-toggle-split"
-                          href="#"
+                        <button
+                          class="btn nav-link dropdown-toggle dropdown-toggle-split"
                           id="navbarDropdownMenuLink"
-                          role="button"
+                          type="button"
                           data-toggle="dropdown"
                           aria-haspopup="true"
                           aria-expanded="false"
                           aria-label="Change assessment"
-                        >
-                        </a>
+                        ></button>
                         <div
                           class="dropdown-menu"
                           aria-labelledby="navbarDropdownMenuLink"
@@ -781,11 +775,10 @@ function NavbarInstructor({
           <li class="navbar-text mx-2 no-select">/</li>
 
           <li class="nav-item dropdown" id="navbar-course-instance-switcher">
-            <a
-              class="nav-link dropdown-toggle"
-              href="#"
+            <button
+              class="btn nav-link dropdown-toggle"
               id="navbarDropdownMenuInstanceChooseLink"
-              role="button"
+              type="button"
               data-toggle="dropdown"
               aria-haspopup="true"
               aria-expanded="false"
@@ -794,7 +787,7 @@ function NavbarInstructor({
               hx-target="#navbarDropdownMenuInstanceChoose"
             >
               Choose course instance...
-            </a>
+            </button>
             <div
               class="dropdown-menu"
               aria-labelledby="navbarDropdownMenuInstanceChooseLink"
