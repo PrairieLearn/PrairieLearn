@@ -334,6 +334,13 @@
   </div>
 </nav>
 
+<% // Course announcements are shown only to instructors. %>
+<% if (navbarType === 'instructor' && typeof course !== 'undefined' && course.announcement_html && course.announcement_color) { %>
+  <div class="alert alert-<%= course.announcement_color %> mb-0 rounded-0 text-center">
+    <%- course.announcement_html %>
+  </div>
+<% } %>
+
 <% // Mapping navPage to navtab sets
 const navPagesTabs = {
     instance_admin: 'navTabs/instructorInstanceAdmin',
