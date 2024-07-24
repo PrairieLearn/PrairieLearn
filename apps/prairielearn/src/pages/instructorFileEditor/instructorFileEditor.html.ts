@@ -101,7 +101,7 @@ export function InstructorFileEditor({
           name="ace-base-path"
           content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
         />
-        ${HeadContents({ resLocals, pageTitle: `Edit ${editorData?.fileName}` })}
+        ${HeadContents({ resLocals, pageTitle: `Edit ${editorData.fileName}` })}
         ${compiledScriptTag('instructorFileEditorClient.ts')}
       </head>
 
@@ -239,7 +239,7 @@ export function InstructorFileEditor({
                                   : 'File was saved, but failed to sync.'
                                 : 'Failed to save and sync file.'}
                             </div>
-                            ${draftEdit?.jobSequence != null
+                            ${draftEdit.jobSequence != null
                               ? html`
                                   <div class="col-auto">
                                     <button
