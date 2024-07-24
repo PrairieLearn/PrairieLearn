@@ -262,15 +262,15 @@ async function readDraftEdit({
   const deletedFileEdits = await sqldb.queryRows(
     sql.soft_delete_file_edit,
     { user_id, course_id, dir_name, file_name },
-    IdSchema,
+    IdSchema.nullable(),
   );
   debug(`Deleted ${deletedFileEdits.length} previously saved drafts`);
   for (const file_id of deletedFileEdits) {
-    if (fileEdit?.file_id != null && idsEqual(file_id, fileEdit.file_id)) {
-      debug(`Defer removal of file_id=${file_id} from file store until after reading contents`);
-    } else {
+    if (file_id != null && (fileEdit?.file_id == null || !idsEqual(file_id, fileEdit.file_id))) {
       debug(`Remove file_id=${file_id} from file store`);
       await deleteFile(file_id, authn_user_id);
+    } else {
+      debug(`Defer removal of file_id=${file_id} from file store until after reading contents`);
     }
   }
   if (fileEdit == null) return null;
@@ -315,12 +315,14 @@ async function writeDraftEdit({
   const deletedFileEdits = await sqldb.queryRows(
     sql.soft_delete_file_edit,
     { user_id, course_id, dir_name, file_name },
-    IdSchema,
+    IdSchema.nullable(),
   );
   debug(`Deleted ${deletedFileEdits.length} previously saved drafts`);
   for (const file_id of deletedFileEdits) {
-    debug(`Remove file_id=${file_id} from file store`);
-    await deleteFile(file_id, authn_user_id);
+    if (file_id != null) {
+      debug(`Remove file_id=${file_id} from file store`);
+      await deleteFile(file_id, authn_user_id);
+    }
   }
 
   debug('Write contents to file store');
