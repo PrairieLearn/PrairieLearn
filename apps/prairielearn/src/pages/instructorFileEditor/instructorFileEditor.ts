@@ -14,6 +14,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
+import { IdSchema } from '../../lib/db-types.js';
 import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
@@ -204,15 +205,12 @@ router.post(
 
       debug('Write draft file edit to db and to file store');
       const editID = await writeDraftEdit({
-        userID: res.locals.user.user_id,
-        authnUserID: res.locals.authn_user.user_id,
-        courseID: res.locals.course.id,
-        dirName: paths.workingDirectory,
-        fileName: paths.workingFilename,
-        origHash: req.body.file_edit_orig_hash,
-        coursePath: res.locals.course.path,
-        uid: res.locals.user.uid,
-        user_name: res.locals.user.name,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        course_id: res.locals.course.id,
+        dir_name: paths.workingDirectory,
+        file_name: paths.workingFilename,
+        orig_hash: req.body.file_edit_orig_hash,
         editContents: req.body.file_edit_contents,
       });
 
@@ -307,56 +305,52 @@ async function updateJobSequenceId(edit_id: string, job_sequence_id: string) {
   debug(`Update file edit id=${edit_id}: job_sequence_id=${job_sequence_id}`);
 }
 
-async function writeDraftEdit(fileEdit: {
-  userID: string;
-  authnUserID: string;
-  courseID: string;
-  dirName: string;
-  fileName: string;
-  origHash: string;
-  coursePath: string;
-  uid: string;
-  user_name: string;
+async function writeDraftEdit({
+  user_id,
+  authn_user_id,
+  course_id,
+  dir_name,
+  file_name,
+  orig_hash,
+  editContents,
+}: {
+  user_id: string;
+  authn_user_id: string;
+  course_id: string;
+  dir_name: string;
+  file_name: string;
+  orig_hash: string;
   editContents: string;
 }) {
-  const deletedFileEdits = await sqldb.queryAsync(sql.soft_delete_file_edit, {
-    user_id: fileEdit.userID,
-    course_id: fileEdit.courseID,
-    dir_name: fileEdit.dirName,
-    file_name: fileEdit.fileName,
-  });
-  debug(`Deleted ${deletedFileEdits.rowCount} previously saved drafts`);
-  for (const row of deletedFileEdits.rows) {
-    debug(`Remove file_id=${row.file_id} from file store`);
-    await deleteFile(row.file_id, fileEdit.userID);
+  const deletedFileEdits = await sqldb.queryRows(
+    sql.soft_delete_file_edit,
+    { user_id, course_id, dir_name, file_name },
+    IdSchema,
+  );
+  debug(`Deleted ${deletedFileEdits.length} previously saved drafts`);
+  for (const file_id of deletedFileEdits) {
+    debug(`Remove file_id=${file_id} from file store`);
+    await deleteFile(file_id, user_id);
   }
 
   debug('Write contents to file store');
-  const fileID = await uploadFile({
-    display_filename: fileEdit.fileName,
-    contents: Buffer.from(b64DecodeUnicode(fileEdit.editContents), 'utf8'),
+  const file_id = await uploadFile({
+    display_filename: file_name,
+    contents: Buffer.from(b64DecodeUnicode(editContents), 'utf8'),
     type: 'instructor_file_edit',
     assessment_id: null,
     assessment_instance_id: null,
     instance_question_id: null,
-    user_id: fileEdit.userID,
-    authn_user_id: fileEdit.authnUserID,
+    user_id,
+    authn_user_id,
   });
-  debug(`Wrote file_id=${fileID} to file store`);
+  debug(`Wrote file_id=${file_id} to file store`);
 
-  const params = {
-    user_id: fileEdit.userID,
-    course_id: fileEdit.courseID,
-    dir_name: fileEdit.dirName,
-    file_name: fileEdit.fileName,
-    orig_hash: fileEdit.origHash,
-    file_id: fileID,
-  };
-  debug(
-    `Insert file edit into db: ${params.user_id}, ${params.course_id}, ${params.dir_name}, ${params.file_name}`,
+  const editID = await sqldb.queryRow(
+    sql.insert_file_edit,
+    { user_id, course_id, dir_name, file_name, orig_hash, file_id },
+    IdSchema,
   );
-  const result = await sqldb.queryOneRowAsync(sql.insert_file_edit, params);
-  const editID = result.rows[0].id;
   debug(`Created file edit in database with id ${editID}`);
   return editID;
 }

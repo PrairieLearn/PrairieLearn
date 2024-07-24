@@ -20,6 +20,7 @@ export interface FileEdit {
   fileName: string;
   fileNameForDisplay: string;
   aceMode: string;
+  jobSequenceId?: string;
   jobSequence?: JobSequenceWithTokens;
   diskContents?: string;
   diskHash?: string;
