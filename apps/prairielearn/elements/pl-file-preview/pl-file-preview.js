@@ -1,12 +1,9 @@
 /* eslint-env browser,jquery */
 /* global nb */
-// Note about notebookjs: I'm not thrilled with how notebook and marked are styling the
-// Markdown. Unfortunately, I don't have the design skills to make it any better than
-// it is right now. Perhaps somebody else can pick up where I left off and make improvements.
-// Similarly, it might be nice to have syntax highlighting for the code blocks; but, that is
-// also a task for another day.
-// One last idea: Do we want a "hide markdown" button (assuming that it is usually the code
-// blocks that are of interest to most instructors)?
+// Note about notebookjs: The notebook styling is less than ideal. It may make sense to create a 
+// low-priority story to address this in the future. Similarly, it may make sense to add syntax 
+// highlighting in the future.
+
 (() => {
   async function downloadFile(path, name) {
     const result = await fetch(path, { method: 'GET' });
@@ -120,6 +117,12 @@
               const type = blob.type;
               if (type === 'text/plain') {
                 if (escapedFileName.endsWith('.ipynb')) {
+                  console.log("Here 1")
+                  // return math.sqrt(square(x1-x2)+square(y1-y2)) 
+                  //await import('./notebook_pl.min.js');
+                  const Marked = await import('marked');
+                  console.log('Here2');                          
+                  nb.markdown = Marked.marked.parse;
                   const notebook = nb.parse(JSON.parse(await blob.text()));
                   const rendered = notebook.render();
                   pre.appendChild(rendered);

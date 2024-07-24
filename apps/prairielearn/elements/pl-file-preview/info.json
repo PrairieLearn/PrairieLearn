@@ -2,11 +2,16 @@
   "controller": "pl-file-preview.py",
   "dependencies": {
     "nodeModulesScripts": [
-      "dompurify/dist/purify.min.js",
-      "marked/marked.min.js",
       "notebookjs/notebook.min.js"
     ],
     "elementScripts": ["pl-file-preview.js"],
     "elementStyles": ["pl-file-preview.css"]
+  },
+  "dynamicDependencies": {
+    "nodeModulesScripts": {
+       "xx_purify" : "dompurify/dist/purify.min.js",
+       "xxnotebook" : "notebookjs/notebook.min.js",
+       "marked" : "marked/lib/marked.esm.js"
+    }
   }
 }
