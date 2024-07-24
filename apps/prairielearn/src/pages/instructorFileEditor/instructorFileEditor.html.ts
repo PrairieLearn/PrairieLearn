@@ -12,6 +12,31 @@ import { InstructorFilePaths } from '../../lib/instructorFiles.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 
+export interface FileEdit {
+  userID: string;
+  authnUserId: string;
+  courseID: string;
+  dirName: string;
+  fileName: string;
+  fileNameForDisplay: string;
+  aceMode: string;
+  jobSequence?: JobSequenceWithTokens;
+  diskContents?: string;
+  diskHash?: string;
+  sync_errors?: string | null;
+  sync_warnings?: string | null;
+  alertChoice?: boolean;
+  didSave?: boolean;
+  didSync?: boolean;
+  fileID?: string;
+  editID?: string;
+  editContents?: string;
+  editHash?: string;
+  origHash?: string;
+  alertResults?: boolean;
+  hasSameHash?: boolean;
+}
+
 export function InstructorFileEditorNoPermission({
   resLocals,
   courseOwners,
@@ -217,7 +242,7 @@ export function InstructorFileEditor({
                                   : 'File was saved, but failed to sync.'
                                 : 'Failed to save and sync file.'}
                             </div>
-                            ${fileEdit.jobSequenceId != null
+                            ${fileEdit.jobSequence != null
                               ? html`
                                   <div class="col-auto">
                                     <button
@@ -385,30 +410,4 @@ export function InstructorFileEditor({
       </body>
     </html>
   `.toString();
-}
-export interface FileEdit {
-  userID: string;
-  authnUserId: string;
-  courseID: string;
-  coursePath: string;
-  dirName: string;
-  fileName: string;
-  fileNameForDisplay: string;
-  aceMode: string;
-  jobSequence?: JobSequenceWithTokens;
-  diskContents?: string;
-  diskHash?: string;
-  jobSequenceId?: string;
-  sync_errors?: string | null;
-  sync_warnings?: string | null;
-  alertChoice?: boolean;
-  didSave?: boolean;
-  didSync?: boolean;
-  fileID?: string;
-  editID?: string;
-  editContents?: string;
-  editHash?: string;
-  origHash?: string;
-  alertResults?: boolean;
-  hasSameHash?: boolean;
 }

@@ -72,7 +72,6 @@ router.get(
       userID: res.locals.user.user_id,
       authnUserId: res.locals.authn_user.user_id,
       courseID: res.locals.course.id,
-      coursePath: paths.coursePath,
       dirName: path.dirname(relPath),
       fileName: path.basename(relPath),
       fileNameForDisplay: path.normalize(relPath),
@@ -304,10 +303,7 @@ async function readDraftEdit(fileEdit: FileEdit) {
 }
 
 async function updateJobSequenceId(edit_id: string, job_sequence_id: string) {
-  await sqldb.queryAsync(sql.update_job_sequence_id, {
-    id: edit_id,
-    job_sequence_id,
-  });
+  await sqldb.queryAsync(sql.update_job_sequence_id, { id: edit_id, job_sequence_id });
   debug(`Update file edit id=${edit_id}: job_sequence_id=${job_sequence_id}`);
 }
 
