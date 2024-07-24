@@ -21,57 +21,35 @@ import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
-import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
-import { InstructorFileEditor } from './instructorFileEditor.html.js';
+import {
+  FileEdit,
+  InstructorFileEditor,
+  InstructorFileEditorNoPermission,
+} from './instructorFileEditor.html.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:instructorFileEditor');
 
-interface FileEdit {
-  userID: string;
-  authnUserId: string;
-  courseID: string;
-  coursePath: string;
-  dirName: string;
-  fileName: string;
-  fileNameForDisplay: string;
-  aceMode: string;
-  jobSequence?: JobSequenceWithTokens;
-  diskContents?: string;
-  diskHash?: string;
-  jobSequenceId?: string;
-  sync_errors?: string | null;
-  sync_errors_ansified?: string | null;
-  sync_warnings?: string | null;
-  sync_warnings_ansified?: string | null;
-  alertChoice?: boolean;
-  didSave?: boolean;
-  didSync?: boolean;
-  fileID?: string;
-  editID?: string;
-  editContents?: string;
-  editHash?: string;
-  origHash?: string;
-  alertResults?: boolean;
-  hasSameHash?: boolean;
-}
-
 router.get(
   '/*',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_permission_edit) {
-      // Access denied, but instead of sending them to an error page, we'll show
-      // them an explanatory message and prompt them to get edit permissions.
-      res.locals.course_owners = await getCourseOwners(res.locals.course.id);
-      res.status(403).send(InstructorFileEditor({ resLocals: res.locals }));
+    // Do not allow users to edit the exampleCourse
+    if (res.locals.course.example_course) {
+      res
+        .status(403)
+        .send(InstructorFileEditorNoPermission({ resLocals: res.locals, courseOwners: [] }));
       return;
     }
 
-    // Do not allow users to edit the exampleCourse
-    if (res.locals.course.example_course) {
-      res.status(403).send(InstructorFileEditor({ resLocals: res.locals }));
+    if (!res.locals.authz_data.has_course_permission_edit) {
+      // Access denied, but instead of sending them to an error page, we'll show
+      // them an explanatory message and prompt them to get edit permissions.
+      const courseOwners = await getCourseOwners(res.locals.course.id);
+      res
+        .status(403)
+        .send(InstructorFileEditorNoPermission({ resLocals: res.locals, courseOwners }));
       return;
     }
 
@@ -205,9 +183,7 @@ router.get(
       fileEdit.origHash = fileEdit.diskHash;
     }
 
-    res.locals.fileEdit = fileEdit;
-    res.locals.fileEdit.paths = paths;
-    res.send(InstructorFileEditor({ resLocals: res.locals }));
+    res.send(InstructorFileEditor({ resLocals: res.locals, fileEdit, paths }));
   }),
 );
 
