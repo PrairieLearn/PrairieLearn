@@ -259,7 +259,7 @@ async function readDraftEdit({
   debug('Looking for previously saved drafts');
   const fileEdit = await sqldb.queryOptionalRow(
     sql.select_file_edit,
-    { user_id, course_id, dir_name, file_name, max_age: 24 * 60 * 60 * 1000 },
+    { user_id, course_id, dir_name, file_name, max_age: 24 * 60 * 60 },
     FileEditSchema,
   );
   if (fileEdit) {
