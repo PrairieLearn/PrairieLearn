@@ -2,7 +2,6 @@ import * as path from 'path';
 
 import * as modelist from 'ace-code/src/ext/modelist.js';
 import sha256 from 'crypto-js/sha256.js';
-import debugfn from 'debug';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -30,7 +29,6 @@ import {
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const debug = debugfn('prairielearn:instructorFileEditor');
 
 router.get(
   '/*',
@@ -70,15 +68,9 @@ router.get(
     const fullPath = paths.workingPath;
     const relPath = paths.workingPathRelativeToCourse;
 
-    debug('Read from disk');
     const contents = await fs.readFile(fullPath);
-    const binary = await isBinaryFile(contents);
-    debug(`isBinaryFile: ${binary}`);
-    if (binary) {
-      debug('found a binary file');
+    if (await isBinaryFile(contents)) {
       throw new Error('Cannot edit binary file');
-    } else {
-      debug('found a text file');
     }
 
     const encodedContents = b64EncodeUnicode(contents.toString('utf8'));
@@ -97,7 +89,6 @@ router.get(
       sync_warnings,
     };
 
-    debug('Read from db');
     const draftEdit = await readDraftEdit({
       user_id: res.locals.user.user_id,
       authn_user_id: res.locals.authn_user.user_id,
@@ -108,7 +99,6 @@ router.get(
 
     if (draftEdit != null) {
       if (draftEdit.fileEdit.job_sequence_id != null) {
-        debug('Read job sequence');
         draftEdit.jobSequence = await getJobSequence(
           draftEdit.fileEdit.job_sequence_id,
           res.locals.course.id,
@@ -120,18 +110,11 @@ router.get(
           // Because of the redirect, if the job sequence ends up failing to save,
           // then the corresponding draft will be lost (all drafts are soft-deleted
           // from the database on readDraftEdit).
-          debug('Job sequence is still running - redirect to status page');
           res.redirect(`${res.locals.urlPrefix}/jobSequence/${draftEdit.jobSequence.id}`);
           return;
         }
 
         const job = draftEdit.jobSequence.jobs[0];
-
-        debug('Found a job sequence');
-        debug(` saveAttempted=${job.data.saveAttempted}`);
-        debug(` saveSucceeded=${job.data.saveSucceeded}`);
-        debug(` syncAttempted=${job.data.syncAttempted}`);
-        debug(` syncSucceeded=${job.data.syncSucceeded}`);
 
         // We check for the presence of a `saveSucceeded` key to know if
         // the edit was saved (i.e., written to disk in the case of no git,
@@ -170,7 +153,6 @@ router.get(
 router.post(
   '/*',
   asyncHandler(async (req, res) => {
-    debug('POST /');
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a course Editor)');
     }
@@ -187,9 +169,6 @@ router.post(
     // applied to a file and not to a directory.
 
     if (req.body.__action === 'save_and_sync') {
-      debug('Save and sync');
-
-      debug('Write draft file edit to db and to file store');
       const editID = await writeDraftEdit({
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
@@ -243,17 +222,11 @@ async function readDraftEdit({
   file_name: string;
   authn_user_id: string;
 }): Promise<DraftEdit | null> {
-  debug('Looking for previously saved drafts');
   const fileEdit = await sqldb.queryOptionalRow(
     sql.select_file_edit,
     { user_id, course_id, dir_name, file_name, max_age_sec: 24 * 60 * 60 },
     FileEditSchema,
   );
-  if (fileEdit) {
-    debug(`Found a saved draft with id ${fileEdit.id}`);
-  } else {
-    debug('Found no recent saved drafts');
-  }
 
   // We are choosing to soft-delete all drafts *before* reading the
   // contents of whatever draft we found, because we don't want to get
@@ -264,13 +237,9 @@ async function readDraftEdit({
     { user_id, course_id, dir_name, file_name },
     IdSchema.nullable(),
   );
-  debug(`Deleted ${deletedFileEdits.length} previously saved drafts`);
   for (const file_id of deletedFileEdits) {
     if (file_id != null && (fileEdit?.file_id == null || !idsEqual(file_id, fileEdit.file_id))) {
-      debug(`Remove file_id=${file_id} from file store`);
       await deleteFile(file_id, authn_user_id);
-    } else {
-      debug(`Defer removal of file_id=${file_id} from file store until after reading contents`);
     }
   }
   if (fileEdit == null) return null;
@@ -278,12 +247,10 @@ async function readDraftEdit({
   let contents: string | undefined;
   let hash: string | undefined;
   if (fileEdit.file_id != null) {
-    debug('Read contents of file edit');
     const result = await getFile(fileEdit.file_id);
     contents = b64EncodeUnicode(result.contents.toString('utf8'));
     hash = getHash(contents);
 
-    debug(`Remove file_id=${fileEdit.file_id} from file store`);
     await deleteFile(fileEdit.file_id, authn_user_id);
   }
 
@@ -292,7 +259,6 @@ async function readDraftEdit({
 
 async function updateJobSequenceId(edit_id: string, job_sequence_id: string) {
   await sqldb.queryAsync(sql.update_job_sequence_id, { id: edit_id, job_sequence_id });
-  debug(`Update file edit id=${edit_id}: job_sequence_id=${job_sequence_id}`);
 }
 
 async function writeDraftEdit({
@@ -317,15 +283,12 @@ async function writeDraftEdit({
     { user_id, course_id, dir_name, file_name },
     IdSchema.nullable(),
   );
-  debug(`Deleted ${deletedFileEdits.length} previously saved drafts`);
   for (const file_id of deletedFileEdits) {
     if (file_id != null) {
-      debug(`Remove file_id=${file_id} from file store`);
       await deleteFile(file_id, authn_user_id);
     }
   }
 
-  debug('Write contents to file store');
   const file_id = await uploadFile({
     display_filename: file_name,
     contents: Buffer.from(b64DecodeUnicode(editContents), 'utf8'),
@@ -336,14 +299,12 @@ async function writeDraftEdit({
     user_id,
     authn_user_id,
   });
-  debug(`Wrote file_id=${file_id} to file store`);
 
   const editID = await sqldb.queryRow(
     sql.insert_file_edit,
     { user_id, course_id, dir_name, file_name, orig_hash, file_id },
     IdSchema,
   );
-  debug(`Created file edit in database with id ${editID}`);
   return editID;
 }
 
