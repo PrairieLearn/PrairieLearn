@@ -3,18 +3,6 @@ import { html } from '@prairielearn/html';
 
 import { AssessmentAccessRuleRow } from './instructorAssessmentAccess.types.js';
 
-/**
- *
- * This function adjusts the date to accommodate a situation where the local timezone is different from the timezone of the course. It does so by creating a new date object of the given date object or string and finding the local timezone offset (in milliseconds). Then it returns a new date object with the timezone offset subtracted from the original date.
- *
- * @param dateString - The date string to adjust
- */
-export function adjustedDate(dateString: string | Date) {
-  const date = new Date(dateString);
-  const timezoneOffset = date.getTimezoneOffset() * 60000;
-  return new Date(date.getTime() - timezoneOffset);
-}
-
 export function AccessRulesTable({
   accessRules,
   ptHost,

@@ -7,11 +7,8 @@ import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { Modal } from '../../src/components/Modal.html.js';
-import { AssessmentAccessRuleSchema, DateFromISOString } from '../../src/lib/db-types.js';
-import {
-  AccessRulesTable,
-  adjustedDate,
-} from '../../src/pages/instructorAssessmentAccess/accessRulesTable.js';
+import { AssessmentAccessRuleSchema } from '../../src/lib/db-types.js';
+import { AccessRulesTable } from '../../src/pages/instructorAssessmentAccess/accessRulesTable.js';
 import { EditAccessRuleModal } from '../../src/pages/instructorAssessmentAccess/editAccessRuleModal.js';
 import {
   AssessmentAccessRuleRowSchema,
@@ -50,6 +47,16 @@ function configureEditValidation(modal: HTMLElement) {
   // Ensure that the end date is always after the start date.
   startDateInput.addEventListener('change', handleStartDateChange);
   handleStartDateChange();
+}
+
+/**
+ * Formats a given date object to a string that can be used in JSON. The date
+ * is formatted in the given timezone and truncated to the second.
+ */
+function formatDateForJson(date: Date, timezone: string): string {
+  // The `formatDate` function doesn't include a "T" between the date and time,
+  // so we need to add it manually.
+  return formatDate(date, timezone).slice(0, 19).replace(' ', 'T');
 }
 
 onDocumentReady(() => {
@@ -102,16 +109,11 @@ onDocumentReady(() => {
   // Submit the modified access rules when the "Save and sync" button is clicked.
   on('click', '.js-save-and-sync-button', () => {
     const accessRulesMap = accessRulesData.map(({ assessment_access_rule }) => {
-      // TODO: is this `adjustedDate` bit necessary?
       const startDate = assessment_access_rule.start_date
-        ? adjustedDate(formatDate(new Date(assessment_access_rule.start_date), timezone))
-            .toISOString()
-            .slice(0, 19)
+        ? formatDateForJson(assessment_access_rule.start_date, timezone)
         : null;
       const endDate = assessment_access_rule.end_date
-        ? adjustedDate(formatDate(new Date(assessment_access_rule.end_date), timezone))
-            .toISOString()
-            .slice(0, 19)
+        ? formatDateForJson(assessment_access_rule.end_date, timezone)
         : null;
 
       const rule = {
