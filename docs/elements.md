@@ -244,6 +244,10 @@ To compute `max-select`, we use a similar algorithm (note the different default 
 
 ### `pl-dropdown` element
 
+!!! warning
+
+    Instructors are strongly encouraged to avoid `pl-dropdown` in newer questions. For questions with a single dropdown, a better alternative is to use [`pl-multiple-choice`](#pl-multiple-choice-element), setting the attribute `display="dropdown"`. Using the multiple choice element provides better support for formatted option text (including Math formulas), randomized selection and ordering of options (both correct options and distractors) and partial scores for distractors. For questions using multiple dropdowns with the same set of options, the [`pl-matching`](#pl-matching-element) element provides a better user experience and interface.
+
 Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a <pl-answer></pl-answer> element (ie. <pl-answer>Possible Answer 1</pl-answer>).
 
 #### Sample element
@@ -741,7 +745,7 @@ a `pl-answer` that has attributes:
 | ---------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `correct`  | boolean | false   | Is this a correct answer to the question?                                                                                                      |
 | `feedback` | string  | —       | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
-| `score`    | float   | -       | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
+| `score`    | float   | —       | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
 
 #### Example implementations
 
@@ -2341,16 +2345,17 @@ answer. This answer may be correct, incorrect, or invalid.
 
 ## Deprecated Elements
 
-Note: The following PrairieLearn Elements have been
-**deprecated**. These elements are still supported for backwards
-compatibility, but they should not be used in new questions.
+!!! note
+
+    The following PrairieLearn Elements have been **deprecated**. These elements are still supported for backwards compatibility, but they should not be used in new questions.
 
 ### `pl-prairiedraw-figure` element
 
 Create and display a prairiedraw image.
 
-**WARNING**: This element is **deprecated** and should not be used in
-new questions.
+!!! warning
+
+    This element is **deprecated** and should not be used in new questions.
 
 #### Sample element
 
@@ -2388,7 +2393,9 @@ The provided `script-name` corresponds to a file located within the director for
 
 This element displays a 3D scene with objects that the student can (optionally) translate and/or rotate. It can be used only for output (e.g., as part of a question that asks for something else to be submitted). Or, it can be used for input (e.g., comparing a submitted pose of the body-fixed objects to a correct orientation). Information about the current pose can be hidden from the student and, if visible, can be displayed in a variety of formats, so the element can be used for many different types of questions.
 
-**WARNING**: This element is **deprecated** and should not be used in new questions.
+!!! warning
+
+    This element is **deprecated** and should not be used in new questions.
 
 #### Sample element
 
@@ -2540,8 +2547,9 @@ that if there are many submitted answers, the page will load slowly.
 
 Display the partial score for a specific answer variable.
 
-**WARNING**: This element is **deprecated** and should not be used in
-new questions.
+!!! warning
+
+    This element is **deprecated** and should not be used in new questions.
 
 #### Sample element
 
