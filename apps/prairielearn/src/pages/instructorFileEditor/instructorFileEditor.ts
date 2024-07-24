@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import * as modelist from 'ace-code/src/ext/modelist.js';
-import { AnsiUp } from 'ansi_up';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import * as express from 'express';
@@ -106,13 +105,8 @@ router.get(
     }
 
     const data = await getErrorsAndWarningsForFilePath(res.locals.course.id, relPath);
-    const ansiUp = new AnsiUp();
     fileEdit.sync_errors = data.errors;
-    fileEdit.sync_errors_ansified =
-      fileEdit.sync_errors && ansiUp.ansi_to_html(fileEdit.sync_errors);
     fileEdit.sync_warnings = data.warnings;
-    fileEdit.sync_warnings_ansified =
-      fileEdit.sync_warnings && ansiUp.ansi_to_html(fileEdit.sync_warnings);
 
     if (fileEdit && fileEdit.jobSequence?.status === 'Running') {
       // Because of the redirect, if the job sequence ends up failing to save,

@@ -1,3 +1,5 @@
+import { AnsiUp } from 'ansi_up';
+
 import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
@@ -67,6 +69,8 @@ export function InstructorFileEditor({
   paths: InstructorFilePaths;
 }) {
   const { course, __csrf_token } = resLocals;
+  const ansiUp = new AnsiUp();
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -95,7 +99,7 @@ export function InstructorFileEditor({
                   <pre
                     class="text-white rounded p-3 mb-0"
                     style="background-color: black;"
-                  ><code>${unsafeHtml(fileEdit.sync_errors_ansified ?? '')}</code></pre>
+                  ><code>${unsafeHtml(ansiUp.ansi_to_html(fileEdit.sync_errors))}</code></pre>
                 </div>
               `
             : ''}
@@ -111,7 +115,7 @@ export function InstructorFileEditor({
                   <pre
                     class="text-white rounded p-3 mb-0"
                     style="background-color: black;"
-                  ><code>${unsafeHtml(fileEdit.sync_warnings_ansified ?? '')}</code></pre>
+                  ><code>${unsafeHtml(ansiUp.ansi_to_html(fileEdit.sync_warnings))}</code></pre>
                 </div>
               `
             : ''}
@@ -396,9 +400,7 @@ export interface FileEdit {
   diskHash?: string;
   jobSequenceId?: string;
   sync_errors?: string | null;
-  sync_errors_ansified?: string | null;
   sync_warnings?: string | null;
-  sync_warnings_ansified?: string | null;
   alertChoice?: boolean;
   didSave?: boolean;
   didSync?: boolean;
