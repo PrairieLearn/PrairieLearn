@@ -90,7 +90,7 @@ export function InstructorFileEditor({
   paths: InstructorFilePaths;
   draftEdit: DraftEdit | null;
 }) {
-  const { course, user, __csrf_token } = resLocals;
+  const { course, __csrf_token } = resLocals;
   const ansiUp = new AnsiUp();
 
   return html`
@@ -330,8 +330,6 @@ export function InstructorFileEditor({
                         `
                       : ''}
                     <div class="card-body p-0 position-relative">
-                      <input type="hidden" name="file_edit_user_id" value="${user.user_id}" />
-                      <input type="hidden" name="file_edit_course_id" value="${course.id}" />
                       <input
                         type="hidden"
                         name="file_edit_orig_hash"
