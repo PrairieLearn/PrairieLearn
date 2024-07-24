@@ -8,21 +8,21 @@ import { AssessmentAccessRuleRow } from './instructorAssessmentAccess.types.js';
 
 export function EditAccessRuleModal({
   accessRule,
-  addAccessRule,
+  index,
+  mode,
   timeZoneName,
-  rowNumber,
 }: {
   accessRule: AssessmentAccessRuleRow;
-  addAccessRule: boolean;
+  index: number;
+  mode: 'add' | 'edit';
   timeZoneName: string;
-  rowNumber: number;
 }) {
   return Modal({
     id: 'editAccessRuleModal',
-    title: `${addAccessRule ? 'Add access rule' : 'Edit access rule'}`,
+    title: `${mode === 'add' ? 'Add access rule' : 'Edit access rule'}`,
     body: html`
       <div class="form-group">
-        <input type="hidden" name="row" class="access-rule-row" value="${rowNumber}" />
+        <input type="hidden" name="row" value="${index}" />
         <label for="mode">Mode</label>
         <select
           class="form-control access-rule-mode"
@@ -260,7 +260,7 @@ export function EditAccessRuleModal({
     `,
     footer: html`
       <button type="button" class="btn btn-primary js-save-access-rule-button">
-        ${addAccessRule ? 'Add access rule' : 'Update access rule'}
+        ${mode === 'add' ? 'Add access rule' : 'Update access rule'}
       </button>
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
     `,
