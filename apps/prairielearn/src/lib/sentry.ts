@@ -5,7 +5,9 @@ import * as Sentry from '@prairielearn/sentry';
 export function enrichSentryEventMiddleware(req: Request, res: Response, next: NextFunction) {
   // This will ensure that this middleware is always run in an isolated
   // context so that we don't accidentally leak data between requests.
-  Sentry.withScope((scope) => {
+  Sentry.runWithAsyncContext(() => {
+    const scope = Sentry.getCurrentScope();
+
     // This event processor will run whenever an event is captured by Sentry.
     // It will use as much context as it can, but will gracefully handle the
     // case where context is missing.
