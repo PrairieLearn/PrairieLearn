@@ -13,6 +13,8 @@ import {
   AssessmentQuestionRowSchema,
 } from './publicInstructorAssessmentQuestions.html.js';
 
+import { z } from 'zod';
+
 // TEST, put in different file (like assessments.ts)?
 async function selectAssessmentById(assessment_id: string): Promise<Assessment> {
   return await queryRow(
@@ -24,19 +26,13 @@ async function selectAssessmentById(assessment_id: string): Promise<Assessment> 
   );
 }
 
-class BooleanModel { // TEST
-  static parse(value: any): boolean {
-    // Assuming the query returns a truthy or falsy value that can be directly converted to boolean
-    // Adjust the implementation based on the actual data structure returned by the query
-    return Boolean(value);
-  }
-}
+const BooleanSchema = z.boolean();
 
 async function checkCourseInstancePublic(course_instance_id: string): Promise<boolean> {
   const isPublic = await queryRow(
     sql.check_course_instance_is_public,
     { course_instance_id },
-    BooleanModel, // Use the custom BooleanModel that directly handles boolean values
+    BooleanSchema, // Use the BooleanSchema to validate the boolean result
   );
   return isPublic;
 }
@@ -49,16 +45,13 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
 
-    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString()); // TEST, req.params
-    const course = await selectCourseById(courseId); // TEST, req.params
-
     const isCourseInstancePublic = await checkCourseInstancePublic(res.locals.course_instance_id); // TEST, req.params
-
-    console.log('isCourseInstancePublic', isCourseInstancePublic); // TEST
-
     if (!isCourseInstancePublic) {
       throw new error.HttpStatusError(404, `The course instance that owns this assessment is not public.`);
     }
+
+    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString()); // TEST, req.params
+    const course = await selectCourseById(courseId); // TEST, req.params
 
     res.locals.course = course; // TEST, req.params
     res.locals.assessment = await selectAssessmentById(res.locals.assessment_id); // TEST, req.params

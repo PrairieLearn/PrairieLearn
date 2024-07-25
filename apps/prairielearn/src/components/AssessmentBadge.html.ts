@@ -6,9 +6,11 @@ export function AssessmentBadge({
   urlPrefix,
   plainUrlPrefix,
   course_instance_id,
+  publicURL = false,
 }: {
   assessment: { assessment_id: string; color: string; label: string };
   hideLink?: boolean;
+  publicURL?: boolean;
 } & ( // If urlPrefix is not provided, then plainUrlPrefix and course_instance_id must be provided and the appropriate URL prefix will be constructed
   | {
       urlPrefix: string;
@@ -17,18 +19,24 @@ export function AssessmentBadge({
     }
   | { urlPrefix?: undefined; plainUrlPrefix: string; course_instance_id: string }
 )) {
+
   if (hideLink) {
     return html`
       <span class="badge color-${assessment.color} color-hover">${assessment.label}</span>
     `;
   }
+  if (publicURL) {
+    // For public assessments, the URL prefix is different
+    urlPrefix = `${plainUrlPrefix}/public/course_instance/${course_instance_id}/instructor/assessment/${assessment.assessment_id}/questions`;
+  }
   if (urlPrefix === undefined) {
     // Construct the URL prefix with the appropriate course instance
-    urlPrefix = `${plainUrlPrefix}/course_instance/${course_instance_id}/instructor`;
-  }
+    urlPrefix = `${plainUrlPrefix}/course_instance/${course_instance_id}/instructor/assessment/${assessment.assessment_id}`;
+  } 
+
   return html`
     <a
-      href="${urlPrefix}/assessment/${assessment.assessment_id}"
+      href="${urlPrefix}"
       class="badge color-${assessment.color} color-hover"
       onclick="event.stopPropagation();"
     >

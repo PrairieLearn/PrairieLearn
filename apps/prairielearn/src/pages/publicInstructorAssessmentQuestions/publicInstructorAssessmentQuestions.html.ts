@@ -203,10 +203,11 @@ function AssessmentQuestionsTable({
                 <td>
                   ${question.other_assessments
                     ? question.other_assessments.map((assessment) => {
-                        const urlPrefixAssessments = `${urlPrefix}/course_instance/${course_instance_id}`
                         return html`${AssessmentBadge({
                           assessment,
-                          urlPrefix: urlPrefixAssessments,
+                          plainUrlPrefix: urlPrefix,
+                          course_instance_id,
+                          publicURL: true,
                         })}`;
                       })
                     : ''}
