@@ -89,7 +89,7 @@ Note: PrairieLearn Elements listed next have been
 compatibility, but they should not be used in new questions.
 
 - [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
-  - **Deprecated**: use [`pl-multiple-choice`](#pl-multiple-choice-element) or [`pl-matching`](#pl-matching-element) instead.
+  - **Deprecated**: use [`pl-multiple-choice`](#pl-multiple-choice-element) with `display="dropdown"` for individual elements, or [`pl-matching`](#pl-matching-element) for multiple dropdowns with the same set of options.
 - [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
   figure.
   - **Deprecated**: use [`pl-drawing`](#pl-drawing-element) instead.
