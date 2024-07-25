@@ -1,5 +1,11 @@
 # @prairielearn/prettier-plugin-sql
 
+## 2.0.4
+
+### Patch Changes
+
+- 01ebb70: Upgrade to Prettier 3.3.3
+
 ## 2.0.3
 
 ### Patch Changes

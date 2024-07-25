@@ -4,6 +4,7 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+<<<<<<< HEAD
 import {
   Lti13CourseInstance,
   Lti13Instance,
@@ -12,6 +13,10 @@ import {
   Lti13Lineitems,
 } from '../../../lib/db-types.js';
 import { Modal } from '../../../components/Modal.html.js';
+=======
+import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Lti13CourseInstance, Lti13Instance } from '../../../lib/db-types.js';
+>>>>>>> master
 
 interface Lti13FullInstance {
   lti13_course_instance: Lti13CourseInstance;
@@ -49,9 +54,7 @@ export function InstructorInstanceAdminLti13({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-        })}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         <script>

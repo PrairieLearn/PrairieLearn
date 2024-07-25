@@ -322,7 +322,10 @@ const ConfigSchema = z.object({
    * https://expressjs.com/en/4x/api.html#trust.proxy.options.table
    */
   trustProxy: z.union([z.boolean(), z.number(), z.string()]).default(false),
-  workspaceLogsS3Bucket: z.string().nullable().default(null),
+  workspaceLogsS3Bucket: z
+    .string()
+    .nullable()
+    .default(process.env.NODE_ENV !== 'production' ? 'workspace-logs' : null),
   workspaceLogsFlushIntervalSec: z.number().default(60),
   /**
    * The number of days after which a workspace version's logs should no longer

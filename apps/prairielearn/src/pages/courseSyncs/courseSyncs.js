@@ -1,20 +1,21 @@
 // @ts-check
 import { ECR } from '@aws-sdk/client-ecr';
 import * as async from 'async';
-import { formatISO } from 'date-fns';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
 
 import { DockerName } from '@prairielearn/docker-utils';
 import { HttpStatusError } from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
+import { IdSchema } from '../../lib/db-types.js';
 import * as syncHelpers from '../shared/syncHelpers.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
+import { CourseSyncs, ImageRowSchema, JobSequenceRowSchema } from './courseSyncs.html.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
 router.get(
@@ -24,84 +25,60 @@ router.get(
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
-    const jobSequencesResult = await sqldb.queryAsync(sql.select_sync_job_sequences, {
-      course_id: res.locals.course.id,
-    });
-    res.locals.job_sequences = jobSequencesResult.rows;
+    const jobSequences = await queryRows(
+      sql.select_sync_job_sequences,
+      { course_id: res.locals.course.id },
+      JobSequenceRowSchema,
+    );
 
-    const result = await sqldb.queryAsync(sql.question_images, {
-      course_id: res.locals.course.id,
-    });
-    res.locals.images = result.rows;
-    res.locals.imageSyncNeeded = false;
+    const images = await queryRows(
+      sql.question_images,
+      { course_id: res.locals.course.id },
+      ImageRowSchema,
+    );
 
     if (config.cacheImageRegistry) {
       const ecr = new ECR(makeAwsClientConfig());
-      await async.each(res.locals.images, async (image) => {
-        var repository = new DockerName(image.image);
+      await async.eachLimit(images, 3, async (image) => {
+        const repository = new DockerName(image.image);
         image.tag = repository.getTag() || 'latest (implied)';
         // Default to get overwritten later
         image.pushed_at = null;
         image.imageSyncNeeded = false;
         image.invalid = false;
 
+        /** @type {import('@aws-sdk/client-ecr').DescribeImagesCommandOutput} */
         let data;
         try {
           data = await ecr.describeImages({
             repositoryName: repository.getRepository(),
+            imageIds: [{ imageTag: repository.getTag() ?? 'latest' }],
           });
         } catch (err) {
           if (err.name === 'InvalidParameterException') {
             image.invalid = true;
-            return null;
-          } else if (err.name === 'RepositoryNotFoundException') {
+            return;
+          } else if (
+            err.name === 'RepositoryNotFoundException' ||
+            err.name === 'ImageNotFoundException'
+          ) {
             image.imageSyncNeeded = true;
-            return null;
+            return;
           }
           throw err;
         }
 
-        const ecrInfo = {};
-        data.imageDetails?.forEach((imageDetails) => {
-          if (imageDetails.imageTags) {
-            imageDetails.imageTags.forEach((tag) => {
-              ecrInfo[imageDetails.repositoryName + ':' + tag] = imageDetails;
-            });
-          }
-        });
+        const ecrInfo = data.imageDetails?.[0];
 
         // Put info from ECR into image for EJS
-        var repoName = repository.getCombined(true);
-        image.digest_full = ecrInfo[repoName]?.imageDigest ?? '';
-        image.digest = image.digest_full.substring(0, 24);
-        if (image.digest !== image.digest_full) {
-          image.digest += '...';
-        }
-        image.size = (ecrInfo[repoName]?.imageSizeInBytes ?? 0) / (1000 * 1000);
-        const pushed_at = ecrInfo[repoName]?.imagePushedAt;
-        if (pushed_at) {
-          image.pushed_at = formatISO(pushed_at);
-        } else {
-          res.locals.imageSyncNeeded = true;
-          image.imageSyncNeeded = true;
-        }
+        image.digest = ecrInfo?.imageDigest ?? '';
+        image.pushed_at = ecrInfo?.imagePushedAt;
+        image.imageSyncNeeded = image.pushed_at == null;
+        image.size = ecrInfo?.imageSizeInBytes ?? 0;
       });
-
-      // TODO: format with JavaScript instead of SQL
-      const result = await sqldb.queryAsync(sql.format_pushed_at, {
-        pushed_at_array: res.locals.images.map((i) => i.pushed_at),
-        course_id: res.locals.course.id,
-      });
-      if (result.rowCount !== res.locals.images.length) {
-        throw new Error('pushed_at length mismatch');
-      }
-
-      for (let i = 0; i < res.locals.images.length; i++) {
-        res.locals.images[i].pushed_at_formatted = result.rows[i].pushed_at_formatted;
-      }
     }
 
-    res.render(import.meta.filename.replace(/\.js$/, '.ejs'), res.locals);
+    res.send(CourseSyncs({ resLocals: res.locals, images, jobSequences }));
   }),
 );
 
@@ -114,20 +91,32 @@ router.post(
 
     if (req.body.__action === 'pull') {
       const jobSequenceId = await syncHelpers.pullAndUpdate(res.locals);
-      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+      res.redirect(`${res.locals.urlPrefix}/jobSequence/${jobSequenceId}`);
     } else if (req.body.__action === 'status') {
       const jobSequenceId = await syncHelpers.gitStatus(res.locals);
-      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
-    } else if (req.body.__action === 'syncImages') {
-      const result = await sqldb.queryAsync(sql.question_images, {
-        course_id: res.locals.course.id,
-      });
-      let images = result.rows;
-      if ('single_image' in req.body) {
-        images = _.filter(result.rows, ['image', req.body.single_image]);
+      res.redirect(`${res.locals.urlPrefix}/jobSequence/${jobSequenceId}`);
+    } else if (req.body.__action === 'syncImage') {
+      const questionId = await queryOptionalRow(
+        sql.check_question_with_image,
+        { course_id: res.locals.course.id, image: req.body.single_image },
+        IdSchema,
+      );
+      if (questionId == null) {
+        throw new HttpStatusError(400, 'Image not found in any question for this course');
       }
+      const jobSequenceId = await syncHelpers.ecrUpdate(
+        [{ image: req.body.single_image }],
+        res.locals,
+      );
+      res.redirect(`${res.locals.urlPrefix}/jobSequence/${jobSequenceId}`);
+    } else if (req.body.__action === 'syncImages') {
+      const images = await queryRows(
+        sql.question_images,
+        { course_id: res.locals.course.id },
+        ImageRowSchema,
+      );
       const jobSequenceId = await syncHelpers.ecrUpdate(images, res.locals);
-      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
+      res.redirect(`${res.locals.urlPrefix}/jobSequence/${jobSequenceId}`);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

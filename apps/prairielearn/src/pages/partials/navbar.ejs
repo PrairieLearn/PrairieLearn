@@ -101,9 +101,9 @@
 
           <% if (locals.authn_is_administrator) { %>
 
-            <a class="dropdown-item" id="navbar-administrator-toggle">
+            <button type="button" class="dropdown-item" id="navbar-administrator-toggle">
               <% if (locals.access_as_administrator) { %>Turn off administrator access<% } else { %>Turn on administrator access<% } %>
-            </a>
+            </button>
 
             <div class="dropdown-divider"></div>
 
@@ -175,27 +175,21 @@
             <h6 class="dropdown-header"><%= headingAuthnViewTypeMenu %></h6>
 
             <a class="dropdown-item" href="<%= instructorLink %>" id="navbar-user-view-authn-instructor">
-              <div class="d-flex flex-row justify-content-left">
-                <div class="col-1 px-0"><% if (authnViewTypeMenuChecked == 'instructor') { %>&check;<% } %></div>
-                <div class="col pl-0">
-                  <% if (locals.authz_data?.overrides && authnViewTypeMenuChecked == 'instructor') { %>Modified staff<% } else { %>Staff<% } %>
-                  view <span class="badge badge-success">staff</span>
-                </div>
-              </div>
+              <span class="<% if (authnViewTypeMenuChecked != 'instructor') { %>invisible<% } %>">&check;</span>
+              <span class="pl-3">
+                <% if (locals.authz_data?.overrides && authnViewTypeMenuChecked == 'instructor') { %>Modified staff<% } else { %>Staff<% } %>
+                view <span class="badge badge-success">staff</span>
+              </span>
             </a>
 
             <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-authn-student">
-              <div class="d-flex flex-row justify-content-left">
-                <div class="col-1 px-0"><% if (authnViewTypeMenuChecked == 'student') { %>&check;<% } %></div>
-                <div class="col pl-0">Student view <span class="badge badge-warning">student</span></div>
-              </div>
+              <span class="<% if (authnViewTypeMenuChecked != 'student') { %>invisible<% } %>">&check;</span>
+              <span class="pl-3">Student view <span class="badge badge-warning">student</span></span>
             </a>
 
             <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-authn-student-no-rules">
-              <div class="d-flex flex-row justify-content-left">
-                <div class="col-1 px-0"><% if (authnViewTypeMenuChecked == 'student-no-rules') { %>&check;<% } %></div>
-                <div class="col pl-0">Student view without access restrictions <span class="badge badge-warning">student</span></div>
-              </div>
+              <span class="<% if (authnViewTypeMenuChecked != 'student-no-rules') { %>invisible<% } %>">&check;</span>
+              <span class="pl-3">Student view without access restrictions <span class="badge badge-warning">student</span></span>
             </a>
 
             <% if (authz_data.authn_user.uid != authz_data.user.uid) {
@@ -226,25 +220,19 @@
 
               <% if (authz_data.user_with_requested_uid_has_instructor_access_to_course_instance) { %>
                 <a class="dropdown-item" href="<%= instructorLink %>" id="navbar-user-view-instructor">
-                  <div class="d-flex flex-row justify-content-left">
-                    <div class="col-1 px-0"><% if (viewTypeMenuChecked == 'instructor') { %>&check;<% } %></div>
-                    <div class="col pl-0">Staff view</div>
-                  </div>
+                  <span class="<% if (viewTypeMenuChecked != 'instructor') { %>invisible<% } %>">&check;</span>
+                  <span class="pl-3">Staff view</span>
                 </a>
               <% } %>
 
               <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-student">
-                <div class="d-flex flex-row justify-content-left">
-                  <div class="col-1 px-0"><% if (viewTypeMenuChecked == 'student') { %>&check;<% } %></div>
-                  <div class="col pl-0">Student view</div>
-                </div>
+                <span class="<% if (viewTypeMenuChecked != 'student') { %>invisible<% } %>">&check;</span>
+                <span class="pl-3">Student view</span>
               </a>
 
               <a class="dropdown-item" href="<%= studentLink %>" id="navbar-user-view-student-no-rules">
-                <div class="d-flex flex-row justify-content-left">
-                  <div class="col-1 px-0"><% if (viewTypeMenuChecked == 'student-no-rules') { %>&check;<% } %></div>
-                  <div class="col pl-0">Student view without access restrictions</div>
-                </div>
+                <span class="<% if (viewTypeMenuChecked != 'student-no-rules') { %>invisible<% } %>">&check;</span>
+                <span class="pl-3">Student view without access restrictions</span>
               </a>
 
             <% } %>
@@ -313,7 +301,7 @@
 
           <% if (locals.authz_data && authz_data.mode == 'Exam') { %>
             <div class="dropdown-item-text">
-              Exam mode means you have a checked-in reservation to CBTF. Your interactions with PrairieLearn are limited to your checked-in exam for the duration of your reservation.
+              Exam mode means you have a checked-in reservation on PrairieTest. Your interactions with PrairieLearn are limited to your checked-in exam for the duration of your reservation.
             </div>
             <div class="dropdown-divider"></div>
           <% } %>
@@ -345,6 +333,13 @@
     </ul>
   </div>
 </nav>
+
+<% // Course announcements are shown only to instructors. %>
+<% if (navbarType === 'instructor' && typeof course !== 'undefined' && course.announcement_html && course.announcement_color) { %>
+  <div class="alert alert-<%= course.announcement_color %> mb-0 rounded-0 text-center">
+    <%- course.announcement_html %>
+  </div>
+<% } %>
 
 <% // Mapping navPage to navtab sets
 const navPagesTabs = {

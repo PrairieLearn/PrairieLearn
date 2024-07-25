@@ -2,6 +2,7 @@ import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.html.js';
 import { PlanName } from '../../lib/billing/plans-types.js';
 
@@ -34,9 +35,7 @@ export function InstructorCourseInstanceBilling({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head') %>", {
-          ...resLocals,
-        })}
+        ${HeadContents({ resLocals })}
         ${compiledScriptTag('instructorInstanceAdminBillingClient.ts')}
       </head>
       <body>
