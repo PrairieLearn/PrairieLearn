@@ -63,16 +63,8 @@ export function requestHandler() {
   return (req: any, _res: any, next: any) => {
     Sentry.withIsolationScope((scope) => {
       scope.addEventProcessor((event) => {
-        // If an event processor throws an error, Sentry will catch it and
-        // retrigger the event processor, which infinitely recurses. We'll
-        // treat our event processor as a best-effort operation and silently
-        // swallow any errors.
-        try {
-          event.transaction = extractTransaction(req);
-          return Sentry.addRequestDataToEvent(event, req);
-        } catch {
-          return event;
-        }
+        event.transaction = extractTransaction(req);
+        return Sentry.addRequestDataToEvent(event, req);
       });
 
       next();
