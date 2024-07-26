@@ -2292,18 +2292,14 @@ if (esMain(import.meta) && config.startServer) {
         await opentelemetry.init({
           ...config,
           serviceName: 'prairielearn',
-          ...(config.sentryDsn
-            ? {
-                // For Sentry to work correctly, it needs to hook into our OpenTelemetry setup.
-                // https://docs.sentry.io/platforms/javascript/guides/node/tracing/instrumentation/opentelemetry/
-                //
-                // However, despite what their documentation claims, only the `SentryContextManager`
-                // is necessary if one isn't using Sentry for tracing. In fact, if `SentrySpanProcessor`
-                // is used, 100% of traces will be sent to Sentry, despite us never having set
-                // `tracesSampleRate` in the Sentry configuration.
-                contextManager: new Sentry.SentryContextManager(),
-              }
-            : {}),
+          // For Sentry to work correctly, it needs to hook into our OpenTelemetry setup.
+          // https://docs.sentry.io/platforms/javascript/guides/node/tracing/instrumentation/opentelemetry/
+          //
+          // However, despite what their documentation claims, only the `SentryContextManager`
+          // is necessary if one isn't using Sentry for tracing. In fact, if `SentrySpanProcessor`
+          // is used, 100% of traces will be sent to Sentry, despite us never having set
+          // `tracesSampleRate` in the Sentry configuration.
+          contextManager: config.sentryDsn ? new Sentry.SentryContextManager() : undefined,
         });
 
         // Same with Sentry configuration.
