@@ -26,7 +26,7 @@ export function InstitutionAdminCourses({
           navPage: 'institution_admin',
           navSubPage: 'courses',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <ul class="list-group">
             ${courses.map(
               (course) => html`

@@ -34,7 +34,7 @@ export const AdministratorInstitutionSso = ({
           navSubPage: 'sso',
         })}
 
-        <main class="container">
+        <main id="content" class="container">
           <form method="POST">
             <div class="form-group">
               <h2 class="h4">Enabled single sign-on providers</h2>

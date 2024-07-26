@@ -56,7 +56,7 @@ export function AdministratorInstitutionCourseInstance({
             </li>
           </ol>
         </nav>
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h2 class="h4">Limits</h2>
           <form method="POST" class="mb-3">
             <div class="form-group">

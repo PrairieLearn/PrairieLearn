@@ -40,7 +40,7 @@ export function InstructorCourseInstanceBilling({
       </head>
       <body>
         ${Navbar({ resLocals })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           ${!editable
             ? html`
                 <div class="alert alert-warning">

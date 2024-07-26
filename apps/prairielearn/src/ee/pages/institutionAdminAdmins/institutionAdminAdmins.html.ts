@@ -24,7 +24,7 @@ export function InstitutionAdminAdmins({
           navPage: 'institution_admin',
           navSubPage: 'admins',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <div class="alert alert-primary" role="alert">
             Institution administrators are coming soon!
           </div>

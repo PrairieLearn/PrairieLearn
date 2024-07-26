@@ -1,5 +1,4 @@
-// @ts-check
-import { ECR } from '@aws-sdk/client-ecr';
+import { type DescribeImagesCommandOutput, ECR } from '@aws-sdk/client-ecr';
 import * as async from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -47,8 +46,7 @@ router.get(
         image.imageSyncNeeded = false;
         image.invalid = false;
 
-        /** @type {import('@aws-sdk/client-ecr').DescribeImagesCommandOutput} */
-        let data;
+        let data: DescribeImagesCommandOutput;
         try {
           data = await ecr.describeImages({
             repositoryName: repository.getRepository(),

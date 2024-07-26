@@ -32,7 +32,7 @@ export function StudentCourseInstanceUpgrade({
       </head>
       <body>
         ${Navbar({ resLocals })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h1>
             <i class="fa-solid fa-lock"></i>
             Upgrade required
@@ -106,7 +106,7 @@ export function CourseInstanceStudentUpdateSuccess({
       </head>
       <body>
         ${Navbar({ resLocals })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h1>Thanks!</h1>
 
           ${paid

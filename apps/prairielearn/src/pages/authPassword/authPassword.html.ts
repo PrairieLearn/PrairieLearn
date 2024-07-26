@@ -18,7 +18,7 @@ export function AuthPassword({
       </head>
       <body>
         ${Navbar({ resLocals })}
-        <main class="container">
+        <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-body">
               <p class="text-center">A password is required to access this assessment.</p>

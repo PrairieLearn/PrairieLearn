@@ -49,7 +49,7 @@ export function Home({
       <body class="d-flex flex-column h-100">
         <header>${Navbar({ resLocals, navPage: 'home' })}</header>
 
-        <main class="flex-grow-1">
+        <main id="content" class="flex-grow-1">
           ${ActionsHeader()}
 
           <div id="content" class="container py-5">

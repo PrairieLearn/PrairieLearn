@@ -35,6 +35,13 @@ export function Navbar({
           <span id="test_csrf_token" hidden>${__csrf_token}</span>
         `
       : ''}
+
+    <div class="container-fluid bg-primary">
+      <a href="#content" class="sr-only sr-only-focusable d-inline-flex p-2 m-2 text-white">
+        Skip to main content
+      </a>
+    </div>
+
     ${config.announcementHtml
       ? html`
           <div

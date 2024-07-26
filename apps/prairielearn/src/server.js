@@ -173,7 +173,7 @@ export async function initExpress() {
       sessionTtl <
       (config.sessionStoreExpireSeconds - config.sessionStoreAutoExtendThrottleSeconds) * 1000
     ) {
-      req.session.setExpiration(config.sessionStoreExpireSeconds);
+      req.session.setExpiration(config.sessionStoreExpireSeconds * 1000);
     }
 
     next();
