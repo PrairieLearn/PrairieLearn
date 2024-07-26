@@ -1,5 +1,6 @@
 columns
     assessment_id: bigint
+    last_activity: timestamp with time zone
     lineitem: jsonb
     lineitem_id: text not null
     lti13_course_instance_id: bigint not null

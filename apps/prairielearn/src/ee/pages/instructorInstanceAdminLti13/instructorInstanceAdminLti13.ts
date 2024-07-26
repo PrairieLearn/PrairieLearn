@@ -20,11 +20,13 @@ import {
   delete_lineitem,
   disassociate_lineitem,
   associate_lineitem,
+  get_lineitems,
 } from '../../lib/lti13.js';
 
 import {
   AssessmentRowSchema,
   InstructorInstanceAdminLti13,
+  LineitemsInputs,
 } from './instructorInstanceAdminLti13.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -81,29 +83,27 @@ router.get(
       Lti13Lineitems,
     );
 
-    res.send(
-      InstructorInstanceAdminLti13({
-        resLocals: res.locals,
-        instance,
-        instances,
-        assessments,
-        lineitems,
-      }),
-    );
-  }),
-);
-
-router.get(
-  '/:unsafe_lti13_course_instance_id/lineitems',
-  asyncHandler(async (req, res) => {
-    res.send('<p>Something included</p>');
+    if ('lineitems' in req.query) {
+      const refreshed_lineitems = await get_lineitems(instance);
+      res.send(LineitemsInputs(refreshed_lineitems));
+    } else {
+      res.send(
+        InstructorInstanceAdminLti13({
+          resLocals: res.locals,
+          instance,
+          instances,
+          assessments,
+          lineitems,
+        }),
+      );
+    }
   }),
 );
 
 router.post(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
-    //console.log(req.body);
+    console.log(req.body);
 
     const instance = await queryRow(
       sql.select_lti13_instance,
@@ -198,6 +198,37 @@ router.post(
     } else if (req.body.__action === 'associate_lineitem') {
       await associate_lineitem(instance, req.body.lineitem_id, req.body.assessment_id);
       return res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'lineitem_configure') {
+      if ('create_new' in req.body) {
+        serverJobOptions.description = 'create lineitem from PL assessment';
+        const serverJob = await createServerJob(serverJobOptions);
+
+        serverJob.executeInBackground(async (job) => {
+          const assessment = await queryRow(
+            sql.select_assessment,
+            {
+              assessment_id: req.body.assessment_id,
+              course_instance_id: instance.lti13_course_instance.course_instance_id,
+            },
+            AssessmentSchema.extend({
+              label: z.string(),
+            }),
+          );
+
+          const assessment_metadata = {
+            label: `${assessment.label}: ${assessment.title}`,
+            id: assessment.id,
+            url: `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
+          };
+
+          await create_lineitem(instance, job, assessment_metadata);
+        });
+        return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
+      } else {
+        await associate_lineitem(instance, req.body.lineitem_id, req.body.assessment_id);
+        // flash here?
+        return res.redirect(req.originalUrl);
+      }
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
     }

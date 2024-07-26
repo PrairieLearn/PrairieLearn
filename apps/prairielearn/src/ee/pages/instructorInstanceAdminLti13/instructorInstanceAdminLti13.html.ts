@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Modal } from '../../../components/Modal.html.js';
 import {
   Lti13CourseInstance,
   Lti13Instance,
@@ -11,8 +13,7 @@ import {
   AssessmentSetSchema,
   Lti13Lineitems,
 } from '../../../lib/db-types.js';
-import { Modal } from '../../../components/Modal.html.js';
-import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Lti13LineitemType } from '../../lib/lti13.js';
 
 interface Lti13FullInstance {
   lti13_course_instance: Lti13CourseInstance;
@@ -42,9 +43,7 @@ export function InstructorInstanceAdminLti13({
   lineitems: Lti13Lineitems[];
 }): string {
   const { urlPrefix } = resLocals;
-  const lineitems_unlinked = lineitems.filter((item) => {
-    return item.assessment_id === null;
-  });
+  const lms_name = `${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}`;
 
   return html`
     <!doctype html>
@@ -89,21 +88,19 @@ export function InstructorInstanceAdminLti13({
                   </select>
                   Quick links:
                   <ul>
-                    <li><a href="#assessments">PrairieLearn Assessments</a></li>
-                    <li><a href="#assignments">Unpaired Assignments in LMS</a></li>
+                    <li><a href="#assessments">Linked Assessments</a></li>
                     <li><a href="#connection">Connection to LMS</a></li>
                   </ul>
                   Created at: ${instance.lti13_course_instance.created_at.toDateString()}
                 </div>
                 <div class="col-10">
-                  <h3 id="assessments">PrairieLearn Assessments</h3>
+                  <h3 id="assessments">Linked Assessments</h3>
 
                   <form method="POST">
                     <input type="hidden" name="__action" value="poll_lti13_assessments" />
                     <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                     <button class="btn btn-success">
-                      Poll ${instance.lti13_instance.name} for
-                      ${instance.lti13_course_instance.context_label} external assessment info
+                      Poll ${lms_name} external assessment info
                     </button>
                   </form>
 
@@ -113,7 +110,7 @@ export function InstructorInstanceAdminLti13({
                         <tr>
                           <th colspan="2">PrairieLearn Assessment</th>
                           <th>Actions</th>
-                          <th>${instance.lti13_instance.name} Assignment</th>
+                          <th colspan="2">${lms_name} Assignment</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -126,7 +123,10 @@ export function InstructorInstanceAdminLti13({
                             ${row.start_new_assessment_group
                               ? html`
                                   <tr>
-                                    <th colspan="4">${row.assessment_group_heading}</th>
+                                    <th colspan="2">${row.assessment_group_heading}</th>
+                                    <th colspan="3">
+                                      <button class="btn btn-sm btn-secondary">Bulk actions</button>
+                                    </th>
                                   </tr>
                                 `
                               : ''}
@@ -149,10 +149,33 @@ export function InstructorInstanceAdminLti13({
                               </td>
                               <td>
                                 ${Modal({
-                                  body: html`Hello`,
+                                  body: html`<p>Which ${lms_name} assignment should we link?</p>
+                                    <form method="POST">
+                                      <input
+                                        type="hidden"
+                                        name="__action"
+                                        value="lineitem_configure"
+                                      />
+                                      <input
+                                        type="hidden"
+                                        name="__csrf_token"
+                                        value="${resLocals.__csrf_token}"
+                                      />
+                                      <input type="hidden" name="assessment_id" value="${row.id}" />
+                                      <button class="btn btn-success" name="create_new" value="1">
+                                        Create a new assignment named ${row.label}: ${row.title}
+                                      </button>
+                                      <button
+                                        class="btn btn-info"
+                                        hx-get="?lineitems"
+                                        hx-swap="afterend"
+                                      >
+                                        Pick from existing ${lms_name} assignments
+                                      </button>
+                                    </form> `,
                                   footer: html`<button
                                     type="button"
-                                    class="btn btn-primary"
+                                    class="btn btn-secondary"
                                     data-dismiss="modal"
                                   >
                                     Close
@@ -169,7 +192,9 @@ export function InstructorInstanceAdminLti13({
                                   />
                                   <input type="hidden" name="assessment_id" value="${row.id}" />
                                   ${lineitems_linked.length === 0
-                                    ? html`<button
+                                    ? html`
+                                        <!--
+                                    <button
                                           class="btn btn-sm btn-success"
                                           name="__action"
                                           value="create_lineitem"
@@ -177,6 +202,7 @@ export function InstructorInstanceAdminLti13({
                                           Create ${instance.lti13_course_instance.context_label}
                                           assignment
                                         </button>
+                                        -->
                                         <button
                                           class="btn btn-med-light"
                                           type="button"
@@ -184,15 +210,39 @@ export function InstructorInstanceAdminLti13({
                                           data-target="#assignment-${row.id}"
                                         >
                                           Configure
-                                        </button> `
+                                        </button>
+                                      `
                                     : html`
                                         <button
                                           class="btn btn-info"
                                           name="__action"
                                           value="send_grades"
+                                          onClick="event.preventDefault();alert('Coming soon &#128512;');"
                                         >
-                                          Send grades to ${instance.lti13_instance.name}
+                                          Send grades to ${lms_name}
                                         </button>
+                                        <div class="dropdown js-question-actions">
+                                          <button
+                                            type="button"
+                                            class="btn btn-xs dropdown-toggle"
+                                            data-toggle="dropdown"
+                                            aria-haspopup="true"
+                                            aria-expanded="false"
+                                          >
+                                            ...<span class="caret"></span>
+                                          </button>
+
+                                          <div class="dropdown-menu">
+                                            <button
+                                              class="dropdown-item"
+                                              type="button"
+                                              data-toggle="modal"
+                                              data-target="#assignment-${row.id}"
+                                            >
+                                              Link assignment
+                                            </button>
+                                          </div>
+                                        </div>
                                       `}
                                 </form>
                               </td>
@@ -201,29 +251,36 @@ export function InstructorInstanceAdminLti13({
                                   lineItem(item, resLocals.__csrf_token),
                                 )}
                               </td>
+                              <td class="text-right">
+                                <div class="dropdown js-question-actions">
+                                  <button
+                                    type="button"
+                                    class="btn btn-secondary btn-xs dropdown-toggle"
+                                    data-toggle="dropdown"
+                                    aria-haspopup="true"
+                                    aria-expanded="false"
+                                  >
+                                    Action <span class="caret"></span>
+                                  </button>
+
+                                  <div class="dropdown-menu">
+                                    <button
+                                      class="dropdown-item"
+                                      type="button"
+                                      data-toggle="modal"
+                                      data-target="#assignment-${row.id}"
+                                    >
+                                      Link assignment
+                                    </button>
+                                  </div>
+                                </div>
+                              </td>
                             </tr>
                           `;
                         })}
                       </tbody>
                     </table>
                   </div>
-
-                  <h3 id="assignments">Unpaired Assignments in LMS</h3>
-                  <p>
-                    ${lineitems_unlinked.length === 0
-                      ? html`
-                          There are no unpaired assignments in ${instance.lti13_instance.name}
-                          ${instance.lti13_course_instance.context_label}.
-                        `
-                      : html`
-                          The following assignments are available but not associated with a
-                          PrairieLearn assessment.
-                        `}
-                    To query for changes from the LMS, use the Poll button at the top of the page.
-                  </p>
-                  ${lineitems_unlinked.map((item) =>
-                    lineItem(item, resLocals.__csrf_token, assessments),
-                  )}
 
                   <h3 id="connection">Connection to LMS</h3>
                   <form method="POST">
@@ -291,4 +348,28 @@ function lineItem(item: Lti13Lineitems, csrf: string, assessments: AssessmentRow
       </div>
     </form>
   `;
+}
+
+export function LineitemsInputs(lineitems: Lti13LineitemType[]) {
+  if (lineitems.length === 0) {
+    return html`<p>None found.</p>`.toString();
+  }
+  return html`
+    ${lineitems.map(
+      (lineitem) => html`
+        <div class="form-check">
+          <label class="form-check-label">
+            <input
+              class="form-check-input"
+              type="radio"
+              name="lineitem_id"
+              value="${lineitem.id}"
+            />
+            ${lineitem.label}
+          </label>
+        </div>
+      `,
+    )}
+    <button class="btn btn-primary">Link assignments</button>
+  `.toString();
 }
