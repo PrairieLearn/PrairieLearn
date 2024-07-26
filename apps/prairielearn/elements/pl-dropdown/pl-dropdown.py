@@ -9,7 +9,7 @@ WEIGHT_DEFAULT = 1
 BLANK_ANSWER = " "
 BLANK_DEFAULT = True
 SORT_DEFAULT = "random"
-
+ALLOW_BLANK_DEFAULT = False
 
 class SortTypes(Enum):
     RANDOM = "random"
@@ -53,7 +53,10 @@ def prepare(element_html, data):
     pl.check_attribs(
         element,
         required_attribs=["answers-name"],
-        optional_attribs=["blank", "weight", "sort"],
+        optional_attribs=["blank",
+                           "allow-blank", 
+                           "weight", 
+                           "sort"],
     )
     answers_name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, answers_name)
@@ -101,7 +104,7 @@ def render(element_html, data):
             random.shuffle(dropdown_options)
 
         if blank_start:
-            dropdown_options.insert(0, BLANK_ANSWER)
+            dropdown_options.insert(0, {"value": BLANK_ANSWER, "selected": (submitted_answer == BLANK_ANSWER)})
 
         html_params = {
             "answers-name": answers_name,
@@ -136,11 +139,12 @@ def render(element_html, data):
 
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     answers_name = pl.get_string_attrib(element, "answers-name")
     answer = data["submitted_answers"].get(answers_name, None)
 
-    # Blank option should be available, but cause format error when submitted.
-    valid_options = [" "]
+    # Blank option should be available, but cause format error when submitted and blank is not allowed.
+    valid_options = [BLANK_ANSWER]
 
     for child in element:
         if child.tag in ["pl-answer"]:
@@ -148,7 +152,7 @@ def parse(element_html, data):
             child_html = pl.inner_html(child).strip()
             valid_options.append(child_html)
 
-    if answer is BLANK_ANSWER:
+    if answer is BLANK_ANSWER and not allow_blank:
         data["format_errors"][answers_name] = "The submitted answer was left blank."
 
     if answer is None:
@@ -172,17 +176,22 @@ def grade(element_html, data):
 
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     answers_name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     # solution is what the answer should be
     solution = get_solution(element, data)
 
+    result = data["test_type"]
     # incorrect and correct answer test cases
-    if data["test_type"] == "correct":
+    if result == "invalid" and allow_blank:
+        result = "correct"
+
+    if result == "correct":
         data["raw_submitted_answers"][answers_name] = solution
         data["partial_scores"][answers_name] = {"score": 1, "weight": weight}
-    elif data["test_type"] == "incorrect":
+    elif result == "incorrect":
         dropdown_options = get_options(element, data)
         incorrect_ans = ""
 
@@ -192,9 +201,9 @@ def test(element_html, data):
 
         data["raw_submitted_answers"][answers_name] = incorrect_ans
         data["partial_scores"][answers_name] = {"score": 0, "weight": weight}
-    elif data["test_type"] == "invalid":
+    elif result == "invalid":
         # Test for invalid drop-down options in case injection on front-end
         data["raw_submitted_answers"][answers_name] = "INVALID STRING"
         data["format_errors"][answers_name] = "format error message"
     else:
-        raise Exception("invalid result: %s" % data["test_type"])
+        raise Exception("invalid result: %s" % result)
