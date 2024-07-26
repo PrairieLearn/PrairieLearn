@@ -176,22 +176,17 @@ def grade(element_html, data):
 
 def test(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
-    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     answers_name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     # solution is what the answer should be
     solution = get_solution(element, data)
 
-    result = data["test_type"]
     # incorrect and correct answer test cases
-    if result == "invalid" and allow_blank:
-        result = "correct"
-
-    if result == "correct":
+    if data["test_type"] == "correct":
         data["raw_submitted_answers"][answers_name] = solution
         data["partial_scores"][answers_name] = {"score": 1, "weight": weight}
-    elif result == "incorrect":
+    elif data["test_type"] == "incorrect":
         dropdown_options = get_options(element, data)
         incorrect_ans = ""
 
@@ -201,9 +196,9 @@ def test(element_html, data):
 
         data["raw_submitted_answers"][answers_name] = incorrect_ans
         data["partial_scores"][answers_name] = {"score": 0, "weight": weight}
-    elif result == "invalid":
+    elif data["test_type"] == "invalid":
         # Test for invalid drop-down options in case injection on front-end
         data["raw_submitted_answers"][answers_name] = "INVALID STRING"
         data["format_errors"][answers_name] = "format error message"
     else:
-        raise Exception("invalid result: %s" % result)
+        raise Exception("invalid result: %s" % data["test_type"])
