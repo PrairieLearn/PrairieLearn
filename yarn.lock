@@ -3548,7 +3548,6 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@sentry/node": "npm:^8.20.0"
-    "@sentry/opentelemetry": "npm:^8.20.0"
     "@sentry/utils": "npm:^8.20.0"
     "@types/node": "npm:^20.14.9"
     execa: "npm:^9.3.0"
@@ -3840,7 +3839,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@sentry/opentelemetry@npm:8.20.0, @sentry/opentelemetry@npm:^8.20.0":
+"@sentry/opentelemetry@npm:8.20.0":
   version: 8.20.0
   resolution: "@sentry/opentelemetry@npm:8.20.0"
   dependencies:
