@@ -134,5 +134,6 @@ export {
   startInactiveSpan,
   startSpan,
   startSpanManual,
+  withIsolationScope,
   withScope,
 } from '@sentry/node';
