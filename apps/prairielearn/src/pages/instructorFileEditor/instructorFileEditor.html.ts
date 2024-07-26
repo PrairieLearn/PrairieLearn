@@ -47,7 +47,7 @@ export function InstructorFileEditorNoPermission({
       </head>
 
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
 
         <main id="content" class="container-fluid">
           <div class="card mb-4">
