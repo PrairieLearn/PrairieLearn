@@ -38,7 +38,7 @@ export function AdministratorInstitutionLti13({
           navPage: 'administrator_institution',
           navSubPage: 'lti13',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h2 class="h4">LTI 1.3 / Learning Tools Interoperability</h2>
           <p>
             ${lti13Instances.length} instance${lti13Instances.length === 1 ? '' : 's'} configured.

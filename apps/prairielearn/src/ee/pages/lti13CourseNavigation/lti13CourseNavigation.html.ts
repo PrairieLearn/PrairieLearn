@@ -72,7 +72,7 @@ export function Lti13CourseNavigationInstructor({
           </div>
         </div>
 
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h1>Welcome to PrairieLearn</h1>
           <p>
             To finish the integration for your course, we need to connect
@@ -176,7 +176,7 @@ export function Lti13CourseNavigationNotReady({
           ...resLocals,
           navPage: 'lti13_course_navigation',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h1 class="h1">Welcome to PrairieLearn</h1>
           <h2 class="h2">... but your course isn't ready yet!</h2>
 
@@ -210,7 +210,7 @@ export function Lti13CourseNavigationDone({
           ...resLocals,
           navPage: 'lti13_course_navigation',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h1 class="h1">Welcome to PrairieLearn</h1>
 
           <p>
