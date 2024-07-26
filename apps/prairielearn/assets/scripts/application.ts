@@ -295,23 +295,28 @@ onDocumentReady(() => {
     },
   });
 
-  observe('.sr-only', {
+  observe('.sr-only, .sr-only-focusable', {
     add(el) {
-      el.classList.add('visually-hidden');
-      console.warn(
-        'Bootstrap 5 replaced .sr-only with .visually-hidden. Please update your HTML.',
-        el,
-      );
-    },
-  });
+      const hasSrOnly = el.classList.contains('sr-only');
+      const hasSrOnlyFocusable = el.classList.contains('sr-only-focusable');
 
-  observe('.sr-only-focusable', {
-    add(el) {
-      el.classList.add('visually-hidden-focusable');
-      console.warn(
-        'Bootstrap 5 replaced .sr-only-focusable with .visually-hidden-focusable. Please update your HTML.',
-        el,
-      );
+      if (hasSrOnly && hasSrOnlyFocusable) {
+        el.classList.add('visually-hidden-focusable');
+        console.warn(
+          'Bootstrap 5 replaced .sr-only.sr-only-focusable with .visually-hidden-focusable. Please update your HTML.',
+          el,
+        );
+      } else if (hasSrOnly) {
+        el.classList.add('visually-hidden');
+        console.warn(
+          'Bootstrap 5 replaced .sr-only with .visually-hidden. Please update your HTML.',
+          el,
+        );
+      }
+
+      // Normally we'd leave the existing classes in place, but FontAwesome frustratingly
+      // ships with their own classes that conflict with Bootstrap's. We'll remove them here.
+      el.classList.remove('sr-only', 'sr-only-focusable');
     },
   });
 
