@@ -140,19 +140,7 @@ export async function initExpress() {
   // all pages including the error page (which we could jump to at
   // any point.
   app.use((req, res, next) => {
-    res.locals.asset_path = assets.assetPath;
-    res.locals.node_modules_asset_path = assets.nodeModulesAssetPath;
-    res.locals.compiled_script_tag = assets.compiledScriptTag;
-    res.locals.compiled_stylesheet_tag = assets.compiledStylesheetTag;
-    res.locals.compiled_script_path = assets.compiledScriptPath;
-    res.locals.compiled_stylesheet_path = assets.compiledStylesheetPath;
-    next();
-  });
-  app.use(function (req, res, next) {
     res.locals.config = config;
-    next();
-  });
-  app.use(function (req, res, next) {
     setLocalsFromConfig(res.locals);
     next();
   });
@@ -186,7 +174,7 @@ export async function initExpress() {
       sessionTtl <
       (config.sessionStoreExpireSeconds - config.sessionStoreAutoExtendThrottleSeconds) * 1000
     ) {
-      req.session.setExpiration(config.sessionStoreExpireSeconds);
+      req.session.setExpiration(config.sessionStoreExpireSeconds * 1000);
     }
 
     next();

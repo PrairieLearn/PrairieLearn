@@ -73,14 +73,6 @@ router.get(() => {
 });
 ```
 
-For legacy PrairieLearn code that uses EJS, you can use the `compiled_script_tag` function that's made available to EJS templates via `res.locals`:
-
-```ejs
-<head>
-  <%- compiled_script_tag('foo.ts') %>
-</head>
-```
-
 ### Building assets for production
 
 For production usage, assets must be precompiled with the `compiled-assets build` command. Note that the source directory and build directory should match the values provided to `assets.init`.

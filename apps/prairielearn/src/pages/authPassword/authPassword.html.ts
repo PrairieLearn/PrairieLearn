@@ -1,6 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+
 export function AuthPassword({
   resLocals,
   passwordInvalid,
@@ -12,14 +14,14 @@ export function AuthPassword({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: '',
         })}
-        <main class="container">
+        <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-body">
               <p class="text-center">A password is required to access this assessment.</p>

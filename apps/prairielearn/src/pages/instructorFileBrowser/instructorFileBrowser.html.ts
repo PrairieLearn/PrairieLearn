@@ -3,6 +3,7 @@ import { filesize } from 'filesize';
 import { escapeHtml, html, type HtmlValue, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import {
   AssessmentSyncErrorsAndWarnings,
   CourseInstanceSyncErrorsAndWarnings,
@@ -100,10 +101,7 @@ export function InstructorFileBrowserNoPermission({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Files',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Files' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
@@ -170,15 +168,22 @@ export function InstructorFileBrowser({
                 urlPrefix,
               })
             : '';
+  const pageTitle =
+    navPage === 'course_admin'
+      ? 'Course Files'
+      : navPage === 'instance_admin'
+        ? 'Course Instance Files'
+        : navPage === 'assessment'
+          ? 'Assessment Files'
+          : navPage === 'question'
+            ? `Files (${resLocals.question.qid})`
+            : 'Files';
 
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Files',
-        })}
+        ${HeadContents({ resLocals, pageTitle })}
         <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
         ${compiledScriptTag('instructorFileBrowserClient.ts')}
         <style>

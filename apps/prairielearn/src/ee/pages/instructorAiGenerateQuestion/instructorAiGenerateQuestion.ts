@@ -13,7 +13,6 @@ import { idsEqual } from '../../../lib/id.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
-import { syncContextDocuments } from '../../lib/contextEmbeddings.js';
 
 import { AiGeneratePage, GenerationResults } from './instructorAiGenerateQuestion.html.js';
 
@@ -123,9 +122,6 @@ router.post(
       } else {
         throw new error.HttpStatusError(500, `Job sequence ${result.jobSequenceId} failed.`);
       }
-    } else if (req.body.__action === 'sync_context_documents') {
-      const jobSequenceId = await syncContextDocuments(client, res.locals.authn_user.user_id);
-      res.redirect('/pl/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'regenerate_question') {
       const genJobs = await selectJobsByJobSequenceId(req.body.unsafe_sequence_job_id);
       if (

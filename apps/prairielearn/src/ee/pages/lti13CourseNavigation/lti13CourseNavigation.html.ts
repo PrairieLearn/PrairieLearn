@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { config } from '../../../lib/config.js';
 import { Course, CourseInstance } from '../../../lib/db-types.js';
 
@@ -19,11 +20,7 @@ export function Lti13CourseNavigationInstructor({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          navPage: 'lti13_course_navigation',
-          pageTitle: 'Course',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
@@ -75,7 +72,7 @@ export function Lti13CourseNavigationInstructor({
           </div>
         </div>
 
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h1>Welcome to PrairieLearn</h1>
           <p>
             To finish the integration for your course, we need to connect
@@ -172,18 +169,14 @@ export function Lti13CourseNavigationNotReady({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          navPage: 'lti13_course_navigation',
-          pageTitle: 'Course',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
           ...resLocals,
           navPage: 'lti13_course_navigation',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h1 class="h1">Welcome to PrairieLearn</h1>
           <h2 class="h2">... but your course isn't ready yet!</h2>
 
@@ -210,18 +203,14 @@ export function Lti13CourseNavigationDone({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          navPage: 'lti13_course_navigation',
-          pageTitle: 'Course',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
           ...resLocals,
           navPage: 'lti13_course_navigation',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h1 class="h1">Welcome to PrairieLearn</h1>
 
           <p>
