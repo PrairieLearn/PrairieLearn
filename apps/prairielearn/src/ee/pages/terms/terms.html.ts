@@ -17,7 +17,7 @@ export function Terms({ user, resLocals }: { user: User; resLocals: Record<strin
           navPage: 'plain',
           navbarType: 'plain',
         })}
-        <main class="container">
+        <main id="content" class="container">
           <h1>Terms and Conditions</h1>
           ${user.terms_accepted_at
             ? html`
