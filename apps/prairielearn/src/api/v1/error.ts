@@ -9,4 +9,4 @@ export default (function (err, req, res, _next) {
   res.status(statusCode).send({
     message: status[statusCode],
   });
-} satisfies ErrorRequestHandler as ErrorRequestHandler);
+} satisfies ErrorRequestHandler);
