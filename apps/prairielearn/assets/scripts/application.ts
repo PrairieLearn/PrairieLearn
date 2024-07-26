@@ -14,6 +14,8 @@ const BOOTSTRAP_LEGACY_ATTRIBUTES = [
 
 const BOOTSTRAP_BREAKPOINTS = ['sm', 'md', 'lg', 'xl', 'xxl'];
 
+// The changes here are made based on the Bootstrap 5 migration guide:
+// https://getbootstrap.com/docs/5.3/migration/
 onDocumentReady(() => {
   BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
     $(`[data-${attr}]`).each((i, el) => {
@@ -23,6 +25,32 @@ onDocumentReady(() => {
       }
     });
   });
+
+  // *********************
+  // Content, Reboot, etc.
+  // *********************
+
+  observe('.thead-light, .thead-dark', {
+    add(el) {
+      if (el.classList.contains('thead-light')) {
+        el.classList.add('table-light');
+        console.warn(
+          'Bootstrap 5 replaced .thead-light with .table-light. Please update your HTML.',
+          el,
+        );
+      } else {
+        el.classList.add('table-dark');
+        console.warn(
+          'Bootstrap 5 replaced .thead-dark with .table-dark. Please update your HTML.',
+          el,
+        );
+      }
+    },
+  });
+
+  // ***
+  // RTL
+  // ***
 
   // Bootstrap 5 replaced "left"/"right" with "start"/"end" for RTL support.
   const SPACING_PREFIX_MAP: Record<string, any> = { ml: 'ms', mr: 'me', pl: 'ps', pr: 'pe' };
@@ -57,6 +85,100 @@ onDocumentReady(() => {
       });
     },
   });
+
+  // *****
+  // Forms
+  // *****
+
+  observe('.custom-control.custom-checkbox', {
+    add(el) {
+      el.classList.add('form-check');
+      console.warn(
+        'Bootstrap 5 replaced .custom-control.custom-checkbox with .form-check. Please update your HTML.',
+        el,
+      );
+
+      el.querySelectorAll('.custom-control-input').forEach((input) => {
+        input.classList.add('form-check-input');
+        console.warn(
+          'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
+          input,
+        );
+      });
+
+      el.querySelectorAll('.custom-control-label').forEach((label) => {
+        label.classList.add('form-check-label');
+        console.warn(
+          'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
+          label,
+        );
+      });
+    },
+  });
+
+  observe('.custom-control.custom-radio', {
+    add(el) {
+      el.classList.add('form-check');
+      console.warn(
+        'Bootstrap 5 replaced .custom-control.custom-radio with .form-check. Please update your HTML.',
+        el,
+      );
+
+      el.querySelectorAll('.custom-control-input').forEach((input) => {
+        input.classList.add('form-check-input');
+        console.warn(
+          'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
+          input,
+        );
+      });
+
+      el.querySelectorAll('.custom-control-label').forEach((label) => {
+        label.classList.add('form-check-label');
+        console.warn(
+          'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
+          label,
+        );
+      });
+    },
+  });
+
+  observe('.custom-control.custom-switch', {
+    add(el) {
+      el.classList.add('form-check', 'form-switch');
+      console.warn(
+        'Bootstrap 5 replaced .custom-control.custom-switch with .form-check.form-switch. Please update your HTML.',
+        el,
+      );
+
+      el.querySelectorAll('.custom-control-input').forEach((input) => {
+        input.classList.add('form-check-input');
+        console.warn(
+          'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
+          input,
+        );
+      });
+
+      el.querySelectorAll('.custom-control-label').forEach((label) => {
+        label.classList.add('form-check-label');
+        console.warn(
+          'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
+          label,
+        );
+      });
+    },
+  });
+
+  observe('.custom-select', {
+    add(el) {
+      el.classList.add('form-select');
+      console.warn(
+        'Bootstrap 5 replaced the .custom-select class with .form-select. Please update your HTML.',
+        el,
+      );
+    },
+  });
+
+  // END OF DAY Friday, July 26, 2024: stopped after `.custom-select` in the migration guide.
 
   observe('.float-left, .float-right', {
     add(el) {
@@ -248,16 +370,6 @@ onDocumentReady(() => {
       el.classList.add('form-label');
       console.warn(
         'Bootstrap 5 requires the .form-label class on form labels. Please update your HTML.',
-        el,
-      );
-    },
-  });
-
-  observe('.custom-select', {
-    add(el) {
-      el.classList.add('form-select');
-      console.warn(
-        'Bootstrap 5 replaced the .custom-select class with .form-select. Please update your HTML.',
         el,
       );
     },
