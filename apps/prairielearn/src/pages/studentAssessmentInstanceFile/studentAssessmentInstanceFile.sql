@@ -1,7 +1,6 @@
 -- BLOCK select_file
 SELECT
-  id,
-  display_filename
+  *
 FROM
   files
 WHERE

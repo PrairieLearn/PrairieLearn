@@ -1,12 +1,17 @@
-// @ts-check
 import { pipeline } from 'node:stream/promises';
 
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { stringifyStream } from '@prairielearn/csv';
-import * as error from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
+import { HttpStatusError } from '@prairielearn/error';
+import {
+  loadSqlEquiv,
+  queryRows,
+  queryOptionalRow,
+  queryCursor,
+  queryRow,
+} from '@prairielearn/postgres';
 
 import {
   updateAssessmentStatistics,
@@ -22,10 +27,10 @@ import {
   InstructorAssessments,
 } from './instructorAssessments.html.js';
 
-const router = express.Router();
-const sql = sqldb.loadSqlEquiv(import.meta.url);
+const router = Router();
+const sql = loadSqlEquiv(import.meta.url);
 
-function buildCsvFilename(locals) {
+function buildCsvFilename(locals: Record<string, any>) {
   return `${courseInstanceFilenamePrefix(locals.course_instance, locals.course)}assessment_stats.csv`;
 }
 
@@ -34,7 +39,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const csvFilename = buildCsvFilename(res.locals);
 
-    const rows = await sqldb.queryRows(
+    const rows = await queryRows(
       sql.select_assessments,
       {
         course_instance_id: res.locals.course_instance.id,
@@ -71,7 +76,7 @@ router.get(
     // When fetching the assessment, we don't check whether it needs an update
     // again because we don't want to get get stuck in a loop perpetually
     // updating because students are still working.
-    const row = await sqldb.queryOptionalRow(
+    const row = await queryOptionalRow(
       sql.select_assessment,
       {
         course_instance_id: res.locals.course_instance.id, // for authz checking
@@ -82,7 +87,7 @@ router.get(
       AssessmentSchema,
     );
     if (row == null) {
-      throw new error.HttpStatusError(404, `Assessment not found: ${req.params.assessment_id}`);
+      throw new HttpStatusError(404, `Assessment not found: ${req.params.assessment_id}`);
     }
 
     res.send(AssessmentStats({ row }).toString());
@@ -99,7 +104,7 @@ router.get(
       // update assessment statistics if needed
       await updateAssessmentStatisticsForCourseInstance(res.locals.course_instance.id);
 
-      const cursor = await sqldb.queryCursor(sql.select_assessments, {
+      const cursor = await queryCursor(sql.select_assessments, {
         course_instance_id: res.locals.course_instance.id,
         authz_data: res.locals.authz_data,
         req_date: res.locals.req_date,
@@ -164,7 +169,7 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifier, res);
     } else {
-      throw new error.HttpStatusError(404, `Unknown filename: ${req.params.filename}`);
+      throw new HttpStatusError(404, `Unknown filename: ${req.params.filename}`);
     }
   }),
 );
@@ -182,14 +187,14 @@ router.post(
         return;
       }
 
-      const assessment_id = await sqldb.queryRow(
+      const assessment_id = await queryRow(
         sql.select_assessment_id_from_uuid,
         { uuid: editor.uuid, course_instance_id: res.locals.course_instance.id },
         IdSchema,
       );
       res.redirect(`${res.locals.urlPrefix}/assessment/${assessment_id}/settings`);
     } else {
-      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );
