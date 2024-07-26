@@ -15,6 +15,7 @@ HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
 HIDE_SCORE_BADGE_DEFAULT = False
+ALLOW_BLANK_DEFAULT = False
 BLANK_DEFAULT = True
 BLANK_ANSWER = " "
 NOTA_DEFAULT = False
@@ -48,7 +49,7 @@ def get_counter(i, counter_type):
 
 def legal_answer(answer, options):
     """Checks that the given answer is within the range of the given counter type."""
-    return 0 <= answer < len(options)
+    return -1 <= answer < len(options)
 
 
 def get_select_options(options_list, selected_value, blank_used):
@@ -128,6 +129,7 @@ def prepare(element_html, data):
         "number-options",
         "none-of-the-above",
         "blank",
+        "allow-blank",
         "counter-type",
         "fixed-options-order",
         "hide-score-badge",
@@ -250,6 +252,7 @@ def prepare(element_html, data):
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     display_statements, display_options = data["params"].get(name)
     submitted_answers = data["submitted_answers"]
 
@@ -264,7 +267,7 @@ def parse(element_html, data):
             continue
 
         # A blank is a valid submission from the HTML, but causes a format error.
-        if student_answer == -1:
+        if student_answer == -1 and not allow_blank:
             data["format_errors"][expected_html_name] = (
                 "The submitted answer was left blank."
             )
