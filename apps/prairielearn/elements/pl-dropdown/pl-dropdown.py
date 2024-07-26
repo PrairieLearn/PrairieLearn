@@ -11,6 +11,7 @@ BLANK_DEFAULT = True
 SORT_DEFAULT = "random"
 ALLOW_BLANK_DEFAULT = False
 
+
 class SortTypes(Enum):
     RANDOM = "random"
     ASCEND = "ascend"
@@ -53,10 +54,7 @@ def prepare(element_html, data):
     pl.check_attribs(
         element,
         required_attribs=["answers-name"],
-        optional_attribs=["blank",
-                           "allow-blank", 
-                           "weight", 
-                           "sort"],
+        optional_attribs=["blank", "allow-blank", "weight", "sort"],
     )
     answers_name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, answers_name)
@@ -104,7 +102,10 @@ def render(element_html, data):
             random.shuffle(dropdown_options)
 
         if blank_start:
-            dropdown_options.insert(0, {"value": BLANK_ANSWER, "selected": (submitted_answer == BLANK_ANSWER)})
+            dropdown_options.insert(
+                0,
+                {"value": BLANK_ANSWER, "selected": (submitted_answer == BLANK_ANSWER)},
+            )
 
         html_params = {
             "answers-name": answers_name,
