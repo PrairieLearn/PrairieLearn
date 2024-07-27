@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { JobSchema } from '../../../lib/db-types';
+import { JobSchema } from '../../../lib/db-types.js';
 
 import { AiGenerateJobDetailsPage } from './instructorAiGenerateJobDetails.html';
 
