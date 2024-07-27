@@ -1298,6 +1298,26 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_audit', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'questions';
+      next();
+    },
+    (await import('./ee/pages/instructorAiGenerateJobReview/instructorAiGenerateJobReview.js'))
+      .default,
+  ]);
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_results/:job_id(\\d+)',
+    [
+      function (req, res, next) {
+        res.locals.navSubPage = 'questions';
+        res.locals.lookupParams = req.params;
+        next();
+      },
+      (await import('./ee/pages/instructorAiGenerateJobDetails/instructorAiGenerateJobDetails.js'))
+        .default,
+    ],
+  );
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question', [
     function (req, res, next) {
       res.locals.navSubPage = 'questions';
@@ -1841,6 +1861,23 @@ export async function initExpress() {
       next();
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
+  ]);
+  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_audit', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'questions';
+      next();
+    },
+    (await import('./ee/pages/instructorAiGenerateJobReview/instructorAiGenerateJobReview.js'))
+      .default,
+  ]);
+  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_results/:job_id(\\d+)', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'questions';
+      res.locals.lookupParams = req.params;
+      next();
+    },
+    (await import('./ee/pages/instructorAiGenerateJobDetails/instructorAiGenerateJobDetails.js'))
+      .default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/ai_generate_question', [
     function (req, res, next) {
