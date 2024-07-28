@@ -237,7 +237,7 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/ai_generate_question',
   '/pl/course/:course_id/ai_generate_question',
   '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_results/:job_id',
-  '/pl/course/:course_id/ai_generate_question_results/:job_id'
+  '/pl/course/:course_id/ai_generate_question_results/:job_id',
 ];
 
 function shouldSkipPath(path) {
