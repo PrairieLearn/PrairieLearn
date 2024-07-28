@@ -12,25 +12,10 @@
   "studentGroupJoin": true,
   "studentGroupLeave": true,
   "groupRoles": [
-    {
-      "name": "Manager",
-      "minimum": 1,
-      "maximum": 1,
-      "canAssignRoles": true
-    },
-    {
-      "name": "Recorder",
-      "minimum": 1,
-      "maximum": 1
-    },
-    {
-      "name": "Reflector",
-      "minimum": 1,
-      "maximum": 1
-    },
-    {
-      "name": "Contributor"
-    }
+    { "name": "Manager", "minimum": 1, "maximum": 1, "canAssignRoles": true },
+    { "name": "Recorder", "minimum": 1, "maximum": 1 },
+    { "name": "Reflector", "minimum": 1, "maximum": 1 },
+    { "name": "Contributor" }
   ],
   "allowAccess": [
     {
@@ -45,11 +30,7 @@
       "startDate": "2019-01-28T00:00:01",
       "endDate": "2019-01-30T23:59:59"
     },
-    {
-      "mode": "Public",
-      "credit": 0,
-      "startDate": "2019-01-30T00:00:01"
-    }
+    { "mode": "Public", "credit": 0, "startDate": "2019-01-30T00:00:01" }
   ],
   "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
   "zones": [

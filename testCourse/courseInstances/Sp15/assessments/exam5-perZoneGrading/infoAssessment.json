@@ -17,30 +17,16 @@
     {
       "title": "Questions to test maxPoints",
       "maxPoints": 5,
-      "questions": [
-        {
-          "id": "partialCredit1",
-          "points": [10, 5, 1]
-        }
-      ]
+      "questions": [{ "id": "partialCredit1", "points": [10, 5, 1] }]
     },
     {
       "title": "Questions to test maxPoints and bestQuestions together",
       "bestQuestions": 2,
       "maxPoints": 15,
       "questions": [
-        {
-          "id": "partialCredit2",
-          "points": [10, 5, 1]
-        },
-        {
-          "id": "partialCredit3",
-          "points": [15, 10, 5, 1]
-        },
-        {
-          "id": "partialCredit4_v2",
-          "points": [20, 15, 10, 5, 1]
-        }
+        { "id": "partialCredit2", "points": [10, 5, 1] },
+        { "id": "partialCredit3", "points": [15, 10, 5, 1] },
+        { "id": "partialCredit4_v2", "points": [20, 15, 10, 5, 1] }
       ]
     }
   ]

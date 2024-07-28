@@ -5,24 +5,12 @@
   "set": "Homework",
   "number": "8",
   "allowAccess": [
+    { "startDate": "2020-01-01T00:00:01", "endDate": "2020-12-31T23:59:59", "credit": 100 },
+    { "startDate": "2030-01-01T00:00:01", "endDate": "2030-12-31T23:59:59", "credit": 75 },
+    { "startDate": "2000-01-01T00:00:01", "endDate": "2024-12-31T23:59:59", "active": false },
     {
-      "startDate": "2020-01-01T00:00:01Z",
-      "endDate": "2020-12-31T23:59:59Z",
-      "credit": 100
-    },
-    {
-      "startDate": "2030-01-01T00:00:01Z",
-      "endDate": "2030-12-31T23:59:59Z",
-      "credit": 75
-    },
-    {
-      "startDate": "2000-01-01T00:00:01Z",
-      "endDate": "2024-12-31T23:59:59Z",
-      "active": false
-    },
-    {
-      "startDate": "2025-01-01T00:00:01Z",
-      "endDate": "2039-12-31T23:59:59Z",
+      "startDate": "2025-01-01T00:00:01",
+      "endDate": "2039-12-31T23:59:59",
       "active": false,
       "showClosedAssessment": false
     }

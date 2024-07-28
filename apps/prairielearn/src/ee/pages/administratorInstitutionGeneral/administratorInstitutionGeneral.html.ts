@@ -57,7 +57,7 @@ export function AdministratorInstitutionGeneral({
           navPage: 'administrator_institution',
           navSubPage: 'general',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h2 class="h4">Statistics</h2>
           <div class="card-grid mb-3">
             ${StatisticsCard({ title: 'Courses', value: statistics.course_count })}
