@@ -37,18 +37,7 @@ SET
     ELSE assigned_grader
   END
 WHERE
-  iq.id = $instance_question_id
-  AND (
-    $assigned_grader::BIGINT IS NULL
-    OR $assigned_grader IN (
-      SELECT
-        user_id
-      FROM
-        UNNEST(
-          course_instances_select_graders ($course_instance_id)
-        )
-    )
-  );
+  iq.id = $instance_question_id;
 
 -- BLOCK close_issues_for_instance_question
 WITH

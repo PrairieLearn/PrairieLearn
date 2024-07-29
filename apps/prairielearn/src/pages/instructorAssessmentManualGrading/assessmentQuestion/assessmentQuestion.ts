@@ -6,6 +6,7 @@ import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
 import { botGrade } from '../../../lib/bot-grading.js';
 import { features } from '../../../lib/features/index.js';
+import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { selectUsersWithCourseInstanceAccess } from '../../../models/course-instances.js';
 
@@ -83,6 +84,17 @@ router.post(
       const instance_question_ids = Array.isArray(req.body.instance_question_id)
         ? req.body.instance_question_id
         : [req.body.instance_question_id];
+      if (action_data?.assigned_grader != null) {
+        const courseStaff = await selectUsersWithCourseInstanceAccess({
+          course_instance_id: res.locals.course_instance.id,
+        });
+        if (!courseStaff.some((staff) => idsEqual(staff.user_id, action_data.assigned_grader))) {
+          throw new error.HttpStatusError(
+            400,
+            'Assigned grader does not have Student Data Editor permission',
+          );
+        }
+      }
       await queryAsync(sql.update_instance_questions, {
         course_instance_id: res.locals.course_instance.id,
         assessment_question_id: res.locals.assessment_question.id,
