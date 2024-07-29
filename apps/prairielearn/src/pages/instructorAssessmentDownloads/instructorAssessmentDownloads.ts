@@ -310,7 +310,7 @@ router.get(
 
       for await (const rows of cursor.iterate(100)) {
         for (const row of rows) {
-          const contents = row.contents != null ? row.contents : '';
+          const contents = Buffer.from(row.contents ?? '', 'base64');
           archive.append(contents, { name: prefix + row.filename });
         }
       }
@@ -326,7 +326,6 @@ router.get(
 
       const cursor = await sqldb.queryCursor(sql.assessment_instance_files, {
         assessment_id: res.locals.assessment.id,
-        limit: 100,
         include_all,
         include_final,
         include_best,
@@ -346,7 +345,7 @@ router.get(
 
       for await (const rows of cursor.iterate(100)) {
         for (const row of rows) {
-          const contents = row.contents != null ? row.contents : '';
+          const contents = Buffer.from(row.contents ?? '', 'base64');
           archive.append(contents, { name: prefix + row.filename });
         }
       }
