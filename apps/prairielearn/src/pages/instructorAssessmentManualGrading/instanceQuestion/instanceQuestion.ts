@@ -266,8 +266,6 @@ router.post(
         }
       }
       await sqldb.queryAsync(sql.update_assigned_grader, {
-        course_instance_id: res.locals.course_instance.id,
-        assessment_id: res.locals.assessment.id,
         instance_question_id: res.locals.instance_question.id,
         assigned_grader,
         requires_manual_grading: actionPrompt !== 'graded',

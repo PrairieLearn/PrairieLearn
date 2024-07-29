@@ -96,7 +96,6 @@ router.post(
         }
       }
       await queryAsync(sql.update_instance_questions, {
-        course_instance_id: res.locals.course_instance.id,
         assessment_question_id: res.locals.assessment_question.id,
         instance_question_ids,
         update_requires_manual_grading: 'requires_manual_grading' in action_data,
