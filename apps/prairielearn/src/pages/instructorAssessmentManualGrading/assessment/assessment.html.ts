@@ -8,7 +8,7 @@ import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
-import { AssessmentQuestionSchema, User } from '../../../lib/db-types.js';
+import { AssessmentQuestionSchema, type User } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 
 export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
@@ -201,7 +201,7 @@ function GraderAssignmentModal({
     id: 'grader-assignment-modal',
     title: 'Assign instances to graders',
     body: html`
-      <p>Assign selected instances to the following graders:</p>
+      <p>Assign instances to the following graders:</p>
       ${courseStaff.map(
         (staff) => html`
           <div class="custom-control custom-checkbox">
@@ -219,8 +219,9 @@ function GraderAssignmentModal({
         `,
       )}
       <div class="mt-2 small alert alert-info">
-        If more than one grader is assigned, the selected instances will be randomly split between
-        the graders.
+        Only instances that require grading and are not yet assigned to a grader will be affected.
+        If more than one grader is selected, the instances will be randomly split between the
+        graders.
       </div>
     `,
     footer: html`
