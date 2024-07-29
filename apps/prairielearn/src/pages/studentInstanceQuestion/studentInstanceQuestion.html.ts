@@ -2,7 +2,12 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import {
+  RegenerateInstanceModal,
+  RegenerateInstanceAlert,
+} from '../../components/AssessmentRegenerate.html.js';
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.html.js';
@@ -11,7 +16,13 @@ import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 
-export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<string, any> }) {
+export function StudentInstanceQuestion({
+  resLocals,
+  userCanDeleteAssessmentInstance,
+}: {
+  resLocals: Record<string, any>;
+  userCanDeleteAssessmentInstance: boolean;
+}) {
   const questionContext =
     resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework';
 
@@ -19,8 +30,7 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('question.ts')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('question.ts')}
         ${resLocals.assessment.type === 'Exam'
           ? html`
               ${compiledScriptTag('examTimeLimitCountdown.ts')}
@@ -62,7 +72,11 @@ export function StudentInstanceQuestion({ resLocals }: { resLocals: Record<strin
           ...resLocals,
           navPage: '',
         })}
+        ${userCanDeleteAssessmentInstance
+          ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
+          : ''}
         <main id="content" class="container">
+          ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
           <div class="row">
             <div class="col-lg-9 col-sm-12">
               ${resLocals.variant == null
