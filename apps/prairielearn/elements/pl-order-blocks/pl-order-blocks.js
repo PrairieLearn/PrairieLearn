@@ -9,9 +9,16 @@ window.PLOrderBlocks = function (uuid, options) {
   const optionsElementId = '#order-blocks-options-' + uuid;
   const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
   const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
+  const inline = options.inline;
+  const bottom = fullContainer.querySelector('.pl-order-blocks-bottom');
+  console.log(bottom);
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
+
+    blocks.forEach((block) => block.setAttribute('tabindex', '-1'));
+    blocks[0].setAttribute('tabindex', '0'); // only the first block in the pl-order-blocks element can be focused by tabbing through
+
     blocks.forEach((block) => initializeBlockEvents(block));
   }
 
@@ -35,7 +42,7 @@ window.PLOrderBlocks = function (uuid, options) {
       block.classList.remove('pl-order-blocks-selected');
     }
 
-    function handleKey(ev, block, handle) {
+    function handleKey(ev, block, handle, focus = true) {
       // When we manipulate the location of the block, the focus is automatically removed by the browser,
       // so we immediately refocus it. In some browsers, the blur even will still fire in this case even
       // though we don't want it to, so we temporarily remove and then reattach the blur event listener.
@@ -43,14 +50,128 @@ window.PLOrderBlocks = function (uuid, options) {
       handle();
       ev.preventDefault();
       block.addEventListener('blur', removeSelectedAttribute);
-      block.focus();
+      correctPairing(block);
+      if (focus) {
+        block.focus();
+      }
       setAnswer();
     }
 
     function handleKeyPress(ev) {
+      const optionsBlocks = Array.from($(optionsElementId)[0].querySelectorAll('.pl-order-block'));
+      const dropzoneBlocks = Array.from(
+        $(dropzoneElementId)[0].querySelectorAll('.pl-order-block'),
+      );
+      const allBlocks = Array.from(fullContainer.querySelectorAll('.pl-order-block'));
       if (!block.classList.contains('pl-order-blocks-selected')) {
-        if (ev.key === 'Enter') {
-          handleKey(ev, block, () => block.classList.add('pl-order-blocks-selected'));
+        const moveBetweenOptionsOrDropzone = (options) => {
+          if (options && inDropzone(block) && optionsBlocks.length) {
+            optionsBlocks[0].focus();
+          } else if (!options && !inDropzone(block) && dropzoneBlocks.length) {
+            dropzoneBlocks[0].focus();
+          }
+        };
+        const moveWithinOptionsOrDropzone = (forward) => {
+          if (forward) {
+            if (inDropzone(block)) {
+              const blockIndex = dropzoneBlocks.indexOf(block);
+              if (blockIndex < dropzoneBlocks.length - 1) {
+                dropzoneBlocks[blockIndex + 1].focus();
+              }
+            } else {
+              const blockIndex = optionsBlocks.indexOf(block);
+              if (blockIndex < optionsBlocks.length - 1) {
+                optionsBlocks[blockIndex + 1].focus();
+              }
+            }
+          } else {
+            if (inDropzone(block)) {
+              const blockIndex = dropzoneBlocks.indexOf(block);
+              if (blockIndex > 0) {
+                dropzoneBlocks[blockIndex - 1].focus();
+              }
+            } else {
+              const blockIndex = optionsBlocks.indexOf(block);
+              if (blockIndex > 0) {
+                optionsBlocks[blockIndex - 1].focus();
+              }
+            }
+          }
+        };
+        switch (ev.key) {
+          case 'Enter':
+            handleKey(ev, block, () => block.classList.add('pl-order-blocks-selected'));
+            break;
+          case 'ArrowUp':
+            handleKey(
+              ev,
+              block,
+              () => {
+                if (inline) {
+                  moveBetweenOptionsOrDropzone(true);
+                } else if (bottom) {
+                  const blockIndex = allBlocks.indexOf(block);
+                  if (blockIndex > 0) {
+                    allBlocks[blockIndex - 1].focus();
+                  }
+                } else {
+                  moveWithinOptionsOrDropzone(false);
+                }
+              },
+              false,
+            );
+            break;
+          case 'ArrowDown':
+            handleKey(
+              ev,
+              block,
+              () => {
+                if (inline) {
+                  moveBetweenOptionsOrDropzone(false);
+                } else if (bottom) {
+                  const blockIndex = allBlocks.indexOf(block);
+                  if (blockIndex < allBlocks.length - 1) {
+                    allBlocks[blockIndex + 1].focus();
+                  }
+                } else {
+                  moveWithinOptionsOrDropzone(true);
+                }
+              },
+              false,
+            );
+            break;
+          case 'ArrowLeft':
+            handleKey(
+              ev,
+              block,
+              () => {
+                if (inline) {
+                  moveWithinOptionsOrDropzone(false);
+                } else {
+                  if (!bottom) {
+                    moveBetweenOptionsOrDropzone(true);
+                  }
+                }
+              },
+              false,
+            );
+            break;
+          case 'ArrowRight':
+            handleKey(
+              ev,
+              block,
+              () => {
+                if (inline) {
+                  moveWithinOptionsOrDropzone(true);
+                } else {
+                  if (!bottom) {
+                    moveBetweenOptionsOrDropzone(false);
+                  }
+                }
+              },
+              false,
+            );
+            break;
         }
       } else {
         switch (ev.key) {
@@ -109,6 +230,25 @@ window.PLOrderBlocks = function (uuid, options) {
     });
 
     block.addEventListener('keydown', (ev) => handleKeyPress(ev));
+
+    block.addEventListener('blur', (ev) => {
+      block.setAttribute('tabindex', '-1');
+      const blocks = fullContainer.querySelectorAll('.pl-order-block');
+      if (
+        // Make sure one block is always focusable in each pl-order-blocks element
+        Array.from(blocks).every((item) => {
+          return item.getAttribute('tabindex') === '-1';
+        })
+      ) {
+        block.setAttribute('tabindex', '0');
+      }
+    });
+    block.addEventListener('focus', (ev) => {
+      fullContainer
+        .querySelectorAll('.pl-order-block')
+        .forEach((item) => item.setAttribute('tabindex', '-1'));
+      block.setAttribute('tabindex', '0');
+    });
   }
 
   function setAnswer() {
