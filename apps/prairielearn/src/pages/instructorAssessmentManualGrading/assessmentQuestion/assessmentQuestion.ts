@@ -7,6 +7,7 @@ import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 import { botGrade } from '../../../lib/bot-grading.js';
 import { features } from '../../../lib/features/index.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { selectUsersWithCourseInstanceAccess } from '../../../models/course-instances.js';
 
 import { AssessmentQuestion } from './assessmentQuestion.html.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
@@ -20,8 +21,11 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
+    const courseStaff = await selectUsersWithCourseInstanceAccess({
+      course_instance_id: res.locals.course_instance.id,
+    });
     const botGradingEnabled = await features.enabledFromLocals('bot-grading', res.locals);
-    res.send(AssessmentQuestion({ resLocals: res.locals, botGradingEnabled }));
+    res.send(AssessmentQuestion({ resLocals: res.locals, courseStaff, botGradingEnabled }));
   }),
 );
 

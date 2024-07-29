@@ -28,12 +28,6 @@ ORDER BY
 LIMIT
   1;
 
--- BLOCK select_graders
-SELECT
-  to_jsonb(
-    course_instances_select_graders ($course_instance_id)
-  ) AS graders;
-
 -- BLOCK update_assigned_grader
 UPDATE instance_questions AS iq
 SET

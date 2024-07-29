@@ -6,10 +6,11 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { IdSchema, UserSchema } from '../../../lib/db-types.js';
+import { IdSchema } from '../../../lib/db-types.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
+import { selectUsersWithCourseInstanceAccess } from '../../../models/course-instances.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 import { GradingJobData, GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html.js';
@@ -51,11 +52,9 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
     }
   }
 
-  const graders = await sqldb.queryOptionalRow(
-    sql.select_graders,
-    { course_instance_id: resLocals.course_instance.id },
-    UserSchema.array().nullable(),
-  );
+  const graders = await selectUsersWithCourseInstanceAccess({
+    course_instance_id: resLocals.course_instance.id,
+  });
   return { resLocals, conflict_grading_job, graders };
 }
 
