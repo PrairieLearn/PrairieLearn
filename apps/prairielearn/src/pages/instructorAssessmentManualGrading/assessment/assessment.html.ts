@@ -204,15 +204,15 @@ function GraderAssignmentModal({
       <p>Assign instances to the following graders:</p>
       ${courseStaff.map(
         (staff) => html`
-          <div class="custom-control custom-checkbox">
+          <div class="form-check">
             <input
               type="checkbox"
               id="graderAssignment${staff.user_id}"
               name="assigned_grader"
               value="${staff.user_id}"
-              class="custom-control-input"
+              class="form-check-input"
             />
-            <label class="custom-control-label" for="graderAssignment${staff.user_id}">
+            <label class="form-check-label" for="graderAssignment${staff.user_id}">
               ${staff.name ? `${staff.name} (${staff.uid})` : staff.uid}
             </label>
           </div>
