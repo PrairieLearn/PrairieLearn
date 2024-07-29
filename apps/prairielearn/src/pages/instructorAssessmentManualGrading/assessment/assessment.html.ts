@@ -5,8 +5,10 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Modal } from '../../../components/Modal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
-import { AssessmentQuestionSchema } from '../../../lib/db-types.js';
+import { compiledScriptTag } from '../../../lib/assets.js';
+import { AssessmentQuestionSchema, User } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
 
 export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
@@ -32,10 +34,12 @@ export type ManualGradingQuestion = z.infer<typeof ManualGradingQuestionSchema>;
 export function ManualGradingAssessment({
   resLocals,
   questions,
+  courseStaff,
   num_open_instances,
 }: {
   resLocals: Record<string, any>;
   questions: ManualGradingQuestion[];
+  courseStaff: User[];
   num_open_instances: number;
 }) {
   return html`
@@ -43,9 +47,11 @@ export function ManualGradingAssessment({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })}
+        ${compiledScriptTag('instructorAssessmentManualGradingAssessmentClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
+        ${GraderAssignmentModal({ courseStaff, csrfToken: resLocals.__csrf_token })}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -145,6 +151,17 @@ function AssessmentQuestionRow({
               <small class="text-muted">
                 (${question.num_instance_questions_unassigned} unassigned)
               </small>
+              ${resLocals.authz_data.has_course_instance_permission_edit
+                ? html`
+                    <button
+                      type="button"
+                      class="btn btn-sm js-assign-grader-btn"
+                      data-assessment-question-id="${question.id}"
+                    >
+                      <i class="fas fa-pencil"></i><span class="sr-only">Assign to&hellip;</span>
+                    </button>
+                  `
+                : ''}
             `
           : ''}
       </td>
@@ -171,4 +188,47 @@ function ProgressBar(partial: number | null, total: number | null) {
       <div class="progress-bar bg-danger" style="width: ${100 - progress}%"></div>
     </div>
   `;
+}
+
+function GraderAssignmentModal({
+  csrfToken,
+  courseStaff,
+}: {
+  csrfToken: string;
+  courseStaff: User[];
+}) {
+  return Modal({
+    id: 'grader-assignment-modal',
+    title: 'Assign instances to graders',
+    body: html`
+      <p>Assign selected instances to the following graders:</p>
+      ${courseStaff.map(
+        (staff) => html`
+          <div class="custom-control custom-checkbox">
+            <input
+              type="checkbox"
+              id="graderAssignment${staff.user_id}"
+              name="assigned_grader"
+              value="${staff.user_id}"
+              class="custom-control-input"
+            />
+            <label class="custom-control-label" for="graderAssignment${staff.user_id}">
+              ${staff.name ? `${staff.name} (${staff.uid})` : staff.uid}
+            </label>
+          </div>
+        `,
+      )}
+      <div class="mt-2 small alert alert-info">
+        If more than one grader is assigned, the selected instances will be randomly split between
+        the graders.
+      </div>
+    `,
+    footer: html`
+      <input type="hidden" name="unsafe_assessment_question_id" value="" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="__action" value="assign_graders" />
+      <button type="submit" class="btn btn-primary">Assign</button>
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+    `,
+  });
 }

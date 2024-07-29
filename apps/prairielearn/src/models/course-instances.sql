@@ -62,3 +62,15 @@ ORDER BY
   d.start_date DESC NULLS LAST,
   d.end_date DESC NULLS LAST,
   ci.id DESC;
+
+-- BLOCK select_users_with_course_instance_access
+SELECT
+  u.*
+FROM
+  course_instances AS ci
+  JOIN course_instance_permissions AS cip ON (cip.course_instance_id = ci.id)
+  JOIN course_permissions AS cp ON (cp.id = cip.course_permission_id)
+  JOIN users AS u ON (u.user_id = cp.user_id)
+WHERE
+  ci.id = $course_instance_id
+  AND cip.course_instance_role >= $minimal_role;
