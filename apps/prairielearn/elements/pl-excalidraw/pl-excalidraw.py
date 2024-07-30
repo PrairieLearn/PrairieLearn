@@ -19,7 +19,6 @@ SOURCE_DIRECTORY_MAP = {
     "serverFilesCourse": "server_files_course_path",
     "clientFilesCourse": "client_files_course_path",
     "clientFilesQuestion": "client_files_question_path",
-    "courseExtensions": "course_extensions_path",
     ".": "question_path",
 }
 
