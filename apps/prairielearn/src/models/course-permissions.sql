@@ -349,7 +349,7 @@ FROM
 
 -- BLOCK user_is_instructor_in_any_course
 SELECT
-  c.id
+  TRUE
 FROM
   users AS u
   LEFT JOIN administrators AS adm ON adm.user_id = u.user_id

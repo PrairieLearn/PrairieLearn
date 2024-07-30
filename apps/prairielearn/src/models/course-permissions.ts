@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
@@ -13,7 +15,6 @@ import {
   CoursePermissionSchema,
   type CourseInstancePermission,
   CourseInstancePermissionSchema,
-  IdSchema,
 } from '../lib/db-types.js';
 
 import { selectOrInsertUserByUid } from './user.js';
@@ -215,10 +216,10 @@ export async function userIsInstructorInAnyCourse({
 }: {
   user_id: string;
 }): Promise<boolean> {
-  const course_id = await queryOptionalRow(
+  const result = await queryOptionalRow(
     sql.user_is_instructor_in_any_course,
     { user_id },
-    IdSchema,
+    z.boolean(),
   );
-  return course_id != null;
+  return result ?? false;
 }
