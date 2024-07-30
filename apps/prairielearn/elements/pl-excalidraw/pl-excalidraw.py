@@ -1,6 +1,7 @@
 import base64
 import json
 from pathlib import Path
+from typing import List
 
 import chevron
 import lxml.html
@@ -122,7 +123,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # the expanded form to make it easy to compare with the reference logic at
     # https://github.com/PrairieLearn/PrairieLearn/pull/9900#discussion_r1685163461
     # 2. Because we already handled raising an error on missing source file, the error cases
-    # and invalid states are both tagged below as `assert_never`
+    # and invalid states are both tagged below as `unreachable`
+    unreachable = RuntimeError(f"Unreachable code path reached with state {matrix=}")
 
     match panel:
         case "question":
@@ -139,9 +141,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     if source_available:
                         initial_content = load_file_content(element, data)
                     else:
-                        assert_never(matrix)
+                        raise unreachable
                 else:  # submission
-                    assert_never(matrix)
+                    raise unreachable
 
         case "answer":
             if gradable:
@@ -151,14 +153,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     if fresh:
                         initial_content = load_file_content(element, data)
                     else:  # submission
-                        assert_never(matrix)
+                        raise unreachable
                 else:  # no source file
-                    assert_never(matrix)
+                    raise unreachable
 
         case "submission":
             if gradable:
                 if fresh:
-                    assert_never(matrix)
+                    raise unreachable
                 else:  # submission
                     initial_content = data["submitted_answers"][drawing_name]
             else:  # not gradable
@@ -166,9 +168,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     if source_available:
                         initial_content = load_file_content(element, data)
                     else:  # no source file
-                        assert_never(matrix)
+                        raise unreachable
                 else:  # submission
-                    assert_never(matrix)
+                    raise unreachable
 
         case panel:
             assert_never(panel)
@@ -182,11 +184,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         }
     ).encode()
 
-    errors = (
-        data["format_errors"].get(drawing_name, [])
-        if data["panel"] == "submission"
-        else []
-    )
+    errors: List = []
+    if panel == "submission" and drawing_name and drawing_name in data["format_errors"]:
+        errors = data["format_errors"][drawing_name]
 
     with open("pl-excalidraw.mustache", "r", encoding="utf-8") as template:
         return chevron.render(
@@ -205,11 +205,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     drawing_name = pl.get_string_attrib(element, ATTR_ANSWER_NAME, None)
 
-    try:
-        # Check the submissions if available
-        if drawing_name and drawing_name in data["submitted_answers"]:
-            json.loads(data["submitted_answers"][drawing_name])
-    except Exception as e:
-        if drawing_name not in data["format_errors"]:
-            data["format_errors"][drawing_name] = []
-        data["format_errors"][drawing_name].append(f"Invalid drawing submission: {e}")
+    if drawing_name:
+        try:
+            # Check the submissions if available
+            if drawing_name in data["submitted_answers"]:
+                json.loads(data["submitted_answers"][drawing_name])
+        except Exception as e:
+            if drawing_name not in data["format_errors"]:
+                data["format_errors"][drawing_name] = []
+            data["format_errors"][drawing_name].append(
+                f"Invalid drawing submission: {e}"
+            )
