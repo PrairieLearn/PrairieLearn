@@ -225,7 +225,7 @@ function VariantInfo({
   const duration =
     typeof variant.duration === 'string'
       ? IntervalSchema.parse(variant.duration)
-      : variant.duration ?? 0;
+      : (variant.duration ?? 0);
   const date =
     typeof variant.date === 'string' ? DateFromISOString.parse(variant.date) : variant.date;
 
@@ -268,7 +268,7 @@ function AssessmentInstanceInfo({
   const duration =
     typeof assessment_instance.duration === 'string'
       ? IntervalSchema.parse(assessment_instance.duration)
-      : assessment_instance.duration ?? 0;
+      : (assessment_instance.duration ?? 0);
   const date =
     typeof assessment_instance.date === 'string'
       ? DateFromISOString.parse(assessment_instance.date)

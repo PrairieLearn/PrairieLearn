@@ -1,14 +1,16 @@
 // @ts-check
-import debugfn from 'debug';
+import * as crypto from 'node:crypto';
+
 import _ from 'lodash';
-import request from 'request';
+import fetch from 'node-fetch';
+import oauthSignature from 'oauth-signature';
+import { v4 as uuid } from 'uuid';
 import * as xml2js from 'xml2js';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const debug = debugfn('prairielearn:ltiOutcomes');
 const parser = new xml2js.Parser({ explicitArray: false });
 const builder = new xml2js.Builder();
 
@@ -46,22 +48,6 @@ function xmlReplaceResult(sourcedId, score, identifier) {
 }
 
 /**
- * @param {import('request').CoreOptions & import('request').RequiredUriUrl} options
- * @returns {Promise<{ response: import('request').Response, body: any }>}
- */
-async function requestPost(options) {
-  return new Promise((resolve, reject) => {
-    request.post(options, (err, response, body) => {
-      if (err) {
-        reject(err);
-      } else {
-        resolve({ response, body });
-      }
-    });
-  });
-}
-
-/**
  * Check if LTI needs updating for this assessment.
  *
  * @param {string} assessment_instance_id - The assessment instance ID
@@ -84,27 +70,49 @@ export async function updateScore(assessment_instance_id) {
     score = 0.0;
   }
 
-  /** @type {import('request').CoreOptions & import('request').RequiredUriUrl} */
-  const post_params = {
-    url: info.lis_outcome_service_url,
-    oauth: {
-      consumer_key: info.consumer_key,
-      consumer_secret: info.secret,
-      body_hash: true,
-    },
-    headers: {
-      'Content-type': 'application/xml',
-    },
-    body: xmlReplaceResult(info.lis_result_sourcedid, score, info.date.toString()),
+  const body = xmlReplaceResult(info.lis_result_sourcedid, score, info.date.toString());
+
+  // Compute the SHA-1 hash of the body.
+  const shasum = crypto.createHash('sha1');
+  shasum.update(body || '');
+  const sha1 = shasum.digest('hex');
+
+  const oauthParams = {
+    oauth_consumer_key: info.consumer_key,
+    oauth_version: '1.0',
+    oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+    oauth_nonce: uuid().replace(/-/g, ''),
+    oauth_signature_method: 'HMAC-SHA1',
+    oauth_body_hash: Buffer.from(sha1, 'hex').toString('base64'),
   };
 
-  debug(post_params);
-  const { response: httpResponse, body } = await requestPost(post_params);
+  oauthParams.oauth_signature = oauthSignature.generate(
+    'POST',
+    info.lis_outcome_service_url,
+    oauthParams,
+    info.secret,
+    undefined,
+    { encodeSignature: false },
+  );
 
-  debug(httpResponse);
-  debug(body);
+  const rfc = new oauthSignature.Rfc3986();
+  const stringifiedParameters = Object.entries(oauthParams)
+    .map(([key, value]) => {
+      return `${key}="${rfc.encode(value)}"`;
+    })
+    .join(',');
+
+  const res = await fetch(info.lis_outcome_service_url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/xml',
+      Authorization: `OAuth ${stringifiedParameters}`,
+    },
+    body,
+  });
+
   // Inspect the XML result, log the action
-  const result = await parser.parseStringPromise(body);
+  const result = await parser.parseStringPromise(await res.text());
   const imsx_codeMajor = _.get(
     result,
     [
@@ -120,20 +128,12 @@ export async function updateScore(assessment_instance_id) {
     logger.info(
       `ltiOutcomes.updateScore() ai_id=${assessment_instance_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`,
     );
-    debug(
-      `ltiOutcomes.updateScore() ai_id=${assessment_instance_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`,
-    );
   } else {
     logger.info(
       `ltiOutcomes.updateScore() ai_id=${assessment_instance_id} score=${score} did not return success, debugging follows:`,
     );
-    logger.info('post_params:', post_params);
+    logger.info('oauthParams:', oauthParams);
     logger.info('body:', body);
-    debug(
-      `ltiOutcomes.updateScore() ai_id=${assessment_instance_id} score=${score} did not return success, debugging follows:`,
-    );
-    debug('post_params', post_params);
-    debug('body', body);
   }
 }
 
