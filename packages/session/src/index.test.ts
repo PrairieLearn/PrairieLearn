@@ -472,7 +472,7 @@ describe('session middleware', () => {
         },
       }),
     );
-    app.get('/', (req, res) => res.send(req.session.getExpirationDate().getTime()));
+    app.get('/', (_req, res) => res.sendStatus(200));
     app.get('/extend', (req, res) => {
       req.session.setExpiration(10000);
       res.sendStatus(200);
