@@ -16,23 +16,14 @@ ORDER BY
 
 -- BLOCK user_scores
 WITH
-  course_assessments AS (
-    SELECT
-      a.id,
-      a.order_by AS assessment_order_by,
-      aset.number AS assessment_set_number
-    FROM
-      assessments AS a
-      JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-    WHERE
-      a.deleted_at IS NULL
-      AND a.course_instance_id = $course_instance_id
-  ),
   course_assessment_instances AS (
+    -- Select all assessment instances for the course instance
     SELECT
       ai.id,
       COALESCE(ai.user_id, gu.user_id) AS user_id,
-      ai.group_id
+      ai.group_id,
+      ai.assessment_id,
+      ai.score_perc
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -43,25 +34,26 @@ WITH
       AND g.deleted_at IS NULL
   ),
   course_scores AS (
+    -- For each user, select the instance with the highest score for each assessment
     SELECT DISTINCT
-      ON (cai.user_id, a.id) cai.user_id,
-      a.id AS assessment_id,
-      ai.score_perc,
-      ai.id AS assessment_instance_id,
+      ON (cai.user_id, cai.assessment_id) cai.user_id,
+      cai.assessment_id,
+      cai.score_perc,
+      cai.id AS assessment_instance_id,
       cai.group_id
     FROM
       course_assessment_instances AS cai
-      JOIN assessment_instances AS ai ON (ai.id = cai.id)
-      JOIN assessments AS a ON (a.id = ai.assessment_id)
-    WHERE
-      a.course_instance_id = $course_instance_id
     ORDER BY
       cai.user_id,
-      a.id,
-      ai.score_perc DESC,
-      ai.id
+      cai.assessment_id,
+      cai.score_perc DESC,
+      cai.id
   ),
   user_ids AS (
+    -- Select all users that:
+    -- 1. Are enrolled in the course instance;
+    -- 2. Have at least one assessment instance in the course (typically previously enrolled);
+    -- 3. Have some staff permission in the course or instance.
     (
       SELECT DISTINCT
         user_id
@@ -100,6 +92,7 @@ WITH
     )
   ),
   course_users AS (
+    -- Retrieve user data for each user
     SELECT
       u.user_id,
       u.uid,
@@ -110,68 +103,46 @@ WITH
       user_ids
       JOIN users AS u ON (u.user_id = user_ids.user_id)
   ),
-  scores AS (
+  user_scores AS (
+    -- Aggregate scores for each user
     SELECT
       u.user_id,
-      u.uid,
-      u.uin,
-      u.user_name,
-      u.role,
-      a.id AS assessment_id,
-      a.assessment_order_by,
-      a.assessment_set_number,
-      s.score_perc,
-      s.assessment_instance_id,
-      ARRAY(
-        SELECT
-          ou.uid
-        FROM
-          group_users AS ogu
-          LEFT JOIN course_users AS ou ON (ou.user_id = ogu.user_id)
-        WHERE
-          ogu.group_id = s.group_id
-          AND ogu.user_id != u.user_id
-      ) AS uid_other_users_group
+      JSONB_OBJECT_AGG(
+        s.assessment_id,
+        json_build_object(
+          'score_perc',
+          s.score_perc,
+          'assessment_instance_id',
+          s.assessment_instance_id,
+          'uid_other_users_group',
+          ARRAY(
+            SELECT
+              ou.uid
+            FROM
+              group_users AS ogu
+              LEFT JOIN course_users AS ou ON (ou.user_id = ogu.user_id)
+            WHERE
+              ogu.group_id = s.group_id
+              AND ogu.user_id != u.user_id
+          )
+        )
+      ) AS scores
     FROM
       course_users AS u
-      LEFT JOIN course_assessments AS a ON TRUE
-      LEFT JOIN course_scores AS s ON (
-        s.user_id = u.user_id
-        AND s.assessment_id = a.id
-      )
+      JOIN course_scores AS s ON (s.user_id = u.user_id)
+    GROUP BY
+      u.user_id
   )
 SELECT
-  user_id,
-  uid,
-  uin,
-  user_name,
-  role,
-  ARRAY_AGG(
-    json_build_object(
-      'score_perc',
-      score_perc,
-      'assessment_id',
-      assessment_id,
-      'assessment_instance_id',
-      assessment_instance_id,
-      'uid_other_users_group',
-      uid_other_users_group
-    )
-    ORDER BY
-      (
-        assessment_set_number,
-        assessment_order_by,
-        assessment_id
-      )
-  ) AS scores
+  u.user_id,
+  u.uid,
+  u.uin,
+  u.user_name,
+  u.role,
+  COALESCE(s.scores, '{}') AS scores
 FROM
-  scores
-GROUP BY
-  user_id,
-  uid,
-  uin,
-  user_name,
-  role
+  course_users AS u
+  LEFT JOIN user_scores AS s ON (u.user_id = s.user_id)
 ORDER BY
   role DESC,
   uid;

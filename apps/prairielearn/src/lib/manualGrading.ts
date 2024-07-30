@@ -1,12 +1,11 @@
 import * as async from 'async';
-import * as mustache from 'mustache';
-import { sum, sumBy } from 'lodash';
+import _ from 'lodash';
+import mustache from 'mustache';
 import { z } from 'zod';
+
+import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 
-import { idsEqual } from './id';
-import * as markdown from './markdown';
-import * as ltiOutcomes from './ltiOutcomes';
 import {
   AssessmentQuestionSchema,
   IdSchema,
@@ -15,9 +14,11 @@ import {
   RubricItem,
   RubricItemSchema,
   RubricSchema,
-} from './db-types';
+} from './db-types.js';
+import { idsEqual } from './id.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const AppliedRubricItemSchema = z.object({
   /** ID of the rubric item to be applied. */
@@ -142,15 +143,16 @@ export async function populateRubricData(locals: Record<string, any>): Promise<v
   };
 
   await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
-    item.description_rendered = (
-      await markdown.processContentInline(mustache.render(item.description || '', mustache_data))
-    ).toString();
-    item.explanation_rendered = (
-      await markdown.processContent(mustache.render(item.explanation || '', mustache_data))
-    ).toString();
-    item.grader_note_rendered = (
-      await markdown.processContent(mustache.render(item.grader_note || '', mustache_data))
-    ).toString();
+    item.description_rendered = await markdownToHtml(
+      mustache.render(item.description || '', mustache_data),
+      { inline: true },
+    );
+    item.explanation_rendered = await markdownToHtml(
+      mustache.render(item.explanation || '', mustache_data),
+    );
+    item.grader_note_rendered = await markdownToHtml(
+      mustache.render(item.grader_note || '', mustache_data),
+    );
   });
 
   locals.rubric_data = rubric_data;
@@ -172,7 +174,7 @@ export async function populateManualGradingData(submission: Record<string, any>)
     );
   }
   if (submission.feedback?.manual) {
-    submission.feedback_manual_html = await markdown.processContent(
+    submission.feedback_manual_html = await markdownToHtml(
       submission.feedback?.manual?.toString() || '',
     );
   }
@@ -232,8 +234,8 @@ export async function updateAssessmentQuestionRubric(
     if (use_rubric) {
       const max_points =
         (replace_auto_points
-          ? assessment_question.max_points ?? 0
-          : assessment_question.max_manual_points ?? 0) + Number(max_extra_points);
+          ? (assessment_question.max_points ?? 0)
+          : (assessment_question.max_manual_points ?? 0)) + Number(max_extra_points);
 
       // This test is done inside the transaction to avoid a race condition in case the assessment
       // question's values change.
@@ -297,12 +299,10 @@ export async function updateAssessmentQuestionRubric(
         async (item) => {
           // Attempt to update the rubric item based on the ID. If the ID is not set or does not
           // exist, insert a new rubric item.
-          const updated =
-            item.id == null
-              ? null
-              : await sqldb.queryOptionalRow(sql.update_rubric_item, item, IdSchema);
-          if (updated == null) {
-            await sqldb.queryAsync(sql.insert_rubric_item, item);
+          if (item.id == null) {
+            await sqldb.queryAsync(sql.insert_rubric_item, _.omit(item, ['order', 'id']));
+          } else {
+            await sqldb.queryRow(sql.update_rubric_item, _.omit(item, ['order']), IdSchema);
           }
         },
       );
@@ -329,7 +329,7 @@ async function recomputeInstanceQuestions(
     // Recompute grades for existing instance questions using this rubric
     const instance_questions = await sqldb.queryRows(
       sql.select_instance_questions_to_update,
-      { assessment_question_id, authn_user_id },
+      { assessment_question_id },
       InstanceQuestionToUpdateSchema,
     );
 
@@ -369,7 +369,7 @@ async function insertRubricGrading(
       z.object({ rubric_data: RubricSchema, rubric_item_data: z.array(RubricItemSchema) }),
     );
 
-    const sum_rubric_item_points = sum(
+    const sum_rubric_item_points = _.sum(
       rubric_items?.map(
         (item) =>
           (item.score ?? 1) *
@@ -473,11 +473,11 @@ export async function updateInstanceQuestionScore(
       }
       new_auto_score_perc =
         (100 *
-          sumBy(
+          _.sumBy(
             Object.values(score.partial_scores),
             (value) => (value?.score ?? 0) * (value?.weight ?? 1),
           )) /
-        sumBy(Object.values(score.partial_scores), (value) => value?.weight ?? 1);
+        _.sumBy(Object.values(score.partial_scores), (value) => value?.weight ?? 1);
       new_auto_points = (new_auto_score_perc / 100) * (current_submission.max_auto_points ?? 0);
     }
 
@@ -512,7 +512,7 @@ export async function updateInstanceQuestionScore(
       score.manual_points =
         manual_rubric_grading.computed_points -
         (manual_rubric_grading.replace_auto_points
-          ? new_auto_points ?? current_submission.auto_points ?? 0
+          ? (new_auto_points ?? current_submission.auto_points ?? 0)
           : 0);
       score.manual_score_perc = undefined;
       manual_rubric_grading_id = manual_rubric_grading.id;
@@ -639,7 +639,7 @@ export async function updateInstanceQuestionScore(
         true, // allow_decrease
       ]);
 
-      await ltiOutcomes.updateScoreAsync(current_submission.assessment_instance_id);
+      await ltiOutcomes.updateScore(current_submission.assessment_instance_id);
     }
 
     return {

@@ -1,8 +1,10 @@
-import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { type Institution, type Course, CourseInstanceSchema } from '../../../lib/db-types';
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
+import { HeadContents } from '../../../components/HeadContents.html.js';
+import { type Institution, type Course, CourseInstanceSchema } from '../../../lib/db-types.js';
 
 export const CourseInstanceRowSchema = z.object({
   course_instance: CourseInstanceSchema,
@@ -25,14 +27,13 @@ export function AdministratorInstitutionCourse({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          navPage: 'administrator_institution',
-          pageTitle: 'Courses',
+        ${HeadContents({
+          resLocals,
+          pageTitle: `${course.short_name} - Institution Admin`,
         })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
           navbarType: 'administrator_institution',
@@ -45,11 +46,11 @@ export function AdministratorInstitutionCourse({
               <a href="/pl/administrator/institution/${institution.id}/courses">Courses</a>
             </li>
             <li class="breadcrumb-item active" aria-current="page">
-              ${course.title} (${course.short_name})
+              ${course.short_name}: ${course.title}
             </li>
           </ol>
         </nav>
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h2 class="h4">Limits</h2>
           <form method="POST" class="mb-3">
             <div class="form-group">
@@ -145,7 +146,7 @@ export function AdministratorInstitutionCourse({
                         <a
                           href="/pl/administrator/institution/${institution.id}/course_instance/${course_instance.id}"
                         >
-                          ${course_instance.long_name ?? '—'}: ${course.short_name ?? '—'}
+                          ${course_instance.short_name ?? '—'}: ${course_instance.long_name ?? '—'}
                         </a>
                       </td>
                       <td>${enrollment_count}</td>

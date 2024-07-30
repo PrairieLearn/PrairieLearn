@@ -1,11 +1,13 @@
 import { assert } from 'chai';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import * as helperServer from './helperServer';
-import * as helperClient from './helperClient';
+import { config } from '../lib/config.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as helperClient from './helperClient.js';
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Exam assessment response to `requireHonorCode`', function () {
   this.timeout(60000);
@@ -29,7 +31,7 @@ describe('Exam assessment response to `requireHonorCode`', function () {
     const response = await helperClient.fetchCheerio(assessmentUrl);
     assert.isTrue(response.ok);
 
-    assert.equal(response.$('#start-assessment').text(), 'Start assessment');
+    assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
 
     // We should see the honor code div by default
     assert.lengthOf(response.$('div.test-class-honor-code'), 1);
@@ -45,7 +47,7 @@ describe('Exam assessment response to `requireHonorCode`', function () {
     const response = await helperClient.fetchCheerio(assessmentUrl);
     assert.isTrue(response.ok);
 
-    assert.equal(response.$('#start-assessment').text(), 'Start assessment');
+    assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
 
     // We should not see the honor code div anymore
     assert.lengthOf(response.$('div.test-class-honor-code'), 0);

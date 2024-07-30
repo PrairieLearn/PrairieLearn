@@ -1,9 +1,10 @@
 import { assert } from 'chai';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import * as helperDb from '../helperDb';
+import * as helperDb from '../helperDb.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 let user_id = null;
 
@@ -27,6 +28,7 @@ describe('sproc ip_to_mode tests', function () {
     it('should return "Public"', async () => {
       const result = await sqldb.callAsync('ip_to_mode', ['10.0.0.1', new Date(), user_id]);
       assert.equal(result.rows[0].mode, 'Public');
+      assert.equal(result.rows[0].mode_reason, 'Default');
     });
   });
 
@@ -43,6 +45,7 @@ describe('sproc ip_to_mode tests', function () {
             user_id,
           ]);
           assert.equal(result.rows[0].mode, 'Exam');
+          assert.equal(result.rows[0].mode_reason, 'PrairieTest');
         });
       });
 
@@ -57,6 +60,7 @@ describe('sproc ip_to_mode tests', function () {
             user_id,
           ]);
           assert.equal(result.rows[0].mode, 'Exam');
+          assert.equal(result.rows[0].mode_reason, 'PrairieTest');
         });
       });
 
@@ -71,6 +75,7 @@ describe('sproc ip_to_mode tests', function () {
             user_id,
           ]);
           assert.equal(result.rows[0].mode, 'Public');
+          assert.equal(result.rows[0].mode_reason, 'Default');
         });
       });
 
@@ -85,6 +90,7 @@ describe('sproc ip_to_mode tests', function () {
             user_id,
           ]);
           assert.equal(result.rows[0].mode, 'Public');
+          assert.equal(result.rows[0].mode_reason, 'Default');
         });
       });
 
@@ -102,6 +108,7 @@ describe('sproc ip_to_mode tests', function () {
             user_id,
           ]);
           assert.equal(firstSessionInLocation.rows[0].mode, 'Exam');
+          assert.equal(firstSessionInLocation.rows[0].mode_reason, 'PrairieTest');
 
           const secondSessionInLocation = await sqldb.callAsync('ip_to_mode', [
             '10.1.1.1',
@@ -110,6 +117,7 @@ describe('sproc ip_to_mode tests', function () {
             user_id,
           ]);
           assert.equal(secondSessionInLocation.rows[0].mode, 'Exam');
+          assert.equal(secondSessionInLocation.rows[0].mode_reason, 'PrairieTest');
 
           const notInLocation = await sqldb.callAsync('ip_to_mode', [
             '192.168.0.1',
@@ -118,6 +126,7 @@ describe('sproc ip_to_mode tests', function () {
             user_id,
           ]);
           assert.equal(notInLocation.rows[0].mode, 'Public');
+          assert.equal(notInLocation.rows[0].mode_reason, 'Default');
         });
       });
     });
@@ -130,6 +139,7 @@ describe('sproc ip_to_mode tests', function () {
 
           const result = await sqldb.callAsync('ip_to_mode', ['10.0.0.1', new Date(), user_id]);
           assert.equal(result.rows[0].mode, 'Exam');
+          assert.equal(result.rows[0].mode_reason, 'PrairieTest');
         });
       });
 
@@ -144,6 +154,7 @@ describe('sproc ip_to_mode tests', function () {
             user_id,
           ]);
           assert.equal(result.rows[0].mode, 'Public');
+          assert.equal(result.rows[0].mode_reason, 'Default');
         });
       });
 
@@ -154,6 +165,7 @@ describe('sproc ip_to_mode tests', function () {
 
           const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
           assert.equal(result.rows[0].mode, 'Public');
+          assert.equal(result.rows[0].mode_reason, 'Default');
         });
       });
     });
@@ -166,6 +178,7 @@ describe('sproc ip_to_mode tests', function () {
 
           const result = await sqldb.callAsync('ip_to_mode', ['10.0.0.1', new Date(), user_id]);
           assert.equal(result.rows[0].mode, 'Exam');
+          assert.equal(result.rows[0].mode_reason, 'PrairieTest');
         });
       });
 
@@ -176,11 +189,12 @@ describe('sproc ip_to_mode tests', function () {
 
           const result = await sqldb.callAsync('ip_to_mode', [
             '10.0.0.1',
-            // 65 minutes from now (5 minutes after access end)
-            new Date(Date.now() + 1000 * 60 * 65),
+            // 25 minutes from now (5 minutes after access end)
+            new Date(Date.now() + 1000 * 60 * 25),
             user_id,
           ]);
           assert.equal(result.rows[0].mode, 'Exam');
+          assert.equal(result.rows[0].mode_reason, 'PrairieTest');
         });
       });
 
@@ -191,11 +205,12 @@ describe('sproc ip_to_mode tests', function () {
 
           const result = await sqldb.callAsync('ip_to_mode', [
             '10.0.0.1',
-            // 100 minutes from now (40 minutes after access end)
-            new Date(Date.now() + 1000 * 60 * 100),
+            // 60 minutes from now (40 minutes after access end)
+            new Date(Date.now() + 1000 * 60 * 60),
             user_id,
           ]);
           assert.equal(result.rows[0].mode, 'Public');
+          assert.equal(result.rows[0].mode_reason, 'Default');
         });
       });
 
@@ -206,6 +221,7 @@ describe('sproc ip_to_mode tests', function () {
 
           const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
           assert.equal(result.rows[0].mode, 'Public');
+          assert.equal(result.rows[0].mode_reason, 'Default');
         });
       });
     });
@@ -227,6 +243,7 @@ describe('sproc ip_to_mode tests', function () {
             user_id,
           ]);
           assert.equal(result.rows[0].mode, 'Public');
+          assert.equal(result.rows[0].mode_reason, 'Default');
         });
       });
 
@@ -244,6 +261,7 @@ describe('sproc ip_to_mode tests', function () {
             user_id,
           ]);
           assert.equal(result.rows[0].mode, 'Public');
+          assert.equal(result.rows[0].mode_reason, 'Default');
         });
       });
     });
@@ -260,6 +278,7 @@ describe('sproc ip_to_mode tests', function () {
 
           const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
           assert.equal(result.rows[0].mode, 'Exam');
+          assert.equal(result.rows[0].mode_reason, 'PrairieTest');
         });
       });
     });
@@ -276,6 +295,7 @@ describe('sproc ip_to_mode tests', function () {
 
           const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.01', new Date(), user_id]);
           assert.equal(result.rows[0].mode, 'Exam');
+          assert.equal(result.rows[0].mode_reason, 'PrairieTest');
         });
       });
 
@@ -295,6 +315,27 @@ describe('sproc ip_to_mode tests', function () {
             user_id,
           ]);
           assert.equal(result.rows[0].mode, 'Public');
+          assert.equal(result.rows[0].mode_reason, 'Default');
+        });
+      });
+
+      it('should return "Public" for any IP address, outside the access date range but within an hour of check-in', async () => {
+        await helperDb.runInTransactionAndRollback(async () => {
+          await createCenterExamReservation();
+
+          // Remove IP restriction.
+          await sqldb.queryAsync('UPDATE pt_locations SET filter_networks = FALSE;', {});
+
+          await sqldb.queryAsync(sql.check_in_reservations, {});
+          await sqldb.queryAsync(sql.start_reservations, {});
+
+          const result = await sqldb.callAsync('ip_to_mode', [
+            '192.168.0.01',
+            // 50 minutes from now.
+            new Date(Date.now() + 1000 * 60 * 50),
+            user_id,
+          ]);
+          assert.equal(result.rows[0].mode, 'Public');
         });
       });
     });
@@ -309,6 +350,7 @@ describe('sproc ip_to_mode tests', function () {
 
         const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
         assert.equal(result.rows[0].mode, 'Exam');
+        assert.equal(result.rows[0].mode_reason, 'PrairieTest');
       });
     });
 
@@ -321,6 +363,7 @@ describe('sproc ip_to_mode tests', function () {
 
         const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
         assert.equal(result.rows[0].mode, 'Exam');
+        assert.equal(result.rows[0].mode_reason, 'PrairieTest');
       });
     });
 
@@ -332,6 +375,7 @@ describe('sproc ip_to_mode tests', function () {
 
         const result = await sqldb.callAsync('ip_to_mode', ['192.168.0.1', new Date(), user_id]);
         assert.equal(result.rows[0].mode, 'Exam');
+        assert.equal(result.rows[0].mode_reason, 'PrairieTest');
       });
     });
   });

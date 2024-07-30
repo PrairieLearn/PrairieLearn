@@ -1,30 +1,37 @@
-import asyncHandler = require('express-async-handler');
-import * as express from 'express';
-import * as error from '@prairielearn/error';
-import { startTestQuestion } from '../../lib/question-testing';
-import * as sqldb from '@prairielearn/postgres';
 import * as path from 'path';
+
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { QuestionRenameEditor, QuestionDeleteEditor, QuestionCopyEditor } from '../../lib/editors';
-import { config } from '../../lib/config';
-import { encodePath } from '../../lib/uri-util';
-import { idsEqual } from '../../lib/id';
-import { generateSignedToken } from '@prairielearn/signed-token';
-import { copyQuestionBetweenCourses } from '../../lib/copy-question';
+import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { features } from '../../lib/features/index';
-import { getCanonicalHost } from '../../lib/url';
-import { selectCoursesWithEditAccess } from '../../models/course';
-import { IdSchema } from '../../lib/db-types';
+import * as sqldb from '@prairielearn/postgres';
+import { generateSignedToken } from '@prairielearn/signed-token';
+
+import { config } from '../../lib/config.js';
+import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
+import { IdSchema } from '../../lib/db-types.js';
+import {
+  QuestionRenameEditor,
+  QuestionDeleteEditor,
+  QuestionCopyEditor,
+} from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
+import { idsEqual } from '../../lib/id.js';
+import { startTestQuestion } from '../../lib/question-testing.js';
+import { encodePath } from '../../lib/uri-util.js';
+import { getCanonicalHost } from '../../lib/url.js';
+import { selectCoursesWithEditAccess } from '../../models/course.js';
+
 import {
   InstructorQuestionSettings,
   SelectedAssessmentsSchema,
-  SharingSetSchema,
-} from './instructorQuestionSettings.html';
+  SharingSetRowSchema,
+} from './instructorQuestionSettings.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.post(
   '/test',
@@ -219,7 +226,10 @@ router.get(
     );
 
     let questionGHLink: string | null = null;
-    if (res.locals.course.repository) {
+    if (res.locals.course.example_course) {
+      // The example course is not found at the root of its repository, so its path is hardcoded
+      questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
+    } else if (res.locals.course.repository) {
       const githubRepoMatch = res.locals.course.repository.match(
         /^git@github.com:\/?(.+?)(\.git)?\/?$/,
       );
@@ -230,8 +240,6 @@ router.get(
           `/tree/${res.locals.course.branch}/questions/` +
           res.locals.question.qid;
       }
-    } else if (res.locals.course.example_course) {
-      questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
     }
 
     const qids = await sqldb.queryRows(sql.qids, { course_id: res.locals.course.id }, z.string());
@@ -251,7 +259,7 @@ router.get(
           question_id: res.locals.question.id,
           course_id: res.locals.course.id,
         },
-        SharingSetSchema,
+        SharingSetRowSchema,
       );
       sharingSetsIn = result.filter((row) => row.in_set);
       sharingSetsOther = result.filter((row) => !row.in_set);

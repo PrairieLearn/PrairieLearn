@@ -1,8 +1,13 @@
 import { z } from 'zod';
+
 import { HtmlValue, html, joinHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { AssessmentQuestionSchema } from '../../../lib/db-types';
-import { idsEqual } from '../../../lib/id';
+
+import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
+import { HeadContents } from '../../../components/HeadContents.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
+import { AssessmentQuestionSchema } from '../../../lib/db-types.js';
+import { idsEqual } from '../../../lib/id.js';
 
 export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
   qid: z.string(),
@@ -37,19 +42,22 @@ export function ManualGradingAssessment({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../partials/navbar'); %>", resLocals)}
+        ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            __filename,
-            "<%- include('../../partials/assessmentSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
-          ${renderEjs(__filename, "<%- include('../../partials/assessmentOpenInstancesAlert') %>", {
-            ...resLocals,
-            num_open_instances,
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            assessment: resLocals.assessment,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
+          ${AssessmentOpenInstancesAlert({
+            numOpenInstances: num_open_instances,
+            assessmentId: resLocals.assessment.id,
+            urlPrefix: resLocals.urlPrefix,
           })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">

@@ -1,19 +1,22 @@
 // @ts-check
-import { Octokit } from '@octokit/rest';
-import { v4 as uuidv4 } from 'uuid';
-import * as Sentry from '@prairielearn/sentry';
 import { setTimeout as sleep } from 'node:timers/promises';
 
-import { config } from './config';
-import { logger } from '@prairielearn/logger';
-import { updateCourseCommitHash } from '../models/course';
-import { syncDiskToSql } from '../sync/syncFromDisk';
-import { sendCourseRequestMessage } from './opsbot';
-import { logChunkChangesToJob, updateChunksForCourse } from './chunks';
-import { createServerJob } from './server-jobs';
-import * as sqldb from '@prairielearn/postgres';
+import { Octokit } from '@octokit/rest';
+import { v4 as uuidv4 } from 'uuid';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
+
+import { insertCourse, updateCourseCommitHash } from '../models/course.js';
+import { syncDiskToSql } from '../sync/syncFromDisk.js';
+
+import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
+import { config } from './config.js';
+import { sendCourseRequestMessage } from './opsbot.js';
+import { createServerJob } from './server-jobs.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /*
   Required configuration options to get this working:
@@ -39,7 +42,7 @@ function getGithubClient() {
  * @param {string} repo Name of the new repo to create
  * @param {string} template Name of the template to use
  */
-async function createRepoFromTemplateAsync(client, repo, template) {
+async function createRepoFromTemplate(client, repo, template) {
   await client.repos.createUsingTemplate({
     template_owner: config.githubCourseOwner,
     template_repo: template,
@@ -84,7 +87,7 @@ async function createRepoFromTemplateAsync(client, repo, template) {
  * @returns An object representing the file data.  Raw contents are stored in the 'contents' key,
  * while the file's SHA is stored in 'sha' (this is needed if you want to update the contents later)
  */
-async function getFileFromRepoAsync(client, repo, path) {
+async function getFileFromRepo(client, repo, path) {
   const file = await client.repos.getContent({
     owner: config.githubCourseOwner,
     repo,
@@ -110,7 +113,7 @@ async function getFileFromRepoAsync(client, repo, path) {
  * @param {string} contents Raw contents of the file, stored as a string.
  * @param {string} sha The file's SHA that is being updated (this is returned in getFileFromRepoAsync).
  */
-async function putFileToRepoAsync(client, repo, path, contents, sha) {
+async function putFileToRepo(client, repo, path, contents, sha) {
   await client.repos.createOrUpdateFileContents({
     owner: config.githubCourseOwner,
     repo,
@@ -129,7 +132,7 @@ async function putFileToRepoAsync(client, repo, path, contents, sha) {
  * @param {string} team Team to add
  * @param {'pull' | 'triage' | 'push' | 'maintain' | 'admin'} permission String permission to give to the team
  */
-async function addTeamToRepoAsync(client, repo, team, permission) {
+async function addTeamToRepo(client, repo, team, permission) {
   await client.teams.addOrUpdateRepoPermissionsInOrg({
     owner: config.githubCourseOwner,
     org: config.githubCourseOwner,
@@ -146,7 +149,7 @@ async function addTeamToRepoAsync(client, repo, team, permission) {
  * @param {string} username Username to add
  * @param {'pull' | 'triage' | 'push' | 'maintain' | 'admin'} permission String permission to give to the user
  */
-async function addUserToRepoAsync(client, repo, username, permission) {
+async function addUserToRepo(client, repo, username, permission) {
   await client.repos.addCollaborator({
     owner: config.githubCourseOwner,
     repo,
@@ -171,7 +174,7 @@ async function addUserToRepoAsync(client, repo, username, permission) {
  */
 export async function createCourseRepoJob(options, authn_user) {
   /**
-   * @param {import('./server-jobs').ServerJob} job
+   * @param {import('./server-jobs.js').ServerJob} job
    */
   const createCourseRepo = async (job) => {
     const client = getGithubClient();
@@ -188,7 +191,7 @@ export async function createCourseRepoJob(options, authn_user) {
 
     // Create base github repo from template
     job.info('Creating repository from template');
-    await createRepoFromTemplateAsync(client, options.repo_short_name, config.githubCourseTemplate);
+    await createRepoFromTemplate(client, options.repo_short_name, config.githubCourseTemplate);
     job.info(`Created repository ${options.repo_short_name}`);
 
     // Find main branch (which is the only branch in the new repo).
@@ -208,7 +211,7 @@ export async function createCourseRepoJob(options, authn_user) {
 
     // Update the infoCourse.json file by grabbing the original and JSON editing it.
     job.info('Updating infoCourse.json');
-    let { sha: sha, contents } = await getFileFromRepoAsync(
+    let { sha: sha, contents } = await getFileFromRepo(
       client,
       options.repo_short_name,
       'infoCourse.json',
@@ -225,12 +228,12 @@ export async function createCourseRepoJob(options, authn_user) {
     job.verbose('New infoCourse.json file:');
     job.verbose(newContents);
 
-    await putFileToRepoAsync(client, options.repo_short_name, 'infoCourse.json', newContents, sha);
+    await putFileToRepo(client, options.repo_short_name, 'infoCourse.json', newContents, sha);
     job.info('Uploaded new infoCourse.json file');
 
     // Add machine and instructor to the repo
     job.info('Adding machine team to repo');
-    await addTeamToRepoAsync(client, options.repo_short_name, config.githubMachineTeam, 'admin');
+    await addTeamToRepo(client, options.repo_short_name, config.githubMachineTeam, 'admin');
     job.info(
       `Added team ${config.githubMachineTeam} as administrator of repo ${options.repo_short_name}`,
     );
@@ -238,7 +241,7 @@ export async function createCourseRepoJob(options, authn_user) {
     if (options.github_user) {
       job.info('Adding instructor to repo');
       try {
-        await addUserToRepoAsync(client, options.repo_short_name, options.github_user, 'admin');
+        await addUserToRepo(client, options.repo_short_name, options.github_user, 'admin');
         job.info(
           `Added user ${options.github_user} as administrator of repo ${options.repo_short_name}`,
         );
@@ -249,18 +252,17 @@ export async function createCourseRepoJob(options, authn_user) {
 
     // Insert the course into the courses table
     job.info('Adding course to database');
-    const inserted_course = (
-      await sqldb.callAsync('courses_insert', [
-        options.institution_id,
-        options.short_name,
-        options.title,
-        options.display_timezone,
-        options.path,
-        `git@github.com:${config.githubCourseOwner}/${options.repo_short_name}.git`,
-        branch,
-        authn_user.user_id,
-      ])
-    ).rows[0];
+    const repository = `git@github.com:${config.githubCourseOwner}/${options.repo_short_name}.git`;
+    const inserted_course = await insertCourse({
+      institution_id: options.institution_id,
+      short_name: options.short_name,
+      title: options.title,
+      display_timezone: options.display_timezone,
+      path: options.path,
+      repository,
+      branch,
+      authn_user_id: authn_user.user_id,
+    });
     job.verbose('Inserted course into database:');
     job.verbose(JSON.stringify(inserted_course, null, 4));
 
@@ -279,7 +281,7 @@ export async function createCourseRepoJob(options, authn_user) {
     }
 
     job.info('Clone from remote git repository');
-    await job.exec('git', ['clone', inserted_course.repository, inserted_course.path], {
+    await job.exec('git', ['clone', repository, inserted_course.path], {
       // Executed in the root directory, but this shouldn't really matter.
       cwd: '/',
       env: git_env,

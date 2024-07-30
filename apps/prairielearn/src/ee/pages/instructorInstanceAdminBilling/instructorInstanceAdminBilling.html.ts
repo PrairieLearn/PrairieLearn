@@ -1,8 +1,10 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.html';
-import { PlanName } from '../../lib/billing/plans-types';
+
+import { HeadContents } from '../../../components/HeadContents.html.js';
+import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.html.js';
+import { PlanName } from '../../lib/billing/plans-types.js';
 
 export type EnrollmentLimitSource = 'course_instance' | 'institution';
 
@@ -33,16 +35,14 @@ export function InstructorCourseInstanceBilling({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head') %>", {
-          ...resLocals,
-        })}
+        ${HeadContents({ resLocals })}
         ${compiledScriptTag('instructorInstanceAdminBillingClient.ts')}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           ${!editable
             ? html`
                 <div class="alert alert-warning">

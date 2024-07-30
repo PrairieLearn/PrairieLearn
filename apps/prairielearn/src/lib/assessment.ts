@@ -1,15 +1,11 @@
 import * as async from 'async';
-import * as ejs from 'ejs';
-import * as path from 'path';
 import debugfn from 'debug';
+import * as ejs from 'ejs';
 import { z } from 'zod';
-import { callbackify, promisify } from 'util';
 
 import * as error from '@prairielearn/error';
-import { gradeVariant } from './grading';
 import * as sqldb from '@prairielearn/postgres';
-import * as ltiOutcomes from './ltiOutcomes';
-import { createServerJob } from './server-jobs';
+
 import {
   CourseSchema,
   IdSchema,
@@ -17,10 +13,13 @@ import {
   VariantSchema,
   ClientFingerprintSchema,
   AssessmentInstanceSchema,
-} from './db-types';
+} from './db-types.js';
+import { gradeVariant } from './grading.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import { createServerJob } from './server-jobs.js';
 
-const debug = debugfn('prairielearn:' + path.basename(__filename, '.js'));
-const sql = sqldb.loadSqlEquiv(__filename);
+const debug = debugfn('prairielearn:assessment');
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export const InstanceLogSchema = z.object({
   event_name: z.string(),
@@ -50,7 +49,7 @@ export type InstanceLogEntry = z.infer<typeof InstanceLogSchema>;
  * @param assessment_id - The assessment it should belong to.
  * @returns Throws an error if the assessment instance doesn't belong to the assessment.
  */
-export async function checkBelongsAsync(
+export async function checkBelongs(
   assessment_instance_id: string,
   assessment_id: string,
 ): Promise<void> {
@@ -64,7 +63,6 @@ export async function checkBelongsAsync(
     throw new error.HttpStatusError(403, 'access denied');
   }
 }
-export const checkBelongs = callbackify(checkBelongsAsync);
 
 /**
  * Render the "text" property of an assessment.
@@ -157,7 +155,7 @@ export async function update(
     // NOTE: It's important that this is run outside of `runInTransaction`
     // above. This will hit the network, and as a rule we don't do any
     // potentially long-running work inside of a transaction.
-    await promisify(ltiOutcomes.updateScore)(assessment_instance_id);
+    await ltiOutcomes.updateScore(assessment_instance_id);
   }
   return updated;
 }
@@ -490,4 +488,53 @@ export async function deleteAllAssessmentInstancesForAssessment(
     assessment_id,
     authn_user_id,
   });
+}
+
+/**
+ * This is used to conditionally display/permit a shortcut to delete the
+ * assessment instance. Usually, the only way to delete an assessment instance
+ * is from the "Students" tab of an assessment. However, when a staff member is
+ * iterating on or testing an assessment, it can be tedious to constantly go
+ * back to that page to delete the instance in order to recreate it.
+ *
+ * The shortcut is a "Regenerate assessment instance" button on the assessment
+ * instance page and instance question page. It's only displayed if the user
+ * has the necessary permissions: either "Previewer" or above access on the
+ * course, or "Student Data Viewer" or above access on the course instance.
+ * We're deliberately permissive with these permissions to allow "untrusted"
+ * course staff to e.g. perform quality control on assessments.
+ *
+ * We have an extra check: the instance must have been created by a user that
+ * was an instructor at the time of creation. This addresses the case where
+ * some user was an enrolled student in course instance X and was later added
+ * as course staff to course instance Y. In this case, the user should not be
+ * able to delete their old assessment instances in course instance X. This
+ * check is performed with the `assessment_instances.include_in_statistics`
+ * column, which reflects whether or not the user was an instructor at the time
+ * of creation. We'll rename this column to something more general, e.g.
+ * `created_by_instructor`, in a future migration.
+ *
+ * There's one exception to the above check: the example course, where
+ * `include_in_statistics` is generally `false` even when instructors create
+ * assessment instances; this is because the example course has weird implicit
+ * permissions.
+ *
+ * Note that we check for `authn_` permissions specifically. This ensures that
+ * the menu appears for both "student view" and "student view without access
+ * restrictions".
+ *
+ * @returns {boolean} Whether or not the user should be allowed to delete the assessment instance.
+ */
+export function canDeleteAssessmentInstance(resLocals): boolean {
+  return (
+    // Check for permissions.
+    (resLocals.authz_data.authn_has_course_permission_preview ||
+      resLocals.authz_data.authn_has_course_instance_permission_view) &&
+    // Check that the assessment instance belongs to this user, or that the
+    // user belongs to the group that created the assessment instance.
+    resLocals.authz_result.authorized_edit &&
+    // Check that the assessment instance was created by an instructor; bypass
+    // this check if the course is an example course.
+    (!resLocals.assessment_instance.include_in_statistics || resLocals.course.example_course)
+  );
 }

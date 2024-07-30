@@ -1,4 +1,5 @@
 import { z } from 'zod';
+
 import {
   ConfigLoader,
   makeFileConfigSource,
@@ -7,7 +8,7 @@ import {
 } from '@prairielearn/config';
 import { logger } from '@prairielearn/logger';
 
-import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths';
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from './paths.js';
 
 const ConfigSchema = z.object({
   startServer: z.boolean().default(true),
@@ -22,12 +23,23 @@ const ConfigSchema = z.object({
       z.boolean(),
       // A subset of the options that can be provided to the `TLSSocket` constructor.
       // https://node-postgres.com/features/ssl
-      z.object({
-        rejectUnauthorized: z.boolean().default(true),
-        ca: z.string().nullable().default(null),
-        key: z.string().nullable().default(null),
-        cert: z.string().nullable().default(null),
-      }),
+      z
+        .object({
+          rejectUnauthorized: z.boolean().default(true),
+          ca: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+          key: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+          cert: z
+            .string()
+            .nullish()
+            .transform((x) => x ?? undefined),
+        })
+        .strict(),
     ])
     .default(false),
   namedLocksRenewIntervalMs: z.number().default(60_000),
@@ -66,9 +78,35 @@ const ConfigSchema = z.object({
   authName: z.string().nullable().default('Dev User'),
   /** Sets the default user UIN in development. */
   authUin: z.string().nullable().default('000000000'),
+  /** Sets the default user email in development. */
+  authEmail: z.string().nullable().default('dev@example.com'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
-  sessionStoreExpireSeconds: z.number().default(86400),
-  sessionCookieSameSite: z.string().default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
+  /**
+   * How long a session should be kept alive in the session store.
+   */
+  sessionStoreExpireSeconds: z.number().default(30 * 24 * 60 * 60),
+  /**
+   * Used to determine how often the session will have its expiration time
+   * automatically extended. The session will be extended if the session is
+   * set to expire within the next `expireSeconds - throttleSeconds`. For
+   * instance, if `sessionStoreExpireSeconds = 24 * 60 * 60` (24 hours) and
+   * `sessionStoreAutoExtendThrottleSeconds = 1 * 60 * 60` (1 hour), then the
+   * session will be extended if it is set to expire within the next 23 hours.
+   *
+   * Another way to think about this is that, assuming frequent user activity,
+   * the session will be extended roughly every hour.
+   *
+   * See the full implementation of this in `server.js`.
+   *
+   * This should most likely be set to a value that's significantly smaller than
+   * `sessionStoreExpireSeconds` to ensure that users don't unexpectedly find
+   * themselves logged out. The default (1 hour) was chosen to complement the
+   * default session duration of 30 days.
+   */
+  sessionStoreAutoExtendThrottleSeconds: z.number().default(1 * 60 * 60),
+  sessionCookieSameSite: z
+    .union([z.boolean(), z.enum(['none', 'lax', 'strict'])])
+    .default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
   cookieDomain: z.string().nullable().default(null),
   serverType: z.enum(['http', 'https']).default('http'),
   serverPort: z.string().default('3000'),
@@ -218,9 +256,6 @@ const ConfigSchema = z.object({
   blockedWarnEnable: z.boolean().default(false),
   blockedAtWarnEnable: z.boolean().default(false),
   blockedWarnThresholdMS: z.number().default(100),
-  SEBServerUrl: z.string().nullable().default(null),
-  SEBServerFilter: z.string().nullable().default(null),
-  SEBDownloadUrl: z.string().nullable().default(null),
   awsRegion: z.string().default('us-east-2'),
   /**
    * This is populated by `lib/aws.js` later.
@@ -287,7 +322,10 @@ const ConfigSchema = z.object({
    * https://expressjs.com/en/4x/api.html#trust.proxy.options.table
    */
   trustProxy: z.union([z.boolean(), z.number(), z.string()]).default(false),
-  workspaceLogsS3Bucket: z.string().nullable().default(null),
+  workspaceLogsS3Bucket: z
+    .string()
+    .nullable()
+    .default(process.env.NODE_ENV !== 'production' ? 'workspace-logs' : null),
   workspaceLogsFlushIntervalSec: z.number().default(60),
   /**
    * The number of days after which a workspace version's logs should no longer
@@ -503,6 +541,8 @@ const ConfigSchema = z.object({
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
   stripeProductIds: z.record(z.string(), z.string()).default({}),
+  openAiApiKey: z.string().nullable().default(null),
+  openAiOrganization: z.string().nullable().default(null),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

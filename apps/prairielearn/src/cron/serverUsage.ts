@@ -1,9 +1,9 @@
-// @ts-check
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { makeAwsClientConfig } from '../lib/aws';
-import { config } from '../lib/config';
+import { makeAwsClientConfig } from '../lib/aws.js';
+import { config } from '../lib/config.js';
 
 export async function run() {
   if (!config.runningInEc2) return;

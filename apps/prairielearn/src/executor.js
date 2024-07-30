@@ -1,11 +1,12 @@
 // @ts-check
-const readline = require('readline');
-const { FunctionMissingError } = require('./lib/code-caller');
-const { CodeCallerNative } = require('./lib/code-caller/code-caller-native');
+import { createInterface } from 'node:readline';
+
+import { CodeCallerNative } from './lib/code-caller/code-caller-native.js';
+import { FunctionMissingError } from './lib/code-caller/index.js';
 
 /**
  * @typedef {Object} Request
- * @property {import('./lib/code-caller/code-caller-native').CallType} type
+ * @property {import('./lib/code-caller/code-caller-native.js').CallType} type
  * @property {string} directory
  * @property {string} file
  * @property {string} fcn
@@ -16,7 +17,7 @@ const { CodeCallerNative } = require('./lib/code-caller/code-caller-native');
 /**
  * @typedef {Object} Results
  * @property {string} [error]
- * @property {import('./lib/code-caller/code-caller-native').ErrorData} [errorData]
+ * @property {import('./lib/code-caller/code-caller-native.js').ErrorData} [errorData]
  * @property {any} [data]
  * @property {string} [output]
  * @property {boolean} [functionMissing]
@@ -123,7 +124,7 @@ if (Number.isNaN(pingTimeoutMilliseconds)) {
 
   // Our overall loop looks like this: read a line of input from stdin, spin
   // off a python worker to handle it, and write the results back to stdout.
-  const rl = readline.createInterface({
+  const rl = createInterface({
     input: process.stdin,
     output: process.stdout,
     terminal: false,

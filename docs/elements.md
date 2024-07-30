@@ -16,7 +16,6 @@ PrairieLearn presently provides the following templated **input field** elements
   representing asymptotic input.
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
-- [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
 - [`pl-file-editor`](#pl-file-editor-element): Provide an in-browser code editor
   for writing and submitting code.
 - [`pl-file-upload`](#pl-file-upload-element): Provide a submission area
@@ -58,7 +57,7 @@ images, files, and code display. The following **decorative** elements are avail
 - [`pl-file-download`](#pl-file-download-element): Enable file downloads for
   data-centric questions.
 - [`pl-file-preview`](#pl-file-preview-element): Displays a preview of submitted files.
-- [`pl-graph`](#pl-graph-element): Displays graphs, using GraphViz DOT notation, an adjacency matrix, or a networkx graph.
+- [`pl-graph`](#pl-graph-element): Displays graphs, using [GraphViz DOT notation](https://graphviz.org/doc/info/lang.html), an adjacency matrix, or a [`networkx`](https://networkx.org/) graph.
 - [`pl-matrix-latex`](#pl-matrix-latex-element): Displays matrices using
   appropriate LaTeX commands for use in a mathematical expression.
 - [`pl-overlay`](#pl-overlay-element): Allows layering existing elements on top of one another in specified positions.
@@ -89,6 +88,8 @@ Note: PrairieLearn Elements listed next have been
 **deprecated**. These elements are still supported for backwards
 compatibility, but they should not be used in new questions.
 
+- [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
+  - **Deprecated**: use [`pl-multiple-choice`](#pl-multiple-choice-element) with `display="dropdown"` for individual elements, or [`pl-matching`](#pl-matching-element) for multiple dropdowns with the same set of options.
 - [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
   figure.
   - **Deprecated**: use [`pl-drawing`](#pl-drawing-element) instead.
@@ -239,69 +240,6 @@ To compute `max-select`, we use a similar algorithm (note the different default 
 #### See also
 
 - [`pl-multiple-choice` for allowing only **one** correct choice](#pl-multiple-choice-element)
-
----
-
-### `pl-dropdown` element
-
-Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a <pl-answer></pl-answer> element (ie. <pl-answer>Possible Answer 1</pl-answer>).
-
-#### Sample element
-
-![](elements/pl-dropdown.png)
-
-**question.html**
-
-```html
-<p>Select the correct word in the following quotes:</p>
-The
-<pl-dropdown answers-name="aristotle" blank="true">
-  {{#params.aristotle}}
-  <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
-  {{/params.aristotle}}
-</pl-dropdown>
-is more than the sum of its parts.
-<p></p>
-
-A
-<pl-dropdown sort="ascend" answers-name="hume">
-  <pl-answer correct="true">wise</pl-answer>
-  <pl-answer correct="false">clumsy</pl-answer>
-  <pl-answer correct="false">reckless</pl-answer>
-</pl-dropdown>
-man proportions his belief to the evidence.
-<p></p>
-```
-
-**server.py**
-
-```python
-def generate(data):
-
-    QUESTION1 = "aristotle"
-
-    data["params"][QUESTION1] = [
-        {"tag": "true", "ans": "whole"},
-        {"tag": "false", "ans": "part"},
-        {"tag": "false", "ans": "inverse"}
-    ]
-
-    return data
-```
-
-#### Customizations
-
-| Attribute      | Type    | Default | Description                                                                                                                                                          |
-| -------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name` | string  | -       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
-| `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
-| `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                    |
-| `blank`        | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.                                                                                           |
-
-#### Example implementation
-
-- [demo/overlayDropdown]
-- [element/dropdown]
 
 ---
 
@@ -509,6 +447,7 @@ Given a list of statements, select a matching option for each entry from a drop-
 | `blank`               | boolean                                                    | True          | Option to add blank dropdown entry as the default selection in each drop-down list.                                                                                                                                    |
 | `counter-type`        | "decimal" or "lower-alpha" or "upper-alpha" or "full-text" | "lower-alpha" | The type of counter to use when enumerating the options. If set to "full-text", the column of options will be hidden, and the text of each option will be used in the statements' dropdown lists, instead of counters. |
 | `hide-score-badge`    | boolean                                                    | false         | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.                                                                                                                            |
+| `options-placement`   | "right" or "bottom"                                        | "right"       | The placement of options relative to the statements in order to make it visually cohesive. Especially useful when dealing with long statements or options.                                                             |
 
 Inside the `pl-matching` element, a series of `pl-statement` and `pl-option` elements specify the questions the student must answer and the options to which they can be matched, respectively. Statements are displayed in the left column, and options in the right.
 
@@ -706,19 +645,20 @@ generation if two (or more) choices are identical.
 
 #### Customizations
 
-| Attribute                    | Type                                         | Default  | Description                                                                                                                                                                    |
-| ---------------------------- | -------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `answers-name`               | string                                       | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.           |
-| `weight`                     | integer                                      | 1        | Weight to use when computing a weighted average score over elements.                                                                                                           |
-| `display`                    | "block", "inline", or "dropdown"             | "block"  | Display option for the input field. Block and inline display answer choices as radio buttons, while dropdown presents option as a dropdown.                                    |
-| `number-answers`             | integer                                      | special  | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                            |
-| `order`                      | "random", "ascend", "descend", or "fixed"    | "random" | Order to display answer choices. Fixed order displays choices in the same order as the original source file.                                                                   |
-| `hide-letter-keys`           | boolean                                      | false    | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                             |
-| `all-of-the-above`           | "false", "random", "correct", "incorrect"    | "false"  | Add "All of the above" choice. See below for details.                                                                                                                          |
-| `none-of-the-above`          | "false", "random", "correct", or "incorrect" | "false"  | Add "None of the above" choice. See below for details.                                                                                                                         |
-| `all-of-the-above-feedback`  | string                                       | —        | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                     |
-| `none-of-the-above-feedback` | string                                       | —        | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                    |
-| `allow-blank`                | boolean                                      | false    | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid. |
+| Attribute                    | Type                                         | Default  | Description                                                                                                                                                                                |
+| ---------------------------- | -------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `answers-name`               | string                                       | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                       |
+| `weight`                     | integer                                      | 1        | Weight to use when computing a weighted average score over elements.                                                                                                                       |
+| `display`                    | "block", "inline", or "dropdown"             | "block"  | Display option for the input field. Block and inline display answer choices as radio buttons, while dropdown presents option as a dropdown.                                                |
+| `number-answers`             | integer                                      | special  | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                                        |
+| `order`                      | "random", "ascend", "descend", or "fixed"    | "random" | Order to display answer choices. Fixed order displays choices in the same order as the original source file.                                                                               |
+| `hide-letter-keys`           | boolean                                      | false    | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                                         |
+| `all-of-the-above`           | "false", "random", "correct", "incorrect"    | "false"  | Add "All of the above" choice. See below for details.                                                                                                                                      |
+| `none-of-the-above`          | "false", "random", "correct", or "incorrect" | "false"  | Add "None of the above" choice. See below for details.                                                                                                                                     |
+| `all-of-the-above-feedback`  | string                                       | —        | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                                 |
+| `none-of-the-above-feedback` | string                                       | —        | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                                |
+| `allow-blank`                | boolean                                      | false    | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid.             |
+| `size`                       | integer                                      | -        | Manually set the size of the dropdown to a fixed width. The default behavior is to make the dropdown as wide as the widest option. Should only be used with `display` set to `"dropdown"`. |
 
 The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
 
@@ -739,7 +679,7 @@ a `pl-answer` that has attributes:
 | ---------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `correct`  | boolean | false   | Is this a correct answer to the question?                                                                                                      |
 | `feedback` | string  | —       | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
-| `score`    | float   | -       | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
+| `score`    | float   | —       | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
 
 #### Example implementations
 
@@ -936,15 +876,16 @@ Provides an in-browser rich text editor, aimed mostly at manual grading essay-ty
 
 #### Customizations
 
-| Attribute            | Type    | Default            | description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
-| -------------------- | ------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `file-name`          | string  | -                  | The name of the output file; will be used to store the student's answer in the `_files` submitted answer                                                                                                                                                                                                                                                                                                                                              |
-| `quill-theme`        | string  | `snow`             | Specifies a Quill editor theme; the most common themes are `snow` (which uses a default toolbar) or `bubble` (which hides the default toolbar, showing formatting options when text is selected). See [the Quill documentation](https://quilljs.com/docs/themes/) for more information about additional themes.                                                                                                                                       |
-| `source-file-name`   | string  | None               | Name of the source file with existing content to be displayed in the editor. The format of this file must match the format specified in the `format` attribute.                                                                                                                                                                                                                                                                                       |
-| `directory`          | string  | special            | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
-| `placeholder`        | string  | "Your answer here" | Text to be shown in the editor as a placeholder when there is no student input.                                                                                                                                                                                                                                                                                                                                                                       |
-| `format`             | string  | `html`             | Format used to save the student's response. The element supports `html` and `markdown` formats. This format also affects how the source file name or inner HTML is interpreted.                                                                                                                                                                                                                                                                       |
-| `markdown-shortcuts` | boolean | `true`             | Whether or not the editor accepts shortcuts based on markdown format (e.g., typing `_word_` causes the word to become italic).                                                                                                                                                                                                                                                                                                                        |
+| Attribute            | Type                          | Default            | description                                                                                                                                                                                                                                                                                                                                                                                                                                           |
+| -------------------- | ----------------------------- | ------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file-name`          | string                        | -                  | The name of the output file; will be used to store the student's answer in the `_files` submitted answer                                                                                                                                                                                                                                                                                                                                              |
+| `quill-theme`        | string                        | `snow`             | Specifies a Quill editor theme; the most common themes are `snow` (which uses a default toolbar) or `bubble` (which hides the default toolbar, showing formatting options when text is selected). See [the Quill documentation](https://quilljs.com/docs/themes/) for more information about additional themes.                                                                                                                                       |
+| `source-file-name`   | string                        | None               | Name of the source file with existing content to be displayed in the editor. The format of this file must match the format specified in the `format` attribute.                                                                                                                                                                                                                                                                                       |
+| `directory`          | string                        | special            | Directory where the source file with existing code is to be found. Only useful if `source-file-name` is used. If it contains one of the special names `clientFilesCourse` or `serverFilesCourse`, then the source file name is read from the course's special directories, otherwise the directory is expected to be in the question's own directory. If not provided, the source file name is expected to be found in the question's main directory. |
+| `placeholder`        | string                        | "Your answer here" | Text to be shown in the editor as a placeholder when there is no student input.                                                                                                                                                                                                                                                                                                                                                                       |
+| `format`             | `html` or `markdown`          | `html`             | Format used to save the student's response. This format also affects how the source file name or inner HTML is interpreted.                                                                                                                                                                                                                                                                                                                           |
+| `markdown-shortcuts` | boolean                       | `true`             | Whether or not the editor accepts shortcuts based on markdown format (e.g., typing `_word_` causes the word to become italic).                                                                                                                                                                                                                                                                                                                        |
+| `counter`            | `word`, `character` or `none` | `none`             | Whether a word or character count should be displayed at the bottom of the editor.                                                                                                                                                                                                                                                                                                                                                                    |
 
 #### Example implementations
 
@@ -2345,16 +2286,84 @@ answer. This answer may be correct, incorrect, or invalid.
 
 ## Deprecated Elements
 
-Note: The following PrairieLearn Elements have been
-**deprecated**. These elements are still supported for backwards
-compatibility, but they should not be used in new questions.
+!!! note
+
+    The following PrairieLearn Elements have been **deprecated**. These elements are still supported for backwards compatibility, but they should not be used in new questions.
+
+### `pl-dropdown` element
+
+!!! warning
+
+    Instructors are strongly encouraged to avoid `pl-dropdown` in newer questions. For questions with a single dropdown, a better alternative is to use [`pl-multiple-choice`](#pl-multiple-choice-element), setting the attribute `display="dropdown"`. Using the multiple choice element provides better support for formatted option text (including Math formulas), randomized selection and ordering of options (both correct options and distractors) and partial scores for distractors. For questions using multiple dropdowns with the same set of options, the [`pl-matching`](#pl-matching-element) element provides a better user experience and interface.
+
+Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a <pl-answer></pl-answer> element (ie. <pl-answer>Possible Answer 1</pl-answer>).
+
+#### Sample element
+
+![](elements/pl-dropdown.png)
+
+**question.html**
+
+```html
+<p>Select the correct word in the following quotes:</p>
+The
+<pl-dropdown answers-name="aristotle" blank="true">
+  {{#params.aristotle}}
+  <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
+  {{/params.aristotle}}
+</pl-dropdown>
+is more than the sum of its parts.
+<p></p>
+
+A
+<pl-dropdown sort="ascend" answers-name="hume">
+  <pl-answer correct="true">wise</pl-answer>
+  <pl-answer correct="false">clumsy</pl-answer>
+  <pl-answer correct="false">reckless</pl-answer>
+</pl-dropdown>
+man proportions his belief to the evidence.
+<p></p>
+```
+
+**server.py**
+
+```python
+def generate(data):
+
+    QUESTION1 = "aristotle"
+
+    data["params"][QUESTION1] = [
+        {"tag": "true", "ans": "whole"},
+        {"tag": "false", "ans": "part"},
+        {"tag": "false", "ans": "inverse"}
+    ]
+
+    return data
+```
+
+#### Customizations
+
+| Attribute      | Type    | Default | Description                                                                                                                                                          |
+| -------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name` | string  | -       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
+| `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
+| `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                    |
+| `blank`        | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.                                                                                           |
+
+#### Example implementation
+
+- [demo/overlayDropdown]
+- [element/dropdown]
+
+---
 
 ### `pl-prairiedraw-figure` element
 
 Create and display a prairiedraw image.
 
-**WARNING**: This element is **deprecated** and should not be used in
-new questions.
+!!! warning
+
+    This element is **deprecated** and should not be used in new questions.
 
 #### Sample element
 
@@ -2392,7 +2401,9 @@ The provided `script-name` corresponds to a file located within the director for
 
 This element displays a 3D scene with objects that the student can (optionally) translate and/or rotate. It can be used only for output (e.g., as part of a question that asks for something else to be submitted). Or, it can be used for input (e.g., comparing a submitted pose of the body-fixed objects to a correct orientation). Information about the current pose can be hidden from the student and, if visible, can be displayed in a variety of formats, so the element can be used for many different types of questions.
 
-**WARNING**: This element is **deprecated** and should not be used in new questions.
+!!! warning
+
+    This element is **deprecated** and should not be used in new questions.
 
 #### Sample element
 
@@ -2544,8 +2555,9 @@ that if there are many submitted answers, the page will load slowly.
 
 Display the partial score for a specific answer variable.
 
-**WARNING**: This element is **deprecated** and should not be used in
-new questions.
+!!! warning
+
+    This element is **deprecated** and should not be used in new questions.
 
 #### Sample element
 

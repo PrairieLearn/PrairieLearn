@@ -1,7 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { type Course, type Institution } from '../../../lib/db-types';
+import { HeadContents } from '../../../components/HeadContents.html.js';
+import { type Course, type Institution } from '../../../lib/db-types.js';
 
 export function InstitutionAdminCourses({
   institution,
@@ -16,20 +17,17 @@ export function InstitutionAdminCourses({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          pageTitle: `Courses — ${institution.short_name}`,
-        })}
+        ${HeadContents({ resLocals, pageTitle: `Courses — ${institution.short_name}` })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
+        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
           ...resLocals,
           institution,
           navbarType: 'institution',
           navPage: 'institution_admin',
           navSubPage: 'courses',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <ul class="list-group">
             ${courses.map(
               (course) => html`

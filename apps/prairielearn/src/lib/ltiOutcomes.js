@@ -1,18 +1,18 @@
-const ERR = require('async-stacktrace');
-const request = require('request');
-const xml2js = require('xml2js');
-const _ = require('lodash');
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const util = require('util');
+// @ts-check
+import * as crypto from 'node:crypto';
 
-var sqldb = require('@prairielearn/postgres');
-const { config } = require('./config');
-const { logger } = require('@prairielearn/logger');
+import _ from 'lodash';
+import fetch from 'node-fetch';
+import oauthSignature from 'oauth-signature';
+import { v4 as uuid } from 'uuid';
+import * as xml2js from 'xml2js';
 
-var sql = sqldb.loadSqlEquiv(__filename);
-var parser = new xml2js.Parser({ explicitArray: false });
-var builder = new xml2js.Builder();
+import { logger } from '@prairielearn/logger';
+import * as sqldb from '@prairielearn/postgres';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+const parser = new xml2js.Parser({ explicitArray: false });
+const builder = new xml2js.Builder();
 
 const exampleRequest = {
   imsx_POXEnvelopeRequest: {
@@ -34,7 +34,7 @@ const exampleRequest = {
   },
 };
 function xmlReplaceResult(sourcedId, score, identifier) {
-  var Obj = _.clone(exampleRequest);
+  const Obj = _.clone(exampleRequest);
 
   Obj.imsx_POXEnvelopeRequest.imsx_POXHeader.imsx_POXRequestHeaderInfo.imsx_messageIdentifier =
     identifier;
@@ -43,121 +43,99 @@ function xmlReplaceResult(sourcedId, score, identifier) {
   Obj.imsx_POXEnvelopeRequest.imsx_POXBody.replaceResultRequest.resultRecord.result.resultScore.textString =
     score;
 
-  var xml = builder.buildObject(Obj);
+  const xml = builder.buildObject(Obj);
   return xml;
 }
 
 /**
  * Check if LTI needs updating for this assessment.
  *
- * @param {string} ai_id - The assessment instance
- * @param {function} callback - A callback(err) function.
+ * @param {string} assessment_instance_id - The assessment instance ID
  */
-function updateScore(ai_id, callback) {
-  if (ai_id == null) return callback(null);
+export async function updateScore(assessment_instance_id) {
+  if (assessment_instance_id == null) return;
 
-  sqldb.queryZeroOrOneRow(sql.get_score, { ai_id }, (err, result) => {
-    if (ERR(err, callback)) return;
-    if (result.rowCount === 0) {
-      return callback(null);
-    }
-
-    var info = result.rows[0];
-
-    var score = info.score_perc / 100;
-    if (score > 1) {
-      score = 1.0;
-    }
-    if (score < 0) {
-      score = 0.0;
-    }
-
-    var post_params = {
-      url: info.lis_outcome_service_url,
-      oauth: {
-        consumer_key: info.consumer_key,
-        consumer_secret: info.secret,
-        body_hash: true,
-      },
-      headers: {
-        'Content-type': 'application/xml',
-      },
-      body: xmlReplaceResult(info.lis_result_sourcedid, score, info.date.toString()),
-    };
-
-    debug(post_params);
-    request.post(post_params, function (err, httpResponse, body) {
-      if (ERR(err, callback)) return;
-
-      debug(httpResponse);
-      debug(body);
-      // Inspect the XML result, log the action
-      parser.parseString(body, (err, result) => {
-        if (ERR(err, callback)) return;
-        const imsx_codeMajor = _.get(
-          result,
-          [
-            'imsx_POXEnvelopeResponse',
-            'imsx_POXHeader',
-            'imsx_POXResponseHeaderInfo',
-            'imsx_statusInfo',
-            'imsx_codeMajor',
-          ],
-          null,
-        );
-        if (imsx_codeMajor === 'success') {
-          logger.info(
-            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`,
-          );
-          debug(
-            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`,
-          );
-        } else {
-          logger.info(
-            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} did not return success, debugging follows:`,
-          );
-          logger.info('post_params:', post_params);
-          logger.info('body:', body);
-          debug(
-            `ltiOutcomes.updateScore() ai_id=${ai_id} score=${score} did not return success, debugging follows:`,
-          );
-          debug('post_params', post_params);
-          debug('body', body);
-        }
-        callback(null);
-      });
-    });
+  const scoreResult = await sqldb.queryZeroOrOneRowAsync(sql.get_score, {
+    ai_id: assessment_instance_id,
   });
-}
+  if (scoreResult.rowCount === 0) return null;
 
-// Only run if called directly, for development
-// e.g. node lib/ltiOutcomes <assessment_instance_id>
-if (require.main === module) {
-  var pgConfig = {
-    user: config.postgresqlUser,
-    database: config.postgresqlDatabase,
-    host: config.postgresqlHost,
-    password: config.postgresqlPassword,
-    max: 100,
-    idleTimeoutMillis: 30000,
-  };
-  var idleErrorHandler = function (err) {
-    logger.error('idle client error', err);
-  };
-  sqldb.init(pgConfig, idleErrorHandler, function (err) {
-    if (ERR(err)) return;
+  const info = scoreResult.rows[0];
 
-    updateScore(parseInt(process.argv[2]), null, (err) => {
-      if (ERR(err)) return;
-      sqldb.close(function () {});
-    });
+  let score = info.score_perc / 100;
+  if (score > 1) {
+    score = 1.0;
+  }
+  if (score < 0) {
+    score = 0.0;
+  }
+
+  const body = xmlReplaceResult(info.lis_result_sourcedid, score, info.date.toString());
+
+  // Compute the SHA-1 hash of the body.
+  const shasum = crypto.createHash('sha1');
+  shasum.update(body || '');
+  const sha1 = shasum.digest('hex');
+
+  const oauthParams = {
+    oauth_consumer_key: info.consumer_key,
+    oauth_version: '1.0',
+    oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
+    oauth_nonce: uuid().replace(/-/g, ''),
+    oauth_signature_method: 'HMAC-SHA1',
+    oauth_body_hash: Buffer.from(sha1, 'hex').toString('base64'),
+  };
+
+  oauthParams.oauth_signature = oauthSignature.generate(
+    'POST',
+    info.lis_outcome_service_url,
+    oauthParams,
+    info.secret,
+    undefined,
+    { encodeSignature: false },
+  );
+
+  const rfc = new oauthSignature.Rfc3986();
+  const stringifiedParameters = Object.entries(oauthParams)
+    .map(([key, value]) => {
+      return `${key}="${rfc.encode(value)}"`;
+    })
+    .join(',');
+
+  const res = await fetch(info.lis_outcome_service_url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/xml',
+      Authorization: `OAuth ${stringifiedParameters}`,
+    },
+    body,
   });
-}
 
-module.exports = {
-  updateScore,
-  updateScoreAsync: util.promisify(updateScore),
-};
+  // Inspect the XML result, log the action
+  const result = await parser.parseStringPromise(await res.text());
+  const imsx_codeMajor = _.get(
+    result,
+    [
+      'imsx_POXEnvelopeResponse',
+      'imsx_POXHeader',
+      'imsx_POXResponseHeaderInfo',
+      'imsx_statusInfo',
+      'imsx_codeMajor',
+    ],
+    null,
+  );
+  if (imsx_codeMajor === 'success') {
+    logger.info(
+      `ltiOutcomes.updateScore() ai_id=${assessment_instance_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`,
+    );
+  } else {
+    logger.info(
+      `ltiOutcomes.updateScore() ai_id=${assessment_instance_id} score=${score} did not return success, debugging follows:`,
+    );
+    logger.info('oauthParams:', oauthParams);
+    logger.info('body:', body);
+  }
+}
 
 /*
 ** Code used to copy the example XML into a JS object. Included here for

@@ -1,8 +1,8 @@
-import passport = require('passport');
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
+import passport from 'passport';
 
-import * as authnLib from '../../../lib/authn';
+import * as authnLib from '../../../lib/authn.js';
 
 const router = Router();
 
@@ -36,12 +36,12 @@ router.post(
       uid: user.upn,
       name: user.displayName,
       uin: null,
+      email: user._json.email || null,
       provider: 'Azure',
     };
 
     await authnLib.loadUser(req, res, authnParams, {
       redirect: true,
-      pl_authn_cookie: true,
     });
   }),
 );

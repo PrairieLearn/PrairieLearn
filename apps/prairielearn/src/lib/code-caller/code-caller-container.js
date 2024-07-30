@@ -1,24 +1,27 @@
 // @ts-check
-const path = require('path');
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
-const { v4: uuidv4 } = require('uuid');
-const Docker = require('dockerode');
-const MemoryStream = require('memorystream');
-const tmp = require('tmp-promise');
-const { Mutex } = require('async-mutex');
-const os = require('os');
-const fs = require('fs-extra');
-const execa = require('execa');
-const { ECRClient } = require('@aws-sdk/client-ecr');
-const bindMount = require('@prairielearn/bind-mount');
-const { instrumented } = require('@prairielearn/opentelemetry');
-const { setupDockerAuth } = require('@prairielearn/docker-utils');
-const { logger } = require('@prairielearn/logger');
+import * as os from 'node:os';
+import * as path from 'node:path';
 
-const { config } = require('../config');
-const { FunctionMissingError } = require('./code-caller-shared');
-const { deferredPromise } = require('../deferred');
-const { makeAwsClientConfig } = require('../aws');
+import { ECRClient } from '@aws-sdk/client-ecr';
+import { Mutex } from 'async-mutex';
+import debugfn from 'debug';
+import Docker from 'dockerode';
+import { execa } from 'execa';
+import fs from 'fs-extra';
+import MemoryStream from 'memorystream';
+import * as tmp from 'tmp-promise';
+import { v4 as uuidv4 } from 'uuid';
+
+import * as bindMount from '@prairielearn/bind-mount';
+import { setupDockerAuth } from '@prairielearn/docker-utils';
+import { logger } from '@prairielearn/logger';
+import { instrumented } from '@prairielearn/opentelemetry';
+
+import { makeAwsClientConfig } from '../aws.js';
+import { config } from '../config.js';
+import { deferredPromise } from '../deferred.js';
+
+import { FunctionMissingError } from './code-caller-shared.js';
 
 /** @typedef {typeof CREATED | typeof WAITING | typeof IN_CALL | typeof EXITING | typeof EXITED} CallerState */
 const CREATED = Symbol('CREATED');
@@ -29,6 +32,7 @@ const EXITED = Symbol('EXITED');
 
 const MOUNT_DIRECTORY_PREFIX = 'prairielearn-worker-';
 
+const debug = debugfn('prairielearn:code-caller-container');
 const docker = new Docker();
 
 let executorImageTag = 'latest';
@@ -107,13 +111,13 @@ async function ensureImage() {
   }
 }
 
-/** @typedef {import('./code-caller-shared').CodeCaller} CodeCaller */
-/** @typedef {import('./code-caller-shared').CallType} CallType */
+/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
+/** @typedef {import('./code-caller-shared.js').CallType} CallType */
 
 /**
  * @implements {CodeCaller}
  */
-class CodeCallerContainer {
+export class CodeCallerContainer {
   constructor(options = { questionTimeoutMilliseconds: 5_000, pingTimeoutMilliseconds: 60_000 }) {
     /** @type {CallerState} */
     this.state = CREATED;
@@ -195,7 +199,7 @@ class CodeCallerContainer {
    * Allows this caller to prepare for execution of code from a particular
    * course.
    *
-   * @param {import('./code-caller-shared').PrepareForCourseOptions} options
+   * @param {import('./code-caller-shared.js').PrepareForCourseOptions} options
    */
   async prepareForCourse({ coursePath, forbiddenModules }) {
     this.forbiddenModules = forbiddenModules;
@@ -289,11 +293,11 @@ class CodeCallerContainer {
       // was restarted, we can slightly optimize things by skipping the
       // restart. This is safe, as no user-provided code will have been
       // loaded into the Python interpreter.
-      this.debug(`exit restart() - skipping since no calls recorded since last restart`);
+      this.debug('exit restart() - skipping since no calls recorded since last restart');
       return true;
     } else if (this.state === CREATED) {
       // no need to restart if we don't have a worker
-      this.debug(`exit restart()`);
+      this.debug('exit restart()');
       return true;
     } else if (this.state === WAITING) {
       const { result } = await this.call('restart', null, null, 'restart', []);
@@ -724,8 +728,6 @@ class CodeCallerContainer {
   }
 }
 
-module.exports.CodeCallerContainer = CodeCallerContainer;
-
 /**
  * If PrairieLearn dies unexpectedly, we may leave around temporary directories
  * that should have been removed. This function will perform a best-effort
@@ -767,10 +769,10 @@ async function cleanupMountDirectories() {
   }
 }
 
-module.exports.init = async function init() {
+export async function init() {
   await cleanupMountDirectories();
   await updateExecutorImageTag();
   if (config.ensureExecutorImageAtStartup) {
     await ensureImage();
   }
-};
+}

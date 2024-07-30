@@ -1,9 +1,10 @@
-import { html, HtmlSafeString } from '@prairielearn/html';
 import { EncodedData } from '@prairielearn/browser-utils';
-import { type CourseInstance } from '../lib/db-types';
-import { QuestionsPageDataAnsified } from '../models/questions';
-import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets';
-import { idsEqual } from '../lib/id';
+import { html, HtmlSafeString } from '@prairielearn/html';
+
+import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets.js';
+import { type CourseInstance } from '../lib/db-types.js';
+import { idsEqual } from '../lib/id.js';
+import { QuestionsPageDataAnsified } from '../models/questions.js';
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
@@ -25,6 +26,7 @@ export function QuestionsTableHead() {
 export function QuestionsTable({
   questions,
   showAddQuestionButton = false,
+  showAiGenerateQuestionButton = false,
   showSharingSets = false,
   current_course_instance,
   course_instances = [],
@@ -35,6 +37,7 @@ export function QuestionsTable({
 }: {
   questions: QuestionsPageDataAnsified[];
   showAddQuestionButton?: boolean;
+  showAiGenerateQuestionButton?: boolean;
   showSharingSets?: boolean;
   current_course_instance?: CourseInstance;
   course_instances?: CourseInstance[];
@@ -47,7 +50,14 @@ export function QuestionsTable({
   const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);
   return html`
     ${EncodedData(
-      { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix },
+      {
+        course_instance_ids,
+        showAddQuestionButton,
+        showAiGenerateQuestionButton,
+        qidPrefix,
+        urlPrefix,
+        plainUrlPrefix,
+      },
       'questions-table-data',
     )}
 

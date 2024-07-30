@@ -1,7 +1,10 @@
+import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
-import { WorkspaceLogSchema } from '../../lib/db-types';
-import { z } from 'zod';
+
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { WorkspaceLogSchema } from '../../lib/db-types.js';
 
 export const WorkspaceLogRowSchema = WorkspaceLogSchema.extend({
   date_formatted: z.string(),
@@ -34,13 +37,10 @@ export function WorkspaceLogs({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Workspace logs',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Workspace logs' })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'plain',
         })}
@@ -98,13 +98,10 @@ export function WorkspaceVersionLogs({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Workspace version logs',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Workspace version logs' })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
+        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'plain',
         })}

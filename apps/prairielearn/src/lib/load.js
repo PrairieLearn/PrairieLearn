@@ -1,13 +1,14 @@
 // @ts-check
-const _ = require('lodash');
-import * as path from 'path';
-const debug = require('debug')('prairielearn:' + path.basename(__filename, '.js'));
+import debugfn from 'debug';
+import _ from 'lodash';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
-import { config } from './config';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { config } from './config.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+const debug = debugfn('prairielearn:load');
 
 class LoadEstimator {
   constructor(jobType, maxJobCount, warnOnOldJobs) {
@@ -120,7 +121,7 @@ class LoadEstimator {
           startMS: info.startMS,
           startTimestamp: new Date(info.startMS).toISOString(),
         };
-        logger.error(`load._warnOldJobs(): job exceeded max response time`, details);
+        logger.error('load._warnOldJobs(): job exceeded max response time', details);
         info.warned = true;
       }
     });
@@ -148,7 +149,7 @@ export function startJob(jobType, id, maxJobCount) {
 
 export function endJob(jobType, id) {
   debug(`endJob(): jobType = ${jobType}, id = ${id}`);
-  if (!_.has(estimators, jobType)) throw new Error(`endJob(): no such estimator: ${jobType}`);
+  if (!(jobType in estimators)) throw new Error(`endJob(): no such estimator: ${jobType}`);
   estimators[jobType].endJob(id);
 }
 

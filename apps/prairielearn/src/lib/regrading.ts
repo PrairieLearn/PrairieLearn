@@ -3,11 +3,11 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { createServerJob } from './server-jobs';
-import * as ltiOutcomes from './ltiOutcomes';
-import { IdSchema } from './db-types';
+import { IdSchema } from './db-types.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import { createServerJob } from './server-jobs.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const RegradeAssessmentInstanceInfoSchema = z.object({
   assessment_instance_label: z.string(),
@@ -87,7 +87,7 @@ export async function regradeAssessmentInstance(
     } else {
       job.info('No changes made');
     }
-    await ltiOutcomes.updateScoreAsync(assessment_instance_id);
+    await ltiOutcomes.updateScore(assessment_instance_id);
   });
   return serverJob.jobSequenceId;
 }
@@ -150,7 +150,7 @@ export async function regradeAllAssessmentInstances(
         } else {
           msg += 'No changes made';
         }
-        await ltiOutcomes.updateScoreAsync(row.assessment_instance_id);
+        await ltiOutcomes.updateScore(row.assessment_instance_id);
       } catch (err) {
         logger.error('error while regrading', { row, err });
         error_count++;

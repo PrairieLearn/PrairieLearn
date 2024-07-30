@@ -32,6 +32,7 @@ from typing_extensions import NotRequired, assert_never
 
 class PartialScore(TypedDict):
     "A class with type signatures for the partial scores dict"
+
     score: float | None
     weight: NotRequired[int]
     feedback: NotRequired[str]
@@ -1132,7 +1133,7 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
 
     # support FANCY division characters
     a_sub = a_sub.replace("\u2215", "/")  # unicode /
-    a_sub = a_sub.replace("\u00F7", "/")  # division symbol, because why not
+    a_sub = a_sub.replace("\u00f7", "/")  # division symbol, because why not
 
     or_complex = " (or complex) " if allow_complex else " "
 

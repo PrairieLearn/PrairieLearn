@@ -1,6 +1,6 @@
 # PrairieDraw
 
-**WARNING**: This page describes the old PrairieDraw library. This library will be supported indefinitely, but it is strongly recommended that all new questions use the [`pl-drawing`](elements/#pl-drawing-element) element instead.
+**WARNING**: This page describes the old PrairieDraw library. This library will be supported indefinitely, but it is strongly recommended that all new questions use the [`pl-drawing`](elements.md#pl-drawing-element) element instead.
 
 ---
 
@@ -141,10 +141,10 @@ Draw an arrow out of the screen (circle with center dot) at `vector`.
 Draw an arrow into the screen (circle with center x) at `vector`.
 
 `circleArrow(center, radius, startAngle, endAngle [, type, fixedRad, idealSegmentSize])`
-Draw an arrow arc centerd at `center`, with radius `radius`, from `startAngle` to `endAngle` (in radians). The `fixedRad` option (default false) specifies if a constant radius should be used (as opposed to curling in the beginning/end).
+Draw an arrow arc centered at `center`, with radius `radius`, from `startAngle` to `endAngle` (in radians). The `fixedRad` option (default false) specifies if a constant radius should be used (as opposed to curling in the beginning/end).
 
 `circleArrowCentered(center, radius, centerAngle, extentAngle [, type, fixedRad])`
-Draw an arrow arc centered at `center`, with radius `radius`, centerd at `centerAngle` and spanning `extentAngle` (in radians).
+Draw an arrow arc centered at `center`, with radius `radius`, centered at `centerAngle` and spanning `extentAngle` (in radians).
 
 `triangularDistributedLoad(start, end, startSize, endSize, startLabel, endLabel, arrowToLine, arrowDown)`
 This creates a (trapezoidal) distributed load acting on the line between `start` and `end`, with height `startSize` at one side and `endSize` at the other and corresponding labels `startLabel` and `endLabel`. `arrowToLine` is true if the arrowheads point towards the line between `start` and `end`, and false otherwise. `arrowDown` is true if the arrowheads point down (negative y direction) and false otherwise. These last two options determine whether arrows appear above or below the line.

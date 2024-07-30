@@ -1,6 +1,7 @@
-import * as helperDb from '../../tests/helperDb';
-import { getOrCreateUser } from '../../tests/utils/auth';
-import { ensurePlanGrant } from './plan-grants';
+import * as helperDb from '../../tests/helperDb.js';
+import { getOrCreateUser } from '../../tests/utils/auth.js';
+
+import { ensurePlanGrant } from './plan-grants.js';
 
 describe('plan-grants', () => {
   before(helperDb.before);
@@ -13,6 +14,7 @@ describe('plan-grants', () => {
           uid: 'student@example.com',
           name: 'Example Student',
           uin: 'student',
+          email: 'student@example.com',
         });
 
         await ensurePlanGrant({
@@ -32,6 +34,7 @@ describe('plan-grants', () => {
           uid: 'student@example.com',
           name: 'Example Student',
           uin: 'student',
+          email: 'student@example.com',
         });
 
         const options = {

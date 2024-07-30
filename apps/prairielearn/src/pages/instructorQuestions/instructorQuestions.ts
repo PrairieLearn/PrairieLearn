@@ -1,15 +1,19 @@
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
+
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { QuestionAddEditor } from '../../lib/editors';
-import * as fs from 'fs-extra';
-import { QuestionsPage } from './instructorQuestions.html';
-import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions';
-import asyncHandler = require('express-async-handler');
-import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances';
+
+import { QuestionAddEditor } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
+import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions.js';
+
+import { QuestionsPage } from './instructorQuestions.html.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -36,6 +40,10 @@ router.get(
           res.locals.authz_data.has_course_permission_edit &&
           !res.locals.course.example_course &&
           courseDirExists,
+        showAiGenerateQuestionButton:
+          res.locals.authz_data.has_course_permission_edit &&
+          !res.locals.course.example_course &&
+          (await features.enabledFromLocals('ai-question-generation', res.locals)),
         resLocals: res.locals,
       }),
     );
