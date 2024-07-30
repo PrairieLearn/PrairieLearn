@@ -1,9 +1,11 @@
+{{#show_widget}}
 <script>
     $(async () => {
         const module = await import("pl-excalidraw-js");
         await module.initializeExcalidraw("{{uuid}}", "{{name}}", JSON.parse(atob("{{metadata}}")));
     });
 </script>
+{{/show_widget}}
 
 <div>
     {{#errors}}
@@ -11,8 +13,10 @@
         {{.}}
     </div>
     {{/errors}}
+    {{#show_widget}}
     <input type="hidden" name="{{name}}" id="excalidraw-input-{{uuid}}"/>
     <div class="excalidraw-root">
         <div id="excalidraw-{{uuid}}"></div>
     </div>
+    {{/show_widget}}
 </div>

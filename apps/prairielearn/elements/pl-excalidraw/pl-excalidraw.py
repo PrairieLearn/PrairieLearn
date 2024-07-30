@@ -13,6 +13,7 @@ ATTR_WIDTH = "width"
 ATTR_HEIGHT = "height"
 ATTR_SOURCE_FILE_NAME = "source-file-name"
 ATTR_SOURCE_DIRECTORY = "directory"
+ATTR_GRADABLE = "gradable"
 
 
 SOURCE_DIRECTORY_MAP = {
@@ -22,11 +23,42 @@ SOURCE_DIRECTORY_MAP = {
     ".": "question_path",
 }
 
+# -----------------------------------------------------------------------------
+# The logic below is derived from the combinations at
+# https://github.com/PrairieLearn/PrairieLearn/pull/9900#discussion_r1685163461
+
+
+def is_answer_name_required(gradable: bool) -> bool:
+    # All cases marked (ANS)
+    return gradable
+
+
+def is_widget_editable(panel: str, gradable: bool, editable: bool) -> bool:
+    # All cases where `(RW)` is marked. data["editable"] must also be True
+    return panel == "question" and gradable and editable
+
+
+def is_source_file_name_required(panel: str, gradable: bool, fresh: bool) -> bool:
+    # All cases where `NoSource: Raise an error`
+    match panel:
+        case "question" if not gradable and fresh:
+            return True
+        case "answer" if not gradable:
+            return True
+        case "submission" if not gradable:
+            return True
+    return False
+
+
+# -----------------------------------------------------------------------------
+
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    required_attrs = [ATTR_ANSWER_NAME]
+    required_attrs = []
     optional_attrs = [
+        ATTR_GRADABLE,
+        ATTR_ANSWER_NAME,
         ATTR_WIDTH,
         ATTR_HEIGHT,
         ATTR_SOURCE_FILE_NAME,
@@ -34,8 +66,16 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     ]
     pl.check_attribs(element, required_attrs, optional_attrs)
 
-    name = pl.get_string_attrib(element, ATTR_ANSWER_NAME)
-    pl.check_answers_names(data, name)
+    gradable = pl.get_boolean_attrib(element, ATTR_GRADABLE, True)
+
+    name = pl.get_string_attrib(element, ATTR_ANSWER_NAME, None)
+    if name:
+        pl.check_answers_names(data, name)
+
+    if is_answer_name_required(gradable) and name is None:
+        raise RuntimeError(
+            f"Missing required attribute {ATTR_ANSWER_NAME} (Required when `{ATTR_GRADABLE}` is set)"
+        )
 
     source_dir = pl.get_string_attrib(element, ATTR_SOURCE_DIRECTORY, ".")
     if source_dir not in SOURCE_DIRECTORY_MAP:
@@ -57,40 +97,85 @@ def load_file_content(element: HtmlElement, data: pl.QuestionData) -> str:
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
+    empty_diagram = ""  # pick a default representation
     element = lxml.html.fragment_fromstring(element_html)
-    drawing_name = pl.get_string_attrib(element, ATTR_ANSWER_NAME)
-    initial_content: str = ""
+    drawing_name = pl.get_string_attrib(element, ATTR_ANSWER_NAME, None)
 
-    match data["panel"]:
-        case "answer":
-            # Answer must have a file attribute
-            if not pl.has_attrib(element, ATTR_SOURCE_FILE_NAME):
-                raise RuntimeError(
-                    f"Answer drawing '{drawing_name}' does not have a `{ATTR_SOURCE_FILE_NAME}` argument"
-                )
-            initial_content = load_file_content(element, data)
+    gradable = pl.get_boolean_attrib(element, ATTR_GRADABLE, True)
+    fresh = drawing_name not in data["submitted_answers"]
+    panel = data["panel"]
+    source_available = pl.has_attrib(element, ATTR_SOURCE_FILE_NAME)
+
+    # the state space (for debugging)
+    matrix = f"{gradable=} {fresh=} {panel=} {source_available=}"
+
+    if is_source_file_name_required(panel, gradable, fresh) and not source_available:
+        raise RuntimeError(f"Missing required attribute `{ATTR_SOURCE_FILE_NAME}`")
+
+    initial_content: str = empty_diagram
+
+    # We sometimes want to render errors without rendering the widget
+    show_widget = True
+
+    # Notes:
+    # 1. We could have simplified the if-else chains below by collapsing branches, but we use
+    # the expanded form to make it easy to compare with the reference logic at
+    # https://github.com/PrairieLearn/PrairieLearn/pull/9900#discussion_r1685163461
+    # 2. Because we already handled raising an error on missing source file, the error cases
+    # and invalid states are both tagged below as `assert_never`
+
+    match panel:
         case "question":
-            # First try loading the submission
-            if drawing_name in data["submitted_answers"]:
-                initial_content = (
-                    data["submitted_answers"].get(drawing_name) or initial_content
-                )
-            # Next, try using the file attribute to load the starter diagram
-            elif pl.has_attrib(element, ATTR_SOURCE_FILE_NAME):
-                initial_content = load_file_content(element, data)
-            # Finally, give up and mark it as empty
-            else:
-                initial_content = ""
+            if gradable:
+                if fresh:
+                    if source_available:
+                        initial_content = load_file_content(element, data)
+                    else:
+                        initial_content = empty_diagram
+                else:  # submission
+                    initial_content = data["submitted_answers"][drawing_name]
+            else:  # not gradable
+                if fresh:
+                    if source_available:
+                        initial_content = load_file_content(element, data)
+                    else:
+                        assert_never(matrix)
+                else:  # submission
+                    assert_never(matrix)
+
+        case "answer":
+            if gradable:
+                show_widget = False
+            else:  # not gradable
+                if source_available:
+                    if fresh:
+                        initial_content = load_file_content(element, data)
+                    else:  # submission
+                        assert_never(matrix)
+                else:  # no source file
+                    assert_never(matrix)
+
         case "submission":
-            initial_content = (
-                data["submitted_answers"].get(drawing_name) or initial_content
-            )
+            if gradable:
+                if fresh:
+                    assert_never(matrix)
+                else:  # submission
+                    initial_content = data["submitted_answers"][drawing_name]
+            else:  # not gradable
+                if fresh:
+                    if source_available:
+                        initial_content = load_file_content(element, data)
+                    else:  # no source file
+                        assert_never(matrix)
+                else:  # submission
+                    assert_never(matrix)
+
         case panel:
             assert_never(panel)
 
     content_bytes = json.dumps(
         {
-            "read_only": data["panel"] != "question" or not data["editable"],
+            "read_only": not is_widget_editable(panel, gradable, data["editable"]),
             "initial_content": initial_content,
             "width": pl.get_string_attrib(element, ATTR_WIDTH, "100%"),
             "height": pl.get_string_attrib(element, ATTR_HEIGHT, "800px"),
@@ -111,20 +196,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "name": drawing_name,
                 "metadata": base64.b64encode(content_bytes).decode(),
                 "errors": errors,
+                "show_widget": show_widget,
             },
         )
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    drawing_name = pl.get_string_attrib(element, ATTR_ANSWER_NAME)
+    drawing_name = pl.get_string_attrib(element, ATTR_ANSWER_NAME, None)
 
     try:
-        # Only check submissions if present. When one makes a submission using pl-excalidraw,
-        # we always save a valid answer for all pl-excalidraw elements rendered in the question.
-        # There might however be a standalone element inside pl-answer-panel without a submission;
-        # it is okay to ignore them.
-        if drawing_name in data["submitted_answers"]:
+        # Check the submissions if available
+        if drawing_name and drawing_name in data["submitted_answers"]:
             json.loads(data["submitted_answers"][drawing_name])
     except Exception as e:
         if drawing_name not in data["format_errors"]:

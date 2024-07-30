@@ -319,6 +319,7 @@ Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidra
 <p>Draw something else, with a starter diagram</p>
 
 <pl-excalidraw
+  gradable="true"
   answers-name="vector"
   source-file-name="starter.excalidraw"
   directory="client_files_question_path"
@@ -329,13 +330,14 @@ Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidra
 
 #### Customizations
 
-| Attribute          | Type                                                                                             | Default | Description                                                                                                   |
-| ------------------ | ------------------------------------------------------------------------------------------------ | ------- | ------------------------------------------------------------------------------------------------------------- |
-| `answers-name`     | string                                                                                           | -       | Unique name to identify the widget with. Drawing submissions are saved with this name.                        |
-| `source-file-name` | string                                                                                           | -       | Optional file to load as the starter diagram.                                                                 |
-| `directory`        | `serverFilesCourse` or `clientFilesCourse` or `clientFilesQuestion` or `courseExtensions` or `.` | "."     | Directory where the `source-file-name` is loaded from. By default, it refers to the question directory `"."`. |
-| `width`            | string                                                                                           | `100%`  | Width of the widget, compatible with the [CSS width][css-width-mdn] specification.                            |
-| `height`           | string                                                                                           | `800px` | Height of the widget, compatible with the [CSS width][css-width-mdn] specification.                           |
+| Attribute          | Type                                                                                             | Default | Description                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `gradable`         | boolean                                                                                          | "true"  | Whether a diagram accepts input from the user.                                                                          |
+| `answers-name`     | string                                                                                           | -       | Unique name to identify the widget with. Drawing submissions are saved with this name. Required when `gradable` is set. |
+| `source-file-name` | string                                                                                           | -       | Optional file to load as the starter diagram.                                                                           |
+| `directory`        | `serverFilesCourse` or `clientFilesCourse` or `clientFilesQuestion` or `courseExtensions` or `.` | "."     | Directory where the `source-file-name` is loaded from. By default, it refers to the question directory `"."`.           |
+| `width`            | string                                                                                           | `100%`  | Width of the widget, compatible with the [CSS width][css-width-mdn] specification.                                      |
+| `height`           | string                                                                                           | `800px` | Height of the widget, compatible with the [CSS width][css-width-mdn] specification.                                     |
 
 [css-width-mdn]: https://developer.mozilla.org/en-US/docs/Web/CSS/width
 
