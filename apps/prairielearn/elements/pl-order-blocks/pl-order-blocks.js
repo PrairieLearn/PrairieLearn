@@ -9,9 +9,6 @@ window.PLOrderBlocks = function (uuid, options) {
   const optionsElementId = '#order-blocks-options-' + uuid;
   const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
   const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
-  const inline = options.inline;
-  const bottom = fullContainer.querySelector('.pl-order-blocks-bottom');
-  console.log(bottom);
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
@@ -62,7 +59,6 @@ window.PLOrderBlocks = function (uuid, options) {
       const dropzoneBlocks = Array.from(
         $(dropzoneElementId)[0].querySelectorAll('.pl-order-block'),
       );
-      const allBlocks = Array.from(fullContainer.querySelectorAll('.pl-order-block'));
       if (!block.classList.contains('pl-order-blocks-selected')) {
         const moveBetweenOptionsOrDropzone = (options) => {
           if (options && inDropzone(block) && optionsBlocks.length) {
@@ -107,16 +103,7 @@ window.PLOrderBlocks = function (uuid, options) {
               ev,
               block,
               () => {
-                if (inline) {
-                  moveBetweenOptionsOrDropzone(true);
-                } else if (bottom) {
-                  const blockIndex = allBlocks.indexOf(block);
-                  if (blockIndex > 0) {
-                    allBlocks[blockIndex - 1].focus();
-                  }
-                } else {
-                  moveWithinOptionsOrDropzone(false);
-                }
+                moveWithinOptionsOrDropzone(false);
               },
               false,
             );
@@ -126,16 +113,7 @@ window.PLOrderBlocks = function (uuid, options) {
               ev,
               block,
               () => {
-                if (inline) {
-                  moveBetweenOptionsOrDropzone(false);
-                } else if (bottom) {
-                  const blockIndex = allBlocks.indexOf(block);
-                  if (blockIndex < allBlocks.length - 1) {
-                    allBlocks[blockIndex + 1].focus();
-                  }
-                } else {
-                  moveWithinOptionsOrDropzone(true);
-                }
+                moveWithinOptionsOrDropzone(true);
               },
               false,
             );
@@ -145,13 +123,7 @@ window.PLOrderBlocks = function (uuid, options) {
               ev,
               block,
               () => {
-                if (inline) {
-                  moveWithinOptionsOrDropzone(false);
-                } else {
-                  if (!bottom) {
-                    moveBetweenOptionsOrDropzone(true);
-                  }
-                }
+                moveBetweenOptionsOrDropzone(true);
               },
               false,
             );
@@ -161,13 +133,7 @@ window.PLOrderBlocks = function (uuid, options) {
               ev,
               block,
               () => {
-                if (inline) {
-                  moveWithinOptionsOrDropzone(true);
-                } else {
-                  if (!bottom) {
-                    moveBetweenOptionsOrDropzone(false);
-                  }
-                }
+                moveBetweenOptionsOrDropzone(false);
               },
               false,
             );
