@@ -57,6 +57,28 @@ function getFilenames(locals) {
   return filenames;
 }
 
+async function pipeCursorToArchive(res, cursor: sqldb.CursorIterator<any>) {
+  const archive = archiver('zip');
+  const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(' ', '');
+  const prefix = `${dirname}/`;
+  archive.append('', { name: prefix });
+  archive.pipe(res);
+
+  for await (const rows of cursor.iterate(100)) {
+    for (const row of rows) {
+      let contents: string | Buffer;
+      try {
+        contents = Buffer.from(row.contents ?? '', 'base64');
+      } catch (err) {
+        // Ignore any errors in reading the contents (e.g., not a string) and treat as a blank file.
+        contents = '';
+      }
+      archive.append(contents, { name: prefix + row.filename });
+    }
+  }
+  archive.finalize();
+}
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -298,23 +320,7 @@ router.get(
       });
 
       res.attachment(req.params.filename);
-
-      const archive = archiver('zip');
-      const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(
-        ' ',
-        '',
-      );
-      const prefix = `${dirname}/`;
-      archive.append('', { name: prefix });
-      archive.pipe(res);
-
-      for await (const rows of cursor.iterate(100)) {
-        for (const row of rows) {
-          const contents = Buffer.from(row.contents ?? '', 'base64');
-          archive.append(contents, { name: prefix + row.filename });
-        }
-      }
-      archive.finalize();
+      await pipeCursorToArchive(res, cursor);
     } else if (
       req.params.filename === filenames.allFilesZipFilename ||
       req.params.filename === filenames.finalFilesZipFilename ||
@@ -333,23 +339,7 @@ router.get(
       });
 
       res.attachment(req.params.filename);
-
-      const archive = archiver('zip');
-      const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(
-        ' ',
-        '',
-      );
-      const prefix = `${dirname}/`;
-      archive.append('', { name: prefix });
-      archive.pipe(res);
-
-      for await (const rows of cursor.iterate(100)) {
-        for (const row of rows) {
-          const contents = Buffer.from(row.contents ?? '', 'base64');
-          archive.append(contents, { name: prefix + row.filename });
-        }
-      }
-      archive.finalize();
+      await pipeCursorToArchive(res, cursor);
     } else if (req.params.filename === filenames.groupsCsvFilename) {
       const groupConfig = await getGroupConfig(res.locals.assessment.id);
       const cursor = await sqldb.queryCursor(sql.group_configs, {
