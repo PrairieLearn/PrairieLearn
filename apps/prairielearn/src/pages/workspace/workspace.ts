@@ -7,6 +7,7 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
 import { config } from '../../lib/config.js';
+import { userIsInstructorInAnyCourse } from '../../models/course-permissions.js';
 import { selectVariantIdForWorkspace } from '../../models/workspace.js';
 
 import { Workspace } from './workspace.html.js';
@@ -56,7 +57,7 @@ router.get(
         pageNote,
         navTitle,
         navTitleHref,
-        showLogs: res.locals.authn_is_administrator || res.locals.authn_is_instructor,
+        showLogs: await userIsInstructorInAnyCourse({ user_id: res.locals.authn_user.user_id }),
         heartbeatIntervalSec: config.workspaceHeartbeatIntervalSec,
         visibilityTimeoutSec: config.workspaceVisibilityTimeoutSec,
         socketToken: generateSignedToken(

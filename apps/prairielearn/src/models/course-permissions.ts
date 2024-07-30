@@ -13,6 +13,7 @@ import {
   CoursePermissionSchema,
   type CourseInstancePermission,
   CourseInstancePermissionSchema,
+  IdSchema,
 } from '../lib/db-types.js';
 
 import { selectOrInsertUserByUid } from './user.js';
@@ -202,4 +203,22 @@ export async function deleteAllCourseInstancePermissionsForCourse({
     course_id,
     authn_user_id,
   });
+}
+
+/**
+ * Checks if the user is an instructor in at least one course. Also returns true
+ * if the user is an administrator, which gives them instructor-like access to
+ * all courses.
+ */
+export async function userIsInstructorInAnyCourse({
+  user_id,
+}: {
+  user_id: string;
+}): Promise<boolean> {
+  const course_id = await queryOptionalRow(
+    sql.user_is_instructor_in_any_course,
+    { user_id },
+    IdSchema,
+  );
+  return course_id != null;
 }

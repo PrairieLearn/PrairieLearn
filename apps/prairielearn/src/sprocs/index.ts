@@ -72,7 +72,6 @@ export async function init() {
       'users_select_or_insert.sql',
       'users_select_or_insert_and_enroll_lti.sql',
       'users_are_instructors_in_any_course.sql',
-      'users_is_instructor_in_any_course.sql',
       'users_is_instructor_in_course.sql',
       'users_is_instructor_in_course_instance.sql',
       'users_get_displayed_role.sql',

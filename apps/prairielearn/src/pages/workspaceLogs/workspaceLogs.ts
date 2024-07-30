@@ -8,6 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { makeS3ClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
+import { userIsInstructorInAnyCourse } from '../../models/course-permissions.js';
 
 import {
   WorkspaceLogRow,
@@ -115,14 +116,15 @@ async function loadLogsForWorkspaceVersion(
 // Only instructors and admins can access these routes. We don't need to check
 // if the instructor has access to the workspace; that's already been checked
 // by the workspace authorization middleware.
-router.use((req, res, next) => {
-  // TODO: is `authn_is_instructor` the right permission to check?
-  if (!res.locals.authn_is_administrator && !res.locals.authn_is_instructor) {
-    next(new error.HttpStatusError(403, 'Access denied'));
-  } else {
-    next();
-  }
-});
+router.use(
+  asyncHandler(async (req, res, next) => {
+    if (!(await userIsInstructorInAnyCourse({ user_id: res.locals.authn_user.user_id }))) {
+      throw new error.HttpStatusError(403, 'Access denied');
+    } else {
+      next();
+    }
+  }),
+);
 
 // Overview of workspace logs, including all state transitions and links to
 // logs for individual versions.
