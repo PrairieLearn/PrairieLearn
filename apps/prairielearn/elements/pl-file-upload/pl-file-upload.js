@@ -15,6 +15,32 @@
       this.files = [];
       this.acceptedFiles = options.acceptedFiles || [];
       this.acceptedFilesLowerCase = this.acceptedFiles.map((f) => f.toLowerCase());
+      // The list of optional files contains tuples with patterns (if regex-based) and display names
+      this.optionalFiles = options.optionalFiles || [];
+      // Divide optional files into static names and regex patterns
+      this.optionalFilesStatic = this.optionalFiles.filter((f) => f[0] === null).map((f) => f[1]);
+      this.optionalFilesLowerCase = this.optionalFilesStatic.map((f) => f.toLowerCase());
+      this.optionalFilesWildcard = this.optionalFiles.filter((f) => f[0] !== null);
+
+      // Look up the index of static names; for regexes, the index does not matter,
+      // as long as they can be distinguished from static names
+      this.findFileNameIndex = (fileName) => {
+        if (this.acceptedFilesLowerCase.includes(fileName)) {
+          return this.acceptedFilesLowerCase.indexOf(fileName);
+        }
+        if (this.optionalFilesLowerCase.includes(fileName)) {
+          return this.acceptedFiles.length + this.optionalFilesLowerCase.indexOf(fileName);
+        }
+        const matchingWildcard = this.optionalFilesWildcard.findIndex((f) =>
+          new RegExp(f[0], 'i').test(fileName),
+        );
+        if (matchingWildcard >= 0) {
+          return this.acceptedFiles.length + this.optionalFilesStatic.length;
+        } else {
+          return -1;
+        }
+      };
+
       this.pendingFileDownloads = new Set();
       this.failedFileDownloads = new Set();
 
@@ -83,7 +109,7 @@
         accept: (file, done) => {
           // fuzzy case match
           const fileNameLowerCase = file.name.toLowerCase();
-          if (this.acceptedFilesLowerCase.includes(fileNameLowerCase)) {
+          if (this.findFileNameIndex(fileNameLowerCase) > -1) {
             return done();
           }
           return done('invalid file');
@@ -91,7 +117,9 @@
         addedfile: (file) => {
           // fuzzy case match
           const fileNameLowerCase = file.name.toLowerCase();
-          if (!this.acceptedFilesLowerCase.includes(fileNameLowerCase)) {
+          const acceptedFilesIdx = this.findFileNameIndex(fileNameLowerCase);
+
+          if (acceptedFilesIdx <= -1) {
             this.addWarningMessage(
               '<strong>' +
                 file.name +
@@ -100,9 +128,17 @@
             );
             return;
           }
-          const acceptedFilesIdx = this.acceptedFilesLowerCase.indexOf(fileNameLowerCase);
-          const acceptedName = this.acceptedFiles[acceptedFilesIdx];
-          this.addFileFromBlob(acceptedName, file, false);
+
+          // For static file names, look up the index to match capitalization,
+          // for regex patterns, accept the uploaded file name as-is
+          if (acceptedFilesIdx < this.acceptedFiles.concat(this.optionalFilesStatic).length) {
+            const acceptedName = this.acceptedFiles.concat(this.optionalFilesStatic)[
+              acceptedFilesIdx
+            ];
+            this.addFileFromBlob(acceptedName, file, false);
+          } else {
+            this.addFileFromBlob(file.name, file, false);
+          }
         },
       });
 
@@ -201,14 +237,16 @@
       $fileList.html('');
 
       var uuid = this.uuid;
+      var index = 0;
 
-      this.acceptedFiles.forEach((fileName, index) => {
+      // This is called repeatedly with different parameters for required/optional/regex entries
+      var renderFileListEntry = (fileName, isOptional = false, isWildcard = false) => {
         var isExpanded = expandedFiles.includes(fileName);
         var fileData = this.getSubmittedFileContents(fileName);
 
         var $file = $('<li class="list-group-item" data-file="' + fileName + '"></li>');
         var $fileStatusContainer = $(
-          '<div class="file-status-container collapsed d-flex flex-row" data-toggle="collapse" data-target="#file-preview-' +
+          '<div class="file-status-container collapsed d-flex flex-row mathjax_ignore" data-toggle="collapse" data-target="#file-preview-' +
             uuid +
             '-' +
             index +
@@ -240,7 +278,17 @@
             '<i class="file-status-icon far fa-circle" aria-hidden="true"></i>',
           );
         }
-        $fileStatusContainerLeft.append(fileName);
+        if (isOptional) {
+          if (isWildcard) {
+            $fileStatusContainerLeft.append(
+              `Any files matching this naming pattern: <em>${fileName}</em> (optional)`,
+            );
+          } else {
+            $fileStatusContainerLeft.append(`${fileName} (optional)`);
+          }
+        } else {
+          $fileStatusContainerLeft.append(fileName);
+        }
         if (this.pendingFileDownloads.has(fileName)) {
           $fileStatusContainerLeft.append(
             '<p class="file-status">fetching previous submission...</p>',
@@ -313,7 +361,22 @@
         }
 
         $fileList.append($file);
-      });
+        index++;
+      };
+
+      // First list required files...
+      this.acceptedFiles.forEach((n) => renderFileListEntry(n));
+      // ...then static optional files...
+      this.optionalFilesStatic.forEach((n) => renderFileListEntry(n, true));
+      // ...then all remaining uploaded files...
+      this.files
+        .map((f) => f.name)
+        .filter((n) => !this.acceptedFiles.includes(n) && !this.optionalFilesStatic.includes(n))
+        .forEach((n) => renderFileListEntry(n, true));
+      // ...and finally all wildcard patterns (which might accept an arbitrary number of uploads)
+      this.optionalFilesWildcard
+        .map((n) => n[1])
+        .forEach((n) => renderFileListEntry(n, true, true));
     }
 
     addWarningMessage(message) {
