@@ -1,18 +1,49 @@
-// @ts-check
 import * as path from 'path';
 
 import * as error from '@prairielearn/error';
-import { html } from '@prairielearn/html';
+import { html, type HtmlSafeString } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
 
-/** @typedef {ReturnType<typeof getPaths>} InstructorFilePaths */
+export interface InstructorFilePaths {
+  coursePath: string;
+  courseId: string;
+  hasEditPermission: boolean;
+  rootPath: string;
+  invalidRootPaths: string[];
+  cannotMove: string[];
+  clientDir: string;
+  serverDir: string;
+  testsDir?: string;
+  urlPrefix: string;
+  workingPath: string;
+  workingPathRelativeToCourse: string;
+  workingDirectory: string;
+  workingFilename: string;
+  specialDirs: {
+    label: string;
+    path: string;
+    info: HtmlSafeString;
+  }[];
+  branch: {
+    name: string;
+    path: string;
+    canView: boolean;
+  }[];
+}
 
-/**
- * @param {Record<string, any>} locals
- */
-function getContextPaths(locals) {
-  /** @type {string} */
-  const coursePath = locals.course.path;
+function getContextPaths(
+  locals: Record<string, any>,
+): Pick<
+  InstructorFilePaths,
+  | 'rootPath'
+  | 'invalidRootPaths'
+  | 'cannotMove'
+  | 'clientDir'
+  | 'serverDir'
+  | 'testsDir'
+  | 'urlPrefix'
+> {
+  const coursePath: string = locals.course.path;
   if (locals.navPage === 'course_admin') {
     const rootPath = coursePath;
     return {
@@ -69,17 +100,14 @@ function getContextPaths(locals) {
  * For the file path of the current page, this function returns rich
  * information about higher folders up to a certain level determined by
  * the navPage. Created for use in instructor file views.
- *
- * @param {string | undefined} requestedPath
- * @param {Record<string, any>} locals
  */
-export function getPaths(requestedPath, locals) {
-  /** @type {string} */
-  const coursePath = locals.course.path;
-  /** @type {string} */
-  const courseId = locals.course.id;
-  /** @type {boolean} */
-  const hasEditPermission =
+export function getPaths(
+  requestedPath: string | undefined,
+  locals: Record<string, any>,
+): InstructorFilePaths {
+  const coursePath: string = locals.course.path;
+  const courseId: string = locals.course.id;
+  const hasEditPermission: boolean =
     locals.authz_data.has_course_permission_edit && !locals.course.example_course;
 
   const { rootPath, invalidRootPaths, cannotMove, clientDir, serverDir, testsDir, urlPrefix } =
