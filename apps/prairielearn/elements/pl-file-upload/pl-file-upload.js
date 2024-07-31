@@ -18,9 +18,9 @@
       // The list of optional files contains tuples with patterns (if regex-based) and display names
       this.optionalFiles = options.optionalFiles || [];
       // Divide optional files into static names and regex patterns
-      this.optionalFilesStatic = this.optionalFiles.filter((f) => f[0] === null).map((f) => f[1]);
+      this.optionalFilesStatic = this.optionalFiles.filter((f) => f[0] === '').map((f) => f[1]);
       this.optionalFilesLowerCase = this.optionalFilesStatic.map((f) => f.toLowerCase());
-      this.optionalFilesWildcard = this.optionalFiles.filter((f) => f[0] !== null);
+      this.optionalFilesWildcard = this.optionalFiles.filter((f) => f[0] !== '');
 
       // Look up the index of static names; for regexes, the index does not matter,
       // as long as they can be distinguished from static names

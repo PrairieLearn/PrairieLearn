@@ -63,7 +63,7 @@ def glob_to_regex(glob_pattern: str) -> tuple[str, str]:
 
     # If there are no wildcards, return None and remove escapes for standard string comparison
     if not has_wildcard:
-        return (None, glob_pattern.replace("\\", ""))
+        return ("", glob_pattern.replace("\\", ""))
 
     result += "$"
     return (result, glob_pattern)
