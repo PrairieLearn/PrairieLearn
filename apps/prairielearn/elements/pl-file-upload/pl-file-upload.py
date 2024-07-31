@@ -1,8 +1,8 @@
 import csv
 import hashlib
+import itertools
 import json
 import re
-import itertools
 from io import StringIO
 
 import chevron
@@ -30,8 +30,8 @@ def get_file_names_as_array(raw_file_names: str) -> list[str]:
 
 
 # Translate glob into regex patterns for consistent handling in Python and JS
-# Returns a tuple: first the regex (if wildcards are present, else None), 
-#   then the pattern for displaying and for string-based comparisons 
+# Returns a tuple: first the regex (if wildcards are present, else None),
+#   then the pattern for displaying and for string-based comparisons
 def glob_to_regex(glob_pattern: str) -> tuple[str, str]:
     result = "^"
     has_wildcard = False
@@ -63,7 +63,7 @@ def glob_to_regex(glob_pattern: str) -> tuple[str, str]:
 
     # If there are no wildcards, return None and remove escapes for standard string comparison
     if not has_wildcard:
-        return (None, glob_pattern.replace("\\",""))
+        return (None, glob_pattern.replace("\\", ""))
 
     result += "$"
     return (result, glob_pattern)
@@ -113,7 +113,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     uuid = pl.get_uuid()
     parse_error = data["format_errors"].get("_files", None)
-    
+
     if data["panel"] != "question":
         return ""
 
@@ -125,7 +125,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     optional_file_names = sorted(get_file_names_as_array(raw_optional_file_names))
 
     # Convert file name patterns to regular expressions to avoid specialized JS imports on the client side
-    # Note that optional_file_regex is a tuple with an entry for matching and on for displaying 
+    # Note that optional_file_regex is a tuple with an entry for matching and on for displaying
     optional_file_regex = [glob_to_regex(x) for x in optional_file_names]
     optional_file_json = json.dumps(optional_file_regex, allow_nan=False)
 
@@ -143,9 +143,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Pairwise compare files and optional names and patterns
     wildcard_files = {
         file
-        for pattern, file in itertools.product(optional_file_regex, submitted_file_names)
-        if pattern[0] and re.compile(pattern[0], re.IGNORECASE).match(file) 
-            or not pattern[0] and pattern[1] == file
+        for pattern, file in itertools.product(
+            optional_file_regex, submitted_file_names
+        )
+        if pattern[0]
+        and re.compile(pattern[0], re.IGNORECASE).match(file)
+        or not pattern[0]
+        and pattern[1] == file
     }
     accepted_file_names = list(required_files | wildcard_files)
 
@@ -200,13 +204,16 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     wildcard_files = {
         file.get("name", "")
         for pattern, file in itertools.product(optional_file_pattern, parsed_files)
-        if pattern[0] and re.compile(pattern[0], re.IGNORECASE).match(file.get("name", "")) 
-            or not pattern[0] and pattern[1] == file.get("name", "")
+        if pattern[0]
+        and re.compile(pattern[0], re.IGNORECASE).match(file.get("name", ""))
+        or not pattern[0]
+        and pattern[1] == file.get("name", "")
     }
     parsed_files = [
         x
         for x in parsed_files
-        if x.get("name", "") in required_file_names or x.get("name", "") in wildcard_files
+        if x.get("name", "") in required_file_names
+        or x.get("name", "") in wildcard_files
     ]
 
     # Return format error if cleaned file list is empty and allow_blank is not set
