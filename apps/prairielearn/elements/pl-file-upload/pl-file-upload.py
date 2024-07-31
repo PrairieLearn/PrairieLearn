@@ -28,11 +28,24 @@ def get_file_names_as_array(raw_file_names: str) -> list[str]:
     )
     return next(reader)
 
+# Split optional file names into two categories: wildcard patterns and plain file names
+# For the wildcards, convert into regular expressions and return a two-item list with both the regex and a plain display version
+# For the plain names, remove escapes for displaying and return in a separate list
+def extract_patterns(optional_file: str) -> tuple[list[list[str]], list[str]]:
+    # Try converting all file names to regexes; if no wildcard is present, glob_to_regex returns an empty string
+    optional_file_regex_raw = [glob_to_regex(x) for x in optional_file]
+
+    # Collect and remove escapes from where the regular expression is empty, so that these cases can be handled by string comparison
+    optional_file_plain = [name.replace("\\", "") for regex, name in zip(optional_file_regex_raw, optional_file) if not regex]
+
+    # Collect that actual regular expressions and add the plain name for displaying
+    optional_file_regex = [[regex, name] for regex, name in zip(optional_file_regex_raw, optional_file) if regex]
+    return optional_file_regex, optional_file_plain
+
 
 # Translate glob into regex patterns for consistent handling in Python and JS
-# Returns a tuple: first the regex (if wildcards are present, else None),
-#   then the pattern for displaying and for string-based comparisons
-def glob_to_regex(glob_pattern: str) -> tuple[str, str]:
+# Returns the regex if wildcards are present and an empty string otherwise
+def glob_to_regex(glob_pattern: str) -> str:
     result = "^"
     has_wildcard = False
     escape = False
@@ -61,12 +74,12 @@ def glob_to_regex(glob_pattern: str) -> tuple[str, str]:
         else:
             result += re.escape(c)
 
-    # If there are no wildcards, return None and remove escapes for standard string comparison
+    # If there are no wildcards, return an empty string
     if not has_wildcard:
-        return ("", glob_pattern.replace("\\", ""))
+        return ""
 
     result += "$"
-    return (result, glob_pattern)
+    return result
 
 
 # Each pl-file-upload element is uniquely identified by the SHA1 hash of its
@@ -124,34 +137,33 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     raw_optional_file_names = pl.get_string_attrib(element, "optional-file-names", "")
     optional_file_names = sorted(get_file_names_as_array(raw_optional_file_names))
 
-    # Convert file name patterns to regular expressions to avoid specialized JS imports on the client side
-    # Note that optional_file_regex is a tuple with an entry for matching and on for displaying
-    optional_file_regex = [glob_to_regex(x) for x in optional_file_names]
-    optional_file_json = json.dumps(optional_file_regex, allow_nan=False)
+    # Split optional names into two separate lists: wildcard patterns and plain names
+    optional_file_regex, optional_file_plain = extract_patterns(optional_file_names)
+
+    optional_file_plain_json = json.dumps(optional_file_plain, allow_nan=False)
+    optional_file_regex_json = json.dumps(optional_file_regex, allow_nan=False)
 
     answer_name = get_answer_name(raw_file_names, raw_optional_file_names)
 
     # Only send the file names to the client. We don"t include the contents
     # to avoid bloating the HTML. The client will fetch any submitted files
-    # asynchronously once the page loads.
+    # asynchronously once the page loads
     submitted_files = data["submitted_answers"].get("_files", [])
     submitted_file_names = [x.get("name") for x in submitted_files]
 
-    # We filter out any files that neither match a required file name or an optional pattern for this element.
+    # We filter out any files that neither match a required file name or plain optional name
     required_files = set(submitted_file_names) & set(file_names)
+    optional_files = set(submitted_file_names) & set(optional_file_plain)
 
-    # Pairwise compare files and optional names and patterns
+    # For wildcard patterns, we have to do a more complex pairwise matching of files and patterns
     wildcard_files = {
         file
         for pattern, file in itertools.product(
             optional_file_regex, submitted_file_names
         )
-        if pattern[0]
-        and re.compile(pattern[0], re.IGNORECASE).match(file)
-        or not pattern[0]
-        and pattern[1] == file
+        if re.compile(pattern[0], re.IGNORECASE).match(file)
     }
-    accepted_file_names = list(required_files | wildcard_files)
+    accepted_file_names = list(required_files | optional_files | wildcard_files)
 
     submitted_file_names_json = json.dumps(accepted_file_names, allow_nan=False)
 
@@ -159,7 +171,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "question": True,
         "name": answer_name,
         "file_names": file_names_json,
-        "optional_file_names": optional_file_json,
+        "optional_file_names": optional_file_plain_json,
+        "optional_file_regex": optional_file_regex_json,
         "uuid": uuid,
         "editable": data["editable"],
         "submission_files_url": data["options"].get("submission_files_url", None),
@@ -197,22 +210,21 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         add_format_error(data, "Could not parse submitted files.")
         parsed_files = []
 
-    # Create a list of tuples (regex, name); if regex is None, simple string comparison will be used
-    optional_file_pattern = [glob_to_regex(pattern) for pattern in optional_file_names]
+    # Split optional names into two separate lists: wildcard patterns and plain names
+    optional_file_regex, optional_file_plain = extract_patterns(optional_file_names)
 
     # Pair up patterns and files and retain only files where at least one pattern matches
     wildcard_files = {
         file.get("name", "")
-        for pattern, file in itertools.product(optional_file_pattern, parsed_files)
-        if pattern[0]
-        and re.compile(pattern[0], re.IGNORECASE).match(file.get("name", ""))
-        or not pattern[0]
-        and pattern[1] == file.get("name", "")
+        for pattern, file in itertools.product(optional_file_regex, parsed_files)
+        if re.compile(pattern[0], re.IGNORECASE).match(file.get("name", ""))
     }
+    
     parsed_files = [
         x
         for x in parsed_files
         if x.get("name", "") in required_file_names
+        or x.get("name", "") in optional_file_plain
         or x.get("name", "") in wildcard_files
     ]
 

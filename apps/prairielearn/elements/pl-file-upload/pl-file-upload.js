@@ -16,11 +16,10 @@
       this.acceptedFiles = options.acceptedFiles || [];
       this.acceptedFilesLowerCase = this.acceptedFiles.map((f) => f.toLowerCase());
       // The list of optional files contains tuples with patterns (if regex-based) and display names
-      this.optionalFiles = options.optionalFiles || [];
+      this.optionalFilesPlain = options.optionalFilesPlain || [];
       // Divide optional files into static names and regex patterns
-      this.optionalFilesStatic = this.optionalFiles.filter((f) => f[0] === '').map((f) => f[1]);
-      this.optionalFilesLowerCase = this.optionalFilesStatic.map((f) => f.toLowerCase());
-      this.optionalFilesWildcard = this.optionalFiles.filter((f) => f[0] !== '');
+      this.optionalFilesLowerCase = this.optionalFilesPlain.map((f) => f.toLowerCase());
+      this.optionalFilesRegex = options.optionalFilesRegex || [];
 
       // Look up the index of static names; for regexes, the index does not matter,
       // as long as they can be distinguished from static names
@@ -31,11 +30,11 @@
         if (this.optionalFilesLowerCase.includes(fileName)) {
           return this.acceptedFiles.length + this.optionalFilesLowerCase.indexOf(fileName);
         }
-        const matchingWildcard = this.optionalFilesWildcard.findIndex((f) =>
+        const matchingWildcard = this.optionalFilesRegex.findIndex((f) =>
           new RegExp(f[0], 'i').test(fileName),
         );
         if (matchingWildcard >= 0) {
-          return this.acceptedFiles.length + this.optionalFilesStatic.length;
+          return this.acceptedFiles.length + this.optionalFilesPlain.length;
         } else {
           return -1;
         }
@@ -131,8 +130,8 @@
 
           // For static file names, look up the index to match capitalization,
           // for regex patterns, accept the uploaded file name as-is
-          if (acceptedFilesIdx < this.acceptedFiles.concat(this.optionalFilesStatic).length) {
-            const acceptedName = this.acceptedFiles.concat(this.optionalFilesStatic)[
+          if (acceptedFilesIdx < this.acceptedFiles.concat(this.optionalFilesPlain).length) {
+            const acceptedName = this.acceptedFiles.concat(this.optionalFilesPlain)[
               acceptedFilesIdx
             ];
             this.addFileFromBlob(acceptedName, file, false);
@@ -367,16 +366,14 @@
       // First list required files...
       this.acceptedFiles.forEach((n) => renderFileListEntry(n));
       // ...then static optional files...
-      this.optionalFilesStatic.forEach((n) => renderFileListEntry(n, true));
+      this.optionalFilesPlain.forEach((n) => renderFileListEntry(n, true));
       // ...then all remaining uploaded files...
       this.files
         .map((f) => f.name)
-        .filter((n) => !this.acceptedFiles.includes(n) && !this.optionalFilesStatic.includes(n))
+        .filter((n) => !this.acceptedFiles.includes(n) && !this.optionalFilesPlain.includes(n))
         .forEach((n) => renderFileListEntry(n, true));
       // ...and finally all wildcard patterns (which might accept an arbitrary number of uploads)
-      this.optionalFilesWildcard
-        .map((n) => n[1])
-        .forEach((n) => renderFileListEntry(n, true, true));
+      this.optionalFilesRegex.map((n) => n[1]).forEach((n) => renderFileListEntry(n, true, true));
     }
 
     addWarningMessage(message) {
