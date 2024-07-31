@@ -36,8 +36,6 @@ export async function init() {
       'assessment_instances_lock.sql',
       'assessment_instances_insert.sql',
       'assessment_instances_duration.sql',
-      'assessments_duration_stats.sql',
-      'assessments_score_stats.sql',
       'assessments_format.sql',
       'assessments_format_for_question.sql',
       'tags_for_question.sql',
