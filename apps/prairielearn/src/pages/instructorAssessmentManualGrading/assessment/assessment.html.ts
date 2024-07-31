@@ -207,12 +207,12 @@ function GraderAssignmentModal({
           <div class="form-check">
             <input
               type="checkbox"
-              id="graderAssignment${staff.user_id}"
+              id="grader-assignment-${staff.user_id}"
               name="assigned_grader"
               value="${staff.user_id}"
               class="form-check-input"
             />
-            <label class="form-check-label" for="graderAssignment${staff.user_id}">
+            <label class="form-check-label" for="grader-assignment-${staff.user_id}">
               ${staff.name ? `${staff.name} (${staff.uid})` : staff.uid}
             </label>
           </div>
