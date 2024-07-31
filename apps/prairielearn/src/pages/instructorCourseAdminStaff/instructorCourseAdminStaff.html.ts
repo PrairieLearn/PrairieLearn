@@ -49,11 +49,13 @@ export function InstructorCourseAdminStaff({
   courseInstances,
   courseUsers,
   uidsLimit,
+  githubAccessLink,
 }: {
   resLocals: Record<string, any>;
   courseInstances: CourseInstance[];
   courseUsers: CourseUsersRow[];
   uidsLimit: number;
+  githubAccessLink: string | null;
 }) {
   return html`
     <!doctype html>
@@ -196,6 +198,14 @@ export function InstructorCourseAdminStaff({
                 <summary>Recommended access levels</summary>
                 ${AccessLevelsTable()}
               </details>
+              ${githubAccessLink
+                ? html`<div class="alert alert-info">
+                    The settings above do not affect access to the course's repository. To change
+                    repository permissions, go to the
+                    <a href="${githubAccessLink}" target="_blank">access settings page</a> on
+                    GitHub.
+                  </div>`
+                : ''}
             </small>
           </div>
         </main>
