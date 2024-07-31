@@ -60,24 +60,40 @@ router.post(
         res.redirect(req.originalUrl);
         return;
       }
-      const graderIds: string[] = Array.isArray(req.body.assigned_grader)
+      const assignedGraderIds: string[] = Array.isArray(req.body.assigned_grader)
         ? req.body.assigned_grader
         : [req.body.assigned_grader];
+      const allowedGraderIds = (
+        await selectUsersWithCourseInstanceAccess({
+          course_instance_id: res.locals.course_instance.id,
+        })
+      ).map((user) => user.user_id);
+      if (assignedGraderIds.some((graderId) => !allowedGraderIds.includes(graderId))) {
+        flash(
+          'error',
+          'Selected graders do not have student data editor access to this course instance.',
+        );
+        res.redirect(req.originalUrl);
+        return;
+      }
       await runInTransactionAsync(async () => {
-        const numInstancesToGrade =
-          (await queryOptionalRow(
-            sql.count_instance_questions_to_grade,
-            {
-              assessment_id: res.locals.assessment.id,
-              unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
-            },
-            z.number(),
-          )) ?? 0;
+        const numInstancesToGrade = await queryOptionalRow(
+          sql.count_instance_questions_to_grade,
+          {
+            assessment_id: res.locals.assessment.id,
+            unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
+          },
+          z.number(),
+        );
+        if (!numInstancesToGrade) {
+          flash('warning', 'No instances to assign.');
+          return;
+        }
         // We use ceil to ensure that all instances are graded, even if the
         // division is not exact. The last grader may not be assigned the same
         // number of instances as the others, and that is expected.
-        const numInstancesPerGrader = Math.ceil(numInstancesToGrade / graderIds.length);
-        for (const graderId of graderIds) {
+        const numInstancesPerGrader = Math.ceil(numInstancesToGrade / assignedGraderIds.length);
+        for (const graderId of assignedGraderIds) {
           await queryAsync(sql.update_instance_question_graders, {
             assessment_id: res.locals.assessment.id,
             unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
