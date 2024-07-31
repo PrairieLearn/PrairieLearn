@@ -9,6 +9,10 @@
   <span id="test_csrf_token" hidden><%= __csrf_token %></span>
 <% } %>
 
+<div class="container-fluid bg-primary">
+  <a href="#content" class="sr-only sr-only-focusable d-inline-flex p-2 m-2 text-white">Skip to main content</a>
+</div>
+
 <% if (config.announcementHtml) { %>
   <div class="alert alert-<%= config.announcementColor ?? 'primary' %> mb-0 rounded-0 text-center">
     <%- config.announcementHtml %>
@@ -301,7 +305,7 @@
 
           <% if (locals.authz_data && authz_data.mode == 'Exam') { %>
             <div class="dropdown-item-text">
-              Exam mode means you have a checked-in reservation to CBTF. Your interactions with PrairieLearn are limited to your checked-in exam for the duration of your reservation.
+              Exam mode means you have a checked-in reservation on PrairieTest. Your interactions with PrairieLearn are limited to your checked-in exam for the duration of your reservation.
             </div>
             <div class="dropdown-divider"></div>
           <% } %>

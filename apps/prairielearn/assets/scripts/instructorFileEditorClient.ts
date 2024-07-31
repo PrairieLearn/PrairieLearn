@@ -1,5 +1,4 @@
 import ace from 'ace-builds';
-import CryptoJS from 'crypto-js';
 import prettierBabelPlugin from 'prettier/plugins/babel';
 import prettierEstreePlugin from 'prettier/plugins/estree';
 import * as prettier from 'prettier/standalone';
@@ -38,7 +37,7 @@ function getCursorPositionFromCursorOffset(cursorOffset: number, lines: string[]
 
 class InstructorFileEditor {
   element: HTMLElement;
-  diskHash?: string;
+  diskContents?: string;
   saveElement?: HTMLButtonElement | null;
   inputContentsElement?: HTMLInputElement | null;
   editor: ace.Ace.Editor;
@@ -49,17 +48,16 @@ class InstructorFileEditor {
     aceMode,
     readOnly,
     contents,
+    diskContents,
   }: {
     element: HTMLElement;
     saveElement?: HTMLButtonElement | null;
     aceMode?: string;
     readOnly?: boolean;
     contents?: string;
+    diskContents?: string;
   }) {
     this.element = element;
-    this.diskHash = element.querySelector<HTMLInputElement>(
-      'input[name=file_edit_orig_hash]',
-    )?.value;
     const editorElement = element.querySelector<HTMLElement>('.editor');
     if (!editorElement) {
       throw new Error(`Could not find .editor element inside ${element.id}`);
@@ -80,6 +78,7 @@ class InstructorFileEditor {
     });
 
     this.setEditorContents(contents ? this.b64DecodeUnicode(contents) : '');
+    this.diskContents = diskContents ? this.b64DecodeUnicode(diskContents) : '';
 
     this.editor.commands.addCommand({
       name: 'saveAndSync',
@@ -142,14 +141,9 @@ class InstructorFileEditor {
     this.checkDiff();
   }
 
-  getHash(contents: string) {
-    return CryptoJS.SHA256(this.b64EncodeUnicode(contents)).toString();
-  }
-
   checkDiff() {
     if (this.saveElement) {
-      const curHash = this.getHash(this.editor.getValue());
-      this.saveElement.disabled = curHash === this.diskHash;
+      this.saveElement.disabled = this.editor.getValue() === this.diskContents;
     }
   }
 
@@ -200,17 +194,22 @@ onDocumentReady(() => {
   ace.config.set('themePath', aceBasePath);
 
   const draftEditorElement = document.querySelector<HTMLElement>('#file-editor-draft');
+  const diskEditorElement = document.querySelector<HTMLElement>('#file-editor-disk');
+
   const draftEditor = draftEditorElement
     ? new InstructorFileEditor({
         element: draftEditorElement,
         aceMode: draftEditorElement.dataset.aceMode,
         readOnly: draftEditorElement.dataset.readOnly === 'true',
         contents: draftEditorElement.dataset.contents,
+        // If the `#file-editor-disk` element exists, then the disk content is
+        // actually based on that element, and the draft element contains the
+        // last "unsuccessful" edit.
+        diskContents: diskEditorElement?.dataset.contents ?? draftEditorElement.dataset.contents,
         saveElement: document.querySelector<HTMLButtonElement>('#file-editor-save-button'),
       })
     : null;
 
-  const diskEditorElement = document.querySelector<HTMLElement>('#file-editor-disk');
   if (diskEditorElement) {
     new InstructorFileEditor({
       element: diskEditorElement,

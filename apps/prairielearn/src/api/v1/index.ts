@@ -1,5 +1,5 @@
-// @ts-check
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as Sentry from '@prairielearn/sentry';
@@ -11,12 +11,12 @@ const router = Router();
  * viewing permissions. This should be added to any routes that provide student
  * data.
  */
-function authzHasCourseInstanceView(req, res, next) {
+const authzHasCourseInstanceView = asyncHandler(async (req, res, next) => {
   if (!res.locals.authz_data.has_course_instance_permission_view) {
-    return next(new error.HttpStatusError(403, 'Requires student data view access'));
+    throw new error.HttpStatusError(403, 'Requires student data view access');
   }
   next();
-}
+});
 
 // Pretty-print all JSON responses
 router.use((await import('./prettyPrintJson.js')).default);
@@ -61,7 +61,7 @@ router.use(
 router.use((await import('./notFound.js')).default);
 
 // The Sentry error handler must come before our own.
-router.use(Sentry.expressErrorHandler());
+router.use(Sentry.Handlers.errorHandler());
 
 // Handle errors independently from the normal PL error handling
 router.use((await import('./error.js')).default);
