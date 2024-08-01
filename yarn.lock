@@ -3356,7 +3356,7 @@ __metadata:
     strip-ansi: "npm:^7.1.0"
     stripe: "npm:^16.2.0"
     tablesorter: "npm:^2.31.3"
-    tar: "npm:^7.4.0"
+    tar: "npm:^7.4.3"
     three: "npm:0.160.1"
     tmp: "npm:^0.2.3"
     tmp-promise: "npm:^3.0.3"
@@ -14191,9 +14191,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tar@npm:^7.4.0":
-  version: 7.4.0
-  resolution: "tar@npm:7.4.0"
+"tar@npm:^7.4.3":
+  version: 7.4.3
+  resolution: "tar@npm:7.4.3"
   dependencies:
     "@isaacs/fs-minipass": "npm:^4.0.0"
     chownr: "npm:^3.0.0"
@@ -14201,7 +14201,7 @@ __metadata:
     minizlib: "npm:^3.0.1"
     mkdirp: "npm:^3.0.1"
     yallist: "npm:^5.0.0"
-  checksum: 10c0/f4bab85fd101585f2cececc41eb8706191052ab65cc33f1a798198e0c7905f41b06ae3d6731fb2b6084847c53bc1e2265b77e05a105c0c44afaf6cb7a08ddf14
+  checksum: 10c0/d4679609bb2a9b48eeaf84632b6d844128d2412b95b6de07d53d8ee8baf4ca0857c9331dfa510390a0727b550fd543d4d1a10995ad86cdf078423fbb8d99831d
   languageName: node
   linkType: hard
 
