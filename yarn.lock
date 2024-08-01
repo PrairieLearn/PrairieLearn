@@ -2080,12 +2080,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/plugin-request-log@npm:^5.1.0":
-  version: 5.3.0
-  resolution: "@octokit/plugin-request-log@npm:5.3.0"
+"@octokit/plugin-request-log@npm:^5.3.1":
+  version: 5.3.1
+  resolution: "@octokit/plugin-request-log@npm:5.3.1"
   peerDependencies:
     "@octokit/core": ">=6"
-  checksum: 10c0/a20876ea9f58f2e5a58a0c0f95492d8021599c843de44f5754e8006212a97cdf502712ffd6c38d165a74e2eeb4b1f6361d4a0171faed34ed445d63b48830038c
+  checksum: 10c0/2f959934b8285cf39a1d1d0b92ec881b3ae171ae74738225f87b89381afd72a32bc7ea9c04d2dcee74f74ad24c22cce0c5f3e5b4333d531ea67b985e4ee90cb0
   languageName: node
   linkType: hard
 
@@ -2155,15 +2155,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@octokit/rest@npm:^21.0.0":
-  version: 21.0.0
-  resolution: "@octokit/rest@npm:21.0.0"
+"@octokit/rest@npm:^21.0.1":
+  version: 21.0.1
+  resolution: "@octokit/rest@npm:21.0.1"
   dependencies:
     "@octokit/core": "npm:^6.1.2"
     "@octokit/plugin-paginate-rest": "npm:^11.0.0"
-    "@octokit/plugin-request-log": "npm:^5.1.0"
+    "@octokit/plugin-request-log": "npm:^5.3.1"
     "@octokit/plugin-rest-endpoint-methods": "npm:^13.0.0"
-  checksum: 10c0/05f32338479abaae26c5e5418b2667710830e664edafb0c735740ad1ae5dc25e7c0ea9ef9b7f96d00b81c70c78bbf6e86b9048617a8e9c8f02b4f890dc4bc51a
+  checksum: 10c0/b1d54fa564ef2a96f9d25f17df6bbc845aa4a10eec7dd810b65ed616755a24c5cc9d98ad20cf9ba61eb0c9d8cf5ce44814e544f4247d0c1e4d2fc74f265188d2
   languageName: node
   linkType: hard
 
@@ -3153,7 +3153,7 @@ __metadata:
     "@aws-sdk/lib-storage": "npm:^3.609.0"
     "@fortawesome/fontawesome-free": "npm:^6.5.2"
     "@node-saml/passport-saml": "npm:^5.0.0"
-    "@octokit/rest": "npm:^21.0.0"
+    "@octokit/rest": "npm:^21.0.1"
     "@prairielearn/aws": "workspace:^"
     "@prairielearn/bind-mount": "workspace:^"
     "@prairielearn/browser-utils": "workspace:^"
