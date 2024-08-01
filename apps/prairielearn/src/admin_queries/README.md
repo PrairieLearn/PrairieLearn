@@ -12,7 +12,9 @@ If a JS or TS file is provided, it must export a function that returns an object
 ```ts
 import type { AdministratorQueryResult } from './types/index.types.js';
 
-export default async function (params: Record<string, any>): Promise<AdministratorQueryResult> {
+export default async function (params: {
+  /* types */
+}): Promise<AdministratorQueryResult> {
   // Perform some actions, including potentially running queries
   // Return a array of column names and an array of row objects
   return { columns, rows };

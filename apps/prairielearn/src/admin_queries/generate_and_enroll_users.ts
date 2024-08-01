@@ -18,7 +18,10 @@ const EnrolledUserSchema = z.object({
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export default async function (params: Record<string, any>): Promise<AdministratorQueryResult> {
+export default async function (params: {
+  count: string;
+  course_instance_id: string;
+}): Promise<AdministratorQueryResult> {
   const rows = await queryRows(sql.generate_and_enroll_users, params, EnrolledUserSchema);
   return { rows, columns: Object.keys(EnrolledUserSchema.shape) };
 }

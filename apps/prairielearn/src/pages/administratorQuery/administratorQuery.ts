@@ -109,7 +109,7 @@ router.post(
       await jsonLoad.readJSON(path.join(queriesDir, jsonFilename)),
     );
 
-    const queryParams = {};
+    const queryParams: Record<string, string> = {};
     info.params?.forEach((p) => {
       queryParams[p.name] = req.body[p.name];
     });
