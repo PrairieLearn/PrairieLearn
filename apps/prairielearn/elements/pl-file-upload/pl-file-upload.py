@@ -28,6 +28,7 @@ def get_file_names_as_array(raw_file_names: str) -> list[str]:
     )
     return next(reader)
 
+
 # Split optional file names into two categories: wildcard patterns and plain file names
 # For the wildcards, convert into regular expressions and return a two-item list with both the regex and a plain display version
 # For the plain names, remove escapes for displaying and return in a separate list
@@ -36,10 +37,18 @@ def extract_patterns(optional_file: str) -> tuple[list[list[str]], list[str]]:
     optional_file_regex_raw = [glob_to_regex(x) for x in optional_file]
 
     # Collect and remove escapes from where the regular expression is empty, so that these cases can be handled by string comparison
-    optional_file_plain = [name.replace("\\", "") for regex, name in zip(optional_file_regex_raw, optional_file) if not regex]
+    optional_file_plain = [
+        name.replace("\\", "")
+        for regex, name in zip(optional_file_regex_raw, optional_file)
+        if not regex
+    ]
 
     # Collect that actual regular expressions and add the plain name for displaying
-    optional_file_regex = [[regex, name] for regex, name in zip(optional_file_regex_raw, optional_file) if regex]
+    optional_file_regex = [
+        [regex, name]
+        for regex, name in zip(optional_file_regex_raw, optional_file)
+        if regex
+    ]
     return optional_file_regex, optional_file_plain
 
 
@@ -145,7 +154,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     answer_name = get_answer_name(raw_file_names, raw_optional_file_names)
 
-    # Only send the file names to the client. We don"t include the contents
+    # Only send the file names to the client. We don't include the contents
     # to avoid bloating the HTML. The client will fetch any submitted files
     # asynchronously once the page loads
     submitted_files = data["submitted_answers"].get("_files", [])
@@ -219,7 +228,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         for pattern, file in itertools.product(optional_file_regex, parsed_files)
         if re.compile(pattern[0], re.IGNORECASE).match(file.get("name", ""))
     }
-    
+
     parsed_files = [
         x
         for x in parsed_files
