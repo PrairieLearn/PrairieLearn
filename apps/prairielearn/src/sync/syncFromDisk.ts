@@ -1,4 +1,6 @@
 import * as namedLocks from '@prairielearn/named-locks';
+import * as fs from 'fs'; // TEST
+import * as path from 'path'; // TEST
 
 import { chalk, chalkDim } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
@@ -61,9 +63,21 @@ export async function syncDiskToSqlWithLock(
           for (const zone of assessment.data.zones) {
             if (zone.questions) {
               for (const question of zone.questions) {
-                console.log(question.sharedPublicly) // TEST
-                console.log(question) // TEST
-                if (!question.sharedPublicly || question.sharedPublicly === undefined) {
+
+                // Construct the path to the info.json file
+                const infoJsonPath = path.join(courseDir, 'questions', question.id || '', 'info.json');
+                console.log(infoJsonPath); // TEST
+
+                let questionInfo;     
+                try {
+                  // Read and parse the info.json file
+                  const infoJsonData = await fs.promises.readFile(infoJsonPath, 'utf-8');
+                  questionInfo = JSON.parse(infoJsonData);
+                } catch (error) {
+                  console.error(`Failed to read info.json for question ${question.id}:`, error);
+                }
+
+                if (!questionInfo.sharedPublicly || questionInfo.sharedPublicly === undefined) {
                   throw new Error(`Question ${question.id} is not shared publicly in public course instance ${courseInstanceKey}. All questions in a public course instance must be shared publicly.`);
                 }
               }
