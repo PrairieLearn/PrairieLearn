@@ -1,5 +1,5 @@
 beautifulsoup4==4.12.3
-bokeh==3.5.0
+bokeh==3.5.1
 colormath==3.0.0
 defusedxml==0.7.1
 Faker==26.0.0
