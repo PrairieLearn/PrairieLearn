@@ -25,7 +25,7 @@ To render columns as links, return column pairs like:
 - `course_instance_id`/`course_instance` - The `course_instance` should be `course_instances.short_name AS course_instance`.
 - `assessment_id`/`assessment` - The `assessment` should be `aset.abbreviation || a.number || ': ' || a.title AS assessment` or just `aset.abbreviation || a.number AS assessment`.
 
-To change the sort order for column with name `COL`, return another column with name `_sortval_COL`.
+To change the sort order for column with name `COL`, return another column with name `_sortval_COL`. The `_sortval_COL` column does not need to be included in `columns`, though it will be ignored if it is included.
 
 Dates and intervals should be rendered with:
 

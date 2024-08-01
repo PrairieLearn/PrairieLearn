@@ -9,14 +9,13 @@ import { stringify } from '@prairielearn/csv';
 import * as sqldb from '@prairielearn/postgres';
 
 import type { AdministratorQueryResult } from '../../admin_queries/index.types.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { IdSchema, type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 import * as jsonLoad from '../../lib/json-load.js';
 
 import {
   AdministratorQuery,
   AdministratorQuerySchema,
   QueryRunRowSchema,
-  type QueryRunRow,
 } from './administratorQuery.html.js';
 
 const router = express.Router();
@@ -53,10 +52,10 @@ router.get(
     });
 
     let query_run_id: string | null = null;
-    let query_run: QueryRunRow | null = null;
+    let query_run: QueryRun | null = null;
     if (req.query.query_run_id) {
       query_run_id = IdSchema.parse(req.query.query_run_id);
-      query_run = await sqldb.queryRow(sql.select_query_run, { query_run_id }, QueryRunRowSchema);
+      query_run = await sqldb.queryRow(sql.select_query_run, { query_run_id }, QueryRunSchema);
     }
 
     if (!query_run && info.params == null) {
@@ -71,9 +70,9 @@ router.get(
     } else if (req.query.format === 'csv') {
       res.attachment(req.params.query + '.csv');
       if (query_run?.result != null) {
-        stringify(query_run.result.rows, {
+        stringify(query_run.result?.rows, {
           header: true,
-          columns: query_run.result.columns,
+          columns: query_run.result?.columns,
         }).pipe(res);
       } else {
         res.send('');

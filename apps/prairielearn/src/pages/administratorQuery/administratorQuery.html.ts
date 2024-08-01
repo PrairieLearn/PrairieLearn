@@ -7,7 +7,8 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { AdministratorQueryResultSchema } from '../../admin_queries/index.types.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
-import { QueryRunSchema } from '../../lib/db-types.js';
+import { config } from '../../lib/config.js';
+import { QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 
 export const AdministratorQueryRunParamsSchema = z.object({
   name: z.string(),
@@ -39,9 +40,8 @@ export const AdministratorQuerySchema = z.object({
 type AdministratorQuery = z.infer<typeof AdministratorQuerySchema>;
 
 export const QueryRunRowSchema = QueryRunSchema.extend({
-  result: AdministratorQueryResultSchema.nullable(), // TODO Should be enforced?
-  user_name: z.string().optional(),
-  user_uid: z.string().optional(),
+  user_name: z.string().nullable(),
+  user_uid: z.string().nullable(),
 });
 export type QueryRunRow = z.infer<typeof QueryRunRowSchema>;
 
@@ -56,88 +56,12 @@ export function AdministratorQuery({
 }: {
   resLocals: Record<string, any>;
   query_run_id: string | null;
-  query_run: QueryRunRow | null;
+  query_run: QueryRun | null;
   queryFilename: string;
   info: AdministratorQuery;
   sqlHighlighted: string | null;
   recent_query_runs: QueryRunRow[];
 }) {
-  function renderHeader(columns, col) {
-    const row = {};
-    columns.forEach((c) => {
-      row[c] = true;
-    });
-
-    if (col === 'course_id' && 'course' in row) {
-      return '';
-    } else if (col === 'course_instance_id' && 'course_instance' in row) {
-      return '';
-    } else if (col === 'assessment_id' && 'assessment' in row && 'course_instance_id' in row) {
-      return '';
-    } else if (/^_sortval_/.test(col)) {
-      return '';
-    } else {
-      return html`<th>${col}</th>`;
-    }
-  }
-
-  function render(row, col) {
-    const tdAttributes =
-      `_sortval_${col}` in row ? html`data-text="${row['_sortval_' + col]}"` : html``;
-
-    if (col === 'course_id' && 'course' in row) {
-      null;
-    } else if (col === 'course' && 'course_id' in row) {
-      return html`
-        <td ${tdAttributes}>
-          <a href="${resLocals.urlPrefix}/course/${row['course_id']}">${row[col]}</a>
-        </td>
-      `;
-    } else if (col === 'course_instance_id' && 'course_instance' in row) {
-      null;
-    } else if (col === 'course_instance' && 'course_instance_id' in row) {
-      return html`
-        <td ${tdAttributes}>
-          <a href="${resLocals.urlPrefix}/course_instance/${row['course_instance_id']}">
-            ${row[col]}
-          </a>
-        </td>
-      `;
-    } else if (col === 'assessment_id' && 'assessment' in row && 'course_instance_id' in row) {
-      null;
-    } else if (col === 'assessment' && 'assessment_id' in row && 'course_instance_id' in row) {
-      return html`
-        <td ${tdAttributes}>
-          <a
-            href="${resLocals.urlPrefix}/course_instance/${row[
-              'course_instance_id'
-            ]}/instructor/assessment/${row['assessment_id']}"
-          >
-            ${row[col]}
-          </a>
-        </td>
-      `;
-    } else if (/^_sortval_/.test(col)) {
-      null;
-    } else if (row[col] == null) {
-      return html`<td ${tdAttributes}></td>`;
-    } else if (info.resultFormats && info.resultFormats[col] === 'pre') {
-      return html`
-        <td ${tdAttributes}>
-          <pre>${row[col]}</pre>
-        </td>
-      `;
-    } else if (typeof row[col] == 'object') {
-      return html`
-        <td ${tdAttributes}>
-          <code>${JSON.stringify(row[col])}</code>
-        </td>
-      `;
-    } else {
-      return html` <td ${tdAttributes}>${row[col]}</td> `;
-    }
-  }
-
   return html`
     <!doctype html>
     <html lang="en">
@@ -235,8 +159,8 @@ export function AdministratorQuery({
                       ? html`
                           <div class="ml-auto">
                             <span class="mr-2 test-suite-row-count">
-                              ${query_run.result.rows.length}
-                              ${query_run.result.rows.length === 1 ? 'row' : 'rows'}
+                              ${query_run.result.rows?.length ?? 0}
+                              ${query_run.result.rows?.length === 1 ? 'row' : 'rows'}
                             </span>
                             <a
                               href="${`?query_run_id=${query_run_id}&format=json`}"
@@ -265,7 +189,7 @@ export function AdministratorQuery({
                     <table class="table table-sm table-hover table-striped tablesorter">
                       <thead>
                         <tr>
-                          ${query_run.result.columns?.map((col) =>
+                          ${query_run.result.columns?.map((col: string) =>
                             renderHeader(query_run.result?.columns, col),
                           )}
                         </tr>
@@ -273,9 +197,11 @@ export function AdministratorQuery({
 
                       <tbody>
                         ${query_run.result.rows?.map(
-                          (row) => html`
+                          (row: any) => html`
                             <tr>
-                              ${query_run.result?.columns?.map((col) => render(row, col))}
+                              ${query_run.result?.columns?.map((col: string) =>
+                                renderCell(row, col, info),
+                              )}
                             </tr>
                           `,
                         )}
@@ -346,4 +272,77 @@ export function AdministratorQuery({
       </body>
     </html>
   `.toString();
+}
+
+function renderHeader(columns: string[], col: string) {
+  if (col === 'course_id' && 'course' in columns) {
+    return '';
+  } else if (col === 'course_instance_id' && 'course_instance' in columns) {
+    return '';
+  } else if (
+    col === 'assessment_id' &&
+    'assessment' in columns &&
+    'course_instance_id' in columns
+  ) {
+    return '';
+  } else if (/^_sortval_/.test(col)) {
+    return '';
+  }
+  return html`<th>${col}</th>`;
+}
+
+function renderCell(row: any, col: string, info: AdministratorQuery) {
+  const tdAttributes = `_sortval_${col}` in row ? html`data-text="${row[`_sortval_${col}`]}"` : '';
+
+  if (col === 'course_id' && 'course' in row) {
+    return null;
+  } else if (col === 'course' && 'course_id' in row) {
+    return html`
+      <td ${tdAttributes}>
+        <a href="${config.urlPrefix}/course/${row['course_id']}">${row[col]}</a>
+      </td>
+    `;
+  } else if (col === 'course_instance_id' && 'course_instance' in row) {
+    null;
+  } else if (col === 'course_instance' && 'course_instance_id' in row) {
+    return html`
+      <td ${tdAttributes}>
+        <a href="${config.urlPrefix}/course_instance/${row['course_instance_id']}">${row[col]}</a>
+      </td>
+    `;
+  } else if (col === 'assessment_id' && 'assessment' in row && 'course_instance_id' in row) {
+    return null;
+  } else if (col === 'assessment' && 'assessment_id' in row && 'course_instance_id' in row) {
+    return html`
+      <td ${tdAttributes}>
+        <a
+          href="${config.urlPrefix}/course_instance/${row[
+            'course_instance_id'
+          ]}/instructor/assessment/${row['assessment_id']}"
+        >
+          ${row[col]}
+        </a>
+      </td>
+    `;
+  } else if (/^_sortval_/.test(col)) {
+    return null;
+  } else if (row[col] == null) {
+    return html`<td ${tdAttributes}></td>`;
+  }
+
+  if (info.resultFormats?.[col] === 'pre') {
+    return html`
+      <td ${tdAttributes}>
+        <pre>${row[col]}</pre>
+      </td>
+    `;
+  } else if (typeof row[col] === 'object') {
+    return html`
+      <td ${tdAttributes}>
+        <code>${JSON.stringify(row[col])}</code>
+      </td>
+    `;
+  }
+
+  return html`<td ${tdAttributes}>${row[col]}</td>`;
 }
