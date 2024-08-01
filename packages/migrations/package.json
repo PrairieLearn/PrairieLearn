@@ -33,7 +33,7 @@
     "mocha": "^10.6.0",
     "tmp-promise": "^3.0.3",
     "tsx": "^4.16.2",
-    "typescript": "^5.5.3",
+    "typescript": "^5.5.4",
     "typescript-cp": "^0.1.9"
   },
   "c8": {

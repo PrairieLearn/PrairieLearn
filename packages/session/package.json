@@ -41,7 +41,7 @@
     "set-cookie-parser": "^2.6.0",
     "source-map-support": "^0.5.21",
     "tsx": "^4.16.2",
-    "typescript": "^5.5.3"
+    "typescript": "^5.5.4"
   },
   "c8": {
     "reporter": [
