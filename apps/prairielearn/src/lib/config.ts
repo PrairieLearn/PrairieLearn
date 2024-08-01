@@ -437,8 +437,6 @@ const ConfigSchema = z.object({
    */
   sentryDsn: z.string().nullable().default(null),
   sentryEnvironment: z.string().default('development'),
-  sentryTracesSampleRate: z.number().nullable().default(null),
-  sentryProfilesSampleRate: z.number().nullable().default(null),
   /**
    * In some markets, such as China, the title of all pages needs to be a
    * specific string in order to comply with local regulations. If this option
