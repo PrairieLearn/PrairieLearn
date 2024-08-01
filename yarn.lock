@@ -3235,7 +3235,7 @@ __metadata:
     "@types/tmp": "npm:^0.2.6"
     "@types/unzipper": "npm:^0.10.9"
     "@types/uuid": "npm:^10.0.0"
-    "@viz-js/viz": "npm:^3.6.0"
+    "@viz-js/viz": "npm:^3.7.0"
     ace-builds: "npm:^1.35.2"
     ace-code: "npm:^1.35.2"
     ajv: "npm:^8.16.0"
@@ -5622,10 +5622,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@viz-js/viz@npm:^3.6.0":
-  version: 3.6.0
-  resolution: "@viz-js/viz@npm:3.6.0"
-  checksum: 10c0/14d2946b2369221e49794f3666aa054e0fd72b72ea787c39ec64b8e45e2f425cd4dc467ab247e3fa4dd5147a63a3c9f907034e4938a90e60faa9a27e251187a1
+"@viz-js/viz@npm:^3.7.0":
+  version: 3.7.0
+  resolution: "@viz-js/viz@npm:3.7.0"
+  checksum: 10c0/2e341c3d63fca99154c73d76b37e3e3c33277177206303fa79c90395f36470f409fcd3e1a0aa9fdf503d1c60082fb4a6ac863baabb663dba117d3dfeb113707d
   languageName: node
   linkType: hard
 
