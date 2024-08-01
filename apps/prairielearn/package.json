@@ -127,7 +127,7 @@
     "memorystream": "^0.3.1",
     "mersenne": "0.0.4",
     "mime": "^4.0.3",
-    "morphdom": "^2.7.3",
+    "morphdom": "^2.7.4",
     "multer": "^1.4.5-lts.1",
     "mustache": "^4.2.0",
     "node-fetch": "^3.3.2",

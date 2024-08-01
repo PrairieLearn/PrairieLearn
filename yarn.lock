@@ -3316,7 +3316,7 @@ __metadata:
     mime: "npm:^4.0.3"
     mocha: "npm:^10.6.0"
     mocha-steps: "npm:^1.3.0"
-    morphdom: "npm:^2.7.3"
+    morphdom: "npm:^2.7.4"
     multer: "npm:^1.4.5-lts.1"
     mustache: "npm:^4.2.0"
     node-fetch: "npm:^3.3.2"
@@ -11567,10 +11567,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"morphdom@npm:^2.7.3":
-  version: 2.7.3
-  resolution: "morphdom@npm:2.7.3"
-  checksum: 10c0/b2fa38615e38a11388dcd59476821ee51a41d2b1a2efe11029077b324223b58b2863d4c06a9fb79e0f44c5e14daefac5fa84af3fd8ec4f6ad64fa92da58d0815
+"morphdom@npm:^2.7.4":
+  version: 2.7.4
+  resolution: "morphdom@npm:2.7.4"
+  checksum: 10c0/fbb8c45ac780cfbf25a8cc656ead9ab54216395662905ec9982c06d97baa75eb44230abd8676d041b8964c5ce84a72f22fd0af031e9dae43b53a630a16387717
   languageName: node
   linkType: hard
 
