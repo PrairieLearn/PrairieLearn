@@ -55,40 +55,40 @@ def extract_patterns(optional_file: str) -> tuple[list[list[str]], list[str]]:
 # Translate glob into regex patterns for consistent handling in Python and JS
 # Returns the regex if wildcards are present and an empty string otherwise
 def glob_to_regex(glob_pattern: str) -> str:
-    result = "^"
+    result = ["^"]
     has_wildcard = False
     escape = False
     in_range = False
     for c in glob_pattern:
         if escape:
-            result += re.escape(c)
+            result.append(re.escape(c))
             escape = False
         elif in_range and c != "]":
-            result += c
+            result.append(c)
         elif c == "\\":
             escape = True
         elif c == "?":
             has_wildcard = True
-            result += "."
+            result.append(".")
         elif c == "*":
             has_wildcard = True
-            result += ".*"
+            result.append(".*")
         elif c == "[":
             has_wildcard = True
             in_range = True
-            result += c
+            result.append(c)
         elif c == "]":
             in_range = False
-            result += c
+            result.append(c)
         else:
-            result += re.escape(c)
+            result.append(re.escape(c))
 
     # If there are no wildcards, return an empty string
     if not has_wildcard:
         return ""
 
-    result += "$"
-    return result
+    result.append("$")
+    return "".join(result)
 
 
 # Each pl-file-upload element is uniquely identified by the SHA1 hash of its
@@ -120,6 +120,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     ):
         raise Exception(
             "One of required attributes file-names or optional-file-names missing"
+        )
+
+    if pl.has_attrib(element, "file-names") and pl.has_attrib(element, "allow-blank"):
+        raise Exception(
+            "The attribute allow-blank cannot be used when (mandatory) file-names are specified"
         )
 
     if "_required_file_names" not in data["params"]:

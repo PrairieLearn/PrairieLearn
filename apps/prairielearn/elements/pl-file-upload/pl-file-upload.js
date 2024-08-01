@@ -21,23 +21,19 @@
       this.optionalFilesLowerCase = this.optionalFilesPlain.map((f) => f.toLowerCase());
       this.optionalFilesRegex = options.optionalFilesRegex || [];
 
-      // Look up the index of static names; for regexes, the index does not matter,
-      // as long as they can be distinguished from static names
-      this.findFileNameIndex = (fileName) => {
+      // Checks whether a file name is acceptable
+      // If yes, it returns the canonical name of the file, if not, it returns null
+      this.findAcceptedFileName = (fileName) => {
         if (this.acceptedFilesLowerCase.includes(fileName)) {
-          return this.acceptedFilesLowerCase.indexOf(fileName);
+          return this.acceptedFiles[this.acceptedFilesLowerCase.indexOf(fileName)];
         }
         if (this.optionalFilesLowerCase.includes(fileName)) {
-          return this.acceptedFiles.length + this.optionalFilesLowerCase.indexOf(fileName);
+          return this.optionalFilesPlain[this.optionalFilesLowerCase.indexOf(fileName)];
         }
-        const matchingWildcard = this.optionalFilesRegex.findIndex((f) =>
-          new RegExp(f[0], 'i').test(fileName),
-        );
-        if (matchingWildcard >= 0) {
-          return this.acceptedFiles.length + this.optionalFilesPlain.length;
-        } else {
-          return -1;
+        if (this.optionalFilesRegex.some((f) => new RegExp(f[0], 'i').test(fileName))) {
+          return fileName;
         }
+        return null;
       };
 
       this.pendingFileDownloads = new Set();
@@ -108,7 +104,7 @@
         accept: (file, done) => {
           // fuzzy case match
           const fileNameLowerCase = file.name.toLowerCase();
-          if (this.findFileNameIndex(fileNameLowerCase) > -1) {
+          if (this.findAcceptedFileName(fileNameLowerCase)) {
             return done();
           }
           return done('invalid file');
@@ -116,9 +112,9 @@
         addedfile: (file) => {
           // fuzzy case match
           const fileNameLowerCase = file.name.toLowerCase();
-          const acceptedFilesIdx = this.findFileNameIndex(fileNameLowerCase);
+          const acceptedFileName = this.findAcceptedFileName(fileNameLowerCase);
 
-          if (acceptedFilesIdx <= -1) {
+          if (acceptedFileName === null) {
             this.addWarningMessage(
               '<strong>' +
                 file.name +
@@ -128,16 +124,7 @@
             return;
           }
 
-          // For static file names, look up the index to match capitalization,
-          // for regex patterns, accept the uploaded file name as-is
-          if (acceptedFilesIdx < this.acceptedFiles.concat(this.optionalFilesPlain).length) {
-            const acceptedName = this.acceptedFiles.concat(this.optionalFilesPlain)[
-              acceptedFilesIdx
-            ];
-            this.addFileFromBlob(acceptedName, file, false);
-          } else {
-            this.addFileFromBlob(file.name, file, false);
-          }
+          this.addFileFromBlob(acceptedFileName, file, false);
         },
       });
 
