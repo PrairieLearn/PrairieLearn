@@ -10,7 +10,7 @@ Each query must have the following files:
 If a JS or TS file is provided, it must export a function that returns an object of type AdministratorQueryResult. For example:
 
 ```ts
-import type { AdministratorQueryResult } from '../pages/administratorQuery/administratorQuery.html.js';
+import type { AdministratorQueryResult } from './types/index.types.js';
 
 export default async function (params: Record<string, any>): Promise<AdministratorQueryResult> {
   // Perform some actions, including potentially running queries

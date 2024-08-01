@@ -8,6 +8,7 @@ import hljs from 'highlight.js';
 import { stringify } from '@prairielearn/csv';
 import * as sqldb from '@prairielearn/postgres';
 
+import type { AdministratorQueryResult } from '../../admin_queries/index.types.js';
 import { IdSchema } from '../../lib/db-types.js';
 import * as jsonLoad from '../../lib/json-load.js';
 
@@ -16,7 +17,6 @@ import {
   AdministratorQuerySchema,
   QueryRunRowSchema,
   type QueryRunRow,
-  type AdministratorQueryResult,
 } from './administratorQuery.html.js';
 
 const router = express.Router();

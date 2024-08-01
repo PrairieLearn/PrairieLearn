@@ -4,15 +4,10 @@ import { formatDate } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { AdministratorQueryResultSchema } from '../../admin_queries/index.types.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { QueryRunSchema } from '../../lib/db-types.js';
-
-export const AdministratorQueryResultSchema = z.object({
-  rows: z.array(z.record(z.any())),
-  columns: z.array(z.string()),
-});
-export type AdministratorQueryResult = z.infer<typeof AdministratorQueryResultSchema>;
 
 export const AdministratorQueryRunParamsSchema = z.object({
   name: z.string(),
