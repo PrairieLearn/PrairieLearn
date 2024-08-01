@@ -3344,7 +3344,7 @@ __metadata:
     quilljs-markdown: "npm:^1.2.0"
     remark-parse: "npm:^11.0.0"
     remark-stringify: "npm:^11.0.0"
-    requirejs: "npm:^2.3.6"
+    requirejs: "npm:^2.3.7"
     search-string: "npm:^3.1.0"
     serve-favicon: "npm:^2.5.0"
     set-cookie-parser: "npm:^2.6.0"
@@ -13195,13 +13195,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"requirejs@npm:^2.3.6":
-  version: 2.3.6
-  resolution: "requirejs@npm:2.3.6"
+"requirejs@npm:^2.3.7":
+  version: 2.3.7
+  resolution: "requirejs@npm:2.3.7"
   bin:
-    r.js: ./bin/r.js
-    r_js: ./bin/r.js
-  checksum: 10c0/945faa9a6dc96b534a6ab25871e8578ddb93e87c6f2cf32cecf5f33d80e62086f47b8bfae49742150979a16432d8056b00e222b1f24fd2154c066fd65709889b
+    r.js: bin/r.js
+    r_js: bin/r.js
+  checksum: 10c0/2d77a57b949eba5a69fbc0a38acc6c621443696c5327ed75117f36c92ce2d05829fe6cc2fb2aebfb2fa65df7b17fd268e57782e8c817f8fcc2a07d06a50c0a5b
   languageName: node
   linkType: hard
 

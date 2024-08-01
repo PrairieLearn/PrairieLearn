@@ -155,7 +155,7 @@
     "quilljs-markdown": "^1.2.0",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
-    "requirejs": "^2.3.6",
+    "requirejs": "^2.3.7",
     "search-string": "^3.1.0",
     "serve-favicon": "^2.5.0",
     "showdown": "^2.1.0",
