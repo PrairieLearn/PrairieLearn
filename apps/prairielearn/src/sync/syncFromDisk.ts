@@ -15,6 +15,7 @@ import * as syncQuestions from './fromDisk/questions.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import { makePerformance } from './performance.js';
+import { error } from 'console';
 
 const perf = makePerformance('sync');
 
@@ -43,6 +44,34 @@ export async function syncDiskToSqlWithLock(
   const courseData = await perf.timed('loadCourseData', () =>
     courseDB.loadFullCourse(courseId, courseDir),
   );
+
+  /*
+   * Check that all questions in publicly shared course instances are also shared publicly
+   */
+  for (const courseInstanceKey in courseData.courseInstances) {
+    const courseInstance = courseData.courseInstances[courseInstanceKey];
+
+    if (courseInstance.sharedPublicly) {
+
+      for (const assessmentKey in courseInstance.assessments) {
+        const assessment = courseInstance.assessments[assessmentKey];
+        if (assessment.data && assessment.data.zones) {
+          for (const zone of assessment.data.zones) {
+            if (zone.questions) {
+              for (const question of zone.questions) {
+                if (!question.sharedPublicly) {
+                  throw error('Question not shared publicly');
+                }
+              }
+            }
+          }
+        }
+      }
+    } else {
+      console.log('Course instance not shared publicly'); // TEST
+    }
+  }
+
   logger.info('Syncing info to database');
   await perf.timed('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
   const courseInstanceIds = await perf.timed('syncCourseInstances', () =>
