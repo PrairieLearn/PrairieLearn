@@ -7,7 +7,7 @@ import { Modal } from '../../components/Modal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
-import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 
 import { DeleteQuestionModal } from './deleteQuestionModal.html.js';
 import { EditQuestionModal } from './editQuestionModal.html.js';
@@ -59,7 +59,7 @@ export function InstructorAssessmentQuestions({
               <button type="submit" class="btn btn-danger">Reset question variants</button>
             `,
           })}
-          ${DeleteQuestionModal({ zoneNumber: 0, questionNumber: 0 })}
+          ${DeleteQuestionModal({ zoneIndex: 0, questionIndex: 0 })}
           ${EditQuestionModal({
             newQuestion: true,
             zoneIndex: 0,
@@ -89,11 +89,11 @@ export function InstructorAssessmentQuestions({
               assessmentQuestionEditorEnabled
                 ? html`
                     <div class="ml-auto">
-                      <button id="enableEditButton" class="btn btn-sm btn-light">
+                      <button class="btn btn-sm btn-light js-enable-edit-button">
                         <i class="fa fa-edit" aria-hidden="true"></i> Edit Assessment Questions
                       </button>
-                      <span id="editModeButtons" style="display: none">
-                        <button id="saveAndSyncButton" class="btn btn-sm btn-light" type="button">
+                      <span class="js-edit-mode-buttons" style="display: none">
+                        <button class="btn btn-sm btn-light js-save-and-sync-button" type="button">
                           <i class="fa fa-save" aria-hidden="true"></i> Save and sync
                         </button>
                         <button class="btn btn-sm btn-light" onclick="window.location.reload()">

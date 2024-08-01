@@ -97,6 +97,7 @@ export const AssessmentsFormatForQuestionSchema = z.array(
     color: z.string(),
   }),
 );
+export type AssessmentsFormatForQuestion = z.infer<typeof AssessmentsFormatForQuestionSchema>;
 
 // Result of grading_job_status sproc
 export const GradingJobStatusSchema = z.enum([

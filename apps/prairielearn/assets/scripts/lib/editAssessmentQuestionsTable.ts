@@ -2,6 +2,8 @@ import { html } from '@prairielearn/html';
 
 import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
+import { AssessmentsFormatForQuestion } from '../../../src/lib/db-types.js';
+import { AssessmentQuestionRow } from '../../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
 
 function maxPoints({
   max_auto_points,
@@ -37,7 +39,7 @@ export function EditAssessmentQuestionsTable({
   assessmentType: string;
   showAdvanceScorePercCol: boolean;
 }) {
-  // TO DO: Add advance score percentage column
+  // TODO: Add advance score percentage column
   const nTableCols = showAdvanceScorePercCol ? 13 : 12;
 
   return html`
@@ -66,9 +68,9 @@ export function EditAssessmentQuestionsTable({
                 <td class="arrowButtonsCell align-content-center">
                   <div>
                     <button
-                      class="btn btn-xs btn-secondary zone-up-arrow-button"
+                      class="btn btn-xs btn-secondary js-zone-up-arrow-button"
                       type="button"
-                      data-zone-number="${zoneIndex}"
+                      data-zone-index="${zoneIndex}"
                       ${zoneIndex === 0 ? 'disabled' : ''}
                     >
                       <i class="fa fa-arrow-up" aria-hidden="true"></i>
@@ -76,9 +78,9 @@ export function EditAssessmentQuestionsTable({
                   </div>
                   <div>
                     <button
-                      class="btn btn-xs btn-secondary zone-down-arrow-button"
+                      class="btn btn-xs btn-secondary js-zone-down-arrow-button"
                       type="button"
-                      data-zone-number="${zoneIndex}"
+                      data-zone-index="${zoneIndex}"
                       ${zoneIndex === zones.length - 1 ? 'disabled' : ''}
                     >
                       <i class="fa fa-arrow-down" aria-hidden="true"></i>
@@ -87,7 +89,7 @@ export function EditAssessmentQuestionsTable({
                 </td>
                 <td class="editButtonCell align-content-center">
                   <button
-                    class="btn btn-sm btn-secondary edit-zone-button"
+                    class="btn btn-sm btn-secondary js-edit-zone-button"
                     type="button"
                     data-zone-index="${zoneIndex}"
                   >
@@ -105,7 +107,7 @@ export function EditAssessmentQuestionsTable({
                   ${zone.bestQuestions ? `(best ${zone.bestQuestions} questions)` : ''}
                 </th>
               </tr>
-              ${zone.questions.map((question, questionIndex: number) => {
+              ${zone.questions.map((question: AssessmentQuestionRow, questionIndex: number) => {
                 return html`
                   ${question.is_alternative_group
                     ? html`
@@ -171,8 +173,8 @@ export function EditAssessmentQuestionsTable({
                                 : `Choose ${question.alternative_group_number_choose} questions from:`}
                           </td>
                         </tr>
-                        ${question.alternatives.map((alternative, alternativeIndex) => {
-                          return questionRow({
+                        ${question.alternatives?.map((alternative, alternativeIndex) => {
+                          return QuestionRow({
                             question: alternative,
                             zoneIndex,
                             questionIndex,
@@ -180,10 +182,10 @@ export function EditAssessmentQuestionsTable({
                             showAdvanceScorePercCol,
                             assessmentType,
                             // For the alternative groups, pass in points from the alternative group level rather than off the specific question itself
-                            init_points: question.init_points,
-                            points_list: question.points_list,
-                            max_manual_points: question.max_manual_points,
-                            max_auto_points: question.max_auto_points,
+                            init_points: question.init_points ?? 0,
+                            points_list: question.points_list ?? [],
+                            max_manual_points: question.max_manual_points ?? 0,
+                            max_auto_points: question.max_auto_points ?? 0,
                           });
                         })}
                         <tr>
@@ -191,26 +193,26 @@ export function EditAssessmentQuestionsTable({
                           <td></td>
                           <td colspan="${nTableCols - 2}">
                             <button
-                              class="btn btn-sm addQuestion"
+                              class="btn btn-sm js-add-question"
                               data-zone-index="${zoneIndex}"
                               data-question-index="${questionIndex}"
-                              data-alternative-index="${question.alternatives.length}"
+                              data-alternative-index="${question.alternatives?.length}"
                             >
                               <i class="fa fa-add" aria-hidden="true"></i> Add Question to Group
                             </button>
                           </td>
                         </tr>
                       `
-                    : questionRow({
+                    : QuestionRow({
                         question,
                         zoneIndex,
                         questionIndex,
                         showAdvanceScorePercCol,
                         assessmentType,
-                        init_points: question.init_points,
-                        points_list: question.points_list,
-                        max_manual_points: question.max_manual_points,
-                        max_auto_points: question.max_auto_points,
+                        init_points: question.init_points ?? 0,
+                        points_list: question.points_list ?? [],
+                        max_manual_points: question.max_manual_points ?? 0,
+                        max_auto_points: question.max_auto_points ?? 0,
                       })}
                 `;
               })}
@@ -218,7 +220,7 @@ export function EditAssessmentQuestionsTable({
                 <td></td>
                 <td colspan="${nTableCols - 1}">
                   <button
-                    class="btn btn-sm add-question"
+                    class="btn btn-sm js-add-question"
                     data-zone-index="${zoneIndex}"
                     data-question-index="${zone.questions.length}"
                   >
@@ -230,7 +232,7 @@ export function EditAssessmentQuestionsTable({
           })}
           <tr>
             <td colspan="${nTableCols}">
-              <button class="btn btn-sm add-zone" data-zone-index="${zones.length}">
+              <button class="btn btn-sm js-add-zone" data-zone-index="${zones.length}">
                 <i class="fa fa-add" aria-hidden="true"></i> Add Zone
               </button>
             </td>
@@ -241,7 +243,7 @@ export function EditAssessmentQuestionsTable({
   `;
 }
 
-function questionRow({
+function QuestionRow({
   question,
   zoneIndex,
   questionIndex,
@@ -271,11 +273,11 @@ function questionRow({
       <td class="arrowButtonsCell align-content-center">
         <div ${question.is_alternative_group ? 'class="ml-3"' : ''}>
           <button
-            class="btn btn-xs btn-secondary question-up-arrow-button"
+            class="btn btn-xs btn-secondary js-question-up-arrow-button"
             type="button"
-            data-zone-number="${zoneIndex}"
-            data-question-number="${questionIndex}"
-            data-alternative-number="${alternativeIndex}"
+            data-zone-index="${zoneIndex}"
+            data-question-index="${questionIndex}"
+            data-alternative-index="${alternativeIndex}"
             ${zoneIndex === 0 && questionIndex === 0 && alternativeIndex === undefined
               ? 'disabled'
               : ''}
@@ -285,38 +287,38 @@ function questionRow({
         </div>
         <div>
           <button
-            class="btn btn-xs btn-secondary question-down-arrow-button"
+            class="btn btn-xs btn-secondary js-question-down-arrow-button"
             type="button"
-            data-zone-number="${zoneIndex}"
-            data-question-number="${questionIndex}"
-            data-alternative-number="${alternativeIndex}"
+            data-zone-index="${zoneIndex}"
+            data-question-index="${questionIndex}"
+            data-alternative-index="${alternativeIndex}"
           >
             <i class="fa fa-arrow-down" aria-hidden="true"></i>
           </button>
         </div>
       </td>
-      <td class="editButtonCell align-content-center">
+      <td class="edit-button-cell align-content-center">
         <button
-          class="btn btn-sm btn-secondary editButton"
+          class="btn btn-sm btn-secondary js-edit-question-button"
           type="button"
-          data-zone-number="${zoneIndex}"
-          data-question-number="${questionIndex}"
-          data-zone-number="${zoneIndex}"
-          data-question-number="${questionIndex}"
-          data-alternative-number="${alternativeIndex}"
+          data-zone-index="${zoneIndex}"
+          data-question-index="${questionIndex}"
+          data-zone-index="${zoneIndex}"
+          data-question-index="${questionIndex}"
+          data-alternative-index="${alternativeIndex}"
           data-toggle="modal"
           data-target="editQuestionModal"
         >
           <i class="fa fa-edit" aria-hidden="true"></i>
         </button>
       </td>
-      <td class="deleteButtonCell align-content-center">
+      <td class="delete-button-cell align-content-center">
         <button
-          class="btn btn-sm btn-danger deleteQuestionButton"
+          class="btn btn-sm btn-danger js-delete-question-button"
           type="button"
-          data-zone-number="${zoneIndex}"
-          data-question-number="${questionIndex}"
-          data-alternative-number="${alternativeIndex}"
+          data-zone-index="${zoneIndex}"
+          data-question-index="${questionIndex}"
+          data-alternative-index="${alternativeIndex}"
           data-toggle="modal"
           data-target="deleteQuestionModal"
         >
@@ -360,7 +362,7 @@ function questionRow({
         : ''}
       <td>
         ${question.other_assessments
-          ? question.other_assessments.map((assessment) => {
+          ? question.other_assessments.map((assessment: AssessmentsFormatForQuestion) => {
               return html`
                 <span class="badge color-${assessment.color} color-hover">
                   ${assessment.label}

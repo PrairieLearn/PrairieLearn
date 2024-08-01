@@ -15,7 +15,7 @@ import { FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
-import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions.js';
+import { selectQuestionsForCourse } from '../../models/questions.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
 import { FindQIDModal } from './findQIDModal.html.js';
@@ -85,7 +85,7 @@ router.get(
       authn_is_administrator: res.locals.authz_data.authn_is_administrator,
     });
 
-    const questions: QuestionsPageDataAnsified[] = await selectQuestionsForCourse(
+    const questions = await selectQuestionsForCourse(
       res.locals.course.id,
       courseInstances.map((ci) => ci.id),
     );
@@ -122,7 +122,7 @@ router.post(
         res.locals.assessment.tid,
         'infoAssessment.json',
       );
-      const paths = getPaths(req, res);
+      const paths = getPaths(undefined, res.locals);
       const assessmentInfo = JSON.parse(await fs.readFile(assessmentPath, 'utf8'));
       const origHash = req.body.__orig_hash;
       assessmentInfo.zones = JSON.parse(req.body.zones);

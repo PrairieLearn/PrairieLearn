@@ -80,7 +80,11 @@ export function EditZoneModal({
         </small>
       </div> `,
     footer: html`
-      <button type="button" class="btn btn-primary" id="confirmEditZoneButton" data-dismiss="modal">
+      <button
+        type="button"
+        class="btn btn-primary js-confirm-edit-zone-button"
+        data-dismiss="modal"
+      >
         ${newZone ? 'Add Zone' : 'Update Zone'}
       </button>
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>

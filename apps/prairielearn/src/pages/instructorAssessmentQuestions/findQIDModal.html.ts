@@ -26,7 +26,7 @@ export function FindQIDModal({
         urlPrefix,
         plainUrlPrefix,
         __csrf_token: csrfToken,
-        findQidMode: true,
+        showCheckboxes: true,
       })}
     </div>`,
     footer: html` <button

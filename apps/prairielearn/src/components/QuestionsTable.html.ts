@@ -34,7 +34,7 @@ export function QuestionsTable({
   urlPrefix,
   plainUrlPrefix,
   __csrf_token,
-  findQidMode,
+  showCheckboxes,
 }: {
   questions: QuestionsPageDataAnsified[];
   showAddQuestionButton?: boolean;
@@ -46,7 +46,7 @@ export function QuestionsTable({
   urlPrefix: string;
   plainUrlPrefix: string;
   __csrf_token: string;
-  findQidMode?: boolean;
+  showCheckboxes?: boolean;
 }): HtmlSafeString {
   const has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
   const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);
@@ -91,7 +91,7 @@ export function QuestionsTable({
         data-pagination-h-align="left"
         data-pagination-detail-h-align="right"
         data-page-list="[10,20,50,100,200,500,unlimited]"
-        data-page-size="${findQidMode ? 10 : 50}"
+        data-page-size="${showCheckboxes ? 10 : 50}"
         data-smart-display="false"
         data-show-extended-pagination="true"
         data-toolbar=".fixed-table-pagination:nth(0)"
@@ -99,7 +99,7 @@ export function QuestionsTable({
       >
         <thead>
           <tr>
-            ${findQidMode
+            ${showCheckboxes
               ? html`<th
                   data-field="select"
                   data-class="align-middle text-nowrap qid-radio"

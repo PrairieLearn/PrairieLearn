@@ -3,13 +3,13 @@ import { html } from '@prairielearn/html';
 import { Modal } from '../../components/Modal.html.js';
 
 export function DeleteQuestionModal({
-  zoneNumber,
-  questionNumber,
-  alternativeNumber,
+  zoneIndex,
+  questionIndex,
+  alternativeIndex,
 }: {
-  zoneNumber: number;
-  questionNumber: number;
-  alternativeNumber?: number;
+  zoneIndex: number;
+  questionIndex: number;
+  alternativeIndex?: number;
 }) {
   return Modal({
     id: 'deleteQuestionModal',
@@ -18,12 +18,11 @@ export function DeleteQuestionModal({
     footer: html`
       <button
         type="button"
-        class="btn btn-danger"
-        id="confirmDeleteButton"
+        class="btn btn-danger js-confirm-delete-button"
         data-dismiss="modal"
-        data-zone-number="${zoneNumber}"
-        data-question-number="${questionNumber}"
-        data-alternative-number="${alternativeNumber}"
+        data-zone-index="${zoneIndex}"
+        data-question-index="${questionIndex}"
+        data-alternative-index="${alternativeIndex}"
       >
         Remove Question
       </button>

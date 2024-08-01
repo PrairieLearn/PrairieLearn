@@ -2,6 +2,8 @@ import { html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.html.js';
 
+import { AssessmentQuestionRow } from './instructorAssessmentQuestions.types.js';
+
 export function EditQuestionModal({
   newQuestion,
   question,
@@ -11,9 +13,7 @@ export function EditQuestionModal({
   assessmentType,
 }: {
   newQuestion: boolean;
-  question?: Record<string, any>;
-  urlPrefix?: string;
-  assessmentInstanceId?: string;
+  question?: AssessmentQuestionRow;
   zoneIndex: number;
   questionIndex: number;
   alternativeIndex?: number;
@@ -50,14 +50,14 @@ export function EditQuestionModal({
         <div class="input-group">
           <input
             type="text"
-            class="form-control qid"
-            id="qidInput"
+            class="form-control js-qid-input"
             name="qid"
             aria-describedby="qidHelp"
             value="${question?.qid}"
+            disabled
           />
           <div class="input-group-append">
-            <button type="button" class="btn btn-primary" id="findQid">
+            <button type="button" class="btn btn-primary js-find-qid">
               <i class="fa fa-magnifying-glass" aria-hidden="true"></i> Find QID
             </button>
           </div>
@@ -83,7 +83,7 @@ export function EditQuestionModal({
                 >Whether points for the question will be given automatically or manaullys.</small
               >
             </div>
-            <div class="form-group hw-auto-points">
+            <div class="form-group js-hw-auto-points">
               <label for="autoPoints">Auto Points</label>
               <input
                 type="number"
@@ -96,7 +96,7 @@ export function EditQuestionModal({
                 The amount of points each attempt at the question is worth.
               </small>
             </div>
-            <div class="form-group hw-auto-points">
+            <div class="form-group js-hw-auto-points">
               <label for="maxAutoPoints">Max Points</label>
               <input
                 type="number"
@@ -109,7 +109,7 @@ export function EditQuestionModal({
                 The maximum number of points that can be awarded for the question.
               </small>
             </div>
-            <div class="form-group hw-auto-points">
+            <div class="form-group js-hw-auto-points">
               <label for="triesPerVariant">Tries Per Variant</label>
               <input
                 type="number"
@@ -123,7 +123,7 @@ export function EditQuestionModal({
                 a new variant.</small
               >
             </div>
-            <div class="form-group hw-manual-points">
+            <div class="form-group js-hw-manual-points">
               <label for="manualPoints">Manual Points</label>
               <input
                 type="number"
@@ -146,7 +146,7 @@ export function EditQuestionModal({
                 class="form-control points-list"
                 id="autoPointsInput"
                 name="autoPoints"
-                value="${question?.points_list.join(',')}"
+                value="${question?.points_list?.join(',')}"
               />
               <small id="autoPointsHelp" class="form-text text-muted">
                 This is a list of points that each attempt at the question is worth. Enter values
