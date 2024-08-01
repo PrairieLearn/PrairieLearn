@@ -199,12 +199,13 @@ export function InstructorCourseAdminStaff({
                 ${AccessLevelsTable()}
               </details>
               ${githubAccessLink
-                ? html`<div class="alert alert-info">
-                    The settings above do not affect access to the course's repository. To change
-                    repository permissions, go to the
-                    <a href="${githubAccessLink}" target="_blank">access settings page</a> on
-                    GitHub.
-                  </div>`
+                ? html`
+                    <div class="alert alert-info mt-3">
+                      The settings above do not affect access to the course's Git repository. To
+                      change repository permissions, go to the
+                      <a href="${githubAccessLink}" target="_blank">GitHub access settings page</a>.
+                    </div>
+                  `
                 : ''}
             </small>
           </div>
