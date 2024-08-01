@@ -5,15 +5,9 @@ import { Issuer, TokenSet } from 'openid-client';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import {
-  loadSqlEquiv,
-  queryRow,
-  queryAsync,
-  queryOptionalRow,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { DateFromISOString, Lti13Lineitems } from '../../lib/db-types.js';
+import { DateFromISOString } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { ServerJob } from '../../lib/server-jobs.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
@@ -304,13 +298,32 @@ export async function get_lineitems(instance: any) {
   return data;
 }
 
+/*
+Output might not be the same as get_lineitems so I'm leaning towards getting
+all of them and then using .find() to get the singular instance?
+
+export async function get_lineitem(instance: any, lineitem_id: string) {
+  const token = await access_token(instance.lti13_instance.id);
+
+  // https://canvas.instructure.com/doc/api/line_items.html#method.lti/ims/line_items.show
+  const response = await fetch(`${lineitem_id}?include[]=launch_url`, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  checkStatus(response);
+
+  return (await response.json()) as Lti13LineitemType;
+}
+*/
 /////////////////////////////////////////////////////////////////////////////////////////////////
 export async function sync_lineitems(instance: any, job: ServerJob) {
   job.info(
-    `Polling for external assignments in ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
+    `Polling for external assignments from ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
   );
 
   const data = await get_lineitems(instance);
+
+  // TODO: Don't add them if they're not already present
 
   await runInTransactionAsync(async () => {
     await queryAsync(sql.create_lineitems_temp, {});
@@ -396,61 +409,35 @@ export async function create_lineitem(
   job.info('Done.');
 }
 
-export async function delete_lineitem(instance: any, job: ServerJob, lineitem_id: string) {
-  // Validate line_item is part of course?
-
-  job.info(`Asking the LMS to remove assignment with ID ${lineitem_id}`);
-
-  const token = await access_token(instance.lti13_instance.id);
-  const response = await fetch(lineitem_id, {
-    method: 'DELETE',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-type': 'application/vnd.ims.lis.v2.lineitem+json',
-    },
-  });
-
-  /*
-  // Canvas docs say it should return a LineItem object, but in practice this seems
-  // to return 204 No Content in a successful delete and an error otherwise.
-  console.log(response);
-  const item = await response.text();
-  console.log(item);
-  */
-  checkStatus(response);
-
-  await queryAsync(sql.delete_lineitem, {
-    lti13_course_instance_id: instance.lti13_course_instance.id,
-    lineitem_id,
-  });
-  job.info('Done.');
-}
-
+/*
 export async function disassociate_lineitem(instance: any, lineitem_id: string) {
   await queryAsync(sql.disassociate_lineitem, {
     lti13_course_instance_id: instance.lti13_course_instance.id,
     lineitem_id,
   });
 }
+*/
+export async function unlink_assessment(lti13_course_instance_id: string, assessment_id: string) {
+  await queryAsync(sql.delete_lineitem_by_assessment_id, {
+    lti13_course_instance_id,
+    assessment_id,
+  });
+}
 
-export async function associate_lineitem(
+export async function query_and_link_lineitem(
   instance: any,
   lineitem_id: string,
   assessment_id: string | number,
 ) {
-  const result = await queryOptionalRow(
-    sql.associate_lineitem,
-    {
-      lti13_course_instance_id: instance.lti13_course_instance.id,
-      lineitem_id,
-      assessment_id,
-    },
-    Lti13Lineitems,
-  );
+  const lineitems = await get_lineitems(instance);
+  const item = lineitems.find(({ id }) => id === lineitem_id);
 
-  if (result === null) {
-    throw new HttpStatusError(400, 'Unable to associate lineitem');
-  }
+  await queryAsync(sql.update_lineitem_with_assessment, {
+    lti13_course_instance_id: instance.lti13_course_instance.id,
+    lineitem_id: item?.id,
+    lineitem: JSON.stringify(item),
+    assessment_id,
+  });
 }
 
 function checkStatus(response: Response) {

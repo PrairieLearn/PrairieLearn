@@ -17,10 +17,9 @@ import { insertAuditLog } from '../../../models/audit-log.js';
 import {
   sync_lineitems,
   create_lineitem,
-  delete_lineitem,
-  disassociate_lineitem,
-  associate_lineitem,
   get_lineitems,
+  unlink_assessment,
+  query_and_link_lineitem,
 } from '../../lib/lti13.js';
 
 import {
@@ -184,51 +183,37 @@ router.post(
         await create_lineitem(instance, job, assessment_metadata);
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
-    } else if (req.body.__action === 'delete_lineitem') {
-      serverJobOptions.description = 'delete lineitem in LMS';
+    } else if (req.body.__action === 'unlink_assessment') {
+      await unlink_assessment(instance.lti13_course_instance.id, req.body.assessment_id);
+      return res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'create_link_assessment') {
+      serverJobOptions.description = 'create lineitem from PL assessment';
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
-        await delete_lineitem(instance, job, req.body.lineitem_id);
+        const assessment = await queryRow(
+          sql.select_assessment,
+          {
+            assessment_id: req.body.assessment_id,
+            course_instance_id: instance.lti13_course_instance.course_instance_id,
+          },
+          AssessmentSchema.extend({
+            label: z.string(),
+          }),
+        );
+
+        const assessment_metadata = {
+          label: `${assessment.label}: ${assessment.title}`,
+          id: assessment.id,
+          url: `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
+        };
+
+        await create_lineitem(instance, job, assessment_metadata);
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
-    } else if (req.body.__action === 'disassociate_lineitem') {
-      await disassociate_lineitem(instance, req.body.lineitem_id);
+    } else if (req.body.__action === 'link_assessment') {
+      await query_and_link_lineitem(instance, req.body.lineitem_id, req.body.assessment_id);
       return res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'associate_lineitem') {
-      await associate_lineitem(instance, req.body.lineitem_id, req.body.assessment_id);
-      return res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'lineitem_configure') {
-      if ('create_new' in req.body) {
-        serverJobOptions.description = 'create lineitem from PL assessment';
-        const serverJob = await createServerJob(serverJobOptions);
-
-        serverJob.executeInBackground(async (job) => {
-          const assessment = await queryRow(
-            sql.select_assessment,
-            {
-              assessment_id: req.body.assessment_id,
-              course_instance_id: instance.lti13_course_instance.course_instance_id,
-            },
-            AssessmentSchema.extend({
-              label: z.string(),
-            }),
-          );
-
-          const assessment_metadata = {
-            label: `${assessment.label}: ${assessment.title}`,
-            id: assessment.id,
-            url: `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
-          };
-
-          await create_lineitem(instance, job, assessment_metadata);
-        });
-        return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
-      } else {
-        await associate_lineitem(instance, req.body.lineitem_id, req.body.assessment_id);
-        // flash here?
-        return res.redirect(req.originalUrl);
-      }
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
     }

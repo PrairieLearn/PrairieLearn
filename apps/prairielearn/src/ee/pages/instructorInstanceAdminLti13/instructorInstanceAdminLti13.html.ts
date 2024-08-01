@@ -1,4 +1,3 @@
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
@@ -95,22 +94,24 @@ export function InstructorInstanceAdminLti13({
                 </div>
                 <div class="col-10">
                   <h3 id="assessments">Linked Assessments</h3>
-
-                  <form method="POST">
-                    <input type="hidden" name="__action" value="poll_lti13_assessments" />
-                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                    <button class="btn btn-success">
-                      Poll ${lms_name} external assessment info
-                    </button>
-                  </form>
-
                   <div class="table-responsive">
                     <table class="table table-sm table-hover">
                       <thead>
                         <tr>
                           <th colspan="2">PrairieLearn Assessment</th>
                           <th>Actions</th>
-                          <th colspan="2">${lms_name} Assignment</th>
+                          <th>
+                            <form method="POST">
+                              <input type="hidden" name="__action" value="poll_lti13_assessments" />
+                              <input
+                                type="hidden"
+                                name="__csrf_token"
+                                value="${resLocals.__csrf_token}"
+                              />
+                              ${lms_name} Assignment
+                              <button class="btn btn-success btn-xs">Sync metadata</button>
+                            </form>
+                          </th>
                         </tr>
                       </thead>
                       <tbody>
@@ -118,14 +119,23 @@ export function InstructorInstanceAdminLti13({
                           const lineitems_linked = lineitems.filter((item) => {
                             return item.assessment_id === row.id;
                           });
+                          //console.log(row);
 
                           return html`
                             ${row.start_new_assessment_group
                               ? html`
                                   <tr>
-                                    <th colspan="2">${row.assessment_group_heading}</th>
-                                    <th colspan="3">
-                                      <button class="btn btn-sm btn-secondary">Bulk actions</button>
+                                    <th colspan="5">
+                                      ${row.assessment_group_heading}
+                                      <button
+                                        class="btn btn-sm btn-secondary ml-2"
+                                        type="button"
+                                        data-toggle="modal"
+                                        data-target="#bulk-${row.assessment_set_id}-${row.assessment_module_id}"
+                                      >
+                                        Bulk actions set_id ${row.assessment_set_id} module_id
+                                        ${row.assessment_module_id}
+                                      </button>
                                     </th>
                                   </tr>
                                 `
@@ -153,16 +163,15 @@ export function InstructorInstanceAdminLti13({
                                     <form method="POST">
                                       <input
                                         type="hidden"
-                                        name="__action"
-                                        value="lineitem_configure"
-                                      />
-                                      <input
-                                        type="hidden"
                                         name="__csrf_token"
                                         value="${resLocals.__csrf_token}"
                                       />
                                       <input type="hidden" name="assessment_id" value="${row.id}" />
-                                      <button class="btn btn-success" name="create_new" value="1">
+                                      <button
+                                        class="btn btn-success"
+                                        name="__action"
+                                        value="create_link_assessment"
+                                      >
                                         Create a new assignment named ${row.label}: ${row.title}
                                       </button>
                                       <button
@@ -181,7 +190,7 @@ export function InstructorInstanceAdminLti13({
                                     Close
                                   </button>`,
                                   id: `assignment-${row.id}`,
-                                  title: `Configure ${row.title} in ${instance.lti13_course_instance.context_label}`,
+                                  title: `Configure ${row.title} in ${lms_name}`,
                                 })}
 
                                 <form method="POST">
@@ -193,23 +202,13 @@ export function InstructorInstanceAdminLti13({
                                   <input type="hidden" name="assessment_id" value="${row.id}" />
                                   ${lineitems_linked.length === 0
                                     ? html`
-                                        <!--
-                                    <button
-                                          class="btn btn-sm btn-success"
-                                          name="__action"
-                                          value="create_lineitem"
-                                        >
-                                          Create ${instance.lti13_course_instance.context_label}
-                                          assignment
-                                        </button>
-                                        -->
                                         <button
                                           class="btn btn-med-light"
                                           type="button"
                                           data-toggle="modal"
                                           data-target="#assignment-${row.id}"
                                         >
-                                          Configure
+                                          Link to ${lms_name}
                                         </button>
                                       `
                                     : html`
@@ -221,60 +220,39 @@ export function InstructorInstanceAdminLti13({
                                         >
                                           Send grades to ${lms_name}
                                         </button>
-                                        <div class="dropdown js-question-actions">
-                                          <button
-                                            type="button"
-                                            class="btn btn-xs dropdown-toggle"
-                                            data-toggle="dropdown"
-                                            aria-haspopup="true"
-                                            aria-expanded="false"
-                                          >
-                                            ...<span class="caret"></span>
-                                          </button>
-
-                                          <div class="dropdown-menu">
-                                            <button
-                                              class="dropdown-item"
-                                              type="button"
-                                              data-toggle="modal"
-                                              data-target="#assignment-${row.id}"
-                                            >
-                                              Link assignment
-                                            </button>
-                                          </div>
-                                        </div>
                                       `}
+                                  <span class="dropdown js-question-actions">
+                                    <button
+                                      type="button"
+                                      class="btn btn-xs dropdown-toggle"
+                                      data-toggle="dropdown"
+                                      aria-haspopup="true"
+                                      aria-expanded="false"
+                                    >
+                                      ...<span class="caret"></span>
+                                    </button>
+
+                                    <div class="dropdown-menu">
+                                      <button
+                                        class="dropdown-item"
+                                        type="button"
+                                        data-toggle="modal"
+                                        data-target="#assignment-${row.id}"
+                                      >
+                                        Link assignment
+                                      </button>
+                                      <button
+                                        class="dropdown-item"
+                                        name="__action"
+                                        value="unlink_assessment"
+                                      >
+                                        Unlink assignment
+                                      </button>
+                                    </div>
+                                  </span>
                                 </form>
                               </td>
-                              <td>
-                                ${lineitems_linked.map((item) =>
-                                  lineItem(item, resLocals.__csrf_token),
-                                )}
-                              </td>
-                              <td class="text-right">
-                                <div class="dropdown js-question-actions">
-                                  <button
-                                    type="button"
-                                    class="btn btn-secondary btn-xs dropdown-toggle"
-                                    data-toggle="dropdown"
-                                    aria-haspopup="true"
-                                    aria-expanded="false"
-                                  >
-                                    Action <span class="caret"></span>
-                                  </button>
-
-                                  <div class="dropdown-menu">
-                                    <button
-                                      class="dropdown-item"
-                                      type="button"
-                                      data-toggle="modal"
-                                      data-target="#assignment-${row.id}"
-                                    >
-                                      Link assignment
-                                    </button>
-                                  </div>
-                                </div>
-                              </td>
+                              <td class="align-middle">${lineitems_linked.map(lineItem)}</td>
                             </tr>
                           `;
                         })}
@@ -304,49 +282,18 @@ export function InstructorInstanceAdminLti13({
   `.toString();
 }
 
-function lineItem(item: Lti13Lineitems, csrf: string, assessments: AssessmentRow[] = []) {
-  const inputUuid = uuidv4();
+function lineItem(item: Lti13Lineitems) {
   return html`
-    <form method="POST">
-      <input type="hidden" name="__csrf_token" value="${csrf}" />
-      <input type="hidden" name="lineitem_id" value="${item.lineitem_id}" />
-      <span title="${item.lineitem_id}">${item.lineitem.label}</span>
-      ${item.assessment_id
-        ? ''
-        : html`<div class="input-group">
-            <div class="input-group-prepend">
-              <label class="input-group-text" for="${inputUuid}">
-                Associate ${item.lineitem.label} with
-              </label>
-            </div>
-            <select name="assessment_id" class="custom-select" id="${inputUuid}">
-              <option selected disabled>Pick a PrairieLearn assessment...</option>
-              ${assessments.map((a) => {
-                return html`<option value="${a.id}">${a.label}: ${a.title}</option>`;
-              })}
-            </select>
-            <div class="input-group-append">
-              <button class="btn btn-info" name="__action" value="associate_lineitem">
-                Associate
-              </button>
-            </div>
-          </div> `}
-      <button
-        class="btn btn-xs"
-        onClick="event.preventDefault();$(this).next('.lineitem-detail').toggle();"
-      >
-        ...
-      </button>
-      <div class="lineitem-detail" style="display:none;">
-        <button class="btn btn-xs btn-warning" name="__action" value="disassociate_lineitem">
-          Disassociate
-        </button>
-        <button class="btn btn-xs btn-danger" name="__action" value="delete_lineitem">
-          Delete from LMS
-        </button>
-        <pre>${JSON.stringify(item, null, 2)}</pre>
-      </div>
-    </form>
+    <span title="${item.lineitem_id}">${item.lineitem.label}</span>
+    <button
+      class="btn btn-xs"
+      onClick="event.preventDefault();$(this).next('.lineitem-detail').toggle();"
+    >
+      ...
+    </button>
+    <div class="lineitem-detail" style="display:none;">
+      <pre>${JSON.stringify(item, null, 2)}</pre>
+    </div>
   `;
 }
 
@@ -354,6 +301,7 @@ export function LineitemsInputs(lineitems: Lti13LineitemType[]) {
   if (lineitems.length === 0) {
     return html`<p>None found.</p>`.toString();
   }
+  // TODO: Filter out assignments that are already linked?
   return html`
     ${lineitems.map(
       (lineitem) => html`
@@ -370,6 +318,8 @@ export function LineitemsInputs(lineitems: Lti13LineitemType[]) {
         </div>
       `,
     )}
-    <button class="btn btn-primary">Link assignments</button>
+    <button name="__action" value="link_assessment" class="btn btn-primary">
+      Link assignments
+    </button>
   `.toString();
 }

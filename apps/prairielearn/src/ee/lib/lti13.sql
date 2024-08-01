@@ -52,12 +52,6 @@ SET
   lineitem = $lineitem,
   assessment_id = $assessment_id;
 
--- BLOCK delete_lineitem
-DELETE FROM lti13_lineitems
-WHERE
-  lineitem_id = $lineitem_id
-  AND lti13_course_instance_id = $lti13_course_instance_id;
-
 -- BLOCK create_lineitems_temp
 CREATE TEMPORARY TABLE new_lineitems (LIKE lti13_lineitems) ON
 COMMIT
@@ -140,6 +134,12 @@ SELECT
     FROM
       deleting
   ) AS deleted;
+
+-- BLOCK delete_lineitem_by_assessment_id
+DELETE FROM lti13_lineitems
+WHERE
+  lti13_course_instance_id = $lti13_course_instance_id
+  AND assessment_id = $assessment_id;
 
 -- BLOCK disassociate_lineitem
 UPDATE lti13_lineitems
