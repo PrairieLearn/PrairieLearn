@@ -46,7 +46,7 @@ export function AdministratorInstitutionSaml({
         })}
         ${DeleteSamlConfigurationModal({ csrfToken: resLocals.__csrf_token })}
 
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           ${hasSamlProvider && !hasEnabledSaml
             ? html`
                 <div class="alert alert-warning">
