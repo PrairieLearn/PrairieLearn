@@ -66,7 +66,7 @@ export function InstructorInstanceAdminLti13({
           ...resLocals,
           navSubPage: 'lti13',
         })}
-        <main class="container-fluid mb-4">
+        <main id="content" class="container-fluid mb-4">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">LTI 1.3 configuration</div>
             <div class="card-body">
