@@ -233,7 +233,6 @@ interface CourseInstanceAllowAccess {
   startDate: string;
   endDate: string;
   institution: string;
-  sharedPublicly: boolean;
 }
 
 export interface CourseInstance {
@@ -385,6 +384,7 @@ export interface Question {
 }
 
 export interface CourseInstanceData {
+  sharedPublicly: any;
   courseInstance: InfoFile<CourseInstance>;
   assessments: Record<string, InfoFile<Assessment>>;
 }

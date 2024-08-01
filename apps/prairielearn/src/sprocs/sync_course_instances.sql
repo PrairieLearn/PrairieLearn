@@ -25,7 +25,8 @@ BEGIN
         uuid uuid,
         errors TEXT,
         warnings TEXT,
-        data JSONB
+        data JSONB,
+        shared_publicly BOOLEAN
     ) ON COMMIT DROP;
 
     INSERT INTO disk_course_instances (
@@ -33,13 +34,15 @@ BEGIN
         uuid,
         errors,
         warnings,
-        data
+        data,
+        shared_publicly
     ) SELECT
         entries->>0,
         (entries->>1)::uuid,
         entries->>2,
         entries->>3,
-        (entries->4)::JSONB
+        (entries->4)::JSONB,
+        (entries->>5)::boolean
     FROM UNNEST(disk_course_instances_data) AS entries;
 
     -- Synchronize the dest (course_instances) with the src

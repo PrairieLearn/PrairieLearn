@@ -51,7 +51,9 @@ export async function syncDiskToSqlWithLock(
   for (const courseInstanceKey in courseData.courseInstances) {
     const courseInstance = courseData.courseInstances[courseInstanceKey];
 
+    courseInstance.sharedPublicly = true; // TEST
     if (courseInstance.sharedPublicly) {
+      console.log(`Checking course instance ${courseInstanceKey} since it's public`); // TEST
 
       for (const assessmentKey in courseInstance.assessments) {
         const assessment = courseInstance.assessments[assessmentKey];
@@ -59,16 +61,16 @@ export async function syncDiskToSqlWithLock(
           for (const zone of assessment.data.zones) {
             if (zone.questions) {
               for (const question of zone.questions) {
-                if (!question.sharedPublicly) {
-                  throw error('Question not shared publicly');
+                console.log(question.sharedPublicly) // TEST
+                console.log(question) // TEST
+                if (!question.sharedPublicly || question.sharedPublicly === undefined) {
+                  throw new Error(`Question ${question.id} is not shared publicly in public course instance ${courseInstanceKey}. All questions in a public course instance must be shared publicly.`);
                 }
               }
             }
           }
         }
       }
-    } else {
-      console.log('Course instance not shared publicly'); // TEST
     }
   }
 
