@@ -37,7 +37,7 @@
   "devDependencies": {
     "@types/async": "^3.2.24",
     "@types/chai": "^4.3.16",
-    "@types/dockerode": "^3.3.29",
+    "@types/dockerode": "^3.3.31",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^20.14.9",
     "@types/sinon": "^17.0.3",
