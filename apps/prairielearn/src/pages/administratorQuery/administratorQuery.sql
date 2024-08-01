@@ -15,8 +15,7 @@ RETURNING
 
 -- BLOCK select_query_run
 SELECT
-  *,
-  format_date_full_compact (date, 'UTC') as formatted_date
+  *
 FROM
   query_runs
 WHERE
@@ -24,9 +23,7 @@ WHERE
 
 -- BLOCK select_recent_query_runs
 SELECT
-  qr.id,
-  qr.params,
-  format_date_full_compact (qr.date, 'UTC') as formatted_date,
+  qr.*,
   u.name AS user_name,
   u.uid AS user_uid
 FROM

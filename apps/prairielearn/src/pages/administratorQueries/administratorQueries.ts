@@ -21,10 +21,14 @@ router.get(
         const contents = AdministratorQueryJsonSchema.parse(
           await jsonLoad.readJSON(path.join(queriesDir, f)),
         );
+        const filePrefix = f.replace(/\.json$/, '');
         return {
           ...contents,
-          sqlFilename: f.replace(/\.json$/, '.sql'),
-          link: f.replace(/\.json$/, ''),
+          sqlFilename: await import(path.join(queriesDir, `${filePrefix}.js`)).then(
+            () => `${filePrefix}.js`,
+            () => `${filePrefix}.sql`,
+          ),
+          link: filePrefix,
         };
       }),
     );

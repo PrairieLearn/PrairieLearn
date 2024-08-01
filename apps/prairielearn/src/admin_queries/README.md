@@ -1,9 +1,23 @@
 # Administrator queries
 
-Each query must have two files:
+Each query must have the following files:
 
 - A JSON file in the [`adminQuery` JSON Schema](../schemas/schemas/adminQuery.json).
-- A SQL file with a query that returns a table, and potentially also performs an INSERT, UPDATE, or other action.
+- Either:
+  - A JS or TS file with a default function that performs the necessary actions and returns the resulting data.
+  - A SQL file with a query that returns a table, and potentially also performs an INSERT, UPDATE, or other action.
+
+If a JS or TS file is provided, it must export a function that returns an object of type AdministratorQueryResult. For example:
+
+```ts
+import type { AdministratorQueryResult } from '../pages/administratorQuery/administratorQuery.html.js';
+
+export default async function (params: Record<string, any>): Promise<AdministratorQueryResult> {
+  // Perform some actions, including potentially running queries
+  // Return a array of column names and an array of row objects
+  return { columns, rows };
+}
+```
 
 To render columns as links, return column pairs like:
 

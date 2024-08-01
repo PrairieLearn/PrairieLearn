@@ -769,6 +769,18 @@ export const PlanGrantSchema = z.object({
 });
 export type PlanGrant = z.infer<typeof PlanGrantSchema>;
 
+export const QueryRunSchema = z.object({
+  authn_user_id: IdSchema,
+  date: DateFromISOString,
+  error: z.string().nullable(),
+  id: IdSchema,
+  name: z.string(),
+  params: z.record(z.string(), z.any()).nullable(),
+  result: z.record(z.string(), z.any()).nullable(),
+  sql: z.string(),
+});
+export type QueryRun = z.infer<typeof QueryRunSchema>;
+
 export const QuestionGenerationContextEmbeddingSchema = z.object({
   id: IdSchema,
   doc_text: z.string(),
