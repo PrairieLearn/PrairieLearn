@@ -8,6 +8,7 @@ import nodeJose from 'node-jose';
 
 import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
+import { access_token } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
 import { Lti13UserSchema } from '../lib/db-types.js';
 import { selectUserByUid } from '../models/user.js';
@@ -36,6 +37,7 @@ async function withServer<T>(app: express.Express, port: number, fn: () => Promi
 
 describe('LTI 1.3', () => {
   let oidcProviderPort: number;
+  let keystore: nodeJose.JWK.KeyStore;
 
   before(async () => {
     config.isEnterprise = true;
@@ -47,6 +49,13 @@ describe('LTI 1.3', () => {
 
     // Allocate an available port for the OIDC provider.
     oidcProviderPort = await getPort();
+
+    keystore = nodeJose.JWK.createKeyStore();
+    await keystore.generate('RSA', 2048, {
+      alg: 'RS256',
+      use: 'sig',
+      kid: 'test',
+    });
   });
 
   after(async () => {
@@ -105,6 +114,7 @@ describe('LTI 1.3', () => {
             issuer: `http://localhost:${oidcProviderPort}`,
             authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
             jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
+            token_endpoint: `http://localhost:${oidcProviderPort}/token`,
           }),
           custom_fields: '{}',
           client_id: CLIENT_ID,
@@ -188,13 +198,7 @@ describe('LTI 1.3', () => {
     const nonce = redirectUrl.searchParams.get('nonce') as string;
     const state = redirectUrl.searchParams.get('state') as string;
 
-    const keystore = nodeJose.JWK.createKeyStore();
-    const key = await keystore.generate('RSA', 2048, {
-      alg: 'RS256',
-      use: 'sig',
-      kid: 'test',
-    });
-
+    const key = keystore.get('test');
     const joseKey = await jose.importJWK(key.toJSON(true) as any);
     const fakeIdToken = await new jose.SignJWT({
       nonce,
@@ -360,5 +364,51 @@ describe('LTI 1.3', () => {
     });
 
     assert.equal(finishBadLoginResponse.status, 500);
+  });
+
+  step('request access_token', async () => {
+    const ACCESS_TOKEN = '33679293-edd6-4415-af36-03113feb8447';
+
+    // Run a server to respond to token requests.
+    const app = express();
+    app.use(express.urlencoded({ extended: true }));
+
+    app.post('/token', async (req, res) => {
+      assert.equal(req.body.grant_type, 'client_credentials');
+      assert.equal(req.body.client_id, CLIENT_ID);
+      assert.equal(
+        req.body.client_assertion_type,
+        'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      );
+
+      const key = keystore.get('test');
+      const joseKey = await jose.importJWK(key.toJSON(true) as any);
+
+      console.log(req.body.client_assertion, joseKey);
+
+      //const ok = await jose.jwtVerify(req.body.client_assertion, joseKey);
+      //console.log(ok);
+
+      // Decodes but does not validate
+      const jwt = JSON.parse(
+        Buffer.from(req.body.client_assertion.split('.')[1], 'base64').toString(),
+      );
+      assert.equal(jwt.iss, CLIENT_ID);
+      assert.property(jwt, 'jti');
+
+      res.send(
+        JSON.stringify({
+          access_token: ACCESS_TOKEN,
+          stenotype: 'bearer',
+          expires_in: 3600,
+          scope: req.body.scope,
+        }),
+      );
+    });
+
+    await withServer(app, oidcProviderPort, async () => {
+      const result = await access_token('1');
+      assert.equal(result, ACCESS_TOKEN);
+    });
   });
 });
