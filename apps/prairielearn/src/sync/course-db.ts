@@ -233,6 +233,7 @@ interface CourseInstanceAllowAccess {
   startDate: string;
   endDate: string;
   institution: string;
+  sharedPublicly: boolean;
 }
 
 export interface CourseInstance {
