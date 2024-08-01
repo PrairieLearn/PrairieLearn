@@ -3231,6 +3231,7 @@ __metadata:
     "@types/qrcode-svg": "npm:^1.1.4"
     "@types/serve-favicon": "npm:^2.5.7"
     "@types/streamifier": "npm:^0.1.2"
+    "@types/tabulator-tables": "npm:^6.2.3"
     "@types/tar": "npm:^6.1.13"
     "@types/tmp": "npm:^0.2.6"
     "@types/unzipper": "npm:^0.10.9"
@@ -3356,6 +3357,7 @@ __metadata:
     strip-ansi: "npm:^7.1.0"
     stripe: "npm:^16.2.0"
     tablesorter: "npm:^2.31.3"
+    tabulator-tables: "npm:^6.2.5"
     tar: "npm:^7.4.0"
     three: "npm:0.160.1"
     tmp: "npm:^0.2.3"
@@ -5399,6 +5401,13 @@ __metadata:
   dependencies:
     "@types/node": "npm:*"
   checksum: 10c0/475f787ae2b992a22f3b794ad0920d2b43e0541d126020c1edb25ebd60b736122d1c4db6813aa8fa9ad5cfed49b700a1e6ee5154acabac2ebc2bed7b40c0d667
+  languageName: node
+  linkType: hard
+
+"@types/tabulator-tables@npm:^6.2.3":
+  version: 6.2.3
+  resolution: "@types/tabulator-tables@npm:6.2.3"
+  checksum: 10c0/3b4081ae25796461adff6165027a985cf16bc8ba1a6999eed3f1fdb7c56191f59d44d65a0e9691a7f2b3b56131ce8618a4d9126d21e9d5850fc9a95ee29747cc
   languageName: node
   linkType: hard
 
@@ -14131,6 +14140,13 @@ __metadata:
   dependencies:
     jquery: "npm:>=1.2.6"
   checksum: 10c0/8a5a7dced74d36b27390e331effe7a412b9521563e4c1abe355f3f22b91974df0639d1b6c32a939ee19a3d5f3b3548cbde33dae6a03adeba42dab25d4d450837
+  languageName: node
+  linkType: hard
+
+"tabulator-tables@npm:^6.2.5":
+  version: 6.2.5
+  resolution: "tabulator-tables@npm:6.2.5"
+  checksum: 10c0/c05e766b3c9b510dc0295e99167e837da20683300ec1f520c0f1efd559bd2e6197a7b1659a20ae817faa7bf54513d4f57a972aa0a8dd50d024946d9540c818fd
   languageName: node
   linkType: hard
 
