@@ -3366,7 +3366,7 @@ __metadata:
     tzientist: "npm:^3.2.0"
     unified: "npm:^11.0.5"
     unist-util-visit: "npm:^5.0.0"
-    unzipper: "npm:^0.12.1"
+    unzipper: "npm:^0.12.3"
     uuid: "npm:^10.0.0"
     winston: "npm:^3.13.0"
     xml-formatter: "npm:^3.6.3"
@@ -6132,17 +6132,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"bluebird@npm:^3.5.1":
+"bluebird@npm:^3.5.1, bluebird@npm:~3.7.2":
   version: 3.7.2
   resolution: "bluebird@npm:3.7.2"
   checksum: 10c0/680de03adc54ff925eaa6c7bb9a47a0690e8b5de60f4792604aae8ed618c65e6b63a7893b57ca924beaf53eee69c5af4f8314148c08124c550fe1df1add897d2
-  languageName: node
-  linkType: hard
-
-"bluebird@npm:~3.4.1":
-  version: 3.4.7
-  resolution: "bluebird@npm:3.4.7"
-  checksum: 10c0/ac7e3df09a433b985a0ba61a0be4fc23e3874bf62440ffbca2f275a8498b00c11336f1f633631f38419b2c842515473985f9c4aaa9e4c9b36105535026d94144
   languageName: node
   linkType: hard
 
@@ -14795,16 +14788,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"unzipper@npm:^0.12.1":
-  version: 0.12.1
-  resolution: "unzipper@npm:0.12.1"
+"unzipper@npm:^0.12.3":
+  version: 0.12.3
+  resolution: "unzipper@npm:0.12.3"
   dependencies:
-    bluebird: "npm:~3.4.1"
+    bluebird: "npm:~3.7.2"
     duplexer2: "npm:~0.1.4"
     fs-extra: "npm:^11.2.0"
     graceful-fs: "npm:^4.2.2"
     node-int64: "npm:^0.4.0"
-  checksum: 10c0/227873256eae37bc46de0876502f27b9f7356af6da598933f25f406d04913246bbe629f47b7fddd00c14de00d8f9cdef3dd2b9cf429d88d6ede93f8fbcafa18b
+  checksum: 10c0/4cae2ad23bfd47011d5f8a6d61fb1dc0e4b5008bc3896e6f3d5ab946a64e9482714992a988128bce541440aa646e16e5e5c9bf35e49097edbaf833e7f814d36d
   languageName: node
   linkType: hard
 
