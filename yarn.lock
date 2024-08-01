@@ -2358,7 +2358,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@opentelemetry/instrumentation-express@npm:0.41.0, @opentelemetry/instrumentation-express@npm:^0.41.1":
+"@opentelemetry/instrumentation-express@npm:0.41.0":
   version: 0.41.0
   resolution: "@opentelemetry/instrumentation-express@npm:0.41.0"
   dependencies:
@@ -2368,6 +2368,19 @@ __metadata:
   peerDependencies:
     "@opentelemetry/api": ^1.3.0
   checksum: 10c0/45ac1234f554e1a6ad9554e365d826f0d7b62535d90739367f8db41ccd5e65fe027b84cd1b4310c6acb9293ae93ba91cce4d686a641ef43dd2d6d58f124cebf3
+  languageName: node
+  linkType: hard
+
+"@opentelemetry/instrumentation-express@npm:^0.41.1":
+  version: 0.41.1
+  resolution: "@opentelemetry/instrumentation-express@npm:0.41.1"
+  dependencies:
+    "@opentelemetry/core": "npm:^1.8.0"
+    "@opentelemetry/instrumentation": "npm:^0.52.0"
+    "@opentelemetry/semantic-conventions": "npm:^1.22.0"
+  peerDependencies:
+    "@opentelemetry/api": ^1.3.0
+  checksum: 10c0/0f6c43c78c6e3f8102d80befcf4d658b1175b6b8d0036787c9cc7fd8f27ac0f118c0227402e819ad1d95f596d3cf18c5012a959c82686a5ad8c122d8c3c5913d
   languageName: node
   linkType: hard
 
