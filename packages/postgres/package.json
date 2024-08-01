@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@types/debug": "^4.1.12",
-    "@types/lodash": "^4.17.6",
+    "@types/lodash": "^4.17.7",
     "@types/pg-cursor": "^2.7.2",
     "multipipe": "^4.0.0",
     "pg": "^8.12.0",
