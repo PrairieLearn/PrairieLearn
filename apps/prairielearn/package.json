@@ -100,7 +100,7 @@
     "fast-json-stable-stringify": "^2.1.0",
     "fetch-cookie": "^3.0.1",
     "file-type": "^19.0.0",
-    "filesize": "^10.1.2",
+    "filesize": "^10.1.4",
     "folder-hash": "^4.0.4",
     "fs-extra": "^11.2.0",
     "generic-pool": "^3.9.0",
