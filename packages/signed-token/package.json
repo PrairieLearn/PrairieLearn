@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "base64url": "^3.0.1",
-    "debug": "^4.3.5",
+    "debug": "^4.3.6",
     "lodash": "^4.17.21"
   },
   "devDependencies": {

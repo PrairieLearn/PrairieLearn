@@ -3268,7 +3268,7 @@ __metadata:
     d3: "npm:^7.9.0"
     date-fns: "npm:^3.6.0"
     date-fns-tz: "npm:^3.1.3"
-    debug: "npm:^4.3.5"
+    debug: "npm:^4.3.6"
     delegated-events: "npm:^1.1.2"
     dockerode: "npm:^4.0.2"
     dompurify: "npm:^3.1.6"
@@ -3456,7 +3456,7 @@ __metadata:
     "@types/debug": "npm:^4.1.12"
     "@types/node": "npm:^20.14.9"
     base64url: "npm:^3.0.1"
-    debug: "npm:^4.3.5"
+    debug: "npm:^4.3.6"
     lodash: "npm:^4.17.21"
     typescript: "npm:^5.5.3"
   languageName: unknown
@@ -3493,7 +3493,7 @@ __metadata:
     body-parser: "npm:^1.20.2"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
-    debug: "npm:^4.3.5"
+    debug: "npm:^4.3.6"
     dockerode: "npm:^4.0.2"
     express: "npm:^4.19.2"
     express-async-handler: "npm:^1.2.0"
@@ -7483,6 +7483,18 @@ __metadata:
   dependencies:
     ms: "npm:^2.1.1"
   checksum: 10c0/37d96ae42cbc71c14844d2ae3ba55adf462ec89fd3a999459dec3833944cd999af6007ff29c780f1c61153bcaaf2c842d1e4ce1ec621e4fc4923244942e4a02a
+  languageName: node
+  linkType: hard
+
+"debug@npm:^4.3.6":
+  version: 4.3.6
+  resolution: "debug@npm:4.3.6"
+  dependencies:
+    ms: "npm:2.1.2"
+  peerDependenciesMeta:
+    supports-color:
+      optional: true
+  checksum: 10c0/3293416bff072389c101697d4611c402a6bacd1900ac20c0492f61a9cdd6b3b29750fc7f5e299f8058469ef60ff8fb79b86395a30374fbd2490113c1c7112285
   languageName: node
   linkType: hard
 
