@@ -41,7 +41,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@types/node": "^20.14.9",
+    "@types/node": "^22.0.2",
     "c8": "^10.1.2",
     "chai": "^5.1.1",
     "mocha": "^10.6.0",

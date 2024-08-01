@@ -215,7 +215,7 @@
     "@types/mocha": "^10.0.7",
     "@types/multer": "^1.4.11",
     "@types/mustache": "^4.2.5",
-    "@types/node": "^20.14.9",
+    "@types/node": "^22.0.2",
     "@types/node-fetch": "^2.6.11",
     "@types/node-jose": "^1.1.13",
     "@types/oauth-signature": "^1.5.2",

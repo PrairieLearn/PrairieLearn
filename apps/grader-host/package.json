@@ -39,7 +39,7 @@
     "@types/chai": "^4.3.16",
     "@types/dockerode": "^3.3.29",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^20.14.9",
+    "@types/node": "^22.0.2",
     "@types/sinon": "^17.0.3",
     "@types/tmp": "^0.2.6",
     "c8": "^10.1.2",
