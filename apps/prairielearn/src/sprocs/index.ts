@@ -54,7 +54,6 @@ export async function init() {
       'courses_update_column.sql',
       'course_instances_select_graders.sql',
       'assessment_instances_grade.sql',
-      'assessment_instances_regrade.sql',
       'instance_questions_points_homework.sql',
       'instance_questions_points_exam.sql',
       'instance_questions_points.sql',
