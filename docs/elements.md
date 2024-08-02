@@ -316,14 +316,35 @@ in [the format expected by externally graded questions](externalGrading.md#file-
 ![](elements/pl-file-upload.png)
 
 ```html
-<pl-file-upload file-names="foo.py, bar.c, filename with\, comma.txt"></pl-file-upload>
+<pl-file-upload
+  file-names="foo.py, bar.c, filename with\, comma.txt"
+  optional-file-names="foo.pdf, *.py, file_?.txt, file_[abc].txt, file with \\? as non-wildcard.pdf"
+></pl-file-upload>
 ```
 
 #### Customizations
 
-| Attribute    | Type     | Default | description                                                                                                                                    |
-| ------------ | -------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
-| `file-names` | CSV list | ""      | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes. |
+| Attribute             | Type     | Default | description                                                                                                                                                                                                                                                       |
+| --------------------- | -------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file-names`          | CSV list | ""      | List of files that should and must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.                                                                                                                    |
+| `optional-file-names` | CSV list | ""      | List of files that can be submitted, but are optional. Wildcards are supported (see below). Commas should be escaped with a backslash, reserved wildcard characters in file names should be escaped with double backslashes, and filenames cannot contain quotes. |
+| `allow-blank`         | boolean  | false   | Whether or not an empty file input is allowed. By default, at least one file must be uploaded, even if only `optional-file-names` are specified                                                                                                                   |
+
+#### Supported wildcards
+
+Only `optional-file-names` supports a number of wildcards to allow a range of file names. Note that the use of wildcards enables multiple files to be uploaded for each wildcard pattern, all of which will be included in the submission.
+
+- The `?` placeholder allows a single wildcard character. For example, `solution?.txt` allows
+  files like "solution1.txt", "solution2.txt", and so on, but not "solution10.txt".
+- The `*` placeholder allows an arbitrary number of wildcard characters. For example, `*.txt`
+  allows files like "solution.txt", "my_file.txt", and also ".txt".
+- The `[seq]` placeholder allows a single character from the set of options listed inside the square
+  brackets. For example, `file_[abc].txt` allows "file_a.txt", "file_b.txt" and "file_c.txt", but not
+  "file_x.txt".
+- The `[seq]` placeholder also supports ranges like "a-z" or "0-9". For example, `file_[0-9].txt`
+  allows "file*5.txt", but not "file_x.txt", while `file*[a-z].txt`allows the "file_x.txt" and 
+not "file_5.txt". Ranges can also be combined. For example,`file\_[0-9a-z]` allows any alphanumeric
+  character. |
 
 #### Example implementations
 

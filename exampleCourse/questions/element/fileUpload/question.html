@@ -14,24 +14,11 @@
   <pl-file-upload optional-file-names="solution.txt,solution.doc,solution.pdf"></pl-file-upload>
 
   <p> By setting <code>allow-blank="true"</code> and only listing optional files, submissions without any files
-    can be allowed as well. In addition, <code>optional-file-names</code> supports a number of wildcard patterns 
-    to allow ranges of file names:</p>
-    <ul>
-      <li>The <code>?</code> placeholder allows a single wildcard character. For example, <code>solution?.txt</code> allows 
-        files like "solution1.txt", "solution2.txt", and so on, but not "solution10.txt".</li>
-      <li>The <code>*</code> placeholder allows an arbitrary number of wildcard characters. For example, <code>*.txt</code> 
-        allows files like "solution.txt", "my_file.txt", and also ".txt".</li>
-      <li>The <code>[seq]</code> placeholder allows a single character from the set of options listed inside the square
-        brackets. For example, <code>file_[abc].txt</code> allows "file_a.txt", "file_b.txt" and "file_c.txt", but not 
-        "file_x.txt".</li>
-      <li>The <code>[seq]</code> placeholder also supports ranges like "a-z" or "0-9". For example, <code>file_[0-9].txt
-        </code> allows "file_5.txt", but not "file_x.txt", while <code>file_[a-z].txt</code> allows the "file_x.txt" and 
-        not "file_5.txt". Ranges can also be combined. For example, <code>file_[0-9a-z]</code> allows any alphanumeric 
-        character.</li>
-    </ul>
-  <p> All wildcard patterns are case insensitive (e.g.,  <code>[a-z]</code> also allows uppercase letters). Note that using 
-    wildcard patterns will allow multiple files to be uploaded per pattern, as long as each file name matches a pattern.</p>
-  </p>
+    can be allowed as well. In addition, <code>optional-file-names</code> supports a number of 
+    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-upload-element">wildcard patterns</a>
+    to allow ranges of file names.</p>
+  <p> Note that using wildcard patterns will allow multiple files to be uploaded per pattern, as long as each 
+    file name matches a pattern.</p>
 
   <pl-file-upload allow-blank="true" optional-file-names="solution.???,solution[0-9].pdf,*.py"></pl-file-upload>
 
