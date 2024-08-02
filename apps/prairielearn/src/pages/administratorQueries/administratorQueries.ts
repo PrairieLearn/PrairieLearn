@@ -24,11 +24,11 @@ router.get(
         const filePrefix = f.replace(/\.json$/, '');
         return {
           ...contents,
-          sqlFilename: await import(path.join(queriesDir, `${filePrefix}.js`)).then(
-            () => `${filePrefix}.js`,
-            () => `${filePrefix}.sql`,
+          type: await import(path.join(queriesDir, `${filePrefix}.js`)).then(
+            () => 'Module',
+            () => 'SQL',
           ),
-          link: filePrefix,
+          filePrefix,
         };
       }),
     );

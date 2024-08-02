@@ -22,8 +22,8 @@ export const AdministratorQueryJsonSchema = z.object({
 export type AdministratorQueryJson = z.infer<typeof AdministratorQueryJsonSchema>;
 
 interface AdministratorQuery extends AdministratorQueryJson {
-  sqlFilename: string;
-  link: string;
+  filePrefix: string;
+  type: 'Module' | 'SQL';
 }
 
 export function AdministratorQueries({
@@ -55,10 +55,11 @@ export function AdministratorQueries({
                     (query) => html`
                       <tr>
                         <td>
-                          <a href="${`${resLocals.urlPrefix}/administrator/query/${query.link}`}">
-                            <code>${query.sqlFilename}</code>
+                          <a href="${resLocals.urlPrefix}/administrator/query/${query.filePrefix}">
+                            <code>${query.filePrefix}</code>
                           </a>
                         </td>
+                        <td>${query.type}</td>
                         <td>${query.description}</td>
                       </tr>
                     `,
