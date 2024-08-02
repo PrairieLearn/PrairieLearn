@@ -46,14 +46,22 @@ VALUES
     $lineitem,
     $assessment_id
   )
-ON CONFLICT (lti13_course_instance_id, lineitem_id) DO
+ON CONFLICT (
+  lti13_course_instance_id,
+  lineitem_id,
+  assessment_id
+) DO
 UPDATE
 SET
   lineitem = $lineitem,
   assessment_id = $assessment_id;
 
 -- BLOCK create_lineitems_temp
-CREATE TEMPORARY TABLE new_lineitems (LIKE lti13_lineitems) ON
+CREATE TEMPORARY TABLE new_lineitems (
+  lti13_course_instance_id bigint,
+  lineitem_id text,
+  lineitem jsonb
+) ON
 COMMIT
 DROP;
 
@@ -69,26 +77,6 @@ VALUES
 
 -- BLOCK sync_lti13_lineitems
 WITH
-  adding AS (
-    INSERT INTO
-      lti13_lineitems
-    SELECT
-      *
-    FROM
-      new_lineitems
-    WHERE
-      NOT EXISTS (
-        SELECT
-          1
-        FROM
-          lti13_lineitems
-        WHERE
-          lti13_lineitems.lineitem_id = new_lineitems.lineitem_id
-          AND lti13_lineitems.lti13_course_instance_id = new_lineitems.lti13_course_instance_id
-      )
-    RETURNING
-      *
-  ),
   updating AS (
     UPDATE lti13_lineitems
     SET
@@ -116,12 +104,6 @@ WITH
       *
   )
 SELECT
-  (
-    SELECT
-      count(*)
-    FROM
-      adding
-  ) AS added,
   (
     SELECT
       count(*)

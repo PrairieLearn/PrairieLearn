@@ -323,8 +323,6 @@ export async function sync_lineitems(instance: any, job: ServerJob) {
 
   const data = await get_lineitems(instance);
 
-  // TODO: Don't add them if they're not already present
-
   await runInTransactionAsync(async () => {
     await queryAsync(sql.create_lineitems_temp, {});
 
@@ -344,20 +342,19 @@ export async function sync_lineitems(instance: any, job: ServerJob) {
         lti13_course_instance_id: instance.lti13_course_instance.id,
       },
       z.object({
-        added: z.string(),
         updated: z.string(),
         deleted: z.string(),
       }),
     );
 
     job.info(
-      `\nSummary of PrairieLearn changes: ${output.added} added, ${output.updated} updated, ${output.deleted} deleted.`,
+      `\nSummary of PrairieLearn changes: ${output.updated} updated, ${output.deleted} deleted.`,
     );
     job.info('Done.');
   });
 }
 
-export async function create_lineitem(
+export async function create_and_link_lineitem(
   instance: any,
   job: ServerJob,
   assessment: {
@@ -399,29 +396,8 @@ export async function create_lineitem(
 
   job.info('Associating PrairieLearn assessment with the new assignment');
 
-  await queryAsync(sql.update_lineitem_with_assessment, {
-    lti13_course_instance_id: instance.lti13_course_instance.id,
-    lineitem_id: item.id,
-    lineitem: JSON.stringify(item),
-    assessment_id: assessment.id,
-  });
-
+  await link_assessment(instance.lti13_course_instance.id, assessment.id, item);
   job.info('Done.');
-}
-
-/*
-export async function disassociate_lineitem(instance: any, lineitem_id: string) {
-  await queryAsync(sql.disassociate_lineitem, {
-    lti13_course_instance_id: instance.lti13_course_instance.id,
-    lineitem_id,
-  });
-}
-*/
-export async function unlink_assessment(lti13_course_instance_id: string, assessment_id: string) {
-  await queryAsync(sql.delete_lineitem_by_assessment_id, {
-    lti13_course_instance_id,
-    assessment_id,
-  });
 }
 
 export async function query_and_link_lineitem(
@@ -432,10 +408,32 @@ export async function query_and_link_lineitem(
   const lineitems = await get_lineitems(instance);
   const item = lineitems.find(({ id }) => id === lineitem_id);
 
+  if (item) {
+    await link_assessment(instance.lti13_course_instance.id, assessment_id, item);
+  } else {
+    throw new HttpStatusError(400, 'Lineitem not found');
+  }
+}
+
+export async function unlink_assessment(
+  lti13_course_instance_id: string,
+  assessment_id: string | number,
+) {
+  await queryAsync(sql.delete_lineitem_by_assessment_id, {
+    lti13_course_instance_id,
+    assessment_id,
+  });
+}
+
+export async function link_assessment(
+  lti13_course_instance_id: string,
+  assessment_id: string | number,
+  lineitem: Lti13LineitemType,
+) {
   await queryAsync(sql.update_lineitem_with_assessment, {
-    lti13_course_instance_id: instance.lti13_course_instance.id,
-    lineitem_id: item?.id,
-    lineitem: JSON.stringify(item),
+    lti13_course_instance_id,
+    lineitem_id: lineitem.id,
+    lineitem: JSON.stringify(lineitem),
     assessment_id,
   });
 }

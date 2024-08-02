@@ -16,10 +16,10 @@ import { getCanonicalHost } from '../../../lib/url.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
   sync_lineitems,
-  create_lineitem,
   get_lineitems,
   unlink_assessment,
   query_and_link_lineitem,
+  create_and_link_lineitem,
 } from '../../lib/lti13.js';
 
 import {
@@ -151,39 +151,15 @@ router.post(
         `/pl/course_instance/${res.locals.course_instance.id}/instructor/instance_admin/assessments`,
       );
     } else if (req.body.__action === 'poll_lti13_assessments') {
-      serverJobOptions.description = 'Synchronize external assignments from LMS';
+      serverJobOptions.description = 'Synchronize external assignment metadata from LMS';
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
         await sync_lineitems(instance, job);
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
-    } else if (req.body.__action === 'create_lineitem') {
-      serverJobOptions.description = 'create lineitem from PL assessment';
-      const serverJob = await createServerJob(serverJobOptions);
-
-      serverJob.executeInBackground(async (job) => {
-        const assessment = await queryRow(
-          sql.select_assessment,
-          {
-            assessment_id: req.body.assessment_id,
-            course_instance_id: instance.lti13_course_instance.course_instance_id,
-          },
-          AssessmentSchema.extend({
-            label: z.string(),
-          }),
-        );
-
-        const assessment_metadata = {
-          label: `${assessment.label}: ${assessment.title}`,
-          id: assessment.id,
-          url: `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
-        };
-
-        await create_lineitem(instance, job, assessment_metadata);
-      });
-      return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else if (req.body.__action === 'unlink_assessment') {
+      // validate assessment_id off of course_instance here?
       await unlink_assessment(instance.lti13_course_instance.id, req.body.assessment_id);
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'create_link_assessment') {
@@ -208,7 +184,7 @@ router.post(
           url: `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
         };
 
-        await create_lineitem(instance, job, assessment_metadata);
+        await create_and_link_lineitem(instance, job, assessment_metadata);
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else if (req.body.__action === 'link_assessment') {

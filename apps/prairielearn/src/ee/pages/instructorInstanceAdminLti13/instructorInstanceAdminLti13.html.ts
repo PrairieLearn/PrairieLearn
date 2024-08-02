@@ -174,6 +174,14 @@ export function InstructorInstanceAdminLti13({
                                       >
                                         Create a new assignment named ${row.label}: ${row.title}
                                       </button>
+                                    </form>
+                                    <form method="POST">
+                                      <input
+                                        type="hidden"
+                                        name="__csrf_token"
+                                        value="${resLocals.__csrf_token}"
+                                      />
+                                      <input type="hidden" name="assessment_id" value="${row.id}" />
                                       <button
                                         class="btn btn-info"
                                         hx-get="?lineitems"
@@ -312,6 +320,7 @@ export function LineitemsInputs(lineitems: Lti13LineitemType[]) {
               type="radio"
               name="lineitem_id"
               value="${lineitem.id}"
+              required
             />
             ${lineitem.label}
           </label>
