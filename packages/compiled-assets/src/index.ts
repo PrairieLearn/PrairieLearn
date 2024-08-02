@@ -62,7 +62,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
 
     esbuildContext = await esbuild.context({
       entryPoints: sourcePaths,
-      target: 'es6',
+      target: 'es2017',
       format: 'iife',
       sourcemap: 'inline',
       bundle: true,
@@ -196,7 +196,7 @@ async function buildAssets(sourceDirectory: string, buildDirectory: string) {
   const files = await globby(path.join(sourceDirectory, '*/*.{js,jsx,ts,tsx,css}'));
   const buildResult = await esbuild.build({
     entryPoints: files,
-    target: 'es6',
+    target: 'es2017',
     format: 'iife',
     sourcemap: 'linked',
     bundle: true,
