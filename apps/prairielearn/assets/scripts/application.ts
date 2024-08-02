@@ -323,6 +323,7 @@ onDocumentReady(() => {
       // set of classes to support hover/focus styles.
       if (el.tagName === 'A' || el.tagName === 'BUTTON') {
         el.classList.add('btn', `btn-${color}`);
+        // TODO: log something useful to the console.
       } else {
         el.classList.add(`text-bg-${color}`);
         console.warn('Bootstrap 5 replaced .badge-* with .text-bg-*. Please update your HTML.', el);
