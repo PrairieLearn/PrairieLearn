@@ -32,21 +32,21 @@ def get_file_names_as_array(raw_file_names: str) -> list[str]:
 # Split optional file names into two categories: wildcard patterns and plain file names
 # For the wildcards, convert into regular expressions and return a two-item list with both the regex and a plain display version
 # For the plain names, remove escapes for displaying and return in a separate list
-def extract_patterns(optional_file: str) -> tuple[list[list[str]], list[str]]:
+def extract_patterns(optional_files: list[str]) -> tuple[list[list[str]], list[str]]:
     # Try converting all file names to regexes; if no wildcard is present, glob_to_regex returns an empty string
-    optional_file_regex_raw = [glob_to_regex(x) for x in optional_file]
+    optional_file_regex_raw = [glob_to_regex(x) for x in optional_files]
 
     # Collect and remove escapes from where the regular expression is empty, so that these cases can be handled by string comparison
     optional_file_plain = [
         name.replace("\\", "")
-        for regex, name in zip(optional_file_regex_raw, optional_file)
+        for regex, name in zip(optional_file_regex_raw, optional_files)
         if not regex
     ]
 
     # Collect that actual regular expressions and add the plain name for displaying
     optional_file_regex = [
         [regex, name]
-        for regex, name in zip(optional_file_regex_raw, optional_file)
+        for regex, name in zip(optional_file_regex_raw, optional_files)
         if regex
     ]
     return optional_file_regex, optional_file_plain
