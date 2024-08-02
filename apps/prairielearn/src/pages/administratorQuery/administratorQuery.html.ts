@@ -203,7 +203,7 @@ export function AdministratorQuery({
                           (row: any) => html`
                             <tr>
                               ${query_run.result?.columns?.map((col: string) =>
-                                renderCell(row, col, info),
+                                renderCell(row, col, query_run.result?.columns, info),
                               )}
                             </tr>
                           `,
@@ -277,44 +277,47 @@ export function AdministratorQuery({
   `.toString();
 }
 
-function renderHeader(columns: string[], col: string) {
-  if (col === 'course_id' && 'course' in columns) {
-    return '';
-  } else if (col === 'course_instance_id' && 'course_instance' in columns) {
-    return '';
-  } else if (
-    col === 'assessment_id' &&
-    'assessment' in columns &&
-    'course_instance_id' in columns
-  ) {
-    return '';
-  } else if (/^_sortval_/.test(col)) {
-    return '';
+function renderColumn(columns: string[], col: string) {
+  if (col === 'course_id' && columns.includes('course')) {
+    return false;
   }
+  if (col === 'course_instance_id' && columns.includes('course_instance')) {
+    return false;
+  }
+  if (
+    col === 'assessment_id' &&
+    columns.includes('assessment') &&
+    columns.includes('course_instance_id')
+  ) {
+    return false;
+  }
+  if (/^_sortval_/.test(col)) {
+    return false;
+  }
+  return true;
+}
+
+function renderHeader(columns: string[], col: string) {
+  if (!renderColumn(columns, col)) return '';
   return html`<th>${col}</th>`;
 }
 
-function renderCell(row: any, col: string, info: AdministratorQuery) {
+function renderCell(row: any, col: string, columns: string[], info: AdministratorQuery) {
+  if (!renderColumn(columns, col)) return '';
   const tdAttributes = `_sortval_${col}` in row ? html`data-text="${row[`_sortval_${col}`]}"` : '';
 
-  if (col === 'course_id' && 'course' in row) {
-    return null;
-  } else if (col === 'course' && 'course_id' in row) {
+  if (col === 'course' && 'course_id' in row) {
     return html`
       <td ${tdAttributes}>
         <a href="${config.urlPrefix}/course/${row['course_id']}">${row[col]}</a>
       </td>
     `;
-  } else if (col === 'course_instance_id' && 'course_instance' in row) {
-    null;
   } else if (col === 'course_instance' && 'course_instance_id' in row) {
     return html`
       <td ${tdAttributes}>
         <a href="${config.urlPrefix}/course_instance/${row['course_instance_id']}">${row[col]}</a>
       </td>
     `;
-  } else if (col === 'assessment_id' && 'assessment' in row && 'course_instance_id' in row) {
-    return null;
   } else if (col === 'assessment' && 'assessment_id' in row && 'course_instance_id' in row) {
     return html`
       <td ${tdAttributes}>
@@ -327,9 +330,9 @@ function renderCell(row: any, col: string, info: AdministratorQuery) {
         </a>
       </td>
     `;
-  } else if (/^_sortval_/.test(col)) {
-    return null;
-  } else if (row[col] == null) {
+  }
+
+  if (row[col] == null) {
     return html`<td ${tdAttributes}></td>`;
   }
 
