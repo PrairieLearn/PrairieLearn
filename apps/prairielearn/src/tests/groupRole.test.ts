@@ -12,6 +12,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../lib/config.js';
 import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -229,9 +230,8 @@ describe('Test group based assessments with custom group roles from student side
   });
 
   step('can insert/get 5 users into/from the DB', async function () {
-    const result = await sqldb.queryAsync(sql.generate_and_enroll_5_users, []);
-    assert.lengthOf(result.rows, 5);
-    locals.studentUsers = result.rows;
+    locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
+    assert.lengthOf(locals.studentUsers, 5);
   });
 
   step('can create a group as first user', async function () {

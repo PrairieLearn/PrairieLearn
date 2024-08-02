@@ -21,6 +21,7 @@
     "@aws-sdk/client-sqs": "^3.621.0",
     "@aws-sdk/credential-providers": "^3.621.0",
     "@aws-sdk/lib-storage": "^3.621.0",
+    "@faker-js/faker": "^8.4.1",
     "@fortawesome/fontawesome-free": "^6.6.0",
     "@node-saml/passport-saml": "^5.0.0",
     "@octokit/rest": "^21.0.1",

@@ -1,27 +1,42 @@
-import { z } from 'zod';
-
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
-
-import { CourseInstanceSchema, CourseSchema, UserSchema } from '../lib/db-types.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectCourseById } from '../models/course.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import type { AdministratorQueryResult } from './index.types.js';
 
-const EnrolledUserSchema = z.object({
-  user_id: UserSchema.shape.user_id,
-  uid: UserSchema.shape.uid,
-  name: UserSchema.shape.name,
-  course_id: CourseSchema.shape.id,
-  course: CourseSchema.shape.short_name,
-  course_instance_id: CourseInstanceSchema.shape.id,
-  course_instance: CourseInstanceSchema.shape.short_name,
-});
+const columns = [
+  'user_id',
+  'uid',
+  'name',
+  'course_id',
+  'course',
+  'course_instance_id',
+  'course_instance',
+];
 
-const sql = loadSqlEquiv(import.meta.url);
-
-export default async function (params: {
+export default async function ({
+  count,
+  course_instance_id,
+}: {
   count: string;
   course_instance_id: string;
 }): Promise<AdministratorQueryResult> {
-  const rows = await queryRows(sql.generate_and_enroll_users, params, EnrolledUserSchema);
-  return { rows, columns: Object.keys(EnrolledUserSchema.shape) };
+  const course_instance = await selectCourseInstanceById(course_instance_id);
+  if (!course_instance) {
+    return { rows: [], columns };
+  }
+  const course = await selectCourseById(course_instance.course_id);
+  const users = await generateAndEnrollUsers({ count: Number(count), course_instance_id });
+  return {
+    rows: users.map(({ user_id, uid, name }) => ({
+      user_id,
+      uid,
+      name,
+      course_id: course.id,
+      course: course.short_name,
+      course_instance_id,
+      course_instance: course_instance.short_name,
+    })),
+    columns,
+  };
 }
