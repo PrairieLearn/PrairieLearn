@@ -19,9 +19,9 @@ export const AdministratorQueryJsonSchema = z.object({
   comment: z.string().optional(),
   params: z.array(AdministratorQueryJsonParamsSchema).optional(),
 });
-export type AdministratorQueryJson = z.infer<typeof AdministratorQueryJsonSchema>;
+type AdministratorQueryJson = z.infer<typeof AdministratorQueryJsonSchema>;
 
-interface AdministratorQuery extends AdministratorQueryJson {
+export interface AdministratorQuery extends AdministratorQueryJson {
   filePrefix: string;
   type: 'Module' | 'SQL';
 }
