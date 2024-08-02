@@ -445,7 +445,7 @@ export async function startTestQuestion(
     printStats('Parse/grade:     ', 'gradeDuration');
 
     if (!success) {
-      throw new Error('Some tests failed. See the "Errors" page for details.');
+      throw new Error('Some tests failed. See the "Issues" page for details.');
     }
   });
 
