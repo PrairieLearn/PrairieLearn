@@ -114,19 +114,20 @@ router.post(
       queryParams[p.name] = req.body[p.name];
     });
 
-    let querySql = '';
+    let sqlOrModuleInfo = '';
     let error: string | null = null;
     let result: AdministratorQueryResult | null = null;
     try {
       result = await import(path.join(queriesDir, jsFilename)).then(
         async (module) => {
-          // TODO Decide what is saved in the `sql` column of the `query_runs` table
+          sqlOrModuleInfo = module.default.toString();
           return (await module.default(queryParams)) as AdministratorQueryResult;
         },
-        async (err) => {
-          console.log(err);
-          querySql = await fs.readFile(path.join(queriesDir, sqlFilename), { encoding: 'utf8' });
-          const queryResult = await sqldb.queryAsync(querySql, queryParams);
+        async () => {
+          sqlOrModuleInfo = await fs.readFile(path.join(queriesDir, sqlFilename), {
+            encoding: 'utf8',
+          });
+          const queryResult = await sqldb.queryAsync(sqlOrModuleInfo, queryParams);
           return {
             columns: queryResult.fields.map((f) => f.name),
             rows: queryResult.rows,
@@ -141,7 +142,7 @@ router.post(
       sql.insert_query_run,
       {
         name: req.params.query,
-        sql: querySql,
+        sql: sqlOrModuleInfo,
         params: queryParams,
         authn_user_id: res.locals.authn_user.user_id,
         error,
