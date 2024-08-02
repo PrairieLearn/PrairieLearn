@@ -1136,9 +1136,8 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     locals.contributor = contributor;
 
     // Insert/get 5 users into/from the DB
-    const enrolledUsersResult = await sqldb.queryAsync(sql.generate_and_enroll_5_users, []);
-    assert.lengthOf(enrolledUsersResult.rows, 5);
-    locals.studentUsers = enrolledUsersResult.rows;
+    locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
+    assert.lengthOf(locals.studentUsers, 5);
 
     // Switch current user to the group creator and load assessment
     await switchUserAndLoadAssessment(locals.studentUsers[0], assessmentUrl, '00000001', 2);
@@ -1647,9 +1646,8 @@ describe('Test group role reassignment logic when user leaves', function () {
   });
 
   step('should insert/get 5 users into/from the DB', async function () {
-    const result = await sqldb.queryAsync(sql.generate_and_enroll_5_users, []);
-    assert.lengthOf(result.rows, 5);
-    locals.studentUsers = result.rows;
+    locals.studentUsers = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
+    assert.lengthOf(locals.studentUsers, 5);
   });
 
   step('should setup group info', async function () {
