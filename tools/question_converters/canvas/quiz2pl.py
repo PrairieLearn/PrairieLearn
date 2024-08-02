@@ -1,14 +1,16 @@
-#!/usr/bin/python3
+#!/usr/bin/env python3
 
-import os, sys
-import re
-from os import path
-import json
 import argparse
-from collections import OrderedDict
+import json
+import os
+import re
+import sys
 import uuid
+from collections import OrderedDict
+from os import path
 
 import canvas
+
 
 def file_name_only(name):
     return re.sub('[\W_]+', '', name)
@@ -222,12 +224,12 @@ for question in questions.values():
                 blanks[answer['blank_id']].append(answer)
             question_text = question['question_text']
             for blank, answers in blanks.items():
-                dropdown = f'<pl-dropdown answers-name="{blank}">\n'
+                dropdown = f'<pl-multiple-choice display="dropdown" hide-letter-keys="true" answers-name="{blank}">\n'
                 for answer in answers:
                     dropdown += '  <pl-answer'
                     if answer['weight'] > 0: dropdown += ' correct="true"'
                     dropdown += f'>{answer["text"]}</pl-answer>\n'
-                dropdown += '</pl-dropdown>'
+                dropdown += '</pl-multiple-choice>'
                 question_text = question_text.replace(f'[{blank}]', dropdown)
             template.write(question_text + '\n')
 

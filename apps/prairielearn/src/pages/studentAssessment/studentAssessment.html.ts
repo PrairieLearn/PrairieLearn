@@ -2,17 +2,29 @@ import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Assessment, GroupConfig, User } from '../../lib/db-types.js';
+import { GroupInfo } from '../../lib/groups.js';
 
-export function StudentAssessment({ resLocals }: { resLocals: Record<string, any> }) {
+export function StudentAssessment({
+  resLocals,
+  groupConfig,
+  groupInfo,
+  userCanAssignRoles,
+}: {
+  resLocals: Record<string, any>;
+  groupConfig?: GroupConfig;
+  groupInfo?: GroupInfo | null;
+  userCanAssignRoles?: boolean;
+}) {
   const { assessment_set, assessment, course, authz_result, user, __csrf_token } = resLocals;
 
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('studentAssessmentClient.js')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('studentAssessmentClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -53,7 +65,7 @@ export function StudentAssessment({ resLocals }: { resLocals: Record<string, any
                   `
                 : ''}
               ${assessment.group_work
-                ? StudentGroupControls({ resLocals })
+                ? StudentGroupControls({ groupConfig, groupInfo, userCanAssignRoles, resLocals })
                 : StartAssessmentForm({ assessment, user, __csrf_token, startAllowed: true })}
             </div>
           </div>
@@ -126,25 +138,37 @@ function HonorPledge({ user, groupWork }: { user: User; groupWork: boolean }) {
   `;
 }
 
-function StudentGroupControls({ resLocals }: { resLocals: Record<string, any> }) {
-  const { groupSize, groupConfig, startAllowed, user, __csrf_token, notInGroup, assessment } =
-    resLocals;
-  if (notInGroup) {
+function StudentGroupControls({
+  groupConfig,
+  groupInfo,
+  userCanAssignRoles = false,
+  resLocals,
+}: {
+  resLocals: Record<string, any>;
+  groupConfig?: GroupConfig;
+  groupInfo?: GroupInfo | null;
+  userCanAssignRoles?: boolean;
+}) {
+  if (groupConfig == null) return '';
+
+  const { user, __csrf_token, assessment } = resLocals;
+  if (groupInfo == null) {
     return GroupCreationJoinForm({ groupConfig, __csrf_token });
   }
 
   return html`
-    ${renderEjs(
-      import.meta.url,
-      "<%- include('../partials/groupWorkInfoContainer.ejs'); %>",
-      resLocals,
-    )}
-    ${StartAssessmentForm({ assessment, user, __csrf_token, startAllowed })}
-    ${groupConfig.minimum - groupSize > 0
+    ${GroupWorkInfoContainer({
+      groupConfig,
+      groupInfo,
+      userCanAssignRoles,
+      csrfToken: __csrf_token,
+    })}
+    ${StartAssessmentForm({ assessment, user, __csrf_token, startAllowed: groupInfo.start })}
+    ${groupConfig.minimum != null && groupConfig.minimum - groupInfo.groupSize > 0
       ? html`
           <p class="text-center">
             * Minimum group size is ${groupConfig.minimum}. You need at least
-            ${groupConfig.minimum - groupSize} more group member(s) to start.
+            ${groupConfig.minimum - groupInfo.groupSize} more group member(s) to start.
           </p>
         `
       : ''}

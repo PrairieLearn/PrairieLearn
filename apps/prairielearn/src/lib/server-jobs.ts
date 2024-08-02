@@ -12,7 +12,8 @@ import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-toke
 
 import { chalk, chalkDim } from './chalk.js';
 import { config } from './config.js';
-import { IdSchema, Job, JobSchema, JobSequenceSchema, UserSchema } from './db-types.js';
+import { IdSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
+import { type JobSequenceWithTokens, JobSequenceWithJobsSchema } from './server-jobs.types.js';
 import * as socketServer from './socket-server.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -33,40 +34,28 @@ interface ServerJobExecOptions {
   env?: NodeJS.ProcessEnv;
 }
 
+export interface ServerJobResult {
+  data: Record<string, any>;
+}
+
 export interface ServerJob {
   fail(msg: string): never;
   error(msg: string): void;
   warn(msg: string): void;
   info(msg: string): void;
   verbose(msg: string): void;
-  exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<void>;
+  exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<ServerJobResult>;
   data: Record<string, unknown>;
 }
 
 export interface ServerJobExecutor {
   jobSequenceId: string;
-  execute(fn: ServerJobExecutionFunction): Promise<void>;
-  executeUnsafe(fn: ServerJobExecutionFunction): Promise<void>;
+  execute(fn: ServerJobExecutionFunction): Promise<ServerJobResult>;
+  executeUnsafe(fn: ServerJobExecutionFunction): Promise<ServerJobResult>;
   executeInBackground(fn: ServerJobExecutionFunction): void;
 }
 
 export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
-
-const JobSequenceWithJobsSchema = JobSequenceSchema.extend({
-  start_date_formatted: z.string().nullable(),
-  finish_date_formatted: z.string().nullable(),
-  user_uid: UserSchema.shape.uid.nullable(),
-  authn_user_uid: UserSchema.shape.uid.nullable(),
-  job_count: z.coerce.number(),
-  jobs: z.array(
-    JobSchema.extend({
-      start_date_formatted: z.string().nullable(),
-      finish_date_formatted: z.string().nullable(),
-      user_uid: UserSchema.shape.uid.nullable(),
-      authn_user_uid: UserSchema.shape.uid.nullable(),
-    }),
-  ),
-});
 
 /**
  * Store currently active job information in memory. This is used
@@ -123,7 +112,11 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     this.addToOutput(chalkDim(msg) + '\n');
   }
 
-  async exec(file: string, args: string[] = [], options: ServerJobExecOptions): Promise<void> {
+  async exec(
+    file: string,
+    args: string[] = [],
+    options: ServerJobExecOptions,
+  ): Promise<ServerJobResult> {
     this.addToOutput(chalk.blueBright(`Command: ${file} ${args.join(' ')}\n`));
     this.addToOutput(chalk.blueBright(`Working directory: ${options.cwd}\n`));
 
@@ -152,15 +145,18 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       const duration = (performance.now() - start).toFixed(2);
       this.addToOutput(chalkDim(`Command completed in ${duration}ms`) + '\n\n');
     }
+
+    return { data: this.data };
   }
 
   /**
    * Runs the job sequence and returns a Promise that resolves when the job
    * sequence has completed, even if an error is encountered.
    */
-  async execute(fn: ServerJobExecutionFunction): Promise<void> {
+  async execute(fn: ServerJobExecutionFunction): Promise<ServerJobResult> {
     this.checkAndMarkStarted();
     await this.executeInternal(fn, false);
+    return { data: this.data };
   }
 
   /**
@@ -168,9 +164,10 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
    * sequence has completed. The returned promise will reject if the job
    * sequence fails.
    */
-  async executeUnsafe(fn: ServerJobExecutionFunction): Promise<void> {
+  async executeUnsafe(fn: ServerJobExecutionFunction): Promise<ServerJobResult> {
     this.checkAndMarkStarted();
     await this.executeInternal(fn, true);
+    return { data: this.data };
   }
 
   /**
@@ -455,7 +452,10 @@ export async function errorAbandonedJobs() {
   });
 }
 
-export async function getJobSequence(job_sequence_id: string, course_id: string | null) {
+export async function getJobSequence(
+  job_sequence_id: string,
+  course_id: string | null,
+): Promise<JobSequenceWithTokens> {
   const jobSequence = await queryRow(
     sql.select_job_sequence_with_course_id_as_json,
     { job_sequence_id, course_id },
@@ -472,25 +472,5 @@ export async function getJobSequence(job_sequence_id: string, course_id: string 
       const jobTokenData = { jobId: job.id.toString() };
       return { ...job, token: generateSignedToken(jobTokenData, config.secretKey) };
     }),
-  };
-}
-
-/**
- * Resolves with a job sequence, where each job's output has been turned into
- * markup with `ansi_up`.
- */
-export async function getJobSequenceWithFormattedOutput(
-  job_sequence_id: string,
-  course_id: string | null,
-) {
-  const jobSequence = await getJobSequence(job_sequence_id, course_id);
-  const ansiup = new AnsiUp();
-  return {
-    ...jobSequence,
-    jobs: jobSequence.jobs.map((job) => ({
-      ...job,
-      output_raw: job.output,
-      output: job.output ? ansiup.ansi_to_html(job.output) : '',
-    })),
   };
 }

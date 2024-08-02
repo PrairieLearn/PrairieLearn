@@ -3,7 +3,11 @@ import { z } from 'zod';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../../components/HeadContents.html.js';
+import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.html.js';
+import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.html.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
+import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { GradingJobSchema, User } from '../../../lib/db-types.js';
 
@@ -30,11 +34,13 @@ export function InstanceQuestion({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../partials/head') %>", {
-          ...resLocals,
+        ${HeadContents({
+          resLocals: {
+            ...resLocals,
+            // instance_question_info is reset to keep the default title from showing the student question number
+            instance_question_info: undefined,
+          },
           pageNote: `Instance - question ${resLocals.instance_question_info.instructor_question_number}`,
-          // instance_question_info is reset to keep the default title from showing the student question number
-          instance_question_info: undefined,
         })}
         ${compiledScriptTag('question.ts')}
         <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
@@ -57,11 +63,12 @@ export function InstanceQuestion({
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
         <div class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../../partials/questionSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${QuestionSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            question: resLocals.question,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
         </div>
         ${RubricSettingsModal({ resLocals })}
         <main id="content" class="container-fluid">
@@ -90,19 +97,34 @@ export function InstanceQuestion({
               </div>
 
               ${resLocals.file_list.length > 0
-                ? renderEjs(import.meta.url, "<%- include('../../partials/attachFilePanel') %>", {
-                    ...resLocals,
-                    question_context: 'manual_grading',
+                ? PersonalNotesPanel({
+                    fileList: resLocals.file_list,
+                    context: 'question',
+                    courseInstanceId: resLocals.course_instance.id,
+                    assessment_instance: resLocals.assessment_instance,
+                    authz_result: resLocals.authz_result,
+                    variantId: resLocals.variant.id,
+                    csrfToken: resLocals.__csrf_token,
+                    allowNewUploads: false,
                   })
                 : ''}
-              ${renderEjs(
-                import.meta.url,
-                "<%- include('../../partials/instructorInfoPanel'); %>",
-                {
-                  ...resLocals,
-                  question_context: 'manual_grading',
-                },
-              )}
+              ${InstructorInfoPanel({
+                course: resLocals.course,
+                course_instance: resLocals.course_instance,
+                assessment: resLocals.assessment,
+                assessment_instance: resLocals.assessment_instance,
+                instance_question: resLocals.instance_question,
+                question: resLocals.question,
+                variant: resLocals.variant,
+                user: resLocals.user,
+                instance_group: resLocals.instance_group,
+                instance_group_uid_list: resLocals.instance_group_uid_list,
+                instance_user: resLocals.instance_user,
+                authz_data: resLocals.authz_data,
+                question_is_shared: resLocals.question_is_shared,
+                questionContext: 'manual_grading',
+                csrfToken: resLocals.__csrf_token,
+              })}
             </div>
           </div>
         </main>

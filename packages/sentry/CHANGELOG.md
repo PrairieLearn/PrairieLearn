@@ -1,5 +1,17 @@
 # @prairielearn/sentry
 
+## 2.0.4
+
+### Patch Changes
+
+- 68653a6: Handle errors inside request event processor
+
+## 2.0.3
+
+### Patch Changes
+
+- 24a93b8: Upgrade all JavaScript dependencies
+
 ## 2.0.2
 
 ### Patch Changes

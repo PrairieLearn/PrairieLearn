@@ -64,13 +64,13 @@ export function checkPasswordOrRedirect(req: Request, res: Response): boolean {
     return true;
   }
 
-  if (req.cookies.pl_assessmentpw == null) {
+  if (req.cookies.pl2_assessmentpw == null) {
     // The user has not entered a password yet.
     badPassword(req, res);
     return false;
   }
 
-  const pwData = getCheckedSignedTokenData(req.cookies.pl_assessmentpw, config.secretKey, {
+  const pwData = getCheckedSignedTokenData(req.cookies.pl2_assessmentpw, config.secretKey, {
     maxAge: 24 * 60 * 60 * 1000,
   });
   if (pwData == null || pwData.password !== res.locals.authz_result.password) {
