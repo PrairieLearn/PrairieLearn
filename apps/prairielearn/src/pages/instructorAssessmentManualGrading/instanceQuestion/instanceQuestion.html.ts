@@ -42,6 +42,51 @@ export function InstanceQuestion({
           },
           pageNote: `Instance - question ${resLocals.instance_question_info.instructor_question_number}`,
         })}
+        <!-- This should become obsolete in Bootstrap 5 -->
+        <style>
+          .bs-canvas-overlay {
+            opacity: 0.85;
+            z-index: 1100;
+          }
+
+          .bs-canvas {
+            top: 0;
+            z-index: 1110;
+            overflow-x: hidden;
+            overflow-y: auto;
+            width: 33%;
+            transition: margin 0.4s ease-out;
+            -webkit-transition: margin 0.4s ease-out;
+            -moz-transition: margin 0.4s ease-out;
+            -ms-transition: margin 0.4s ease-out;
+          }
+
+          .bs-canvas-right {
+            right: 0;
+            margin-right: -33%;
+          }
+        </style>
+        <script>
+          var toggle = false;
+          jQuery(document).ready(function ($) {
+            $(document).on('click', '.js-toggle-overlay', function () {
+              if (toggle) {
+                $('.canvas-overlay').addClass('card mb-4');
+                $('.canvas-overlay').removeClass(
+                  'bs-canvas bs-canvas-right position-fixed border-left bg-light h-100 mr-0',
+                );
+              } else {
+                $('.canvas-overlay').removeClass('card mb-4');
+                $('.canvas-overlay').addClass(
+                  'bs-canvas bs-canvas-right position-fixed border-left bg-light h-100 mr-0',
+                );
+              }
+              toggle = !toggle;
+
+              return false;
+            });
+          });
+        </script>
         ${compiledScriptTag('question.ts')}
         <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
         <script>
@@ -89,8 +134,13 @@ export function InstanceQuestion({
             </div>
 
             <div class="col-lg-4 col-12">
-              <div class="card mb-4 border-info">
-                <div class="card-header bg-info text-white">Grading</div>
+              <div class="card mb-4 border-info canvas-overlay">
+                <div class="card-header bg-info text-white">
+                  Grading
+                  <button type="button" class="btn ml-5 btn-light js-toggle-overlay">
+                    Toggle Overlay
+                  </button>
+                </div>
                 <div class="js-main-grading-panel">
                   ${GradingPanel({ resLocals, context: 'main', graders })}
                 </div>
