@@ -158,7 +158,7 @@ export function AdministratorQuery({
                     ${query_run?.result != null
                       ? html`
                           <div class="ml-auto">
-                            <span class="mr-2 test-suite-row-count">
+                            <span class="mr-2" data-test-id="row-count">
                               ${query_run.result.rows?.length ?? 0}
                               ${query_run.result.rows?.length === 1 ? 'row' : 'rows'}
                             </span>
@@ -186,7 +186,10 @@ export function AdministratorQuery({
             ${query_run?.result != null
               ? html`
                   <div class="table-responsive">
-                    <table class="table table-sm table-hover table-striped tablesorter">
+                    <table
+                      class="table table-sm table-hover table-striped tablesorter"
+                      data-test-id="results-table"
+                    >
                       <thead>
                         <tr>
                           ${query_run.result.columns?.map((col: string) =>
