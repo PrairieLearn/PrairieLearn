@@ -7,7 +7,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { JobSchema } from '../../../lib/db-types.js';
 
-import { AiGenerateJobReviewpage } from './instructorAiGenerateJobReview.html.js';
+import { AiGenerateJobReviewpage } from './instructorAiGenerateJobs.html.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);

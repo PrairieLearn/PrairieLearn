@@ -4,14 +4,13 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Job } from '../../../lib/db-types.js';
 
-export function AiGenerateJobDetailsPage({
+export function AiGenerateJobPage({
   resLocals,
   job,
 }: {
   resLocals: Record<string, any>;
   job: Job;
 }) {
-  console.log(job.data);
   return html` <!doctype html>
     <html lang="en">
       <head>

@@ -11,7 +11,7 @@ export function AiGenerateJobReviewpage({
   jobs,
 }: {
   resLocals: Record<string, any>;
-  jobs: (Job & { email?: string })[];
+  jobs: (Job & { email?: string | null })[];
 }) {
   return html` <!doctype html>
     <html lang="en">
