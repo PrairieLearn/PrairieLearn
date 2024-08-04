@@ -1,21 +1,20 @@
-// @ts-check
 import * as path from 'path';
 
 import * as async from 'async';
-import * as express from 'express';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 
 import { chalk } from '../../lib/chalk.js';
-import * as chunks from '../../lib/chunks.js';
+import { updateChunksForCourse, logChunkChangesToJob } from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
-const router = express.Router();
+const router = Router();
 
-async function update(locals) {
+async function update(locals: Record<string, any>) {
   const serverJob = await createServerJob({
     courseId: locals.course ? locals.course.id : null,
     type: 'loadFromDisk',
@@ -27,7 +26,7 @@ async function update(locals) {
     await async.eachOfSeries(config.courseDirs || [], async (courseDir, index) => {
       courseDir = path.resolve(REPOSITORY_ROOT_PATH, courseDir);
       job.info(chalk.bold(courseDir));
-      var infoCourseFile = path.join(courseDir, 'infoCourse.json');
+      const infoCourseFile = path.join(courseDir, 'infoCourse.json');
       const hasInfoCourseFile = await fs.pathExists(infoCourseFile);
       if (!hasInfoCourseFile) {
         job.verbose('infoCourse.json not found, skipping');
@@ -39,14 +38,14 @@ async function update(locals) {
       if (!result) throw new Error('syncOrCreateDiskToSql() returned null');
       if (result.hadJsonErrors) anyCourseHadJsonErrors = true;
       if (config.chunksGenerator) {
-        const chunkChanges = await chunks.updateChunksForCourse({
+        const chunkChanges = await updateChunksForCourse({
           coursePath: courseDir,
           courseId: result.courseId,
           courseData: result.courseData,
           oldHash: 'HEAD~1',
           newHash: 'HEAD',
         });
-        chunks.logChunkChangesToJob(chunkChanges, job);
+        logChunkChangesToJob(chunkChanges, job);
       }
     });
 

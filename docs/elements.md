@@ -16,7 +16,6 @@ PrairieLearn presently provides the following templated **input field** elements
   representing asymptotic input.
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
-- [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
 - [`pl-file-editor`](#pl-file-editor-element): Provide an in-browser code editor
   for writing and submitting code.
 - [`pl-file-upload`](#pl-file-upload-element): Provide a submission area
@@ -89,6 +88,8 @@ Note: PrairieLearn Elements listed next have been
 **deprecated**. These elements are still supported for backwards
 compatibility, but they should not be used in new questions.
 
+- [`pl-dropdown`](#pl-dropdown-element): Select an answer from answers in a drop-down box.
+  - **Deprecated**: use [`pl-multiple-choice`](#pl-multiple-choice-element) with `display="dropdown"` for individual elements, or [`pl-matching`](#pl-matching-element) for multiple dropdowns with the same set of options.
 - [`pl-prairiedraw-figure`](#pl-prairiedraw-figure-element): Show a PrairieDraw
   figure.
   - **Deprecated**: use [`pl-drawing`](#pl-drawing-element) instead.
@@ -239,69 +240,6 @@ To compute `max-select`, we use a similar algorithm (note the different default 
 #### See also
 
 - [`pl-multiple-choice` for allowing only **one** correct choice](#pl-multiple-choice-element)
-
----
-
-### `pl-dropdown` element
-
-Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a <pl-answer></pl-answer> element (ie. <pl-answer>Possible Answer 1</pl-answer>).
-
-#### Sample element
-
-![](elements/pl-dropdown.png)
-
-**question.html**
-
-```html
-<p>Select the correct word in the following quotes:</p>
-The
-<pl-dropdown answers-name="aristotle" blank="true">
-  {{#params.aristotle}}
-  <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
-  {{/params.aristotle}}
-</pl-dropdown>
-is more than the sum of its parts.
-<p></p>
-
-A
-<pl-dropdown sort="ascend" answers-name="hume">
-  <pl-answer correct="true">wise</pl-answer>
-  <pl-answer correct="false">clumsy</pl-answer>
-  <pl-answer correct="false">reckless</pl-answer>
-</pl-dropdown>
-man proportions his belief to the evidence.
-<p></p>
-```
-
-**server.py**
-
-```python
-def generate(data):
-
-    QUESTION1 = "aristotle"
-
-    data["params"][QUESTION1] = [
-        {"tag": "true", "ans": "whole"},
-        {"tag": "false", "ans": "part"},
-        {"tag": "false", "ans": "inverse"}
-    ]
-
-    return data
-```
-
-#### Customizations
-
-| Attribute      | Type    | Default | Description                                                                                                                                                          |
-| -------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name` | string  | -       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
-| `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
-| `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                    |
-| `blank`        | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.                                                                                           |
-
-#### Example implementation
-
-- [demo/overlayDropdown]
-- [element/dropdown]
 
 ---
 
@@ -741,7 +679,7 @@ a `pl-answer` that has attributes:
 | ---------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------- |
 | `correct`  | boolean | false   | Is this a correct answer to the question?                                                                                                      |
 | `feedback` | string  | —       | Helper text (HTML) to be displayed to the student next to the option after question is graded if this option has been selected by the student. |
-| `score`    | float   | -       | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
+| `score`    | float   | —       | Score given to answer choice if selected by student. Defaults to 1.0 for correct answers and 0.0 for incorrect answers.                        |
 
 #### Example implementations
 
@@ -2341,16 +2279,84 @@ answer. This answer may be correct, incorrect, or invalid.
 
 ## Deprecated Elements
 
-Note: The following PrairieLearn Elements have been
-**deprecated**. These elements are still supported for backwards
-compatibility, but they should not be used in new questions.
+!!! note
+
+    The following PrairieLearn Elements have been **deprecated**. These elements are still supported for backwards compatibility, but they should not be used in new questions.
+
+### `pl-dropdown` element
+
+!!! warning
+
+    Instructors are strongly encouraged to avoid `pl-dropdown` in newer questions. For questions with a single dropdown, a better alternative is to use [`pl-multiple-choice`](#pl-multiple-choice-element), setting the attribute `display="dropdown"`. Using the multiple choice element provides better support for formatted option text (including Math formulas), randomized selection and ordering of options (both correct options and distractors) and partial scores for distractors. For questions using multiple dropdowns with the same set of options, the [`pl-matching`](#pl-matching-element) element provides a better user experience and interface.
+
+Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a <pl-answer></pl-answer> element (ie. <pl-answer>Possible Answer 1</pl-answer>).
+
+#### Sample element
+
+![](elements/pl-dropdown.png)
+
+**question.html**
+
+```html
+<p>Select the correct word in the following quotes:</p>
+The
+<pl-dropdown answers-name="aristotle" blank="true">
+  {{#params.aristotle}}
+  <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
+  {{/params.aristotle}}
+</pl-dropdown>
+is more than the sum of its parts.
+<p></p>
+
+A
+<pl-dropdown sort="ascend" answers-name="hume">
+  <pl-answer correct="true">wise</pl-answer>
+  <pl-answer correct="false">clumsy</pl-answer>
+  <pl-answer correct="false">reckless</pl-answer>
+</pl-dropdown>
+man proportions his belief to the evidence.
+<p></p>
+```
+
+**server.py**
+
+```python
+def generate(data):
+
+    QUESTION1 = "aristotle"
+
+    data["params"][QUESTION1] = [
+        {"tag": "true", "ans": "whole"},
+        {"tag": "false", "ans": "part"},
+        {"tag": "false", "ans": "inverse"}
+    ]
+
+    return data
+```
+
+#### Customizations
+
+| Attribute      | Type    | Default | Description                                                                                                                                                          |
+| -------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `answers-name` | string  | -       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
+| `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
+| `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                    |
+| `blank`        | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.                                                                                           |
+
+#### Example implementation
+
+- [demo/overlayDropdown]
+- [element/dropdown]
+
+---
 
 ### `pl-prairiedraw-figure` element
 
 Create and display a prairiedraw image.
 
-**WARNING**: This element is **deprecated** and should not be used in
-new questions.
+!!! warning
+
+    This element is **deprecated** and should not be used in new questions.
 
 #### Sample element
 
@@ -2388,7 +2394,9 @@ The provided `script-name` corresponds to a file located within the director for
 
 This element displays a 3D scene with objects that the student can (optionally) translate and/or rotate. It can be used only for output (e.g., as part of a question that asks for something else to be submitted). Or, it can be used for input (e.g., comparing a submitted pose of the body-fixed objects to a correct orientation). Information about the current pose can be hidden from the student and, if visible, can be displayed in a variety of formats, so the element can be used for many different types of questions.
 
-**WARNING**: This element is **deprecated** and should not be used in new questions.
+!!! warning
+
+    This element is **deprecated** and should not be used in new questions.
 
 #### Sample element
 
@@ -2540,8 +2548,9 @@ that if there are many submitted answers, the page will load slowly.
 
 Display the partial score for a specific answer variable.
 
-**WARNING**: This element is **deprecated** and should not be used in
-new questions.
+!!! warning
+
+    This element is **deprecated** and should not be used in new questions.
 
 #### Sample element
 
