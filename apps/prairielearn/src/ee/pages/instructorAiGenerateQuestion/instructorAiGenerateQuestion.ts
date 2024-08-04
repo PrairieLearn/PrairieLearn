@@ -137,7 +137,7 @@ router.post(
 
       const result = await regenerateQuestion(
         client,
-        res.locals?.course?.course_id,
+        res.locals?.course?.id,
         res.locals.authn_user.user_id,
         genJobs[0]?.data?.prompt,
         req.body.prompt,

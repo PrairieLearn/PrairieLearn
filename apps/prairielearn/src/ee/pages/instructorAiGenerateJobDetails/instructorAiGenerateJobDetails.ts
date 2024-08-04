@@ -8,7 +8,7 @@ import { JobSchema } from '../../../lib/db-types.js';
 
 import { AiGenerateJobDetailsPage } from './instructorAiGenerateJobDetails.html.js';
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
@@ -20,7 +20,7 @@ router.get(
 
     const job = await queryRow(
       sql.select_generation_job,
-      { course_id: res.locals.course.id, job_sequence_id: res.locals.lookupParams.job_id },
+      { course_id: res.locals.course.id, job_sequence_id: req.params.job_sequence_id },
       JobSchema,
     );
     res.send(AiGenerateJobDetailsPage({ resLocals: res.locals, job }));

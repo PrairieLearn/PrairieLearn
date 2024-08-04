@@ -4,8 +4,11 @@ SELECT
 FROM
   jobs AS j
 WHERE
-  j.course_id IS NOT DISTINCT FROM $course_id
-  AND j.type = 'ai_question_generate'
+  j.course_id = $course_id
+  AND (
+    j.type = 'ai_question_generate'
+    OR j.type = 'ai_question_regen'
+  )
   AND j.job_sequence_id = $job_sequence_id
 ORDER BY
   j.number_in_sequence,

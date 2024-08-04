@@ -11,65 +11,42 @@ export function AiGenerateJobDetailsPage({
   resLocals: Record<string, any>;
   job: Job;
 }) {
+  console.log(job.data);
   return html` <!doctype html>
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })}
       </head>
-      <body hx-ext="loading-states">
+      <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
           navPage: 'course_admin',
+          navSubPage: 'questions',
           ...resLocals,
         })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Generation Job Results</div>
             <div class="card-body">
-              <div class="mr-auto">
-                <span class="card-title"> Prompt </span>
-              </div>
-              <div id="card-prompt">
-                <pre id="output-prompt" class="bg-dark text-white rounded p-3">
-${job.data['prompt']} 
-              </pre
-                >
+              <h2 class="card-title">Prompt</h2>
+              <div>
+                <pre class="bg-dark text-white rounded p-3">${job.data['prompt']} </pre>
               </div>
 
-              <div class="mr-auto">
-                <span class="card-title"> Generated HTML </span>
+              <h2 class="card-title">Generated HTML</h2>
+              <div>
+                <pre class="bg-dark text-white rounded p-3">${job.data['html']} </pre>
               </div>
-              <div id="card-html">
-                <pre id="output-html" class="bg-dark text-white rounded p-3">
-${job.data['html']} 
-              </pre
-                >
+              <h2 class="card-title">Generated Python</h2>
+              <div>
+                <pre class="bg-dark text-white rounded p-3">${job.data['python']} </pre>
               </div>
-              <div class="mr-auto">
-                <span class="card-title"> Generated Python </span>
+              <h2 class="card-title">Full LLM Generation</h2>
+              <div>
+                <pre class="bg-dark text-white rounded p-3">${job.data['generation']}  </pre>
               </div>
-              <div id="card-py">
-                <pre id="output-py" class="bg-dark text-white rounded p-3">
-                    ${job.data['python']} 
-              </pre
-                >
-              </div>
-              <div class="mr-auto">
-                <span class="card-title"> Full LLM Generation </span>
-              </div>
-              <div id="card-llm">
-                <pre id="output-llm" class="bg-dark text-white rounded p-3">
-${job.data['generation']} 
-              </pre
-                >
-              </div>
-              <div class="mr-auto">
-                <span class="card-title"> Context Documents </span>
-              </div>
-              <div id="card-context">
-                <pre id="output-context" class="bg-dark text-white rounded p-3">
-${job.data['context']} 
-              </pre
-                >
+              <h2 class="card-title">Context Documents</h2>
+              <div>
+                <pre class="bg-dark text-white rounded p-3">${job.data['context']} </pre>
               </div>
             </div>
           </div>

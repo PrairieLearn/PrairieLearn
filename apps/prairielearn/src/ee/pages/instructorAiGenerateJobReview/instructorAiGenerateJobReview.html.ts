@@ -6,21 +6,22 @@ import { HeadContents } from '../../../components/HeadContents.html.js';
 import { JobStatus } from '../../../components/JobStatus.html.js';
 import { Job } from '../../../lib/db-types.js';
 
-export function AiGenerateJobReviewPage({
+export function AiGenerateJobReviewpage({
   resLocals,
-  genJobs,
+  jobs,
 }: {
   resLocals: Record<string, any>;
-  genJobs: Job[];
+  jobs: (Job & { email?: string })[];
 }) {
   return html` <!doctype html>
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })}
       </head>
-      <body hx-ext="loading-states">
+      <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
           navPage: 'course_admin',
+          navSubPage: 'questions',
           ...resLocals,
         })}
         <main id="content" class="container-fluid">
@@ -38,7 +39,7 @@ export function AiGenerateJobReviewPage({
                   </tr>
                 </thead>
                 <tbody>
-                  ${genJobs.map(
+                  ${jobs.map(
                     (job) => html`
                       <tr>
                         <td>${job.id}</td>
@@ -47,11 +48,11 @@ export function AiGenerateJobReviewPage({
                             ? html`&mdash;`
                             : formatDate(job.start_date, resLocals.course.display_timezone)}
                         </td>
-                        <td>${job.user_id ?? '(System)'}</td>
+                        <td>${job.email ?? '(System)'}</td>
                         <td>${JobStatus({ status: job.status })}</td>
                         <td>
                           <a
-                            href="${resLocals.urlPrefix}/ai_generate_question_results/${job.job_sequence_id}"
+                            href="${resLocals.urlPrefix}/ai_generate_question_job/${job.job_sequence_id}"
                             class="btn btn-xs btn-info"
                           >
                             Details
