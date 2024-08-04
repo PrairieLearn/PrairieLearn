@@ -1851,7 +1851,6 @@ export async function initExpress() {
   ]);
   app.use('/pl/course/:course_id(\\d+)/ai_generate_question_jobs', [
     function (req, res, next) {
-      res.locals.navSubPage = 'questions';
       next();
     },
     (await import('./ee/pages/instructorAiGenerateJobs/instructorAiGenerateJobs.js')).default,
