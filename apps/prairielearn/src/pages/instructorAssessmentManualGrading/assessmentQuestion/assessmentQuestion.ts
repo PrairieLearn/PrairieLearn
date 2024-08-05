@@ -8,7 +8,7 @@ import { botGrade } from '../../../lib/bot-grading.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
-import { selectUsersWithCourseInstanceAccess } from '../../../models/course-instances.js';
+import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { AssessmentQuestion } from './assessmentQuestion.html.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
@@ -22,7 +22,7 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
-    const courseStaff = await selectUsersWithCourseInstanceAccess({
+    const courseStaff = await selectCourseInstanceGraderStaff({
       course_instance_id: res.locals.course_instance.id,
     });
     const botGradingEnabled = await features.enabledFromLocals('bot-grading', res.locals);
@@ -85,7 +85,7 @@ router.post(
         ? req.body.instance_question_id
         : [req.body.instance_question_id];
       if (action_data?.assigned_grader != null) {
-        const courseStaff = await selectUsersWithCourseInstanceAccess({
+        const courseStaff = await selectCourseInstanceGraderStaff({
           course_instance_id: res.locals.course_instance.id,
         });
         if (!courseStaff.some((staff) => idsEqual(staff.user_id, action_data.assigned_grader))) {

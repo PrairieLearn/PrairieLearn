@@ -11,7 +11,7 @@ import { idsEqual } from '../../../lib/id.js';
 import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
-import { selectUsersWithCourseInstanceAccess } from '../../../models/course-instances.js';
+import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 import { GradingJobData, GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html.js';
@@ -53,7 +53,7 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
     }
   }
 
-  const graders = await selectUsersWithCourseInstanceAccess({
+  const graders = await selectCourseInstanceGraderStaff({
     course_instance_id: resLocals.course_instance.id,
   });
   return { resLocals, conflict_grading_job, graders };
@@ -255,7 +255,7 @@ router.post(
       const actionPrompt = body.__action.substring(9);
       const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
       if (assigned_grader != null) {
-        const courseStaff = await selectUsersWithCourseInstanceAccess({
+        const courseStaff = await selectCourseInstanceGraderStaff({
           course_instance_id: res.locals.course_instance.id,
         });
         if (!courseStaff.some((staff) => idsEqual(staff.user_id, assigned_grader))) {

@@ -74,14 +74,25 @@ export async function selectCourseInstancesWithStaffAccess({
 
 export async function selectUsersWithCourseInstanceAccess({
   course_instance_id,
-  minimal_role = 'Student Data Editor',
+  minimal_role,
 }: {
   course_instance_id: string;
-  minimal_role?: Exclude<CourseInstancePermission['course_instance_role'], null>;
+  minimal_role: Exclude<CourseInstancePermission['course_instance_role'], null>;
 }) {
   return await queryRows(
     sql.select_users_with_course_instance_access,
     { course_instance_id, minimal_role },
     UserSchema,
   );
+}
+
+export async function selectCourseInstanceGraderStaff({
+  course_instance_id,
+}: {
+  course_instance_id: string;
+}) {
+  return await selectUsersWithCourseInstanceAccess({
+    course_instance_id,
+    minimal_role: 'Student Data Editor',
+  });
 }

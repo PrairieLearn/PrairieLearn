@@ -12,7 +12,7 @@ import {
   queryOptionalRow,
 } from '@prairielearn/postgres';
 
-import { selectUsersWithCourseInstanceAccess } from '../../../models/course-instances.js';
+import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
 
@@ -34,7 +34,7 @@ router.get(
       ManualGradingQuestionSchema,
     );
     const num_open_instances = questions[0]?.num_open_instances || 0;
-    const courseStaff = await selectUsersWithCourseInstanceAccess({
+    const courseStaff = await selectCourseInstanceGraderStaff({
       course_instance_id: res.locals.course_instance.id,
     });
     res.send(
@@ -64,7 +64,7 @@ router.post(
         ? req.body.assigned_grader
         : [req.body.assigned_grader];
       const allowedGraderIds = (
-        await selectUsersWithCourseInstanceAccess({
+        await selectCourseInstanceGraderStaff({
           course_instance_id: res.locals.course_instance.id,
         })
       ).map((user) => user.user_id);
