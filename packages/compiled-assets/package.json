@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/compiled-assets",
-  "version": "3.0.3",
+  "version": "3.0.4",
   "type": "module",
   "main": "dist/index.js",
   "bin": "dist/cli.js",
@@ -21,20 +21,20 @@
     "express": "^4.19.2",
     "express-static-gzip": "^2.1.7",
     "fs-extra": "^11.2.0",
-    "globby": "^14.0.1",
+    "globby": "^14.0.2",
     "pretty-bytes": "^6.1.1",
     "tmp-promise": "^3.0.3"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.14.9",
+    "@types/node": "^20.14.13",
     "c8": "^10.1.2",
     "chai": "^5.1.1",
     "get-port": "^7.1.0",
-    "mocha": "^10.6.0",
+    "mocha": "^10.7.0",
     "node-fetch": "^3.3.2",
-    "tsx": "^4.16.2",
-    "typescript": "^5.5.3"
+    "tsx": "^4.16.5",
+    "typescript": "^5.5.4"
   },
   "c8": {
     "reporter": [

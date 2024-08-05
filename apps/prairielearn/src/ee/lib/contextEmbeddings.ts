@@ -63,7 +63,7 @@ export async function createEmbedding(client: OpenAI, text: string, openAiUser: 
  * @param job The server job calling this function.
  * @param openAiUser The OpenAI userstring requesting the adding of the document chunk.
  */
-export async function insertDocumentChunk(
+async function insertDocumentChunk(
   client: OpenAI,
   filepath: string,
   doc: DocumentChunk,
@@ -122,7 +122,7 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
       const fileText = await buildContextForQuestion(path.dirname(file.path));
       await insertDocumentChunk(
         client,
-        file.path,
+        path.relative(REPOSITORY_ROOT_PATH, file.path),
         { text: fileText, chunkId: '' },
         job,
         openAiUserFromAuthn(authnUserId),
@@ -135,7 +135,7 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
     for (const doc of files) {
       await insertDocumentChunk(
         client,
-        elementDocsPath,
+        path.relative(REPOSITORY_ROOT_PATH, elementDocsPath),
         doc,
         job,
         openAiUserFromAuthn(authnUserId),
