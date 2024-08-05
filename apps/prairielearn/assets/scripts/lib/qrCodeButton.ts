@@ -1,19 +1,26 @@
 import QR from 'qrcode-svg';
+import { observe } from 'selector-observer';
 
 import { onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 
 onDocumentReady(() => {
-  document.querySelectorAll<HTMLButtonElement>('.js-qrcode-button').forEach((button) => {
-    const content = button.dataset.qrCodeContent;
-    if (content) {
-      const qrCodeSvg = new QR({ content, width: 512, height: 512 }).svg();
+  observe('.js-qrcode-button', {
+    add(el) {
+      if (!(el instanceof HTMLElement)) return;
 
-      $(button).popover({
-        content: parseHTMLElement(document, qrCodeSvg),
-        html: true,
-        trigger: 'click',
-        container: 'body',
-      });
-    }
+      const content = el.dataset.qrCodeContent;
+      if (content) {
+        const qrCodeSvg = new QR({ content, width: 512, height: 512 }).svg();
+
+        // The `data-content` attribute appears to not support SVGs, so we need
+        // to manually initialize the popover with the SVG content.
+        $(el).popover({
+          content: parseHTMLElement(document, qrCodeSvg),
+          html: true,
+          trigger: 'click',
+          container: 'body',
+        });
+      }
+    },
   });
 });
