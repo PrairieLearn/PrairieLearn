@@ -243,70 +243,6 @@ To compute `max-select`, we use a similar algorithm (note the different default 
 
 ---
 
-### `pl-dropdown` element
-
-Select the correct answer from a drop-down **select** menu list of potential answers. The potential options are listed in the inner HTML of a <pl-answer></pl-answer> element (ie. <pl-answer>Possible Answer 1</pl-answer>).
-
-#### Sample element
-
-![](elements/pl-dropdown.png)
-
-**question.html**
-
-```html
-<p>Select the correct word in the following quotes:</p>
-The
-<pl-dropdown answers-name="aristotle" blank="true">
-  {{#params.aristotle}}
-  <pl-answer correct="{{tag}}">{{ans}}</pl-answer>
-  {{/params.aristotle}}
-</pl-dropdown>
-is more than the sum of its parts.
-<p></p>
-
-A
-<pl-dropdown sort="ascend" answers-name="hume">
-  <pl-answer correct="true">wise</pl-answer>
-  <pl-answer correct="false">clumsy</pl-answer>
-  <pl-answer correct="false">reckless</pl-answer>
-</pl-dropdown>
-man proportions his belief to the evidence.
-<p></p>
-```
-
-**server.py**
-
-```python
-def generate(data):
-
-    QUESTION1 = "aristotle"
-
-    data["params"][QUESTION1] = [
-        {"tag": "true", "ans": "whole"},
-        {"tag": "false", "ans": "part"},
-        {"tag": "false", "ans": "inverse"}
-    ]
-
-    return data
-```
-
-#### Customizations
-
-| Attribute      | Type    | Default | Description                                                                                                                                                          |
-| -------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `answers-name` | string  | -       | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question. |
-| `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
-| `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                    |
-| `blank`        | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.                                                                                           |
-| `allow-blank`  | boolean | false   | Whether or not an empty submission is allowed. By default, empty dropdowns will not be graded (invalid format).                                                      |
-
-#### Example implementation
-
-- [demo/overlayDropdown]
-- [element/dropdown]
-
----
-
 ### `pl-file-editor` element
 
 Provides an in-browser file editor that's compatible with the other file elements
@@ -2408,6 +2344,7 @@ def generate(data):
 | `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
 | `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                    |
 | `blank`        | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.                                                                                           |
+| `allow-blank`  | boolean | false   | Whether or not an empty submission is allowed. By default, empty dropdowns will not be graded (invalid format).                                                      |
 
 #### Example implementation
 
