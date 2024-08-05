@@ -13,7 +13,8 @@ export function AiGenerateJobReviewpage({
   resLocals: Record<string, any>;
   jobs: (Job & { email?: string | null })[];
 }) {
-  return html` <!doctype html>
+  return html`
+    <!doctype html>
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })}
@@ -67,5 +68,6 @@ export function AiGenerateJobReviewpage({
           </div>
         </main>
       </body>
-    </html>`.toString();
+    </html>
+  `.toString();
 }

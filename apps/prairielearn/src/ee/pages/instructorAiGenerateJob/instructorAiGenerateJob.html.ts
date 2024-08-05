@@ -11,7 +11,8 @@ export function AiGenerateJobPage({
   resLocals: Record<string, any>;
   job: Job;
 }) {
-  return html` <!doctype html>
+  return html`
+    <!doctype html>
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })}
@@ -28,28 +29,29 @@ export function AiGenerateJobPage({
             <div class="card-body">
               <h2 class="card-title">Prompt</h2>
               <div>
-                <pre class="bg-dark text-white rounded p-3">${job.data['prompt']} </pre>
+                <pre class="bg-dark text-white rounded p-3">${job.data['prompt']}</pre>
               </div>
 
               <h2 class="card-title">Generated HTML</h2>
               <div>
-                <pre class="bg-dark text-white rounded p-3">${job.data['html']} </pre>
+                <pre class="bg-dark text-white rounded p-3">${job.data['html']}</pre>
               </div>
               <h2 class="card-title">Generated Python</h2>
               <div>
-                <pre class="bg-dark text-white rounded p-3">${job.data['python']} </pre>
+                <pre class="bg-dark text-white rounded p-3">${job.data['python']}</pre>
               </div>
               <h2 class="card-title">Full LLM Generation</h2>
               <div>
-                <pre class="bg-dark text-white rounded p-3">${job.data['generation']}  </pre>
+                <pre class="bg-dark text-white rounded p-3">${job.data['generation']}</pre>
               </div>
               <h2 class="card-title">Context Documents</h2>
               <div>
-                <pre class="bg-dark text-white rounded p-3">${job.data['context']} </pre>
+                <pre class="bg-dark text-white rounded p-3">${job.data['context']}</pre>
               </div>
             </div>
           </div>
         </main>
       </body>
-    </html>`.toString();
+    </html>
+  `.toString();
 }
