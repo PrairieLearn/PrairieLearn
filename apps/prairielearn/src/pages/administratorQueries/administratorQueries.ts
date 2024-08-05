@@ -26,18 +26,7 @@ router.get(
           await jsonLoad.readJSON(path.join(queriesDir, f)),
         );
         const filePrefix = f.replace(/\.json$/, '');
-        return {
-          ...contents,
-          // If the JS file can be imported, we assume that the query is a JS
-          // module, otherwise we assume it is a generic SQL query. We don't
-          // actually use the result of the import, we just use the fact that it
-          // doesn't throw an error.
-          type: await import(path.join(queriesDir, `${filePrefix}.js`)).then(
-            () => 'Module',
-            () => 'SQL',
-          ),
-          filePrefix,
-        };
+        return { ...contents, filePrefix };
       }),
     );
     res.send(

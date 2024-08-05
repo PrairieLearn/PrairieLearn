@@ -23,7 +23,6 @@ type AdministratorQueryJson = z.infer<typeof AdministratorQueryJsonSchema>;
 
 export interface AdministratorQuery extends AdministratorQueryJson {
   filePrefix: string;
-  type: 'Module' | 'SQL';
 }
 
 export function AdministratorQueries({

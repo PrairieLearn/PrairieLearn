@@ -4,7 +4,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { CourseInstanceSchema, CourseSchema, UserSchema } from '../lib/db-types.js';
 
-import type { AdministratorQueryResult } from './index.types.js';
+import type { AdministratorQueryResult } from './util.js';
 
 const EnrolledUserSchema = z.object({
   user_id: UserSchema.shape.user_id,

@@ -4,7 +4,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { AdministratorQueryResultSchema } from '../../admin_queries/index.types.js';
+import { AdministratorQueryResultSchema } from '../../admin_queries/util.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';

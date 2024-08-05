@@ -8,7 +8,7 @@ import hljs from 'highlight.js';
 import { stringify } from '@prairielearn/csv';
 import * as sqldb from '@prairielearn/postgres';
 
-import type { AdministratorQueryResult } from '../../admin_queries/index.types.js';
+import type { AdministratorQueryResult } from '../../admin_queries/util.js';
 import { IdSchema, type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 import * as jsonLoad from '../../lib/json-load.js';
 
@@ -17,6 +17,7 @@ import {
   AdministratorQuerySchema,
   QueryRunRowSchema,
 } from './administratorQuery.html.js';
+import { logger } from '@prairielearn/logger';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -103,7 +104,6 @@ router.post(
   asyncHandler(async (req, res, _next) => {
     const jsonFilename = req.params.query + '.json';
     const jsFilename = req.params.query + '.js';
-    const sqlFilename = req.params.query + '.sql';
 
     const info = AdministratorQuerySchema.parse(
       await jsonLoad.readJSON(path.join(queriesDir, jsonFilename)),
@@ -118,23 +118,11 @@ router.post(
     let error: string | null = null;
     let result: AdministratorQueryResult | null = null;
     try {
-      result = await import(path.join(queriesDir, jsFilename)).then(
-        async (module) => {
-          sqlOrModuleInfo = module.default.toString();
-          return (await module.default(queryParams)) as AdministratorQueryResult;
-        },
-        async () => {
-          sqlOrModuleInfo = await fs.readFile(path.join(queriesDir, sqlFilename), {
-            encoding: 'utf8',
-          });
-          const queryResult = await sqldb.queryAsync(sqlOrModuleInfo, queryParams);
-          return {
-            columns: queryResult.fields.map((f) => f.name),
-            rows: queryResult.rows,
-          };
-        },
-      );
+      const module = await import(path.join(queriesDir, jsFilename));
+      sqlOrModuleInfo = module.default.toString();
+      result = (await module.default(queryParams)) as AdministratorQueryResult;
     } catch (err) {
+      logger.error(err);
       error = err.toString();
     }
 
