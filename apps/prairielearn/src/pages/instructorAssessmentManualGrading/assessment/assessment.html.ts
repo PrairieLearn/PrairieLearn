@@ -44,6 +44,11 @@ export function ManualGradingAssessment({
       <head>
         ${HeadContents({ resLocals })}
       </head>
+      <script>
+        $(() => {
+          $('[data-toggle="tooltip"]').tooltip();
+        });
+      </script>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
@@ -122,9 +127,16 @@ function AssessmentQuestionRow({
         </a>
         ${question.manual_rubric_id == null
           ? ''
-          : html`<span class="ml-2 text-info" title="This question uses a rubric">
-              <i class="fas fa-list-check"></i><span class="sr-only">(uses rubric)</span>
-            </span>`}
+          : html`
+              <span
+                class="ml-2 text-info"
+                data-toggle="tooltip"
+                data-boundary="window"
+                title="This question uses a rubric"
+              >
+                <i class="fas fa-list-check"></i><span class="sr-only">(uses rubric)</span>
+              </span>
+            `}
       </td>
       <td>${question.qid}</td>
       <td class="text-center">
