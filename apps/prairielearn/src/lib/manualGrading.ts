@@ -234,8 +234,8 @@ export async function updateAssessmentQuestionRubric(
     if (use_rubric) {
       const max_points =
         (replace_auto_points
-          ? assessment_question.max_points ?? 0
-          : assessment_question.max_manual_points ?? 0) + Number(max_extra_points);
+          ? (assessment_question.max_points ?? 0)
+          : (assessment_question.max_manual_points ?? 0)) + Number(max_extra_points);
 
       // This test is done inside the transaction to avoid a race condition in case the assessment
       // question's values change.
@@ -512,7 +512,7 @@ export async function updateInstanceQuestionScore(
       score.manual_points =
         manual_rubric_grading.computed_points -
         (manual_rubric_grading.replace_auto_points
-          ? new_auto_points ?? current_submission.auto_points ?? 0
+          ? (new_auto_points ?? current_submission.auto_points ?? 0)
           : 0);
       score.manual_score_perc = undefined;
       manual_rubric_grading_id = manual_rubric_grading.id;

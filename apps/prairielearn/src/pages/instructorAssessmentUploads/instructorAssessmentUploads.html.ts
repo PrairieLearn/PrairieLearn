@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { JobStatus } from '../../components/JobStatus.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -26,8 +28,7 @@ export function InstructorAssessmentUploads({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('instructorAssessmentUploadsClient.ts')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('instructorAssessmentUploadsClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
@@ -153,11 +154,7 @@ function AssessmentUploadCard({
                       <td>${job_sequence.start_date_formatted}</td>
                       <td>${job_sequence.job_sequence.description}</td>
                       <td>${job_sequence.user_uid}</td>
-                      <td>
-                        ${renderEjs(import.meta.url, "<%- include('../partials/jobStatus'); %>", {
-                          status: job_sequence.job_sequence.status,
-                        })}
-                      </td>
+                      <td>${JobStatus({ status: job_sequence.job_sequence.status })}</td>
                       <td>
                         <a
                           href="${urlPrefix}/jobSequence/${job_sequence.job_sequence.id}"

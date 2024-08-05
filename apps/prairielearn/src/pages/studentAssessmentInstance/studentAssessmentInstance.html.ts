@@ -7,6 +7,7 @@ import {
   RegenerateInstanceModal,
 } from '../../components/AssessmentRegenerate.html.js';
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
@@ -54,7 +55,7 @@ export function StudentAssessmentInstance({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
         ${resLocals.assessment.type === 'Exam'
           ? html`${compiledScriptTag('examTimeLimitCountdown.ts')}
             ${EncodedData(

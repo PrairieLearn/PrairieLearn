@@ -1,6 +1,7 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
@@ -11,10 +12,10 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
-          ...resLocals,
-          pageNote: 'Preview',
-          pageTitle: resLocals.question.qid,
+        ${HeadContents({
+          resLocals,
+          pageTitle: 'Question Preview',
+          pageNote: resLocals.question.qid,
         })}
         ${compiledScriptTag('question.ts')}
         <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>

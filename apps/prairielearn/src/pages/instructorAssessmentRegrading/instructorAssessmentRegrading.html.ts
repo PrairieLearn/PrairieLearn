@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { JobStatus } from '../../components/JobStatus.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
@@ -25,7 +27,7 @@ export function InstructorAssessmentRegrading({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         <script>
@@ -106,15 +108,7 @@ export function InstructorAssessmentRegrading({
                             <td>${jobSequence.start_date_formatted}</td>
                             <td>${jobSequence.job_sequence.description}</td>
                             <td>${jobSequence.user_uid}</td>
-                            <td>
-                              ${renderEjs(
-                                import.meta.url,
-                                "<%- include('../partials/jobStatus'); %>",
-                                {
-                                  status: jobSequence.job_sequence.status,
-                                },
-                              )}
-                            </td>
+                            <td>${JobStatus({ status: jobSequence.job_sequence.status })}</td>
                             <td>
                               <a
                                 href="${resLocals.urlPrefix}/jobSequence/${jobSequence.job_sequence

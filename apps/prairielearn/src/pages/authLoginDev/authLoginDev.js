@@ -27,7 +27,6 @@ router.get(
 
     await authnLib.loadUser(req, res, authnParams, {
       redirect: true,
-      pl_authn_cookie: true,
     });
   }),
 );

@@ -1,6 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../../components/HeadContents.html.js';
+
 const prebuiltQuestions = [
   {
     id: 'random_mc',
@@ -29,7 +31,7 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body hx-ext="loading-states">
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {

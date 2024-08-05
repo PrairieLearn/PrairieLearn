@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { CourseInstanceAuthz } from '../../models/course-instances.js';
 
@@ -17,10 +18,7 @@ export function InstructorCourseAdminInstances({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Course Instances',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Course Instances' })}
       </head>
       <body>
         <script>
