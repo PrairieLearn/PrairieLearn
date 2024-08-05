@@ -7,7 +7,7 @@ Each query must have the following files:
   - A JS or TS file with a default function that performs the necessary actions and returns the resulting data.
   - A SQL file with a query that returns a table, and potentially also performs an INSERT, UPDATE, or other action.
 
-If a JS or TS file is provided, it must export a function that returns an object of type AdministratorQueryResult. For example:
+If a JS or TS file is provided, it must export a function that returns an object of type `AdministratorQueryResult`. For example:
 
 ```ts
 import type { AdministratorQueryResult } from './types/index.types.js';
