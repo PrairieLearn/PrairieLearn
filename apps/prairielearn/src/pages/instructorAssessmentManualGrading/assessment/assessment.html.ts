@@ -218,7 +218,7 @@ function GraderAssignmentModal({
           </div>
         `,
       )}
-      <div class="mt-2 small alert alert-info">
+      <div class="mt-3 mb-0 small alert alert-info">
         Only instances that require grading and are not yet assigned to a grader will be affected.
         If more than one grader is selected, the instances will be randomly split between the
         graders.
