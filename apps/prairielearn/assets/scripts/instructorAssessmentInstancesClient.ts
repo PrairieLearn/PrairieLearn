@@ -61,13 +61,6 @@ onDocumentReady(() => {
 
       updateTotals($('#usersTable').bootstrapTable('getData'));
 
-      $('[data-toggle="popover"]').popover({
-        sanitize: false,
-        trigger: 'manual',
-        container: 'body',
-        html: true,
-        placement: 'auto',
-      });
       $('.time-limit-edit-button')
         .popover({
           sanitize: false,
@@ -560,21 +553,7 @@ onDocumentReady(() => {
           >
             Action
           </button>
-          <div
-            id="row${ai_id}PopoverClose"
-            tabindex="0"
-            data-toggle="popover"
-            title="Confirm close"
-            data-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
-          ></div>
-          <div
-            id="row${ai_id}PopoverRegrade"
-            tabindex="0"
-            data-toggle="popover"
-            title="Confirm regrade"
-            data-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
-          ></div>
-          <div class="dropdown-menu" onclick="window.event.preventDefault()">
+          <div class="dropdown-menu">
             ${hasCourseInstancePermissionEdit
               ? html`
                   <button
@@ -595,7 +574,12 @@ onDocumentReady(() => {
                   </button>
                   <button
                     class="dropdown-item ${row.open ? '' : 'disabled'}"
-                    onclick="$('#row${ai_id}PopoverClose').popover('show')"
+                    data-toggle="popover"
+                    data-title="Confirm close"
+                    data-html="true"
+                    data-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
+                    data-container="body"
+                    data-placement="auto"
                   >
                     <i class="fas fa-ban mr-2" aria-hidden="true"></i>
                     Grade &amp; Close
@@ -609,7 +593,12 @@ onDocumentReady(() => {
                   </button>
                   <button
                     class="dropdown-item"
-                    onclick="$('#row${ai_id}PopoverRegrade').popover('show')"
+                    data-toggle="popover"
+                    data-title="Confirm regrade"
+                    data-html="true"
+                    data-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
+                    data-container="body"
+                    data-placement="auto"
                   >
                     <i class="fas fa-sync mr-2" aria-hidden="true"></i>
                     Regrade
@@ -713,7 +702,7 @@ function RegradeForm({ csrfToken, ai_id }: { csrfToken: string; ai_id: number })
     <button
       type="button"
       class="btn btn-secondary"
-      onclick="$('#row${ai_id}PopoverRegrade').popover('hide')"
+      onclick="$(this).parents('form').parents('.popover').popover('hide')"
     >
       Cancel
     </button>
