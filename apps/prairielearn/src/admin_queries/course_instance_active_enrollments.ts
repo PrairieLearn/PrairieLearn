@@ -1,5 +1,5 @@
-import { runSqlAdminQuery } from './util.js';
+import { runLegacySqlAdminQuery } from './util.js';
 
 export default async function (params: Record<string, any>) {
-  return runSqlAdminQuery(import.meta.url, params);
+  return runLegacySqlAdminQuery(import.meta.url, params);
 }

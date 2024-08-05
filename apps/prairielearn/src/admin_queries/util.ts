@@ -10,7 +10,7 @@ export const AdministratorQueryResultSchema = z.object({
 });
 export type AdministratorQueryResult = z.infer<typeof AdministratorQueryResultSchema>;
 
-export async function runSqlAdminQuery(
+export async function runLegacySqlAdminQuery(
   metaUrl: string,
   params: Record<string, string>,
 ): Promise<AdministratorQueryResult> {
