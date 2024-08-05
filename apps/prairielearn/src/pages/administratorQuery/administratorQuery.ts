@@ -3,7 +3,6 @@ import * as path from 'node:path';
 
 import express from 'express';
 import asyncHandler from 'express-async-handler';
-import hljs from 'highlight.js';
 
 import { stringify } from '@prairielearn/csv';
 import * as sqldb from '@prairielearn/postgres';
