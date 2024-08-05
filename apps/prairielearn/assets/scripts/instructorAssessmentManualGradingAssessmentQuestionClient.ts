@@ -280,6 +280,7 @@ function gradingTagDropdown(courseStaff: User[]) {
   return html`
     <div class="dropdown btn-group">
       <button
+        type="button"
         class="btn btn-secondary dropdown-toggle grading-tag-button"
         data-toggle="dropdown"
         name="status"
