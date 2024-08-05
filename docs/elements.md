@@ -311,6 +311,12 @@ This element supports additional preview options through [element extensions](el
 Provides a way to accept file uploads as part of an answer. They will be stored
 in [the format expected by externally graded questions](externalGrading.md#file-submission-format).
 
+Note that there is a file size limit of **5 MB per answer**. This limit is not customizable as larger
+requests will be rejected by the server. For the same reason, it is also not possible to bypass the
+limit by using multiple `pl-file-upload` elements in the same question. To avoid unexpected errors or
+potentially misleading error messages for large file uploads, we recommend not using more than one
+`pl-file-upload` element per question.
+
 #### Sample element
 
 ![](elements/pl-file-upload.png)
