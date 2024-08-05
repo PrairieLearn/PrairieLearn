@@ -38,19 +38,10 @@ router.get(
   asyncHandler(async (req, res, next) => {
     const jsonFilename = req.params.query + '.json';
     const jsFilename = req.params.query + '.js';
-    const sqlFilename = req.params.query + '.sql';
-    let queryFilename = jsFilename;
 
     const info = AdministratorQuerySchema.parse(
       await jsonLoad.readJSON(path.join(queriesDir, jsonFilename)),
     );
-    let querySql: string | null = null,
-      sqlHighlighted: string | null = null;
-    await import(path.join(queriesDir, jsFilename)).catch(async () => {
-      queryFilename = sqlFilename;
-      querySql = await fs.readFile(path.join(queriesDir, sqlFilename), { encoding: 'utf8' });
-      sqlHighlighted = hljs.highlight(querySql, { language: 'sql' }).value;
-    });
 
     let query_run_id: string | null = null;
     let query_run: QueryRun | null = null;
@@ -89,9 +80,8 @@ router.get(
           resLocals: res.locals,
           query_run_id,
           query_run,
-          queryFilename,
+          queryFilename: jsFilename,
           info,
-          sqlHighlighted,
           recent_query_runs,
         }),
       );

@@ -58,7 +58,6 @@ export function AdministratorQueries({
                             <code>${query.filePrefix}</code>
                           </a>
                         </td>
-                        <td>${query.type}</td>
                         <td>${query.description}</td>
                       </tr>
                     `,

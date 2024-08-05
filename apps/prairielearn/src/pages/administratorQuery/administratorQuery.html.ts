@@ -51,7 +51,6 @@ export function AdministratorQuery({
   query_run,
   queryFilename,
   info,
-  sqlHighlighted,
   recent_query_runs,
 }: {
   resLocals: Record<string, any>;
@@ -59,7 +58,6 @@ export function AdministratorQuery({
   query_run: QueryRun | null;
   queryFilename: string;
   info: AdministratorQuery;
-  sqlHighlighted: string | null;
   recent_query_runs: QueryRunRow[];
 }) {
   return html`
@@ -90,45 +88,21 @@ export function AdministratorQuery({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <span class="font-weight-bold text-monospace">${queryFilename}</span>
-              ${sqlHighlighted != null
-                ? html`
-                    <button
-                      class="btn btn-xs btn-light ml-2 my-n2"
-                      type="button"
-                      data-toggle="collapse"
-                      data-target="#sql-query"
-                      aria-expanded="false"
-                      aria-controls="sql-query"
-                    >
-                      Show SQL <i class="fas fa-caret-down"></i>
-                    </button>
-                    <span class="ml-3">&mdash;</span>
-                  `
-                : ''}
               <span class="ml-3">${info.description}</span>
             </div>
 
-            ${sqlHighlighted != null
-              ? html`
-                  <div id="sql-query" class="collapse">
-                    <pre class="m-0 p-2 bg-light border-bottom"><code class="sql">${unsafeHtml(
-                      sqlHighlighted,
-                    )}</code></pre>
-                  </div>
-                `
-              : ''}
             <div class="card-body">
               <form name="run-query-form" method="POST">
                 ${info.params
                   ? info.params.map(
                       (param) => html`
                         <div class="form-group">
-                          <label for="${`param-${param.name}`}">${param.name}</label>
+                          <label for="param-${param.name}">${param.name}</label>
                           <input
                             class="form-control"
                             type="text"
-                            id="${`param-${param.name}`}"
-                            aria-describedby="${`param-${param.name}-help`}"
+                            id="param-${param.name}"
+                            aria-describedby="param-${param.name}-help"
                             name="${param.name}"
                             autocomplete="off"
                             ${query_run?.params?.[param.name]
@@ -136,7 +110,7 @@ export function AdministratorQuery({
                               : html`value="${param.default ?? ''}"`}
                           />
 
-                          <small id="${`param-${param.name}-help`}" class="form-text text-muted">
+                          <small id="param-${param.name}-help" class="form-text text-muted">
                             ${param.description}
                           </small>
                         </div>
