@@ -83,7 +83,8 @@
             // removed from the list of pending downloads, so we can just ignore
             // the result.
             if (this.pendingFileDownloads.has(file)) {
-              this.addFileFromBlob(file, await res.blob(), true);
+              const blob = await res.blob();
+              this.addFileFromBlob(file, blob.size, blob, true);
             }
           } catch (e) {
             console.error(e);
@@ -110,6 +111,15 @@
           return done('invalid file');
         },
         addedfile: (file) => {
+          const existingFileSize = this.files.reduce((prev, next) => prev + next.size, 0);
+          if (existingFileSize + file.size > 5 * 1024 * 1024) {
+            this.addWarningMessage(
+              'Combined file size of new file and existing files (<strong>' +
+                Math.round((existingFileSize + file.size) / 1024 / 10.24) / 100 +
+                ' MB</strong>) and is greater than maximum file size of 5 MB.',
+            );
+            return;
+          }
           // fuzzy case match
           const fileNameLowerCase = file.name.toLowerCase();
           const acceptedFileName = this.findAcceptedFileName(fileNameLowerCase);
@@ -124,7 +134,7 @@
             return;
           }
 
-          this.addFileFromBlob(acceptedFileName, file, false);
+          this.addFileFromBlob(acceptedFileName, file.size, file, false);
         },
       });
 
@@ -139,7 +149,7 @@
       this.element.find('input').val(JSON.stringify(this.files));
     }
 
-    addFileFromBlob(name, blob, isFromDownload) {
+    addFileFromBlob(name, size, blob, isFromDownload) {
       this.pendingFileDownloads.delete(name);
       this.failedFileDownloads.delete(name);
 
@@ -155,7 +165,7 @@
 
         // Store the file as base-64 encoded data
         var base64FileData = dataUrl.substring(commaSplitIdx + 1);
-        this.saveSubmittedFile(name, base64FileData);
+        this.saveSubmittedFile(name, size, base64FileData);
         this.renderFileList();
 
         if (!isFromDownload) {
@@ -180,11 +190,12 @@
      * @param  {String} name     Name of the file
      * @param  {String} contents The file's base64-encoded contents
      */
-    saveSubmittedFile(name, contents) {
+    saveSubmittedFile(name, size, contents) {
       var idx = this.files.findIndex((file) => file.name === name);
       if (idx === -1) {
         this.files.push({
           name,
+          size,
           contents,
         });
       } else {
