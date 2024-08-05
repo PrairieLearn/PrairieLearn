@@ -68,9 +68,9 @@ async function pipeCursorToArchive(res, cursor: sqldb.CursorIterator<any>) {
     for (const row of rows) {
       let contents: string | Buffer;
       try {
-        contents = Buffer.from(row.contents ?? '', 'base64');
+        contents = Buffer.from(typeof row.contents === 'string' ? row.contents : '', 'base64');
       } catch (err) {
-        // Ignore any errors in reading the contents (e.g., not a string) and treat as a blank file.
+        // Ignore any errors in reading the contents and treat as a blank file.
         contents = '';
       }
       archive.append(contents, { name: prefix + row.filename });
