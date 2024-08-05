@@ -277,7 +277,7 @@ export function AdministratorQuery({
   `.toString();
 }
 
-function renderColumn(columns: string[], col: string) {
+function shouldRenderColumn(columns: string[], col: string) {
   if (col === 'course_id' && columns.includes('course')) {
     return false;
   }
@@ -298,12 +298,12 @@ function renderColumn(columns: string[], col: string) {
 }
 
 function renderHeader(columns: string[], col: string) {
-  if (!renderColumn(columns, col)) return '';
+  if (!shouldRenderColumn(columns, col)) return '';
   return html`<th>${col}</th>`;
 }
 
 function renderCell(row: any, col: string, columns: string[], info: AdministratorQuery) {
-  if (!renderColumn(columns, col)) return '';
+  if (!shouldRenderColumn(columns, col)) return '';
   const tdAttributes = `_sortval_${col}` in row ? html`data-text="${row[`_sortval_${col}`]}"` : '';
 
   if (col === 'course' && 'course_id' in row) {
