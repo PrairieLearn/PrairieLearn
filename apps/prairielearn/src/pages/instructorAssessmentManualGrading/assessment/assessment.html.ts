@@ -228,8 +228,8 @@ function GraderAssignmentModal({
       <input type="hidden" name="unsafe_assessment_question_id" value="" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="__action" value="assign_graders" />
-      <button type="submit" class="btn btn-primary">Assign</button>
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Assign</button>
     `,
   });
 }
