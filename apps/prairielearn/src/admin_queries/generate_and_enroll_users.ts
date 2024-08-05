@@ -2,7 +2,7 @@ import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
-import type { AdministratorQueryResult } from './index.types.js';
+import type { AdministratorQueryResult } from './util.js';
 
 const columns = [
   'user_id',

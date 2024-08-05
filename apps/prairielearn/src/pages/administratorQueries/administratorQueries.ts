@@ -26,14 +26,7 @@ router.get(
           await jsonLoad.readJSON(path.join(queriesDir, f)),
         );
         const filePrefix = f.replace(/\.json$/, '');
-        return {
-          ...contents,
-          type: await import(path.join(queriesDir, `${filePrefix}.js`)).then(
-            () => 'Module',
-            () => 'SQL',
-          ),
-          filePrefix,
-        };
+        return { ...contents, filePrefix };
       }),
     );
     res.send(

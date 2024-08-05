@@ -1,14 +1,13 @@
-import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import express from 'express';
 import asyncHandler from 'express-async-handler';
-import hljs from 'highlight.js';
 
 import { stringify } from '@prairielearn/csv';
+import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import type { AdministratorQueryResult } from '../../admin_queries/index.types.js';
+import type { AdministratorQueryResult } from '../../admin_queries/util.js';
 import { IdSchema, type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 import * as jsonLoad from '../../lib/json-load.js';
 
@@ -37,19 +36,10 @@ router.get(
   asyncHandler(async (req, res, next) => {
     const jsonFilename = req.params.query + '.json';
     const jsFilename = req.params.query + '.js';
-    const sqlFilename = req.params.query + '.sql';
-    let queryFilename = jsFilename;
 
     const info = AdministratorQuerySchema.parse(
       await jsonLoad.readJSON(path.join(queriesDir, jsonFilename)),
     );
-    let querySql: string | null = null,
-      sqlHighlighted: string | null = null;
-    await import(path.join(queriesDir, jsFilename)).catch(async () => {
-      queryFilename = sqlFilename;
-      querySql = await fs.readFile(path.join(queriesDir, sqlFilename), { encoding: 'utf8' });
-      sqlHighlighted = hljs.highlight(querySql, { language: 'sql' }).value;
-    });
 
     let query_run_id: string | null = null;
     let query_run: QueryRun | null = null;
@@ -88,9 +78,8 @@ router.get(
           resLocals: res.locals,
           query_run_id,
           query_run,
-          queryFilename,
+          queryFilename: jsFilename,
           info,
-          sqlHighlighted,
           recent_query_runs,
         }),
       );
@@ -103,7 +92,6 @@ router.post(
   asyncHandler(async (req, res, _next) => {
     const jsonFilename = req.params.query + '.json';
     const jsFilename = req.params.query + '.js';
-    const sqlFilename = req.params.query + '.sql';
 
     const info = AdministratorQuerySchema.parse(
       await jsonLoad.readJSON(path.join(queriesDir, jsonFilename)),
@@ -118,23 +106,11 @@ router.post(
     let error: string | null = null;
     let result: AdministratorQueryResult | null = null;
     try {
-      result = await import(path.join(queriesDir, jsFilename)).then(
-        async (module) => {
-          sqlOrModuleInfo = module.default.toString();
-          return (await module.default(queryParams)) as AdministratorQueryResult;
-        },
-        async () => {
-          sqlOrModuleInfo = await fs.readFile(path.join(queriesDir, sqlFilename), {
-            encoding: 'utf8',
-          });
-          const queryResult = await sqldb.queryAsync(sqlOrModuleInfo, queryParams);
-          return {
-            columns: queryResult.fields.map((f) => f.name),
-            rows: queryResult.rows,
-          };
-        },
-      );
+      const module = await import(path.join(queriesDir, jsFilename));
+      sqlOrModuleInfo = module.default.toString();
+      result = (await module.default(queryParams)) as AdministratorQueryResult;
     } catch (err) {
+      logger.error(err);
       error = err.toString();
     }
 

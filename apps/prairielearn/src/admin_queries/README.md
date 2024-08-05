@@ -3,14 +3,13 @@
 Each query must have the following files:
 
 - A JSON file in the [`adminQuery` JSON Schema](../schemas/schemas/adminQuery.json).
-- Either:
-  - A JS or TS file with a default function that performs the necessary actions and returns the resulting data.
-  - A SQL file with a query that returns a table, and potentially also performs an INSERT, UPDATE, or other action.
+- A JS or TS file with a default function that performs the necessary actions and returns the resulting data.
+- Optionally, a SQL file with one or more queries used in the query.
 
-If a JS or TS file is provided, it must export a function that returns an object of type AdministratorQueryResult. For example:
+The JS/TS file must export a default function that returns an object of type `AdministratorQueryResult`. For example:
 
 ```ts
-import type { AdministratorQueryResult } from './types/index.types.js';
+import type { AdministratorQueryResult } from './util.js';
 
 export default async function (params: {
   /* types */
