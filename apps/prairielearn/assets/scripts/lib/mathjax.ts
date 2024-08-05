@@ -64,6 +64,24 @@ const mathjaxPromise = new Promise<void>((resolve) => {
       },
     },
   };
+
+  let mj = window.MathJax;
+
+  Object.defineProperty(window, 'MathJax', {
+    set: (value) => {
+      mj = value;
+
+      // The MathJax initialization script will wipe our `typesetPromise` function
+      // until it has loaded itself, so we'll do this hacky little thing to ensure
+      // that `typesetPromise` is always available, even while MathJax is loading.
+      mj.typesetPromise = mathjaxTypeset;
+    },
+    get() {
+      return mj;
+    },
+    configurable: true,
+    enumerable: true,
+  });
 });
 
 export async function mathjaxTypeset() {
