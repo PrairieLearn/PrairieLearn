@@ -1,5 +1,27 @@
 # @prairielearn/browser-utils
 
+## 2.1.2
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+- Updated dependencies [a8438ff]
+  - @prairielearn/html@4.0.4
+
+## 2.1.1
+
+### Patch Changes
+
+- 24a93b8: Upgrade all JavaScript dependencies
+- Updated dependencies [24a93b8]
+  - @prairielearn/html@4.0.3
+
+## 2.1.0
+
+### Minor Changes
+
+- d28a15d: Support custom return type for parseHTMLElement
+
 ## 2.0.2
 
 ### Patch Changes

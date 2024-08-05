@@ -10,6 +10,7 @@ import {
   selectPendingCourseRequests,
   updateCourseRequest,
 } from '../../lib/course-request.js';
+import { deleteCourse, insertCourse, selectCourseById } from '../../models/course.js';
 import { selectAllInstitutions } from '../../models/institution.js';
 
 import { AdministratorCourses, CourseWithInstitutionSchema } from './administratorCourses.html.js';
@@ -39,16 +40,16 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'courses_insert') {
-      await sqldb.callAsync('courses_insert', [
-        req.body.institution_id,
-        req.body.short_name,
-        req.body.title,
-        req.body.display_timezone,
-        req.body.path,
-        req.body.repository,
-        req.body.branch,
-        res.locals.authn_user.user_id,
-      ]);
+      await insertCourse({
+        institution_id: req.body.institution_id,
+        short_name: req.body.short_name,
+        title: req.body.title,
+        display_timezone: req.body.display_timezone,
+        path: req.body.path,
+        repository: req.body.repository,
+        branch: req.body.branch,
+        authn_user_id: res.locals.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'courses_update_column') {
       await sqldb.callAsync('courses_update_column', [
@@ -59,23 +60,17 @@ router.post(
       ]);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'courses_delete') {
-      const result = await sqldb.queryZeroOrOneRowAsync(sql.select_course, {
-        course_id: req.body.course_id,
-      });
-      if (result.rowCount !== 1) throw new Error('course not found');
-
-      const short_name = result.rows[0].short_name;
-      if (req.body.confirm_short_name !== short_name) {
-        throw new Error(
-          'deletion aborted: confirmation string "' +
-            req.body.confirm_short_name +
-            '" did not match expected value of "' +
-            short_name +
-            '"',
+      const course = await selectCourseById(req.body.course_id);
+      if (req.body.confirm_short_name !== course.short_name) {
+        throw new error.HttpStatusError(
+          400,
+          `deletion aborted: confirmation string "${req.body.confirm_short_name}" did not match expected value of "${course.short_name}"`,
         );
       }
-
-      await sqldb.callAsync('courses_delete', [req.body.course_id, res.locals.authn_user.user_id]);
+      await deleteCourse({
+        course_id: req.body.course_id,
+        authn_user_id: res.locals.authn_user.user_id,
+      });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'approve_deny_course_request') {
       await updateCourseRequest(req, res);

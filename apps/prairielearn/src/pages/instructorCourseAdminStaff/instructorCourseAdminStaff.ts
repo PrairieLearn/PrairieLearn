@@ -9,6 +9,7 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { User } from '../../lib/db-types.js';
+import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { parseUidsString } from '../../lib/user.js';
 import {
@@ -65,12 +66,21 @@ router.get(
       CourseUsersRowSchema,
     );
 
+    let githubAccessLink: string | null = null;
+    if (!res.locals.course.example_course) {
+      const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
+      if (githubPrefix) {
+        githubAccessLink = `${githubPrefix}/settings/access`;
+      }
+    }
+
     res.send(
       InstructorCourseAdminStaff({
         resLocals: res.locals,
         courseInstances,
         courseUsers,
         uidsLimit: MAX_UIDS,
+        githubAccessLink,
       }),
     );
   }),
@@ -113,7 +123,7 @@ router.post(
           idsEqual(ci.id, req.body.course_instance_id),
         );
         if (!course_instance) {
-          throw new error.HttpStatusError(400, `Invalid requested course instance role`);
+          throw new error.HttpStatusError(400, 'Invalid requested course instance role');
         }
       }
 
@@ -342,10 +352,10 @@ ${given_cp_and_cip.join(',\n')}
 
       if (req.body.course_instance_id) {
         if (!course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
-          throw new error.HttpStatusError(400, `Invalid requested course instance role`);
+          throw new error.HttpStatusError(400, 'Invalid requested course instance role');
         }
       } else {
-        throw new error.HttpStatusError(400, `Undefined course instance id`);
+        throw new error.HttpStatusError(400, 'Undefined course instance id');
       }
 
       if (req.body.course_instance_role) {
@@ -383,10 +393,10 @@ ${given_cp_and_cip.join(',\n')}
 
       if (req.body.course_instance_id) {
         if (!course_instances.find((ci) => idsEqual(ci.id, req.body.course_instance_id))) {
-          throw new error.HttpStatusError(400, `Invalid requested course instance role`);
+          throw new error.HttpStatusError(400, 'Invalid requested course instance role');
         }
       } else {
-        throw new error.HttpStatusError(400, `Undefined course instance id`);
+        throw new error.HttpStatusError(400, 'Undefined course instance id');
       }
 
       await insertCourseInstancePermissions({

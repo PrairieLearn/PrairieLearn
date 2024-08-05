@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { escapeHtml, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   CourseInstance,
@@ -47,17 +49,19 @@ export function InstructorCourseAdminStaff({
   courseInstances,
   courseUsers,
   uidsLimit,
+  githubAccessLink,
 }: {
   resLocals: Record<string, any>;
   courseInstances: CourseInstance[];
   courseUsers: CourseUsersRow[];
   uidsLimit: number;
+  githubAccessLink: string | null;
 }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
         <style>
           .popover {
             max-width: 35%;
@@ -73,11 +77,11 @@ export function InstructorCourseAdminStaff({
         </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/courseSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${CourseSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           <div class="card mb-4">
             <div class="card-header bg-primary">
               <div class="row align-items-center justify-content-between">
@@ -194,6 +198,15 @@ export function InstructorCourseAdminStaff({
                 <summary>Recommended access levels</summary>
                 ${AccessLevelsTable()}
               </details>
+              ${githubAccessLink
+                ? html`
+                    <div class="alert alert-info mt-3">
+                      The settings above do not affect access to the course's Git repository. To
+                      change repository permissions, go to the
+                      <a href="${githubAccessLink}" target="_blank">GitHub access settings page</a>.
+                    </div>
+                  `
+                : ''}
             </small>
           </div>
         </main>
@@ -297,7 +310,7 @@ function CoursePermissionsInsertForm({
       <div class="form-group">
         <label for="addUsersInputCourseRole">Course content access for all new users:</label>
         <select
-          class="form-control form-control-sm"
+          class="custom-select custom-select-sm"
           id="addUsersInputCourseRole"
           name="course_role"
           required
@@ -317,7 +330,7 @@ function CoursePermissionsInsertForm({
               >
               <div class="input-group">
                 <select
-                  class="form-control form-control-sm"
+                  class="custom-select custom-select-sm"
                   id="addUsersInputCourseInstance"
                   name="course_instance_id"
                 >
@@ -327,7 +340,7 @@ function CoursePermissionsInsertForm({
                   )}
                 </select>
                 <select
-                  class="form-control form-control-sm"
+                  class="custom-select custom-select-sm"
                   id="addUsersInputCourseInstanceRole"
                   name="course_instance_role"
                 >

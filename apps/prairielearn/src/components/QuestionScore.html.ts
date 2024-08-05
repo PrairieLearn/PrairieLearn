@@ -231,10 +231,10 @@ export function ExamQuestionScore({
     <span class="align-middle">
       <span
         class="badge ${score >= 1
-          ? `badge-success`
+          ? 'badge-success'
           : score <= 0
-            ? `badge-danger`
-            : `badge-warning`}"
+            ? 'badge-danger'
+            : 'badge-warning'}"
       >
         ${Math.floor(score * 100)}%
       </span>

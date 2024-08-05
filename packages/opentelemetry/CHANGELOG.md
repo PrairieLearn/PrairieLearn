@@ -1,5 +1,23 @@
 # @prairielearn/opentelemetry
 
+## 2.1.1
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+
+## 2.1.0
+
+### Minor Changes
+
+- ee7b9af: Only enable AWS resource detector in production-like environments
+
+## 2.0.3
+
+### Patch Changes
+
+- 24a93b8: Upgrade all JavaScript dependencies
+
 ## 2.0.2
 
 ### Patch Changes

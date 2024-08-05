@@ -81,6 +81,7 @@ export function connection(socket: Socket) {
       question_id: msg.question_id,
       instance_question_id: msg.instance_question_id,
       variant_id: msg.variant_id,
+      user_id: msg.user_id,
       urlPrefix: msg.url_prefix,
       questionContext: msg.question_context,
       csrfToken: msg.csrf_token,

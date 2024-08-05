@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import {
@@ -32,10 +33,7 @@ export function InstitutionAdminAdmins({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          pageTitle: `Admins — ${institution.short_name}`,
-        })}
+        ${HeadContents({ resLocals, pageTitle: `Admins — ${institution.short_name}` })}
         ${compiledScriptTag('institutionAdminAdminsClient.ts')}
       </head>
       <body>
@@ -46,7 +44,7 @@ export function InstitutionAdminAdmins({
           navPage: 'institution_admin',
           navSubPage: 'admins',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           ${AdminsCard({ rows })}
           ${AddAdminsModal({ uidsLimit, csrfToken: resLocals.__csrf_token })}
           ${RemoveAdminModal({ csrfToken: resLocals.__csrf_token })}
