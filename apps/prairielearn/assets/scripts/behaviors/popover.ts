@@ -8,7 +8,11 @@ onDocumentReady(() => {
       $(el)
         .popover({ sanitize: false })
         .on('shown.bs.popover', () => {
-          // TODO: automatically typeset MathJax if it's on the page.
+          // If MathJax is loaded on this page, attempt to typeset any math
+          // that may be in the popover.
+          if (typeof window.MathJax !== 'undefined') {
+            window.MathJax.typesetPromise([el]);
+          }
         });
     },
     remove(el) {
