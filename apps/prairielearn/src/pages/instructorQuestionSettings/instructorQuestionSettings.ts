@@ -226,7 +226,10 @@ router.get(
     );
 
     let questionGHLink: string | null = null;
-    if (res.locals.course.repository) {
+    if (res.locals.course.example_course) {
+      // The example course is not found at the root of its repository, so its path is hardcoded
+      questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
+    } else if (res.locals.course.repository) {
       const githubRepoMatch = res.locals.course.repository.match(
         /^git@github.com:\/?(.+?)(\.git)?\/?$/,
       );
@@ -237,8 +240,6 @@ router.get(
           `/tree/${res.locals.course.branch}/questions/` +
           res.locals.question.qid;
       }
-    } else if (res.locals.course.example_course) {
-      questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
     }
 
     const qids = await sqldb.queryRows(sql.qids, { course_id: res.locals.course.id }, z.string());

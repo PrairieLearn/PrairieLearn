@@ -23,11 +23,7 @@
       "startDate": "2019-01-28T00:00:01",
       "endDate": "2019-01-30T23:59:59"
     },
-    {
-      "mode": "Public",
-      "credit": 0,
-      "startDate": "2019-01-30T00:00:01"
-    }
+    { "mode": "Public", "credit": 0, "startDate": "2019-01-30T00:00:01" }
   ],
   "zones": [
     {
