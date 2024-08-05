@@ -188,8 +188,8 @@ def prepare(data):
     pass
 
 def parse(data):
-    # data["raw_submitted_answer"][NAME] is the exact raw answer submitted by the student.
-    # data["submitted_answer"][NAME] is the answer parsed by elements (e.g., strings converted to numbers).
+    # data["raw_submitted_answers"][NAME] is the exact raw answer submitted by the student.
+    # data["submitted_answers"][NAME] is the answer parsed by elements (e.g., strings converted to numbers).
     # data["format_errors"][NAME] is the answer format error (if any) from elements.
     # We can modify or delete format errors if we have custom logic (rarely needed).
     # If there are format errors then the submission is "invalid" and is not graded.

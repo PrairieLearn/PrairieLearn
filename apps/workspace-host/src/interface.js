@@ -38,7 +38,7 @@ const debug = debugfn('prairielearn:interface');
 const docker = new Docker();
 
 const app = express();
-app.use(Sentry.Handlers.requestHandler());
+app.use(Sentry.requestHandler());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -94,7 +94,7 @@ app.post(
   }),
 );
 
-app.use(Sentry.Handlers.errorHandler());
+app.use(Sentry.expressErrorHandler());
 
 let server;
 let workspace_server_settings = {};

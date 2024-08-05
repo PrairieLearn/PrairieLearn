@@ -18,6 +18,7 @@ import {
   QuestionCopyEditor,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
+import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { encodePath } from '../../lib/uri-util.js';
@@ -230,15 +231,9 @@ router.get(
       // The example course is not found at the root of its repository, so its path is hardcoded
       questionGHLink = `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/${res.locals.question.qid}`;
     } else if (res.locals.course.repository) {
-      const githubRepoMatch = res.locals.course.repository.match(
-        /^git@github.com:\/?(.+?)(\.git)?\/?$/,
-      );
-      if (githubRepoMatch) {
-        questionGHLink =
-          'https://github.com/' +
-          githubRepoMatch[1] +
-          `/tree/${res.locals.course.branch}/questions/` +
-          res.locals.question.qid;
+      const githubPrefix = httpPrefixForCourseRepo(res.locals.course.repository);
+      if (githubPrefix) {
+        questionGHLink = `${githubPrefix}/tree/${res.locals.course.branch}/questions/${res.locals.question.qid}`;
       }
     }
 
