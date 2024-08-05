@@ -41,7 +41,7 @@ const INSTITUTION_ADMIN_USER = {
 
 async function insertUser(user: AuthUser) {
   const newUser = await queryRow(
-    `INSERT INTO users (name, uid) VALUES ($name, $uid) RETURNING *;`,
+    'INSERT INTO users (name, uid) VALUES ($name, $uid) RETURNING *;',
     {
       name: user.name,
       uid: user.uid,
@@ -50,7 +50,7 @@ async function insertUser(user: AuthUser) {
   );
 
   if (user.isAdministrator) {
-    await queryAsync(`INSERT INTO administrators (user_id) VALUES ($user_id);`, {
+    await queryAsync('INSERT INTO administrators (user_id) VALUES ($user_id);', {
       user_id: newUser.user_id,
     });
   }
