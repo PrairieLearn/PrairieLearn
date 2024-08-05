@@ -2,14 +2,17 @@ import { observe } from 'selector-observer';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+// TODO: we may need to add a lot more attributes to this list. For tooltips,
+// popovers, and maybe more, all options can be controlled by kebab-case data
+// attributes, so we probably have to support all of them.
 const BOOTSTRAP_LEGACY_ATTRIBUTES = [
-  'toggle',
-  'target',
-  'html',
-  'placement',
-  'content',
-  'trigger',
-  'dismiss',
+  'data-toggle',
+  'data-target',
+  'data-html',
+  'data-placement',
+  'data-content',
+  'data-trigger',
+  'data-dismiss',
 ];
 
 const BOOTSTRAP_BREAKPOINTS = ['sm', 'md', 'lg', 'xl', 'xxl'];
@@ -17,13 +20,16 @@ const BOOTSTRAP_BREAKPOINTS = ['sm', 'md', 'lg', 'xl', 'xxl'];
 // The changes here are made based on the Bootstrap 5 migration guide:
 // https://getbootstrap.com/docs/5.3/migration/
 onDocumentReady(() => {
-  BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
-    $(`[data-${attr}]`).each((i, el) => {
-      const val = el.dataset[attr];
-      if (val) {
-        el.setAttribute(`data-bs-${attr}`, val);
-      }
-    });
+  observe(BOOTSTRAP_LEGACY_ATTRIBUTES.map((attr) => `[${attr}]`).join(','), {
+    add(el) {
+      BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
+        const val = el.getAttribute(attr);
+        if (val) {
+          const attrSuffix = attr.replace('data-', '');
+          el.setAttribute(`data-bs-${attrSuffix}`, val);
+        }
+      });
+    },
   });
 
   // *********************
