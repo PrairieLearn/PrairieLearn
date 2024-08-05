@@ -1,10 +1,10 @@
-import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { stringify } from '@prairielearn/csv';
+import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import type { AdministratorQueryResult } from '../../admin_queries/util.js';
@@ -16,7 +16,6 @@ import {
   AdministratorQuerySchema,
   QueryRunRowSchema,
 } from './administratorQuery.html.js';
-import { logger } from '@prairielearn/logger';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
