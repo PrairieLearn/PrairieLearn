@@ -124,10 +124,10 @@ def get_answer_name(file_names: str, optional_file_names: str = "") -> str:
     )
 
 
-def add_format_error(data: pl.QuestionData, error_string: str) -> None:
-    if "_files" not in data["format_errors"]:
-        data["format_errors"]["_files"] = []
-    data["format_errors"]["_files"].append(error_string)
+def add_format_error(answer_name: str, data: pl.QuestionData, error_string: str) -> None:
+    if answer_name not in data["format_errors"]:
+        data["format_errors"][answer_name] = []
+    data["format_errors"][answer_name].append(error_string)
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -161,7 +161,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     uuid = pl.get_uuid()
-    parse_error = data["format_errors"].get("_files")
 
     if data["panel"] != "question":
         return ""
@@ -180,6 +179,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     optional_file_regex_json = json.dumps(optional_file_regex, allow_nan=False)
 
     answer_name = get_answer_name(raw_file_names, raw_optional_file_names)
+    parse_error = data["format_errors"].get(answer_name, [])
 
     # Only send the file names to the client. We don't include the contents
     # to avoid bloating the HTML. The client will fetch any submitted files
@@ -207,7 +207,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "submission_files_url": data["options"].get("submission_files_url"),
         "submitted_file_names": submitted_file_names_json,
         "check_icon_color": PLColor("correct_green"),
-        "parse_error": parse_error,
+        "parse_error": '<br>'.join(parse_error),
     }
 
     with open("pl-file-upload.mustache", "r", encoding="utf-8") as f:
@@ -226,7 +226,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get submitted answer or return format error if it does not exist
     files = data["submitted_answers"].get(answer_name)
     if not files and not allow_blank:
-        add_format_error(data, "No submitted answer for file upload.")
+        add_format_error(answer_name, data, "No submitted answer for file upload.")
         return
 
     # We will store the files in the submitted_answer["_files"] key,
@@ -236,7 +236,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     try:
         parsed_files = json.loads(files)
     except Exception:
-        add_format_error(data, "Could not parse submitted files.")
+        add_format_error(answer_name, data, "Could not parse submitted files.")
         parsed_files = []
 
     # Split optional names into two separate lists: wildcard patterns and plain names
@@ -256,14 +256,14 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     # Return format error if cleaned file list is empty and allow_blank is not set
     if not parsed_files and not allow_blank:
-        add_format_error(data, "No submitted answer for file upload.")
+        add_format_error(answer_name, data, "No submitted answer for file upload.")
 
     if data["submitted_answers"].get("_files") is None:
         data["submitted_answers"]["_files"] = parsed_files
     elif isinstance(data["submitted_answers"].get("_files", None), list):
         data["submitted_answers"]["_files"].extend(parsed_files)
     else:
-        add_format_error(data, "_files was present but was not an array.")
+        add_format_error(answer_name, data, "_files was present but was not an array.")
 
     # Validate that all required files are present
     if parsed_files is not None:
@@ -274,6 +274,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
         if len(missing_files) > 0:
             add_format_error(
+                answer_name,
                 data,
                 "The following required files were missing: "
                 + ", ".join(missing_files),
