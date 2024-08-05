@@ -4,7 +4,7 @@ Each query must have the following files:
 
 - A JSON file in the [`adminQuery` JSON Schema](../schemas/schemas/adminQuery.json).
 - A JS or TS file with a default function that performs the necessary actions and returns the resulting data.
-- Optionally, a SQL file with one or more queries used in the query file.
+- Optionally, a SQL file with one or more queries used in the query.
 
 The JS/TS file must export a default function that returns an object of type `AdministratorQueryResult`. For example:
 
