@@ -57,7 +57,9 @@ def prepare(element_html, data):
         optional_attribs=["blank", "allow-blank", "weight", "sort"],
     )
 
-    if pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT) and not pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT):
+    if pl.get_boolean_attrib(
+        element, "allow-blank", ALLOW_BLANK_DEFAULT
+    ) and not pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT):
         raise ValueError(
             'The attribute "allow-blank" cannot be enabled when blank dropdown entries are disabled by the "blank" attribute.'
         )
