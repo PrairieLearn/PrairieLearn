@@ -168,9 +168,13 @@ onDocumentReady(() => {
   });
 
   const tableSettings = {
+    // TODO: If we can pick up the following change, we can drop the `icons` config here:
+    // https://github.com/wenzhixin/bootstrap-table/pull/7190
+    iconsPrefix: 'fa',
     icons: {
-      columns: 'fa-th-list',
+      columns: 'fa-table-list',
     },
+
     buttons: {
       clearFilters: {
         text: 'Clear filters',
