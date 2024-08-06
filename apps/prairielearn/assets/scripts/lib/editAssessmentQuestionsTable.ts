@@ -2,7 +2,10 @@ import { html } from '@prairielearn/html';
 
 import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
-import { AssessmentQuestionRow } from '../../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
+import {
+  AssessmentQuestionRow,
+  AssessmentQuestionZone,
+} from '../../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
 
 function maxPoints({
   max_auto_points,
@@ -34,7 +37,7 @@ export function EditAssessmentQuestionsTable({
   assessmentType,
   showAdvanceScorePercCol,
 }: {
-  zones: any[];
+  zones: AssessmentQuestionZone[];
   assessmentType: string;
   showAdvanceScorePercCol: boolean;
 }) {
