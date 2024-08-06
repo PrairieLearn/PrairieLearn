@@ -46,7 +46,7 @@ export function EditQuestionModal({
         value="${JSON.stringify(question?.topic)}"
       />
       <div class="form-group">
-        <label for="qid">QID</label>
+        <label for="qidInput">QID</label>
         <div class="input-group">
           <input
             type="text"
@@ -68,7 +68,7 @@ export function EditQuestionModal({
       ${assessmentType === 'Homework'
         ? html`
             <div class="form-group">
-              <label for="Grading Method" class="form-label">Grading Method</label>
+              <label for="gradingMethod" class="form-label">Grading Method</label>
               <select class="form-control" id="gradingMethod" name="gradingMethod">
                 <option
                   value="auto"
@@ -85,7 +85,7 @@ export function EditQuestionModal({
               >
             </div>
             <div class="form-group js-hw-auto-points">
-              <label for="autoPoints">Auto Points</label>
+              <label for="autoPointsInput">Auto Points</label>
               <input
                 type="number"
                 class="form-control"
@@ -98,11 +98,11 @@ export function EditQuestionModal({
               </small>
             </div>
             <div class="form-group js-hw-auto-points">
-              <label for="maxAutoPoints">Max Points</label>
+              <label for="maxAutoPointsInput">Max Points</label>
               <input
                 type="number"
                 class="form-control"
-                id="maxPointsInput"
+                id="maxAutoPointsInput"
                 name="maxAutoPoints"
                 value="${question?.max_auto_points}"
               />
@@ -111,7 +111,7 @@ export function EditQuestionModal({
               </small>
             </div>
             <div class="form-group js-hw-auto-points">
-              <label for="triesPerVariant">Tries Per Variant</label>
+              <label for="triesPerVariantInput">Tries Per Variant</label>
               <input
                 type="number"
                 class="form-control"
@@ -125,7 +125,7 @@ export function EditQuestionModal({
               >
             </div>
             <div class="form-group js-hw-manual-points">
-              <label for="manualPoints">Manual Points</label>
+              <label for="manualPointsInput">Manual Points</label>
               <input
                 type="number"
                 class="form-control"

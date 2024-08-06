@@ -17,7 +17,7 @@ export function EditZoneModal({
     body: html`<input type="hidden" name="zoneIndex" id="zoneIndexInput" value="${zoneIndex}" />
       <input type="hidden" name="newZone" id="newZoneInput" value="${newZone}" />
       <div class="form-group">
-        <label for="title">Title</label>
+        <label for="zoneTitleInput">Title</label>
         <div class="input-group">
           <input
             type="text"
@@ -31,7 +31,7 @@ export function EditZoneModal({
         <small id="zoneNameHelp" class="form-text text-muted"> The name of the zone. </small>
       </div>
       <div class="form-group">
-        <label for="bestQuestions">Best Questions</label>
+        <label for="bestQuestionsInput">Best Questions</label>
         <div class="input-group">
           <input
             type="number"
@@ -48,7 +48,7 @@ export function EditZoneModal({
         </small>
       </div>
       <div class="form-group">
-        <label for="numberChoose">Number Choose</label>
+        <label for="numberChooseInput">Number Choose</label>
         <div class="input-group">
           <input
             type="number"
@@ -64,7 +64,7 @@ export function EditZoneModal({
         </small>
       </div>
       <div class="form-group">
-        <label for="maxPoints">Max Points</label>
+        <label for="maxPointsInput">Max Points</label>
         <div class="input-group">
           <input
             type="number"
@@ -75,8 +75,9 @@ export function EditZoneModal({
             value="${zone?.maxPoints}"
           />
         </div>
-        <small id="bestQuestionsHelp" class="form-text text-muted">
-          Number of questions the student can choose from. Leave blank for all questions.
+        <small id="maxPointssHelp" class="form-text text-muted">
+          Only this many of the points that are awarded for answering questions in this zone will
+          count toward the total points.
         </small>
       </div> `,
     footer: html`
