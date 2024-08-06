@@ -44,11 +44,6 @@ export function ManualGradingAssessment({
       <head>
         ${HeadContents({ resLocals })}
       </head>
-      <script>
-        $(() => {
-          $('[data-toggle="tooltip"]').tooltip();
-        });
-      </script>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
