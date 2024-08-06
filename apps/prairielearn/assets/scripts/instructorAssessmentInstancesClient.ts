@@ -119,8 +119,11 @@ onDocumentReady(() => {
       modal.modal('hide');
     });
 
-    if (event.relatedTarget) {
-      templateFromAttributes(event.relatedTarget, modal[0], {
+    // @ts-expect-error -- The BS5 types don't include the `relatedTarget` property on jQuery events.
+    const { relatedTarget } = event;
+
+    if (relatedTarget) {
+      templateFromAttributes(relatedTarget, modal[0], {
         'data-uid': '.modal-uid',
         'data-name': '.modal-name',
         'data-group-name': '.modal-group-name',
