@@ -14,11 +14,7 @@ const statElements = [
 ];
 
 onDocumentReady(() => {
-  $('.js-sync-popover[data-toggle="popover"]')
-    .popover({ sanitize: false })
-    .on('show.bs.popover', function () {
-      $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
-    });
+  $('.js-sync-popover[data-toggle="popover"]').popover({ sanitize: false });
 
   updatePlots(document.body);
 
