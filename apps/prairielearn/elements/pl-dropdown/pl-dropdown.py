@@ -56,6 +56,12 @@ def prepare(element_html, data):
         required_attribs=["answers-name"],
         optional_attribs=["blank", "allow-blank", "weight", "sort"],
     )
+
+    if pl.has_attrib(element, "allow-blank") and not pl.has_attrib(element, "blank"):
+        raise ValueError(
+            'The attribute "allow-blank" cannot be enabled when blank dropdown entries are disabled by the "blank" attribute.'
+        )
+
     answers_name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, answers_name)
 
