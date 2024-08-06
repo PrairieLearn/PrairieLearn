@@ -139,14 +139,16 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     required_attribs = []
     optional_attribs = ["file-names", "optional-file-names", "allow-blank"]
     pl.check_attribs(element, required_attribs, optional_attribs)
-    if not pl.has_attrib(element, "file-names") and not pl.has_attrib(
-        element, "optional-file-names"
+    if not pl.get_string_attrib(element, "file-names", "") and not pl.get_string_attrib(
+        element, "optional-file-names", ""
     ):
         raise ValueError(
             'One of required attributes "file-names" or "optional-file-names" missing'
         )
 
-    if pl.has_attrib(element, "file-names") and pl.has_attrib(element, "allow-blank"):
+    if pl.get_string_attrib(element, "file-names", "") and pl.get_boolean_attrib(
+        element, "allow-blank", ALLOW_BLANK_DEFAULT
+    ):
         raise ValueError(
             'The attribute "allow-blank" cannot be used when (mandatory) "file-names" are specified'
         )
