@@ -99,10 +99,18 @@ onDocumentReady(() => {
         title: 'hint: use <code>&lt;1</code>, or <code>&gt;0</code>',
         html: true,
       });
+
       $('#grading-table th[data-field="manual_points"] .filter-control input').tooltip({
         title: 'hint: use <code>&lt;1</code>, or <code>&gt;0</code>',
         html: true,
       });
+
+      // This column is hidden by default, but can be shown by the user.
+      $('#grading-table th[data-field="points"] .filter-control input').tooltip({
+        title: 'hint: use <code>&lt;1</code>, or <code>&gt;0</code>',
+        html: true,
+      });
+
       $('#grading-table th[data-field="score_perc"] .filter-control input').tooltip({
         title: 'hint: use <code>&lt;50</code>, or <code>&gt;0</code>',
         html: true,
