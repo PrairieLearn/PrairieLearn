@@ -8,8 +8,7 @@ import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prair
 import {
   AssessmentSchema,
   Lti13CourseInstanceSchema,
-  Lti13InstanceSchema,
-  Lti13Lineitems,
+  Lti13LineitemsSchema,
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
@@ -20,6 +19,7 @@ import {
   unlink_assessment,
   query_and_link_lineitem,
   create_and_link_lineitem,
+  Lti13CombinedInstanceSchema,
 } from '../../lib/lti13.js';
 
 import {
@@ -39,10 +39,7 @@ router.get(
       {
         course_instance_id: res.locals.course_instance.id,
       },
-      z.object({
-        lti13_course_instance: Lti13CourseInstanceSchema,
-        lti13_instance: Lti13InstanceSchema,
-      }),
+      Lti13CombinedInstanceSchema,
     );
 
     // Handle the no parameter offered case, take the first one
@@ -79,7 +76,7 @@ router.get(
       {
         lti13_course_instance_id: instance.lti13_course_instance.id,
       },
-      Lti13Lineitems,
+      Lti13LineitemsSchema,
     );
 
     if ('lineitems' in req.query) {
@@ -102,18 +99,13 @@ router.get(
 router.post(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
-    console.log(req.body);
-
     const instance = await queryRow(
       sql.select_lti13_instance,
       {
         course_instance_id: res.locals.course_instance.id,
         lti13_course_instance_id: req.params.unsafe_lti13_course_instance_id,
       },
-      z.object({
-        lti13_course_instance: Lti13CourseInstanceSchema,
-        lti13_instance: Lti13InstanceSchema,
-      }),
+      Lti13CombinedInstanceSchema,
     );
 
     const serverJobOptions = {

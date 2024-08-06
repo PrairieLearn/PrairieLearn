@@ -7,7 +7,11 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { DateFromISOString } from '../../lib/db-types.js';
+import {
+  DateFromISOString,
+  Lti13InstanceSchema,
+  Lti13CourseInstanceSchema,
+} from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { ServerJob } from '../../lib/server-jobs.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
@@ -22,6 +26,12 @@ const TOKEN_SCOPES = [
   //'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly',
   //'https://canvas.instructure.com/lti/public_jwk/scope/update',
 ];
+
+export const Lti13CombinedInstanceSchema = z.object({
+  lti13_course_instance: Lti13CourseInstanceSchema,
+  lti13_instance: Lti13InstanceSchema,
+});
+export type Lti13CombinedInstance = z.infer<typeof Lti13CombinedInstanceSchema>;
 
 export const Lti13LineitemSchema = z.object({
   id: z.string(),
@@ -282,9 +292,11 @@ export async function access_token(lti13_instance_id: string) {
   }
 }
 
-export async function get_lineitems(instance: any) {
+export async function get_lineitems(instance: Lti13CombinedInstance) {
+  if (instance.lti13_course_instance.lineitems == null) {
+    throw new Error('Lineitems not defined');
+  }
   const token = await access_token(instance.lti13_instance.id);
-
   const response = await fetchRetry(instance.lti13_course_instance.lineitems, {
     method: 'GET',
     headers: { Authorization: `Bearer ${token}` },
@@ -305,7 +317,7 @@ export async function get_lineitems(instance: any) {
  */
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
-export async function sync_lineitems(instance: any, job: ServerJob) {
+export async function sync_lineitems(instance: Lti13CombinedInstance, job: ServerJob) {
   job.info(
     `Polling for external assignments from ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
   );
