@@ -45,11 +45,6 @@ export function UserSettings({
         ${HeadContents({ resLocals, pageTitle: 'User Settings' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../../pages/partials/navbar') %>", {
           ...resLocals,
           navPage: 'user_settings',

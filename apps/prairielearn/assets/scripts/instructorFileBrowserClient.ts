@@ -1,11 +1,6 @@
 import { on } from 'delegated-events';
 
 import './behaviors/custom-file-input.js';
-import { onDocumentReady } from '@prairielearn/browser-utils';
-
-onDocumentReady(() => {
-  $('[data-toggle="popover"]').popover({ sanitize: false });
-});
 
 on('submit', '.needs-validation', function (event) {
   const form = event.target as HTMLFormElement;

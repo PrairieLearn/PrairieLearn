@@ -95,11 +95,6 @@ export function InstructorAssessmentInstance({
         ${compiledScriptTag('popover.ts')}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: '',
