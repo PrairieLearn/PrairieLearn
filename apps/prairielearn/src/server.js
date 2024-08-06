@@ -5,10 +5,6 @@
 // dependencies like `pg` and `express`.
 import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
-
-// `@sentry/tracing` must be imported before `@sentry/profiling-node`.
-import '@sentry/tracing';
-import { ProfilingIntegration } from '@sentry/profiling-node';
 /* eslint-enable import-x/order */
 
 import * as fs from 'node:fs';
@@ -120,11 +116,7 @@ export async function initExpress() {
 
   // These should come first so that we get instrumentation on all our requests.
   if (config.sentryDsn) {
-    app.use(Sentry.Handlers.requestHandler());
-
-    if (config.sentryTracesSampleRate) {
-      app.use(Sentry.Handlers.tracingHandler());
-    }
+    app.use(Sentry.requestHandler());
 
     app.use((await import('./lib/sentry.js')).enrichSentryEventMiddleware);
   }
@@ -2152,7 +2144,7 @@ export async function initExpress() {
   });
 
   // The Sentry error handler must come before our own.
-  app.use(Sentry.Handlers.errorHandler());
+  app.use(Sentry.expressErrorHandler());
 
   app.use((await import('./pages/error/error.js')).default);
 
@@ -2299,22 +2291,26 @@ if (esMain(import.meta) && config.startServer) {
         await opentelemetry.init({
           ...config,
           serviceName: 'prairielearn',
+          // For Sentry to work correctly, it needs to hook into our OpenTelemetry setup.
+          // https://docs.sentry.io/platforms/javascript/guides/node/tracing/instrumentation/opentelemetry/
+          //
+          // However, despite what their documentation claims, only the `SentryContextManager`
+          // is necessary if one isn't using Sentry for tracing. In fact, if `SentrySpanProcessor`
+          // is used, 100% of traces will be sent to Sentry, despite us never having set
+          // `tracesSampleRate` in the Sentry configuration.
+          contextManager: config.sentryDsn ? new Sentry.SentryContextManager() : undefined,
         });
 
         // Same with Sentry configuration.
         if (config.sentryDsn) {
-          const integrations = [];
-          if (config.sentryTracesSampleRate && config.sentryProfilesSampleRate) {
-            integrations.push(new ProfilingIntegration());
-          }
-
           await Sentry.init({
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
-            integrations,
-            tracesSampleRate: config.sentryTracesSampleRate ?? undefined,
-            // This is relative to `tracesSampleRate`.
-            profilesSampleRate: config.sentryProfilesSampleRate ?? undefined,
+
+            // We have our own OpenTelemetry setup, so ensure Sentry doesn't
+            // try to set that up for itself.
+            skipOpenTelemetrySetup: true,
+
             beforeSend: (event) => {
               // This will be necessary until we can consume the following change:
               // https://github.com/chimurai/http-proxy-middleware/pull/823

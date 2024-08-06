@@ -57,7 +57,10 @@ const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
 });
 
 async function ensureUpToDate(locals: Record<string, any>) {
-  const updated = await assessment.update(locals.assessment_instance.id, locals.authn_user.user_id);
+  const updated = await assessment.updateAssessmentInstance(
+    locals.assessment_instance.id,
+    locals.authn_user.user_id,
+  );
   if (updated) {
     // we updated the assessment_instance, so reload it
     locals.assessment_instance = await queryRow(
