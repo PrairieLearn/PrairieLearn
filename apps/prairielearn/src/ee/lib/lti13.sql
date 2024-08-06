@@ -19,20 +19,6 @@ WHERE
 
 -- BLOCK update_lineitem
 INSERT INTO
-  lti13_lineitems (lti13_course_instance_id, lineitem_id, lineitem)
-VALUES
-  (
-    $lti13_course_instance_id,
-    $lineitem_id,
-    $lineitem
-  )
-ON CONFLICT (lti13_course_instance_id, lineitem_id) DO
-UPDATE
-SET
-  lineitem = $lineitem;
-
--- BLOCK update_lineitem_with_assessment
-INSERT INTO
   lti13_lineitems (
     lti13_course_instance_id,
     lineitem_id,
@@ -122,34 +108,3 @@ DELETE FROM lti13_lineitems
 WHERE
   lti13_course_instance_id = $lti13_course_instance_id
   AND assessment_id = $assessment_id;
-
--- BLOCK disassociate_lineitem
-UPDATE lti13_lineitems
-SET
-  assessment_id = NULL
-WHERE
-  lti13_course_instance_id = $lti13_course_instance_id
-  AND lineitem_id = $lineitem_id;
-
--- BLOCK associate_lineitem
-WITH
-  select_assessment AS (
-    SELECT
-      a.id
-    FROM
-      assessments AS a
-      JOIN lti13_course_instances AS lci ON (lci.course_instance_id = a.course_instance_id)
-    WHERE
-      a.id = $assessment_id
-      AND lci.id = $lti13_course_instance_id
-  )
-UPDATE lti13_lineitems
-SET
-  assessment_id = select_assessment.id
-FROM
-  select_assessment
-WHERE
-  lti13_course_instance_id = $lti13_course_instance_id
-  AND lineitem_id = $lineitem_id
-RETURNING
-  *;

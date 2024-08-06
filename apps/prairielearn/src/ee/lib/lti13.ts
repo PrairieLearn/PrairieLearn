@@ -1,6 +1,6 @@
 import type { Request } from 'express';
 import _ from 'lodash';
-import fetch, { Response } from 'node-fetch';
+import fetch, { Response, RequestInfo, RequestInit } from 'node-fetch';
 import { Issuer, TokenSet } from 'openid-client';
 import { z } from 'zod';
 
@@ -261,8 +261,6 @@ export async function access_token(lti13_instance_id: string) {
   ) {
     return tokenSet.access_token;
   } else {
-    //console.log('Token missing or expired');
-
     const issuer = new Issuer(lti13_instance.issuer_params);
     const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
 
@@ -287,34 +285,25 @@ export async function access_token(lti13_instance_id: string) {
 export async function get_lineitems(instance: any) {
   const token = await access_token(instance.lti13_instance.id);
 
-  const response = await fetch(instance.lti13_course_instance.lineitems, {
+  const response = await fetchRetry(instance.lti13_course_instance.lineitems, {
     method: 'GET',
     headers: { Authorization: `Bearer ${token}` },
   });
-  checkStatus(response);
 
   const data = (await response.json()) as Lti13LineitemType[];
-  console.log(data);
+  //console.log(data);
   return data;
 }
 
 /*
-Output might not be the same as get_lineitems so I'm leaning towards getting
-all of them and then using .find() to get the singular instance?
+ * Canvas supports an API call to get a single lineitem.
+ * https://canvas.instructure.com/doc/api/line_items.html#method.lti/ims/line_items.show
+ * But in testing Dave discovered its output might not be the same as
+ * lineitems (plural).
+ *
+ * So instead of a get_lineitem() function, let's get_lineitems and filter.
+ */
 
-export async function get_lineitem(instance: any, lineitem_id: string) {
-  const token = await access_token(instance.lti13_instance.id);
-
-  // https://canvas.instructure.com/doc/api/line_items.html#method.lti/ims/line_items.show
-  const response = await fetch(`${lineitem_id}?include[]=launch_url`, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  checkStatus(response);
-
-  return (await response.json()) as Lti13LineitemType;
-}
-*/
 /////////////////////////////////////////////////////////////////////////////////////////////////
 export async function sync_lineitems(instance: any, job: ServerJob) {
   job.info(
@@ -382,7 +371,7 @@ export async function create_and_link_lineitem(
   );
 
   const token = await access_token(instance.lti13_instance.id);
-  const response = await fetch(instance.lti13_course_instance.lineitems, {
+  const response = await fetchRetry(instance.lti13_course_instance.lineitems, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -391,7 +380,6 @@ export async function create_and_link_lineitem(
     body: JSON.stringify(createBody),
   });
 
-  checkStatus(response);
   const item = (await response.json()) as Lti13LineitemType;
 
   job.info('Associating PrairieLearn assessment with the new assignment');
@@ -430,7 +418,7 @@ export async function link_assessment(
   assessment_id: string | number,
   lineitem: Lti13LineitemType,
 ) {
-  await queryAsync(sql.update_lineitem_with_assessment, {
+  await queryAsync(sql.update_lineitem, {
     lti13_course_instance_id,
     lineitem_id: lineitem.id,
     lineitem: JSON.stringify(lineitem),
@@ -438,17 +426,39 @@ export async function link_assessment(
   });
 }
 
-function checkStatus(response: Response) {
-  const hint = ' -- Try polling the LMS for updated assessment info and retry.';
-  //console.log(response);
-  if (response.ok) {
-    return response;
-  } else {
-    // TODO: Check for throttling
-    // https://canvas.instructure.com/doc/api/file.throttling.html
-    // 403 Forbidden (Rate Limit Exceeded)
-    // X-Request-Cost
-    // X-Rate-Limit-Remaining
-    throw new HttpStatusError(response.status, response.statusText + hint);
+function sleep(delay: number) {
+  return new Promise((resolve) => setTimeout(resolve, delay));
+}
+
+// based on https://github.com/greatjapa/node-fetch-retry/blob/master/index.js
+// https://httpbin.org/status/403
+// TODO: Check for throttling
+// https://canvas.instructure.com/doc/api/file.throttling.html
+// 403 Forbidden (Rate Limit Exceeded)
+// X-Request-Cost
+// X-Rate-Limit-Remaining
+
+//await fetchRetry('https://httpbin.org/status/403');
+
+async function fetchRetry(input: RequestInfo | URL, opts?: RequestInit | undefined) {
+  let retryLeft = 5;
+  let response: Response;
+  while (retryLeft >= 0) {
+    try {
+      response = await fetch(input, opts);
+      if (response.ok) {
+        break;
+      } else {
+        throw new HttpStatusError(response.status, response.statusText);
+      }
+    } catch (err) {
+      if (retryLeft === 0) {
+        throw err;
+      }
+      await sleep(1000);
+    } finally {
+      retryLeft -= 1;
+    }
   }
+  return response;
 }
