@@ -238,8 +238,6 @@ function DeletePersonalNoteButton({
       data-placement="auto"
       title="Confirm delete"
       data-content="${escapeHtml(popoverContent)}"
-      data-trigger="manual"
-      onclick="$(this).popover('show')"
     >
       <i class="far fa-trash-alt"></i>
     </button>

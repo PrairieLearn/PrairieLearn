@@ -99,8 +99,6 @@ export function InstructorCourseAdminStaff({
                         id: 'coursePermissionsRemoveStudentDataAccessButton',
                       }),
                     )}"
-                    data-trigger="manual"
-                    onclick="$(this).popover('show')"
                   >
                     <i class="fas fa-eye-slash" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Remove all student data access</span>
@@ -120,8 +118,6 @@ export function InstructorCourseAdminStaff({
                         id: 'coursePermissionsDeleteNoAccessButton',
                       }),
                     )}"
-                    data-trigger="manual"
-                    onclick="$(this).popover('show')"
                   >
                     <i class="fas fa-recycle" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Delete users with no access</span>
@@ -141,8 +137,6 @@ export function InstructorCourseAdminStaff({
                         id: 'coursePermissionsDeleteNonOwnersButton',
                       }),
                     )}"
-                    data-trigger="manual"
-                    onclick="$(this).popover('show')"
                   >
                     <i class="fas fa-users-slash" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Delete non-owners</span>
@@ -164,8 +158,6 @@ export function InstructorCourseAdminStaff({
                         courseInstances,
                       }),
                     )}"
-                    data-trigger="manual"
-                    onclick="$(this).popover('show')"
                   >
                     <i class="fas fa-users" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Add users</span>
