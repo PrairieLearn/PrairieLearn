@@ -5,14 +5,47 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 // TODO: we may need to add a lot more attributes to this list. For tooltips,
 // popovers, and maybe more, all options can be controlled by kebab-case data
 // attributes, so we probably have to support all of them.
+// The following list of attributes was compiled from the Bootstrap 4 docs:
+// https://getbootstrap.com/docs/4.6/components/carousel/
+// https://getbootstrap.com/docs/4.6/components/dropdowns/
+// https://getbootstrap.com/docs/4.6/components/modal/
+// https://getbootstrap.com/docs/4.6/components/popovers/
+// https://getbootstrap.com/docs/4.6/components/scrollspy/
+// https://getbootstrap.com/docs/4.6/components/tooltips/
+// https://getbootstrap.com/docs/4.6/components/toasts/
 const BOOTSTRAP_LEGACY_ATTRIBUTES = [
-  'data-toggle',
-  'data-target',
-  'data-html',
-  'data-placement',
+  'data-animation',
+  'data-autohide',
+  'data-backdrop',
+  'data-boundary',
+  'data-container',
   'data-content',
-  'data-trigger',
+  'data-custom-class',
+  'data-delay',
   'data-dismiss',
+  'data-display',
+  'data-fallback-placement',
+  'data-flip',
+  'data-focus',
+  'data-interval',
+  'data-keyboard',
+  'data-html',
+  'data-offset',
+  'data-pause',
+  'data-placement',
+  'data-popper-config',
+  'data-reference',
+  'data-ride',
+  'data-selector',
+  'data-show',
+  'data-spy',
+  'data-target',
+  'data-template',
+  'data-title',
+  'data-toggle',
+  'data-touch',
+  'data-trigger',
+  'data-wrap',
 ];
 
 const BOOTSTRAP_BREAKPOINTS = ['sm', 'md', 'lg', 'xl', 'xxl'];
@@ -25,9 +58,38 @@ onDocumentReady(() => {
       BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
         const val = el.getAttribute(attr);
         if (val) {
+          // We need to manually handle `data-boundary="window"` since it no longer works
+          // in Bootstrap 5.
+          // See https://github.com/twbs/bootstrap/issues/34110#issuecomment-1064395197.
+          if (attr === 'data-boundary' && val === 'window') {
+            return;
+          }
           const attrSuffix = attr.replace('data-', '');
           el.setAttribute(`data-bs-${attrSuffix}`, val);
         }
+      });
+    },
+  });
+
+  // Bootstrap 5 no longer supports `data-boundary="window"` for dropdowns.
+  // While Popper.js supports a `strategy: 'fixed'` option, it is not
+  // configurable via a data attribute, so we need to patch the creation of
+  // such dropdowns.
+  //
+  // If the following PR is merged, we can use the attribute instead:
+  // https://github.com/twbs/bootstrap/pull/34120
+  //
+  // Note that we only handle dropdowns here; we don't want to take over the
+  // creation of poppers and tooltips.
+  observe('[data-toggle="dropdown"][data-boundary="window"]', {
+    add(el) {
+      $(el).dropdown({
+        popperConfig(defaultConfig) {
+          return {
+            ...defaultConfig,
+            strategy: 'fixed',
+          };
+        },
       });
     },
   });
