@@ -2,7 +2,6 @@ import { html } from '@prairielearn/html';
 
 import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
-import { AssessmentsFormatForQuestion } from '../../../src/lib/db-types.js';
 import { AssessmentQuestionRow } from '../../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
 
 function maxPoints({
@@ -362,7 +361,7 @@ function QuestionRow({
         : ''}
       <td>
         ${question.other_assessments
-          ? question.other_assessments.map((assessment: AssessmentsFormatForQuestion) => {
+          ? question.other_assessments.map((assessment: { color: string; label: string }) => {
               return html`
                 <span class="badge color-${assessment.color} color-hover">
                   ${assessment.label}

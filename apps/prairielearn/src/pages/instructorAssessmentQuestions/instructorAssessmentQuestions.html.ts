@@ -275,7 +275,7 @@ function AssessmentQuestionsTable({
                       : ''}
                   ${question.display_name}
                 </td>
-                <td>${TopicBadge(question.topic)}</td>
+                <td>${question.topic === null ? '' : TopicBadge(question.topic)}</td>
                 <td>${TagBadgeList(question.tags)}</td>
                 <td>
                   ${maxPoints({

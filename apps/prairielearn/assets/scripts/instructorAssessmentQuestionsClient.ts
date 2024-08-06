@@ -1,5 +1,6 @@
 import { on } from 'delegated-events';
 import morphdom from 'morphdom';
+import { z } from 'zod';
 
 import { onDocumentReady, templateFromAttributes, decodeData } from '@prairielearn/browser-utils';
 
@@ -34,10 +35,9 @@ onDocumentReady(() => {
   const assessmentType = assessmentQuestionsTable.dataset.assessmentType ?? '';
   const urlPrefix = assessmentQuestionsTable.dataset.urlPrefix ?? '';
   const assessmentInstanceId = assessmentQuestionsTable.dataset.assessmentInstanceId ?? '';
-  // const questions = AssessmentQuestionRowSchema.parse(decodeData('assessment-questions-data'));
-  const questions = decodeData('assessment-questions-data');
-  console.log(typeof questions === typeof AssessmentQuestionRowSchema);
-  // console.log(questions);
+  const questions = z
+    .array(AssessmentQuestionRowSchema)
+    .parse(decodeData('assessment-questions-data'));
 
   const zones: AssessmentQuestionZone[] = [];
   let showAdvanceScorePercCol = false;
@@ -160,7 +160,8 @@ onDocumentReady(() => {
   on('click', '.js-question-up-arrow-button', (e) => {
     const zoneIndex = parseInt((e.currentTarget as HTMLElement)?.dataset.zoneIndex ?? '0');
     const questionIndex = parseInt((e.currentTarget as HTMLElement)?.dataset.questionIndex ?? '0');
-    const alternativeIndex = zones[zoneIndex].questions[questionIndex].is_alternative_group
+    const question = zones[zoneIndex].questions[questionIndex];
+    const alternativeIndex = question.is_alternative_group
       ? (e.currentTarget as HTMLElement)?.dataset.alternativeIndex === 'group'
         ? 'group'
         : parseInt((e.currentTarget as HTMLElement)?.dataset.alternativeIndex ?? '0')
@@ -171,7 +172,7 @@ onDocumentReady(() => {
     }
     // Determine if the question is in an alternative group.
     if (typeof alternativeIndex === 'number') {
-      const alternatives = zones[zoneIndex].questions[questionIndex].alternatives;
+      const alternatives = question.alternatives;
       if (!alternatives) return;
       // If the question is in an alternative group and the alternative is the first alternative in the group, we need to move the question out of the group.
       if (alternativeIndex === 0) {
@@ -180,7 +181,7 @@ onDocumentReady(() => {
           0,
           alternatives.shift() ?? zones[zoneIndex].questions[0],
         );
-        zones[zoneIndex].questions[questionIndex].is_alternative_group = false;
+        question.is_alternative_group = false;
         renumberQuestions();
         refreshTable();
         return;
@@ -208,10 +209,8 @@ onDocumentReady(() => {
       zones[zoneIndex].questions[questionIndex - 1].is_alternative_group &&
       alternativeIndex !== 'group'
     ) {
-      zones[zoneIndex].questions[questionIndex].is_alternative_group = true;
-      zones[zoneIndex].questions[questionIndex - 1].alternatives?.push(
-        zones[zoneIndex].questions[questionIndex],
-      );
+      question.is_alternative_group = true;
+      zones[zoneIndex].questions[questionIndex - 1].alternatives?.push(question);
       zones[zoneIndex].questions.splice(questionIndex, 1);
       renumberQuestions();
       refreshTable();
@@ -231,6 +230,7 @@ onDocumentReady(() => {
   on('click', '.js-question-down-arrow-button', (e) => {
     const zoneIndex = parseInt((e.currentTarget as HTMLElement).dataset.zoneIndex ?? '0');
     const questionIndex = parseInt((e.currentTarget as HTMLElement)?.dataset.questionIndex ?? '0');
+    const question = zones[zoneIndex].questions[questionIndex];
     const alternativeIndex = zones[zoneIndex].questions[questionIndex].is_alternative_group
       ? (e.currentTarget as HTMLElement).dataset.alternativeIndex === 'group'
         ? 'group'
@@ -256,8 +256,7 @@ onDocumentReady(() => {
         zones[zoneIndex].questions.splice(
           questionIndex + 1,
           0,
-          zones[zoneIndex].questions[questionIndex].alternatives?.pop() ??
-            zones[zoneIndex].questions[questionIndex],
+          question.alternatives?.pop() ?? question,
         );
         renumberQuestions();
         refreshTable();
@@ -275,9 +274,7 @@ onDocumentReady(() => {
 
     // If the question is the last question in the zone, we need to move it to the beginning of the next zone.
     if (questionIndex === zones[zoneIndex].questions.length - 1) {
-      zones[zoneIndex + 1].questions.unshift(
-        zones[zoneIndex].questions.pop() ?? zones[zoneIndex].questions[questionIndex],
-      );
+      zones[zoneIndex + 1].questions.unshift(zones[zoneIndex].questions.pop() ?? question);
       refreshTable();
       return;
     }
@@ -287,7 +284,7 @@ onDocumentReady(() => {
       zones[zoneIndex].questions[questionIndex + 1].is_alternative_group &&
       alternativeIndex !== 'group'
     ) {
-      zones[zoneIndex].questions[questionIndex].is_alternative_group = true;
+      question.is_alternative_group = true;
       zones[zoneIndex].questions[questionIndex + 1].alternatives?.unshift(
         zones[zoneIndex].questions[questionIndex],
       );
@@ -348,10 +345,10 @@ onDocumentReady(() => {
     const zoneIndex = parseInt(editButton?.dataset.zoneIndex ?? '0');
     const questionIndex = parseInt(editButton?.dataset.questionIndex ?? '0');
     const alternativeIndex = parseInt(editButton?.dataset.alternativeIndex ?? '0');
+    const question = zones[zoneIndex].questions[questionIndex];
+    const alternative = zones[zoneIndex].questions[questionIndex].alternatives?.[alternativeIndex];
     if (assessmentType === 'Exam') {
-      zones[zoneIndex].questions[questionIndex].points_list = zones[zoneIndex].questions[
-        questionIndex
-      ].points_list?.map(
+      question.points_list = zones[zoneIndex].questions[questionIndex].points_list?.map(
         (points: number) =>
           points - (zones[zoneIndex].questions[questionIndex].max_manual_points ?? 0),
       ) ?? [0];
@@ -359,9 +356,7 @@ onDocumentReady(() => {
     $('#editQuestionModal').replaceWith(
       (document.createElement('div').innerHTML = EditQuestionModal({
         newQuestion: false,
-        question: zones[zoneIndex].questions[questionIndex].is_alternative_group
-          ? zones[zoneIndex].questions[questionIndex].alternatives[alternativeIndex]
-          : zones[zoneIndex].questions[questionIndex],
+        question: question.is_alternative_group ? alternative : question,
         zoneIndex,
         questionIndex,
         alternativeIndex,
@@ -467,6 +462,7 @@ onDocumentReady(() => {
         // If the question does not exist, we need to create it.
       } else {
         alternatives[alternativeIndex] = {
+          ...newQuestion,
           qid: questionData.qid.toString(),
           title: questionData.title.toString(),
           tags: JSON.parse(questionData.tags.toString()),
@@ -486,8 +482,8 @@ onDocumentReady(() => {
     } else {
       // If the question already exists, we need to update it.
       if (zones[zoneIndex].questions[questionIndex]) {
-        zones[zoneIndex].questions[questionIndex].qid = questionData.qid.toString();
-        (zones[zoneIndex].questions[questionIndex].title = questionData.title.toString()),
+        zones[zoneIndex].questions[questionIndex].qid = questionData.qid as string;
+        (zones[zoneIndex].questions[questionIndex].title = questionData.title as string),
           (zones[zoneIndex].questions[questionIndex].tags = JSON.parse(
             questionData.tags.toString(),
           )),
@@ -513,7 +509,6 @@ onDocumentReady(() => {
           zones[zoneIndex].questions[questionIndex].max_manual_points = parseInt(
             questionData.manualPoints !== '' ? questionData.manualPoints.toString() : '0',
           );
-          // If the question does not exist, we need to create it.
         } else {
           if (questionData.gradingMethod === 'auto') {
             zones[zoneIndex].questions[questionIndex].init_points = parseFloat(
@@ -535,8 +530,10 @@ onDocumentReady(() => {
             );
           }
         }
+        // If the question does not exist, we need to create it.
       } else {
         zones[zoneIndex].questions[questionIndex] = {
+          ...newQuestion,
           qid: questionData.qid.toString(),
           title: questionData.title.toString(),
           tags: JSON.parse(questionData.tags.toString()),
@@ -555,7 +552,12 @@ onDocumentReady(() => {
                   .split(',')
                   .map(
                     (points: string) =>
-                      parseInt(points) + parseInt(questionData.manualPoints.toString()),
+                      parseFloat(points) +
+                      parseInt(
+                        questionData.manualPoints !== ''
+                          ? questionData.manualPoints.toString()
+                          : '0',
+                      ),
                   )
               : [0],
           max_auto_points:
@@ -652,38 +654,122 @@ onDocumentReady(() => {
     const zonesInput = form.querySelector('input[name="zones"]') as HTMLInputElement;
     const zoneMap = zones
       // We want to filter out any zones that do not have any questions in them.
-      .filter((zone: AssessmentQuestionZone) => zone.questions.length > 0)
+      .filter((zone) => zone.questions.length > 0)
+      // Then map the zones to a new array that has only the editable fields in it.
       .map((zone) => {
         if (zone.questions.length === 0) return;
-        zone.questions = zone.questions.map((question) => {
-          const questionData = {
-            id: question.qid,
-            alternatives: !question.is_alternative_group
-              ? null
-              : question.alternatives?.map((alternative) => {
-                  return { id: alternative.qid };
-                }),
-            autoPoints:
-              assessmentType === 'Exam'
-                ? question.points_list?.map((points) =>
-                    question.max_manual_points === null
-                      ? points
-                      : points - question.max_manual_points,
-                  )
-                : question.init_points,
-            manualPoints: question.max_manual_points,
-            maxAutoPoints: assessmentType === 'Exam' ? 0 : question.max_auto_points,
-            triesPerVariant: question.tries_per_variant === 1 ? null : question.tries_per_variant,
-          };
-          // We want to filter out any question attributes that do not have any values and then add them to the zone questions array.
-          return Object.fromEntries(
-            Object.entries(questionData).filter(([_, value]) => value && value !== 0),
-          );
-        });
+        const resolvedZone = {
+          questions: zone.questions.map((question) => {
+            const questionData = {
+              id: question.qid,
+              alternatives: !question.is_alternative_group
+                ? undefined
+                : question.alternatives?.map((alternative) => {
+                    return { id: alternative.qid };
+                  }),
+              autoPoints:
+                assessmentType === 'Exam'
+                  ? question.points_list?.map((points) =>
+                      question.max_manual_points === null
+                        ? points
+                        : points - question.max_manual_points,
+                    )
+                  : question.init_points,
+              manualPoints: question.max_manual_points ?? null,
+              maxAutoPoints: assessmentType === 'Exam' ? 0 : question.max_auto_points,
+              triesPerVariant:
+                question.tries_per_variant === 1 || question.tries_per_variant === undefined
+                  ? null
+                  : question.tries_per_variant,
+            };
+            // We want to filter out any question attributes that do not have any values and then add them to the zone questions array.
+            return Object.fromEntries(
+              Object.entries(questionData).filter(([_, value]) => value && value !== 0),
+            );
+          }),
+          maxPoints: zone.maxPoints,
+          numberChoose: zone.numberChoose,
+          bestQuestions: zone.bestQuestions,
+          title: zone.title,
+        };
         // We want to filter out any zone attributes that do not have any values and then add the zone to the map.
-        return Object.fromEntries(Object.entries(zone).filter(([_, value]) => value !== null));
+        return Object.fromEntries(
+          Object.entries(resolvedZone).filter(([_, value]) => value !== null),
+        );
       });
     zonesInput.value = JSON.stringify(zoneMap);
     form.submit();
   });
 });
+
+// Blank question template, used for adding new questions.
+const newQuestion: AssessmentQuestionRow = {
+  advance_score_perc: null,
+  alternative_group_id: null,
+  alternative_group_number_choose: null,
+  alternative_group_number: null,
+  alternative_group_size: 0,
+  assessment_id: '0',
+  assessment_question_advance_score_perc: null,
+  average_average_submission_score: null,
+  average_first_submission_score: null,
+  average_last_submission_score: null,
+  average_max_submission_score: null,
+  average_number_submissions: null,
+  average_submission_score_hist: null,
+  average_submission_score_variance: null,
+  deleted_at: null,
+  discrimination: null,
+  display_name: null,
+  effective_advance_score_perc: null,
+  first_submission_score_hist: null,
+  first_submission_score_variance: null,
+  force_max_points: null,
+  grade_rate_minutes: null,
+  id: '0',
+  incremental_submission_points_array_averages: null,
+  incremental_submission_points_array_variances: null,
+  incremental_submission_score_array_averages: null,
+  incremental_submission_score_array_variances: null,
+  init_points: null,
+  last_submission_score_hist: null,
+  last_submission_score_variance: null,
+  manual_rubric_id: null,
+  max_auto_points: null,
+  max_manual_points: null,
+  max_points: null,
+  max_submission_score_hist: null,
+  max_submission_score_variance: null,
+  mean_question_score: null,
+  median_question_score: null,
+  number_in_alternative_group: null,
+  number_submissions_hist: null,
+  number_submissions_variance: null,
+  number: null,
+  open_issue_count: null,
+  other_assessments: null,
+  points_list: null,
+  qid: null,
+  question_id: '0',
+  question_score_variance: null,
+  quintile_question_scores: null,
+  some_nonzero_submission_perc: null,
+  some_perfect_submission_perc: null,
+  some_submission_perc: null,
+  start_new_alternative_group: null,
+  start_new_zone: null,
+  submission_score_array_averages: null,
+  submission_score_array_variances: null,
+  sync_errors: null,
+  sync_warnings: null,
+  tags: null,
+  title: null,
+  topic: null,
+  zone_best_questions: null,
+  zone_has_best_questions: null,
+  zone_has_max_points: null,
+  zone_max_points: null,
+  zone_number_choose: null,
+  zone_number: null,
+  zone_title: null,
+};

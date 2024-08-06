@@ -51,10 +51,11 @@ export function EditQuestionModal({
           <input
             type="text"
             class="form-control js-qid-input"
+            id="qidInput"
             name="qid"
             aria-describedby="qidHelp"
             value="${question?.qid}"
-            disabled
+            readonly="readonly"
           />
           <div class="input-group-append">
             <button type="button" class="btn btn-primary js-find-qid">
