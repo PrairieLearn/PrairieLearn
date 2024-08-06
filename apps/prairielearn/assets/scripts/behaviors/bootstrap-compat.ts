@@ -94,6 +94,31 @@ onDocumentReady(() => {
     },
   });
 
+  // We used `white text/buttons in "info"-colored card headers, but that doesn't
+  // provide sufficient contrast in Bootstrap 5. We'll do our best to patch this
+  // by switching to dark text/buttons in this situation.
+  observe('.card-header.bg-info', {
+    add(el) {
+      if (el.classList.contains('text-white')) {
+        el.classList.remove('text-white');
+        el.classList.add('text-dark');
+        console.warn(
+          'Bootstrap 5 no longer provides sufficient contrast for white text on "info"-colored card headers. Please update your HTML.',
+          el,
+        );
+
+        el.querySelectorAll(':scope > .btn.btn-outline-light').forEach((button) => {
+          button.classList.remove('btn-outline-light');
+          button.classList.add('btn-outline-dark');
+          console.warn(
+            'Bootstrap 5 no longer provides sufficient contrast for white buttons on "info"-colored card headers. Please update your HTML.',
+            button,
+          );
+        });
+      }
+    },
+  });
+
   // *********************
   // Content, Reboot, etc.
   // *********************
