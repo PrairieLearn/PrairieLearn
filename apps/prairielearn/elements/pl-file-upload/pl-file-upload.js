@@ -165,7 +165,7 @@
 
         // Store the file as base-64 encoded data
         var base64FileData = dataUrl.substring(commaSplitIdx + 1);
-        this.saveSubmittedFile(name, size, base64FileData);
+        this.saveSubmittedFile(name, size, isFromDownload ? null : new Date(), base64FileData);
         this.renderFileList();
 
         if (!isFromDownload) {
@@ -188,14 +188,17 @@
     /**
      * Saves or updates the given file.
      * @param  {String} name     Name of the file
+     * @param  {Number} size     Size of the file in bytes
+     * @param  {Date} date     Date when the file was uploaded (null if file is downloaded)
      * @param  {String} contents The file's base64-encoded contents
      */
-    saveSubmittedFile(name, size, contents) {
+    saveSubmittedFile(name, size, date, contents) {
       var idx = this.files.findIndex((file) => file.name === name);
       if (idx === -1) {
         this.files.push({
           name,
           size,
+          date,
           contents,
         });
       } else {
@@ -309,7 +312,14 @@
         } else if (!fileData) {
           $fileStatusContainerLeft.append('<p class="file-status">not uploaded</p>');
         } else {
-          $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
+          var uploadDate = this.files.find((file) => file.name === fileName).date;
+          if (uploadDate !== null) {
+            $fileStatusContainerLeft.append(
+              '<p class="file-status">uploaded at ' + uploadDate.toLocaleString() + '</p>',
+            );
+          } else {
+            $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
+          }
         }
         if (fileData) {
           var $download = $(
