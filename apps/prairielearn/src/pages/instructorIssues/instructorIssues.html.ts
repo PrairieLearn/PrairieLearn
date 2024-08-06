@@ -82,11 +82,6 @@ export function InstructorIssues({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })} ${compiledStylesheetTag('instructorIssues.css')}
-        <script>
-          $(() => {
-            $('[data-toggle=tooltip]').tooltip();
-          });
-        </script>
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}

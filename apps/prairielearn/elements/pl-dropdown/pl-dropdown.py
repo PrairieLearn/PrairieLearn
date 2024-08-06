@@ -9,6 +9,7 @@ WEIGHT_DEFAULT = 1
 BLANK_ANSWER = " "
 BLANK_DEFAULT = True
 SORT_DEFAULT = "random"
+ALLOW_BLANK_DEFAULT = False
 
 
 class SortTypes(Enum):
@@ -53,8 +54,16 @@ def prepare(element_html, data):
     pl.check_attribs(
         element,
         required_attribs=["answers-name"],
-        optional_attribs=["blank", "weight", "sort"],
+        optional_attribs=["blank", "allow-blank", "weight", "sort"],
     )
+
+    if pl.get_boolean_attrib(
+        element, "allow-blank", ALLOW_BLANK_DEFAULT
+    ) and not pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT):
+        raise ValueError(
+            'The attribute "allow-blank" cannot be enabled when blank dropdown entries are disabled by the "blank" attribute.'
+        )
+
     answers_name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, answers_name)
 
@@ -100,7 +109,10 @@ def render(element_html, data):
             random.shuffle(dropdown_options)
 
         if blank_start:
-            dropdown_options.insert(0, BLANK_ANSWER)
+            dropdown_options.insert(
+                0,
+                {"value": BLANK_ANSWER, "selected": (submitted_answer == BLANK_ANSWER)},
+            )
 
         html_params = {
             "answers-name": answers_name,
@@ -133,11 +145,12 @@ def render(element_html, data):
 
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     answers_name = pl.get_string_attrib(element, "answers-name")
     answer = data["submitted_answers"].get(answers_name, None)
 
-    # Blank option should be available, but cause format error when submitted.
-    valid_options = [" "]
+    # Blank option should be available, but cause format error when submitted and blank is not allowed.
+    valid_options = [BLANK_ANSWER]
 
     for child in element:
         if child.tag in ["pl-answer"]:
@@ -145,7 +158,7 @@ def parse(element_html, data):
             child_html = pl.inner_html(child).strip()
             valid_options.append(child_html)
 
-    if answer is BLANK_ANSWER:
+    if answer is BLANK_ANSWER and not allow_blank:
         data["format_errors"][answers_name] = "The submitted answer was left blank."
 
     if answer is None:

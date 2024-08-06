@@ -53,6 +53,7 @@ onDocumentReady(() => {
         data-html="true"
         data-title="Sync Errors"
         data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_errors_ansified}</pre>'
+        data-custom-class="sync-popover"
       >
         <i class="fa fa-times text-danger" aria-hidden="true"></i>
       </button>`;
@@ -65,6 +66,7 @@ onDocumentReady(() => {
         data-html="true"
         data-title="Sync Warnings"
         data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_warnings_ansified}</pre>'
+        data-custom-class="sync-popover"
       >
         <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
       </button>`;
@@ -178,12 +180,6 @@ onDocumentReady(() => {
           $('#questionsTable').bootstrapTable('clearFilterControl');
         },
       },
-    },
-    onPreBody() {},
-    onResetView() {
-      $('.js-sync-popover[data-toggle="popover"]').on('show.bs.popover', function () {
-        $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
-      });
     },
   };
 

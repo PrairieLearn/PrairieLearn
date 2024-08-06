@@ -74,7 +74,6 @@ export function InstructorQuestionSettings({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals, pageNote: resLocals.question.qid })}
-        ${compiledScriptTag('instructorQuestionSettingsClient.ts')}
         <style>
           .popover {
             max-width: 50%;
