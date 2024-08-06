@@ -38,7 +38,7 @@ export function HeadContents(titleOptions: TitleOptions) {
     <script src="${nodeModulesAssetPath('jquery/dist/jquery.min.js')}"></script>
     <script src="${nodeModulesAssetPath('bootstrap/dist/js/bootstrap.bundle.min.js')}"></script>
     <script src="${nodeModulesAssetPath('@fortawesome/fontawesome-free/js/all.min.js')}"></script>
-    ${compiledScriptTag('navbarClient.ts')} ${compiledScriptTag('application.ts')}
+    ${compiledScriptTag('application.ts')} ${compiledScriptTag('navbarClient.ts')}
   `;
 }
 
