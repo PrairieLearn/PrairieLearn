@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
@@ -16,8 +17,8 @@ export function JobSequence({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
+        ${HeadContents({
+          resLocals,
           pageTitle: `${job_sequence.description} #${job_sequence.number}`,
         })}
         ${compiledScriptTag('jobSequenceClient.ts')}

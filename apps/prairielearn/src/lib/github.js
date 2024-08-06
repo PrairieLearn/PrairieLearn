@@ -354,3 +354,22 @@ export async function createCourseRepoJob(options, authn_user) {
 export function reponameFromShortname(short_name) {
   return 'pl-' + short_name.replace(' ', '').toLowerCase();
 }
+
+/**
+ * Returns the HTTPS URL for the course page on GitHub, based on the course's
+ * repository. Assumes that the repository is set using the SSH URL for GitHub.
+ * Returns null if the URL cannot be retrieved from the repository.
+ *
+ * @param {string | null} repository The repository associated to the course
+ * @returns {string | null} The HTTP prefix to access course information on
+ * GitHub
+ */
+export function httpPrefixForCourseRepo(repository) {
+  if (repository) {
+    const githubRepoMatch = repository.match(/^git@github.com:\/?(.+?)(\.git)?\/?$/);
+    if (githubRepoMatch) {
+      return `https://github.com/${githubRepoMatch[1]}`;
+    }
+  }
+  return null;
+}

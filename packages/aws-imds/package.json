@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/aws-imds",
-  "version": "2.0.3",
+  "version": "2.0.4",
   "type": "module",
   "main": "dist/index.js",
   "repository": {
@@ -14,8 +14,8 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.14.9",
-    "typescript": "^5.5.3"
+    "@types/node": "^20.14.13",
+    "typescript": "^5.5.4"
   },
   "dependencies": {
     "node-fetch": "^3.3.2",

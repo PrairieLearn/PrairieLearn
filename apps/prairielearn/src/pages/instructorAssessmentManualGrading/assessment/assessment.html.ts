@@ -4,6 +4,7 @@ import { HtmlValue, html, joinHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import { AssessmentQuestionSchema } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -41,7 +42,7 @@ export function ManualGradingAssessment({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
@@ -119,6 +120,19 @@ function AssessmentQuestionRow({
             : `${question.number_in_alternative_group}.`}
           ${question.title}
         </a>
+        ${question.manual_rubric_id == null
+          ? ''
+          : html`
+              <a
+                href="#"
+                class="ml-2 text-info"
+                data-toggle="tooltip"
+                data-boundary="window"
+                title="This question uses a rubric"
+              >
+                <i class="fas fa-list-check"></i><span class="sr-only">(uses rubric)</span>
+              </a>
+            `}
       </td>
       <td>${question.qid}</td>
       <td class="text-center">

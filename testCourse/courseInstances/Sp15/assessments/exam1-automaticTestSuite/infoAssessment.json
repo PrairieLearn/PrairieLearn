@@ -18,62 +18,13 @@
     {
       "title": "Hard questions",
       "questions": [
-        {
-          "id": "addNumbers",
-          "autoPoints": [
-            5,
-            3,
-            1
-          ]
-        },
-        {
-          "id": "addVectors",
-          "autoPoints": [
-            11,
-            9
-          ],
-          "manualPoints": 10
-        },
-        {
-          "id": "fossilFuelsRadio",
-          "autoPoints": [
-            17,
-            13,
-            7,
-            2
-          ]
-        },
-        {
-          "id": "partialCredit1",
-          "autoPoints": [
-            19
-          ]
-        },
-        {
-          "id": "partialCredit2",
-          "autoPoints": [
-            9,
-            7,
-            5,
-            3
-          ]
-        },
-        {
-          "id": "partialCredit3",
-          "autoPoints": [
-            13,
-            13,
-            8,
-            0.5,
-            0.1
-          ]
-        },
-        {
-          "id": "brokenGeneration",
-          "autoPoints": [
-            10
-          ]
-        }
+        { "id": "addNumbers", "points": [5, 3, 1] },
+        { "id": "addVectors", "autoPoints": [11, 9], "manualPoints": 10 },
+        { "id": "fossilFuelsRadio", "points": [17, 13, 7, 2] },
+        { "id": "partialCredit1", "points": [19] },
+        { "id": "partialCredit2", "points": [9, 7, 5, 3] },
+        { "id": "partialCredit3", "points": [13, 13, 8, 0.5, 0.1] },
+        { "id": "brokenGeneration", "points": [10] }
       ]
     }
   ],

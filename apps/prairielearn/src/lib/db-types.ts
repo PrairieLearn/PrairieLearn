@@ -120,6 +120,9 @@ export type EnumJobStatus = z.infer<typeof EnumJobStatusSchema>;
 export const EnumModeSchema = z.enum(['Public', 'Exam', 'SEB']);
 export type EnumMode = z.infer<typeof EnumModeSchema>;
 
+export const EnumModeReasonSchema = z.enum(['Default', 'PrairieTest', 'Network']);
+export type EnumModeReason = z.infer<typeof EnumModeReasonSchema>;
+
 export const EnumPlanGrantTypeSchema = z.enum(['trial', 'stripe', 'invoice', 'gift']);
 export type EnumPlanGrantType = z.infer<typeof EnumPlanGrantTypeSchema>;
 
@@ -353,6 +356,8 @@ export const ClientFingerprintSchema = z.object({
 export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 
 export const CourseSchema = z.object({
+  announcement_color: z.string().nullable(),
+  announcement_html: z.string().nullable(),
   branch: z.string(),
   commit_hash: z.string().nullable(),
   course_instance_enrollment_limit: z.number().nullable(),
@@ -470,6 +475,22 @@ export const FileSchema = z.object({
   user_id: IdSchema.nullable(),
 });
 export type File = z.infer<typeof FileSchema>;
+
+export const FileEditSchema = z.object({
+  course_id: IdSchema,
+  created_at: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
+  did_save: z.boolean().nullable(),
+  did_sync: z.boolean().nullable(),
+  dir_name: z.string(),
+  file_id: IdSchema.nullable(),
+  file_name: z.string(),
+  id: IdSchema,
+  job_sequence_id: IdSchema.nullable(),
+  orig_hash: z.string(),
+  user_id: IdSchema,
+});
+export type FileEdit = z.infer<typeof FileEditSchema>;
 
 export const GradingJobSchema = z.object({
   auth_user_id: IdSchema.nullable(),

@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -21,8 +22,7 @@ export function InstructorAssessmentSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('instructorAssessmentSettingsClient.ts')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('instructorAssessmentSettingsClient.ts')}
         <style>
           .popover {
             max-width: 50%;
