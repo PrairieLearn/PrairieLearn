@@ -574,10 +574,10 @@ onDocumentReady(() => {
                   <button
                     class="dropdown-item ${row.open ? '' : 'disabled'}"
                     data-toggle="popover"
+                    data-container="body"
                     data-title="Confirm close"
                     data-html="true"
                     data-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
-                    data-container="body"
                     data-placement="auto"
                   >
                     <i class="fas fa-ban mr-2" aria-hidden="true"></i>
@@ -593,10 +593,10 @@ onDocumentReady(() => {
                   <button
                     class="dropdown-item"
                     data-toggle="popover"
+                    data-container="body"
                     data-title="Confirm regrade"
                     data-html="true"
                     data-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
-                    data-container="body"
                     data-placement="auto"
                   >
                     <i class="fas fa-sync mr-2" aria-hidden="true"></i>

@@ -197,9 +197,9 @@ export function InstructorAssessmentInstance({
                             class="btn btn-xs btn-secondary"
                             id="editTotalPointsButton"
                             data-toggle="popover"
+                            data-container="body"
                             data-html="true"
                             data-placement="auto"
-                            data-container="body"
                             title="Change total points"
                             data-content="${escapeHtml(
                               EditTotalPointsForm({

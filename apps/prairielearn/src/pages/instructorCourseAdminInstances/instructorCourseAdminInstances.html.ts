@@ -70,9 +70,10 @@ export function InstructorCourseAdminInstances({
                       Earliest Access Date
                       <button
                         class="btn btn-xs btn-light"
-                        data-placement="auto"
-                        data-trigger="focus"
                         data-toggle="popover"
+                        data-trigger="focus"
+                        data-container="body"
+                        data-placement="bottom"
                         data-html="true"
                         title="Earliest Access Date"
                         data-content="${PopoverStartDate()}"
@@ -85,9 +86,10 @@ export function InstructorCourseAdminInstances({
                       Latest Access Date
                       <button
                         class="btn btn-xs btn-light"
-                        data-placement="auto"
-                        data-trigger="focus"
                         data-toggle="popover"
+                        data-trigger="focus"
+                        data-container="body"
+                        data-placement="bottom"
                         data-html="true"
                         title="Latest Access Date"
                         data-content="${PopoverEndDate()}"

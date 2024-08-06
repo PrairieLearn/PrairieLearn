@@ -227,6 +227,7 @@ function ImageTable({
                         <button
                           class="btn btn-xs btn-secondary"
                           data-toggle="popover"
+                          data-container="body"
                           data-html="true"
                           title="Questions using ${image.image}"
                           data-content="${escapeHtml(ListQuestionsPopover({ image, urlPrefix }))}"
