@@ -318,7 +318,7 @@
               '<p class="file-status">uploaded at ' + uploadDate.toLocaleString() + '</p>',
             );
           } else {
-            $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
+            $fileStatusContainerLeft.append('<p class="file-status">uploaded and submitted</p>');
           }
         }
         if (fileData) {
