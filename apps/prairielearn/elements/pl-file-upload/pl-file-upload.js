@@ -203,6 +203,8 @@
         });
       } else {
         this.files[idx].contents = contents;
+        this.files[idx].size = size;
+        this.files[idx].date = date;
       }
 
       this.syncFilesToHiddenInput();
