@@ -1,5 +1,5 @@
 import { Metadata, credentials } from '@grpc/grpc-js';
-import { metrics } from '@opentelemetry/api';
+import { ContextManager, metrics } from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
@@ -137,6 +137,7 @@ interface OpenTelemetryConfigEnabled {
   openTelemetrySamplerType: 'always-on' | 'always-off' | 'trace-id-ratio';
   openTelemetrySampleRate?: number;
   openTelemetrySpanProcessor?: 'batch' | 'simple' | SpanProcessor;
+  contextManager?: ContextManager;
   honeycombApiKey?: string | null;
   honeycombDataset?: string | null;
   serviceName?: string;
@@ -315,7 +316,9 @@ export async function init(config: OpenTelemetryConfig) {
   if (spanProcessor) {
     nodeTracerProvider.addSpanProcessor(spanProcessor);
   }
-  nodeTracerProvider.register();
+  nodeTracerProvider.register({
+    contextManager: config.contextManager,
+  });
   instrumentations.forEach((i) => i.setTracerProvider(nodeTracerProvider));
 
   // Save the provider so we can shut it down later.

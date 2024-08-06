@@ -188,6 +188,174 @@ WHERE
   a.id = $assessment_id;
 
 -- BLOCK update_assessment_statisics
+WITH
+  student_assessment_scores AS (
+    SELECT
+      -- if a student has multiple assessment_instances for this assessment
+      -- then use their maximum score
+      max(ai.score_perc) AS score_perc
+    FROM
+      assessment_instances AS ai
+      JOIN assessments AS a ON (a.id = ai.assessment_id)
+      -- Only select groups that are not soft-deleted
+      LEFT JOIN groups AS g ON (
+        g.id = ai.group_id
+        AND g.deleted_at IS NULL
+      )
+      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
+      JOIN enrollments AS e ON (
+        e.user_id = u.user_id
+        AND e.course_instance_id = a.course_instance_id
+      )
+    WHERE
+      a.id = $assessment_id
+      AND ai.include_in_statistics
+    GROUP BY
+      u.user_id
+  ),
+  score_stats AS (
+    SELECT
+      count(score_perc) AS number,
+      coalesce(min(score_perc), 0) AS min,
+      coalesce(max(score_perc), 0) AS max,
+      coalesce(avg(score_perc), 0) AS mean,
+      coalesce(stddev_samp(score_perc), 0) AS std,
+      coalesce(
+        percentile_disc(0.5) WITHIN GROUP (
+          ORDER BY
+            score_perc
+        ),
+        0
+      ) AS median,
+      count(
+        score_perc <= 0
+        OR NULL
+      ) AS n_zero,
+      count(
+        score_perc >= 100
+        OR NULL
+      ) AS n_hundred,
+      CAST(
+        count(
+          score_perc <= 0
+          OR NULL
+        ) AS double precision
+      ) / greatest(1, count(score_perc)) * 100 AS n_zero_perc,
+      CAST(
+        count(
+          score_perc >= 100
+          OR NULL
+        ) AS double precision
+      ) / greatest(1, count(score_perc)) * 100 AS n_hundred_perc,
+      coalesce(
+        histogram (score_perc, 0, 100, 10),
+        array_fill(0, ARRAY[10])
+      ) AS score_hist
+    FROM
+      student_assessment_scores
+  ),
+  basic_duration_stats AS (
+    SELECT
+      coalesce(min(duration), interval '0') AS min,
+      coalesce(max(duration), interval '0') AS max,
+      coalesce(avg(duration), interval '0') AS mean,
+      coalesce(
+        percentile_disc(0.5) WITHIN GROUP (
+          ORDER BY
+            duration
+        ),
+        interval '0'
+      ) AS median,
+      coalesce(
+        percentile_disc(0.75) WITHIN GROUP (
+          ORDER BY
+            duration
+        ),
+        interval '0'
+      ) AS quartile3,
+      coalesce(
+        percentile_disc(0.9) WITHIN GROUP (
+          ORDER BY
+            duration
+        ),
+        interval '0'
+      ) AS perc90
+    FROM
+      assessment_instances AS ai
+      JOIN assessments AS a ON (a.id = ai.assessment_id)
+      -- Only select groups that are not soft-deleted
+      LEFT JOIN groups AS g ON (
+        g.id = ai.group_id
+        AND g.deleted_at IS NULL
+      )
+      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
+      JOIN enrollments AS e ON (
+        e.user_id = u.user_id
+        AND e.course_instance_id = a.course_instance_id
+      )
+    WHERE
+      a.id = $assessment_id
+      AND ai.include_in_statistics
+  ),
+  duration_stats AS (
+    SELECT
+      *,
+      interval_hist_thresholds (
+        coalesce(
+          greatest(quartile3 + 2 * (quartile3 - median), perc90),
+          interval '10 minutes'
+        )
+      ) AS thresholds
+    FROM
+      basic_duration_stats
+  ),
+  duration_hist_stats AS (
+    SELECT
+      coalesce(
+        array_histogram (
+          ai.duration,
+          (
+            SELECT
+              thresholds
+            FROM
+              duration_stats
+          )
+        ),
+        array_fill(
+          0,
+          ARRAY[
+            array_length(
+              (
+                SELECT
+                  thresholds
+                FROM
+                  duration_stats
+              ),
+              1
+            ) - 1
+          ]
+        )
+      ) AS hist
+    FROM
+      assessment_instances AS ai
+      JOIN assessments AS a ON (a.id = ai.assessment_id)
+      -- Only select groups that are not soft-deleted
+      LEFT JOIN groups AS g ON (
+        g.id = ai.group_id
+        AND g.deleted_at IS NULL
+      )
+      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
+      JOIN enrollments AS e ON (
+        e.user_id = u.user_id
+        AND e.course_instance_id = a.course_instance_id
+      )
+    WHERE
+      a.id = $assessment_id
+      AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id)
+  )
 UPDATE assessments AS a
 SET
   statistics_last_updated_at = now(),
@@ -207,12 +375,13 @@ SET
   duration_stat_mean = duration_stats.mean,
   duration_stat_median = duration_stats.median,
   duration_stat_thresholds = duration_stats.thresholds,
-  duration_stat_threshold_seconds = duration_stats.threshold_seconds,
-  duration_stat_threshold_labels = duration_stats.threshold_labels,
-  duration_stat_hist = duration_stats.hist
+  duration_stat_threshold_seconds = interval_array_to_seconds (duration_stats.thresholds),
+  duration_stat_threshold_labels = interval_array_to_strings (duration_stats.thresholds),
+  duration_stat_hist = duration_hist_stats.hist
 FROM
-  assessments_score_stats ($assessment_id) AS score_stats,
-  assessments_duration_stats ($assessment_id) AS duration_stats
+  score_stats,
+  duration_stats,
+  duration_hist_stats
 WHERE
   a.id = $assessment_id;
 
