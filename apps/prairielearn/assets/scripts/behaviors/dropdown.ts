@@ -7,7 +7,6 @@ onDocumentReady(() => {
     add(el) {
       const dropdownParent = el.closest('.dropdown');
       if (dropdownParent) {
-        console.log('dropdown added!', el);
         $(dropdownParent).on('hide.bs.dropdown', function (event) {
           // @ts-expect-error -- `clickEvent` is not reflected in types.
           const { clickEvent } = event;
