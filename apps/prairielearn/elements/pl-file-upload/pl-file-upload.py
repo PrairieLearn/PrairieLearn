@@ -124,7 +124,9 @@ def get_answer_name(file_names: str, optional_file_names: str = "") -> str:
     )
 
 
-def add_format_error(answer_name: str, data: pl.QuestionData, error_string: str) -> None:
+def add_format_error(
+    answer_name: str, data: pl.QuestionData, error_string: str
+) -> None:
     if answer_name not in data["format_errors"]:
         data["format_errors"][answer_name] = []
     data["format_errors"][answer_name].append(error_string)
@@ -207,7 +209,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "submission_files_url": data["options"].get("submission_files_url"),
         "submitted_file_names": submitted_file_names_json,
         "check_icon_color": PLColor("correct_green"),
-        "parse_error": '<br>'.join(parse_error),
+        "parse_error": "<br>".join(parse_error),
     }
 
     with open("pl-file-upload.mustache", "r", encoding="utf-8") as f:
