@@ -95,7 +95,11 @@ onDocumentReady(() => {
     onCheckAll: updateGradingTagButton,
     onCheckSome: updateGradingTagButton,
     onCreatedControls: () => {
-      $('#grading-table th[data-field="points"] .filter-control input').tooltip({
+      $('#grading-table th[data-field="auto_points"] .filter-control input').tooltip({
+        title: 'hint: use <code>&lt;1</code>, or <code>&gt;0</code>',
+        html: true,
+      });
+      $('#grading-table th[data-field="manual_points"] .filter-control input').tooltip({
         title: 'hint: use <code>&lt;1</code>, or <code>&gt;0</code>',
         html: true,
       });
@@ -106,14 +110,12 @@ onDocumentReady(() => {
     },
     onPreBody: () => {
       $('#grading-table [data-toggle="popover"]').popover('dispose');
-      $('#grading-table [data-toggle="tooltip"]').tooltip('dispose');
     },
     onPostBody: () => {
       updateGradingTagButton();
       $('#grading-table [data-toggle="popover"]')
         .popover({ sanitize: false })
         .on('shown.bs.popover', updatePointsPopoverHandlers);
-      $('#grading-table [data-toggle=tooltip]').tooltip({ html: true });
     },
     columns: [
       [
