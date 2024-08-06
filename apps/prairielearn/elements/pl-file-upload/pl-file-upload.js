@@ -215,6 +215,18 @@
       return file ? file.contents : null;
     }
 
+    deleteUploadedFile(name) {
+      this.pendingFileDownloads.delete(name);
+      this.failedFileDownloads.delete(name);
+      var idx = this.files.findIndex((file) => file.name === name);
+      if (idx !== -1) {
+        this.files.splice(idx, 1);
+      }
+
+      this.syncFilesToHiddenInput();
+      this.renderFileList();
+    }
+
     /**
      * Generates markup to show the status of the uploaded files, including
      * previews of files as appropriate.
@@ -300,12 +312,13 @@
           $fileStatusContainerLeft.append('<p class="file-status">uploaded</p>');
         }
         if (fileData) {
-          var download =
+          var $download = $(
             '<a download="' +
-            fileName +
-            '" class="btn btn-outline-secondary btn-sm mr-1" onclick="event.stopPropagation();" href="data:application/octet-stream;base64,' +
-            fileData +
-            '">Download</a>';
+              fileName +
+              '" class="btn btn-outline-secondary btn-sm mr-1" onclick="event.stopPropagation();" href="data:application/octet-stream;base64,' +
+              fileData +
+              '">Download</a>',
+          );
 
           var $preview = $(
             '<div class="file-preview collapse" id="file-preview-' +
@@ -313,6 +326,14 @@
               '-' +
               index +
               '"></div>',
+          );
+
+          var $deleteUpload = $(
+            '<button type="button" class="btn btn-outline-secondary btn-sm mr-1" id="file-delete-' +
+              uuid +
+              '-' +
+              index +
+              '">Delete</button>',
           );
 
           var $error = $('<div class="alert alert-danger mt-2 d-none" role="alert"></div>');
@@ -350,10 +371,13 @@
               .attr('src', 'data:application/octet-stream;base64,' + fileData);
           }
           $file.append($preview);
+          $fileStatusContainer.append($download);
+          if (isOptional) {
+            $deleteUpload.on('click', () => this.deleteUploadedFile(fileName));
+            $fileStatusContainer.append($deleteUpload);
+          }
           $fileStatusContainer.append(
-            '<div class="align-self-center">' +
-              download +
-              '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>',
+            '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>',
           );
         }
 
