@@ -371,14 +371,16 @@
               .attr('src', 'data:application/octet-stream;base64,' + fileData);
           }
           $file.append($preview);
-          $fileStatusContainer.append($download);
+          var $fileButtons = $('<div class="align-self-center"></div>');
+          $fileButtons.append($download);
           if (isOptional) {
             $deleteUpload.on('click', () => this.deleteUploadedFile(fileName));
-            $fileStatusContainer.append($deleteUpload);
+            $fileButtons.append($deleteUpload);
           }
-          $fileStatusContainer.append(
+          $fileButtons.append(
             '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>',
           );
+          $fileStatusContainer.append($fileButtons);
         }
 
         $fileList.append($file);
