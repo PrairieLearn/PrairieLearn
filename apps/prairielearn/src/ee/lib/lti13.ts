@@ -1,6 +1,6 @@
 import type { Request } from 'express';
 import _ from 'lodash';
-import fetch, { Response, RequestInfo, RequestInit } from 'node-fetch';
+import fetch, { RequestInfo, RequestInit } from 'node-fetch';
 import { Issuer, TokenSet } from 'openid-client';
 import { z } from 'zod';
 
@@ -454,12 +454,11 @@ function sleep(delay: number) {
 
 async function fetchRetry(input: RequestInfo | URL, opts?: RequestInit | undefined) {
   let retryLeft = 5;
-  let response: Response;
   while (retryLeft >= 0) {
     try {
-      response = await fetch(input, opts);
+      const response = await fetch(input, opts);
       if (response.ok) {
-        break;
+        return response;
       } else {
         throw new HttpStatusError(response.status, response.statusText);
       }
@@ -472,5 +471,5 @@ async function fetchRetry(input: RequestInfo | URL, opts?: RequestInit | undefin
       retryLeft -= 1;
     }
   }
-  return response;
+  throw new Error('Too many retries');
 }
