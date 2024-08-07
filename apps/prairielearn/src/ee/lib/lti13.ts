@@ -48,7 +48,7 @@ export const Lti13LineitemSchema = z.object({
     external_tool_url: z.string().optional(),
   }),
 });
-export type Lti13LineitemType = z.infer<typeof Lti13LineitemSchema>;
+export type Lti13Lineitem = z.infer<typeof Lti13LineitemSchema>;
 
 // Validate LTI 1.3
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
@@ -141,8 +141,6 @@ export class Lti13Claim {
 
     // Check to see that it's not expired
     this.assertValid();
-
-    console.log(JSON.stringify(this.claims, null, 2));
   }
 
   // Accessors
@@ -302,7 +300,7 @@ export async function get_lineitems(instance: Lti13CombinedInstance) {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  const data = (await response.json()) as Lti13LineitemType[];
+  const data = (await response.json()) as Lti13Lineitem[];
   //console.log(data);
   return data;
 }
@@ -322,12 +320,12 @@ export async function sync_lineitems(instance: Lti13CombinedInstance, job: Serve
     `Polling for external assignments from ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
   );
 
-  const data = await get_lineitems(instance);
+  const lineitems = await get_lineitems(instance);
 
   await runInTransactionAsync(async () => {
     await queryAsync(sql.create_lineitems_temp, {});
 
-    for (const item of data) {
+    for (const item of lineitems) {
       job.info(`* ${item.label}`);
 
       await queryAsync(sql.insert_lineitems_temp, {
@@ -364,7 +362,7 @@ export async function create_and_link_lineitem(
     url: string;
   },
 ) {
-  const createBody: Lti13LineitemType = {
+  const createBody: Lti13Lineitem = {
     id: 'new_lineitem', // will be ignored/overwritten by the LMS platform
     scoreMaximum: 100,
     label: assessment.label,
@@ -392,7 +390,7 @@ export async function create_and_link_lineitem(
     body: JSON.stringify(createBody),
   });
 
-  const item = (await response.json()) as Lti13LineitemType;
+  const item = (await response.json()) as Lti13Lineitem;
 
   job.info('Associating PrairieLearn assessment with the new assignment');
 
@@ -428,7 +426,7 @@ export async function unlink_assessment(
 export async function link_assessment(
   lti13_course_instance_id: string,
   assessment_id: string | number,
-  lineitem: Lti13LineitemType,
+  lineitem: Lti13Lineitem,
 ) {
   await queryAsync(sql.update_lineitem, {
     lti13_course_instance_id,
