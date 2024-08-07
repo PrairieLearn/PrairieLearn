@@ -30,6 +30,15 @@ onDocumentReady(() => {
 
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
   $('#grading-table').bootstrapTable({
+    // TODO: If we can pick up the following change, we can drop the `icons` config here:
+    // https://github.com/wenzhixin/bootstrap-table/pull/7190
+    iconsPrefix: 'fa',
+    icons: {
+      refresh: 'fa-sync',
+      autoRefresh: 'fa-clock',
+      columns: 'fa-table-list',
+    },
+
     classes: 'table table-sm table-bordered',
     url: instancesUrl,
     responseHandler: (res: { instance_questions: InstanceQuestionRow[] }) =>
@@ -95,10 +104,22 @@ onDocumentReady(() => {
     onCheckAll: updateGradingTagButton,
     onCheckSome: updateGradingTagButton,
     onCreatedControls: () => {
+      $('#grading-table th[data-field="auto_points"] .filter-control input').tooltip({
+        title: 'hint: use <code>&lt;1</code>, or <code>&gt;0</code>',
+        html: true,
+      });
+
+      $('#grading-table th[data-field="manual_points"] .filter-control input').tooltip({
+        title: 'hint: use <code>&lt;1</code>, or <code>&gt;0</code>',
+        html: true,
+      });
+
+      // This column is hidden by default, but can be shown by the user.
       $('#grading-table th[data-field="points"] .filter-control input').tooltip({
         title: 'hint: use <code>&lt;1</code>, or <code>&gt;0</code>',
         html: true,
       });
+
       $('#grading-table th[data-field="score_perc"] .filter-control input').tooltip({
         title: 'hint: use <code>&lt;50</code>, or <code>&gt;0</code>',
         html: true,
@@ -106,14 +127,12 @@ onDocumentReady(() => {
     },
     onPreBody: () => {
       $('#grading-table [data-toggle="popover"]').popover('dispose');
-      $('#grading-table [data-toggle="tooltip"]').tooltip('dispose');
     },
     onPostBody: () => {
       updateGradingTagButton();
       $('#grading-table [data-toggle="popover"]')
         .popover({ sanitize: false })
         .on('shown.bs.popover', updatePointsPopoverHandlers);
-      $('#grading-table [data-toggle=tooltip]').tooltip({ html: true });
     },
     columns: [
       [
