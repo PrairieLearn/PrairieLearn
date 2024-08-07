@@ -28,26 +28,15 @@ export function InstructorAiGenerateJob({
             <div class="card-header bg-primary text-white">Generation Job Results</div>
             <div class="card-body">
               <h2 class="card-title">Prompt</h2>
-              <div>
-                <pre class="bg-dark text-white rounded p-3">${job.data['prompt']}</pre>
-              </div>
-
+              <pre class="bg-dark text-white rounded p-3">${job.data['prompt']}</pre>
               <h2 class="card-title">Generated HTML</h2>
-              <div>
-                <pre class="bg-dark text-white rounded p-3">${job.data['html']}</pre>
-              </div>
+              <pre class="bg-dark text-white rounded p-3">${job.data['html']}</pre>
               <h2 class="card-title">Generated Python</h2>
-              <div>
-                <pre class="bg-dark text-white rounded p-3">${job.data['python']}</pre>
-              </div>
+              <pre class="bg-dark text-white rounded p-3">${job.data['python']}</pre>
               <h2 class="card-title">Full LLM Generation</h2>
-              <div>
-                <pre class="bg-dark text-white rounded p-3">${job.data['generation']}</pre>
-              </div>
+              <pre class="bg-dark text-white rounded p-3">${job.data['generation']}</pre>
               <h2 class="card-title">Context Documents</h2>
-              <div>
-                <pre class="bg-dark text-white rounded p-3">${job.data['context']}</pre>
-              </div>
+              <pre class="bg-dark text-white rounded p-3">${job.data['context']}</pre>
             </div>
           </div>
         </main>
