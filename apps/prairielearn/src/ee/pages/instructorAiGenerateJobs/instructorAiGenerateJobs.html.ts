@@ -49,7 +49,7 @@ export function InstructorAIGenerateJobs({
                             ? html`&mdash;`
                             : formatDate(row.job.start_date, resLocals.course.display_timezone)}
                         </td>
-                        <td>${row.user.user_id ?? '(System)'}</td>
+                        <td>${row.user?.user_id ?? '(System)'}</td>
                         <td>${JobStatus({ status: row.job.status })}</td>
                         <td>
                           <a
