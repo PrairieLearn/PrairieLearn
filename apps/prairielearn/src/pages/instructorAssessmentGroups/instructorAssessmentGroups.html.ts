@@ -45,7 +45,6 @@ export function InstructorAssessmentGroups({
         <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.widgets.min.js',
           )}"></script>
-        ${compiledScriptTag('instructorAssessmentGroupsClient.ts')}
       </head>
 
       <body>
