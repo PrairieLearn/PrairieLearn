@@ -93,9 +93,9 @@ onDocumentReady(() => {
           html: true,
           trigger: 'click',
           content: timeLimitEditPopoverContent,
+          customClass: 'popover-wide',
         })
         .on('show.bs.popover', function () {
-          $($(this).data('bs.popover').getTipElement()).css('max-width', '350px');
           $(this).find('.select-time-limit').change();
         });
     },
