@@ -144,7 +144,8 @@ onDocumentReady(() => {
           sortable: true,
           switchable: false,
           formatter: (_value: number, row: InstanceQuestionRowWithIndex) =>
-            html`<a
+            html`
+              <a
                 href="${urlPrefix}/assessment/${row.assessment_question
                   .assessment_id}/manual_grading/instance_question/${row.id}"
                 >Instance ${row.index + 1}</a
@@ -170,7 +171,8 @@ onDocumentReady(() => {
                       <i class="fas fa-exclamation-triangle text-warning"></i>
                     </a>
                   `
-                : ''}`.toString(),
+                : ''}
+            `.toString(),
         },
         {
           field: 'user_or_group_name',
