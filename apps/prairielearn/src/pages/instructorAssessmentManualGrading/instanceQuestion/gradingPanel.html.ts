@@ -65,18 +65,21 @@ export function GradingPanel({
         ${resLocals.assessment_question.max_points
           ? // Percentage-based grading is only suitable if the question has points
             html`
-              <li class="list-group-item">
-                <div class="form-group row justify-content-center">
-                  <label class="custom-control-inline col-auto mx-0">
-                    <span class="">Points</span>
-                    <div class="custom-control custom-switch mx-2">
-                      <input
-                        class="custom-control-input js-manual-grading-pts-perc-select"
-                        name="use_score_perc"
-                        type="checkbox"
-                      />
-                      <span class="custom-control-label">Percentage</span>
-                    </div>
+              <li class="list-group-item d-flex justify-content-center">
+                <span>Points</span>
+                <div class="custom-control custom-switch mx-2">
+                  <input
+                    class="custom-control-input js-manual-grading-pts-perc-select"
+                    name="use_score_perc"
+                    id="use-score-perc"
+                    type="checkbox"
+                  />
+                  <label
+                    class="custom-control-label"
+                    for="use-score-perc"
+                    arial-label="Grade by percentage"
+                  >
+                    Percentage
                   </label>
                 </div>
               </li>
