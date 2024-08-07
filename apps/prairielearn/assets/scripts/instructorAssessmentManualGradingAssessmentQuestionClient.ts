@@ -147,16 +147,29 @@ onDocumentReady(() => {
             html`<a
                 href="${urlPrefix}/assessment/${row.assessment_question
                   .assessment_id}/manual_grading/instance_question/${row.id}"
+                >Instance ${row.index + 1}</a
               >
-                Instance ${row.index + 1}
-                ${row.open_issue_count
-                  ? html`<span class="badge badge-pill badge-danger">${row.open_issue_count}</span>`
-                  : ''}
-              </a>
+              ${row.open_issue_count
+                ? html`
+                    <a
+                      href="#"
+                      class="badge badge-pill badge-danger"
+                      title="Instance question has ${row.open_issue_count} open ${row.open_issue_count >
+                      1
+                        ? 'issues'
+                        : 'issue'}"
+                      data-toggle="tooltip"
+                    >
+                      ${row.open_issue_count}
+                    </a>
+                  `
+                : ''}
               ${row.assessment_open
-                ? html`<span title="Assessment instance is still open" data-toggle="tooltip">
-                    <i class="fas fa-exclamation-triangle text-warning"></i>
-                  </span>`
+                ? html`
+                    <a href="#" title="Assessment instance is still open" data-toggle="tooltip">
+                      <i class="fas fa-exclamation-triangle text-warning"></i>
+                    </a>
+                  `
                 : ''}`.toString(),
         },
         {
