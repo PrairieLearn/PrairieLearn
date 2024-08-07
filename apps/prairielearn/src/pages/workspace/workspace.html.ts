@@ -34,7 +34,9 @@ export function Workspace({
         ${HeadContents({ resLocals, pageNote, pageTitle })}
         <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />
         ${compiledScriptTag('workspaceClient.ts')}
-        ${resLocals.assessment && resLocals.assessment.type === 'Exam'
+        ${resLocals.assessment &&
+        resLocals.assessment.type === 'Exam' &&
+        resLocals.assessment_instance_remaining_ms
           ? html`${compiledScriptTag('examTimeLimitCountdown.ts')}
             ${EncodedData(
               {
@@ -100,7 +102,6 @@ export function Workspace({
               </li>
               ${resLocals.assessment &&
               resLocals.assessment.type === 'Exam' &&
-              resLocals.assessment_instance.open &&
               resLocals.assessment_instance_remaining_ms
                 ? html`
                     <li class="nav-item ml-2 my-1">
