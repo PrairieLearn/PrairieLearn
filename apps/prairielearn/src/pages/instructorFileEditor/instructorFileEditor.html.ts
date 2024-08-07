@@ -345,7 +345,7 @@ export function InstructorFileEditor({
                       >
                         <div
                           id="js-json-reformat-error"
-                          class="toast hide bg-danger text-white border-0"
+                          class="toast hide text-bg-danger border-0"
                           role="alert"
                           aria-live="assertive"
                           aria-atomic="true"
@@ -356,7 +356,7 @@ export function InstructorFileEditor({
                             </div>
                             <button
                               type="button"
-                              class="mr-2 close"
+                              class="mr-2 m-auto btn-close-white close"
                               data-dismiss="toast"
                               aria-label="Close"
                             >
