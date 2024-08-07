@@ -102,7 +102,7 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        <li class="form-group list-group-item">
+        <li class="list-group-item">
           <label>
             Feedback:
             <textarea
@@ -122,7 +122,7 @@ ${submission.feedback?.manual}</textarea
         </li>
         ${open_issues.length > 0 && context !== 'existing'
           ? html`
-              <li class="form-group list-group-item">
+              <li class="list-group-item">
                 <div class="form-check">
                   ${open_issues.map(
                     (issue) => html`
