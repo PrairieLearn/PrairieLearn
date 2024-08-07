@@ -5,15 +5,16 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { JobSchema } from '../../../lib/db-types.js';
+import { JobSchema, UserSchema } from '../../../lib/db-types.js';
 
-import { AiGenerateJobReviewpage } from './instructorAiGenerateJobs.html.js';
+import { InstructorAIGenerateJobs } from './instructorAiGenerateJobs.html.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-const JobWithUserEmailSchema = JobSchema.extend({
-  email: z.string().nullable().optional(),
+const JobRowSchema = z.object({
+  job: JobSchema,
+  user: UserSchema.nullable(),
 });
 
 router.get(
@@ -26,10 +27,10 @@ router.get(
     const jobs = await queryRows(
       sql.select_generation_sequence_by_course,
       { course_id: res.locals.course.id },
-      JobWithUserEmailSchema,
+      JobRowSchema,
     );
 
-    res.send(AiGenerateJobReviewpage({ resLocals: res.locals, jobs }));
+    res.send(InstructorAIGenerateJobs({ resLocals: res.locals, jobs }));
   }),
 );
 

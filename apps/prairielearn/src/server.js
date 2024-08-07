@@ -1291,19 +1291,11 @@ export async function initExpress() {
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_jobs', [
-    function (req, res, next) {
-      next();
-    },
     (await import('./ee/pages/instructorAiGenerateJobs/instructorAiGenerateJobs.js')).default,
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_job/:job_sequence_id(\\d+)',
-    [
-      function (req, res, next) {
-        next();
-      },
-      (await import('./ee/pages/instructorAiGenerateJob/instructorAiGenerateJob.js')).default,
-    ],
+    [(await import('./ee/pages/instructorAiGenerateJob/instructorAiGenerateJob.js')).default],
   );
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question', [
     function (req, res, next) {
@@ -1850,15 +1842,9 @@ export async function initExpress() {
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/ai_generate_question_jobs', [
-    function (req, res, next) {
-      next();
-    },
     (await import('./ee/pages/instructorAiGenerateJobs/instructorAiGenerateJobs.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/ai_generate_question_job/:job_sequence_id(\\d+)', [
-    function (req, res, next) {
-      next();
-    },
     (await import('./ee/pages/instructorAiGenerateJob/instructorAiGenerateJob.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/ai_generate_question', [

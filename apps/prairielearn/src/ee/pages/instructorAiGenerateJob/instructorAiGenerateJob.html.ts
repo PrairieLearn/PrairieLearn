@@ -4,7 +4,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Job } from '../../../lib/db-types.js';
 
-export function AiGenerateJobPage({
+export function InstructorAiGenerateJob({
   resLocals,
   job,
 }: {

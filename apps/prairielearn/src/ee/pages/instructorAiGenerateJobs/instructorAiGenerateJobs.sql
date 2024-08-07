@@ -1,7 +1,7 @@
 -- BLOCK select_generation_sequence_by_course
 SELECT
-  j.*,
-  u.email
+  to_jsonb(j.*) AS job,
+  to_jsonb(u.*) AS user
 FROM
   jobs AS j
   LEFT JOIN users AS u ON (j.authn_user_id = u.user_id)

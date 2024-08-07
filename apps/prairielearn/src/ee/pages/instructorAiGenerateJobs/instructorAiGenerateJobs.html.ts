@@ -4,14 +4,14 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { JobStatus } from '../../../components/JobStatus.html.js';
-import { Job } from '../../../lib/db-types.js';
+import { Job, User } from '../../../lib/db-types.js';
 
-export function AiGenerateJobReviewpage({
+export function InstructorAIGenerateJobs({
   resLocals,
   jobs,
 }: {
   resLocals: Record<string, any>;
-  jobs: (Job & { email?: string | null })[];
+  jobs: { job: Job; user: User | null }[];
 }) {
   return html`
     <!doctype html>
@@ -41,19 +41,20 @@ export function AiGenerateJobReviewpage({
                 </thead>
                 <tbody>
                   ${jobs.map(
-                    (job) => html`
+                    (row) => html`
                       <tr>
-                        <td>${job.id}</td>
+                        <td>${row.job.id}</td>
                         <td>
-                          ${job.start_date == null
+                          ${row.job.start_date == null
                             ? html`&mdash;`
-                            : formatDate(job.start_date, resLocals.course.display_timezone)}
+                            : formatDate(row.job.start_date, resLocals.course.display_timezone)}
                         </td>
-                        <td>${job.email ?? '(System)'}</td>
-                        <td>${JobStatus({ status: job.status })}</td>
+                        <td>${row.user.user_id ?? '(System)'}</td>
+                        <td>${JobStatus({ status: row.job.status })}</td>
                         <td>
                           <a
-                            href="${resLocals.urlPrefix}/ai_generate_question_job/${job.job_sequence_id}"
+                            href="${resLocals.urlPrefix}/ai_generate_question_job/${row.job
+                              .job_sequence_id}"
                             class="btn btn-xs btn-info"
                           >
                             Details

@@ -6,7 +6,7 @@ import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { JobSchema } from '../../../lib/db-types.js';
 
-import { AiGenerateJobPage } from './instructorAiGenerateJob.html.js';
+import { InstructorAiGenerateJob } from './instructorAiGenerateJob.html.js';
 
 const router = express.Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
@@ -23,7 +23,7 @@ router.get(
       { course_id: res.locals.course.id, job_sequence_id: req.params.job_sequence_id },
       JobSchema,
     );
-    res.send(AiGenerateJobPage({ resLocals: res.locals, job }));
+    res.send(InstructorAiGenerateJob({ resLocals: res.locals, job }));
   }),
 );
 
