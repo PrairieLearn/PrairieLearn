@@ -50,6 +50,7 @@ const BOOTSTRAP_BREAKPOINTS = ['sm', 'md', 'lg', 'xl', 'xxl'];
 
 // The changes here are made based on the Bootstrap 5 migration guide:
 // https://getbootstrap.com/docs/5.3/migration/
+
 observe(BOOTSTRAP_LEGACY_ATTRIBUTES.map((attr) => `[${attr}]`).join(','), {
   add(el) {
     BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
@@ -265,6 +266,27 @@ observe('.custom-select', {
       'Bootstrap 5 replaced the .custom-select class with .form-select. Please update your HTML.',
       el,
     );
+  },
+});
+
+observe('.custom-file', {
+  add(el) {
+    const input = el.querySelector('input[type="file"]');
+    const label = el.querySelector('.custom-file-label');
+
+    if (!input || !label) {
+      console.warn('Could not find input and label in .custom-file.', el);
+      return;
+    }
+
+    // Move the label before the input.
+    el.insertBefore(label, input);
+
+    // Update the classes.
+    label.classList.add('form-label');
+    input.classList.add('form-control');
+
+    // TODO: remove the "custom-file-input" behavior script.
   },
 });
 
