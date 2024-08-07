@@ -74,13 +74,7 @@ export function GradingPanel({
                     id="use-score-perc"
                     type="checkbox"
                   />
-                  <label
-                    class="custom-control-label"
-                    for="use-score-perc"
-                    arial-label="Grade by percentage"
-                  >
-                    Percentage
-                  </label>
+                  <label class="custom-control-label" for="use-score-perc">Percentage</label>
                 </div>
               </li>
             `
