@@ -1,3 +1,4 @@
+import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
@@ -33,6 +34,19 @@ export function Workspace({
         ${HeadContents({ resLocals, pageNote, pageTitle })}
         <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />
         ${compiledScriptTag('workspaceClient.ts')}
+        ${resLocals.assessment && resLocals.assessment.type === 'Exam'
+          ? html`${compiledScriptTag('examTimeLimitCountdown.ts')}
+            ${EncodedData(
+              {
+                serverRemainingMS: resLocals.assessment_instance_remaining_ms,
+                serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
+                serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
+                canTriggerFinish: false,
+                csrfToken: resLocals.__csrf_token,
+              },
+              'time-limit-data',
+            )}`
+          : ''}
       </head>
 
       <body
@@ -84,6 +98,19 @@ export function Workspace({
               <li class="d-sm-none nav-item ml-2 my-1">
                 <span class="nav-item badge badge-light">${navTitle}</span>
               </li>
+              ${resLocals.assessment &&
+              resLocals.assessment.type === 'Exam' &&
+              resLocals.assessment_instance.open &&
+              resLocals.assessment_instance_remaining_ms
+                ? html`
+                    <li class="nav-item ml-2 my-1">
+                      <div id="countdownProgress"></div>
+                      <div class="text-white small">
+                        Time remaining: <span id="countdownDisplay"></span>
+                      </div>
+                    </li>
+                  `
+                : ''}
               <li class="nav-item ml-2 my-1">
                 <button
                   id="reboot"
