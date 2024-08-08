@@ -1,5 +1,11 @@
 import { observe } from 'selector-observer';
 
+import {
+  makeAttributeMigrator,
+  makeClassMigrator,
+  MigratedClass,
+} from '../lib/bootstrap-compat-utils.js';
+
 // TODO: we may need to add a lot more attributes to this list. For tooltips,
 // popovers, and maybe more, all options can be controlled by kebab-case data
 // attributes, so we probably have to support all of them.
@@ -51,21 +57,29 @@ const BOOTSTRAP_BREAKPOINTS = ['sm', 'md', 'lg', 'xl', 'xxl'];
 // The changes here are made based on the Bootstrap 5 migration guide:
 // https://getbootstrap.com/docs/5.3/migration/
 
-observe(BOOTSTRAP_LEGACY_ATTRIBUTES.map((attr) => `[${attr}]`).join(','), {
-  add(el) {
+makeAttributeMigrator({
+  selector: BOOTSTRAP_LEGACY_ATTRIBUTES.map((attr) => `[${attr}]`).join(','),
+  getMigratedAttributes(el) {
+    const migratedAttributes: MigratedAttribute[] = [];
+
     BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
-      const val = el.getAttribute(attr);
-      if (val) {
+      if (el.hasAttribute(attr)) {
+        const val = el.getAttribute(attr);
         // We need to manually handle `data-boundary="window"` since it no longer works
-        // in Bootstrap 5.
+        // in Bootstrap 5; see below.
         // See https://github.com/twbs/bootstrap/issues/34110#issuecomment-1064395197.
         if (attr === 'data-boundary' && val === 'window') {
           return;
         }
-        const attrSuffix = attr.replace('data-', '');
-        el.setAttribute(`data-bs-${attrSuffix}`, val);
+
+        migratedAttributes.push({
+          oldAttribute: attr,
+          newAttribute: attr.replace('data-', 'data-bs-'),
+        });
       }
     });
+
+    return migratedAttributes;
   },
 });
 
@@ -121,21 +135,19 @@ observe('.card-header.bg-info', {
 // Content, Reboot, etc.
 // *********************
 
-observe('.thead-light, .thead-dark', {
-  add(el) {
+makeClassMigrator({
+  selector: '.thead-light, .thead-dark',
+  getMigratedClasses(el) {
+    const migratedClasses: MigratedClass[] = [];
+
     if (el.classList.contains('thead-light')) {
-      el.classList.add('table-light');
-      console.warn(
-        'Bootstrap 5 replaced .thead-light with .table-light. Please update your HTML.',
-        el,
-      );
-    } else {
-      el.classList.add('table-dark');
-      console.warn(
-        'Bootstrap 5 replaced .thead-dark with .table-dark. Please update your HTML.',
-        el,
-      );
+      migratedClasses.push({ oldClass: 'thead-light', newClass: 'table-light' });
     }
+    if (el.classList.contains('thead-dark')) {
+      migratedClasses.push({ oldClass: 'thead-dark', newClass: 'table-dark' });
+    }
+
+    return migratedClasses;
   },
 });
 
@@ -156,8 +168,12 @@ const SPACING_CLASSES = Object.keys(SPACING_PREFIX_MAP)
   )
   .join(', ');
 const SPACING_CLASS_REGEXP = /^[mp][lr]-((sm|md|lg|xl|xxl)-)?([0-5]|auto)$/;
-observe(SPACING_CLASSES, {
-  add(el) {
+
+makeClassMigrator({
+  selector: SPACING_CLASSES,
+  getMigratedClasses(el) {
+    const migratedClasses: MigratedClass[] = [];
+
     el.classList.forEach((cls) => {
       if (!SPACING_CLASS_REGEXP.test(cls)) return;
 
@@ -166,14 +182,10 @@ observe(SPACING_CLASSES, {
       if (!newPrefix) return;
 
       const newClass = `${newPrefix}-${suffix}`;
-      if (el.classList.contains(newClass)) return;
-      el.classList.add(newClass);
-
-      console.warn(
-        `Bootstrap 5 replaced the ${cls} class with the ${newClass} class. Please update your HTML.`,
-        el,
-      );
+      migratedClasses.push({ oldClass: cls, newClass });
     });
+
+    return migratedClasses;
   },
 });
 
@@ -259,13 +271,10 @@ observe('.custom-control.custom-switch', {
   },
 });
 
-observe('.custom-select', {
-  add(el) {
-    el.classList.add('form-select');
-    console.warn(
-      'Bootstrap 5 replaced the .custom-select class with .form-select. Please update your HTML.',
-      el,
-    );
+makeClassMigrator({
+  selector: '.custom-select',
+  getMigratedClasses() {
+    return [{ oldClass: 'custom-select', newClass: 'form-select' }];
   },
 });
 
@@ -290,14 +299,10 @@ observe('.custom-file', {
   },
 });
 
-observe('.custom-range', {
-  add(el) {
-    el.classList.add('form-range');
-
-    console.warn(
-      'Bootstrap 5 replaced the .custom-range class with .form-range. Please update your HTML.',
-      el,
-    );
+makeClassMigrator({
+  selector: '.custom-range',
+  getMigratedClasses() {
+    return [{ oldClass: 'custom-range', newClass: 'form-range' }];
   },
 });
 
@@ -329,73 +334,49 @@ observe('.input-group-prepend, .input-group-append', {
 // the normal spacing utilities. We'll patch this by adding the `.mb-3`
 // class to all `.form-group` elements, as this matches the spacing previously
 // provided by `.form-group`.
-observe('.form-group', {
-  add(el) {
-    el.classList.add('mb-3');
-    console.warn('Bootstrap 5 replaced .form-group with .mb-3. Please update your HTML.', el);
+makeClassMigrator({
+  selector: '.form-group',
+  getMigratedClasses() {
+    return [{ oldClass: 'form-group', newClass: 'mb-3' }];
   },
 });
 
-observe('.form-row', {
-  add(el) {
-    el.classList.add('row');
-    console.warn('Bootstrap 5 replaced .form-row with .row. Please update your HTML.', el);
+makeClassMigrator({
+  selector: '.form-row',
+  getMigratedClasses() {
+    return [{ oldClass: 'form-row', newClass: 'row' }];
   },
 });
 
 // WIP Wednesday, August 7, 2024: stopped after `.custom-range` in the migration guide.
 
-observe('.float-left, .float-right', {
-  add(el) {
-    if (el.classList.contains('float-left')) {
-      el.classList.add('float-start');
-      console.warn(
-        'Bootstrap 5 replaced .float-left with .float-start. Please update your HTML.',
-        el,
-      );
-    } else {
-      el.classList.add('float-end');
-      console.warn(
-        'Bootstrap 5 replaced .float-right with .float-end. Please update your HTML.',
-        el,
-      );
-    }
+makeClassMigrator({
+  selector: '.float-left, .float-right',
+  getMigratedClasses() {
+    return [
+      { oldClass: 'float-left', newClass: 'float-start' },
+      { oldClass: 'float-right', newClass: 'float-end' },
+    ];
   },
 });
 
-observe('.border-left, .border-right', {
-  add(el) {
-    if (el.classList.contains('border-left')) {
-      el.classList.add('border-start');
-      console.warn(
-        'Bootstrap 5 replaced .border-left with .border-start. Please update your HTML.',
-        el,
-      );
-    } else {
-      el.classList.add('border-end');
-      console.warn(
-        'Bootstrap 5 replaced .border-right with .border-end. Please update your HTML.',
-        el,
-      );
-    }
+makeClassMigrator({
+  selector: '.border-left, .border-right',
+  getMigratedClasses() {
+    return [
+      { oldClass: 'border-left', newClass: 'border-start' },
+      { oldClass: 'border-right', newClass: 'border-end' },
+    ];
   },
 });
 
-observe('.rounded-left, .rounded-right', {
-  add(el) {
-    if (el.classList.contains('rounded-left')) {
-      el.classList.add('rounded-start');
-      console.warn(
-        'Bootstrap 5 replaced .rounded-left with .rounded-start. Please update your HTML.',
-        el,
-      );
-    } else {
-      el.classList.add('rounded-end');
-      console.warn(
-        'Bootstrap 5 replaced .rounded-right with .rounded-end. Please update your HTML.',
-        el,
-      );
-    }
+makeClassMigrator({
+  selector: '.rounded-left, .rounded-right',
+  getMigratedClasses() {
+    return [
+      { oldClass: 'rounded-left', newClass: 'rounded-start' },
+      { oldClass: 'rounded-right', newClass: 'rounded-end' },
+    ];
   },
 });
 
@@ -405,22 +386,22 @@ const TEXT_ALIGN_CLASSES = ['left', 'right']
   )
   .join(', ');
 const TEXT_ALIGN_REGEXP = /^text-(sm|md|lg|xl|xxl)-(left|right)$/;
-observe(TEXT_ALIGN_CLASSES, {
-  add(el) {
+
+makeClassMigrator({
+  selector: TEXT_ALIGN_CLASSES,
+  getMigratedClasses(el) {
+    const migratedClasses: MigratedClass[] = [];
+
     Array.from(el.classList)
       .filter((cls) => TEXT_ALIGN_REGEXP.test(cls))
       .forEach((cls) => {
         const classComponents = cls.split('-');
         const newAlignment = classComponents[2] === 'left' ? 'start' : 'end';
         const newClass = `text-${classComponents[1]}-${newAlignment}`;
-        if (el.classList.contains(newClass)) return;
-        el.classList.add(newClass);
-
-        console.warn(
-          `Bootstrap 5 replaced the ${cls} class with the ${newClass} class. Please update your HTML.`,
-          el,
-        );
+        migratedClasses.push({ oldClass: cls, newClass });
       });
+
+    return migratedClasses;
   },
 });
 
@@ -464,31 +445,27 @@ observe(BADGE_SELECTOR, {
   },
 });
 
-// The `.badge-pill` was replaced by `.rounded-pill`.
-observe('.badge-pill', {
-  add(el) {
-    if (!el.classList.contains('badge')) return;
+// The `.badge-pill` class was replaced by `.rounded-pill`.
+makeClassMigrator({
+  selector: '.badge-pill',
+  getMigratedClasses(el) {
+    if (!el.classList.contains('badge')) return [];
 
-    el.classList.add('rounded-pill');
-    console.warn(
-      'Bootstrap 5 replaced .badge-pill with .rounded-pill. Please update your HTML.',
-      el,
-    );
+    return [{ oldClass: 'badge-pill', newClass: 'rounded-pill' }];
   },
 });
 
 // The `.dropdown-menu-left` and `.dropdown-menu-right` classes were replaced
 // by `.dropdown-menu-start` and `.dropdown-menu-end`, respectively.
-observe('.dropdown-menu-right, .dropdown-menu-left', {
-  add(el) {
-    if (!el.classList.contains('dropdown-menu')) return;
+makeClassMigrator({
+  selector: '.dropdown-menu-left, .dropdown-menu-right',
+  getMigratedClasses(el) {
+    if (!el.classList.contains('dropdown-menu')) return [];
 
-    const position = el.classList.contains('dropdown-menu-right') ? 'end' : 'start';
-    el.classList.add(`dropdown-menu-${position}`);
-    console.warn(
-      'Bootstrap 5 replaced .dropdown-menu-{left,right} with .dropdown-menu-{start|end}. Please update your HTML.',
-      el,
-    );
+    return [
+      { oldClass: 'dropdown-menu-left', newClass: 'dropdown-menu-start' },
+      { oldClass: 'dropdown-menu-right', newClass: 'dropdown-menu-end' },
+    ];
   },
 });
 
@@ -513,18 +490,20 @@ const FONT_WEIGHT_CLASSES = [
   'font-weight-light',
   'font-weight-lighter',
 ];
-observe(FONT_WEIGHT_CLASSES.map((cls) => `.${cls}`).join(', '), {
-  add(el) {
-    const fontWeightClasses = FONT_WEIGHT_CLASSES.filter((cls) => el.classList.contains(cls));
-    for (const cls of fontWeightClasses) {
-      const newClass = cls.replace('font-weight', 'fw');
-      el.classList.add(newClass);
-    }
+makeClassMigrator({
+  selector: FONT_WEIGHT_CLASSES.map((cls) => `.${cls}`).join(', '),
+  getMigratedClasses() {
+    return FONT_WEIGHT_CLASSES.map((oldClass) => ({
+      oldClass,
+      newClass: oldClass.replace('font-weight', 'fw'),
+    }));
+  },
+});
 
-    console.warn(
-      'Bootstrap 5 replaced font-weight classes with fw-* classes. Please update your HTML.',
-      el,
-    );
+makeClassMigrator({
+  selector: '.text-monospace',
+  getMigratedClasses() {
+    return [{ oldClass: 'text-monospace', newClass: 'font-monospace' }];
   },
 });
 
@@ -563,10 +542,10 @@ observe('.sr-only, .sr-only-focusable', {
   },
 });
 
-observe('button.close', {
-  add(el) {
-    el.classList.add('btn-close');
-    console.warn('Bootstrap 5 replaced .close with .btn-close. Please update your HTML.', el);
+makeClassMigrator({
+  selector: 'button.close',
+  getMigratedClasses() {
+    return [{ oldClass: 'close', newClass: 'btn-close' }];
   },
 });
 
