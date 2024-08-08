@@ -39,26 +39,24 @@ file_list = ["test.txt", "test.py", "test", "lib.py", "weird name ,~!@#$%^&*()_\
         ([], [], set()),
         ([], file_list, set()),
         ([[".*\\.py", "*.py"]], [], set()),
-        ([[".*\\.py", "*.py"]], file_list, set(["lib.py", "test.py"])),
-        ([["test\\..*", "test.*"]], file_list, set(["test.txt", "test.py"])),
+        ([[".*\\.py", "*.py"]], file_list, {"lib.py", "test.py"}),
+        ([["test\\..*", "test.*"]], file_list, {"test.txt", "test.py"}),
         (
             [["test\\..*", "test.*"], [".*\\.py", "*.py"]],
             file_list,
-            set(["test.txt", "test.py", "lib.py"]),
+            {"test.txt", "test.py", "lib.py"},
         ),
         (
             [["test\\..*", "test.*"], [".*\\.py", "*.py"], [".*", "*"]],
             file_list,
-            set(
-                [
-                    "test.txt",
-                    "test.py",
-                    "test",
-                    "lib.py",
-                    "weird name ,~!@#$%^&*()_\\",
-                    ".",
-                ]
-            ),
+            {
+                "test.txt",
+                "test.py",
+                "test",
+                "lib.py",
+                "weird name ,~!@#$%^&*()_\\",
+                ".",
+            },
         ),
     ],
 )
@@ -78,11 +76,13 @@ def test_find_matching_files_fn(
         ("test???test", "^test...test$"),
         ("test[a-z][abc]test", "^test[a-z][abc]test$"),
         ("[a-z0-9][abc]?test*", "^[a-z0-9][abc].test.*$"),
-        ("\\[a-z0-9]\\[abc]\\?test\\*", ""),  # All wildcard characters are escaped
+        # All wildcard characters are escaped
+        ("\\[a-z0-9]\\[abc]\\?test\\*", ""),
+        # . is a regex character that needs escaping, but characters in ranges don't
         (
             "[*?.].",
             "^[*?.]\\.$",
-        ),  # . is a regex character that needs escaping, but characters in ranges don't
+        ),
     ],
 )
 def test_glob_to_regex_fn(glob_pattern: str, expected_output: str) -> None:
@@ -105,6 +105,8 @@ def test_glob_to_regex_fn(glob_pattern: str, expected_output: str) -> None:
                 "\\[a-z0-9]\\[abc]\\?test\\*",
                 "[*?.].",
             ],
+            # test_glob_to_regex_fn already covers individual cases, so testing one big input list
+            # being sorted into the two output lists makes more sense here
             (
                 [
                     ["^test.*test$", "test*test"],
@@ -115,8 +117,6 @@ def test_glob_to_regex_fn(glob_pattern: str, expected_output: str) -> None:
                 ],
                 ["", "test", "[a-z0-9][abc]?test*"],
             ),
-            # test_glob_to_regex_fn already covers individual cases, so testing one big input list
-            # being sorted into the two output lists makes more sense here
         ),
     ],
 )
