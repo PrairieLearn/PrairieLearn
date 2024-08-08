@@ -127,6 +127,12 @@ def get_answer_name(file_names: str, optional_file_names: str = "") -> str:
 def add_format_error(
     answer_name: str, data: pl.QuestionData, error_string: str
 ) -> None:
+    # Adding format errors to both answer_name and "_files" keys for display next to this
+    # element and in submissions
+    if "_files" not in data["format_errors"]:
+        data["format_errors"]["_files"] = []
+    data["format_errors"]["_files"].append(error_string)
+
     if answer_name not in data["format_errors"]:
         data["format_errors"][answer_name] = []
     data["format_errors"][answer_name].append(error_string)
