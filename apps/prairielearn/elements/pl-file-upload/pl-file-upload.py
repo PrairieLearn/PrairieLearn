@@ -143,7 +143,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "optional-file-names", ""
     ):
         raise ValueError(
-            'One of required attributes "file-names" or "optional-file-names" missing'
+            'One of the required attributes "file-names" or "optional-file-names" is missing'
         )
 
     if pl.get_string_attrib(element, "file-names", "") and pl.get_boolean_attrib(
