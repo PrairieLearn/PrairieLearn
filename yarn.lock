@@ -3499,6 +3499,7 @@ __metadata:
     requirejs: "npm:^2.3.7"
     search-string: "npm:^3.1.0"
     selector-observer: "npm:^2.1.6"
+    selector-set: "npm:^1.1.5"
     serve-favicon: "npm:^2.5.0"
     set-cookie-parser: "npm:^2.6.0"
     showdown: "npm:^2.1.0"
