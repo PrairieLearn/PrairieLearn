@@ -3,29 +3,8 @@ import SelectorSet from 'selector-set';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-type Migrator = (el: Element) => void;
-
-const set = new SelectorSet<Migrator>();
-
-onDocumentReady(() => {
-  const mutationObserver = new MutationObserver(handleMutations);
-  mutationObserver.observe(window.document, {
-    attributes: true,
-    childList: true,
-    subtree: true,
-  });
-});
-
-function handleMutations(mutations: MutationRecord[]) {
-  for (const mutation of mutations) {
-    if (mutation.type === 'attributes') {
-      const el = mutation.target as Element;
-      for (const migrator of set.matches(el)) {
-        migrator.data(el);
-      }
-    }
-  }
-}
+const compatEnabled =
+  document.head.querySelector('meta[name="bootstrap-version')?.getAttribute('content') !== '4';
 
 interface MigratorUtils {
   addClass(el: Element, newClass: string | string[], message: string): void;
@@ -36,6 +15,34 @@ interface MigratorUtils {
 interface MigratorOptions {
   selector: string;
   migrate: (el: Element, utils: MigratorUtils) => void;
+}
+
+const set = new SelectorSet<MigratorOptions>();
+
+onDocumentReady(() => {
+  const mutationObserver = new MutationObserver((mutations) => {
+    for (const mutation of mutations) {
+      if (mutation.type === 'attributes') {
+        const el = mutation.target as Element;
+        for (const migrator of set.matches(el)) {
+          migrator.data.migrate(el, {
+            addClass,
+            migrateClass,
+            migrateAttribute,
+          });
+        }
+      }
+    }
+  });
+  mutationObserver.observe(window.document, {
+    attributes: true,
+    childList: true,
+    subtree: true,
+  });
+});
+
+export function isBootstrapCompatEnabled() {
+  return compatEnabled;
 }
 
 export function makeMigrator(options: MigratorOptions) {
@@ -51,13 +58,7 @@ export function makeMigrator(options: MigratorOptions) {
 
   // `selector-observer` doesn't handle mutations to existing nodes, so we need
   // to use our own `MutationObserver` to handle this case.
-  set.add(options.selector, (el) =>
-    options.migrate(el, {
-      addClass,
-      migrateClass,
-      migrateAttribute,
-    }),
-  );
+  set.add(options.selector, options);
 }
 
 function addClass(el: Element, newClass: string | string[], message: string) {

@@ -1,522 +1,523 @@
 import { observe } from 'selector-observer';
 
-import { makeMigrator } from '../lib/bootstrap-compat-utils.js';
+import { isBootstrapCompatEnabled, makeMigrator } from '../lib/bootstrap-compat-utils.js';
 
-// TODO: we may need to add a lot more attributes to this list. For tooltips,
-// popovers, and maybe more, all options can be controlled by kebab-case data
-// attributes, so we probably have to support all of them.
-// The following list of attributes was compiled from the Bootstrap 4 docs:
-// https://getbootstrap.com/docs/4.6/components/carousel/
-// https://getbootstrap.com/docs/4.6/components/dropdowns/
-// https://getbootstrap.com/docs/4.6/components/modal/
-// https://getbootstrap.com/docs/4.6/components/popovers/
-// https://getbootstrap.com/docs/4.6/components/scrollspy/
-// https://getbootstrap.com/docs/4.6/components/tooltips/
-// https://getbootstrap.com/docs/4.6/components/toasts/
-const BOOTSTRAP_LEGACY_ATTRIBUTES = [
-  'data-animation',
-  'data-autohide',
-  'data-backdrop',
-  'data-boundary',
-  'data-container',
-  'data-content',
-  'data-custom-class',
-  'data-delay',
-  'data-dismiss',
-  'data-display',
-  'data-fallback-placement',
-  'data-flip',
-  'data-focus',
-  'data-interval',
-  'data-keyboard',
-  'data-html',
-  'data-offset',
-  'data-pause',
-  'data-placement',
-  'data-popper-config',
-  'data-reference',
-  'data-ride',
-  'data-selector',
-  'data-show',
-  'data-spy',
-  'data-target',
-  'data-template',
-  'data-title',
-  'data-toggle',
-  'data-touch',
-  'data-trigger',
-  'data-wrap',
-];
+if (isBootstrapCompatEnabled()) {
+  console.log('Enabling Bootstrap compatibility layer.');
 
-const BOOTSTRAP_BREAKPOINTS = ['sm', 'md', 'lg', 'xl', 'xxl'];
+  // The following list of attributes was compiled from the Bootstrap 4 docs:
+  // https://getbootstrap.com/docs/4.6/components/carousel/
+  // https://getbootstrap.com/docs/4.6/components/dropdowns/
+  // https://getbootstrap.com/docs/4.6/components/modal/
+  // https://getbootstrap.com/docs/4.6/components/popovers/
+  // https://getbootstrap.com/docs/4.6/components/scrollspy/
+  // https://getbootstrap.com/docs/4.6/components/tooltips/
+  // https://getbootstrap.com/docs/4.6/components/toasts/
+  const BOOTSTRAP_LEGACY_ATTRIBUTES = [
+    'data-animation',
+    'data-autohide',
+    'data-backdrop',
+    'data-boundary',
+    'data-container',
+    'data-content',
+    'data-custom-class',
+    'data-delay',
+    'data-dismiss',
+    'data-display',
+    'data-fallback-placement',
+    'data-flip',
+    'data-focus',
+    'data-interval',
+    'data-keyboard',
+    'data-html',
+    'data-offset',
+    'data-pause',
+    'data-placement',
+    'data-popper-config',
+    'data-reference',
+    'data-ride',
+    'data-selector',
+    'data-show',
+    'data-spy',
+    'data-target',
+    'data-template',
+    'data-title',
+    'data-toggle',
+    'data-touch',
+    'data-trigger',
+    'data-wrap',
+  ];
 
-// The changes here are made based on the Bootstrap 5 migration guide:
-// https://getbootstrap.com/docs/5.3/migration/
+  const BOOTSTRAP_BREAKPOINTS = ['sm', 'md', 'lg', 'xl', 'xxl'];
 
-makeMigrator({
-  selector: BOOTSTRAP_LEGACY_ATTRIBUTES.map((attr) => `[${attr}]`).join(','),
-  migrate(el, { migrateAttribute }) {
-    BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
-      if (el.hasAttribute(attr)) {
-        const val = el.getAttribute(attr);
-        // We need to manually handle `data-boundary="window"` since it no longer works
-        // in Bootstrap 5; see below.
-        // See https://github.com/twbs/bootstrap/issues/34110#issuecomment-1064395197.
-        if (attr === 'data-boundary' && val === 'window') {
-          return;
+  // The changes here are made based on the Bootstrap 5 migration guide:
+  // https://getbootstrap.com/docs/5.3/migration/
+
+  makeMigrator({
+    selector: BOOTSTRAP_LEGACY_ATTRIBUTES.map((attr) => `[${attr}]`).join(','),
+    migrate(el, { migrateAttribute }) {
+      BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
+        if (el.hasAttribute(attr)) {
+          const val = el.getAttribute(attr);
+          // We need to manually handle `data-boundary="window"` since it no longer works
+          // in Bootstrap 5; see below.
+          // See https://github.com/twbs/bootstrap/issues/34110#issuecomment-1064395197.
+          if (attr === 'data-boundary' && val === 'window') {
+            return;
+          }
+
+          migrateAttribute(el, attr, attr.replace('data-', 'data-bs-'));
         }
+      });
+    },
+  });
 
-        migrateAttribute(el, attr, attr.replace('data-', 'data-bs-'));
-      }
-    });
-  },
-});
+  // Bootstrap 5 no longer supports `data-boundary="window"` for dropdowns.
+  // While Popper.js supports a `strategy: 'fixed'` option, it is not
+  // configurable via a data attribute, so we need to patch the creation of
+  // such dropdowns.
+  //
+  // If the following PR is merged, we can use the attribute instead:
+  // https://github.com/twbs/bootstrap/pull/34120
+  //
+  // Note that we only handle dropdowns here; we don't want to take over the
+  // creation of poppers and tooltips.
+  observe('[data-toggle="dropdown"][data-boundary="window"]', {
+    add(el) {
+      $(el).dropdown({
+        popperConfig(defaultConfig) {
+          return {
+            ...defaultConfig,
+            strategy: 'fixed',
+          };
+        },
+      });
+    },
+  });
 
-// Bootstrap 5 no longer supports `data-boundary="window"` for dropdowns.
-// While Popper.js supports a `strategy: 'fixed'` option, it is not
-// configurable via a data attribute, so we need to patch the creation of
-// such dropdowns.
-//
-// If the following PR is merged, we can use the attribute instead:
-// https://github.com/twbs/bootstrap/pull/34120
-//
-// Note that we only handle dropdowns here; we don't want to take over the
-// creation of poppers and tooltips.
-observe('[data-toggle="dropdown"][data-boundary="window"]', {
-  add(el) {
-    $(el).dropdown({
-      popperConfig(defaultConfig) {
-        return {
-          ...defaultConfig,
-          strategy: 'fixed',
-        };
-      },
-    });
-  },
-});
-
-// We used `white text/buttons in "info"-colored card headers, but that doesn't
-// provide sufficient contrast in Bootstrap 5. We'll do our best to patch this
-// by switching to dark text/buttons in this situation.
-makeMigrator({
-  selector: '.card-header.bg-info.text-white',
-  migrate(el) {
-    el.classList.remove('text-white');
-    el.classList.add('text-dark');
-    console.warn(
-      'Bootstrap 5 no longer provides sufficient contrast for white text on "info"-colored card headers. Please update your HTML.',
-      el,
-    );
-
-    el.querySelectorAll(':scope > .btn.btn-outline-light').forEach((button) => {
-      button.classList.remove('btn-outline-light');
-      button.classList.add('btn-outline-dark');
+  // We used `white text/buttons in "info"-colored card headers, but that doesn't
+  // provide sufficient contrast in Bootstrap 5. We'll do our best to patch this
+  // by switching to dark text/buttons in this situation.
+  makeMigrator({
+    selector: '.card-header.bg-info.text-white',
+    migrate(el) {
+      el.classList.remove('text-white');
+      el.classList.add('text-dark');
       console.warn(
-        'Bootstrap 5 no longer provides sufficient contrast for white buttons on "info"-colored card headers. Please update your HTML.',
-        button,
+        'Bootstrap 5 no longer provides sufficient contrast for white text on "info"-colored card headers. Please update your HTML.',
+        el,
       );
-    });
-  },
-});
 
-// *********************
-// Content, Reboot, etc.
-// *********************
+      el.querySelectorAll(':scope > .btn.btn-outline-light').forEach((button) => {
+        button.classList.remove('btn-outline-light');
+        button.classList.add('btn-outline-dark');
+        console.warn(
+          'Bootstrap 5 no longer provides sufficient contrast for white buttons on "info"-colored card headers. Please update your HTML.',
+          button,
+        );
+      });
+    },
+  });
 
-makeMigrator({
-  selector: '.thead-light, .thead-dark',
-  migrate(el, { migrateClass }) {
-    migrateClass(el, 'thead-light', 'table-light');
-    migrateClass(el, 'thead-dark', 'table-dark');
-  },
-});
+  // *********************
+  // Content, Reboot, etc.
+  // *********************
 
-// ***
-// RTL
-// ***
+  makeMigrator({
+    selector: '.thead-light, .thead-dark',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'thead-light', 'table-light');
+      migrateClass(el, 'thead-dark', 'table-dark');
+    },
+  });
 
-// Bootstrap 5 replaced "left"/"right" with "start"/"end" for RTL support.
-const SPACING_PREFIX_MAP: Record<string, any> = { ml: 'ms', mr: 'me', pl: 'ps', pr: 'pe' };
-const SPACING_SUFFIXES = ['0', '1', '2', '3', '4', '5', 'auto'];
-const SPACING_CLASSES = Object.keys(SPACING_PREFIX_MAP)
-  .flatMap((prefix) =>
-    SPACING_SUFFIXES.map((suffix) => `.${prefix}-${suffix}`).concat(
-      BOOTSTRAP_BREAKPOINTS.flatMap((bp) =>
-        SPACING_SUFFIXES.map((suffix) => `.${bp}-${prefix}-${suffix}`),
+  // ***
+  // RTL
+  // ***
+
+  // Bootstrap 5 replaced "left"/"right" with "start"/"end" for RTL support.
+  const SPACING_PREFIX_MAP: Record<string, any> = { ml: 'ms', mr: 'me', pl: 'ps', pr: 'pe' };
+  const SPACING_SUFFIXES = ['0', '1', '2', '3', '4', '5', 'auto'];
+  const SPACING_CLASSES = Object.keys(SPACING_PREFIX_MAP)
+    .flatMap((prefix) =>
+      SPACING_SUFFIXES.map((suffix) => `.${prefix}-${suffix}`).concat(
+        BOOTSTRAP_BREAKPOINTS.flatMap((bp) =>
+          SPACING_SUFFIXES.map((suffix) => `.${bp}-${prefix}-${suffix}`),
+        ),
       ),
-    ),
-  )
-  .join(', ');
-const SPACING_CLASS_REGEXP = /^[mp][lr]-((sm|md|lg|xl|xxl)-)?([0-5]|auto)$/;
+    )
+    .join(', ');
+  const SPACING_CLASS_REGEXP = /^[mp][lr]-((sm|md|lg|xl|xxl)-)?([0-5]|auto)$/;
 
-makeMigrator({
-  selector: SPACING_CLASSES,
-  migrate(el, { migrateClass }) {
-    el.classList.forEach((cls) => {
-      if (!SPACING_CLASS_REGEXP.test(cls)) return;
+  makeMigrator({
+    selector: SPACING_CLASSES,
+    migrate(el, { migrateClass }) {
+      el.classList.forEach((cls) => {
+        if (!SPACING_CLASS_REGEXP.test(cls)) return;
 
-      const [prefix, suffix] = cls.split('-');
-      const newPrefix = SPACING_PREFIX_MAP[prefix];
-      if (!newPrefix) return;
+        const [prefix, suffix] = cls.split('-');
+        const newPrefix = SPACING_PREFIX_MAP[prefix];
+        if (!newPrefix) return;
 
-      const newClass = `${newPrefix}-${suffix}`;
-      migrateClass(el, cls, newClass);
-    });
-  },
-});
-
-// *****
-// Forms
-// *****
-
-makeMigrator({
-  selector: '.custom-control.custom-checkbox',
-  migrate(el, { addClass }) {
-    addClass(
-      el,
-      'form-check',
-      'Bootstrap 5 replaced .custom-control.custom-checkbox with .form-check. Please update your HTML.',
-    );
-
-    el.querySelectorAll('.custom-control-input').forEach((input) => {
-      addClass(
-        input,
-        'form-check-input',
-        'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
-      );
-    });
-
-    el.querySelectorAll('.custom-control-label').forEach((label) => {
-      addClass(
-        label,
-        'form-check-label',
-        'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
-      );
-    });
-  },
-});
-
-makeMigrator({
-  selector: '.custom-control.custom-radio',
-  migrate(el, { addClass }) {
-    addClass(
-      el,
-      'form-check',
-      'Bootstrap 5 replaced .custom-control.custom-radio with .form-check. Please update your HTML.',
-    );
-
-    el.querySelectorAll('.custom-control-input').forEach((input) => {
-      addClass(
-        input,
-        'form-check-input',
-        'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
-      );
-    });
-
-    el.querySelectorAll('.custom-control-label').forEach((label) => {
-      addClass(
-        label,
-        'form-check-label',
-        'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
-      );
-    });
-  },
-});
-
-makeMigrator({
-  selector: '.custom-control.custom-switch',
-  migrate(el, { addClass }) {
-    addClass(
-      el,
-      ['form-check', 'form-switch'],
-      'Bootstrap 5 replaced .custom-control.custom-switch with .form-check.form-switch. Please update your HTML.',
-    );
-
-    el.querySelectorAll('.custom-control-input').forEach((input) => {
-      addClass(
-        input,
-        'form-check-input',
-        'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
-      );
-    });
-
-    el.querySelectorAll('.custom-control-label').forEach((label) => {
-      addClass(
-        label,
-        'form-check-label',
-        'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
-      );
-    });
-  },
-});
-
-makeMigrator({
-  selector: '.custom-select',
-  migrate(el, { migrateClass }) {
-    migrateClass(el, 'custom-select', 'form-select');
-  },
-});
-
-makeMigrator({
-  selector: '.custom-file',
-  migrate(el) {
-    const input = el.querySelector('input[type="file"]');
-    const label = el.querySelector('.custom-file-label');
-
-    // If there's no input or label, there's nothing for us to migrate;
-    if (!input || !label) return;
-
-    // Move the label before the input.
-    el.insertBefore(label, input);
-
-    // Update the classes.
-    label.classList.add('form-label');
-    input.classList.add('form-control');
-
-    console.warn('Bootstrap 5 uses new markup for file inputs. Please update your HTML.', el);
-  },
-});
-
-makeMigrator({
-  selector: '.custom-range',
-  migrate(el, { migrateClass }) {
-    migrateClass(el, 'custom-range', 'form-range');
-  },
-});
-
-// In Bootstrap 5, elements can be added as direct children of `.input-group`
-// without using a wrapping `.input-group-prepend` or `.input-group-append`.
-// This bit of JavaScript will re-parent the children of `.input-group-*` into
-// the containing `.input-group` element.
-makeMigrator({
-  selector: '.input-group-prepend, .input-group-append',
-  migrate(el) {
-    if (!el.parentElement?.classList.contains('input-group')) return;
-
-    for (const child of Array.from(el.children)) {
-      el.parentElement?.insertBefore(child, el);
-    }
-    el.remove();
-
-    const elementClass = el.classList.contains('input-group-prepend')
-      ? 'input-group-prepend'
-      : 'input-group-append';
-
-    console.warn(
-      `Bootstrap 5 no longer requires ${elementClass} elements to be wrapped in an input-group. Please update your HTML to remove the wrapping ${elementClass} element.`,
-      el,
-    );
-  },
-});
-
-// The `.form-group` class no longer exists. Instead, they recommend using
-// the normal spacing utilities. We'll patch this by adding the `.mb-3`
-// class to all `.form-group` elements, as this matches the spacing previously
-// provided by `.form-group`.
-makeMigrator({
-  selector: '.form-group',
-  migrate(el, { migrateClass }) {
-    migrateClass(el, 'form-group', 'mb-3');
-  },
-});
-
-makeMigrator({
-  selector: '.form-row',
-  migrate(el, { migrateClass }) {
-    migrateClass(el, 'form-row', 'row');
-  },
-});
-
-// WIP Wednesday, August 7, 2024: stopped after `.custom-range` in the migration guide.
-
-makeMigrator({
-  selector: '.float-left, .float-right',
-  migrate(el, { migrateClass }) {
-    migrateClass(el, 'float-left', 'float-start');
-    migrateClass(el, 'float-right', 'float-end');
-  },
-});
-
-makeMigrator({
-  selector: '.border-left, .border-right',
-  migrate(el, { migrateClass }) {
-    migrateClass(el, 'border-left', 'border-start');
-    migrateClass(el, 'border-right', 'border-end');
-  },
-});
-
-makeMigrator({
-  selector: '.rounded-left, .rounded-right',
-  migrate(el, { migrateClass }) {
-    migrateClass(el, 'rounded-left', 'rounded-start');
-    migrateClass(el, 'rounded-right', 'rounded-end');
-  },
-});
-
-const TEXT_ALIGN_CLASSES = ['left', 'right']
-  .flatMap((align) =>
-    [`text-${align}`].concat(BOOTSTRAP_BREAKPOINTS.map((bp) => `.text-${bp}-${align}`)),
-  )
-  .join(', ');
-const TEXT_ALIGN_REGEXP = /^text-(sm|md|lg|xl|xxl)-(left|right)$/;
-makeMigrator({
-  selector: TEXT_ALIGN_CLASSES,
-  migrate(el, { migrateClass }) {
-    Array.from(el.classList)
-      .filter((cls) => TEXT_ALIGN_REGEXP.test(cls))
-      .forEach((cls) => {
-        const classComponents = cls.split('-');
-        const newAlignment = classComponents[2] === 'left' ? 'start' : 'end';
-        const newClass = `text-${classComponents[1]}-${newAlignment}`;
+        const newClass = `${newPrefix}-${suffix}`;
         migrateClass(el, cls, newClass);
       });
-  },
-});
+    },
+  });
 
-// The classes used to color badges have changed. We'll patch
-// this by replacing the `.badge-*` class with the new `.text-bg-*` class.
-const BADGE_COLORS = [
-  'primary',
-  'secondary',
-  'success',
-  'danger',
-  'warning',
-  'info',
-  'light',
-  'dark',
-];
-const BADGE_SELECTOR = BADGE_COLORS.map((color) => `.badge-${color}`).join(', ');
-makeMigrator({
-  selector: BADGE_SELECTOR,
-  migrate(el) {
-    if (!(el instanceof HTMLElement)) return;
-    if (!el.classList.contains('badge')) return;
+  // *****
+  // Forms
+  // *****
 
-    // Temporarily set `transition` to `none` to prevent an animated color change.
-    const originalTransition = el.style.transition;
-    el.style.transition = 'none';
-
-    const color = BADGE_COLORS.find((color) => el.classList.contains(`badge-${color}`));
-    el.classList.remove(`badge-${color}`);
-
-    // If this element is an anchor or a button, we need to use a different
-    // set of classes to support hover/focus styles.
-    if (el.tagName === 'A' || el.tagName === 'BUTTON') {
-      el.classList.add('btn', `btn-${color}`);
-      // TODO: log something useful to the console.
-    } else {
-      el.classList.add(`text-bg-${color}`);
-      console.warn('Bootstrap 5 replaced .badge-* with .text-bg-*. Please update your HTML.', el);
-    }
-
-    // Restore the original `transition` value.
-    setTimeout(() => (el.style.transition = originalTransition), 0);
-  },
-});
-
-// The `.badge-pill` class was replaced by `.rounded-pill`.
-makeMigrator({
-  selector: '.badge-pill',
-  migrate(el, { migrateClass }) {
-    if (!el.classList.contains('badge')) return [];
-
-    migrateClass(el, 'badge-pill', 'rounded-pill');
-  },
-});
-
-// The `.dropdown-menu-left` and `.dropdown-menu-right` classes were replaced
-// by `.dropdown-menu-start` and `.dropdown-menu-end`, respectively.
-makeMigrator({
-  selector: '.dropdown-menu-left, .dropdown-menu-right',
-  migrate(el, { migrateClass }) {
-    if (!el.classList.contains('dropdown-menu')) return [];
-
-    migrateClass(el, 'dropdown-menu-left', 'dropdown-menu-start');
-    migrateClass(el, 'dropdown-menu-right', 'dropdown-menu-end');
-  },
-});
-
-// `label` no longer receives a default bottom margin; the `form-label` class
-// must be added to form labels.
-makeMigrator({
-  selector: 'label',
-  migrate(el, { addClass }) {
-    if (el.closest('.form-group') == null) return;
-
-    addClass(
-      el,
-      'form-label',
-      'Bootstrap 5 requires the .form-label class on form labels. Please update your HTML.',
-    );
-  },
-});
-
-const FONT_WEIGHT_CLASSES = [
-  'font-weight-bold',
-  'font-weight-bolder',
-  'font-weight-normal',
-  'font-weight-light',
-  'font-weight-lighter',
-];
-makeMigrator({
-  selector: FONT_WEIGHT_CLASSES.map((cls) => `.${cls}`).join(', '),
-  migrate(el, { migrateClass }) {
-    FONT_WEIGHT_CLASSES.forEach((oldClass) => {
-      const newClass = oldClass.replace('font-weight', 'fw');
-      migrateClass(el, oldClass, newClass);
-    });
-  },
-});
-
-makeMigrator({
-  selector: '.text-monospace',
-  migrate(el, { migrateClass }) {
-    migrateClass(el, 'text-monospace', 'font-monospace');
-  },
-});
-
-makeMigrator({
-  selector: '.sr-only, .sr-only-focusable',
-  migrate(el, { addClass }) {
-    const hasSrOnly = el.classList.contains('sr-only');
-    const hasSrOnlyFocusable = el.classList.contains('sr-only-focusable');
-
-    if (hasSrOnly && hasSrOnlyFocusable) {
+  makeMigrator({
+    selector: '.custom-control.custom-checkbox',
+    migrate(el, { addClass }) {
       addClass(
         el,
-        'visually-hidden-focusable',
-        'Bootstrap 5 replaced .sr-only.sr-only-focusable with .visually-hidden-focusable. Please update your HTML.',
+        'form-check',
+        'Bootstrap 5 replaced .custom-control.custom-checkbox with .form-check. Please update your HTML.',
       );
-    } else if (hasSrOnly) {
+
+      el.querySelectorAll('.custom-control-input').forEach((input) => {
+        addClass(
+          input,
+          'form-check-input',
+          'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
+        );
+      });
+
+      el.querySelectorAll('.custom-control-label').forEach((label) => {
+        addClass(
+          label,
+          'form-check-label',
+          'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
+        );
+      });
+    },
+  });
+
+  makeMigrator({
+    selector: '.custom-control.custom-radio',
+    migrate(el, { addClass }) {
       addClass(
         el,
-        'visually-hidden',
-        'Bootstrap 5 replaced .sr-only with .visually-hidden. Please update your HTML.',
+        'form-check',
+        'Bootstrap 5 replaced .custom-control.custom-radio with .form-check. Please update your HTML.',
       );
-    }
 
-    // Normally we'd leave the existing classes in place, but FontAwesome frustratingly
-    // ships with their own classes that conflict with Bootstrap's. We'll remove them here.
-    el.classList.remove('sr-only', 'sr-only-focusable');
-  },
-});
+      el.querySelectorAll('.custom-control-input').forEach((input) => {
+        addClass(
+          input,
+          'form-check-input',
+          'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
+        );
+      });
 
-makeMigrator({
-  selector: 'button.close',
-  migrate(el, { migrateClass }) {
-    migrateClass(el, 'close', 'btn-close');
+      el.querySelectorAll('.custom-control-label').forEach((label) => {
+        addClass(
+          label,
+          'form-check-label',
+          'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
+        );
+      });
+    },
+  });
 
-    if (
-      el.children.length === 1 &&
-      el.children[0].tagName === 'SPAN' &&
-      el.children[0].hasAttribute('aria-hidden') &&
-      el.children[0].textContent === '×'
-    ) {
-      el.innerHTML = '';
+  makeMigrator({
+    selector: '.custom-control.custom-switch',
+    migrate(el, { addClass }) {
+      addClass(
+        el,
+        ['form-check', 'form-switch'],
+        'Bootstrap 5 replaced .custom-control.custom-switch with .form-check.form-switch. Please update your HTML.',
+      );
+
+      el.querySelectorAll('.custom-control-input').forEach((input) => {
+        addClass(
+          input,
+          'form-check-input',
+          'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
+        );
+      });
+
+      el.querySelectorAll('.custom-control-label').forEach((label) => {
+        addClass(
+          label,
+          'form-check-label',
+          'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
+        );
+      });
+    },
+  });
+
+  makeMigrator({
+    selector: '.custom-select',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'custom-select', 'form-select');
+    },
+  });
+
+  makeMigrator({
+    selector: '.custom-file',
+    migrate(el) {
+      const input = el.querySelector('input[type="file"]');
+      const label = el.querySelector('.custom-file-label');
+
+      // If there's no input or label, there's nothing for us to migrate;
+      if (!input || !label) return;
+
+      // Move the label before the input.
+      el.insertBefore(label, input);
+
+      // Update the classes.
+      label.classList.add('form-label');
+      input.classList.add('form-control');
+
+      console.warn('Bootstrap 5 uses new markup for file inputs. Please update your HTML.', el);
+    },
+  });
+
+  makeMigrator({
+    selector: '.custom-range',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'custom-range', 'form-range');
+    },
+  });
+
+  // In Bootstrap 5, elements can be added as direct children of `.input-group`
+  // without using a wrapping `.input-group-prepend` or `.input-group-append`.
+  // This bit of JavaScript will re-parent the children of `.input-group-*` into
+  // the containing `.input-group` element.
+  makeMigrator({
+    selector: '.input-group-prepend, .input-group-append',
+    migrate(el) {
+      if (!el.parentElement?.classList.contains('input-group')) return;
+
+      for (const child of Array.from(el.children)) {
+        el.parentElement?.insertBefore(child, el);
+      }
+      el.remove();
+
+      const elementClass = el.classList.contains('input-group-prepend')
+        ? 'input-group-prepend'
+        : 'input-group-append';
+
       console.warn(
-        'Bootstrap 5 no longer requires &times; in close buttons. Please update your HTML.',
+        `Bootstrap 5 no longer requires ${elementClass} elements to be wrapped in an input-group. Please update your HTML to remove the wrapping ${elementClass} element.`,
         el,
       );
-    }
-  },
-});
+    },
+  });
+
+  // The `.form-group` class no longer exists. Instead, they recommend using
+  // the normal spacing utilities. We'll patch this by adding the `.mb-3`
+  // class to all `.form-group` elements, as this matches the spacing previously
+  // provided by `.form-group`.
+  makeMigrator({
+    selector: '.form-group',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'form-group', 'mb-3');
+    },
+  });
+
+  makeMigrator({
+    selector: '.form-row',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'form-row', 'row');
+    },
+  });
+
+  // WIP Wednesday, August 7, 2024: stopped after `.custom-range` in the migration guide.
+
+  makeMigrator({
+    selector: '.float-left, .float-right',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'float-left', 'float-start');
+      migrateClass(el, 'float-right', 'float-end');
+    },
+  });
+
+  makeMigrator({
+    selector: '.border-left, .border-right',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'border-left', 'border-start');
+      migrateClass(el, 'border-right', 'border-end');
+    },
+  });
+
+  makeMigrator({
+    selector: '.rounded-left, .rounded-right',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'rounded-left', 'rounded-start');
+      migrateClass(el, 'rounded-right', 'rounded-end');
+    },
+  });
+
+  const TEXT_ALIGN_CLASSES = ['left', 'right']
+    .flatMap((align) =>
+      [`text-${align}`].concat(BOOTSTRAP_BREAKPOINTS.map((bp) => `.text-${bp}-${align}`)),
+    )
+    .join(', ');
+  const TEXT_ALIGN_REGEXP = /^text-(sm|md|lg|xl|xxl)-(left|right)$/;
+  makeMigrator({
+    selector: TEXT_ALIGN_CLASSES,
+    migrate(el, { migrateClass }) {
+      Array.from(el.classList)
+        .filter((cls) => TEXT_ALIGN_REGEXP.test(cls))
+        .forEach((cls) => {
+          const classComponents = cls.split('-');
+          const newAlignment = classComponents[2] === 'left' ? 'start' : 'end';
+          const newClass = `text-${classComponents[1]}-${newAlignment}`;
+          migrateClass(el, cls, newClass);
+        });
+    },
+  });
+
+  // The classes used to color badges have changed. We'll patch
+  // this by replacing the `.badge-*` class with the new `.text-bg-*` class.
+  const BADGE_COLORS = [
+    'primary',
+    'secondary',
+    'success',
+    'danger',
+    'warning',
+    'info',
+    'light',
+    'dark',
+  ];
+  const BADGE_SELECTOR = BADGE_COLORS.map((color) => `.badge-${color}`).join(', ');
+  makeMigrator({
+    selector: BADGE_SELECTOR,
+    migrate(el) {
+      if (!(el instanceof HTMLElement)) return;
+      if (!el.classList.contains('badge')) return;
+
+      // Temporarily set `transition` to `none` to prevent an animated color change.
+      const originalTransition = el.style.transition;
+      el.style.transition = 'none';
+
+      const color = BADGE_COLORS.find((color) => el.classList.contains(`badge-${color}`));
+      el.classList.remove(`badge-${color}`);
+
+      // If this element is an anchor or a button, we need to use a different
+      // set of classes to support hover/focus styles.
+      if (el.tagName === 'A' || el.tagName === 'BUTTON') {
+        el.classList.add('btn', `btn-${color}`);
+        // TODO: log something useful to the console.
+      } else {
+        el.classList.add(`text-bg-${color}`);
+        console.warn('Bootstrap 5 replaced .badge-* with .text-bg-*. Please update your HTML.', el);
+      }
+
+      // Restore the original `transition` value.
+      setTimeout(() => (el.style.transition = originalTransition), 0);
+    },
+  });
+
+  // The `.badge-pill` class was replaced by `.rounded-pill`.
+  makeMigrator({
+    selector: '.badge-pill',
+    migrate(el, { migrateClass }) {
+      if (!el.classList.contains('badge')) return [];
+
+      migrateClass(el, 'badge-pill', 'rounded-pill');
+    },
+  });
+
+  // The `.dropdown-menu-left` and `.dropdown-menu-right` classes were replaced
+  // by `.dropdown-menu-start` and `.dropdown-menu-end`, respectively.
+  makeMigrator({
+    selector: '.dropdown-menu-left, .dropdown-menu-right',
+    migrate(el, { migrateClass }) {
+      if (!el.classList.contains('dropdown-menu')) return [];
+
+      migrateClass(el, 'dropdown-menu-left', 'dropdown-menu-start');
+      migrateClass(el, 'dropdown-menu-right', 'dropdown-menu-end');
+    },
+  });
+
+  // `label` no longer receives a default bottom margin; the `form-label` class
+  // must be added to form labels.
+  makeMigrator({
+    selector: 'label',
+    migrate(el, { addClass }) {
+      if (el.closest('.form-group') == null) return;
+
+      addClass(
+        el,
+        'form-label',
+        'Bootstrap 5 requires the .form-label class on form labels. Please update your HTML.',
+      );
+    },
+  });
+
+  const FONT_WEIGHT_CLASSES = [
+    'font-weight-bold',
+    'font-weight-bolder',
+    'font-weight-normal',
+    'font-weight-light',
+    'font-weight-lighter',
+  ];
+  makeMigrator({
+    selector: FONT_WEIGHT_CLASSES.map((cls) => `.${cls}`).join(', '),
+    migrate(el, { migrateClass }) {
+      FONT_WEIGHT_CLASSES.forEach((oldClass) => {
+        const newClass = oldClass.replace('font-weight', 'fw');
+        migrateClass(el, oldClass, newClass);
+      });
+    },
+  });
+
+  makeMigrator({
+    selector: '.text-monospace',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'text-monospace', 'font-monospace');
+    },
+  });
+
+  makeMigrator({
+    selector: '.sr-only, .sr-only-focusable',
+    migrate(el, { addClass }) {
+      const hasSrOnly = el.classList.contains('sr-only');
+      const hasSrOnlyFocusable = el.classList.contains('sr-only-focusable');
+
+      if (hasSrOnly && hasSrOnlyFocusable) {
+        addClass(
+          el,
+          'visually-hidden-focusable',
+          'Bootstrap 5 replaced .sr-only.sr-only-focusable with .visually-hidden-focusable. Please update your HTML.',
+        );
+      } else if (hasSrOnly) {
+        addClass(
+          el,
+          'visually-hidden',
+          'Bootstrap 5 replaced .sr-only with .visually-hidden. Please update your HTML.',
+        );
+      }
+
+      // Normally we'd leave the existing classes in place, but FontAwesome frustratingly
+      // ships with their own classes that conflict with Bootstrap's. We'll remove them here.
+      el.classList.remove('sr-only', 'sr-only-focusable');
+    },
+  });
+
+  makeMigrator({
+    selector: 'button.close',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'close', 'btn-close');
+
+      if (
+        el.children.length === 1 &&
+        el.children[0].tagName === 'SPAN' &&
+        el.children[0].hasAttribute('aria-hidden') &&
+        el.children[0].textContent === '×'
+      ) {
+        el.innerHTML = '';
+        console.warn(
+          'Bootstrap 5 no longer requires &times; in close buttons. Please update your HTML.',
+          el,
+        );
+      }
+    },
+  });
+}
