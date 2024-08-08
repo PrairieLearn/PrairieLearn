@@ -53,7 +53,7 @@ onDocumentReady(() => {
         data-html="true"
         data-title="Sync Errors"
         data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_errors_ansified}</pre>'
-        data-custom-class="sync-popover"
+        data-custom-class="popover-wide"
       >
         <i class="fa fa-times text-danger" aria-hidden="true"></i>
       </button>`;
@@ -66,7 +66,7 @@ onDocumentReady(() => {
         data-html="true"
         data-title="Sync Warnings"
         data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_warnings_ansified}</pre>'
-        data-custom-class="sync-popover"
+        data-custom-class="popover-wide"
       >
         <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
       </button>`;
@@ -168,9 +168,13 @@ onDocumentReady(() => {
   });
 
   const tableSettings = {
+    // TODO: If we can pick up the following change, we can drop the `icons` config here:
+    // https://github.com/wenzhixin/bootstrap-table/pull/7190
+    iconsPrefix: 'fa',
     icons: {
-      columns: 'fa-th-list',
+      columns: 'fa-table-list',
     },
+
     buttons: {
       clearFilters: {
         text: 'Clear filters',
