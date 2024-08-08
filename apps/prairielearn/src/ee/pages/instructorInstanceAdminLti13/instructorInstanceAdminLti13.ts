@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import {
@@ -116,6 +117,8 @@ router.post(
       description: 'Some LTI operation',
     };
 
+    console.log(req.body);
+
     if (req.body.__action === 'delete_lti13_course_instance') {
       await runInTransactionAsync(async () => {
         const deleted_lti13_course_instance = await queryRow(
@@ -160,7 +163,7 @@ router.post(
 
       serverJob.executeInBackground(async (job) => {
         const assessment = await queryRow(
-          sql.select_assessment,
+          sql.select_assessment_to_create,
           {
             assessment_id: req.body.assessment_id,
             course_instance_id: instance.lti13_course_instance.course_instance_id,
@@ -182,6 +185,66 @@ router.post(
     } else if (req.body.__action === 'link_assessment') {
       await query_and_link_lineitem(instance, req.body.lineitem_id, req.body.assessment_id);
       return res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'bulk_unlink_assessments') {
+      const group_id =
+        res.locals.course_instance.assessments_group_by === 'Set'
+          ? req.body.assessment_set_id || null
+          : req.body.assessment_module_id || null;
+
+      const lineitems = await queryRows(
+        sql.delete_bulk_lineitems,
+        {
+          lti13_course_instance_id: instance.lti13_course_instance.id,
+          group_id,
+          assessments_group_by: res.locals.course_instance.assessments_group_by,
+        },
+        Lti13LineitemsSchema,
+      );
+
+      flash(
+        'success',
+        `${lineitems.length} assessment${lineitems.length === 1 ? '' : 's'} unlinked.`,
+      );
+      return res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'bulk_create_assessments') {
+      const group_id =
+        res.locals.course_instance.assessments_group_by === 'Set'
+          ? req.body.assessment_set_id || null
+          : req.body.assessment_module_id || null;
+
+      const assessments = await queryRows(
+        sql.select_assessments_to_create,
+        {
+          course_instance_id: instance.lti13_course_instance.course_instance_id,
+          group_id,
+          assessments_group_by: res.locals.course_instance.assessments_group_by,
+        },
+        AssessmentSchema.extend({
+          label: z.string(),
+        }),
+      );
+      console.log(assessments);
+
+      if (assessments.length === 0) {
+        flash('warning', 'No unlinked assessments to create');
+        return res.redirect(req.originalUrl);
+      }
+
+      serverJobOptions.description = 'create lineitems from PL assessments';
+      const serverJob = await createServerJob(serverJobOptions);
+
+      serverJob.executeInBackground(async (job) => {
+        assessments.forEach(async (assessment) => {
+          const assessment_metadata = {
+            label: `${assessment.label}: ${assessment.title}`,
+            id: assessment.id,
+            url: `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
+          };
+
+          await create_and_link_lineitem(instance, job, assessment_metadata);
+        });
+      });
+      return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
     }

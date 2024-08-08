@@ -12,7 +12,7 @@ import {
   AssessmentSetSchema,
   Lti13Lineitems,
 } from '../../../lib/db-types.js';
-import { Lti13LineitemType } from '../../lib/lti13.js';
+import { Lti13Lineitem } from '../../lib/lti13.js';
 
 interface Lti13FullInstance {
   lti13_course_instance: Lti13CourseInstance;
@@ -42,6 +42,7 @@ export function InstructorInstanceAdminLti13({
   lineitems: Lti13Lineitems[];
 }): string {
   const { urlPrefix } = resLocals;
+  const { assessments_group_by } = resLocals.course_instance;
   const lms_name = `${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}`;
 
   return html`
@@ -119,13 +120,71 @@ export function InstructorInstanceAdminLti13({
                           const lineitems_linked = lineitems.filter((item) => {
                             return item.assessment_id === row.id;
                           });
-                          //console.log(row);
-
                           return html`
                             ${row.start_new_assessment_group
                               ? html`
                                   <tr>
                                     <th colspan="5">
+                                      ${Modal({
+                                        id: `bulk-${row.assessment_set_id}-${row.assessment_module_id}`,
+                                        title: `${row.assessment_group_heading} ${assessments_group_by} Bulk Actions`,
+                                        body: html`<p>
+                                            These bulk actions work collectively on every assessment
+                                            in the group where action makes sense.
+                                          </p>
+
+                                          <form method="POST">
+                                            <input
+                                              type="hidden"
+                                              name="__csrf_token"
+                                              value="${resLocals.__csrf_token}"
+                                            />
+
+                                            <input
+                                              type="hidden"
+                                              name="assessment_set_id"
+                                              value="${row.assessment_set_id}"
+                                            />
+                                            <input
+                                              type="hidden"
+                                              name="assessment_module_id"
+                                              value="${row.assessment_module_id}"
+                                            />
+
+                                            <input
+                                              type="hidden"
+                                              name="assessments_group_by"
+                                              value="${assessments_group_by}"
+                                            />
+
+                                            <button
+                                              class="btn btn-success"
+                                              name="__action"
+                                              value="bulk_create_assessments"
+                                              onClick="return confirm('Are you sure?');"
+                                            >
+                                              Create and link assignments in ${lms_name}
+                                            </button>
+                                            that aren't already linked.
+                                            <br />
+                                            <button
+                                              class="btn btn-med-light"
+                                              name="__action"
+                                              value="bulk_unlink_assessments"
+                                              onClick="return confirm('Are you sure?');"
+                                            >
+                                              Unlink assessments
+                                            </button>
+                                            that are linked.
+                                          </form>`,
+                                        footer: html`<button
+                                          type="button"
+                                          class="btn btn-secondary"
+                                          data-dismiss="modal"
+                                        >
+                                          Close
+                                        </button>`,
+                                      })}
                                       ${row.assessment_group_heading}
                                       <button
                                         class="btn btn-sm btn-secondary ml-2"
@@ -133,8 +192,7 @@ export function InstructorInstanceAdminLti13({
                                         data-toggle="modal"
                                         data-target="#bulk-${row.assessment_set_id}-${row.assessment_module_id}"
                                       >
-                                        Bulk actions set_id ${row.assessment_set_id} module_id
-                                        ${row.assessment_module_id}
+                                        Bulk actions
                                       </button>
                                     </th>
                                   </tr>
@@ -305,7 +363,7 @@ function lineItem(item: Lti13Lineitems) {
   `;
 }
 
-export function LineitemsInputs(lineitems: Lti13LineitemType[]) {
+export function LineitemsInputs(lineitems: Lti13Lineitem[]) {
   if (lineitems.length === 0) {
     return html`<p>None found.</p>`.toString();
   }

@@ -99,7 +99,7 @@ WHERE
 ORDER BY
   lineitem_id;
 
--- BLOCK select_assessment
+-- BLOCK select_assessment_to_create
 SELECT
   a.*,
   (aset.abbreviation || a.number) as label
@@ -110,3 +110,39 @@ WHERE
   a.id = $assessment_id
   AND a.course_instance_id = $course_instance_id
   AND a.deleted_at IS NULL;
+
+-- BLOCK select_assessments_to_create
+SELECT
+  a.*,
+  (aset.abbreviation || a.number) as label
+FROM
+  assessments AS a
+  LEFT JOIN assessment_sets AS aset ON aset.id = a.assessment_set_id
+  LEFT JOIN lti13_lineitems AS li ON li.assessment_id = a.id
+WHERE
+  a.course_instance_id = $course_instance_id
+  AND a.deleted_at IS NULL
+  AND CASE
+    WHEN $assessments_group_by = 'Set' THEN a.assessment_set_id = $group_id
+    WHEN $assessments_group_by = 'Module' THEN a.assessment_module_id = $group_id
+  END
+  AND li.assessment_id IS NULL;
+
+-- BLOCK delete_bulk_lineitems
+DELETE FROM lti13_lineitems
+WHERE
+  lti13_course_instance_id = $lti13_course_instance_id
+  AND assessment_id IN (
+    SELECT
+      id
+    FROM
+      assessments AS a
+    WHERE
+      -- TODO Do I need a.course_instance_id here?
+      CASE
+        WHEN $assessments_group_by = 'Set' THEN a.assessment_set_id = $group_id
+        WHEN $assessments_group_by = 'Module' THEN a.assessment_module_id = $group_id
+      END
+  )
+RETURNING
+  *;
