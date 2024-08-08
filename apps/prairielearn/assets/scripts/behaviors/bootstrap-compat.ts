@@ -402,8 +402,12 @@ if (isBootstrapCompatEnabled()) {
       // If this element is an anchor or a button, we need to use a different
       // set of classes to support hover/focus styles.
       if (el.tagName === 'A' || el.tagName === 'BUTTON') {
-        el.classList.add('btn', `btn-${color}`);
-        // TODO: log something useful to the console.
+        el.classList.add('btn', 'btn-xs', `btn-${color}`, 'fw-bold');
+        el.classList.remove('badge');
+        console.warn(
+          'Bootstrap 5 no longer supports badge styles on <button> or <a>. Please update your HTML.',
+          el,
+        );
       } else {
         el.classList.add(`text-bg-${color}`);
         console.warn('Bootstrap 5 replaced .badge-* with .text-bg-*. Please update your HTML.', el);
