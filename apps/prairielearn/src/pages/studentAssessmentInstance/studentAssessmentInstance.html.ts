@@ -797,10 +797,10 @@ function ConfirmFinishModal({
       <p>Are you sure you want to finish, complete, and close out the assessment?</p>
     `,
     footer: html`
+      <button type="button" data-dismiss="modal" class="btn btn-secondary">Cancel</button>
       <input type="hidden" name="__action" value="finish" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="submit" class="btn btn-danger">Finish assessment</button>
-      <button type="button" data-dismiss="modal" class="btn btn-secondary">Cancel</button>
     `,
   });
 }
