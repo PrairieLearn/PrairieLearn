@@ -327,51 +327,24 @@ if (isBootstrapCompatEnabled()) {
     },
   });
 
-  // WIP Wednesday, August 7, 2024: stopped after `.custom-range` in the migration guide.
-
+  // `label` no longer receives a default bottom margin; the `form-label` class
+  // must be added to form labels.
   makeMigrator({
-    selector: '.float-left, .float-right',
-    migrate(el, { migrateClass }) {
-      migrateClass(el, 'float-left', 'float-start');
-      migrateClass(el, 'float-right', 'float-end');
+    selector: 'label',
+    migrate(el, { addClass }) {
+      if (el.closest('.form-group') == null) return;
+
+      addClass(
+        el,
+        'form-label',
+        'Bootstrap 5 requires the .form-label class on form labels. Please update your HTML.',
+      );
     },
   });
 
-  makeMigrator({
-    selector: '.border-left, .border-right',
-    migrate(el, { migrateClass }) {
-      migrateClass(el, 'border-left', 'border-start');
-      migrateClass(el, 'border-right', 'border-end');
-    },
-  });
-
-  makeMigrator({
-    selector: '.rounded-left, .rounded-right',
-    migrate(el, { migrateClass }) {
-      migrateClass(el, 'rounded-left', 'rounded-start');
-      migrateClass(el, 'rounded-right', 'rounded-end');
-    },
-  });
-
-  const TEXT_ALIGN_CLASSES = ['left', 'right']
-    .flatMap((align) =>
-      [`text-${align}`].concat(BOOTSTRAP_BREAKPOINTS.map((bp) => `.text-${bp}-${align}`)),
-    )
-    .join(', ');
-  const TEXT_ALIGN_REGEXP = /^text-(sm|md|lg|xl|xxl)-(left|right)$/;
-  makeMigrator({
-    selector: TEXT_ALIGN_CLASSES,
-    migrate(el, { migrateClass }) {
-      Array.from(el.classList)
-        .filter((cls) => TEXT_ALIGN_REGEXP.test(cls))
-        .forEach((cls) => {
-          const classComponents = cls.split('-');
-          const newAlignment = classComponents[2] === 'left' ? 'start' : 'end';
-          const newClass = `text-${classComponents[1]}-${newAlignment}`;
-          migrateClass(el, cls, newClass);
-        });
-    },
-  });
+  // ********************
+  // Components -> Badges
+  // ********************
 
   // The classes used to color badges have changed. We'll patch
   // this by replacing the `.badge-*` class with the new `.text-bg-*` class.
@@ -420,16 +393,58 @@ if (isBootstrapCompatEnabled()) {
 
   // The `.badge-pill` class was replaced by `.rounded-pill`.
   makeMigrator({
-    selector: '.badge-pill',
+    selector: '.badge.badge-pill',
     migrate(el, { migrateClass }) {
-      if (!el.classList.contains('badge')) return [];
-
       migrateClass(el, 'badge-pill', 'rounded-pill');
     },
   });
 
-  // The `.dropdown-menu-left` and `.dropdown-menu-right` classes were replaced
-  // by `.dropdown-menu-start` and `.dropdown-menu-end`, respectively.
+  // *********************
+  // Components -> Buttons
+  // *********************
+
+  makeMigrator({
+    selector: '.btn.btn-block',
+    migrate(el, { addClass }) {
+      addClass(
+        el,
+        ['d-block', 'w-100'],
+        'Bootstrap 5 replaced .btn-block with .d-block.w-100. Please update your HTML.',
+      );
+    },
+  });
+
+  // **************************
+  // Components -> Close button
+  // **************************
+
+  makeMigrator({
+    selector: 'button.close',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'close', 'btn-close');
+
+      if (
+        el.children.length === 1 &&
+        el.children[0].tagName === 'SPAN' &&
+        el.children[0].hasAttribute('aria-hidden') &&
+        el.children[0].textContent === '×'
+      ) {
+        el.innerHTML = '';
+        console.warn(
+          'Bootstrap 5 no longer requires &times; in close buttons. Please update your HTML.',
+          el,
+        );
+      }
+    },
+  });
+
+  // ***********************
+  // Components -> Dropdowns
+  // ***********************
+
+  // This isn't documented in the migration guide, but the `.dropdown-menu-left`
+  // and `.dropdown-menu-right` classes were replaced by `.dropdown-menu-start`
+  // and `.dropdown-menu-end`, respectively.
   makeMigrator({
     selector: '.dropdown-menu-left, .dropdown-menu-right',
     migrate(el, { migrateClass }) {
@@ -440,18 +455,58 @@ if (isBootstrapCompatEnabled()) {
     },
   });
 
-  // `label` no longer receives a default bottom margin; the `form-label` class
-  // must be added to form labels.
-  makeMigrator({
-    selector: 'label',
-    migrate(el, { addClass }) {
-      if (el.closest('.form-group') == null) return;
+  // *********
+  // Utilities
+  // *********
 
-      addClass(
-        el,
-        'form-label',
-        'Bootstrap 5 requires the .form-label class on form labels. Please update your HTML.',
-      );
+  makeMigrator({
+    selector: '.float-left, .float-right',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'float-left', 'float-start');
+      migrateClass(el, 'float-right', 'float-end');
+    },
+  });
+
+  makeMigrator({
+    selector: '.border-left, .border-right',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'border-left', 'border-start');
+      migrateClass(el, 'border-right', 'border-end');
+    },
+  });
+
+  makeMigrator({
+    selector: '.rounded-left, .rounded-right',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'rounded-left', 'rounded-start');
+      migrateClass(el, 'rounded-right', 'rounded-end');
+    },
+  });
+
+  const TEXT_ALIGN_CLASSES = ['left', 'right']
+    .flatMap((align) =>
+      [`text-${align}`].concat(BOOTSTRAP_BREAKPOINTS.map((bp) => `.text-${bp}-${align}`)),
+    )
+    .join(', ');
+  const TEXT_ALIGN_REGEXP = /^text-(sm|md|lg|xl|xxl)-(left|right)$/;
+  makeMigrator({
+    selector: TEXT_ALIGN_CLASSES,
+    migrate(el, { migrateClass }) {
+      Array.from(el.classList)
+        .filter((cls) => TEXT_ALIGN_REGEXP.test(cls))
+        .forEach((cls) => {
+          const classComponents = cls.split('-');
+          const newAlignment = classComponents[2] === 'left' ? 'start' : 'end';
+          const newClass = `text-${classComponents[1]}-${newAlignment}`;
+          migrateClass(el, cls, newClass);
+        });
+    },
+  });
+
+  makeMigrator({
+    selector: '.text-monospace',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'text-monospace', 'font-monospace');
     },
   });
 
@@ -473,11 +528,15 @@ if (isBootstrapCompatEnabled()) {
   });
 
   makeMigrator({
-    selector: '.text-monospace',
+    selector: '.font-italic',
     migrate(el, { migrateClass }) {
-      migrateClass(el, 'text-monospace', 'font-monospace');
+      migrateClass(el, 'font-italic', 'fst-italic');
     },
   });
+
+  // *******
+  // Helpers
+  // *******
 
   makeMigrator({
     selector: '.sr-only, .sr-only-focusable',
@@ -502,26 +561,6 @@ if (isBootstrapCompatEnabled()) {
       // Normally we'd leave the existing classes in place, but FontAwesome frustratingly
       // ships with their own classes that conflict with Bootstrap's. We'll remove them here.
       el.classList.remove('sr-only', 'sr-only-focusable');
-    },
-  });
-
-  makeMigrator({
-    selector: 'button.close',
-    migrate(el, { migrateClass }) {
-      migrateClass(el, 'close', 'btn-close');
-
-      if (
-        el.children.length === 1 &&
-        el.children[0].tagName === 'SPAN' &&
-        el.children[0].hasAttribute('aria-hidden') &&
-        el.children[0].textContent === '×'
-      ) {
-        el.innerHTML = '';
-        console.warn(
-          'Bootstrap 5 no longer requires &times; in close buttons. Please update your HTML.',
-          el,
-        );
-      }
     },
   });
 }

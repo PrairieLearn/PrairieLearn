@@ -64,10 +64,11 @@ export function makeMigrator(options: MigratorOptions) {
 function addClass(el: Element, newClass: string | string[], message: string) {
   const newClasses = Array.isArray(newClass) ? newClass : [newClass];
 
-  const didAddClass = newClasses.some((newClass) => {
+  let didAddClass = false;
+  newClasses.forEach((newClass) => {
     if (!el.classList.contains(newClass)) {
       el.classList.add(newClass);
-      return true;
+      didAddClass = true;
     }
   });
 

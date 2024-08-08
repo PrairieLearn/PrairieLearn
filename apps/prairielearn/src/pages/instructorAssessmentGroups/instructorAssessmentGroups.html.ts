@@ -6,7 +6,7 @@ import { renderEjs } from '@prairielearn/html-ejs';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
 
 export const GroupUsersRowSchema = z.object({
