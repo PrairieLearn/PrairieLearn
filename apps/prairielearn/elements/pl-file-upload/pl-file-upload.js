@@ -15,9 +15,7 @@
       this.files = [];
       this.acceptedFiles = options.acceptedFiles || [];
       this.acceptedFilesLowerCase = this.acceptedFiles.map((f) => f.toLowerCase());
-      // The list of optional files contains tuples with patterns (if regex-based) and display names
       this.optionalFilesPlain = options.optionalFilesPlain || [];
-      // Divide optional files into static names and regex patterns
       this.optionalFilesLowerCase = this.optionalFilesPlain.map((f) => f.toLowerCase());
       this.optionalFilesRegex = options.optionalFilesRegex || [];
 
@@ -294,9 +292,7 @@
         }
         if (isOptional) {
           if (isWildcard) {
-            $fileStatusContainerLeft.append(
-              `Any files matching this naming pattern: <em>${fileName}</em> (optional)`,
-            );
+            $fileStatusContainerLeft.append(`Files with pattern: <em>${fileName}</em> (optional)`);
           } else {
             $fileStatusContainerLeft.append(`${fileName} (optional)`);
           }
