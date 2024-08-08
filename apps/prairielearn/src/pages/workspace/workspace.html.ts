@@ -34,15 +34,13 @@ export function Workspace({
         ${HeadContents({ resLocals, pageNote, pageTitle })}
         <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />
         ${compiledScriptTag('workspaceClient.ts')}
-        ${resLocals.assessment &&
-        resLocals.assessment.type === 'Exam' &&
-        resLocals.assessment_instance_remaining_ms
+        ${resLocals.assessment?.type === 'Exam' && resLocals.assessment_instance_remaining_ms
           ? html`${compiledScriptTag('examTimeLimitCountdown.ts')}
             ${EncodedData(
               {
                 serverRemainingMS: resLocals.assessment_instance_remaining_ms,
                 serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
-                serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
+                serverUpdateURL: `/pl/course_instance/${resLocals.course_instance_id}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
                 canTriggerFinish: false,
                 csrfToken: resLocals.__csrf_token,
               },
@@ -100,9 +98,7 @@ export function Workspace({
               <li class="d-sm-none nav-item ml-2 my-1">
                 <span class="nav-item badge badge-light">${navTitle}</span>
               </li>
-              ${resLocals.assessment &&
-              resLocals.assessment.type === 'Exam' &&
-              resLocals.assessment_instance_remaining_ms
+              ${resLocals.assessment?.type === 'Exam' && resLocals.assessment_instance_remaining_ms
                 ? html`
                     <li class="nav-item ml-2 my-1">
                       <div id="countdownProgress"></div>
