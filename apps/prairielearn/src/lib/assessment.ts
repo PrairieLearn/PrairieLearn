@@ -127,11 +127,13 @@ export async function makeAssessmentInstance(
  *
  * @param assessment_instance_id - The assessment instance to grade.
  * @param authn_user_id - The current authenticated user.
+ * @param recomputeGrades - Whether to recompute the grades after adding the questions. Should only be false when the caller takes responsibility for grading the assessment instance later.
  * @returns Whether the assessment instance was updated.
  */
-export async function update(
+export async function updateAssessmentInstance(
   assessment_instance_id: string,
   authn_user_id: string,
+  recomputeGrades = true,
 ): Promise<boolean> {
   debug('update()');
   const updated = await sqldb.runInTransactionAsync(async () => {
@@ -142,16 +144,18 @@ export async function update(
     if (!updateResult.rows[0].updated) return false; // skip if not updated
 
     // if updated, regrade to pick up max_points changes, etc.
-    await sqldb.callOneRowAsync('assessment_instances_grade', [
-      assessment_instance_id,
-      authn_user_id,
-      null, // credit
-      true, // only_log_if_score_updated
-    ]);
+    if (recomputeGrades) {
+      await sqldb.callOneRowAsync('assessment_instances_grade', [
+        assessment_instance_id,
+        authn_user_id,
+        null, // credit
+        true, // only_log_if_score_updated
+      ]);
+    }
     return true;
   });
   // Don't try to update LTI score if the assessment wasn't updated.
-  if (updated) {
+  if (updated && recomputeGrades) {
     // NOTE: It's important that this is run outside of `runInTransaction`
     // above. This will hit the network, and as a rule we don't do any
     // potentially long-running work inside of a transaction.
