@@ -11,6 +11,8 @@
 
   class PLFileUpload {
     constructor(uuid, options) {
+      // Not configurable at this point as this matches the request size limit enforced by the server
+      this.maxFileSizeMB = 5;
       this.uuid = uuid;
       this.files = [];
       this.acceptedFiles = options.acceptedFiles || [];
@@ -40,7 +42,7 @@
       const elementId = '#file-upload-' + uuid;
       this.element = $(elementId);
       if (!this.element) {
-        throw new Error('File upload element ' + elementId + ' was not found!');
+        throw new Error(`File upload element ${elementId} was not found!`);
       }
 
       if (options.submittedFileNames) {
@@ -110,11 +112,11 @@
         },
         addedfile: (file) => {
           const existingFileSize = this.files.reduce((prev, next) => prev + next.size, 0);
-          if (existingFileSize + file.size > 5 * 1024 * 1024) {
+          if (existingFileSize + file.size > this.maxFileSizeMB * 1024 * 1024) {
             this.addWarningMessage(
-              'Combined file size of new file and existing files (<strong>' +
-                Math.round((existingFileSize + file.size) / 1024 / 10.24) / 100 +
-                ' MB</strong>) and is greater than maximum file size of 5 MB.',
+              `Combined file size of new file and existing files (<strong>${
+                Math.round((existingFileSize + file.size) / 1024 / 10.24) / 100
+              } MB</strong>) and is greater than maximum file size of ${this.maxFileSizeMB} MB.`,
             );
             return;
           }
@@ -124,10 +126,7 @@
 
           if (acceptedFileName === null) {
             this.addWarningMessage(
-              '<strong>' +
-                file.name +
-                '</strong>' +
-                ' did not match any accepted file for this question.',
+              `<strong>${file.name}</strong> did not match any accepted file for this question.`,
             );
             return;
           }
@@ -157,7 +156,7 @@
 
         var commaSplitIdx = dataUrl.indexOf(',');
         if (commaSplitIdx === -1) {
-          this.addWarningMessage('<strong>' + name + '</strong>' + ' is empty, ignoring file.');
+          this.addWarningMessage(`<strong>${name}</strong> is empty, ignoring file.`);
           return;
         }
 
@@ -256,13 +255,9 @@
         var isExpanded = expandedFiles.includes(fileName);
         var fileData = this.getSubmittedFileContents(fileName);
 
-        var $file = $('<li class="list-group-item" data-file="' + fileName + '"></li>');
+        var $file = $(`<li class="list-group-item" data-file="${fileName}"></li>`);
         var $fileStatusContainer = $(
-          '<div class="file-status-container collapsed d-flex flex-row mathjax_ignore" data-toggle="collapse" data-target="#file-preview-' +
-            uuid +
-            '-' +
-            index +
-            '"></div>',
+          `<div class="file-status-container collapsed d-flex flex-row mathjax_ignore" data-toggle="collapse" data-target="#file-preview-${uuid}-${index}"></div>`,
         );
         if (isExpanded) {
           $fileStatusContainer.removeClass('collapsed');
@@ -313,7 +308,7 @@
           var uploadDate = this.files.find((file) => file.name === fileName).date;
           if (uploadDate !== null) {
             $fileStatusContainerLeft.append(
-              '<p class="file-status">uploaded at ' + uploadDate.toLocaleString() + '</p>',
+              `<p class="file-status">uploaded at ${uploadDate.toLocaleString()}</p>`,
             );
           } else {
             $fileStatusContainerLeft.append('<p class="file-status">uploaded and submitted</p>');
@@ -321,27 +316,15 @@
         }
         if (fileData) {
           var $download = $(
-            '<a download="' +
-              fileName +
-              '" class="btn btn-outline-secondary btn-sm mr-1" onclick="event.stopPropagation();" href="data:application/octet-stream;base64,' +
-              fileData +
-              '">Download</a>',
+            `<a download="${fileName}" class="btn btn-outline-secondary btn-sm mr-1" onclick="event.stopPropagation();" href="data:application/octet-stream;base64,${fileData}">Download</a>`,
           );
 
           var $preview = $(
-            '<div class="file-preview collapse" id="file-preview-' +
-              uuid +
-              '-' +
-              index +
-              '"></div>',
+            `<div class="file-preview collapse" id="file-preview-{uuid}-${index}"></div>`,
           );
 
           var $deleteUpload = $(
-            '<button type="button" class="btn btn-outline-secondary btn-sm mr-1" id="file-delete-' +
-              uuid +
-              '-' +
-              index +
-              '">Delete</button>',
+            `<button type="button" class="btn btn-outline-secondary btn-sm mr-1" id="file-delete-${uuid}-${index}">Delete</button>`,
           );
 
           var $error = $('<div class="alert alert-danger mt-2 d-none" role="alert"></div>');
@@ -376,7 +359,7 @@
                   .text('Content preview is not available for this type of file.')
                   .removeClass('d-none');
               })
-              .attr('src', 'data:application/octet-stream;base64,' + fileData);
+              .attr('src', `data:application/octet-stream;base64,${fileData}`);
           }
           $file.append($preview);
           var $fileButtons = $('<div class="align-self-center"></div>');
