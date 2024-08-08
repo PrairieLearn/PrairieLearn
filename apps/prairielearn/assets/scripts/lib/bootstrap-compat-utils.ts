@@ -3,26 +3,6 @@ import SelectorSet from 'selector-set';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-export interface MigratedClass {
-  oldClass: string;
-  newClass: string;
-}
-
-export interface MigratedAttribute {
-  oldAttribute: string;
-  newAttribute: string;
-}
-
-export interface ClassMigratorOptions {
-  selector: string;
-  getMigratedClasses: (el: Element) => MigratedClass[];
-}
-
-export interface AttributeMigratorOptions {
-  selector: string;
-  getMigratedAttributes: (el: Element) => MigratedAttribute[];
-}
-
 type Migrator = (el: Element) => void;
 
 const set = new SelectorSet<Migrator>();
@@ -47,62 +27,74 @@ function handleMutations(mutations: MutationRecord[]) {
   }
 }
 
-function applyMigratedClasses(el: Element, migratedClasses: MigratedClass[]) {
-  for (const { oldClass, newClass } of migratedClasses) {
-    if (el.classList.contains(oldClass) && !el.classList.contains(newClass)) {
+interface MigratorUtils {
+  addClass(el: Element, newClass: string | string[], message: string): void;
+  migrateClass(el: Element, oldClass: string, newClass: string): void;
+  migrateAttribute(el: Element, oldAttribute: string, newAttribute: string): void;
+}
+
+interface MigratorOptions {
+  selector: string;
+  migrate: (el: Element, utils: MigratorUtils) => void;
+}
+
+export function makeMigrator(options: MigratorOptions) {
+  observe(options.selector, {
+    add(el) {
+      options.migrate(el, {
+        addClass,
+        migrateClass,
+        migrateAttribute,
+      });
+    },
+  });
+
+  // `selector-observer` doesn't handle mutations to existing nodes, so we need
+  // to use our own `MutationObserver` to handle this case.
+  set.add(options.selector, (el) =>
+    options.migrate(el, {
+      addClass,
+      migrateClass,
+      migrateAttribute,
+    }),
+  );
+}
+
+function addClass(el: Element, newClass: string | string[], message: string) {
+  const newClasses = Array.isArray(newClass) ? newClass : [newClass];
+
+  const didAddClass = newClasses.some((newClass) => {
+    if (!el.classList.contains(newClass)) {
       el.classList.add(newClass);
-
-      // TODO: customizable message?
-      console.warn(
-        `Bootstrap 5 replaced .${oldClass} with .${newClass}. Please update your HTML.`,
-        el,
-      );
+      return true;
     }
+  });
+
+  if (didAddClass) {
+    console.warn(message, el);
   }
 }
 
-function applyMigratedAttributes(el: Element, migratedAttributes: MigratedAttribute[]) {
-  for (const { oldAttribute, newAttribute } of migratedAttributes) {
-    if (el.hasAttribute(oldAttribute) && !el.hasAttribute(newAttribute)) {
-      el.setAttribute(newAttribute, el.getAttribute(oldAttribute) as string);
+function migrateClass(el: Element, oldClass: string, newClass: string) {
+  if (el.classList.contains(oldClass) && !el.classList.contains(newClass)) {
+    el.classList.add(newClass);
 
-      // TODO: customizable message?
-      console.warn(
-        `Bootstrap 5 replaced ${oldAttribute} with ${newAttribute}. Please update your HTML.`,
-        el,
-      );
-    }
+    // TODO: customizable message?
+    console.warn(
+      `Bootstrap 5 replaced .${oldClass} with .${newClass}. Please update your HTML.`,
+      el,
+    );
   }
 }
 
-export function makeClassMigrator(options: ClassMigratorOptions) {
-  observe(options.selector, {
-    add(el) {
-      const migratedClasses = options.getMigratedClasses(el);
-      applyMigratedClasses(el, migratedClasses);
-    },
-  });
+function migrateAttribute(el: Element, oldAttribute: string, newAttribute: string) {
+  if (el.hasAttribute(oldAttribute) && !el.hasAttribute(newAttribute)) {
+    el.setAttribute(newAttribute, el.getAttribute(oldAttribute) as string);
 
-  // `selector-observer` doesn't handle mutations to existing nodes, so we need
-  // to use our own `MutationObserver` to handle this case.
-  set.add(options.selector, (el) => {
-    const migratedClasses = options.getMigratedClasses(el);
-    applyMigratedClasses(el, migratedClasses);
-  });
-}
-
-export function makeAttributeMigrator(options: AttributeMigratorOptions) {
-  observe(options.selector, {
-    add(el) {
-      const migratedAttributes = options.getMigratedAttributes(el);
-      applyMigratedAttributes(el, migratedAttributes);
-    },
-  });
-
-  // `selector-observer` doesn't handle mutations to existing nodes, so we need
-  // to use our own `MutationObserver` to handle this case.
-  set.add(options.selector, (el) => {
-    const migratedAttributes = options.getMigratedAttributes(el);
-    applyMigratedAttributes(el, migratedAttributes);
-  });
+    // TODO: customizable message?
+    console.warn(
+      `Bootstrap 5 replaced ${oldAttribute} with ${newAttribute}. Please update your HTML.`,
+      el,
+    );
+  }
 }

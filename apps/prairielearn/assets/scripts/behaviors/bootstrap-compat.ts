@@ -1,10 +1,6 @@
 import { observe } from 'selector-observer';
 
-import {
-  makeAttributeMigrator,
-  makeClassMigrator,
-  MigratedClass,
-} from '../lib/bootstrap-compat-utils.js';
+import { makeMigrator } from '../lib/bootstrap-compat-utils.js';
 
 // TODO: we may need to add a lot more attributes to this list. For tooltips,
 // popovers, and maybe more, all options can be controlled by kebab-case data
@@ -57,11 +53,9 @@ const BOOTSTRAP_BREAKPOINTS = ['sm', 'md', 'lg', 'xl', 'xxl'];
 // The changes here are made based on the Bootstrap 5 migration guide:
 // https://getbootstrap.com/docs/5.3/migration/
 
-makeAttributeMigrator({
+makeMigrator({
   selector: BOOTSTRAP_LEGACY_ATTRIBUTES.map((attr) => `[${attr}]`).join(','),
-  getMigratedAttributes(el) {
-    const migratedAttributes: MigratedAttribute[] = [];
-
+  migrate(el, { migrateAttribute }) {
     BOOTSTRAP_LEGACY_ATTRIBUTES.forEach((attr) => {
       if (el.hasAttribute(attr)) {
         const val = el.getAttribute(attr);
@@ -72,14 +66,9 @@ makeAttributeMigrator({
           return;
         }
 
-        migratedAttributes.push({
-          oldAttribute: attr,
-          newAttribute: attr.replace('data-', 'data-bs-'),
-        });
+        migrateAttribute(el, attr, attr.replace('data-', 'data-bs-'));
       }
     });
-
-    return migratedAttributes;
   },
 });
 
@@ -109,25 +98,24 @@ observe('[data-toggle="dropdown"][data-boundary="window"]', {
 // We used `white text/buttons in "info"-colored card headers, but that doesn't
 // provide sufficient contrast in Bootstrap 5. We'll do our best to patch this
 // by switching to dark text/buttons in this situation.
-observe('.card-header.bg-info', {
-  add(el) {
-    if (el.classList.contains('text-white')) {
-      el.classList.remove('text-white');
-      el.classList.add('text-dark');
-      console.warn(
-        'Bootstrap 5 no longer provides sufficient contrast for white text on "info"-colored card headers. Please update your HTML.',
-        el,
-      );
+makeMigrator({
+  selector: '.card-header.bg-info.text-white',
+  migrate(el) {
+    el.classList.remove('text-white');
+    el.classList.add('text-dark');
+    console.warn(
+      'Bootstrap 5 no longer provides sufficient contrast for white text on "info"-colored card headers. Please update your HTML.',
+      el,
+    );
 
-      el.querySelectorAll(':scope > .btn.btn-outline-light').forEach((button) => {
-        button.classList.remove('btn-outline-light');
-        button.classList.add('btn-outline-dark');
-        console.warn(
-          'Bootstrap 5 no longer provides sufficient contrast for white buttons on "info"-colored card headers. Please update your HTML.',
-          button,
-        );
-      });
-    }
+    el.querySelectorAll(':scope > .btn.btn-outline-light').forEach((button) => {
+      button.classList.remove('btn-outline-light');
+      button.classList.add('btn-outline-dark');
+      console.warn(
+        'Bootstrap 5 no longer provides sufficient contrast for white buttons on "info"-colored card headers. Please update your HTML.',
+        button,
+      );
+    });
   },
 });
 
@@ -135,19 +123,11 @@ observe('.card-header.bg-info', {
 // Content, Reboot, etc.
 // *********************
 
-makeClassMigrator({
+makeMigrator({
   selector: '.thead-light, .thead-dark',
-  getMigratedClasses(el) {
-    const migratedClasses: MigratedClass[] = [];
-
-    if (el.classList.contains('thead-light')) {
-      migratedClasses.push({ oldClass: 'thead-light', newClass: 'table-light' });
-    }
-    if (el.classList.contains('thead-dark')) {
-      migratedClasses.push({ oldClass: 'thead-dark', newClass: 'table-dark' });
-    }
-
-    return migratedClasses;
+  migrate(el, { migrateClass }) {
+    migrateClass(el, 'thead-light', 'table-light');
+    migrateClass(el, 'thead-dark', 'table-dark');
   },
 });
 
@@ -169,11 +149,9 @@ const SPACING_CLASSES = Object.keys(SPACING_PREFIX_MAP)
   .join(', ');
 const SPACING_CLASS_REGEXP = /^[mp][lr]-((sm|md|lg|xl|xxl)-)?([0-5]|auto)$/;
 
-makeClassMigrator({
+makeMigrator({
   selector: SPACING_CLASSES,
-  getMigratedClasses(el) {
-    const migratedClasses: MigratedClass[] = [];
-
+  migrate(el, { migrateClass }) {
     el.classList.forEach((cls) => {
       if (!SPACING_CLASS_REGEXP.test(cls)) return;
 
@@ -182,10 +160,8 @@ makeClassMigrator({
       if (!newPrefix) return;
 
       const newClass = `${newPrefix}-${suffix}`;
-      migratedClasses.push({ oldClass: cls, newClass });
+      migrateClass(el, cls, newClass);
     });
-
-    return migratedClasses;
   },
 });
 
@@ -193,100 +169,102 @@ makeClassMigrator({
 // Forms
 // *****
 
-observe('.custom-control.custom-checkbox', {
-  add(el) {
-    el.classList.add('form-check');
-    console.warn(
+makeMigrator({
+  selector: '.custom-control.custom-checkbox',
+  migrate(el, { addClass }) {
+    addClass(
+      el,
+      'form-check',
       'Bootstrap 5 replaced .custom-control.custom-checkbox with .form-check. Please update your HTML.',
-      el,
     );
 
     el.querySelectorAll('.custom-control-input').forEach((input) => {
-      input.classList.add('form-check-input');
-      console.warn(
-        'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
+      addClass(
         input,
+        'form-check-input',
+        'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
       );
     });
 
     el.querySelectorAll('.custom-control-label').forEach((label) => {
-      label.classList.add('form-check-label');
-      console.warn(
-        'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
+      addClass(
         label,
+        'form-check-label',
+        'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
       );
     });
   },
 });
 
-observe('.custom-control.custom-radio', {
-  add(el) {
-    el.classList.add('form-check');
-    console.warn(
+makeMigrator({
+  selector: '.custom-control.custom-radio',
+  migrate(el, { addClass }) {
+    addClass(
+      el,
+      'form-check',
       'Bootstrap 5 replaced .custom-control.custom-radio with .form-check. Please update your HTML.',
-      el,
     );
 
     el.querySelectorAll('.custom-control-input').forEach((input) => {
-      input.classList.add('form-check-input');
-      console.warn(
-        'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
+      addClass(
         input,
+        'form-check-input',
+        'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
       );
     });
 
     el.querySelectorAll('.custom-control-label').forEach((label) => {
-      label.classList.add('form-check-label');
-      console.warn(
-        'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
+      addClass(
         label,
+        'form-check-label',
+        'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
       );
     });
   },
 });
 
-observe('.custom-control.custom-switch', {
-  add(el) {
-    el.classList.add('form-check', 'form-switch');
-    console.warn(
+makeMigrator({
+  selector: '.custom-control.custom-switch',
+  migrate(el, { addClass }) {
+    addClass(
+      el,
+      ['form-check', 'form-switch'],
       'Bootstrap 5 replaced .custom-control.custom-switch with .form-check.form-switch. Please update your HTML.',
-      el,
     );
 
     el.querySelectorAll('.custom-control-input').forEach((input) => {
-      input.classList.add('form-check-input');
-      console.warn(
-        'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
+      addClass(
         input,
+        'form-check-input',
+        'Bootstrap 5 replaced .custom-control-input with .form-check-input. Please update your HTML.',
       );
     });
 
     el.querySelectorAll('.custom-control-label').forEach((label) => {
-      label.classList.add('form-check-label');
-      console.warn(
-        'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
+      addClass(
         label,
+        'form-check-label',
+        'Bootstrap 5 replaced .custom-control-label with .form-check-label. Please update your HTML.',
       );
     });
   },
 });
 
-makeClassMigrator({
+makeMigrator({
   selector: '.custom-select',
-  getMigratedClasses() {
-    return [{ oldClass: 'custom-select', newClass: 'form-select' }];
+  migrate(el, { migrateClass }) {
+    migrateClass(el, 'custom-select', 'form-select');
   },
 });
 
-observe('.custom-file', {
-  add(el) {
+makeMigrator({
+  selector: '.custom-file',
+  migrate(el) {
     const input = el.querySelector('input[type="file"]');
     const label = el.querySelector('.custom-file-label');
 
-    if (!input || !label) {
-      console.warn('Could not find input and label in .custom-file.', el);
-      return;
-    }
+    // If there's no input or label, there's nothing for us to migrate;
+    if (!input || !label) return;
 
     // Move the label before the input.
     el.insertBefore(label, input);
@@ -299,10 +277,10 @@ observe('.custom-file', {
   },
 });
 
-makeClassMigrator({
+makeMigrator({
   selector: '.custom-range',
-  getMigratedClasses() {
-    return [{ oldClass: 'custom-range', newClass: 'form-range' }];
+  migrate(el, { migrateClass }) {
+    migrateClass(el, 'custom-range', 'form-range');
   },
 });
 
@@ -310,8 +288,9 @@ makeClassMigrator({
 // without using a wrapping `.input-group-prepend` or `.input-group-append`.
 // This bit of JavaScript will re-parent the children of `.input-group-*` into
 // the containing `.input-group` element.
-observe('.input-group-prepend, .input-group-append', {
-  add(el) {
+makeMigrator({
+  selector: '.input-group-prepend, .input-group-append',
+  migrate(el) {
     if (!el.parentElement?.classList.contains('input-group')) return;
 
     for (const child of Array.from(el.children)) {
@@ -334,49 +313,43 @@ observe('.input-group-prepend, .input-group-append', {
 // the normal spacing utilities. We'll patch this by adding the `.mb-3`
 // class to all `.form-group` elements, as this matches the spacing previously
 // provided by `.form-group`.
-makeClassMigrator({
+makeMigrator({
   selector: '.form-group',
-  getMigratedClasses() {
-    return [{ oldClass: 'form-group', newClass: 'mb-3' }];
+  migrate(el, { migrateClass }) {
+    migrateClass(el, 'form-group', 'mb-3');
   },
 });
 
-makeClassMigrator({
+makeMigrator({
   selector: '.form-row',
-  getMigratedClasses() {
-    return [{ oldClass: 'form-row', newClass: 'row' }];
+  migrate(el, { migrateClass }) {
+    migrateClass(el, 'form-row', 'row');
   },
 });
 
 // WIP Wednesday, August 7, 2024: stopped after `.custom-range` in the migration guide.
 
-makeClassMigrator({
+makeMigrator({
   selector: '.float-left, .float-right',
-  getMigratedClasses() {
-    return [
-      { oldClass: 'float-left', newClass: 'float-start' },
-      { oldClass: 'float-right', newClass: 'float-end' },
-    ];
+  migrate(el, { migrateClass }) {
+    migrateClass(el, 'float-left', 'float-start');
+    migrateClass(el, 'float-right', 'float-end');
   },
 });
 
-makeClassMigrator({
+makeMigrator({
   selector: '.border-left, .border-right',
-  getMigratedClasses() {
-    return [
-      { oldClass: 'border-left', newClass: 'border-start' },
-      { oldClass: 'border-right', newClass: 'border-end' },
-    ];
+  migrate(el, { migrateClass }) {
+    migrateClass(el, 'border-left', 'border-start');
+    migrateClass(el, 'border-right', 'border-end');
   },
 });
 
-makeClassMigrator({
+makeMigrator({
   selector: '.rounded-left, .rounded-right',
-  getMigratedClasses() {
-    return [
-      { oldClass: 'rounded-left', newClass: 'rounded-start' },
-      { oldClass: 'rounded-right', newClass: 'rounded-end' },
-    ];
+  migrate(el, { migrateClass }) {
+    migrateClass(el, 'rounded-left', 'rounded-start');
+    migrateClass(el, 'rounded-right', 'rounded-end');
   },
 });
 
@@ -386,22 +359,17 @@ const TEXT_ALIGN_CLASSES = ['left', 'right']
   )
   .join(', ');
 const TEXT_ALIGN_REGEXP = /^text-(sm|md|lg|xl|xxl)-(left|right)$/;
-
-makeClassMigrator({
+makeMigrator({
   selector: TEXT_ALIGN_CLASSES,
-  getMigratedClasses(el) {
-    const migratedClasses: MigratedClass[] = [];
-
+  migrate(el, { migrateClass }) {
     Array.from(el.classList)
       .filter((cls) => TEXT_ALIGN_REGEXP.test(cls))
       .forEach((cls) => {
         const classComponents = cls.split('-');
         const newAlignment = classComponents[2] === 'left' ? 'start' : 'end';
         const newClass = `text-${classComponents[1]}-${newAlignment}`;
-        migratedClasses.push({ oldClass: cls, newClass });
+        migrateClass(el, cls, newClass);
       });
-
-    return migratedClasses;
   },
 });
 
@@ -418,8 +386,9 @@ const BADGE_COLORS = [
   'dark',
 ];
 const BADGE_SELECTOR = BADGE_COLORS.map((color) => `.badge-${color}`).join(', ');
-observe(BADGE_SELECTOR, {
-  add(el) {
+makeMigrator({
+  selector: BADGE_SELECTOR,
+  migrate(el) {
     if (!(el instanceof HTMLElement)) return;
     if (!el.classList.contains('badge')) return;
 
@@ -446,39 +415,38 @@ observe(BADGE_SELECTOR, {
 });
 
 // The `.badge-pill` class was replaced by `.rounded-pill`.
-makeClassMigrator({
+makeMigrator({
   selector: '.badge-pill',
-  getMigratedClasses(el) {
+  migrate(el, { migrateClass }) {
     if (!el.classList.contains('badge')) return [];
 
-    return [{ oldClass: 'badge-pill', newClass: 'rounded-pill' }];
+    migrateClass(el, 'badge-pill', 'rounded-pill');
   },
 });
 
 // The `.dropdown-menu-left` and `.dropdown-menu-right` classes were replaced
 // by `.dropdown-menu-start` and `.dropdown-menu-end`, respectively.
-makeClassMigrator({
+makeMigrator({
   selector: '.dropdown-menu-left, .dropdown-menu-right',
-  getMigratedClasses(el) {
+  migrate(el, { migrateClass }) {
     if (!el.classList.contains('dropdown-menu')) return [];
 
-    return [
-      { oldClass: 'dropdown-menu-left', newClass: 'dropdown-menu-start' },
-      { oldClass: 'dropdown-menu-right', newClass: 'dropdown-menu-end' },
-    ];
+    migrateClass(el, 'dropdown-menu-left', 'dropdown-menu-start');
+    migrateClass(el, 'dropdown-menu-right', 'dropdown-menu-end');
   },
 });
 
 // `label` no longer receives a default bottom margin; the `form-label` class
 // must be added to form labels.
-observe('label', {
-  add(el) {
+makeMigrator({
+  selector: 'label',
+  migrate(el, { addClass }) {
     if (el.closest('.form-group') == null) return;
 
-    el.classList.add('form-label');
-    console.warn(
-      'Bootstrap 5 requires the .form-label class on form labels. Please update your HTML.',
+    addClass(
       el,
+      'form-label',
+      'Bootstrap 5 requires the .form-label class on form labels. Please update your HTML.',
     );
   },
 });
@@ -490,49 +458,40 @@ const FONT_WEIGHT_CLASSES = [
   'font-weight-light',
   'font-weight-lighter',
 ];
-makeClassMigrator({
+makeMigrator({
   selector: FONT_WEIGHT_CLASSES.map((cls) => `.${cls}`).join(', '),
-  getMigratedClasses() {
-    return FONT_WEIGHT_CLASSES.map((oldClass) => ({
-      oldClass,
-      newClass: oldClass.replace('font-weight', 'fw'),
-    }));
+  migrate(el, { migrateClass }) {
+    FONT_WEIGHT_CLASSES.forEach((oldClass) => {
+      const newClass = oldClass.replace('font-weight', 'fw');
+      migrateClass(el, oldClass, newClass);
+    });
   },
 });
 
-makeClassMigrator({
+makeMigrator({
   selector: '.text-monospace',
-  getMigratedClasses() {
-    return [{ oldClass: 'text-monospace', newClass: 'font-monospace' }];
+  migrate(el, { migrateClass }) {
+    migrateClass(el, 'text-monospace', 'font-monospace');
   },
 });
 
-observe('.text-monospace', {
-  add(el) {
-    el.classList.add('font-monospace');
-    console.warn(
-      'Bootstrap 5 replaced .text-monospace with .font-monospace. Please update your HTML.',
-      el,
-    );
-  },
-});
-
-observe('.sr-only, .sr-only-focusable', {
-  add(el) {
+makeMigrator({
+  selector: '.sr-only, .sr-only-focusable',
+  migrate(el, { addClass }) {
     const hasSrOnly = el.classList.contains('sr-only');
     const hasSrOnlyFocusable = el.classList.contains('sr-only-focusable');
 
     if (hasSrOnly && hasSrOnlyFocusable) {
-      el.classList.add('visually-hidden-focusable');
-      console.warn(
-        'Bootstrap 5 replaced .sr-only.sr-only-focusable with .visually-hidden-focusable. Please update your HTML.',
+      addClass(
         el,
+        'visually-hidden-focusable',
+        'Bootstrap 5 replaced .sr-only.sr-only-focusable with .visually-hidden-focusable. Please update your HTML.',
       );
     } else if (hasSrOnly) {
-      el.classList.add('visually-hidden');
-      console.warn(
-        'Bootstrap 5 replaced .sr-only with .visually-hidden. Please update your HTML.',
+      addClass(
         el,
+        'visually-hidden',
+        'Bootstrap 5 replaced .sr-only with .visually-hidden. Please update your HTML.',
       );
     }
 
@@ -542,28 +501,22 @@ observe('.sr-only, .sr-only-focusable', {
   },
 });
 
-makeClassMigrator({
+makeMigrator({
   selector: 'button.close',
-  getMigratedClasses() {
-    return [{ oldClass: 'close', newClass: 'btn-close' }];
-  },
-});
+  migrate(el, { migrateClass }) {
+    migrateClass(el, 'close', 'btn-close');
 
-observe('button.close', {
-  add(el) {
     if (
-      el.children.length !== 1 ||
-      el.children[0].tagName !== 'SPAN' ||
-      !el.children[0].hasAttribute('aria-hidden') ||
-      el.children[0].textContent !== '×'
+      el.children.length === 1 &&
+      el.children[0].tagName === 'SPAN' &&
+      el.children[0].hasAttribute('aria-hidden') &&
+      el.children[0].textContent === '×'
     ) {
-      return;
+      el.innerHTML = '';
+      console.warn(
+        'Bootstrap 5 no longer requires &times; in close buttons. Please update your HTML.',
+        el,
+      );
     }
-
-    el.innerHTML = '';
-    console.warn(
-      'Bootstrap 5 no longer requires &times; in close buttons. Please update your HTML.',
-      el,
-    );
   },
 });
