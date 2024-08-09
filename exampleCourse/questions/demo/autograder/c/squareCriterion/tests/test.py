@@ -9,7 +9,7 @@ class DemoGrader(cgrader.CGrader):
             "square.c",
             "main",
             add_c_file="/grade/tests/main.c",
-            # The following must be included if compiling a Check test
+            # The following must be included if compiling a Criterion test
             flags="-lcriterion",
         )
         self.run_criterion_suite("./main", use_iteration=True)
