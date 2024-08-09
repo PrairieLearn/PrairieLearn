@@ -175,6 +175,7 @@ export function StudentInstanceQuestion({
                     authz_result: resLocals.authz_result,
                     variantId: resLocals.variant?.id,
                     csrfToken: resLocals.__csrf_token,
+                    allowNewUploads: resLocals.assessment.allow_personal_notes,
                   })
                 : ''}
               ${InstructorInfoPanel({

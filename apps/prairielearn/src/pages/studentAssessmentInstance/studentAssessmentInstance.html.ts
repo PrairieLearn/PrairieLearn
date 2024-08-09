@@ -509,6 +509,7 @@ export function StudentAssessmentInstance({
             assessment_instance: resLocals.assessment_instance,
             csrfToken: resLocals.__csrf_token,
             authz_result: resLocals.authz_result,
+            allowNewUploads: resLocals.assessment.allow_personal_notes,
           })}
           ${InstructorInfoPanel({
             course: resLocals.course,
