@@ -1,0 +1,15 @@
+{
+  "uuid": "e69c7da8-f512-4947-a34b-c5d20e4d4c56",
+  "title": "Autograder demo: Square function in C (Criterion Framework)",
+  "topic": "Autograder",
+  "tags": ["jonatan", "demo", "autograder", "c", "criterion"],
+  "type": "v3",
+  "singleVariant": true,
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-c",
+    "timeout": 100,
+    "entrypoint": "python3 /grade/tests/test.py"
+  }
+}

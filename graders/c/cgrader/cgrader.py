@@ -640,6 +640,87 @@ class CGrader:
             self.result["message"] += f"Error parsing test suite log.\n\n{e}\n"
             raise UngradableException()
 
+    def run_criterion_suite(
+        self,
+        exec_file,
+        args=None,
+        use_suite_title=False,
+        use_case_name=True,
+        use_unit_test_id=True,
+        use_iteration=False,
+        sandboxed=False,
+        use_malloc_debug=False,
+        env=None,
+    ):
+        if not args:
+            args = []
+        if not isinstance(args, list):
+            args = [args]
+
+        if not env:
+            env = {}
+        env["TEMP"] = "/tmp"
+
+        log_file_dir = tempfile.mkdtemp()
+        log_file = os.path.join(log_file_dir, "tests.json")
+        env["CRITERION_OUTPUTS"] = f"pl:{log_file}"
+
+        if sandboxed:
+            self.change_mode(log_file_dir, "777", change_parent=False)
+        else:
+            env["SANDBOX_UID"] = self.run_command("id -u")
+            env["SANDBOX_GID"] = self.run_command("id -g")
+
+        if use_malloc_debug:
+            env["LD_PRELOAD"] = "/lib/x86_64-linux-gnu/libc_malloc_debug.so"
+
+        out = self.run_command([exec_file] + args, env=env, sandboxed=sandboxed)
+
+        print(out)  # Printing so it shows in the grading job log
+
+        # Copy log file to results directory so it becomes available to the instructor after execution
+        out = self.run_command(["mkdir", "-p", "/grade/results"], sandboxed=False)
+        out = self.run_command(
+            ["cp", log_file, "/grade/results/criterion_log.json", "--backup=numbered"],
+            sandboxed=False,
+        )
+        print(out)
+
+        separator_1 = ": " if use_suite_title and use_case_name else ""
+        separator_2 = (
+            " - " if use_unit_test_id and (use_suite_title or use_case_name) else ""
+        )
+        try:
+            with open(log_file, "r", errors="backslashreplace") as log:
+                test_data = json.load(log)
+            for suite in test_data.get("test_suites", []):
+                suite_title = suite.get("name", "") if use_suite_title else ""
+                for test in suite.get("tests", []):
+                    result = test.get("status")
+                    test_id = test.get("name") if use_unit_test_id else ""
+                    iteration = (
+                        # TODO Get iteration
+                        f" (run {test.get('iteration', '???')})"
+                        if use_iteration
+                        else ""
+                    )
+                    # TODO Get description
+                    case_name = test.get("description", "???") if use_case_name else ""
+                    self.add_test_result(
+                        f"{suite_title}{separator_1}{case_name}{separator_2}{test_id}{iteration}",
+                        points=result == "PASSED",
+                        msg=result,
+                        output="\n".join(test.get("messages", [])),
+                    )
+        except FileNotFoundError:
+            self.result["message"] += (
+                "Test suite log file not found. Consult the instructor.\n"
+            )
+            raise UngradableException()
+        except Exception as e:
+            self.result["message"] += f"Error parsing test suite log.\n\n{e}\n"
+            raise UngradableException()
+
     def save_results(self):
         if self.result["max_points"] > 0:
             self.result["score"] = self.result["points"] / self.result["max_points"]
