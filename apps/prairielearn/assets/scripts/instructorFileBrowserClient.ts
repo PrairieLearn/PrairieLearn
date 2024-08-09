@@ -1,6 +1,5 @@
 import { on } from 'delegated-events';
 
-import './behaviors/custom-file-input.js';
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 onDocumentReady(() => {

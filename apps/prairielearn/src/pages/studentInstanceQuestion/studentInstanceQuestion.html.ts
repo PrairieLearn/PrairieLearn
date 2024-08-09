@@ -65,7 +65,6 @@ export function StudentInstanceQuestion({
                 : ''}
               ${unsafeHtml(resLocals.extraHeadersHtml)}
             `}
-        ${compiledScriptTag('studentInstanceQuestionClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
