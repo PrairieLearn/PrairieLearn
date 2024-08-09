@@ -14,7 +14,6 @@ import { QuestionContainer, QuestionTitle } from '../../components/QuestionConta
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
-import { config } from '../../lib/config.js';
 
 export function StudentInstanceQuestion({
   resLocals,
