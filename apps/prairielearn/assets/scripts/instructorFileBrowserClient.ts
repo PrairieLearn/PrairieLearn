@@ -1,7 +1,5 @@
 import { on } from 'delegated-events';
 
-import './behaviors/custom-file-input.js';
-
 on('submit', '.needs-validation', function (event) {
   const form = event.target as HTMLFormElement;
   form.reportValidity();
