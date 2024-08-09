@@ -48,3 +48,71 @@ ORDER BY
   u.uid,
   u.user_id,
   ai.number;
+
+-- BLOCK select_and_lock_assessment_instance
+SELECT
+  ai.*,
+  a.type AS assessment_type
+FROM
+  assessment_instances AS ai
+  JOIN assessments AS a ON (a.id = ai.assessment_id)
+WHERE
+  ai.id = $assessment_instance_id
+FOR NO KEY UPDATE OF
+  ai;
+
+-- BLOCK regrade_instance_questions
+WITH
+  updated_instance_questions AS (
+    UPDATE instance_questions AS iq
+    SET
+      points = aq.max_points,
+      auto_points = aq.max_auto_points,
+      manual_points = aq.max_manual_points,
+      score_perc = 100,
+      modified_at = now()
+    FROM
+      assessment_questions AS aq
+    WHERE
+      aq.id = iq.assessment_question_id
+      AND iq.assessment_instance_id = $assessment_instance_id
+      AND aq.force_max_points
+      AND iq.points < aq.max_points
+    RETURNING
+      iq.*,
+      aq.max_points,
+      aq.max_auto_points,
+      aq.max_manual_points
+  ),
+  log_result AS (
+    INSERT INTO
+      question_score_logs (
+        instance_question_id,
+        auth_user_id,
+        points,
+        auto_points,
+        manual_points,
+        max_points,
+        max_auto_points,
+        max_manual_points,
+        score_perc
+      )
+    SELECT
+      id,
+      $authn_user_id,
+      points,
+      auto_points,
+      manual_points,
+      max_points,
+      max_auto_points,
+      max_manual_points,
+      score_perc
+    FROM
+      updated_instance_questions
+  )
+SELECT
+  q.qid
+FROM
+  updated_instance_questions AS iq
+  JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+  JOIN questions AS q ON (q.id = aq.question_id);
