@@ -2,9 +2,9 @@ import { observe } from 'selector-observer';
 
 observe('[data-toggle="tooltip"]', {
   add(el) {
-    $(el).tooltip();
+    new window.bootstrap.Tooltip(el);
   },
   remove(el) {
-    $(el).tooltip('dispose');
+    window.bootstrap.Tooltip.getInstance(el)?.dispose();
   },
 });

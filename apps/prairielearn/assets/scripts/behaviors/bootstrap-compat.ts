@@ -84,7 +84,7 @@ if (isBootstrapCompatEnabled()) {
   // creation of poppers and tooltips.
   observe('[data-toggle="dropdown"][data-boundary="window"]', {
     add(el) {
-      $(el).dropdown({
+      new window.bootstrap.Dropdown(el, {
         popperConfig(defaultConfig) {
           return {
             ...defaultConfig,
