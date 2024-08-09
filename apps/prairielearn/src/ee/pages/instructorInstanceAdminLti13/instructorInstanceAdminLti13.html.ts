@@ -335,8 +335,9 @@ export function InstructorInstanceAdminLti13({
 }
 
 function lineItem(item: Lti13Lineitems) {
-  return html`
-    <span title="${item.lineitem_id}">${item.lineitem.label}</span>
+  return html` <span title="${item.lineitem_id}">${item.lineitem.label}</span>`;
+  /*
+  html`
     <!--
     <button
       class="btn btn-xs"
@@ -347,15 +348,16 @@ function lineItem(item: Lti13Lineitems) {
     <div class="lineitem-detail" style="display:none;">
       <pre>${JSON.stringify(item, null, 2)}</pre>
     </div>
-    -->
   `;
+  */
 }
 
 export function LineitemsInputs(lineitems: Lti13Lineitem[]) {
   if (lineitems.length === 0) {
     return html`<p>None found.</p>`.toString();
   }
-  // TODO: Filter out assignments that are already linked?
+  // TODO: Filter out assignments that are already linked? Re-linking will override the
+  // previous assignment link
   return html`
     ${lineitems.map(
       (lineitem) => html`

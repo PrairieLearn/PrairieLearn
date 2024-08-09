@@ -386,9 +386,6 @@ describe('LTI 1.3', () => {
 
       console.log(req.body.client_assertion, joseKey);
 
-      //const ok = await jose.jwtVerify(req.body.client_assertion, joseKey);
-      //console.log(ok);
-
       // Decodes but does not validate
       const jwt = JSON.parse(
         Buffer.from(req.body.client_assertion.split('.')[1], 'base64').toString(),

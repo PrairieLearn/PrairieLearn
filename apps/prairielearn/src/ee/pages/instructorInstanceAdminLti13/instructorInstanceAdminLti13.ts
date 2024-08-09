@@ -61,6 +61,11 @@ router.get(
       throw error.make(404, 'LTI 1.3 instance not found.');
     }
 
+    if ('lineitems' in req.query) {
+      //const refreshed_lineitems = await get_lineitems(instance);
+      return res.send(LineitemsInputs(await get_lineitems(instance)));
+    }
+
     const assessments = await queryRows(
       sql.select_assessments,
       {
@@ -80,20 +85,15 @@ router.get(
       Lti13LineitemsSchema,
     );
 
-    if ('lineitems' in req.query) {
-      const refreshed_lineitems = await get_lineitems(instance);
-      res.send(LineitemsInputs(refreshed_lineitems));
-    } else {
-      res.send(
-        InstructorInstanceAdminLti13({
-          resLocals: res.locals,
-          instance,
-          instances,
-          assessments,
-          lineitems,
-        }),
-      );
-    }
+    res.send(
+      InstructorInstanceAdminLti13({
+        resLocals: res.locals,
+        instance,
+        instances,
+        assessments,
+        lineitems,
+      }),
+    );
   }),
 );
 

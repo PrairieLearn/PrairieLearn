@@ -300,8 +300,7 @@ export async function get_lineitems(instance: Lti13CombinedInstance) {
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  const data = (await response.json()) as Lti13Lineitem[];
-  return data;
+  return (await response.json()) as Lti13Lineitem[];
 }
 
 /*

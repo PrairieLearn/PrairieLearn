@@ -32,11 +32,7 @@ VALUES
     $lineitem,
     $assessment_id
   )
-ON CONFLICT (
-  lti13_course_instance_id,
-  lineitem_id,
-  assessment_id
-) DO
+ON CONFLICT (lti13_course_instance_id, lineitem_id) DO
 UPDATE
 SET
   lineitem = $lineitem,

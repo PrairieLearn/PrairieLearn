@@ -7,9 +7,5 @@ CREATE TABLE IF NOT EXISTS lti13_lineitems (
   lineitem_id text,
   lineitem jsonb,
   last_activity timestamp with time zone,
-  PRIMARY KEY (
-    lti13_course_instance_id,
-    lineitem_id,
-    assessment_id
-  )
+  PRIMARY KEY (lti13_course_instance_id, lineitem_id)
 );
