@@ -7,6 +7,7 @@ import re
 import shlex
 import subprocess
 import tempfile
+from itertools import groupby
 from typing import Literal
 
 import lxml.etree as ET
@@ -644,9 +645,9 @@ class CGrader:
         self,
         exec_file,
         args=None,
-        use_suite_title=False,
-        use_case_name=True,
-        use_unit_test_id=True,
+        use_suite_name=False,
+        use_test_name=True,
+        use_test_description=True,
         use_iteration=False,
         sandboxed=False,
         use_malloc_debug=False,
@@ -686,28 +687,33 @@ class CGrader:
         )
         print(out)
 
-        separator_1 = ": " if use_suite_title and use_case_name else ""
+        separator_1 = ": " if use_suite_name and use_test_description else ""
         separator_2 = (
-            " - " if use_unit_test_id and (use_suite_title or use_case_name) else ""
+            " - " if use_test_name and (use_suite_name or use_test_description) else ""
         )
         try:
             with open(log_file, "r", errors="backslashreplace") as log:
                 test_data = json.load(log)
             for suite in test_data.get("test_suites", []):
-                suite_title = suite.get("name", "") if use_suite_title else ""
-                for test in suite.get("tests", []):
+                suite_name = suite.get("name", "") if use_suite_name else ""
+                tests = suite.get("tests", [])
+                if use_iteration:
+                    for name, tests_for_name in groupby(
+                        tests, key=lambda t: t.get("name")
+                    ):
+                        for i, test in enumerate(tests_for_name):
+                            test["iteration"] = i + 1
+                for test in tests:
                     result = test.get("status")
-                    test_id = test.get("name") if use_unit_test_id else ""
+                    test_name = test.get("name") if use_test_name else ""
                     iteration = (
-                        # TODO Get iteration
-                        f" (run {test.get('iteration', '???')})"
-                        if use_iteration
-                        else ""
+                        f" (run {test.get('iteration', '0')})" if use_iteration else ""
                     )
-                    # TODO Get description
-                    case_name = test.get("description", "???") if use_case_name else ""
+                    description = (
+                        test.get("description", test_name) if use_test_description else ""
+                    )
                     self.add_test_result(
-                        f"{suite_title}{separator_1}{case_name}{separator_2}{test_id}{iteration}",
+                        f"{suite_name}{separator_1}{description}{separator_2}{test_name}{iteration}",
                         points=result == "PASSED",
                         msg=result,
                         output="\n".join(test.get("messages", [])),

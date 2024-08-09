@@ -18,12 +18,15 @@ static void pl_custom_output_provider(FILE *f, struct criterion_global_stats *st
     for (struct criterion_test_stats *ts = ss->tests; ts; ts = ts->next)
     {
       // TODO Add description, iteration number, etc.
-      fprintf(f, "    {\"name\": \"%s\", \"status\": \"%s\", \"messages\": [\n", ts->test->name,
+      fprintf(f, "    {\"name\": \"%s\", \"status\": \"%s\", \"description\": \"%s\", \"messages\": [\n",
+              ts->test->name,
               ts->crashed                            ? "The test crashed."
               : ts->timed_out                        ? "The test timed out."
               : ts->test_status == CR_STATUS_SKIPPED ? "The test was skipped."
               : ts->test_status == CR_STATUS_FAILED  ? "FAILED"
-                                                     : "PASSED");
+                                                     : "PASSED",
+              ts->test->data->description);
+
       char *comma = "";
       for (struct criterion_assert_stats *asrt = ts->asserts; asrt; asrt = asrt->next)
       {
