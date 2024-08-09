@@ -100,9 +100,9 @@ function LeaveGroupModal({ csrfToken }: { csrfToken: string }) {
       </p>
     `,
     footer: html`
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       <input type="hidden" name="__action" value="leave_group" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       <button id="leave-group" type="submit" class="btn btn-danger">Leave group</button>
     `,
   });

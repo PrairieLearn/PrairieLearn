@@ -93,6 +93,7 @@ onDocumentReady(() => {
           html: true,
           trigger: 'click',
           content: timeLimitEditPopoverContent,
+          customClass: 'popover-wide',
         })
         .on('show.bs.popover', function () {
           $(this).find('.select-time-limit').change();
