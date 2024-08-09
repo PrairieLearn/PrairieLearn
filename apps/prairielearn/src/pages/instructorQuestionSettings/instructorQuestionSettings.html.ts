@@ -10,6 +10,7 @@ import { Modal } from '../../components/Modal.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
@@ -73,6 +74,7 @@ export function InstructorQuestionSettings({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals, pageNote: resLocals.question.qid })}
+        ${compiledScriptTag('instructorQuestionSettingsClient.ts')}
         <style>
           .popover {
             max-width: 50%;
