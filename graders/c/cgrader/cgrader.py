@@ -710,7 +710,9 @@ class CGrader:
                         f" (run {test.get('iteration', '0')})" if use_iteration else ""
                     )
                     description = (
-                        test.get("description", test_name) if use_test_description else ""
+                        test.get("description", test_name)
+                        if use_test_description
+                        else ""
                     )
                     self.add_test_result(
                         f"{suite_name}{separator_1}{description}{separator_2}{test_name}{iteration}",
