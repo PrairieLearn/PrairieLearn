@@ -232,8 +232,7 @@ router.post(
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
-        // The await below makes this forEach() essentially parallel. Does it need to be serial?
-        assessments.forEach(async (assessment) => {
+        for (const assessment of assessments) {
           const assessment_metadata = {
             label: `${assessment.label}: ${assessment.title}`,
             id: assessment.id,
@@ -241,7 +240,7 @@ router.post(
           };
 
           await create_and_link_lineitem(instance, job, assessment_metadata);
-        });
+        }
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else {

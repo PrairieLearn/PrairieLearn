@@ -301,7 +301,6 @@ export async function get_lineitems(instance: Lti13CombinedInstance) {
   });
 
   const data = (await response.json()) as Lti13Lineitem[];
-  //console.log(data);
   return data;
 }
 
@@ -311,7 +310,7 @@ export async function get_lineitems(instance: Lti13CombinedInstance) {
  * But in testing Dave discovered its output might not be the same as
  * lineitems (plural).
  *
- * So instead of a get_lineitem() function, let's get_lineitems and filter.
+ * Instead of a get_lineitem() function, let's get_lineitems and filter.
  */
 
 /////////////////////////////////////////////////////////////////////////////////////////////////
@@ -440,15 +439,16 @@ function sleep(delay: number) {
   return new Promise((resolve) => setTimeout(resolve, delay));
 }
 
+/* Throttling notes
 // based on https://github.com/greatjapa/node-fetch-retry/blob/master/index.js
 // https://httpbin.org/status/403
-// TODO: Check for throttling
 // https://canvas.instructure.com/doc/api/file.throttling.html
 // 403 Forbidden (Rate Limit Exceeded)
 // X-Request-Cost
 // X-Rate-Limit-Remaining
 
 //await fetchRetry('https://httpbin.org/status/403');
+*/
 
 async function fetchRetry(input: RequestInfo | URL, opts?: RequestInit | undefined) {
   let retryLeft = 5;

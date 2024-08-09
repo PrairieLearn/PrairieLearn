@@ -130,7 +130,7 @@ export function InstructorInstanceAdminLti13({
                                         title: `${row.assessment_group_heading} ${assessments_group_by} Bulk Actions`,
                                         body: html`<p>
                                             These bulk actions work collectively on every assessment
-                                            in the group where action makes sense.
+                                            in the group where the action makes sense.
                                           </p>
 
                                           <form method="POST">
@@ -149,12 +149,6 @@ export function InstructorInstanceAdminLti13({
                                               type="hidden"
                                               name="assessment_module_id"
                                               value="${row.assessment_module_id}"
-                                            />
-
-                                            <input
-                                              type="hidden"
-                                              name="assessments_group_by"
-                                              value="${assessments_group_by}"
                                             />
 
                                             <button
@@ -286,36 +280,28 @@ export function InstructorInstanceAdminLti13({
                                         >
                                           Send grades to ${lms_name}
                                         </button>
-                                      `}
-                                  <span class="dropdown js-question-actions">
-                                    <button
-                                      type="button"
-                                      class="btn btn-xs dropdown-toggle"
-                                      data-toggle="dropdown"
-                                      aria-haspopup="true"
-                                      aria-expanded="false"
-                                    >
-                                      ...<span class="caret"></span>
-                                    </button>
+                                        <span class="dropdown js-question-actions">
+                                          <button
+                                            type="button"
+                                            class="btn btn-xs dropdown-toggle"
+                                            data-toggle="dropdown"
+                                            aria-haspopup="true"
+                                            aria-expanded="false"
+                                          >
+                                            ...<span class="caret"></span>
+                                          </button>
 
-                                    <div class="dropdown-menu">
-                                      <button
-                                        class="dropdown-item"
-                                        type="button"
-                                        data-toggle="modal"
-                                        data-target="#assignment-${row.id}"
-                                      >
-                                        Link assignment
-                                      </button>
-                                      <button
-                                        class="dropdown-item"
-                                        name="__action"
-                                        value="unlink_assessment"
-                                      >
-                                        Unlink assignment
-                                      </button>
-                                    </div>
-                                  </span>
+                                          <div class="dropdown-menu">
+                                            <button
+                                              class="dropdown-item"
+                                              name="__action"
+                                              value="unlink_assessment"
+                                            >
+                                              Unlink assignment
+                                            </button>
+                                          </div>
+                                        </span>
+                                      `}
                                 </form>
                               </td>
                               <td class="align-middle">${lineitems_linked.map(lineItem)}</td>
@@ -351,6 +337,7 @@ export function InstructorInstanceAdminLti13({
 function lineItem(item: Lti13Lineitems) {
   return html`
     <span title="${item.lineitem_id}">${item.lineitem.label}</span>
+    <!--
     <button
       class="btn btn-xs"
       onClick="event.preventDefault();$(this).next('.lineitem-detail').toggle();"
@@ -360,6 +347,7 @@ function lineItem(item: Lti13Lineitems) {
     <div class="lineitem-detail" style="display:none;">
       <pre>${JSON.stringify(item, null, 2)}</pre>
     </div>
+    -->
   `;
 }
 
