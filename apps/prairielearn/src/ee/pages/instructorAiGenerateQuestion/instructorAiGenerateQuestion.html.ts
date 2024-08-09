@@ -135,3 +135,14 @@ ${generatedPython}
     </div>
   `.toString();
 };
+
+export const GenerationFailure = (urlPrefix: string, jobSequenceId: string): string => {
+  return html`
+    <div id="generation-results">
+      <h3>Generation Failed</h3>
+
+      <p>The LLM did not generate any question file.</p>
+      <a href="${urlPrefix + '/jobSequence/' + jobSequenceId}">See job logs</a>
+    </div>
+  `.toString();
+};
