@@ -73,6 +73,9 @@ async function ensureUpToDate(locals: Record<string, any>) {
 
 async function processFileUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) throw new Error('Assessment is not open');
+  if (!res.locals.assessment.allow_personal_notes) {
+    throw new Error('This assessment does not allow personal notes.');
+  }
   if (!res.locals.authz_result.active) {
     throw new Error('This assessment is not accepting submissions at this time.');
   }
@@ -93,6 +96,9 @@ async function processFileUpload(req: Request, res: Response) {
 
 async function processTextUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) throw new Error('Assessment is not open');
+  if (!res.locals.assessment.allow_personal_notes) {
+    throw new Error('This assessment does not allow personal notes.');
+  }
   if (!res.locals.authz_result.active) {
     throw new Error('This assessment is not accepting submissions at this time.');
   }
@@ -110,6 +116,9 @@ async function processTextUpload(req: Request, res: Response) {
 
 async function processDeleteFile(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) throw new Error('Assessment is not open');
+  if (!res.locals.assessment.allow_personal_notes) {
+    throw new Error('This assessment does not allow personal notes.');
+  }
   if (!res.locals.authz_result.active) {
     throw new Error('This assessment is not accepting submissions at this time.');
   }
