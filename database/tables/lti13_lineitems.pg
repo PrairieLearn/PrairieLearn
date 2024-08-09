@@ -6,7 +6,7 @@ columns
     lti13_course_instance_id: bigint not null
 
 indexes
-    lti13_lineitems_pkey: PRIMARY KEY (lti13_course_instance_id, lineitem_id, assessment_id) USING btree (lti13_course_instance_id, lineitem_id, assessment_id)
+    lti13_lineitems_pkey: PRIMARY KEY (lti13_course_instance_id, lineitem_id) USING btree (lti13_course_instance_id, lineitem_id)
 
 foreign-key constraints
     lti13_lineitems_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

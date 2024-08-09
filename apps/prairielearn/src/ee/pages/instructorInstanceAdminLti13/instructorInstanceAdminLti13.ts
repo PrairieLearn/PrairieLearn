@@ -62,8 +62,8 @@ router.get(
     }
 
     if ('lineitems' in req.query) {
-      //const refreshed_lineitems = await get_lineitems(instance);
-      return res.send(LineitemsInputs(await get_lineitems(instance)));
+      res.send(LineitemsInputs(await get_lineitems(instance)));
+      return;
     }
 
     const assessments = await queryRows(

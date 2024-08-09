@@ -295,7 +295,8 @@ export async function get_lineitems(instance: Lti13CombinedInstance) {
     throw new Error('Lineitems not defined');
   }
   const token = await access_token(instance.lti13_instance.id);
-  const response = await fetchRetry(instance.lti13_course_instance.lineitems, {
+  // FIXME: Pagination hack
+  const response = await fetchRetry(instance.lti13_course_instance.lineitems + '?per_page=100', {
     method: 'GET',
     headers: { Authorization: `Bearer ${token}` },
   });
@@ -454,11 +455,17 @@ async function fetchRetry(input: RequestInfo | URL, opts?: RequestInit | undefin
   while (retryLeft >= 0) {
     try {
       const response = await fetch(input, opts);
-      if (response.ok) {
-        return response;
-      } else {
+
+      if (!response.ok) {
         throw new HttpStatusError(response.status, response.statusText);
       }
+
+      // Pagenated, handle this
+      //if ('link' in response.headers) {
+      // recursively run, merge results?
+      //}
+
+      return response;
     } catch (err) {
       if (retryLeft === 0) {
         throw err;
