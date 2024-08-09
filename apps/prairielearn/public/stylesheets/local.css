@@ -126,6 +126,14 @@ mjx-container {
   max-width: min(800px, 90vw);
 }
 
+/**
+ * Remove the bottom border from the final row of the last table in a card.
+ */
+.card > table.table:last-of-type tbody tr:last-child th,
+.card > table.table:last-of-type tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 /**************
  * Submissions
  **************/
@@ -163,12 +171,6 @@ mjx-container {
 
 .submission-header.collapsed .expand-icon-container::before {
   content: 'show';
-}
-
-/** Remove bottom border on the last table row/header in a card. */
-.card .table:last-child tbody tr:last-child th,
-.card .table:last-child tbody tr:last-child td {
-  border-bottom: 0;
 }
 
 /***************************************
@@ -307,12 +309,4 @@ small .user-output-invalid {
   border-color: #6c757d;
   margin-left: 5px;
   background: #fff;
-}
-
-/**
- * Remove the bottom border from the final row of the last table in a card.
- */
-.card > table.table:last-of-type tbody tr:last-child th,
-.card > table.table:last-of-type tbody tr:last-child td {
-  border-bottom: 0;
 }
