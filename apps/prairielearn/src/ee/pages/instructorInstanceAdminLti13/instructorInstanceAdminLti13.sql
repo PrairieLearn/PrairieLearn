@@ -138,8 +138,8 @@ WHERE
     FROM
       assessments AS a
     WHERE
-      -- TODO Do I need a.course_instance_id here?
-      CASE
+      a.course_instance_id = $course_instance_id
+      AND CASE
         WHEN $assessments_group_by = 'Set' THEN a.assessment_set_id = $group_id
         WHEN $assessments_group_by = 'Module' THEN a.assessment_module_id = $group_id
       END

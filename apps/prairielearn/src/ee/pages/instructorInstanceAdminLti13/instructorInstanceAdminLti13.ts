@@ -117,8 +117,6 @@ router.post(
       description: 'Some LTI operation',
     };
 
-    console.log(req.body);
-
     if (req.body.__action === 'delete_lti13_course_instance') {
       await runInTransactionAsync(async () => {
         const deleted_lti13_course_instance = await queryRow(
@@ -195,6 +193,7 @@ router.post(
         sql.delete_bulk_lineitems,
         {
           lti13_course_instance_id: instance.lti13_course_instance.id,
+          course_instance_id: instance.lti13_course_instance.course_instance_id,
           group_id,
           assessments_group_by: res.locals.course_instance.assessments_group_by,
         },
@@ -223,7 +222,6 @@ router.post(
           label: z.string(),
         }),
       );
-      console.log(assessments);
 
       if (assessments.length === 0) {
         flash('warning', 'No unlinked assessments to create');
@@ -234,6 +232,7 @@ router.post(
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
+        // The await below makes this forEach() essentially parallel. Does it need to be serial?
         assessments.forEach(async (assessment) => {
           const assessment_metadata = {
             label: `${assessment.label}: ${assessment.title}`,
