@@ -2,6 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
 
@@ -26,11 +27,7 @@ export function AdministratorInstitutionLti13({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          navPage: 'administrator_institution',
-          pageTitle: 'LTI 1.3',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Institution Admin' })}
         ${compiledScriptTag('administratorInstitutionLti13Client.ts')}
       </head>
       <body>
@@ -41,7 +38,7 @@ export function AdministratorInstitutionLti13({
           navPage: 'administrator_institution',
           navSubPage: 'lti13',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h2 class="h4">LTI 1.3 / Learning Tools Interoperability</h2>
           <p>
             ${lti13Instances.length} instance${lti13Instances.length === 1 ? '' : 's'} configured.

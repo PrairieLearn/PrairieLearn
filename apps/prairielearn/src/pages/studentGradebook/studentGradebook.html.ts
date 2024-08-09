@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Scorebar } from '../../components/Scorebar.html.js';
 import {
   AssessmentInstanceSchema,
   AssessmentSchema,
@@ -33,7 +35,7 @@ export function StudentGradebook({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -76,9 +78,7 @@ export function StudentGradebook({
                       </td>
                       <td class="text-center align-middle">
                         ${row.show_closed_assessment_score
-                          ? renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
-                              score: row.assessment_instance_score_perc,
-                            })
+                          ? Scorebar(row.assessment_instance_score_perc)
                           : 'Score not shown'}
                       </td>
                     </tr>

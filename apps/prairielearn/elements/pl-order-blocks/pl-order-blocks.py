@@ -193,7 +193,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         and feedback_type is not FeedbackType.NONE
     ):
         raise Exception(
-            "feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
+            f"feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
         )
 
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
