@@ -136,7 +136,7 @@ ${generatedPython}
   `.toString();
 };
 
-export const GenerationFailure = (urlPrefix: string, jobSequenceId: string): string => {
+export function GenerationFailure(urlPrefix: string, jobSequenceId: string): string {
   return html`
     <div id="generation-results">
       <h3>Generation Failed</h3>
@@ -145,4 +145,4 @@ export const GenerationFailure = (urlPrefix: string, jobSequenceId: string): str
       <a href="${urlPrefix + '/jobSequence/' + jobSequenceId}">See job logs</a>
     </div>
   `.toString();
-};
+}

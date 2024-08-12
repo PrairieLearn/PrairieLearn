@@ -124,13 +124,7 @@ router.post(
           ),
         );
       } else {
-        if (req.get('HX-Request')) {
-          res
-            .set('HX-Redirect', res.locals.urlPrefix + '/jobSequence/' + result.jobSequenceId)
-            .send();
-        } else {
-          res.redirect(res.locals.urlPrefix + '/jobSequence/' + result.jobSequenceId);
-        }
+        res.send(GenerationFailure(res.locals.urlPrefix, result.jobSequenceId));
       }
     } else if (req.body.__action === 'regenerate_question') {
       const genJobs = await selectJobsByJobSequenceId(req.body.unsafe_sequence_job_id);
