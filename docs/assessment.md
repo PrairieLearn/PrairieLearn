@@ -44,20 +44,20 @@ For more information about how to create your own assessment modules, see [Cours
 
 Each assessment has a `type` set to either `Homework` or `Exam`, as listed below.
 
-|                          | `Homework`                                    | `Exam`                                                |
-| ------------------------ | --------------------------------------------- | ----------------------------------------------------- |
-| **General purpose**      | Formative assessments, practice               | Summative assessments, measure learning               |
-| **Randomized questions** | Multiple variants (if question supports them) | Each student gets a single variant                    |
-| **Number of attempts**   | Unlimited attempts                            | Limited attempts, possibly with decreasing points     |
-| **Gamification**         | Rewards repeated correct answers              | Incentivizes a correct answer as early as possible    |
-| **Question order**       | Fixed order by default                        | Shuffled order within zones by default                |
-| **Time limits**          | Not supported                                 | Supported                                             |
-| **Passwords**            | Not supported                                 | Supported                                             |
-| **Multiple instances**   | Not supported                                 | Supported                                             |
-| **Assessment updates**   | Updated if assessment changes                 | Assessment is fixed on creation                       |
-| **Closing assessments**  | Assessments remain open                       | By default, idle assessments are closed after 6 hours |
-| **Honor pledge**         | Not supported                                 | Enabled by default                                    |
-| **Real-time grading**    | Always enabled                                | Can be disabled                                       |
+|                          | `Homework`                                                                                          | `Exam`                                                                                     |
+| ------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **General purpose**      | Formative assessments, practice                                                                     | Summative assessments, measure learning                                                    |
+| **Randomized questions** | [Multiple variants (if question supports them)](#limiting-the-number-of-attempts-for-each-question) | Each student gets a single variant                                                         |
+| **Number of attempts**   | Unlimited attempts                                                                                  | [Limited attempts, possibly with decreasing points](#question-points-for-exam-assessments) |
+| **Gamification**         | [Rewards repeated correct answers](#question-points-for-homework-assessments)                       | Incentivizes a correct answer as early as possible                                         |
+| **Question order**       | [Fixed order by default](#changing-question-order-randomization)                                    | [Shuffled order within zones by default](#changing-question-order-randomization)           |
+| **Time limits**          | Not supported                                                                                       | [Supported](accessControl.md#time-limits)                                                  |
+| **Passwords**            | Not supported                                                                                       | [Supported](accessControl.md#passwords)                                                    |
+| **Multiple instances**   | Not supported                                                                                       | [Supported](#multiple-instance-versus-single-instance-assessments)                         |
+| **Assessment updates**   | Updated if assessment changes                                                                       | Assessment is fixed on creation                                                            |
+| **Closing assessments**  | Assessments remain open                                                                             | [By default, idle assessments are closed after 6 hours](#auto-closing-exam-assessments)    |
+| **Honor pledge**         | Not supported                                                                                       | [Enabled by default](#honor-code)                                                          |
+| **Real-time grading**    | Always enabled                                                                                      | [Can be disabled](#disabling-real-time-grading)                                            |
 
 ## Changing question-order randomization
 
