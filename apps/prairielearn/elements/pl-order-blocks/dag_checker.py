@@ -59,15 +59,21 @@ def check_topological_sorting(submission: list[Mapping[str, str]], graph: nx.DiG
     """
     :param submission: candidate for topological sorting
     :param graph: graph to check topological sorting over
-    :return: index of first element not topologically sorted, or length of list if sorted
+    :return: A tuple containing:
+        - The index of the first element in the submission that is not topologically sorted, or the length of the 
+        submission if it is correctly sorted.
+        - A list of indices of blocks that are disordered based on their check_tag relationships.
     """
     seen = set()
     disordered = []
     top = None
+
+    # First, we check the basic topological ordering
     for i, node in enumerate(submission):
         if node["tag"] is None or not all(u in seen for (u, _) in graph.in_edges(node["tag"])):
             disordered.append(i)
         seen.add(node["tag"])
+    
     if not disordered:
         top = len(submission)
     else:
@@ -78,26 +84,33 @@ def check_topological_sorting(submission: list[Mapping[str, str]], graph: nx.DiG
 
     for i, node in enumerate(submission):
         if node["check_tag"]:
+            # Check if the check_tag exists in the graph
             if node["check_tag"] not in graph.nodes:
                 raise Exception(
                     f"The check_tag '{node['check_tag']}' referenced by tag '{node['tag']}' does not exist in the correct answer."
                 )
+
             if node["check_tag"] == node["tag"]:
                 if i in disordered:
                     disordered_lines.append(i)
             else:
+                # Check if there is a valid dependency between the check_tag and the current node
                 if not transitive_closure_graph.has_edge(node["check_tag"], node["tag"]) and \
                 not transitive_closure_graph.has_edge(node["tag"], node["check_tag"]):
                     raise Exception(
                         f"Invalid check_tag relationship: {node['tag']} and {node['check_tag']} are in different groups or have no dependency."
                     )
+                
+                # Find the index of the block with the check_tag in the submission
                 check_tag_index = None
                 for idx, block in enumerate(submission):
                     if block["tag"] == node["check_tag"]:
                         check_tag_index = idx
 
+                # Determine if the current node is disordered based on its check_tag
                 predecessors = list(transitive_closure_graph.predecessors(node["tag"]))
                 successors = list(transitive_closure_graph.successors(node["tag"]))
+                
                 if check_tag_index is not None:
                     if node["check_tag"] in predecessors and check_tag_index > i:
                         disordered_lines.append(i)
@@ -105,6 +118,7 @@ def check_topological_sorting(submission: list[Mapping[str, str]], graph: nx.DiG
                         disordered_lines.append(i)
                 else:
                     disordered_lines.append(i)
+
     return top, disordered_lines
 def check_grouping(
     submission: list[Mapping[str, str]], group_belonging: Mapping[str, Optional[str]]
