@@ -14,7 +14,11 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
 
-import { AiGeneratePage, GenerationResults } from './instructorAiGenerateQuestion.html.js';
+import {
+  AiGeneratePage,
+  GenerationFailure,
+  GenerationResults,
+} from './instructorAiGenerateQuestion.html.js';
 
 const router = express.Router();
 
@@ -105,7 +109,7 @@ router.post(
     if (req.body.__action === 'generate_question') {
       const result = await generateQuestion(
         client,
-        res.locals.course ? res.locals.course.id : undefined,
+        res.locals.course.id,
         res.locals.authn_user.user_id,
         req.body.prompt,
       );
@@ -120,7 +124,12 @@ router.post(
           ),
         );
       } else {
-        throw new error.HttpStatusError(500, `Job sequence ${result.jobSequenceId} failed.`);
+        res.send(
+          GenerationFailure({
+            urlPrefix: res.locals.urlPrefix,
+            jobSequenceId: result.jobSequenceId,
+          }),
+        );
       }
     } else if (req.body.__action === 'regenerate_question') {
       const genJobs = await selectJobsByJobSequenceId(req.body.unsafe_sequence_job_id);
@@ -137,7 +146,7 @@ router.post(
 
       const result = await regenerateQuestion(
         client,
-        res.locals?.course?.course_id,
+        res.locals.course.id,
         res.locals.authn_user.user_id,
         genJobs[0]?.data?.prompt,
         req.body.prompt,
@@ -155,7 +164,12 @@ router.post(
           ),
         );
       } else {
-        res.redirect('/pl/jobSequence/' + result.jobSequenceId);
+        res.send(
+          GenerationFailure({
+            urlPrefix: res.locals.urlPrefix,
+            jobSequenceId: result.jobSequenceId,
+          }),
+        );
       }
     } else if (req.body.__action === 'save_question') {
       const genJobs = await selectJobsByJobSequenceId(req.body.unsafe_sequence_job_id);

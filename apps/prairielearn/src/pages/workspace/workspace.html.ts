@@ -125,8 +125,9 @@ export function Workspace({
                   tabindex="0"
                   type="button"
                   class="nav-item btn btn-light"
-                  data-container="body"
                   data-toggle="popover"
+                  data-trigger="focus"
+                  data-container="body"
                   data-placement="bottom"
                   data-html="true"
                   data-content="${escapeHtml(HelpButtonContents())}"
@@ -182,8 +183,8 @@ function ResetModal({ __csrf_token }: { __csrf_token: string }) {
       </ul>
     `,
     footer: html`
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <button name="__action" value="reset" class="btn btn-danger">
         <i class="fas fa-trash text-white" aria-hidden="true"></i>
         Reset
@@ -210,8 +211,8 @@ function RebootModal({ __csrf_token }: { __csrf_token: string }) {
       </ul>
     `,
     footer: html`
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <button name="__action" value="reboot" class="btn btn-info">
         <i class="fas fa-sync text-white" aria-hidden="true"></i>
         Reboot
