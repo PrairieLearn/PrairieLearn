@@ -73,7 +73,6 @@ onDocumentReady(() => {
       $('.time-limit-edit-button')
         .popover({
           sanitize: false,
-          placement: 'right',
           title() {
             const row = $(this).data('row');
             return row.action === 'set_time_limit_all'
@@ -492,6 +491,7 @@ onDocumentReady(() => {
           class="btn btn-secondary btn-xs ml-1 time-limit-edit-button"
           id="row${row.assessment_instance_id}PopoverTimeLimit"
           data-row="${JSON.stringify(row)}"
+          data-placement="right"
         >
           <i class="bi-pencil-square" aria-hidden="true"></i>
         </a>
