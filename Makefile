@@ -94,4 +94,7 @@ changeset:
 	@yarn changeset
 	@yarn prettier --write ".changeset/**/*.md"
 
-ci: lint typecheck check-dependencies test
+build-docs:
+	@mkdocs build --strict
+
+ci: lint typecheck check-dependencies test build-docs
