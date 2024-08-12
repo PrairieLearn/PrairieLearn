@@ -309,7 +309,7 @@ export function InstructorAssessmentInstance({
                 </tr>
               </thead>
               <tbody>
-                ${instance_questions.map((instance_question, i_instance_question) => {
+                ${instance_questions.map((instance_question) => {
                   return html`
                     ${instance_question.start_new_zone && instance_question.zone_title
                       ? html`

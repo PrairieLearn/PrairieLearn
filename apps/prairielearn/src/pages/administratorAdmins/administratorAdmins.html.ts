@@ -58,7 +58,7 @@ export function AdministratorAdmins({
 
                 <tbody>
                   ${admins.map(
-                    (admin, i) => html`
+                    (admin) => html`
                       <tr>
                         <td class="align-middle">${admin.uid}</td>
                         <td class="align-middle">${admin.name}</td>

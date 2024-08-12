@@ -5,7 +5,6 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { compiledScriptTag } from '../../lib/assets.js';
 import {
   CourseInstance,
   CourseInstanceSchema,
