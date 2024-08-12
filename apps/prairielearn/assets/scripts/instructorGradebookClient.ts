@@ -14,6 +14,14 @@ onDocumentReady(() => {
 
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
   $('#gradebook-table').bootstrapTable({
+    // TODO: If we can pick up the following change, we can drop the `icons` config here:
+    // https://github.com/wenzhixin/bootstrap-table/pull/7190
+    iconsPrefix: 'fa',
+    icons: {
+      refresh: 'fa-sync',
+      columns: 'fa-table-list',
+    },
+
     url: `${urlPrefix}/instance_admin/gradebook/raw_data.json`,
     uniqueId: 'user_id',
     classes: 'table table-sm table-hover table-bordered',
