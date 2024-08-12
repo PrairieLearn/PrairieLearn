@@ -84,7 +84,7 @@
             <option
                 value="{{key}}"
                 style="white-space:normal;"
-                data-content="{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}"
+                data-content="{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{html}}"
                 {{#selected}}selected{{/selected}}
             ></option>
         {{/answers}}
@@ -113,17 +113,7 @@
 {{/question}}
 {{#submission}}
 {{#parse_error}}
-<script>
-    $(function(){
-        $('#pl-multiple-choice-submission-{{uuid}} [data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            template: '<div class="popover pl-checkbox-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-        });
-    });
-</script>
-
-<span id="pl-multiple-choice-submission-{{uuid}}">
+<span>
     <a
         href="javascript:void(0);"
         role="button"

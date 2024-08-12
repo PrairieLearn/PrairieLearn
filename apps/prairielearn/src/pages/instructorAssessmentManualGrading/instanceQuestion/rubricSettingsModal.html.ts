@@ -243,8 +243,8 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
             <div class="js-settings-error-alert-placeholder"></div>
             <div class="modal-footer">
               ${resLocals.authz_data.has_course_instance_permission_edit
-                ? [
-                    rubric_data
+                ? html`
+                    ${rubric_data
                       ? html`
                           <button
                             type="button"
@@ -253,11 +253,17 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                             Disable rubric
                           </button>
                         `
-                      : '',
-                    html`<button type="submit" class="btn btn-primary">Save rubric</button>`,
-                  ]
-                : ''}
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                      : ''}
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                      Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">Save rubric</button>
+                  `
+                : html`
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                      Close
+                    </button>
+                  `}
             </div>
           </div>
         </form>

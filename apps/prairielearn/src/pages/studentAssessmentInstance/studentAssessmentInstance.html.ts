@@ -69,7 +69,6 @@ export function StudentAssessmentInstance({
               'time-limit-data',
             )}`
           : ''}
-        ${compiledScriptTag('studentAssessmentInstanceClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -799,8 +798,8 @@ function ConfirmFinishModal({
     footer: html`
       <input type="hidden" name="__action" value="finish" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="submit" class="btn btn-danger">Finish assessment</button>
       <button type="button" data-dismiss="modal" class="btn btn-secondary">Cancel</button>
+      <button type="submit" class="btn btn-danger">Finish assessment</button>
     `,
   });
 }

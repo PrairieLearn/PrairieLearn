@@ -13,10 +13,6 @@ function getNumericalAttribute(element: HTMLElement, name: string, defaultValue:
 }
 
 $(function () {
-  $('[data-toggle="popover"]').popover({
-    trigger: 'focus',
-  });
-
   const socketToken = document.body.getAttribute('data-socket-token');
   const workspaceId = document.body.getAttribute('data-workspace-id');
   const heartbeatIntervalSec = getNumericalAttribute(

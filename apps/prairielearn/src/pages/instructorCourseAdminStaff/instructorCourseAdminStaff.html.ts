@@ -49,11 +49,13 @@ export function InstructorCourseAdminStaff({
   courseInstances,
   courseUsers,
   uidsLimit,
+  githubAccessLink,
 }: {
   resLocals: Record<string, any>;
   courseInstances: CourseInstance[];
   courseUsers: CourseUsersRow[];
   uidsLimit: number;
+  githubAccessLink: string | null;
 }) {
   return html`
     <!doctype html>
@@ -68,11 +70,6 @@ export function InstructorCourseAdminStaff({
         ${compiledScriptTag('popover.ts')}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${CourseSyncErrorsAndWarnings({
@@ -102,8 +99,6 @@ export function InstructorCourseAdminStaff({
                         id: 'coursePermissionsRemoveStudentDataAccessButton',
                       }),
                     )}"
-                    data-trigger="manual"
-                    onclick="$(this).popover('show')"
                   >
                     <i class="fas fa-eye-slash" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Remove all student data access</span>
@@ -123,8 +118,6 @@ export function InstructorCourseAdminStaff({
                         id: 'coursePermissionsDeleteNoAccessButton',
                       }),
                     )}"
-                    data-trigger="manual"
-                    onclick="$(this).popover('show')"
                   >
                     <i class="fas fa-recycle" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Delete users with no access</span>
@@ -144,8 +137,6 @@ export function InstructorCourseAdminStaff({
                         id: 'coursePermissionsDeleteNonOwnersButton',
                       }),
                     )}"
-                    data-trigger="manual"
-                    onclick="$(this).popover('show')"
                   >
                     <i class="fas fa-users-slash" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Delete non-owners</span>
@@ -167,8 +158,6 @@ export function InstructorCourseAdminStaff({
                         courseInstances,
                       }),
                     )}"
-                    data-trigger="manual"
-                    onclick="$(this).popover('show')"
                   >
                     <i class="fas fa-users" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Add users</span>
@@ -196,6 +185,15 @@ export function InstructorCourseAdminStaff({
                 <summary>Recommended access levels</summary>
                 ${AccessLevelsTable()}
               </details>
+              ${githubAccessLink
+                ? html`
+                    <div class="alert alert-info mt-3">
+                      The settings above do not affect access to the course's Git repository. To
+                      change repository permissions, go to the
+                      <a href="${githubAccessLink}" target="_blank">GitHub access settings page</a>.
+                    </div>
+                  `
+                : ''}
             </small>
           </div>
         </main>
