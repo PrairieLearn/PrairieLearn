@@ -60,7 +60,7 @@ async function processFileUpload(req: Request, res: Response) {
     throw new HttpStatusError(403, 'Assessment is not open');
   }
   if (!res.locals.assessment.allow_personal_notes) {
-    throw new Error('This assessment does not allow personal notes.');
+    throw new HttpStatusError(403, 'This assessment does not allow personal notes.');
   }
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
@@ -86,7 +86,7 @@ async function processTextUpload(req: Request, res: Response) {
     throw new HttpStatusError(403, 'Assessment is not open');
   }
   if (!res.locals.assessment.allow_personal_notes) {
-    throw new Error('This assessment does not allow personal notes.');
+    throw new HttpStatusError(403, 'This assessment does not allow personal notes.');
   }
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
@@ -109,7 +109,7 @@ async function processDeleteFile(req: Request, res: Response) {
     throw new HttpStatusError(403, 'Assessment is not open');
   }
   if (!res.locals.assessment.allow_personal_notes) {
-    throw new Error('This assessment does not allow personal notes.');
+    throw new HttpStatusError(403, 'This assessment does not allow personal notes.');
   }
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
