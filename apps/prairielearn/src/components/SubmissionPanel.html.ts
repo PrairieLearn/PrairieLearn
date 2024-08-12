@@ -294,12 +294,15 @@ function SubmissionStatusBadge({
   let manualGradingBadge: HtmlValue = null;
   let autoGradingBadge: HtmlValue = null;
 
+  const manualPercentage =
+    assessment_question?.manual_perc ??
+    question.manual_perc ??
+    (question.grading_method === 'Manual' ? 100 : 0);
+
   if (
-    assessment_question && instance_question
-      ? assessment_question.max_manual_points ||
-        instance_question.manual_points ||
-        instance_question.requires_manual_grading
-      : question.grading_method === 'Manual'
+    manualPercentage > 0 ||
+    instance_question?.requires_manual_grading ||
+    instance_question?.manual_points
   ) {
     // The manual grading status only applies to the latest submission
     if (isLatestSubmission) {
@@ -338,11 +341,7 @@ function SubmissionStatusBadge({
 
   const autoStatusPrefix = manualGradingBadge ? 'auto-grading: ' : '';
 
-  if (
-    assessment_question
-      ? assessment_question.max_auto_points || !assessment_question.max_manual_points
-      : question.grading_method !== 'Manual'
-  ) {
+  if (manualPercentage < 100) {
     if (submission.graded_at == null) {
       if (submission.grading_requested_at == null) {
         if (submission.gradable) {
