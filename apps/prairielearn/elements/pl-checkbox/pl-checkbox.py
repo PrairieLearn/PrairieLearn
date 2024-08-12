@@ -360,7 +360,6 @@ def render(element_html, data):
             "question": True,
             "name": name,
             "editable": editable,
-            "uuid": pl.get_uuid(),
             "info": info,
             "answers": answerset,
             "inline": inline,
@@ -442,7 +441,6 @@ def render(element_html, data):
         else:
             html_params = {
                 "submission": True,
-                "uuid": pl.get_uuid(),
                 "parse_error": parse_error,
                 "inline": inline,
             }

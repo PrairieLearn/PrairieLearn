@@ -348,7 +348,6 @@ def render(element_html, data):
         html_params = {
             "question": True,
             "name": name,
-            "uuid": pl.get_uuid(),
             "statements": statement_set,
             "options": option_set,
             "counter_type": counter_type,
