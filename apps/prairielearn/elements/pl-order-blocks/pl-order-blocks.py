@@ -67,6 +67,7 @@ class OrderBlocksAnswerData(TypedDict):
     distractor_bin: NotRequired[str]
     distractor_feedback: Optional[str]
     disorder_feedback: Optional[str]
+    check_tag: Optional[str]
     uuid: str
 
 
@@ -253,6 +254,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     "distractor-feedback",
                     "distractor-for",
                     "disorder-feedback",
+                    "check-tag"
                 ],
             )
 
@@ -269,6 +271,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             html_tags, "disorder-feedback", None
         )
 
+        check_tag = pl.get_string_attrib(
+            html_tags, "check-tag", None
+        )
+
+        # Raise an exception if there's a check-tag but no disorder-feedback
+        if check_tag and not disorder_feedback:
+            raise Exception(
+                f"The block with check-tag '{check_tag}'has no disorder-feedback."
+            )
+        if check_tag and not is_correct:
+            raise Exception(
+                f"check-tag '{check_tag}' cannot be attached to an incorrect block."
+            )
+        
         distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
         if distractor_for is not None and is_correct:
             raise Exception(
@@ -309,6 +325,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "group_info": group_info,  # only used with DAG grader
             "distractor_feedback": distractor_feedback,
             "disorder_feedback": disorder_feedback,
+            "check_tag": check_tag,
             "uuid": pl.get_uuid(),
         }
         if is_correct:
@@ -718,6 +735,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 )
             answer["distractor_feedback"] = matching_block["distractor_feedback"]
             answer["disorder_feedback"] = matching_block.get("disorder_feedback", "")
+            answer["check_tag"] = matching_block.get("check_tag", None)
 
     if grading_method is GradingMethodType.EXTERNAL:
         for html_tags in element:
@@ -827,7 +845,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         final_score = max(0.0, final_score)  # scores cannot be below 0
 
     elif grading_method in LCS_GRADABLE_TYPES:
-        submission = [ans["tag"] for ans in student_answer]
+        for ans in student_answer:
+            if ans["disorder_feedback"] and not ans["check_tag"]:
+                ans["check_tag"] = ans["tag"]
+        submission = [{"tag": ans["tag"], "check_tag": ans.get("check_tag", None)} for ans in student_answer]
         depends_graph = {}
         group_belonging = {}
 
@@ -858,12 +879,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         elif grading_method is GradingMethodType.DAG:
             depends_graph, group_belonging = extract_dag(true_answer_list)
 
-        result = grade_dag(
-            submission, depends_graph, group_belonging
-        )
-        num_initial_correct = result[0]
-        true_answer_length = result[1]
-        disordered_lines = result[2]
+        num_initial_correct, true_answer_length, disordered_lines = grade_dag(
+            submission, depends_graph, group_belonging)
 
         first_wrong = (
             None if num_initial_correct == len(submission) else num_initial_correct
@@ -889,11 +906,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                     block["icon"] = ""
                     block["distractor_feedback"] = ""
 
-        result = grade_dag(
-            submission, depends_graph, group_belonging
-        )
-        num_initial_correct = result[0]
-        true_answer_length = result[1]
+        num_initial_correct, true_answer_length, disordered_lines = grade_dag(
+            submission, depends_graph, group_belonging)
 
         if partial_credit_type is PartialCreditType.NONE:
             if num_initial_correct == true_answer_length:
@@ -901,6 +915,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             elif num_initial_correct < true_answer_length:
                 final_score = 0
         elif partial_credit_type is PartialCreditType.LCS:
+            submission = [ans["tag"] for ans in submission]
             edit_distance = lcs_partial_credit(
                 submission, depends_graph, group_belonging
             )
