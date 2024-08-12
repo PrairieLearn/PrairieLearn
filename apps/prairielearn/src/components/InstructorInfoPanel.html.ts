@@ -97,7 +97,7 @@ export function InstructorInfoPanel({
 
 function StaffUserInfo({ user }: { user: User }) {
   return html`
-    <h5 class="card-title">Staff user:</h5>
+    <h2 class="card-title h5">Staff user:</h2>
     <div class="d-flex flex-wrap pb-2">
       <div class="pr-1">${user.name}</div>
       <div class="pr-1">${user.uid}</div>
@@ -176,7 +176,7 @@ function QuestionInfo({
 
   return html`
     <hr />
-    <h5 class="card-title">Question:</h5>
+    <h2 class="card-title h5">Question:</h2>
 
     <div class="d-flex flex-wrap">
       <div class="pr-1">QID:</div>

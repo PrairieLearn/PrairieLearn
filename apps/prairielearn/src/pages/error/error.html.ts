@@ -60,7 +60,7 @@ export function ErrorPage({
             </h1>
 
             <div class="card-body">
-              <h4 class="mb-3">${error.message}</h4>
+              <h2 class="mb-3 h4">${error.message}</h2>
 
               ${unsafeHtml(errorInfo ?? '')}
 
