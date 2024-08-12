@@ -1,2 +1,2 @@
 ALTER TABLE assessments
-ADD COLUMN allow_personal_notes boolean DEFAULT true;
+ADD COLUMN allow_personal_notes boolean not null DEFAULT true;
