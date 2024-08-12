@@ -69,7 +69,6 @@ export function StudentAssessmentInstance({
               'time-limit-data',
             )}`
           : ''}
-        ${compiledScriptTag('studentAssessmentInstanceClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
