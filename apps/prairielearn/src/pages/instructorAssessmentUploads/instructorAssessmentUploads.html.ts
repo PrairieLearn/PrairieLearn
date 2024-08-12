@@ -7,7 +7,6 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobStatus } from '../../components/JobStatus.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { compiledScriptTag } from '../../lib/assets.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 
 export const UploadJobSequenceSchema = z.object({
@@ -28,7 +27,7 @@ export function InstructorAssessmentUploads({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })} ${compiledScriptTag('instructorAssessmentUploadsClient.ts')}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}

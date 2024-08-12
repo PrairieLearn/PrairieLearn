@@ -90,7 +90,7 @@ export function SubmissionPanel({
         ? html`
             <div class="card mb-4 grading-block border-info">
               <div
-                class="card-header bg-info text-white d-flex submission-header ${!expanded
+                class="card-header bg-info text-white d-flex align-items-center submission-header ${!expanded
                   ? ' collapsed'
                   : ''}"
                 data-toggle="collapse"

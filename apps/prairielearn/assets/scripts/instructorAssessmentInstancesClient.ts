@@ -21,6 +21,15 @@ onDocumentReady(() => {
   const hasCourseInstancePermissionEdit = dataset.hasCourseInstancePermissionEdit === 'true';
 
   const bsTable = $('#usersTable').bootstrapTable({
+    // TODO: If we can pick up the following change, we can drop the `icons` config here:
+    // https://github.com/wenzhixin/bootstrap-table/pull/7190
+    iconsPrefix: 'fa',
+    icons: {
+      refresh: 'fa-sync',
+      autoRefresh: 'fa-clock',
+      columns: 'fa-table-list',
+    },
+
     buttons: {
       studentsOnly: {
         text: 'Students Only',
@@ -84,9 +93,9 @@ onDocumentReady(() => {
           html: true,
           trigger: 'click',
           content: timeLimitEditPopoverContent,
+          customClass: 'popover-wide',
         })
         .on('show.bs.popover', function () {
-          $($(this).data('bs.popover').getTipElement()).css('max-width', '350px');
           $(this).find('.select-time-limit').change();
         });
     },

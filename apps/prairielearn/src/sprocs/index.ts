@@ -35,7 +35,6 @@ export async function init() {
       'check_assessment_access.sql',
       'assessment_instances_lock.sql',
       'assessment_instances_insert.sql',
-      'assessment_instances_duration.sql',
       'assessments_format.sql',
       'assessments_format_for_question.sql',
       'tags_for_question.sql',

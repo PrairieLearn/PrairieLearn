@@ -49,11 +49,6 @@ export function ManualGradingAssessment({
         ${HeadContents({ resLocals })}
         ${compiledScriptTag('instructorAssessmentManualGradingAssessmentClient.ts')}
       </head>
-      <script>
-        $(() => {
-          $('[data-toggle="tooltip"]').tooltip();
-        });
-      </script>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
         ${GraderAssignmentModal({ courseStaff, csrfToken: resLocals.__csrf_token })}

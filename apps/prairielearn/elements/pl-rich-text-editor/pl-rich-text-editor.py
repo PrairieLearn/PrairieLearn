@@ -21,6 +21,7 @@ class OutputFormat(Enum):
 
 QUILL_THEME_DEFAULT = "snow"
 PLACEHOLDER_DEFAULT = "Your answer here"
+ALLOW_BLANK_DEFAULT = False
 SOURCE_FILE_NAME_DEFAULT = None
 DIRECTORY_DEFAULT = "."
 MARKDOWN_SHORTCUTS_DEFAULT = True
@@ -52,6 +53,7 @@ def prepare(element_html, data):
         "source-file-name",
         "directory",
         "placeholder",
+        "allow-blank",
         "format",
         "markdown-shortcuts",
         "counter",
@@ -161,12 +163,13 @@ def render(element_html, data):
 
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     file_name = pl.get_string_attrib(element, "file-name", "")
     answer_name = get_answer_name(file_name)
 
     # Get submitted answer or return parse_error if it does not exist
     file_contents = data["submitted_answers"].get(answer_name, None)
-    if not file_contents:
+    if not file_contents and not allow_blank:
         add_format_error(data, "No submitted answer for {0}".format(file_name))
         return
 
