@@ -120,6 +120,19 @@ function AssessmentQuestionRow({
             : `${question.number_in_alternative_group}.`}
           ${question.title}
         </a>
+        ${question.manual_rubric_id == null
+          ? ''
+          : html`
+              <a
+                href="#"
+                class="ml-2 text-info"
+                data-toggle="tooltip"
+                data-boundary="window"
+                title="This question uses a rubric"
+              >
+                <i class="fas fa-list-check"></i><span class="sr-only">(uses rubric)</span>
+              </a>
+            `}
       </td>
       <td>${question.qid}</td>
       <td class="text-center">

@@ -105,7 +105,7 @@ router.post(
     if (req.body.__action === 'generate_question') {
       const result = await generateQuestion(
         client,
-        res.locals.course ? res.locals.course.id : undefined,
+        res.locals.course.id,
         res.locals.authn_user.user_id,
         req.body.prompt,
       );
@@ -120,7 +120,13 @@ router.post(
           ),
         );
       } else {
-        throw new error.HttpStatusError(500, `Job sequence ${result.jobSequenceId} failed.`);
+        if (req.get('HX-Request')) {
+          res
+            .set('HX-Redirect', res.locals.urlPrefix + '/jobSequence/' + result.jobSequenceId)
+            .send();
+        } else {
+          res.redirect(res.locals.urlPrefix + '/jobSequence/' + result.jobSequenceId);
+        }
       }
     } else if (req.body.__action === 'regenerate_question') {
       const genJobs = await selectJobsByJobSequenceId(req.body.unsafe_sequence_job_id);
@@ -137,7 +143,7 @@ router.post(
 
       const result = await regenerateQuestion(
         client,
-        res.locals?.course?.course_id,
+        res.locals.course.id,
         res.locals.authn_user.user_id,
         genJobs[0]?.data?.prompt,
         req.body.prompt,
@@ -155,7 +161,13 @@ router.post(
           ),
         );
       } else {
-        res.redirect('/pl/jobSequence/' + result.jobSequenceId);
+        if (req.get('HX-Request')) {
+          res
+            .set('HX-Redirect', res.locals.urlPrefix + '/jobSequence/' + result.jobSequenceId)
+            .send();
+        } else {
+          res.redirect(res.locals.urlPrefix + '/jobSequence/' + result.jobSequenceId);
+        }
       }
     } else if (req.body.__action === 'save_question') {
       const genJobs = await selectJobsByJobSequenceId(req.body.unsafe_sequence_job_id);

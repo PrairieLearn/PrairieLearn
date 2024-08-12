@@ -123,8 +123,8 @@ function HonorPledge({ user, groupWork }: { user: User; groupWork: boolean }) {
         </li>
       </ul>
 
-      <div class="card-footer text-center border-top-0 py-2">
-        <span class="form-check d-inline">
+      <div class="card-footer d-flex justify-content-center">
+        <span class="form-check">
           <input type="checkbox" class="form-check-input" id="certify-pledge" />
           <label class="form-check-label font-weight-bold" for="certify-pledge">
             I certify and pledge the above.

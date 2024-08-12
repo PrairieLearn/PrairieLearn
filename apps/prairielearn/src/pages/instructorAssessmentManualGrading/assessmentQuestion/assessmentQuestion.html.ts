@@ -125,8 +125,8 @@ function GradingConflictModal() {
     title: 'Grading conflict detected',
     body: html`<p>Another grader has already graded this submission.</p>`,
     footer: html`
-      <a class="btn btn-primary conflict-details-link" href="/">See details</a>
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Dismiss</button>
+      <a class="btn btn-primary conflict-details-link" href="/">See details</a>
     `,
   });
 }

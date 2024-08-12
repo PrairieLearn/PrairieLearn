@@ -122,6 +122,10 @@ mjx-container {
   text-rendering: geometricPrecision;
 }
 
+.popover-wide {
+  max-width: min(800px, 90vw);
+}
+
 /**************
  * Submissions
  **************/

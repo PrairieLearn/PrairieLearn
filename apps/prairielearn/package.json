@@ -154,6 +154,7 @@
     "remark-stringify": "^11.0.0",
     "requirejs": "^2.3.7",
     "search-string": "^3.1.0",
+    "selector-observer": "^2.1.6",
     "serve-favicon": "^2.5.0",
     "showdown": "^2.1.0",
     "socket.io": "^4.7.5",

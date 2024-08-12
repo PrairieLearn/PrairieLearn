@@ -174,7 +174,7 @@ Keep in mind you are not just generating an example; you are generating an actua
  */
 export async function regenerateQuestion(
   client: OpenAI,
-  courseId: string | undefined,
+  courseId: string,
   authnUserId: string,
   originalPrompt: string,
   revisionPrompt: string,

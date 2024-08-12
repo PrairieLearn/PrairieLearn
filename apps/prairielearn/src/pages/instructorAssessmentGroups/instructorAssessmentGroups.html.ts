@@ -6,7 +6,7 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
 
 export const GroupUsersRowSchema = z.object({
@@ -45,7 +45,6 @@ export function InstructorAssessmentGroups({
         <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.widgets.min.js',
           )}"></script>
-        ${compiledScriptTag('instructorAssessmentGroupsClient.ts')}
       </head>
 
       <body>

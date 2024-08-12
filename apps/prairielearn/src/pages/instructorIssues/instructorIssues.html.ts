@@ -82,11 +82,6 @@ export function InstructorIssues({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })} ${compiledStylesheetTag('instructorIssues.css')}
-        <script>
-          $(() => {
-            $('[data-toggle=tooltip]').tooltip();
-          });
-        </script>
       </head>
       <body>
         ${Navbar({ resLocals })}
@@ -345,17 +340,15 @@ function CloseMatchingIssuesModal({
       </p>
     `,
     footer: html`
-      <div class="modal-footer">
-        <input type="hidden" name="__action" value="close_matching" />
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <input
-          type="hidden"
-          name="unsafe_issue_ids"
-          value="${issues.map((issue) => issue.id).join(',')}"
-        />
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-danger">Close issues</button>
-      </div>
+      <input type="hidden" name="__action" value="close_matching" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input
+        type="hidden"
+        name="unsafe_issue_ids"
+        value="${issues.map((issue) => issue.id).join(',')}"
+      />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Close issues</button>
     `,
   });
 }
