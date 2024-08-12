@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
-import { html, unsafeHtml } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AdministratorQueryResultSchema } from '../../admin_queries/util.js';
