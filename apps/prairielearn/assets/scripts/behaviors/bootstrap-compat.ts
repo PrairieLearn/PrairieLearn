@@ -327,6 +327,39 @@ if (isBootstrapCompatEnabled()) {
     },
   });
 
+  makeMigrator({
+    selector: '.form-inline',
+    migrate(el, { addClass }) {
+      // We historically used `form-inline` incorrectly: we frequently applied it
+      // alongside `d-inline-block`. This made `form-inline` a no-op, as `d-inline-block`
+      // overrides `display` to `inline-block`, but `form-inline` relies on it being `flex.
+      //
+      // To ideally handle all cases, we'll only add the equivalent classes if we don't see
+      // any other `d-*` classes on the element.
+      //
+      // This won't handle every potentially strange use here, but it will handle the common
+      // case of courses forking core PL elements and dragging our incorrect usage along with them.
+
+      const hasNonFlexDisplayClass = Array.from(el.classList).some(
+        (cls) => cls.startsWith('d-') && !cls.startsWith('d-flex'),
+      );
+
+      if (hasNonFlexDisplayClass) {
+        console.warn('Bootstrap 5 has deprecated .form-inline. Please update your HTML.', el);
+        return;
+      }
+
+      // We can sorta-kinda emulate the old behavior by using `d-flex.flex-row.flex-wrap`.
+      // However, this isn't a complete replacement, as the old class would also impact the
+      // styling of its descendants.
+      addClass(
+        el,
+        ['d-flex', 'flex-row', 'flex-wrap', 'align-items-center'],
+        'Bootstrap 5 has deprecated .form-inline. Please update your HTML.',
+      );
+    },
+  });
+
   // `label` no longer receives a default bottom margin; the `form-label` class
   // must be added to form labels.
   makeMigrator({
