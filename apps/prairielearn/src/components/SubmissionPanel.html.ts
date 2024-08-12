@@ -296,8 +296,9 @@ function SubmissionStatusBadge({
 
   const manualPercentage =
     assessment_question?.manual_perc ??
-    question.manual_perc ??
-    (question.grading_method === 'Manual' ? 100 : 0);
+    (assessment_question
+      ? (100 * (assessment_question.max_manual_points ?? 0)) / (assessment_question.max_points || 1)
+      : (question?.manual_perc ?? (question?.grading_method === 'Manual' ? 100 : 0)));
 
   if (
     manualPercentage > 0 ||

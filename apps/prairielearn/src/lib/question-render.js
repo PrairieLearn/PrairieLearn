@@ -307,18 +307,15 @@ export function buildLocals(
     locals.showTryAgainButton = true;
   }
 
-  // If the manual percentage is not populated, we
-  // fallback to the grading method (in question preview), or the proportion of
-  // manual points to max points (in assessment).
-  locals.manualPercentage =
+  // If the manual percentage is not populated, we fallback to the grading
+  // method (in question preview), or the proportion of manual points to max
+  // points (in assessment).
+  const manualPercentage =
     assessment_question?.manual_perc ??
-    question?.manual_perc ??
     (assessment_question
-      ? (100 * assessment_question.max_manual_points) / (assessment_question.max_points || 1)
-      : question?.grading_method === 'Manual'
-        ? 100
-        : 0);
-  if (locals.manualPercentage === 100) {
+      ? (100 * (assessment_question.max_manual_points ?? 0)) / (assessment_question.max_points || 1)
+      : (question?.manual_perc ?? (question?.grading_method === 'Manual' ? 100 : 0)));
+  if (manualPercentage >= 100) {
     locals.showGradeButton = false;
   }
 

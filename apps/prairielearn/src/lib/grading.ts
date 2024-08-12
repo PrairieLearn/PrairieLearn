@@ -35,13 +35,6 @@ const NextAllowedGradeSchema = z.object({
   allow_grade_interval: z.string(),
 });
 
-const VariantDataSchema = z.object({
-  instance_question_id: z.string().nullable(),
-  manual_perc: z.number(),
-  max_auto_points: z.number().nullable(),
-  max_manual_points: z.number().nullable(),
-});
-
 const VariantForSubmissionSchema = VariantSchema.extend({
   assessment_instance_id: z.string().nullable(),
   max_manual_points: z.number().nullable(),
@@ -248,24 +241,17 @@ async function selectSubmissionForGrading(
   return sqldb.runInTransactionAsync(async () => {
     await sqldb.callAsync('variants_lock', [variant_id]);
 
-    const variantData = await sqldb.queryOptionalRow(
-      sql.select_variant_data,
+    const manualPercentage = await sqldb.queryOptionalRow(
+      sql.select_variant_manual_percentage,
       { variant_id },
-      VariantDataSchema,
+      z.number(),
     );
-    if (variantData == null) return null;
 
     // We only select variants that will be auto-graded, so ignore this variant
     // if this is manual grading only. Typically we would not reach this point
     // for these cases, since the grade button is not shown to students, so this
     // is an extra precaution.
-    if (variantData.instance_question_id == null) {
-      if (variantData.manual_perc >= 100) return null;
-    } else {
-      if ((variantData.max_auto_points ?? 0) === 0 && (variantData.max_manual_points ?? 0) !== 0) {
-        return null;
-      }
-    }
+    if (manualPercentage == null || manualPercentage >= 100) return null;
 
     // Select the most recent submission
     const submission = await sqldb.queryOptionalRow(

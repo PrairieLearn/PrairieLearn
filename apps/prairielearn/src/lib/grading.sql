@@ -18,18 +18,21 @@ FROM
 WHERE
   v.id = $variant_id;
 
--- BLOCK select_variant_data
+-- BLOCK select_variant_manual_percentage
 SELECT
-  v.instance_question_id,
   COALESCE(
+    aq.manual_perc,
+    -- This is a fallback for assessment questions where manual percentage is not populated
+    CASE
+      WHEN aq.id IS NOT NULL THEN 100 * aq.max_manual_points / COALESCE(NULLIF(aq.max_points, 0), 1)
+    END,
     q.manual_perc,
+    -- This is a fallback for questions where manual percentage is not populated
     CASE
       WHEN q.grading_method = 'Manual' THEN 100
       ELSE 0
     END
-  ) AS manual_perc,
-  aq.max_auto_points,
-  aq.max_manual_points
+  )
 FROM
   variants AS v
   JOIN questions AS q ON (q.id = v.question_id)
