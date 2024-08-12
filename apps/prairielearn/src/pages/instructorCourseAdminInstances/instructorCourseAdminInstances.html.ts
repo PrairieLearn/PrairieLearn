@@ -21,16 +21,6 @@ export function InstructorCourseAdminInstances({
         ${HeadContents({ resLocals, pageTitle: 'Course Instances' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('#earliest-access-date [data-toggle="popover"]').popover({
-              sanitize: false,
-            });
-            $('#latest-access-date [data-toggle="popover"]').popover({
-              sanitize: false,
-            });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${CourseSyncErrorsAndWarnings({
@@ -80,9 +70,10 @@ export function InstructorCourseAdminInstances({
                       Earliest Access Date
                       <button
                         class="btn btn-xs btn-light"
-                        data-placement="auto"
-                        data-trigger="focus"
                         data-toggle="popover"
+                        data-trigger="focus"
+                        data-container="body"
+                        data-placement="bottom"
                         data-html="true"
                         title="Earliest Access Date"
                         data-content="${PopoverStartDate()}"
@@ -95,9 +86,10 @@ export function InstructorCourseAdminInstances({
                       Latest Access Date
                       <button
                         class="btn btn-xs btn-light"
-                        data-placement="auto"
-                        data-trigger="focus"
                         data-toggle="popover"
+                        data-trigger="focus"
+                        data-container="body"
+                        data-placement="bottom"
                         data-html="true"
                         title="Latest Access Date"
                         data-content="${PopoverEndDate()}"
