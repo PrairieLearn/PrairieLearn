@@ -55,25 +55,59 @@ def solve_dag(
     return sort
 
 
-def check_topological_sorting(submission: list[str], graph: nx.DiGraph) -> list[int]:
+def check_topological_sorting(submission: list[Mapping[str, str]], graph: nx.DiGraph) ->tuple[int, list[int]]:
     """
     :param submission: candidate for topological sorting
     :param graph: graph to check topological sorting over
-    :return: list of indices of all disordered lines, or [-1] if all are sorted
+    :return: index of first element not topologically sorted, or length of list if sorted
     """
     seen = set()
     disordered = []
+    top = None
     for i, node in enumerate(submission):
-        if node is None or not all(u in seen for (u, _) in graph.in_edges(node)):
+        if node["tag"] is None or not all(u in seen for (u, _) in graph.in_edges(node["tag"])):
             disordered.append(i)
-        seen.add(node)
+        seen.add(node["tag"])
     if not disordered:
-        return [-1]
+        top = len(submission)
     else:
-        return disordered
+        top = disordered[0]
 
+    disordered_lines = []
+    transitive_closure_graph = nx.transitive_closure(graph)
+
+    for i, node in enumerate(submission):
+        if node["check_tag"]:
+            if node["check_tag"] not in graph.nodes:
+                raise Exception(
+                    f"The check_tag '{node['check_tag']}' referenced by tag '{node['tag']}' does not exist in the correct answer."
+                )
+            if node["check_tag"] == node["tag"]:
+                if i in disordered:
+                    disordered_lines.append(i)
+            else:
+                if not transitive_closure_graph.has_edge(node["check_tag"], node["tag"]) and \
+                not transitive_closure_graph.has_edge(node["tag"], node["check_tag"]):
+                    raise Exception(
+                        f"Invalid check_tag relationship: {node['tag']} and {node['check_tag']} are in different groups or have no dependency."
+                    )
+                check_tag_index = None
+                for idx, block in enumerate(submission):
+                    if block["tag"] == node["check_tag"]:
+                        check_tag_index = idx
+
+                predecessors = list(transitive_closure_graph.predecessors(node["tag"]))
+                successors = list(transitive_closure_graph.successors(node["tag"]))
+                if check_tag_index is not None:
+                    if node["check_tag"] in predecessors and check_tag_index > i:
+                        disordered_lines.append(i)
+                    elif node["check_tag"] in successors and check_tag_index < i:
+                        disordered_lines.append(i)
+                else:
+                    disordered_lines.append(i)
+    return top, disordered_lines
 def check_grouping(
-    submission: list[str], group_belonging: Mapping[str, Optional[str]]
+    submission: list[Mapping[str, str]], group_belonging: Mapping[str, Optional[str]]
 ) -> int:
     """
     :param submission: candidate solution
@@ -152,9 +186,9 @@ def add_edges_for_groups(
         graph.remove_node(group_tag)
 
 def grade_dag(
-    submission: list[str],
+    submission: list[Mapping[str, str]],
     depends_graph: Mapping[str, list[str]],
-    group_belonging: Mapping[str, Optional[str]],
+    group_belonging: Mapping[str, Optional[str]]
 ) -> tuple[int, int, list[int]]:
     """In order for a student submission to a DAG graded question to be deemed correct, the student
     submission must be a topological sort of the DAG and blocks which are in the same pl-block-group
@@ -165,18 +199,12 @@ def grade_dag(
     :return: tuple containing length of list that meets both correctness conditions, starting from the beginning,
     and the length of any correct solution, and the list that containd the indices of all disordered lines.
     """
-    graph = dag_to_nx(depends_graph, group_belonging)
 
-    disordered_lines = check_topological_sorting(submission, graph)
-    if disordered_lines and disordered_lines[0] != -1:
-        top_sort_correctness = disordered_lines[0]
-    else:
-        top_sort_correctness = len(submission)
-        
-    grouping_correctness = check_grouping(submission, group_belonging)
-    top_sort_correctness = min(top_sort_correctness, grouping_correctness)
-    
-    return top_sort_correctness, graph.number_of_nodes(), disordered_lines if disordered_lines[0] != -1 else []
+    graph = dag_to_nx(depends_graph, group_belonging)
+    top_sort_correctness, disordered_lines = check_topological_sorting(submission, graph)
+    submission_new = [ans["tag"] for ans in submission]
+    grouping_correctness = check_grouping(submission_new, group_belonging)
+    return min(top_sort_correctness, grouping_correctness), graph.number_of_nodes(), disordered_lines
 
 def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     """this function from
@@ -265,7 +293,6 @@ def lcs_partial_credit(
                 ):
                     mvc_size = len(subset)
                     break
-
             if mvc_size < problematic_subgraph.number_of_nodes() - 1:
                 break
 
