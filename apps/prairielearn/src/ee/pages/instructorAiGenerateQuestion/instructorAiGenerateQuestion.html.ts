@@ -136,7 +136,13 @@ ${generatedPython}
   `.toString();
 };
 
-export function GenerationFailure(urlPrefix: string, jobSequenceId: string): string {
+export function GenerationFailure({
+  urlPrefix,
+  jobSequenceId,
+}: {
+  urlPrefix: string;
+  jobSequenceId: string;
+}): string {
   return html`
     <div id="generation-results">
       <h3>Generation Failed</h3>

@@ -124,7 +124,12 @@ router.post(
           ),
         );
       } else {
-        res.send(GenerationFailure(res.locals.urlPrefix, result.jobSequenceId));
+        res.send(
+          GenerationFailure({
+            urlPrefix: res.locals.urlPrefix,
+            jobSequenceId: result.jobSequenceId,
+          }),
+        );
       }
     } else if (req.body.__action === 'regenerate_question') {
       const genJobs = await selectJobsByJobSequenceId(req.body.unsafe_sequence_job_id);
@@ -159,7 +164,12 @@ router.post(
           ),
         );
       } else {
-        res.send(GenerationFailure(res.locals.urlPrefix, result.jobSequenceId));
+        res.send(
+          GenerationFailure({
+            urlPrefix: res.locals.urlPrefix,
+            jobSequenceId: result.jobSequenceId,
+          }),
+        );
       }
     } else if (req.body.__action === 'save_question') {
       const genJobs = await selectJobsByJobSequenceId(req.body.unsafe_sequence_job_id);
