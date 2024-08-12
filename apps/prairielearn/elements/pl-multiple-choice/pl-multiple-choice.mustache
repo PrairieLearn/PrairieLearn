@@ -62,13 +62,27 @@
 <span class="py-1 d-inline align-items-center">
     <script>
         $(() => {
-            $('#pl-multiple-choice-select-{{uuid}}').selectpicker({})
-                .on('rendered.bs.select loaded.bs.select shown.bs.select', (e) => {
-                    // If any of the options has math, render the math as needed
-                    // Events: loaded (when the page opens), rendered (when the value changes),
-                    // shown (when the dropdown extends)
-                    MathJax.typesetPromise();
-                });
+            const select = new TomSelect('#pl-multiple-choice-select-{{uuid}}', {
+                render: {
+                    option: (data, escape) => {
+                        console.log('rendering option', data)
+                        return`<div>${data.content}</div>`
+                    },
+                    item: (data, escape) => {
+                        console.log('rendering item', data);
+                        return `<div>${data.content}</div>`
+                    }
+                }
+            });
+            select.on('dropdown_open', () => {
+                // If any of the options has math, render the math as needed
+                // Events: loaded (when the page opens), rendered (when the value changes),
+                // shown (when the dropdown extends)
+                MathJax.typesetPromise();
+            })
+            select.on('dropdown_close', () => {
+                MathJax.typesetPromise();
+            })
         });
     </script>
     <select
