@@ -1,21 +1,13 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { JobSchema, UserSchema } from '../../../lib/db-types.js';
-
-import { InstructorAIGenerateJobs } from './instructorAiGenerateJobs.html.js';
+import { InstructorAIGenerateJobs, JobRowSchema } from './instructorAiGenerateJobs.html.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
-
-const JobRowSchema = z.object({
-  job: JobSchema,
-  user: UserSchema.nullable(),
-});
 
 router.get(
   '/',

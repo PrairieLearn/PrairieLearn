@@ -187,7 +187,7 @@ export async function regenerateQuestion(
 }> {
   const serverJob = await createServerJob({
     courseId,
-    type: 'ai_question_regen',
+    type: 'ai_question_regenerate',
     description: 'Revise a question using the LLM',
   });
 

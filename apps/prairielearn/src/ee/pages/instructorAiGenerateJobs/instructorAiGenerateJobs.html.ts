@@ -1,17 +1,26 @@
+import { z } from 'zod';
+
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { JobStatus } from '../../../components/JobStatus.html.js';
-import { Job, User } from '../../../lib/db-types.js';
+import { JobSchema, UserSchema } from '../../../lib/db-types.js';
+
+export const JobRowSchema = z.object({
+  job: JobSchema,
+  user: UserSchema.nullable(),
+});
+
+type JobRow = z.infer<typeof JobRowSchema>;
 
 export function InstructorAIGenerateJobs({
   resLocals,
   jobs,
 }: {
   resLocals: Record<string, any>;
-  jobs: { job: Job; user: User | null }[];
+  jobs: JobRow[];
 }) {
   return html`
     <!doctype html>
@@ -32,7 +41,6 @@ export function InstructorAIGenerateJobs({
               <table class="table table-sm table-hover">
                 <thead>
                   <tr>
-                    <th>Number</th>
                     <th>Date</th>
                     <th>User</th>
                     <th>Status</th>
@@ -43,13 +51,12 @@ export function InstructorAIGenerateJobs({
                   ${jobs.map(
                     (row) => html`
                       <tr>
-                        <td>${row.job.id}</td>
                         <td>
                           ${row.job.start_date == null
                             ? html`&mdash;`
                             : formatDate(row.job.start_date, resLocals.course.display_timezone)}
                         </td>
-                        <td>${row.user?.user_id ?? '(System)'}</td>
+                        <td>${row.user?.uid ?? '(System)'}</td>
                         <td>${JobStatus({ status: row.job.status })}</td>
                         <td>
                           <a
