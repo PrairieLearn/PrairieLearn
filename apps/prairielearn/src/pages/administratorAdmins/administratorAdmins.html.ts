@@ -18,11 +18,6 @@ export function AdministratorAdmins({
         ${HeadContents({ resLocals, pageTitle: 'Administrators' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
           ...resLocals,
           navPage: 'admin',

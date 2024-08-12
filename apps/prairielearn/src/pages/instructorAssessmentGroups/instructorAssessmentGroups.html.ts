@@ -48,28 +48,6 @@ export function InstructorAssessmentGroups({
       </head>
 
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-
-            // Prevent the dropdown menu from closing when the popover is opened.
-            $('.js-group-action[data-toggle="popover"]').on('click', (e) => {
-              e.stopPropagation();
-            });
-
-            $('.js-group-action-dropdown').on('hide.bs.dropdown', (e) => {
-              // If the click is inside a popover, don't hide the dropdown.
-              if (e.clickEvent.target.closest('.popover')) {
-                e.preventDefault();
-                e.stopPropagation();
-                return;
-              }
-
-              // Hide all popovers when the dropdown menu is closed.
-              $('.js-group-action[data-toggle="popover"]').popover('hide');
-            });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
