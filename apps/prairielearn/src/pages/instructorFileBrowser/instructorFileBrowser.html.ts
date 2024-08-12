@@ -259,7 +259,6 @@ function FileBrowserActions({
     </a>
     <button
       type="button"
-      id="instructorFileUploadForm-${fileInfo.id}"
       class="btn btn-sm btn-light"
       data-toggle="popover"
       data-container="body"
@@ -284,7 +283,6 @@ function FileBrowserActions({
     </a>
     <button
       type="button"
-      id="instructorFileRenameForm-${fileInfo.id}"
       class="btn btn-sm btn-light"
       data-toggle="popover"
       data-container="body"
@@ -302,7 +300,6 @@ function FileBrowserActions({
     </button>
     <button
       type="button"
-      id="instructorFileDeleteForm-${fileInfo.id}"
       class="btn btn-sm btn-light"
       data-toggle="popover"
       data-container="body"
@@ -584,13 +581,7 @@ function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: 
           ? html`<input type="hidden" name="file_path" value="${file.path}" />`
           : html`<input type="hidden" name="working_path" value="${file.working_path}" />`}
         <div class="text-right">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            onclick="$('#instructorFileUploadForm-${file.id}').popover('hide')"
-          >
-            Cancel
-          </button>
+          <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
           <button type="submit" class="btn btn-primary">Upload file</button>
         </div>
       </div>
@@ -606,13 +597,7 @@ function FileDeleteForm({ file, csrfToken }: { file: FileDeleteInfo; csrfToken: 
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="file_path" value="${file.path}" />
       <div class="text-right">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          onclick="$('#instructorFileDeleteForm-${file.id}').popover('hide')"
-        >
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Delete</button>
       </div>
     </form>
@@ -661,13 +646,7 @@ function FileRenameForm({
         />
       </div>
       <div class="text-right">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          onclick="$('#instructorFileRenameForm-${file.id}').popover('hide')"
-        >
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>

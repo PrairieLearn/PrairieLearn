@@ -114,7 +114,6 @@ export function UserSettings({
               ${!isExamMode
                 ? html`
                     <button
-                      id="generateTokenButton"
                       type="button"
                       class="btn btn-light btn-sm ml-auto"
                       data-toggle="popover"
@@ -123,7 +122,6 @@ export function UserSettings({
                       data-placement="auto"
                       title="Generate new token"
                       data-content="${TokenGenerateForm({
-                        id: 'generateTokenButton',
                         csrfToken: resLocals.__csrf_token,
                       }).toString()}"
                     >
@@ -204,7 +202,6 @@ function TokenList({
           </span>
         </div>
         <button
-          id="deleteTokenButton${token.id}"
           type="button"
           class="btn btn-outline-danger btn-sm ml-auto"
           data-toggle="popover"
@@ -213,7 +210,6 @@ function TokenList({
           data-placement="auto"
           title="Delete this token"
           data-content="${TokenDeleteForm({
-            id: `deleteTokenButton${token.id}`,
             token_id: token.id,
             csrfToken: resLocals.__csrf_token,
           }).toString()}"
@@ -225,7 +221,7 @@ function TokenList({
   );
 }
 
-function TokenGenerateForm({ id, csrfToken }: { id: string; csrfToken: string }) {
+function TokenGenerateForm({ csrfToken }: { csrfToken: string }) {
   return html`
     <form name="generate-token-form" method="post">
       <input type="hidden" name="__action" value="token_generate" />
@@ -242,24 +238,14 @@ function TokenGenerateForm({ id, csrfToken }: { id: string; csrfToken: string })
         />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Generate token</button>
       </div>
     </form>
   `;
 }
 
-function TokenDeleteForm({
-  token_id,
-  id,
-  csrfToken,
-}: {
-  token_id: string;
-  id: string;
-  csrfToken: string;
-}) {
+function TokenDeleteForm({ token_id, csrfToken }: { token_id: string; csrfToken: string }) {
   return html`
     <form name="token-delete-form" method="POST">
       <input type="hidden" name="__action" value="token_delete" />
@@ -270,9 +256,7 @@ function TokenDeleteForm({
         API. You cannot undo this action.
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-danger">Delete token</button>
       </div>
     </form>

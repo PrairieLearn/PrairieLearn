@@ -8,14 +8,12 @@ export function EditQuestionPointsScoreButton({
   assessment_question,
   urlPrefix,
   csrfToken,
-  buttonId,
 }: {
   field: 'points' | 'auto_points' | 'manual_points' | 'score_perc';
   instance_question: Omit<InstanceQuestion, 'modified_at'> & { modified_at: string };
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   csrfToken: string;
-  buttonId: string;
 }) {
   const editForm = EditQuestionPointsScoreForm({
     field,
@@ -23,7 +21,6 @@ export function EditQuestionPointsScoreButton({
     assessment_question,
     urlPrefix,
     csrfToken,
-    buttonId,
   });
   const label = {
     points: 'points',
@@ -35,7 +32,6 @@ export function EditQuestionPointsScoreButton({
   return html`<button
     type="button"
     class="btn btn-xs btn-secondary"
-    id="${buttonId}"
     data-toggle="popover"
     data-container="body"
     data-html="true"
@@ -53,14 +49,12 @@ function EditQuestionPointsScoreForm({
   assessment_question,
   urlPrefix,
   csrfToken,
-  buttonId,
 }: {
   field: 'points' | 'auto_points' | 'manual_points' | 'score_perc';
   instance_question: Omit<InstanceQuestion, 'modified_at'> & { modified_at: string };
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   csrfToken: string;
-  buttonId: string;
 }) {
   const manualGradingUrl = `${urlPrefix}/assessment/${assessment_question.assessment_id}/manual_grading/instance_question/${instance_question.id}`;
   if (assessment_question.manual_rubric_id != null) {
@@ -71,13 +65,7 @@ function EditQuestionPointsScoreForm({
           <a href="${manualGradingUrl}">the manual grading page</a>.
         </p>
         <div class="text-right">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            onclick="$('#${buttonId}').popover('hide')"
-          >
-            Cancel
-          </button>
+          <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         </div>
       </div>
     `;
@@ -121,9 +109,7 @@ function EditQuestionPointsScoreForm({
         </small>
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${buttonId}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>

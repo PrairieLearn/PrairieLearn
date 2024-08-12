@@ -30,7 +30,6 @@ export function AdministratorAdmins({
               <button
                 type="button"
                 class="btn btn-sm btn-light ml-auto"
-                id="administratorInsertButton"
                 data-toggle="popover"
                 data-container="body"
                 data-html="true"
@@ -39,7 +38,6 @@ export function AdministratorAdmins({
                 data-content="${escapeHtml(
                   AdministratorInsertForm({
                     csrfToken: resLocals.__csrf_token,
-                    id: 'administratorInsertButton',
                   }),
                 )}"
               >
@@ -68,7 +66,6 @@ export function AdministratorAdmins({
                           <button
                             type="button"
                             class="btn btn-sm btn-danger float-right"
-                            id="administratorDeleteButton${i}"
                             data-toggle="popover"
                             data-container="body"
                             data-html="true"
@@ -77,7 +74,6 @@ export function AdministratorAdmins({
                             data-content="${escapeHtml(
                               AdministratorDeleteForm({
                                 csrfToken: resLocals.__csrf_token,
-                                id: 'administratorDeleteButton' + i,
                                 uid: admin.uid,
                                 userId: admin.user_id,
                               }),
@@ -107,7 +103,7 @@ export function AdministratorAdmins({
   `.toString();
 }
 
-function AdministratorInsertForm({ csrfToken, id }: { csrfToken: string; id: string }) {
+function AdministratorInsertForm({ csrfToken }: { csrfToken: string }) {
   return html`
     <form name="add-user-form" method="POST">
       <input type="hidden" name="__action" value="administrators_insert_by_user_uid" />
@@ -123,9 +119,7 @@ function AdministratorInsertForm({ csrfToken, id }: { csrfToken: string; id: str
         />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Add administrator</button>
       </div>
     </form>
@@ -134,12 +128,10 @@ function AdministratorInsertForm({ csrfToken, id }: { csrfToken: string; id: str
 
 function AdministratorDeleteForm({
   csrfToken,
-  id,
   userId,
   uid,
 }: {
   csrfToken: string;
-  id: string;
   userId: string;
   uid: string;
 }) {
@@ -153,9 +145,7 @@ function AdministratorDeleteForm({
         <p class="form-control-static">${uid}</p>
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Remove access</button>
       </div>
     </form>
