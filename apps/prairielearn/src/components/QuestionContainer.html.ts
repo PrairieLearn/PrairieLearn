@@ -617,11 +617,13 @@ function QuestionPanel({
   return html`
     <div class="card mb-4 question-block">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        ${QuestionTitle({
-          questionContext,
-          question,
-          questionNumber: instance_question_info?.question_number,
-        })}
+        <h1 class="h6 font-weight-normal mb-0">
+          ${QuestionTitle({
+            questionContext,
+            question,
+            questionNumber: instance_question_info?.question_number,
+          })}
+        </h1>
         ${showCopyQuestionButton
           ? html`
               <button
