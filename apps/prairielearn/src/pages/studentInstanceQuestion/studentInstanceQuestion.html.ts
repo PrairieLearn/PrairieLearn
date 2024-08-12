@@ -166,7 +166,7 @@ export function StudentInstanceQuestion({
                 advanceScorePerc: resLocals.instance_question_info.advance_score_perc,
                 userGroupRoles: resLocals.assessment_instance.user_group_roles,
               })}
-              ${config.attachedFilesDialogEnabled && resLocals.assessment.allow_personal_notes
+              ${resLocals.assessment.allow_personal_notes
                 ? PersonalNotesPanel({
                     fileList: resLocals.file_list,
                     context: 'question',
