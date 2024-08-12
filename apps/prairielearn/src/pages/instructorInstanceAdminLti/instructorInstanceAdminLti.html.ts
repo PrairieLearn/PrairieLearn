@@ -28,9 +28,6 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
       </head>
       <body>
         <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
           function copyToClipboard(element) {
             var $temp = $('<input>');
             $('body').append($temp);

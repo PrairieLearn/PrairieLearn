@@ -41,7 +41,6 @@ export function AdministratorWorkspaces({
       <body>
         <script>
           $(() => {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
             const toggleButton = document.querySelector('#toggle-all-workspaces');
             toggleButton.addEventListener('click', () => {
               const state = toggleButton.dataset.state;

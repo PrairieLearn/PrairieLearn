@@ -130,9 +130,10 @@ onDocumentReady(() => {
     },
     onPostBody: () => {
       updateGradingTagButton();
-      $('#grading-table [data-toggle="popover"]')
-        .popover({ sanitize: false })
-        .on('shown.bs.popover', updatePointsPopoverHandlers);
+      $('#grading-table [data-toggle="popover"]').on(
+        'shown.bs.popover',
+        updatePointsPopoverHandlers,
+      );
     },
     columns: [
       [
