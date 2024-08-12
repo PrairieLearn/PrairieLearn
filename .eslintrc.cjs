@@ -1,3 +1,19 @@
+const NO_RESTRICTED_SYNTAX = [
+  {
+    selector:
+      'CallExpression[callee.type="MemberExpression"][callee.object.name="MathJax"][callee.property.name=/^(typeset|tex2chtml|tex2svg)$/]',
+    message: "Don't use the synchronous MathJax API; use a function like typesetPromise() instead.",
+  },
+  {
+    selector: 'MemberExpression[object.name="MathJax"][property.name="Hub"]',
+    message: 'Use MathJax.typesetPromise() instead of MathJax.Hub',
+  },
+  {
+    selector: 'ImportDeclaration[source.value="fs-extra"]:has(ImportNamespaceSpecifier)',
+    message: 'Use a default import instead of a namespace import for fs-extra',
+  },
+];
+
 module.exports = {
   env: {
     node: true,
@@ -5,8 +21,8 @@ module.exports = {
   },
   extends: [
     'eslint:recommended',
-    'plugin:import/recommended',
-    'plugin:import/typescript',
+    'plugin:import-x/recommended',
+    'plugin:import-x/typescript',
     'plugin:@typescript-eslint/stylistic',
     'plugin:@typescript-eslint/strict',
     'prettier',
@@ -16,10 +32,10 @@ module.exports = {
     ecmaVersion: 13,
   },
   settings: {
-    'import/parsers': {
+    'import-x/parsers': {
       '@typescript-eslint/parser': ['.ts', '.js'],
     },
-    'import/resolver': {
+    'import-x/resolver': {
       typescript: true,
       node: true,
     },
@@ -38,23 +54,30 @@ module.exports = {
       '__filename',
       '__dirname',
     ],
-    'no-restricted-syntax': [
-      'error',
-      {
-        selector:
-          'CallExpression[callee.type="MemberExpression"][callee.object.name="MathJax"][callee.property.name=/^(typeset|tex2chtml|tex2svg)$/]',
-        message:
-          "Don't use the synchronous MathJax API; use a function like typesetPromise() instead.",
-      },
-      {
-        selector: 'MemberExpression[object.name="MathJax"][property.name="Hub"]',
-        message: 'Use MathJax.typesetPromise() instead of MathJax.Hub',
-      },
-    ],
+    'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
     'object-shorthand': 'error',
 
     // This isn't super useful to use because we're using TypeScript.
-    'import/no-named-as-default-member': 'off',
+    'import-x/no-named-as-default': 'off',
+    'import-x/no-named-as-default-member': 'off',
+
+    'import-x/order': [
+      'error',
+      {
+        'newlines-between': 'always',
+        alphabetize: {
+          order: 'asc',
+        },
+        pathGroups: [
+          {
+            pattern: '@prairielearn/**',
+            group: 'external',
+            position: 'after',
+          },
+        ],
+        pathGroupsExcludedImportTypes: ['builtin'],
+      },
+    ],
 
     // The recommended Mocha rules are too strict for us; we'll only enable
     // these two rules.
@@ -83,6 +106,10 @@ module.exports = {
     // This was enabled when we upgraded to `@typescript-eslint/*` v6.
     // TODO: fix the violations so we can enable this rule.
     '@typescript-eslint/no-dynamic-delete': 'off',
+
+    // Blocks double-quote strings (unless a single quote is present in the
+    // string) and backticks (unless there is a tag or substitution in place).
+    quotes: ['error', 'single', { avoidEscape: true }],
   },
   overrides: [
     {
@@ -90,12 +117,13 @@ module.exports = {
       rules: {
         // TypeScript performs similar checks, so we disable these for TS files.
         // https://typescript-eslint.io/linting/troubleshooting/performance-troubleshooting/#eslint-plugin-import
-        'import/named': 'off',
-        'import/namespace': 'off',
-        'import/default': 'off',
-        'import/no-named-as-default-member': 'off',
+        'import-x/named': 'off',
+        'import-x/namespace': 'off',
+        'import-x/default': 'off',
+        'import-x/no-named-as-default-member': 'off',
         'no-restricted-syntax': [
           'error',
+          ...NO_RESTRICTED_SYNTAX,
           {
             selector: 'MemberExpression[object.name="module"][property.name="exports"]',
             message: 'module.exports should not be used in TypeScript files',

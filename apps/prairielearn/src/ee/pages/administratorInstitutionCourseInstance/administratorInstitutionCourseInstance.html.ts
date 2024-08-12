@@ -1,5 +1,8 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
+import { HeadContents } from '../../../components/HeadContents.html.js';
+import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Course,
   type CourseInstance,
@@ -7,7 +10,6 @@ import {
   type PlanGrant,
 } from '../../../lib/db-types.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
-import { compiledScriptTag } from '../../../lib/assets.js';
 
 export function AdministratorInstitutionCourseInstance({
   institution,
@@ -26,10 +28,9 @@ export function AdministratorInstitutionCourseInstance({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          navPage: 'administrator_institution',
-          pageTitle: 'Courses',
+        ${HeadContents({
+          resLocals,
+          pageTitle: `${course.short_name}, ${course_instance.short_name} - Institution Admin`,
         })}
         ${compiledScriptTag('administratorInstitutionCourseInstanceClient.ts')}
       </head>
@@ -56,7 +57,7 @@ export function AdministratorInstitutionCourseInstance({
             </li>
           </ol>
         </nav>
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h2 class="h4">Limits</h2>
           <form method="POST" class="mb-3">
             <div class="form-group">

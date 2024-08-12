@@ -1,7 +1,9 @@
-import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { type Institution, type Course, CourseInstanceSchema } from '../../../lib/db-types.js';
 
 export const CourseInstanceRowSchema = z.object({
@@ -25,10 +27,9 @@ export function AdministratorInstitutionCourse({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          navPage: 'administrator_institution',
-          pageTitle: 'Courses',
+        ${HeadContents({
+          resLocals,
+          pageTitle: `${course.short_name} - Institution Admin`,
         })}
       </head>
       <body>
@@ -49,7 +50,7 @@ export function AdministratorInstitutionCourse({
             </li>
           </ol>
         </nav>
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h2 class="h4">Limits</h2>
           <form method="POST" class="mb-3">
             <div class="form-group">

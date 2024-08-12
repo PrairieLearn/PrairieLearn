@@ -1,7 +1,9 @@
-import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { WorkspaceHostSchema, IdSchema } from '../../lib/db-types.js';
 
 const WorkspaceWithContextSchema = z.object({
@@ -34,7 +36,7 @@ export function AdministratorWorkspaces({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals, pageTitle: 'Workspaces' })}
       </head>
       <body>
         <script>

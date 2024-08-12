@@ -1,0 +1,13 @@
+{
+  "uuid": "d7e80f01-e4ea-406e-9d64-f5fffcf7cb49",
+  "title": "Workspace test with invalid files",
+  "topic": "Workspace",
+  "tags": ["jonatan", "workspace"],
+  "type": "v3",
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-xtermjs",
+    "port": 8080,
+    "home": "/home/prairie",
+    "gradedFiles": []
+  }
+}

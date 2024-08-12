@@ -1,9 +1,11 @@
+import * as path from 'path';
+
+import { assert } from 'chai';
+import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import * as path from 'path';
+
 import * as sqldb from '@prairielearn/postgres';
-import stringify from 'json-stable-stringify';
-import { assert } from 'chai';
 
 import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
@@ -406,8 +408,8 @@ const courseInstances: Record<string, CourseInstanceData> = {
       longName: 'Testing instance',
       allowAccess: [
         {
-          startDate: '2019-01-14T00:00:00',
-          endDate: '2019-05-15T00:00:00',
+          startDate: '2000-01-01T00:00:00',
+          endDate: '3000-01-01T00:00:00',
         },
       ],
     },
@@ -418,14 +420,13 @@ const courseInstances: Record<string, CourseInstanceData> = {
  * @returns The base course data for syncing testing
  */
 export function getCourseData(): CourseData {
-  // Round-trip through JSON.stringify to ensure that mutations to nested
+  // Copy all data with `structuredClone` to ensure that mutations to nested
   // objects aren't reflected in the original objects.
-  const courseData = {
+  return structuredClone({
     course,
     questions,
     courseInstances,
-  };
-  return JSON.parse(JSON.stringify(courseData));
+  });
 }
 
 export function getFakeLogger() {

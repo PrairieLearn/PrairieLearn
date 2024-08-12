@@ -1,5 +1,6 @@
-import { PostgresPool, PoolClient } from '@prairielearn/postgres';
 import { PoolConfig } from 'pg';
+
+import { PostgresPool, PoolClient } from '@prairielearn/postgres';
 
 interface NamedLocksConfig {
   /**
@@ -170,7 +171,7 @@ async function getLock(name: string, options: LockOptions) {
     const lock_sql = options.timeout
       ? `SELECT * FROM named_locks WHERE name = ${lockNameLiteral} FOR UPDATE;`
       : `SELECT * FROM named_locks WHERE name = ${lockNameLiteral} FOR UPDATE SKIP LOCKED;`;
-    const result = await pool.queryWithClientAsync(client, lock_sql, { name });
+    const result = await pool.queryWithClientAsync(client, lock_sql, {});
     acquiredLock = result.rowCount === 1;
   } catch (err) {
     // Something went wrong, so we end the transaction and re-throw the

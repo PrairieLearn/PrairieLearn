@@ -122,6 +122,10 @@ mjx-container {
   text-rendering: geometricPrecision;
 }
 
+.popover-wide {
+  max-width: min(800px, 90vw);
+}
+
 /**************
  * Submissions
  **************/
@@ -177,11 +181,6 @@ mjx-container {
 
 a.badge {
   text-decoration: none;
-}
-
-.navbar,
-#course-nav {
-  align-items: baseline;
 }
 
 .no-select {

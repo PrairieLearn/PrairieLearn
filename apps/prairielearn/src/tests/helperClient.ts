@@ -1,6 +1,7 @@
-import fetch, { RequestInit, Response } from 'node-fetch';
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
+import fetch, { RequestInit, Response } from 'node-fetch';
+
 import { config } from '../lib/config.js';
 
 interface CheerioResponse extends Response {
@@ -15,7 +16,7 @@ interface CheerioResponse extends Response {
  *
  * If desired, you can set cookies via the `cookie` header:
  * ```
- * options.headers = {cookie: 'pl_access_as_administrator=active'};
+ * options.headers = {cookie: 'pl2_access_as_administrator=active'};
  * ```
  */
 export async function fetchCheerio(
@@ -198,4 +199,19 @@ export async function saveOrGrade(
       ...payload,
     }).toString(),
   });
+}
+
+/**
+ * Asserts that an alert exists with a given text. Normalizes the text of the
+ * alert before comparing with the expected value.
+ */
+export function assertAlert($: cheerio.CheerioAPI, text: string, expectedLength = 1) {
+  const alerts = $('.alert').filter((_, elem) =>
+    $(elem).text().trim().replaceAll(/\s+/g, ' ').includes(text),
+  );
+  if (alerts.length !== expectedLength) {
+    console.error(`Expected ${expectedLength}:`, text);
+    console.error('Actual:', $('.alert').text());
+  }
+  assert.lengthOf(alerts, expectedLength);
 }

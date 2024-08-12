@@ -1,16 +1,19 @@
-import { config } from '../lib/config.js';
 import * as path from 'path';
+
+import { assert } from 'chai';
+import { execa } from 'execa';
 import fs from 'fs-extra';
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp';
-import execa from 'execa';
 
-import * as helperServer from './helperServer.js';
-import { fetchCheerio } from './helperClient.js';
-import { assert } from 'chai';
-import { selectCourseById } from '../models/course.js';
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+
+import { config } from '../lib/config.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
+import { selectCourseById } from '../models/course.js';
+
+import { fetchCheerio } from './helperClient.js';
+import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -108,6 +111,7 @@ describe('Editing course settings', () => {
       uid: 'viewer@example.com',
       name: 'Viewer User',
       uin: 'viewer',
+      email: 'viewer@example.com',
     });
     await insertCoursePermissionsByUserUid({
       course_id: '1',

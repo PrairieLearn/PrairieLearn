@@ -1,6 +1,8 @@
+import csvtojson from 'csvtojson';
 import _ from 'lodash';
 import * as streamifier from 'streamifier';
-import csvtojson from 'csvtojson';
+import { z } from 'zod';
+
 import * as namedLocks from '@prairielearn/named-locks';
 import {
   loadSqlEquiv,
@@ -9,11 +11,10 @@ import {
   queryOptionalRow,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
-import { z } from 'zod';
 
 import { IdSchema, UserSchema } from './db-types.js';
-import { createServerJob } from './server-jobs.js';
 import { GroupOperationError, createGroup, createOrAddToGroup } from './groups.js';
+import { createServerJob } from './server-jobs.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -76,8 +77,8 @@ export async function uploadInstanceGroups(
       async () => {
         job.verbose('Uploading group settings for ' + assessment_label);
         job.verbose(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-        job.verbose(`----------------------------------------`);
-        job.verbose(`Processing group updates...`);
+        job.verbose('----------------------------------------');
+        job.verbose('Processing group updates...');
         const csvStream = streamifier.createReadStream(csvFile.buffer, {
           encoding: 'utf8',
         });
@@ -102,7 +103,7 @@ export async function uploadInstanceGroups(
         });
 
         const errorCount = groupAssignments.length - successCount;
-        job.verbose(`----------------------------------------`);
+        job.verbose('----------------------------------------');
         if (errorCount === 0) {
           job.verbose(`Successfully updated groups for ${successCount} students, with no errors`);
         } else {
@@ -167,8 +168,8 @@ export async function autoGroups(
       async () => {
         job.verbose(`Acquired lock ${lockName}`);
         job.verbose('Auto generate group settings for ' + assessment_label);
-        job.verbose(`----------------------------------------`);
-        job.verbose(`Fetching the enrollment lists...`);
+        job.verbose('----------------------------------------');
+        job.verbose('Fetching the enrollment lists...');
         const studentsToGroup = await queryRows(
           sql.select_enrolled_students_without_group,
           { assessment_id },
@@ -179,7 +180,7 @@ export async function autoGroups(
         job.verbose(
           `There are ${numStudents} students enrolled in ${assessment_label} without a group`,
         );
-        job.verbose(`----------------------------------------`);
+        job.verbose('----------------------------------------');
         job.verbose(`Creating groups with a max size of ${max_group_size}`);
 
         let groupsCreated = 0,
@@ -211,7 +212,7 @@ export async function autoGroups(
           }
         });
         const errorCount = numStudents - studentsGrouped;
-        job.verbose(`----------------------------------------`);
+        job.verbose('----------------------------------------');
         if (studentsGrouped !== 0) {
           job.verbose(
             `Successfully grouped ${studentsGrouped} students into ${groupsCreated} groups`,

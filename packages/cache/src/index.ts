@@ -1,8 +1,10 @@
+import assert from 'node:assert';
+
 import { Redis } from 'ioredis';
 import { LRUCache } from 'lru-cache';
+
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
-import assert from 'node:assert';
 
 export class Cache {
   enabled = false;

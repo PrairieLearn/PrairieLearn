@@ -1,7 +1,10 @@
+import { z } from 'zod';
+
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { WorkspaceLogSchema } from '../../lib/db-types.js';
-import { z } from 'zod';
 
 export const WorkspaceLogRowSchema = WorkspaceLogSchema.extend({
   date_formatted: z.string(),
@@ -34,10 +37,7 @@ export function WorkspaceLogs({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Workspace logs',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Workspace logs' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -98,10 +98,7 @@ export function WorkspaceVersionLogs({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Workspace version logs',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Workspace version logs' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {

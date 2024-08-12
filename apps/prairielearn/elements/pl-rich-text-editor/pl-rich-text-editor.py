@@ -1,16 +1,29 @@
 import base64
 import hashlib
 import os
+from enum import Enum
 
 import chevron
 import lxml.html
 import prairielearn as pl
 
+
+class Counter(Enum):
+    NONE = "none"
+    CHARACTER = "character"
+    WORD = "word"
+
+
+class OutputFormat(Enum):
+    HTML = "html"
+    MARKDOWN = "markdown"
+
+
 QUILL_THEME_DEFAULT = "snow"
 PLACEHOLDER_DEFAULT = "Your answer here"
+ALLOW_BLANK_DEFAULT = False
 SOURCE_FILE_NAME_DEFAULT = None
 DIRECTORY_DEFAULT = "."
-FORMAT_DEFAULT = "html"
 MARKDOWN_SHORTCUTS_DEFAULT = True
 
 
@@ -40,14 +53,15 @@ def prepare(element_html, data):
         "source-file-name",
         "directory",
         "placeholder",
+        "allow-blank",
         "format",
         "markdown-shortcuts",
+        "counter",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     source_file_name = pl.get_string_attrib(
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
     )
-    output_format = pl.get_string_attrib(element, "format", FORMAT_DEFAULT)
     element_text = element_inner_html(element)
 
     file_name = pl.get_string_attrib(element, "file-name")
@@ -64,11 +78,6 @@ def prepare(element_html, data):
                 + element_text
             )
 
-    if output_format not in ("html", "markdown"):
-        raise Exception(
-            f'Invalid output format "{output_format}". Must be either "html" or "markdown".'
-        )
-
 
 def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
@@ -81,10 +90,13 @@ def render(element_html, data):
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
     )
     directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
-    output_format = pl.get_string_attrib(element, "format", FORMAT_DEFAULT)
+    output_format = pl.get_enum_attrib(
+        element, "format", OutputFormat, OutputFormat.HTML
+    )
     markdown_shortcuts = pl.get_boolean_attrib(
         element, "markdown-shortcuts", MARKDOWN_SHORTCUTS_DEFAULT
     )
+    counter = pl.get_enum_attrib(element, "counter", Counter, Counter.NONE)
     element_text = element_inner_html(element)
 
     if data["panel"] == "question" or data["panel"] == "submission":
@@ -101,8 +113,10 @@ def render(element_html, data):
                 if (data["panel"] == "submission" or not data["editable"])
                 else "false"
             ),
-            "format": output_format,
+            "format": output_format.value,
             "markdown_shortcuts": "true" if markdown_shortcuts else "false",
+            "counter": counter.value,
+            "counter_enabled": counter != Counter.NONE,
         }
 
         if source_file_name is not None:
@@ -149,12 +163,13 @@ def render(element_html, data):
 
 def parse(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     file_name = pl.get_string_attrib(element, "file-name", "")
     answer_name = get_answer_name(file_name)
 
     # Get submitted answer or return parse_error if it does not exist
     file_contents = data["submitted_answers"].get(answer_name, None)
-    if not file_contents:
+    if not file_contents and not allow_blank:
         add_format_error(data, "No submitted answer for {0}".format(file_name))
         return
 

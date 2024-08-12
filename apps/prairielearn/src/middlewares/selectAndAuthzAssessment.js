@@ -2,8 +2,8 @@
 import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
 
-import * as sqldb from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

@@ -361,8 +361,9 @@ class CGrader:
         file = os.path.abspath(file)
         self.run_command(["chmod", mode, file], sandboxed=False)
         parent = os.path.dirname(file)
+        # Ensure that all users can resolve the path name
         if change_parent and parent and not os.path.samefile(file, parent):
-            self.change_mode(parent, "711")
+            self.change_mode(parent, "a+x")
 
     def test_send_in_check_out(self, *args, **kwargs):
         """Old deprecated function name,
@@ -456,15 +457,11 @@ class CGrader:
             out += "\n(NO ENDING LINE BREAK)"
 
         if msg is None and exp_output:
-            comment = (
-                ""
-                if len(exp_output) == 1
-                else " one of"
-                if must_match_all_outputs == "any"
-                else " all of"
-            )
+            quantifier = ""
+            if len(exp_output) > 1:
+                quantifier = " one of" if must_match_all_outputs == "any" else " all of"
             join_str = "\n\n" if any("\n" in t for t, _ in exp_output) else "\n\t"
-            msg = f"Expected{comment}:{join_str}" + join_str.join(
+            msg = f"Expected{quantifier}:{join_str}" + join_str.join(
                 (
                     f"\033[32m{t}\033[0m"
                     if highlight_matches and r.search(outcmp) is not None

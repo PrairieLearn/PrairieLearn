@@ -1,21 +1,24 @@
-import * as express from 'express';
 import { pipeline } from 'node:stream/promises';
+
+import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import * as error from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
-import { stringifyStream } from '@prairielearn/csv';
 import { z } from 'zod';
 
-import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
-import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
-import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
+import { stringifyStream } from '@prairielearn/csv';
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
 import {
   selectAssessmentInstanceLog,
   selectAssessmentInstanceLogCursor,
   updateAssessmentInstancePoints,
   updateAssessmentInstanceScore,
 } from '../../lib/assessment.js';
+import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
+import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
+import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import { resetVariantsForInstanceQuestion } from '../../models/variant.js';
+
 import {
   InstructorAssessmentInstance,
   AssessmentInstanceStatsSchema,
@@ -191,22 +194,8 @@ router.post(
           points: req.body.points,
           manual_points: req.body.manual_points,
           auto_points: req.body.auto_points,
+          score_perc: req.body.score_perc,
         },
-        res.locals.authn_user.user_id,
-      );
-      if (modified_at_conflict) {
-        return res.redirect(
-          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${grading_job_id}`,
-        );
-      }
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'edit_question_score_perc') {
-      const { modified_at_conflict, grading_job_id } = await updateInstanceQuestionScore(
-        res.locals.assessment.id,
-        req.body.instance_question_id,
-        null, // submission_id
-        req.body.modified_at,
-        { score_perc: req.body.score_perc },
         res.locals.authn_user.user_id,
       );
       if (modified_at_conflict) {

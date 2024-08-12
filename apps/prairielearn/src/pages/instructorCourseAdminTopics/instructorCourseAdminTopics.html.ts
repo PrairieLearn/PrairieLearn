@@ -1,6 +1,9 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { Topic } from '../../lib/db-types.js';
 
 export function InstructorCourseAdminTopics({
@@ -14,16 +17,16 @@ export function InstructorCourseAdminTopics({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/courseSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${CourseSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Topics</div>
             <div class="table-responsive">
@@ -41,11 +44,7 @@ export function InstructorCourseAdminTopics({
                     return html`
                       <tr>
                         <td class="align-middle">${topic.number}</td>
-                        <td class="align-middle">
-                          ${renderEjs(import.meta.url, "<%- include('../partials/topic'); %>", {
-                            topic,
-                          })}
-                        </td>
+                        <td class="align-middle">${TopicBadge(topic)}</td>
                         <td class="align-middle">${topic.color}</td>
                         <td class="align-middle">${topic.description}</td>
                       </tr>

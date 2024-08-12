@@ -1,4 +1,5 @@
 import { Readable } from 'node:stream';
+
 import { assert } from 'chai';
 
 import { stringifyStream } from './index.js';

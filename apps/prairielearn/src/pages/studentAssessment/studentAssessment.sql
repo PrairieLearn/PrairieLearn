@@ -1,6 +1,6 @@
 -- BLOCK select_single_assessment_instance
 SELECT
-  ai.*
+  ai.id
 FROM
   assessment_instances AS ai
   LEFT JOIN groups AS g ON (

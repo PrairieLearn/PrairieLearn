@@ -1,5 +1,6 @@
 import { readFile } from 'fs/promises';
 import { join } from 'path';
+
 import { eachSeries } from 'async';
 
 import * as error from '@prairielearn/error';
@@ -24,8 +25,6 @@ export async function init() {
       'format_date_short.sql',
       'format_date_full.sql',
       'format_date_full_compact.sql',
-      'format_date_full_compact_ms.sql',
-      'format_date_only_no_tz.sql',
       'input_date.sql',
       'interval_hist_thresholds.sql',
       'jsonb_array_to_text_array.sql',
@@ -36,9 +35,6 @@ export async function init() {
       'check_assessment_access.sql',
       'assessment_instances_lock.sql',
       'assessment_instances_insert.sql',
-      'assessment_instances_duration.sql',
-      'assessments_duration_stats.sql',
-      'assessments_score_stats.sql',
       'assessments_format.sql',
       'assessments_format_for_question.sql',
       'tags_for_question.sql',
@@ -54,12 +50,9 @@ export async function init() {
       'authz_course_instance.sql',
       'administrators_insert_by_user_uid.sql',
       'administrators_delete_by_user_id.sql',
-      'courses_insert.sql',
       'courses_update_column.sql',
-      'courses_delete.sql',
       'course_instances_select_graders.sql',
       'assessment_instances_grade.sql',
-      'assessment_instances_regrade.sql',
       'instance_questions_points_homework.sql',
       'instance_questions_points_exam.sql',
       'instance_questions_points.sql',
@@ -75,7 +68,6 @@ export async function init() {
       'users_select_or_insert.sql',
       'users_select_or_insert_and_enroll_lti.sql',
       'users_are_instructors_in_any_course.sql',
-      'users_is_instructor_in_any_course.sql',
       'users_is_instructor_in_course.sql',
       'users_is_instructor_in_course_instance.sql',
       'users_get_displayed_role.sql',

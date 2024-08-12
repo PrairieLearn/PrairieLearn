@@ -1,8 +1,10 @@
-import asyncHandler from 'express-async-handler';
 import * as express from 'express';
+import asyncHandler from 'express-async-handler';
 
 import * as sqldb from '@prairielearn/postgres';
+
 import { TopicSchema } from '../../lib/db-types.js';
+
 import { InstructorCourseAdminTopics } from './instructorCourseAdminTopics.html.js';
 
 const router = express.Router();

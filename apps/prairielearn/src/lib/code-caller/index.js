@@ -1,16 +1,18 @@
 // @ts-check
 import * as os from 'node:os';
-import { createPool } from 'generic-pool';
-import { v4 as uuidv4 } from 'uuid';
-import * as Sentry from '@prairielearn/sentry';
-import debugfn from 'debug';
 import { setTimeout as sleep } from 'node:timers/promises';
 
+import debugfn from 'debug';
+import { createPool } from 'generic-pool';
+import { v4 as uuidv4 } from 'uuid';
+
 import { logger } from '@prairielearn/logger';
-import { config } from '../config.js';
+import * as Sentry from '@prairielearn/sentry';
+
 import * as chunks from '../chunks.js';
-import { features } from '../features/index.js';
+import { config } from '../config.js';
 import * as load from '../load.js';
+
 import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container.js';
 import { CodeCallerNative } from './code-caller-native.js';
 import { FunctionMissingError } from './code-caller-shared.js';
@@ -186,19 +188,13 @@ export async function withCodeCaller(course, fn) {
   }
 
   if (pool.available === 0 && !config.workerUseQueue) {
-    debug(`getPythonCaller(): no workers available, waiting to error`);
+    debug('getPythonCaller(): no workers available, waiting to error');
     return new Promise((resolve, reject) => {
       setTimeout(() => {
         reject(new Error('Server is overloaded. Please try again.'));
       }, config.workerOverloadDelayMS);
     });
   }
-
-  // Determine if this course is allowed to use `rpy2`.
-  const allowRpy2 = await features.enabled('allow-rpy2', {
-    institution_id: course.institution_id,
-    course_id: course.id,
-  });
 
   const jobUuid = uuidv4();
   load.startJob('python_callback_waiting', jobUuid);
@@ -209,7 +205,7 @@ export async function withCodeCaller(course, fn) {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
     await codeCaller.prepareForCourse({
       coursePath,
-      forbiddenModules: allowRpy2 ? [] : ['rpy2'],
+      forbiddenModules: [],
     });
   } catch (err) {
     // If we fail to prepare for a course, assume that the code caller is

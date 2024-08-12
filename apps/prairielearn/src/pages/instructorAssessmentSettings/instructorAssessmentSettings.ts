@@ -1,12 +1,14 @@
+import * as path from 'path';
+
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import * as path from 'path';
-import QR from 'qrcode-svg';
-import { flash } from '@prairielearn/flash';
-import * as sqldb from '@prairielearn/postgres';
-import * as error from '@prairielearn/error';
 import { z } from 'zod';
 
+import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
+import * as sqldb from '@prairielearn/postgres';
+
+import { IdSchema } from '../../lib/db-types.js';
 import {
   AssessmentCopyEditor,
   AssessmentRenameEditor,
@@ -14,7 +16,7 @@ import {
 } from '../../lib/editors.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
-import { IdSchema } from '../../lib/db-types.js';
+
 import { InstructorAssessmentSettings } from './instructorAssessmentSettings.html.js';
 
 const router = express.Router();
@@ -31,18 +33,9 @@ router.get(
 
     const host = getCanonicalHost(req);
     const studentLink = new URL(
-      res.locals.plainUrlPrefix +
-        '/course_instance/' +
-        res.locals.course_instance.id +
-        '/assessment/' +
-        res.locals.assessment.id,
+      `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`,
       host,
     ).href;
-    const studentLinkQRCode = new QR({
-      content: studentLink,
-      width: 512,
-      height: 512,
-    }).svg();
     const infoAssessmentPath = encodePath(
       path.join(
         'courseInstances',
@@ -57,7 +50,6 @@ router.get(
         resLocals: res.locals,
         tids,
         studentLink,
-        studentLinkQRCode,
         infoAssessmentPath,
       }),
     );

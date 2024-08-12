@@ -1,5 +1,6 @@
 // @ts-check
 import asyncHandler from 'express-async-handler';
+
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';

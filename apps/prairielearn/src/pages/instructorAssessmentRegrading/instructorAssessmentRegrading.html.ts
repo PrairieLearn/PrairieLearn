@@ -1,9 +1,13 @@
-import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
 
-import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
+import { html } from '@prairielearn/html';
+import { renderEjs } from '@prairielearn/html-ejs';
+
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { JobStatus } from '../../components/JobStatus.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 
 export const RegradingJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
@@ -23,7 +27,7 @@ export function InstructorAssessmentRegrading({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         <script>
@@ -33,11 +37,13 @@ export function InstructorAssessmentRegrading({
         </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            assessment: resLocals.assessment,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           ${resLocals.authz_data.has_course_instance_permission_edit
             ? html`
                 ${regradeAllAssessmentInstancesModal({
@@ -102,15 +108,7 @@ export function InstructorAssessmentRegrading({
                             <td>${jobSequence.start_date_formatted}</td>
                             <td>${jobSequence.job_sequence.description}</td>
                             <td>${jobSequence.user_uid}</td>
-                            <td>
-                              ${renderEjs(
-                                import.meta.url,
-                                "<%- include('../partials/jobStatus'); %>",
-                                {
-                                  status: jobSequence.job_sequence.status,
-                                },
-                              )}
-                            </td>
+                            <td>${JobStatus({ status: jobSequence.job_sequence.status })}</td>
                             <td>
                               <a
                                 href="${resLocals.urlPrefix}/jobSequence/${jobSequence.job_sequence

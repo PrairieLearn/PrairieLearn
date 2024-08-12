@@ -1,9 +1,13 @@
+import { z } from 'zod';
+
 import { html, escapeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
+
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Modal } from '../../components/Modal.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
-import { z } from 'zod';
-import { Modal } from '../../components/Modal.html.js';
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
@@ -30,7 +34,7 @@ export function InstructorAssessmentGroups({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
         <link
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
           rel="stylesheet"
@@ -65,20 +69,16 @@ export function InstructorAssessmentGroups({
               $('.js-group-action[data-toggle="popover"]').popover('hide');
             });
           });
-
-          // make the file inputs display the file name
-          $(document).on('change', '.custom-file-input', function () {
-            this.fileName = $(this).val().replace(/\\\\/g, '/').replace(/.*\\//, '');
-            $(this).parent('.custom-file').find('.custom-file-label').text(this.fileName);
-          });
         </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            assessment: resLocals.assessment,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           ${!groupConfigInfo
             ? html`
                 <div class="card mb-4">
@@ -376,7 +376,7 @@ function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: 
     <form name="delete-member-form" method="POST">
       <div class="form-group">
         <label for="delete-member-form-${row.group_id}">UID:</label>
-        <select class="form-control" name="user_id" id="delete-member-form-${row.group_id}">
+        <select class="custom-select" name="user_id" id="delete-member-form-${row.group_id}">
           ${row.users.map((user) => {
             return html` <option value="${user.user_id}">${user.uid}</option> `;
           })}

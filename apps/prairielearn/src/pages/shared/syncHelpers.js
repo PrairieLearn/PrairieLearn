@@ -8,13 +8,14 @@ import {
 } from '@aws-sdk/client-ecr';
 import * as async from 'async';
 import Docker from 'dockerode';
+
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import * as Sentry from '@prairielearn/sentry';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
-import { createServerJob } from '../../lib/server-jobs.js';
 import { pullAndUpdateCourse } from '../../lib/course.js';
+import { createServerJob } from '../../lib/server-jobs.js';
 
 const docker = new Docker();
 

@@ -1,6 +1,8 @@
 // @ts-check
 import asyncHandler from 'express-async-handler';
+
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
+
 import { config } from '../lib/config.js';
 import { idsEqual } from '../lib/id.js';
 
@@ -10,7 +12,7 @@ export default asyncHandler(async (req, res, next) => {
   // set by middlewares/authzWorkspaceCookieSet.js
 
   const workspace_id = res.locals.workspace_id;
-  const cookieName = `pl_authz_workspace_${workspace_id}`;
+  const cookieName = `pl2_authz_workspace_${workspace_id}`;
   if (cookieName in req.cookies) {
     // if we have a workspace authz cookie then we try and unpack it
     const cookieData = getCheckedSignedTokenData(req.cookies[cookieName], config.secretKey, {

@@ -1,4 +1,5 @@
 import asyncHandler from 'express-async-handler';
+
 import { idsEqual } from '../lib/id.js';
 import { ensureCheckedEnrollment } from '../models/enrollment.js';
 

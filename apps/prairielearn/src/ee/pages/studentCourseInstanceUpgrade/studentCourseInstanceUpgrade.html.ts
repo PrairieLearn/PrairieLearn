@@ -1,9 +1,10 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { PlanName } from '../../lib/billing/plans-types.js';
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { Course, CourseInstance } from '../../../lib/db-types.js';
+import { PlanName } from '../../lib/billing/plans-types.js';
 import { formatStripePrice } from '../../lib/billing/stripe.js';
 
 export function StudentCourseInstanceUpgrade({
@@ -27,10 +28,7 @@ export function StudentCourseInstanceUpgrade({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head') %>", {
-          ...resLocals,
-        })}
-        ${compiledScriptTag('studentCourseInstanceUpgradeClient.ts')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('studentCourseInstanceUpgradeClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
@@ -38,7 +36,7 @@ export function StudentCourseInstanceUpgrade({
           // This won't actually render anything on the page; it just has to be non-null.
           navPage: 'upgrade',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h1>
             <i class="fa-solid fa-lock"></i>
             Upgrade required
@@ -108,9 +106,7 @@ export function CourseInstanceStudentUpdateSuccess({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head') %>", {
-          ...resLocals,
-        })}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
@@ -118,7 +114,7 @@ export function CourseInstanceStudentUpdateSuccess({
           // This won't actually render anything on the page; it just has to be non-null.
           navPage: 'upgrade',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h1>Thanks!</h1>
 
           ${paid
