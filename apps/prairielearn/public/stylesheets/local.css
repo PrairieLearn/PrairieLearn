@@ -122,8 +122,8 @@ mjx-container {
   text-rendering: geometricPrecision;
 }
 
-.sync-popover {
-  max-width: 80%;
+.popover-wide {
+  max-width: min(800px, 90vw);
 }
 
 /**************
