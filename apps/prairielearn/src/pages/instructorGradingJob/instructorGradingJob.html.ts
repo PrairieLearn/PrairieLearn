@@ -44,9 +44,9 @@ export function InstructorGradingJob({
         })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
+            <h1 class="card-header bg-primary text-white h6 font-weight-normal">
               Grading Job ${gradingJobRow.grading_job.id}
-            </div>
+            </h1>
 
             <table class="table table-sm table-hover two-column-description">
               <tbody>

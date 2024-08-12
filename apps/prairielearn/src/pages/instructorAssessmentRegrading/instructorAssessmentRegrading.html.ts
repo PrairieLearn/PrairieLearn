@@ -55,9 +55,9 @@ export function InstructorAssessmentRegrading({
             : ''}
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
+            <h1 class="card-header bg-primary text-white h6 font-weight-normal">
               ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Regrading
-            </div>
+            </h1>
 
             ${resLocals.authz_data.has_course_instance_permission_edit
               ? html`

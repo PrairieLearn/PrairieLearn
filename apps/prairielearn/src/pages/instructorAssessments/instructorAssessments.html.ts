@@ -67,7 +67,7 @@ export function InstructorAssessments({
             <div class="card-header bg-primary">
               <div class="row align-items-center justify-content-between">
                 <div class="col-auto">
-                  <span class="text-white">Assessments</span>
+                  <h1 class="text-white h6 font-weight-normal mb-0">Assessments</h1>
                 </div>
                 ${authz_data.has_course_permission_edit && !course.example_course
                   ? html`

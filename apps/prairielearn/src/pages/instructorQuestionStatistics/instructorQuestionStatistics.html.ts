@@ -60,9 +60,9 @@ export function InstructorQuestionStatistics({
           })}
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">
+            <h1 class="card-header bg-primary text-white h6 font-weight-normal">
               Detailed assessment statistics for question ${resLocals.question.qid}
-            </div>
+            </h1>
 
             <div class="table-responsive">
               <table class="table table-sm table-hover tablesorter table-bordered">

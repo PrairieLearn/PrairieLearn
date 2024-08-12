@@ -51,7 +51,7 @@ export function InstructorFileEditorNoPermission({
 
         <main id="content" class="container-fluid">
           <div class="card mb-4">
-            <div class="card-header bg-danger text-white">File editor</div>
+            <h1 class="card-header bg-danger text-white h6 font-weight-normal">File editor</h1>
             <div class="card-body">
               <h2>Insufficient permissions</h2>
               ${resLocals.course.example_course
@@ -141,6 +141,7 @@ export function InstructorFileEditor({
                 </div>
               `
             : ''}
+          <h1 class="sr-only">File editor</h1>
 
           <form name="editor-form" method="POST">
             <input type="hidden" name="__csrf_token" value="${__csrf_token}" />

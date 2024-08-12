@@ -57,6 +57,7 @@ export function CourseSyncs({
         </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">Course Sync</h1>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Repository status</div>
             <div class="table-responsive">

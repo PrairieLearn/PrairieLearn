@@ -82,9 +82,11 @@ export function InstructorAssessmentGroups({
           ${!groupConfigInfo
             ? html`
                 <div class="card mb-4">
-                  <div class="card-header bg-primary text-white d-flex align-items-center">
+                  <h1
+                    class="card-header bg-primary text-white d-flex align-items-center h6 font-weight-normal"
+                  >
                     ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Groups
-                  </div>
+                  </h1>
                   <div class="card-body">
                     This is not a group assessment. To enable this functionality, please set
                     <code>"groupWork": true</code> in <code>infoAssessment.json</code>.
@@ -110,7 +112,9 @@ export function InstructorAssessmentGroups({
                   : ''}
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white d-flex align-items-center">
-                    ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Groups
+                    <h1 class="h6 font-weight-normal mb-0">
+                      ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Groups
+                    </h1>
                     ${resLocals.authz_data.has_course_instance_permission_edit
                       ? html`
                           <div class="ml-auto">

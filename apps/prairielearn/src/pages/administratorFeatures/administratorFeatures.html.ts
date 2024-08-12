@@ -47,7 +47,7 @@ export function AdministratorFeatures({
         })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Features</div>
+            <h1 class="card-header bg-primary text-white h6 font-weight-normal">Features</h1>
             ${features.length > 0
               ? html`<div class="list-group list-group-flush">
                   ${features.map((feature) => {

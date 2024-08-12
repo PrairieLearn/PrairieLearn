@@ -53,9 +53,11 @@ export function InstructorAssessmentAccess({
           })}
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
+            <h1
+              class="card-header bg-primary text-white d-flex align-items-center h6 font-weight-normal"
+            >
               ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access
-            </div>
+            </h1>
 
             <div class="table-responsive">
               <table class="table table-sm table-hover">

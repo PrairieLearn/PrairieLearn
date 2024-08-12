@@ -79,7 +79,7 @@ export function InstructorGradebook({
               })
             : html`
                 <div class="card mb-4">
-                  <div class="card-header bg-primary text-white">Gradebook</div>
+                  <h1 class="card-header bg-primary text-white h6 font-weight-normal">Gradebook</h1>
                   <table id="gradebook-table"></table>
 
                   <div class="spinning-wheel card-body spinner-border">
@@ -105,7 +105,7 @@ function StudentDataViewMissing({
 }) {
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-danger text-white">Gradebook</div>
+      <h1 class="card-header bg-danger text-white h6 font-weight-normal">Gradebook</h1>
       <div class="card-body">
         <h2>Insufficient permissions</h2>
         <p>You must have permission to view student data in order to access the gradebook.</p>

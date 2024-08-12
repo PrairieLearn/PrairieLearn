@@ -55,7 +55,9 @@ export function ErrorPage({
         })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-danger text-white">Error processing request</div>
+            <h1 class="card-header bg-danger text-white h6 font-weight-normal">
+              Error processing request
+            </h1>
 
             <div class="card-body">
               <h4 class="mb-3">${error.message}</h4>

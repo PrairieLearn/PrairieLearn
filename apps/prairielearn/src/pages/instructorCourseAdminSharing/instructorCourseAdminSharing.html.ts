@@ -185,7 +185,9 @@ export function InstructorCourseAdminSharing({
             urlPrefix: resLocals.urlPrefix,
           })}
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">Course Sharing Info</div>
+            <h1 class="card-header bg-primary text-white d-flex h6 font-weight-normal">
+              Course Sharing Info
+            </h1>
             <table class="table table-sm table-hover two-column-description">
               <tbody>
                 <tr>

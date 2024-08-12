@@ -77,7 +77,7 @@ export function InstructorAssessmentStatistics({
             course: resLocals.course,
             urlPrefix: resLocals.urlPrefix,
           })}
-
+          <h1 class="sr-only">${resLocals.assessment_set.name} ${assessment.number} Statistics</h1>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               ${resLocals.assessment_set.name} ${assessment.number}: Score statistics

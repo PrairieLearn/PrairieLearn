@@ -27,7 +27,7 @@ export function InstructorCourseAdminSets({
             urlPrefix: resLocals.urlPrefix,
           })}
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Assessment sets</div>
+            <h1 class="card-header bg-primary text-white h6 font-weight-normal">Assessment sets</h1>
             <div class="table-responsive">
               <table class="table table-sm table-hover table-striped">
                 <thead>

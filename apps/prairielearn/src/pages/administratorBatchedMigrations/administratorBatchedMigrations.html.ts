@@ -31,7 +31,7 @@ export function AdministratorBatchedMigrations({
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <span class="mr-auto">Batched migrations</span>
+              <h1 class="h6 font-weight-normal mb-0">Batched migrations</h1>
             </div>
             ${hasBatchedMigrations
               ? html`<div class="list-group list-group-flush">
