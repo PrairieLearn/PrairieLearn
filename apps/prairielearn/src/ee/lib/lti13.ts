@@ -1,3 +1,5 @@
+import { setTimeout as sleep } from 'timers/promises';
+
 import { parseLinkHeader } from '@web3-storage/parse-link-header';
 import type { Request } from 'express';
 import _ from 'lodash';
@@ -264,9 +266,10 @@ export async function access_token(lti13_instance_id: string) {
 
   let tokenSet: TokenSet = lti13_instance.access_tokenset;
 
+  // -5 minute buffer to refresh tokens before they expire
   if (
     lti13_instance.access_token_expires_at &&
-    lti13_instance.access_token_expires_at > new Date()
+    lti13_instance.access_token_expires_at > new Date(Date.now() - 5 * 60 * 1000)
   ) {
     return tokenSet.access_token;
   } else {
@@ -284,26 +287,11 @@ export async function access_token(lti13_instance_id: string) {
 
     await queryAsync(sql.update_token, {
       lti13_instance_id,
-      tokenSet,
-      expires_at: new Date(expires_at),
+      access_tokenset: tokenSet,
+      access_token_expires_at: new Date(expires_at),
     });
     return tokenSet.access_token;
   }
-}
-
-export async function get_lineitems(instance: Lti13CombinedInstance) {
-  if (instance.lti13_course_instance.lineitems == null) {
-    throw new Error('Lineitems not defined');
-  }
-  const token = await access_token(instance.lti13_instance.id);
-  const lineitems: Lti13Lineitem[] = await fetchRetry(instance.lti13_course_instance.lineitems, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  await fetchRetry('https://httpbin.org/status/403');
-
-  return lineitems;
 }
 
 /*
@@ -314,14 +302,35 @@ export async function get_lineitems(instance: Lti13CombinedInstance) {
  *
  * Instead of a get_lineitem() function, let's get_lineitems and filter.
  */
+export async function get_lineitems(instance: Lti13CombinedInstance) {
+  if (instance.lti13_course_instance.lineitems == null) {
+    throw new Error('Lineitems not defined');
+  }
+  const token = await access_token(instance.lti13_instance.id);
+  const lineitems: Lti13Lineitem[] = await fetchRetry(instance.lti13_course_instance.lineitems, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
-/////////////////////////////////////////////////////////////////////////////////////////////////
+  /*
+  console.log(lineitems[0]);
+
+  const item = await fetchRetry(lineitems[0].id, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  console.log(item);
+  */
+
+  return lineitems;
+}
+
 export async function sync_lineitems(instance: Lti13CombinedInstance, job: ServerJob) {
   job.info(
     `Polling for external assignments from ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
   );
   const lineitems = await get_lineitems(instance);
-  job.info(`Found ${lineitems.length}`);
+  job.info(`Found ${lineitems.length} assignments.`);
 
   await runInTransactionAsync(async () => {
     await queryAsync(sql.create_lineitems_temp, {});
@@ -355,7 +364,7 @@ export async function sync_lineitems(instance: Lti13CombinedInstance, job: Serve
 }
 
 export async function create_and_link_lineitem(
-  instance: any,
+  instance: Lti13CombinedInstance,
   job: ServerJob,
   assessment: {
     label: string;
@@ -363,6 +372,10 @@ export async function create_and_link_lineitem(
     url: string;
   },
 ) {
+  if (instance.lti13_course_instance.lineitems == null) {
+    throw new Error('Lineitems not defined');
+  }
+
   const createBody: Lti13Lineitem = {
     id: 'new_lineitem', // will be ignored/overwritten by the LMS platform
     scoreMaximum: 100,
@@ -398,7 +411,7 @@ export async function create_and_link_lineitem(
 }
 
 export async function query_and_link_lineitem(
-  instance: any,
+  instance: Lti13CombinedInstance,
   lineitem_id: string,
   assessment_id: string | number,
 ) {
@@ -435,21 +448,19 @@ export async function link_assessment(
   });
 }
 
-function sleep(delay: number) {
-  return new Promise((resolve) => setTimeout(resolve, delay));
-}
-
 /* Throttling notes
 // https://canvas.instructure.com/doc/api/file.throttling.html
 // 403 Forbidden (Rate Limit Exceeded)
 // X-Request-Cost
 // X-Rate-Limit-Remaining
 */
-
 export async function fetchRetry(
   input: RequestInfo | URL,
   opts?: RequestInit | undefined,
-  incomingfetchRetryOpts?,
+  incomingfetchRetryOpts?: {
+    retryLeft?: number;
+    sleepMs?: number;
+  },
 ) {
   const fetchRetryOpts = {
     retryLeft: 5,

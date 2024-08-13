@@ -12,8 +12,8 @@ SELECT
 -- BLOCK update_token
 UPDATE lti13_instances
 SET
-  access_tokenset = $tokenSet,
-  access_token_expires_at = $expires_at
+  access_tokenset = $access_tokenset,
+  access_token_expires_at = $access_token_expires_at
 WHERE
   id = $lti13_instance_id;
 
