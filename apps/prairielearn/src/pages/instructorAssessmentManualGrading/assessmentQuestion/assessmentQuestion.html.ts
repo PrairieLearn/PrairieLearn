@@ -105,9 +105,11 @@ export function AssessmentQuestion({
               `
             : ''}
           <div class="card mb-4">
-            <h1 class="card-header bg-primary text-white h6 font-weight-normal">
-              ${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}
-            </h1>
+            <div class="card-header bg-primary text-white">
+              <h1 class="h6 font-weight-normal mb-0">
+                ${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}
+              </h1>
+            </div>
             <form name="grading-form" method="POST">
               <input type="hidden" name="__action" value="batch_action" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />

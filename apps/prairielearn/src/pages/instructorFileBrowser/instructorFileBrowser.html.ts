@@ -107,7 +107,9 @@ export function InstructorFileBrowserNoPermission({
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
-            <h1 class="card-header bg-danger text-white h6 font-weight-normal">Files</h1>
+            <div class="card-header bg-danger text-white">
+              <h1 class="h6 font-weight-normal mb-0">Files</h1>
+            </div>
             <div class="card-body">
               <h2>Insufficient permissions</h2>
               <p>You must have at least &quot;Viewer&quot; permissions for this course.</p>

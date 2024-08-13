@@ -60,9 +60,12 @@ export function ManualGradingAssessment({
             urlPrefix: resLocals.urlPrefix,
           })}
           <div class="card mb-4">
-            <h1 class="card-header bg-primary text-white h6 font-weight-normal">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Manual Grading Queue
-            </h1>
+            <div class="card-header bg-primary text-white">
+              <h1 class="h6 font-weight-normal mb-0">
+                ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Manual Grading
+                Queue
+              </h1>
+            </div>
 
             <div class="table-responsive">
               <table id="instanceQuestionGradingTable" class="table table-sm table-hover">

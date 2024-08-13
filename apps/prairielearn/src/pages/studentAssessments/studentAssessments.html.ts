@@ -63,7 +63,9 @@ export function StudentAssessments({
         })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <h1 class="card-header bg-primary text-white h6 font-weight-normal">Assessments</h1>
+            <div class="card-header bg-primary text-white">
+              <h1 class="h6 font-weight-normal mb-0">Assessments</h1>
+            </div>
 
             <table class="table table-sm table-hover">
               <thead>

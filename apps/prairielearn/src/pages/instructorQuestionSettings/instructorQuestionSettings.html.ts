@@ -91,9 +91,9 @@ export function InstructorQuestionSettings({
             urlPrefix: resLocals.urlPrefix,
           })}
           <div class="card mb-4">
-            <h1 class="card-header bg-primary text-white d-flex h6 font-weight-normal">
-              Question Settings
-            </h1>
+            <div class="card-header bg-primary text-white d-flex">
+              <h1 class="h6 font-weight-normal mb-0">Question Settings</h1>
+            </div>
             <div class="card-body">
               <form>
                 <div class="form-group">
