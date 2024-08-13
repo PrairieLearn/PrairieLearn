@@ -3,7 +3,7 @@ import { observe } from 'selector-observer';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-const openPopovers = new Set<any>();
+const openPopoverTriggers = new Set<HTMLElement>();
 
 function getPopoverContainerForTrigger(trigger: HTMLElement): HTMLElement | null {
   const popoverId = trigger.getAttribute('aria-describedby');
@@ -27,6 +27,17 @@ observe('[data-toggle="popover"]', {
   },
   remove(el) {
     $(el).popover('dispose');
+
+    if (el instanceof HTMLElement) {
+      // There can be race conditions when a popover trigger is removed where
+      // Bootstrap seems to lose track of the connection between the open popover
+      // and its trigger. To ensure that we aren't left with dangling popovers,
+      // we'll forcefully remove the popover container if it exists.
+      const container = getPopoverContainerForTrigger(el);
+      if (container) {
+        container.remove();
+      }
+    }
   },
 });
 
@@ -46,8 +57,8 @@ on('click', '[data-dismiss="popover"]', (event) => {
 // TODO: In Bootstrap 5, switch to using native events.
 onDocumentReady(() => {
   $(document).on('show.bs.popover', () => {
-    openPopovers.forEach((popover) => $(popover).popover('hide'));
-    openPopovers.clear();
+    openPopoverTriggers.forEach((popover) => $(popover).popover('hide'));
+    openPopoverTriggers.clear();
   });
 
   $(document).on('inserted.bs.popover', (event) => {
@@ -61,6 +72,6 @@ onDocumentReady(() => {
   });
 
   $(document).on('shown.bs.popover', (event) => {
-    openPopovers.add(event.target);
+    openPopoverTriggers.add(event.target);
   });
 });
