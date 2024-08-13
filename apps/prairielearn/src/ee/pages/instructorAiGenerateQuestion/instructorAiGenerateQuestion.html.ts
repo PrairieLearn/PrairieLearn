@@ -81,7 +81,7 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
       <script>
         function setPromptToExample() {
           const question_set = document.getElementById('user-prompt-prebuilt').value;
-          document.getElementById('user-prompt-llm').value = question_set;
+          document.getElementById('user-prompt-llm').innerHTML = question_set;
         }
       </script>
     </html>
