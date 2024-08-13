@@ -8,7 +8,7 @@ import nodeJose from 'node-jose';
 
 import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
-import { access_token } from '../ee/lib/lti13.js';
+import { access_token, fetchRetry } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
 import { Lti13UserSchema } from '../lib/db-types.js';
 import { selectUserByUid } from '../models/user.js';
@@ -406,6 +406,140 @@ describe('LTI 1.3', () => {
     await withServer(app, oidcProviderPort, async () => {
       const result = await access_token('1');
       assert.equal(result, ACCESS_TOKEN);
+    });
+  });
+});
+
+describe('fetchRetry()', async () => {
+  let apiProviderPort: number;
+  let app;
+  let baseUrl: string;
+
+  let apiCount: number;
+
+  // Thanks chatGPT
+  const products = [
+    'Apple',
+    'Banana',
+    'Cherry',
+    'Date',
+    'Eggplant',
+    'Fig',
+    'Grapes',
+    'Honeydew',
+    'Iceberg',
+    'Jackfruit',
+    'Kiwi',
+    'Lemon',
+    'Mango',
+    'Nectarine',
+    'Orange',
+    'Papaya',
+    'Quince',
+    'Raspberry',
+    'Strawberry',
+    'Tomato',
+    'Ugli fruit',
+    'Vanilla',
+    'Watermelon',
+    'Xigua',
+    'Yam',
+    'Zucchini',
+  ];
+
+  const productApi = (req, res) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const totalPages = Math.ceil(products.length / limit);
+
+    // Base URL for links
+    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`;
+
+    // Generate Link Header
+    const links: string[] = [];
+
+    if (page < totalPages) {
+      links.push(`<${baseUrl}?page=${page + 1}&limit=${limit}>; rel="next"`);
+    }
+    if (page > 1) {
+      links.push(`<${baseUrl}?page=${page - 1}&limit=${limit}>; rel="prev"`);
+    }
+    links.push(`<${baseUrl}?page=1&limit=${limit}>; rel="first"`);
+    links.push(`<${baseUrl}?page=${totalPages}&limit=${limit}>; rel="last"`);
+
+    res.set('Link', links.join(', '));
+
+    const returning = products.slice(startIndex, endIndex);
+    res.json(returning);
+  };
+
+  function resp403(res) {
+    console.warn('Throwing 403, attempt ' + apiCount);
+    res.status(403).json([]);
+  }
+
+  before(async () => {
+    apiProviderPort = await getPort();
+    baseUrl = `http://localhost:${apiProviderPort}/`;
+    // Run a server to respond to API requests.
+    app = express();
+    app.use(express.urlencoded({ extended: true }));
+
+    app.use((req, res, next) => {
+      apiCount++;
+      next();
+    });
+
+    app.get('/403all', async (req, res) => {
+      resp403(res);
+    });
+
+    app.get('/403oddAttempt', async (req, res) => {
+      if (apiCount % 2 === 1) {
+        resp403(res);
+      } else {
+        productApi(req, res);
+      }
+    });
+
+    app.get('/', productApi);
+  });
+
+  step('should return the full list by iterating', async () => {
+    apiCount = 0;
+    await withServer(app, apiProviderPort, async () => {
+      const result = await fetchRetry(baseUrl, {}, { sleepMs: 100 });
+      assert.equal(result.length, 26);
+      assert.equal(apiCount, 3);
+    });
+  });
+
+  step('should return the full list with a large limit', async () => {
+    apiCount = 0;
+    await withServer(app, apiProviderPort, async () => {
+      const result2 = await fetchRetry(baseUrl + '?limit=100', {}, { sleepMs: 100 });
+      assert.equal(result2.length, 26);
+      assert.equal(apiCount, 1);
+    });
+  });
+
+  step('should throw an error on all 403s', async () => {
+    apiCount = 0;
+    await withServer(app, apiProviderPort, async () => {
+      await assert.isRejected(fetchRetry(baseUrl + '403all', {}, { sleepMs: 100 }), /Forbidden/);
+      assert.equal(apiCount, 5);
+    });
+  });
+
+  step('should return the full list by iterating with intermittant 403s', async () => {
+    apiCount = 0;
+    await withServer(app, apiProviderPort, async () => {
+      const result = await fetchRetry(baseUrl + '403oddAttempt', {}, { sleepMs: 100 });
+      assert.equal(result.length, 26);
+      assert.equal(apiCount, 6);
     });
   });
 });

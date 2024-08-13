@@ -3380,6 +3380,7 @@ __metadata:
     "@types/unzipper": "npm:^0.10.9"
     "@types/uuid": "npm:^10.0.0"
     "@viz-js/viz": "npm:^3.7.0"
+    "@web3-storage/parse-link-header": "npm:^3.1.0"
     ace-builds: "npm:^1.35.4"
     ace-code: "npm:^1.35.4"
     ajv: "npm:^8.17.1"
@@ -5792,6 +5793,13 @@ __metadata:
   version: 3.7.0
   resolution: "@viz-js/viz@npm:3.7.0"
   checksum: 10c0/2e341c3d63fca99154c73d76b37e3e3c33277177206303fa79c90395f36470f409fcd3e1a0aa9fdf503d1c60082fb4a6ac863baabb663dba117d3dfeb113707d
+  languageName: node
+  linkType: hard
+
+"@web3-storage/parse-link-header@npm:^3.1.0":
+  version: 3.1.0
+  resolution: "@web3-storage/parse-link-header@npm:3.1.0"
+  checksum: 10c0/c753f1bbae2036c639f4232bb435fd46e32337a46df1f5c2179a8d5ebd07dde351a37a46e27fc4928e9b793dab8c1f1998caf5119428a1703925787614966d64
   languageName: node
   linkType: hard
 

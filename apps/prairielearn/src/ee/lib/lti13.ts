@@ -1,3 +1,4 @@
+import { parseLinkHeader } from '@web3-storage/parse-link-header';
 import type { Request } from 'express';
 import _ from 'lodash';
 import fetch, { RequestInfo, RequestInit } from 'node-fetch';
@@ -295,13 +296,14 @@ export async function get_lineitems(instance: Lti13CombinedInstance) {
     throw new Error('Lineitems not defined');
   }
   const token = await access_token(instance.lti13_instance.id);
-  // FIXME: Pagination hack
-  const response = await fetchRetry(instance.lti13_course_instance.lineitems + '?per_page=100', {
+  const lineitems: Lti13Lineitem[] = await fetchRetry(instance.lti13_course_instance.lineitems, {
     method: 'GET',
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  return (await response.json()) as Lti13Lineitem[];
+  await fetchRetry('https://httpbin.org/status/403');
+
+  return lineitems;
 }
 
 /*
@@ -318,8 +320,8 @@ export async function sync_lineitems(instance: Lti13CombinedInstance, job: Serve
   job.info(
     `Polling for external assignments from ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
   );
-
   const lineitems = await get_lineitems(instance);
+  job.info(`Found ${lineitems.length}`);
 
   await runInTransactionAsync(async () => {
     await queryAsync(sql.create_lineitems_temp, {});
@@ -380,7 +382,7 @@ export async function create_and_link_lineitem(
   );
 
   const token = await access_token(instance.lti13_instance.id);
-  const response = await fetchRetry(instance.lti13_course_instance.lineitems, {
+  const item: Lti13Lineitem = await fetchRetry(instance.lti13_course_instance.lineitems, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -388,8 +390,6 @@ export async function create_and_link_lineitem(
     },
     body: JSON.stringify(createBody),
   });
-
-  const item = (await response.json()) as Lti13Lineitem;
 
   job.info('Associating PrairieLearn assessment with the new assignment');
 
@@ -440,40 +440,45 @@ function sleep(delay: number) {
 }
 
 /* Throttling notes
-// based on https://github.com/greatjapa/node-fetch-retry/blob/master/index.js
-// https://httpbin.org/status/403
 // https://canvas.instructure.com/doc/api/file.throttling.html
 // 403 Forbidden (Rate Limit Exceeded)
 // X-Request-Cost
 // X-Rate-Limit-Remaining
-
-//await fetchRetry('https://httpbin.org/status/403');
 */
 
-async function fetchRetry(input: RequestInfo | URL, opts?: RequestInit | undefined) {
-  let retryLeft = 5;
-  while (retryLeft >= 0) {
-    try {
-      const response = await fetch(input, opts);
+export async function fetchRetry(
+  input: RequestInfo | URL,
+  opts?: RequestInit | undefined,
+  incomingfetchRetryOpts?,
+) {
+  const fetchRetryOpts = {
+    retryLeft: 5,
+    sleepMs: 1000,
+    ...incomingfetchRetryOpts,
+  };
+  try {
+    const response = await fetch(input, opts);
 
-      if (!response.ok) {
-        throw new HttpStatusError(response.status, response.statusText);
-      }
-
-      // Pagenated, handle this
-      //if ('link' in response.headers) {
-      // recursively run, merge results?
-      //}
-
-      return response;
-    } catch (err) {
-      if (retryLeft === 0) {
-        throw err;
-      }
-      await sleep(1000);
-    } finally {
-      retryLeft -= 1;
+    if (!response.ok) {
+      throw new HttpStatusError(response.status, response.statusText);
     }
+
+    const parsed = parseLinkHeader(response.headers.get('link')) ?? {};
+    if ('next' in parsed) {
+      const results = await response.json();
+
+      if (Array.isArray(results)) {
+        return results.concat(await fetchRetry(parsed.next.url, opts, fetchRetryOpts));
+      }
+    }
+
+    return await response.json();
+  } catch (err) {
+    fetchRetryOpts.retryLeft -= 1;
+    if (fetchRetryOpts.retryLeft === 0) {
+      throw err;
+    }
+    await sleep(fetchRetryOpts.sleepMs);
+    return await fetchRetry(input, opts, fetchRetryOpts);
   }
-  throw new Error('Too many retries');
 }

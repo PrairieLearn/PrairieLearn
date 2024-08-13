@@ -370,7 +370,7 @@ export function LineitemsInputs(lineitems: Lti13Lineitem[]) {
               value="${lineitem.id}"
               required
             />
-            ${lineitem.label}
+            <span title="${lineitem.id}">${lineitem.label}</span>
           </label>
         </div>
       `,
