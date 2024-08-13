@@ -67,7 +67,7 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
                 </button>
               </form>
               Or choose a question from our list of example prompts:
-              <select id="user-prompt-exanmple" onchange="setPromptToExample()">
+              <select id="user-prompt-example" onchange="setPromptToExample()">
                 <option value=""></option>
                 ${examplePrompts.map(
                   (question) => html`<option value="${question.question}">${question.id}</option>`,
@@ -80,8 +80,8 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
       </body>
       <script>
         function setPromptToExample() {
-          const question_set = document.getElementById('user-prompt-prebuilt').value;
-          document.getElementById('user-prompt-llm').innerHTML = question_set;
+          const question_set = document.getElementById('user-prompt-example').value;
+          document.getElementById('user-prompt-llm').value = question_set;
         }
       </script>
     </html>
