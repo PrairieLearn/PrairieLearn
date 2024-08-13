@@ -67,7 +67,16 @@
         $(() => {
             const select = new TomSelect('#pl-multiple-choice-select-{{uuid}}', {
                 plugins: ['no_backspace_delete', 'dropdown_input'],
+                allowEmptyOption: true,
+
+                // Search based on the `content` field, which comes from the `data-content`
+                // attribute on each option.
                 searchField: ['content'],
+
+                // Ensure searches happen immediately.
+                refreshThrottle: 0,
+
+                // Render items based on the `data-content` attribute.
                 render: {
                     option: (data, escape) => {
                         return`<div>${data.content}</div>`
@@ -90,7 +99,7 @@
         class="d-inline-flex"
         {{^editable}}disabled{{/editable}}
     >
-        <option value="" disabled selected>Select an option</option>
+        <option value="" disabled selected data-content="Select an option"></option>
         {{#answers}}
             <option
                 value="{{key}}"

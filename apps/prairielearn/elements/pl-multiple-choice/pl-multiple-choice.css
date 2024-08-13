@@ -17,12 +17,11 @@
   border-radius: 0.2rem;
 }
 
-.pl-multiple-choice-dropdown .ts-wrapper {
-  width: var(--pl-multiple-choice-dropdown-width, auto);
+.pl-multiple-choice-dropdown .ts-wrapper .ts-control .item {
+  min-width: var(--pl-multiple-choice-dropdown-width, 220px);
 }
 
 .pl-multiple-choice-dropdown .ts-control {
-  /** Always show the cursor as a pointer. */
   cursor: pointer !important;
 
   /** https://github.com/orchidjs/tom-select/issues/757 */
