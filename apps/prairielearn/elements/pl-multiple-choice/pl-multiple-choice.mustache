@@ -82,7 +82,7 @@
                         return`<div>${data.content}</div>`
                     },
                     item: (data, escape) => {
-                        return `<div>${data.content}</div>`
+                        return `<div class="${data.disabled ? 'text-muted' : ''}">${data.content}</div>`
                     }
                 }
             });
