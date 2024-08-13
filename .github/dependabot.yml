@@ -1,113 +1,41 @@
 version: 2
 updates:
-  - package-ecosystem: npm
-    directory: '/'
+  - package-ecosystem: docker
+    directories:
+      - '/'
+      - '/graders/*'
+      - '/images/*'
+      - '/workspaces/*'
     schedule:
       interval: monthly
     rebase-strategy: disabled
-    groups:
-      all-patch-minor:
-        update-types:
-          - 'patch'
-          - 'minor'
+
   - package-ecosystem: github-actions
     directory: '/'
     schedule:
       interval: monthly
     rebase-strategy: disabled
-  - package-ecosystem: docker
-    directory: '/'
-    schedule:
-      interval: monthly
-    rebase-strategy: disabled
 
-  # Base image
-  - package-ecosystem: docker
-    directory: '/images/plbase'
-    schedule:
-      interval: monthly
-    rebase-strategy: disabled
-  - package-ecosystem: pip
-    directory: '/images/plbase'
-    schedule:
-      interval: monthly
-    rebase-strategy: disabled
-    groups:
-      all-patch-minor:
-        update-types:
-          - 'patch'
-          - 'minor'
-
-  # Graders
-  - package-ecosystem: pip
-    directory: '/graders/python'
-    schedule:
-      interval: monthly
-    rebase-strategy: disabled
-    groups:
-      all-patch-minor:
-        update-types:
-          - 'patch'
-          - 'minor'
-  - package-ecosystem: docker
-    directory: '/graders/python'
-    schedule:
-      interval: monthly
-    rebase-strategy: disabled
-  - package-ecosystem: pip
-    directory: '/graders/c'
-    schedule:
-      interval: monthly
-    rebase-strategy: disabled
-    groups:
-      all-patch-minor:
-        update-types:
-          - 'patch'
-          - 'minor'
-  - package-ecosystem: docker
-    directory: '/graders/c'
-    schedule:
-      interval: monthly
-    rebase-strategy: disabled
-  - package-ecosystem: docker
-    directory: '/graders/java'
-    schedule:
-      interval: monthly
-    rebase-strategy: disabled
-
-  # Workspaces
-  - package-ecosystem: docker
-    directory: '/workspaces/jupyterlab'
-    schedule:
-      interval: monthly
-    rebase-strategy: disabled
-  - package-ecosystem: pip
-    directory: '/workspaces/jupyterlab-python'
-    schedule:
-      interval: monthly
-    rebase-strategy: disabled
-    groups:
-      all-patch-minor:
-        update-types:
-          - 'patch'
-          - 'minor'
-  - package-ecosystem: docker
-    directory: '/workspaces/xtermjs'
-    schedule:
-      interval: monthly
-    rebase-strategy: disabled
   - package-ecosystem: npm
-    directory: '/workspaces/xtermjs/src'
+    directories:
+      - '/'
+      - '/workspaces/desktop/server'
+      - '/workspaces/xtermjs/src'
     schedule:
       interval: monthly
     rebase-strategy: disabled
-  - package-ecosystem: docker
-    directory: '/workspaces/desktop'
-    schedule:
-      interval: monthly
-    rebase-strategy: disabled
-  - package-ecosystem: npm
-    directory: '/workspaces/desktop/server'
+    groups:
+      all-patch-minor:
+        update-types:
+          - 'patch'
+          - 'minor'
+
+  - package-ecosystem: pip
+    directories:
+      - '/graders/c'
+      - '/graders/python'
+      - '/images/plbase'
+      - '/workspaces/jupyterlab-python'
     schedule:
       interval: monthly
     rebase-strategy: disabled
