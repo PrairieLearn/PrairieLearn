@@ -44,6 +44,12 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
                 </button>
               </form>
               <div id="generation-results"></div>
+              <br />
+              <div>
+                <a href="${resLocals.urlPrefix}/ai_generate_question_jobs" class="btn btn-primary">
+                  Previous Generation Jobs
+                </a>
+              </div>
             </div>
           </div>
         </main>
