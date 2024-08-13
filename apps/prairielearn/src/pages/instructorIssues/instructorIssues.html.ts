@@ -408,20 +408,20 @@ function FilterHelpModal() {
           </tr>
         </tbody>
       </table>
-      <h2 class="h4">Full-text search</h2>
+      <h3 class="h4">Full-text search</h3>
       <p>
         You can also search the issue message by simply entering text. For example,
         <code>no picture</code> would return any issues that contain text like "no picture".
       </p>
 
-      <h2 class="h4">Qualifier negation</h2>
+      <h3 class="h4">Qualifier negation</h3>
       <p>
         Any qualifier can be negated with the a hyphen (<code>-</code>). For example,
         <code>-is:manually-reported</code> would return all issues that were
         <strong>not</strong> manually reported.
       </p>
 
-      <h2 class="h4">Combining qualifiers</h2>
+      <h3 class="h4">Combining qualifiers</h3>
       <p>These can be combined to form complex searches. An example:</p>
       <code><pre>is:open qid:vector answer is wrong</pre></code>
       <p>
