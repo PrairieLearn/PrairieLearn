@@ -121,7 +121,7 @@ function InstanceUserInfo({
       <details>
         ${instance_group != null
           ? html`
-              <summary><h5 class="card-title">Group details</h5></summary>
+              <summary><h2 class="card-title h5">Group details</h2></summary>
               <div class="d-flex flex-wrap pb-2">
                 <div class="pr-1">${instance_group.name}</div>
                 <div class="pr-1">(${instance_group_uid_list?.join(', ')})</div>
@@ -129,7 +129,7 @@ function InstanceUserInfo({
             `
           : html`
               <summary>
-                <h5 class="card-title d-inline-block">Student details</h5>
+                <h2 class="card-title d-inline-block h5">Student details</h2>
               </summary>
               <div class="d-flex flex-wrap pb-2">
                 <div class="pr-1">${instance_user?.name}</div>
@@ -276,7 +276,7 @@ function AssessmentInstanceInfo({
 
   return html`
     <hr />
-    <h5 class="card-title">Assessment Instance:</h5>
+    <h2 class="card-title h5">Assessment Instance:</h2>
     <div class="d-flex flex-wrap">
       <div class="pr-1">AID:</div>
       <div>
@@ -326,7 +326,7 @@ function ManualGradingInfo({
 
   return html`
     <hr />
-    <h5 class="card-title">Manual Grading:</h5>
+    <h2 class="card-title h5">Manual Grading:</h2>
 
     <div class="d-flex flex-wrap">
       <div class="pr-1">Status:</div>
