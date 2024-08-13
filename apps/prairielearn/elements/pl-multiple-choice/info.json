@@ -3,6 +3,6 @@
   "dependencies": {
     "elementStyles": ["pl-multiple-choice.css"],
     "nodeModulesStyles": ["tom-select/dist/css/tom-select.bootstrap4.min.css"],
-    "nodeModulesScripts": ["tom-select/dist/js/tom-select.base.min.js"]
+    "nodeModulesScripts": ["tom-select/dist/js/tom-select.popular.min.js"]
   }
 }

@@ -59,41 +59,38 @@
 {{/radio}}
 {{^radio}}
 <!-- Weirdly enough putting this in a div causes it to display without the inline -->
-<span class="py-1 d-inline align-items-center">
+<span
+    class="py-1 d-inline align-items-center pl-multiple-choice-dropdown"
+    {{#size}}style="--pl-multiple-choice-dropdown-width: {{size}}px"{{/size}}
+>
     <script>
         $(() => {
             const select = new TomSelect('#pl-multiple-choice-select-{{uuid}}', {
+                plugins: ['no_backspace_delete', 'dropdown_input'],
+                searchField: ['content'],
                 render: {
                     option: (data, escape) => {
-                        console.log('rendering option', data)
                         return`<div>${data.content}</div>`
                     },
                     item: (data, escape) => {
-                        console.log('rendering item', data);
                         return `<div>${data.content}</div>`
                     }
                 }
             });
-            select.on('dropdown_open', () => {
-                // If any of the options has math, render the math as needed
-                // Events: loaded (when the page opens), rendered (when the value changes),
-                // shown (when the dropdown extends)
-                MathJax.typesetPromise();
-            })
-            select.on('dropdown_close', () => {
-                MathJax.typesetPromise();
-            })
+
+            // In case the dropdown items contain math, render it when the
+            // dropdown is opened or closed.
+            select.on('dropdown_open', () => MathJax.typesetPromise());
+            select.on('dropdown_close', () => MathJax.typesetPromise())
         });
     </script>
     <select
         name="{{name}}"
-        data-style="btn-light border border-secondary"
         id="pl-multiple-choice-select-{{uuid}}"
-        title="Nothing selected"
         class="d-inline-flex"
-        {{#size}}data-width="{{size}}px"{{/size}}
         {{^editable}}disabled{{/editable}}
     >
+        <option value="" disabled selected>Select an option</option>
         {{#answers}}
             <option
                 value="{{key}}"
