@@ -104,7 +104,10 @@ onDocumentReady(() => {
       'json',
     );
 
-    // Immediately close the popover.
+    // Immediately close the popover. Note that this is done before the above
+    // HTTP request has finished. A potential improvement would be to disable
+    // the form and show a spinner until the request completes, at which point
+    // the popover would be closed.
     const popover = event.currentTarget.closest('.popover');
     if (popover) {
       // TODO: This won't work in Bootstrap 5, see the following:
