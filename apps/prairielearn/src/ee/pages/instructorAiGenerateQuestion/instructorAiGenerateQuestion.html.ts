@@ -3,26 +3,26 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 
-const prebuiltQuestions = [
+const examplePrompts = [
   {
     id: 'random_mc',
     question:
-      'Please write a multiple choice question asking the user to choose the median of 5 random numbers between 1 and 100. Display all of the numbers to the user, and then make each of the numbers a potential answer, with the median being the correct answer.',
+      'Write a multiple choice question asking the user to choose the median of 5 random numbers between 1 and 100. Display all of the numbers to the user, and then make each of the numbers a potential answer, with the median being the correct answer.',
   },
   {
     id: 'random_int',
     question:
-      'Please write a question that asks the user to multiply two integers. You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B in an integer input box. The correct answer should be the product of the two numbers that you generated.',
+      'Write a question that asks the user to multiply two integers. You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B in an integer input box. The correct answer should be the product of the two numbers that you generated.',
   },
   {
     id: 'basic_int',
     question:
-      'Please write a question asking "What The Answer to the Ultimate Question of Life, the Universe, and Everything?". Provide an integer box for the user to answer. The correct answer is 42.',
+      'Write a question asking "What The Answer to the Ultimate Question of Life, the Universe, and Everything?". Provide an integer box for the user to answer. The correct answer is 42.',
   },
   {
     id: 'implicit_specified_physics',
     question:
-      'Please write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
+      'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
   },
 ];
 
@@ -66,12 +66,12 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
                   Create question
                 </button>
               </form>
-              Or choose a question from our list of test questions:
-              <select id="user-prompt-prebuilt" onchange="setQuestionToPrebuilt()">
+              Or choose a question from our list of example prompts:
+              <select id="user-prompt-exanmple" onchange="setPromptToExample()">
                 <option value=""></option>
-                ${prebuiltQuestions.map((question) => {
-                  return html`<option value="${question.question}">${question.id}</option>`;
-                })}
+                ${examplePrompts.map(
+                  (question) => html`<option value="${question.question}">${question.id}</option>`,
+                )}
               </select>
               <div id="generation-results"></div>
             </div>
@@ -79,9 +79,9 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
         </main>
       </body>
       <script>
-        function setQuestionToPrebuilt() {
+        function setPromptToExample() {
           const question_set = document.getElementById('user-prompt-prebuilt').value;
-          document.getElementById('user-prompt-llm').innerHTML = question_set;
+          document.getElementById('user-prompt-llm').value = question_set;
         }
       </script>
     </html>
