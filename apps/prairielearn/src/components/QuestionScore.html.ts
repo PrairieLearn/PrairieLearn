@@ -196,6 +196,7 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
             rows="5"
             name="description"
             placeholder="Describe the error in this question"
+            required
           ></textarea>
         </div>
         <input type="hidden" name="__variant_id" value="${variant.id}" />
