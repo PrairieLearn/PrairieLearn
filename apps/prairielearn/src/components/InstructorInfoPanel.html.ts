@@ -401,6 +401,7 @@ function IssueReportButton({
             rows="5"
             name="description"
             placeholder="Describe the issue"
+            required
           ></textarea>
         </div>
         <input type="hidden" name="__variant_id" value="${variant.id}" />

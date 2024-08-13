@@ -501,14 +501,16 @@ export function StudentAssessmentInstance({
             </div>
           </div>
 
-          ${PersonalNotesPanel({
-            fileList: resLocals.file_list,
-            context: 'assessment',
-            courseInstanceId: resLocals.course_instance.id,
-            assessment_instance: resLocals.assessment_instance,
-            csrfToken: resLocals.__csrf_token,
-            authz_result: resLocals.authz_result,
-          })}
+          ${resLocals.assessment.allow_personal_notes
+            ? PersonalNotesPanel({
+                fileList: resLocals.file_list,
+                context: 'assessment',
+                courseInstanceId: resLocals.course_instance.id,
+                assessment_instance: resLocals.assessment_instance,
+                csrfToken: resLocals.__csrf_token,
+                authz_result: resLocals.authz_result,
+              })
+            : ''}
           ${InstructorInfoPanel({
             course: resLocals.course,
             course_instance: resLocals.course_instance,

@@ -69,7 +69,6 @@ onDocumentReady(() => {
       $('.time-limit-edit-button')
         .popover({
           sanitize: false,
-          placement: 'right',
           title() {
             const row = $(this).data('row');
             return row.action === 'set_time_limit_all'
@@ -87,6 +86,19 @@ onDocumentReady(() => {
         .on('show.bs.popover', function () {
           $(this).find('.select-time-limit').trigger('change');
         });
+    },
+    customSearch: (data: AssessmentInstanceRow[], searchText: string) => {
+      return data.filter((row) => {
+        const search = searchText.toLowerCase();
+        return assessmentGroupWork
+          ? row.group_name?.toLowerCase().includes(search) ||
+              row.uid_list?.some((uid) => uid.toLowerCase().includes(search)) ||
+              row.user_name_list?.some((name) => name?.toLowerCase().includes(search)) ||
+              row.group_roles?.some((role) => role.toLowerCase().includes(search))
+          : row.uid?.toLowerCase().includes(search) ||
+              row.name?.toLowerCase().includes(search) ||
+              row.role?.toLowerCase().includes(search);
+      });
     },
     columns: tableColumns(assessmentGroupWork),
   });
@@ -180,16 +192,97 @@ onDocumentReady(() => {
   });
 
   function tableColumns(assessmentGroupWork: boolean) {
-    const assessmentInstanceIdColumn = {
-      field: 'assessment_instance_id',
-      title: '<span class="sr-only">Assessment Instance</span>',
-      sortable: true,
-      sorter: detailsLinkSorter,
-      formatter: detailsLinkFormatter,
-      class: 'align-middle sticky-column text-nowrap',
-      switchable: false,
-    };
-    const nonspecificColumns = [
+    return [
+      {
+        field: 'assessment_instance_id',
+        title: '<span class="sr-only">Assessment Instance</span>',
+        sortable: true,
+        sorter: detailsLinkSorter,
+        formatter: detailsLinkFormatter,
+        class: 'align-middle sticky-column text-nowrap',
+        switchable: false,
+      },
+      ...(assessmentGroupWork
+        ? [
+            {
+              field: 'group_name',
+              title: 'Name',
+              visible: false,
+              sortable: true,
+              class: 'align-middle',
+              switchable: true,
+              formatter: (value: string) => html`${value}`.toString(),
+            },
+            {
+              field: 'uid_list',
+              title: 'Group Members',
+              sortable: true,
+              class: 'text-center align-middle text-wrap',
+              formatter: listFormatter,
+              switchable: true,
+            },
+            {
+              field: 'user_name_list',
+              title: 'Group Member Name',
+              sortable: true,
+              visible: false,
+              class: 'text-center align-middle text-wrap',
+              formatter: listFormatter,
+              switchable: true,
+            },
+            {
+              field: 'group_roles',
+              title: html` Roles
+                <button
+                  class="btn btn-xs"
+                  type="button"
+                  title="Show roles help"
+                  data-toggle="modal"
+                  data-target="#role-help"
+                >
+                  <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                </button>`,
+              sortable: true,
+              class: 'text-center align-middle text-wrap',
+              formatter: uniqueListFormatter,
+              switchable: true,
+            },
+          ]
+        : [
+            {
+              field: 'uid',
+              title: 'UID',
+              visible: false,
+              sortable: true,
+              class: 'align-middle text-nowrap',
+              switchable: true,
+              formatter: (value: string) => html`${value}`.toString(),
+            },
+            {
+              field: 'name',
+              title: 'Name',
+              sortable: true,
+              class: 'align-middle text-nowrap',
+              switchable: true,
+              formatter: (value: string) => html`${value}`.toString(),
+            },
+            {
+              field: 'role',
+              title: html` Role
+                <button
+                  class="btn btn-xs"
+                  type="button"
+                  title="Show roles help"
+                  data-toggle="modal"
+                  data-target="#role-help"
+                >
+                  <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                </button>`,
+              sortable: true,
+              class: 'text-center align-middle text-nowrap',
+              switchable: true,
+            },
+          ]),
       {
         field: 'number',
         title: 'Instance',
@@ -205,7 +298,6 @@ onDocumentReady(() => {
         class: 'text-center align-middle',
         formatter: scorebarFormatter,
         switchable: true,
-        searchFormatter: false,
       },
       {
         field: 'date_formatted',
@@ -250,7 +342,6 @@ onDocumentReady(() => {
         formatter: timeRemainingLimitFormatter,
         class: 'text-center align-middle text-nowrap',
         switchable: true,
-        searchFormatter: false,
       },
       {
         field: 'total_time',
@@ -261,120 +352,33 @@ onDocumentReady(() => {
         formatter: timeRemainingLimitFormatter,
         class: 'text-center align-middle',
         switchable: true,
-        searchFormatter: false,
+      },
+      {
+        field: 'client_fingerprint_id_change_count',
+        title: html` Fingerprint Changes
+          <button
+            class="btn btn-xs"
+            type="button"
+            title="Show fingerprint changes help"
+            data-toggle="modal"
+            data-target="#fingerprint-changes-help"
+          >
+            <i class="bi-question-circle-fill" aria-hidden="true"></i>
+          </button>`,
+        class: 'text-center align-middle',
+        // Hidden for groupwork by default, as it is not as relevant in that context
+        visible: !assessmentGroupWork,
+        switchable: true,
+        sortable: true,
+      },
+      {
+        field: 'action_button',
+        title: 'Actions',
+        formatter: actionButtonFormatter,
+        class: 'text-center align-middle',
+        switchable: false,
       },
     ];
-    const actionButton = {
-      field: 'action_button',
-      title: 'Actions',
-      formatter: actionButtonFormatter,
-      class: 'text-center align-middle',
-      switchable: false,
-      searchFormatter: false,
-    };
-
-    if (assessmentGroupWork) {
-      return [
-        assessmentInstanceIdColumn,
-        {
-          field: 'group_name',
-          title: 'Name',
-          visible: false,
-          sortable: true,
-          class: 'align-middle',
-          switchable: true,
-        },
-        {
-          field: 'uid_list',
-          title: 'Group Members',
-          sortable: true,
-          class: 'text-center align-middle text-wrap',
-          formatter: listFormatter,
-          switchable: true,
-        },
-        {
-          field: 'user_name_list',
-          title: 'Group Member Name',
-          sortable: true,
-          visible: false,
-          class: 'text-center align-middle text-wrap',
-          formatter: listFormatter,
-          switchable: true,
-        },
-        {
-          field: 'group_roles',
-          title: html` Roles
-            <button
-              class="btn btn-xs"
-              type="button"
-              title="Show roles help"
-              data-toggle="modal"
-              data-target="#role-help"
-            >
-              <i class="bi-question-circle-fill" aria-hidden="true"></i>
-            </button>`,
-          sortable: true,
-          class: 'text-center align-middle text-wrap',
-          formatter: uniqueListFormatter,
-          switchable: true,
-        },
-        ...nonspecificColumns,
-        actionButton,
-      ];
-    } else {
-      return [
-        assessmentInstanceIdColumn,
-        {
-          field: 'uid',
-          title: 'UID',
-          visible: false,
-          sortable: true,
-          class: 'align-middle text-nowrap',
-          switchable: true,
-        },
-        {
-          field: 'name',
-          title: 'Name',
-          sortable: true,
-          class: 'align-middle text-nowrap',
-          switchable: true,
-        },
-        {
-          field: 'role',
-          title: html` Role
-            <button
-              class="btn btn-xs"
-              type="button"
-              title="Show roles help"
-              data-toggle="modal"
-              data-target="#role-help"
-            >
-              <i class="bi-question-circle-fill" aria-hidden="true"></i>
-            </button>`,
-          sortable: true,
-          class: 'text-center align-middle text-nowrap',
-          switchable: true,
-        },
-        ...nonspecificColumns,
-        {
-          field: 'client_fingerprint_id_change_count',
-          title: html` Fingerprint Changes
-            <button
-              class="btn btn-xs"
-              ,
-              type="button"
-              title="Show fingerprint changes help"
-              data-toggle="modal"
-              data-target="#fingerprint-changes-help"
-            >
-              <i class="bi-question-circle-fill" aria-hidden="true"></i>
-            </button>`,
-          class: 'text-center align-middle',
-          switchable: true,
-        },
-        actionButton,
-      ];
-    }
   }
 
   function refreshTable() {
@@ -491,6 +495,8 @@ onDocumentReady(() => {
           class="btn btn-secondary btn-xs ml-1 time-limit-edit-button"
           id="row${row.assessment_instance_id}PopoverTimeLimit"
           data-row="${JSON.stringify(row)}"
+          data-placement="bottom"
+          data-boundary="window"
         >
           <i class="bi-pencil-square" aria-hidden="true"></i>
         </a>
@@ -505,7 +511,11 @@ onDocumentReady(() => {
     if (!assessmentMultipleInstance) {
       number = row.number === 1 ? '' : `#${row.number}`;
     }
-    return `<a href="${urlPrefix}/assessment_instance/${value}">${assessmentSetAbbr}${assessmentNumber}${number} for ${name}</a>`;
+    return html`
+      <a href="${urlPrefix}/assessment_instance/${value}">
+        ${assessmentSetAbbr}${assessmentNumber}${number} for ${name}
+      </a>
+    `.toString();
   }
 
   function detailsLinkSorter(
