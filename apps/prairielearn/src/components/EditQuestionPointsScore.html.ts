@@ -38,6 +38,7 @@ export function EditQuestionPointsScoreButton({
     data-placement="auto"
     title="Change question ${label}"
     data-content="${escapeHtml(editForm)}"
+    data-testid="edit-question-points-score-button-${field}"
   >
     <i class="fa fa-edit" aria-hidden="true"></i>
   </button>`;

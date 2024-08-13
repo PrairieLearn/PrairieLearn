@@ -494,7 +494,6 @@ function DirectoryBrowserBody({
                 </a>
                 <button
                   type="button"
-                  id="instructorFileRenameForm-${f.id}"
                   class="btn btn-xs btn-secondary"
                   data-toggle="popover"
                   data-container="body"
@@ -505,6 +504,7 @@ function DirectoryBrowserBody({
                     FileRenameForm({ file: f, csrfToken, isViewingFile: false }),
                   )}"
                   data-trigger="click"
+                  data-testid="rename-file-button"
                   ${f.canRename ? '' : 'disabled'}
                 >
                   <i class="fa fa-i-cursor"></i>
@@ -512,7 +512,6 @@ function DirectoryBrowserBody({
                 </button>
                 <button
                   type="button"
-                  id="instructorFileDeleteForm-${f.id}"
                   class="btn btn-xs btn-secondary"
                   data-toggle="popover"
                   data-container="body"
@@ -521,6 +520,7 @@ function DirectoryBrowserBody({
                   title="Confirm delete"
                   data-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
                   data-trigger="click"
+                  data-testid="delete-file-button"
                   ${f.canDelete ? '' : 'disabled'}
                 >
                   <i class="far fa-trash-alt"></i>

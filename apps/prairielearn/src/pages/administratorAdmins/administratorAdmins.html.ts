@@ -40,6 +40,7 @@ export function AdministratorAdmins({
                     csrfToken: resLocals.__csrf_token,
                   }),
                 )}"
+                data-testid="administrator-insert-button"
               >
                 <i class="fa fa-user-plus" aria-hidden="true"></i>
                 <span class="d-none d-sm-inline">Add administrator</span>

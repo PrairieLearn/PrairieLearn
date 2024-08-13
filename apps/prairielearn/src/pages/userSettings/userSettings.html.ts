@@ -124,6 +124,7 @@ export function UserSettings({
                       data-content="${TokenGenerateForm({
                         csrfToken: resLocals.__csrf_token,
                       }).toString()}"
+                      data-testid="generate-token-button"
                     >
                       <i class="fa fa-plus" aria-hidden="true"></i>
                       <span class="d-none d-sm-inline">Generate new token</span>

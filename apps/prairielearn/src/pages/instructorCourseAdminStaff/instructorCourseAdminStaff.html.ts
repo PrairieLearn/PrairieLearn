@@ -95,6 +95,7 @@ export function InstructorCourseAdminStaff({
                         csrfToken: resLocals.__csrf_token,
                       }),
                     )}"
+                    data-testid="remove-all-student-data-access-button"
                   >
                     <i class="fas fa-eye-slash" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Remove all student data access</span>
@@ -112,6 +113,7 @@ export function InstructorCourseAdminStaff({
                         csrfToken: resLocals.__csrf_token,
                       }),
                     )}"
+                    data-testid="delete-users-with-no-access-button"
                   >
                     <i class="fas fa-recycle" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Delete users with no access</span>
@@ -129,6 +131,7 @@ export function InstructorCourseAdminStaff({
                         csrfToken: resLocals.__csrf_token,
                       }),
                     )}"
+                    data-testid="delete-non-owners-button"
                   >
                     <i class="fas fa-users-slash" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Delete non-owners</span>
@@ -148,6 +151,7 @@ export function InstructorCourseAdminStaff({
                         courseInstances,
                       }),
                     )}"
+                    data-testid="add-users-button"
                   >
                     <i class="fas fa-users" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Add users</span>
