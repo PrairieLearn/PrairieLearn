@@ -133,7 +133,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
     if (!samlProvider) {
-      throw new error.HttpStatusError(404, 'Institution does not support SAML authentication');
+      throw new HttpStatusError(404, 'Institution does not support SAML authentication');
     }
 
     const metadata = await util.promisify(strategy.generateServiceProviderMetadata)(
