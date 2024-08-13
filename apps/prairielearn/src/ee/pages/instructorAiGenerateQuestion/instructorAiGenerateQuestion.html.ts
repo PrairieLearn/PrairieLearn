@@ -80,8 +80,8 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
       </body>
       <script>
         function setPromptToExample() {
-          const question_set = document.getElementById('user-prompt-example').value;
-          document.getElementById('user-prompt-llm').value = question_set;
+          const prompt = document.getElementById('user-prompt-example').value;
+          document.getElementById('user-prompt-llm').value = prompt;
         }
       </script>
     </html>
