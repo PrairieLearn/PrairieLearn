@@ -189,6 +189,9 @@ function updateSettingsPointValues() {
   const points = Number((selected ?? form).dataset.maxPoints);
   const pointsStr = points === 1 ? '1 point' : `${points} points`;
 
+  form.querySelectorAll('[name="total_points"]').forEach((input) => {
+    input.value = points;
+  });
   form.querySelectorAll('.js-negative-grading').forEach((input) => {
     input.value = points;
   });
@@ -197,9 +200,6 @@ function updateSettingsPointValues() {
   });
   form.querySelectorAll('.js-rubric-max-points-positive').forEach((node) => {
     node.style.display = points ? '' : 'none';
-  });
-  form.querySelectorAll('.js-rubric-max-points-zero').forEach((node) => {
-    node.style.display = points ? 'none' : '';
   });
   checkRubricItemTotals();
 }

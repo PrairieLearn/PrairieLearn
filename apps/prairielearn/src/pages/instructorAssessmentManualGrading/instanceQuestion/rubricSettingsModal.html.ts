@@ -4,6 +4,7 @@ import { RubricData } from '../../../lib/manualGrading.js';
 
 export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, any> }) {
   const rubric_data = resLocals.rubric_data as RubricData | null | undefined;
+  const total_points = rubric_data?.total_points ?? 100;
   return html`
     <div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog">
       <div class="modal-dialog border-info" style="max-width: 98vw" role="document">
@@ -17,14 +18,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
           <input type="hidden" name="__action" value="modify_rubric_settings" />
           <input type="hidden" name="modified_at" value="${rubric_data?.modified_at.toString()}" />
           <input type="hidden" name="use_rubric" value="true" />
-          <input
-            type="hidden"
-            name="total_points"
-            value="${
-              // TODO Review this initial value, as well as the logic for starting points based on this
-              100
-            }"
-          />
+          <input type="hidden" name="total_points" value="${total_points}" />
 
           <div class="modal-content">
             <div class="modal-header bg-info text-light">
@@ -121,15 +115,13 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                         class="form-check-input js-rubric-item-limits js-negative-grading"
                         name="starting_points"
                         type="radio"
-                        value="${
-                          // TODO Handle in combination with total_points
-                          resLocals.assessment_question.max_manual_points
-                        }"
+                        value="${total_points}"
                         required
                         ${rubric_data?.starting_points ? 'checked' : ''}
                       />
-                      Negative grading (start at <span class="js-rubric-max-points-info"></span>,
-                      subtract penalties)
+                      Negative grading (start at
+                      <span class="js-rubric-max-points-info">${total_points}</span>, subtract
+                      penalties)
                     </label>
                     <button
                       type="button"
