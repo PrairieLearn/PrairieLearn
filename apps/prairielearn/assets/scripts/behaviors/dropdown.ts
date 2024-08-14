@@ -17,6 +17,14 @@ onDocumentReady(() => {
             return;
           }
 
+          // Sometimes we have dropdown buttons that manually trigger popovers. Since
+          // we can't rely on `data-toggle="popover"` to detect these, we also support
+          // a `data-bs-toggles-popover` attribute.
+          if (clickEvent?.target.closest('[data-bs-toggle-popover]')) {
+            event.preventDefault();
+            return;
+          }
+
           // If the click occurred inside a popover, prevent the dropdown from hiding.
           if (clickEvent?.target.closest('.popover')) {
             event.preventDefault();
