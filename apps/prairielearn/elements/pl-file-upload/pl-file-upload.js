@@ -140,7 +140,7 @@
           // Show the preview for the newly-uploaded file
           const container = this.element.find(`li[data-file="${name}"]`);
           container.find('.file-preview').addClass('show');
-          container.find('.file-status-container').removeClass('collapsed');
+          container.find('.file-preview-button').removeClass('collapsed');
 
           // Ensure that students see a prompt if they try to navigate away
           // from the page without saving the form. This check is initially
@@ -207,16 +207,7 @@
         var fileData = this.getSubmittedFileContents(fileName);
 
         var $file = $('<li class="list-group-item" data-file="' + fileName + '"></li>');
-        var $fileStatusContainer = $(
-          '<div class="file-status-container collapsed d-flex flex-row" data-toggle="collapse" data-target="#file-preview-' +
-            uuid +
-            '-' +
-            index +
-            '"></div>',
-        );
-        if (isExpanded) {
-          $fileStatusContainer.removeClass('collapsed');
-        }
+        var $fileStatusContainer = $('<div class="file-status-container d-flex flex-row"></div>');
         if (fileData) {
           $fileStatusContainer.addClass('has-preview');
         }
@@ -258,7 +249,7 @@
           var download =
             '<a download="' +
             fileName +
-            '" class="btn btn-outline-secondary btn-sm mr-1" onclick="event.stopPropagation();" href="data:application/octet-stream;base64,' +
+            '" class="btn btn-outline-secondary btn-sm mr-1" href="data:application/octet-stream;base64,' +
             fileData +
             '">Download</a>';
 
@@ -308,7 +299,10 @@
           $fileStatusContainer.append(
             '<div class="align-self-center">' +
               download +
-              '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>',
+              `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-toggle="collapse" data-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}">` +
+              '<span class="file-preview-icon fa fa-angle-down"></span>' +
+              '</button>' +
+              '</div>',
           );
         }
 
