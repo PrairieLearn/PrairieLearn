@@ -40,6 +40,7 @@ export function AdministratorCourses({
           navSubPage: 'courses',
         })}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">Courses</h1>
           ${CourseRequestsTable({
             rows: course_requests,
             institutions,

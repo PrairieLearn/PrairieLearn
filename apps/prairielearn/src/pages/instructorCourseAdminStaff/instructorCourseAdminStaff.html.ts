@@ -79,7 +79,7 @@ export function InstructorCourseAdminStaff({
             <div class="card-header bg-primary">
               <div class="row align-items-center justify-content-between">
                 <div class="col-auto">
-                  <span class="text-white">Staff</span>
+                  <h1 class="text-white h6 font-weight-normal mb-0">Staff</h1>
                 </div>
                 <div class="col-auto">
                   <button
