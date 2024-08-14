@@ -52,7 +52,9 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
 
             <div class="col-lg-3 col-sm-12">
               <div class="card mb-4">
-                <div class="card-header bg-secondary text-white">Student view placeholder</div>
+                <div class="card-header bg-secondary text-white">
+                  <h2 class="h6 font-weight-normal mb-0">Student view placeholder</h2>
+                </div>
                 <div class="card-body">
                   <div class="d-flex justify-content-center">
                     In student views this area is used for assessment and score info.

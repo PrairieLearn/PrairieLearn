@@ -50,7 +50,9 @@ export function QuestionScorePanel({
   return html`
     <div class="card mb-4" id="question-score-panel">
       <div class="card-header bg-secondary text-white">
-        Question ${instance_question_info.question_number}
+        <h2 class="h6 font-weight-normal mb-0">
+          Question ${instance_question_info.question_number}
+        </h2>
       </div>
       <table class="table table-sm two-column-description-no-header">
         <tbody>
