@@ -1,8 +1,9 @@
-import type { Popover } from 'bootstrap';
 import { on } from 'delegated-events';
 import { observe } from 'selector-observer';
 
-const openPopoverTriggers = new Set<Popover>();
+import { onDocumentReady } from '@prairielearn/browser-utils';
+
+const openPopoverTriggers = new Set<HTMLElement>();
 
 function getPopoverContainerForTrigger(trigger: HTMLElement): HTMLElement | null {
   const popoverId = trigger.getAttribute('aria-describedby');
@@ -21,11 +22,25 @@ function getPopoverTriggerForContainer(container: HTMLElement): HTMLElement | nu
 }
 
 observe('[data-toggle="popover"]', {
+  constructor: HTMLElement,
   add(el) {
-    new window.bootstrap.Popover(el, { sanitize: false });
+    // We continue to use the jQuery interface to ensure compatibility with Bootstrap 4.
+    $(el).popover({ sanitize: false });
   },
   remove(el) {
-    window.bootstrap.Popover.getInstance(el)?.dispose();
+    // We continue to use the jQuery interface to ensure compatibility with Bootstrap 4.
+    $(el).popover('dispose');
+
+    // There can be race conditions when a popover trigger is removed where
+    // Bootstrap seems to lose track of the connection between the open popover
+    // and its trigger. To ensure that we aren't left with dangling popovers,
+    // we'll forcefully remove the popover container if it exists.
+    //
+    // TODO: Remove this once we're using the native Bootstrap 5 API.
+    const container = getPopoverContainerForTrigger(el);
+    if (container) {
+      container.remove();
+    }
   },
 });
 
@@ -39,27 +54,27 @@ on('click', '[data-dismiss="popover"]', (event) => {
   const trigger = getPopoverTriggerForContainer(popoverContainer);
   if (!trigger) return;
 
-  window.bootstrap.Popover.getInstance(trigger)?.hide();
+  $(trigger).popover('hide');
 });
 
-on('show.bs.popover', 'body', () => {
-  openPopoverTriggers.forEach((popover) => popover.hide());
-  openPopoverTriggers.clear();
-});
+// We continue to use the jQuery interface to ensure compatibility with Bootstrap 4.
+onDocumentReady(() => {
+  $(document.body).on('show.bs.popover', () => {
+    openPopoverTriggers.forEach((popover) => $(popover).popover('hide'));
+    openPopoverTriggers.clear();
+  });
 
-on('inserted.bs.popover', 'body', (event) => {
-  const container = getPopoverContainerForTrigger(event.target as HTMLElement);
+  $(document.body).on('inserted.bs.popover', (event) => {
+    const container = getPopoverContainerForTrigger(event.target);
 
-  // If MathJax is loaded on this page, attempt to typeset any math
-  // that may be in the popover.
-  if (container && typeof window.MathJax !== 'undefined') {
-    window.MathJax.typesetPromise([container]);
-  }
-});
+    // If MathJax is loaded on this page, attempt to typeset any math
+    // that may be in the popover.
+    if (container && typeof window.MathJax !== 'undefined') {
+      window.MathJax.typesetPromise([container]);
+    }
+  });
 
-on('shown.bs.popover', 'body', (event) => {
-  const popover = window.bootstrap.Popover.getInstance(event.target as HTMLElement);
-  if (popover) {
-    openPopoverTriggers.add(popover);
-  }
+  $(document.body).on('shown.bs.popover', (event) => {
+    openPopoverTriggers.add(event.target);
+  });
 });
