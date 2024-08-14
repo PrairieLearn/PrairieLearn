@@ -34,7 +34,7 @@ export const Lti13CombinedInstanceSchema = z.object({
 });
 export type Lti13CombinedInstance = z.infer<typeof Lti13CombinedInstanceSchema>;
 
-export const Lti13LineitemSchema = z.object({
+export const LineitemSchema = z.object({
   id: z.string(),
   label: z.string(),
   scoreMaximum: z.number(),
@@ -49,10 +49,10 @@ export const Lti13LineitemSchema = z.object({
     external_tool_url: z.string().optional(),
   }),
 });
-export type Lti13Lineitem = z.infer<typeof Lti13LineitemSchema>;
+export type Lineitem = z.infer<typeof LineitemSchema>;
 
-export const Lti13LineitemsSchema = z.array(Lti13LineitemSchema);
-export type Lti13Lineitems = z.infer<typeof Lti13LineitemsSchema>;
+export const LineitemsSchema = z.array(LineitemSchema);
+export type Lineitems = z.infer<typeof LineitemsSchema>;
 
 // Validate LTI 1.3
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
@@ -299,7 +299,7 @@ export async function getLineitems(instance: Lti13CombinedInstance) {
     throw new Error('Lineitems not defined');
   }
   const token = await getAccessToken(instance.lti13_instance.id);
-  const lineitems = Lti13LineitemsSchema.parse(
+  const lineitems = LineitemsSchema.parse(
     await fetchRetry(instance.lti13_course_instance.lineitems, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
@@ -311,8 +311,8 @@ export async function getLineitems(instance: Lti13CombinedInstance) {
 
 export async function getLineitem(instance: Lti13CombinedInstance, lineitem_id: string) {
   const token = await getAccessToken(instance.lti13_instance.id);
-  const lineitem = Lti13LineitemSchema.parse(
-    fetchRetry(lineitem_id, {
+  const lineitem = LineitemSchema.parse(
+    await fetchRetry(lineitem_id, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     }),
@@ -372,7 +372,7 @@ export async function createAndLinkLineitem(
     throw new Error('Lineitems not defined');
   }
 
-  const createBody: Lti13Lineitem = {
+  const createBody: Lineitem = {
     id: 'new_lineitem', // will be ignored/overwritten by the LMS platform
     scoreMaximum: 100,
     label: assessment.label,
@@ -391,14 +391,16 @@ export async function createAndLinkLineitem(
   );
 
   const token = await getAccessToken(instance.lti13_instance.id);
-  const item: Lti13Lineitem = await fetchRetry(instance.lti13_course_instance.lineitems, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-type': 'application/vnd.ims.lis.v2.lineitem+json',
-    },
-    body: JSON.stringify(createBody),
-  });
+  const item = LineitemSchema.parse(
+    await fetchRetry(instance.lti13_course_instance.lineitems, {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-type': 'application/vnd.ims.lis.v2.lineitem+json',
+      },
+      body: JSON.stringify(createBody),
+    }),
+  );
 
   job.info('Associating PrairieLearn assessment with the new assignment');
 
@@ -433,7 +435,7 @@ export async function unlinkAssessment(
 export async function linkAssessment(
   lti13_course_instance_id: string,
   assessment_id: string | number,
-  lineitem: Lti13Lineitem,
+  lineitem: Lineitem,
 ) {
   await queryAsync(sql.update_lineitem, {
     lti13_course_instance_id,

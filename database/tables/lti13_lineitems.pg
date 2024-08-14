@@ -1,12 +1,15 @@
 columns
     assessment_id: bigint not null
-    last_activity: timestamp with time zone
-    lineitem: jsonb
+    id: bigint not null default nextval('lti13_lineitems_id_seq'::regclass)
+    last_activity: timestamp with time zone not null default now()
+    lineitem: jsonb not null
     lineitem_id: text not null
     lti13_course_instance_id: bigint not null
 
 indexes
-    lti13_lineitems_pkey: PRIMARY KEY (lti13_course_instance_id, lineitem_id) USING btree (lti13_course_instance_id, lineitem_id)
+    lti13_lineitems_pkey: PRIMARY KEY (id) USING btree (id)
+    lti13_lineitems_assessment_id_key: UNIQUE (assessment_id) USING btree (assessment_id)
+    lti13_lineitems_lti13_course_instance_id_lineitem_id_key: UNIQUE (lti13_course_instance_id, lineitem_id) USING btree (lti13_course_instance_id, lineitem_id)
 
 foreign-key constraints
     lti13_lineitems_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE

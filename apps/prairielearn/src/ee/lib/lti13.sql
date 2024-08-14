@@ -23,20 +23,23 @@ INSERT INTO
     lti13_course_instance_id,
     lineitem_id,
     lineitem,
-    assessment_id
+    assessment_id,
+    last_activity
   )
 VALUES
   (
     $lti13_course_instance_id,
     $lineitem_id,
     $lineitem,
-    $assessment_id
+    $assessment_id,
+    NOW()
   )
 ON CONFLICT (lti13_course_instance_id, lineitem_id) DO
 UPDATE
 SET
   lineitem = $lineitem,
-  assessment_id = $assessment_id;
+  assessment_id = $assessment_id,
+  last_activity = NOW();
 
 -- BLOCK create_lineitems_temp
 CREATE TEMPORARY TABLE new_lineitems (

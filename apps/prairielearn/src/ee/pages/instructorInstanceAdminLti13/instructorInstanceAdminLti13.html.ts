@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
@@ -12,7 +13,7 @@ import {
   AssessmentSetSchema,
   Lti13Lineitems,
 } from '../../../lib/db-types.js';
-import { Lti13Lineitem } from '../../lib/lti13.js';
+import { Lineitems } from '../../lib/lti13.js';
 
 interface Lti13FullInstance {
   lti13_course_instance: Lti13CourseInstance;
@@ -91,7 +92,11 @@ export function InstructorInstanceAdminLti13({
                     <li><a href="#assessments">Linked Assessments</a></li>
                     <li><a href="#connection">Connection to LMS</a></li>
                   </ul>
-                  Created at: ${instance.lti13_course_instance.created_at.toDateString()}
+                  Created at:
+                  ${formatDateYMDHM(
+                    instance.lti13_course_instance.created_at,
+                    resLocals.course_instance.display_timezone,
+                  )}
                 </div>
                 <div class="col-10">
                   <h3 id="assessments">Linked Assessments</h3>
@@ -304,7 +309,11 @@ export function InstructorInstanceAdminLti13({
                                       `}
                                 </form>
                               </td>
-                              <td class="align-middle">${lineitems_linked.map(lineItem)}</td>
+                              <td class="align-middle">
+                                ${lineitems_linked.map((i) =>
+                                  lineItem(i, resLocals.course_instance.display_timezone),
+                                )}
+                              </td>
                             </tr>
                           `;
                         })}
@@ -334,25 +343,16 @@ export function InstructorInstanceAdminLti13({
   `.toString();
 }
 
-function lineItem(item: Lti13Lineitems) {
-  return html` <span title="${item.lineitem_id}">${item.lineitem.label}</span>`;
-  /*
-  html`
-    <!--
-    <button
-      class="btn btn-xs"
-      onClick="event.preventDefault();$(this).next('.lineitem-detail').toggle();"
-    >
-      ...
-    </button>
-    <div class="lineitem-detail" style="display:none;">
-      <pre>${JSON.stringify(item, null, 2)}</pre>
-    </div>
+function lineItem(item: Lti13Lineitems, timezone: string) {
+  return html`
+    <span title="${item.lineitem_id}">${item.lineitem.label}</span>
+    <p class="text-right">
+      <em>Last activity: ${formatDateYMDHM(item.last_activity, timezone)}</em>
+    </p>
   `;
-  */
 }
 
-export function LineitemsInputs(lineitems: Lti13Lineitem[]) {
+export function LineitemsInputs(lineitems: Lineitems) {
   if (lineitems.length === 0) {
     return html`<p>None found.</p>`.toString();
   }
