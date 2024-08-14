@@ -8,7 +8,12 @@ import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.htm
 import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.html.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
-import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
+import {
+  assetPath,
+  compiledScriptTag,
+  compiledStylesheetTag,
+  nodeModulesAssetPath,
+} from '../../../lib/assets.js';
 import { GradingJobSchema, User } from '../../../lib/db-types.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
@@ -59,6 +64,7 @@ export function InstanceQuestion({
           : ''}
         ${unsafeHtml(resLocals.extraHeadersHtml)}
         ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
+        ${compiledStylesheetTag('instructorAssessmentManualGradingInstanceQuestion.css')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}

@@ -1,0 +1,14 @@
+.js-selectable-rubric-item-label {
+  border-color: rgba(0, 0, 0, 0);
+  border-width: 1px;
+  border-style: solid;
+}
+
+.js-selectable-rubric-item-label:has(input:checked) {
+  border-color: rgba(0, 0, 0, 0.125);
+  background-color: var(--light);
+}
+
+.js-selectable-rubric-item-label p {
+  margin-bottom: 0;
+}

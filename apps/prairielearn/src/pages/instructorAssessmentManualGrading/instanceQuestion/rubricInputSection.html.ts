@@ -19,20 +19,6 @@ export function RubricInputSection({
         : resLocals.assessment_question.max_manual_points) / rubric_data.total_points;
 
   return html`
-    <style>
-      .js-selectable-rubric-item-label {
-        border-color: rgba(0, 0, 0, 0);
-        border-width: 1px;
-        border-style: solid;
-      }
-      .js-selectable-rubric-item-label:has(input:checked) {
-        border-color: rgba(0, 0, 0, 0.125);
-        background-color: var(--light);
-      }
-      .js-selectable-rubric-item-label p {
-        margin-bottom: 0;
-      }
-    </style>
     <input type="hidden" name="score_manual_adjust_points_ratio" value="${pointsRatio}" />
     ${rubric_data.rubric_items?.map(
       (item) => html`
