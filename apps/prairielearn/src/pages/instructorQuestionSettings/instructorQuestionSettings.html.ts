@@ -238,7 +238,6 @@ export function InstructorQuestionSettings({
                                     csrfToken: resLocals.__csrf_token,
                                     editableCourses,
                                     courseId: resLocals.course.id,
-                                    buttonId: 'copyQuestionButton',
                                   }),
                                 )}"
                               >
@@ -284,12 +283,10 @@ function CopyForm({
   csrfToken,
   editableCourses,
   courseId,
-  buttonId,
 }: {
   csrfToken: string;
   editableCourses: CourseWithPermissions[];
   courseId: string;
-  buttonId: string;
 }) {
   return html`
     <form name="copy-question-form" method="POST">
@@ -310,9 +307,7 @@ function CopyForm({
         </select>
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${buttonId}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Submit</button>
       </div>
     </form>
