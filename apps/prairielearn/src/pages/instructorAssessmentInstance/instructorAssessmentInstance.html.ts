@@ -92,7 +92,6 @@ export function InstructorAssessmentInstance({
         <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.widgets.min.js',
           )}"></script>
-        ${compiledScriptTag('popover.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -204,7 +203,6 @@ export function InstructorAssessmentInstance({
                             data-content="${escapeHtml(
                               EditTotalPointsForm({
                                 resLocals,
-                                id: 'editTotalPointsButton',
                               }),
                             )}"
                           >
@@ -234,7 +232,6 @@ export function InstructorAssessmentInstance({
                             data-content="${escapeHtml(
                               EditTotalScorePercForm({
                                 resLocals,
-                                id: 'editTotalScorePercButton',
                               }),
                             )}"
                           >
@@ -312,7 +309,7 @@ export function InstructorAssessmentInstance({
                 </tr>
               </thead>
               <tbody>
-                ${instance_questions.map((instance_question, i_instance_question) => {
+                ${instance_questions.map((instance_question) => {
                   return html`
                     ${instance_question.start_new_zone && instance_question.zone_title
                       ? html`
@@ -356,7 +353,6 @@ export function InstructorAssessmentInstance({
                               assessment_question: instance_question.assessment_question,
                               urlPrefix: resLocals.urlPrefix,
                               csrfToken: resLocals.__csrf_token,
-                              buttonId: `editQuestionAutoPoints${i_instance_question}`,
                             })
                           : ''}
                       </td>
@@ -373,7 +369,6 @@ export function InstructorAssessmentInstance({
                               assessment_question: instance_question.assessment_question,
                               urlPrefix: resLocals.urlPrefix,
                               csrfToken: resLocals.__csrf_token,
-                              buttonId: `editQuestionManualPoints${i_instance_question}`,
                             })
                           : ''}
                       </td>
@@ -390,7 +385,6 @@ export function InstructorAssessmentInstance({
                               assessment_question: instance_question.assessment_question,
                               urlPrefix: resLocals.urlPrefix,
                               csrfToken: resLocals.__csrf_token,
-                              buttonId: `editQuestionPoints${i_instance_question}`,
                             })
                           : ''}
                       </td>
@@ -405,7 +399,6 @@ export function InstructorAssessmentInstance({
                               assessment_question: instance_question.assessment_question,
                               urlPrefix: resLocals.urlPrefix,
                               csrfToken: resLocals.__csrf_token,
-                              buttonId: `editQuestionScorePerc${i_instance_question}`,
                             })
                           : ''}
                       </td>
@@ -667,7 +660,7 @@ export function InstructorAssessmentInstance({
   `.toString();
 }
 
-function EditTotalPointsForm({ resLocals, id }: { resLocals: Record<string, any>; id: string }) {
+function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
     <form name="edit-total-points-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_points" />
@@ -694,16 +687,14 @@ function EditTotalPointsForm({ resLocals, id }: { resLocals: Record<string, any>
         </small>
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>
   `;
 }
 
-function EditTotalScorePercForm({ resLocals, id }: { resLocals: Record<string, any>; id: string }) {
+function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
     <form name="edit-total-score-perc-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_score_perc" />
@@ -730,9 +721,7 @@ function EditTotalScorePercForm({ resLocals, id }: { resLocals: Record<string, a
         </small>
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>

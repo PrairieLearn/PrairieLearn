@@ -390,7 +390,6 @@ function pointsFormatter(
 ) {
   const points = row[field];
   const maxPoints = row.assessment_question[`max_${field}`];
-  const buttonId = `editQuestionPoints_${field}_${row.id}`;
 
   return html`${formatPoints(points ?? 0)}
     <small>/<span class="text-muted">${maxPoints ?? 0}</span></small>
@@ -401,7 +400,6 @@ function pointsFormatter(
           assessment_question: row.assessment_question,
           urlPrefix: urlPrefix ?? '',
           csrfToken: csrfToken ?? '',
-          buttonId,
         })
       : ''}`;
 }
@@ -413,8 +411,6 @@ function scorebarFormatter(
   urlPrefix: string,
   csrfToken: string,
 ) {
-  const buttonId = `editQuestionScorePerc${row.id}`;
-
   return html`<div class="d-inline-block align-middle">
       ${score == null ? '' : Scorebar(score, { minWidth: '10em' })}
     </div>
@@ -425,7 +421,6 @@ function scorebarFormatter(
           assessment_question: row.assessment_question,
           urlPrefix: urlPrefix ?? '',
           csrfToken: csrfToken ?? '',
-          buttonId,
         })
       : ''}`.toString();
 }

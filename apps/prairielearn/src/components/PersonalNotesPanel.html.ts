@@ -209,7 +209,6 @@ function DeletePersonalNoteButton({
   variantId?: string;
   csrfToken: string;
 }) {
-  const buttonId = `attachFileDeleteButton${file.id}`;
   const popoverContent = html`
     <form name="attach-file-delete-form" method="POST">
       <p>Are you sure you want to delete <strong>${file.display_filename}</strong>?</p>
@@ -220,9 +219,7 @@ function DeletePersonalNoteButton({
         : ''}
       <input type="hidden" name="file_id" value="${file.id}" />
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${buttonId}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Delete</button>
       </div>
     </form>
@@ -230,14 +227,14 @@ function DeletePersonalNoteButton({
 
   return html`
     <button
-      id="${buttonId}"
-      class="btn btn-xs btn-secondary attachFileDeleteButton"
+      class="btn btn-xs btn-secondary"
       data-toggle="popover"
       data-container="body"
       data-html="true"
       data-placement="auto"
       title="Confirm delete"
       data-content="${escapeHtml(popoverContent)}"
+      data-testid="delete-personal-note-button"
     >
       <i class="far fa-trash-alt"></i>
     </button>
