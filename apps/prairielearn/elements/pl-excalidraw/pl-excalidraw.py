@@ -30,17 +30,17 @@ SOURCE_DIRECTORY_MAP = {
 
 
 def is_answer_name_required(gradable: bool) -> bool:
-    # All cases marked (ANS)
+    """All cases marked (ANS)"""
     return gradable
 
 
 def is_widget_editable(panel: str, gradable: bool, editable: bool) -> bool:
-    # All cases where `(RW)` is marked. data["editable"] must also be True
+    """All cases where `(RW)` is marked. data["editable"] must also be True"""
     return panel == "question" and gradable and editable
 
 
 def is_source_file_name_required(panel: str, gradable: bool, fresh: bool) -> bool:
-    # All cases where `NoSource: Raise an error`
+    """All cases where `NoSource: Raise an error`"""
     match panel:
         case "question" if not gradable and fresh:
             return True
