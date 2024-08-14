@@ -137,9 +137,10 @@ export async function populateRubricData(locals: Record<string, any>): Promise<v
 
   // The total_points column is currently not fully populated in some cases. Use the max_points from the assessment question as a fallback.
   if (rubric_data != null && rubric_data.total_points == null) {
-    rubric_data.total_points = rubric_data.replace_auto_points
-      ? locals.assessment_question.max_points
-      : locals.assessment_question.max_manual_points;
+    rubric_data.total_points =
+      rubric_data.replace_auto_points || !locals.assessment_question.max_manual_points
+        ? locals.assessment_question.max_points
+        : locals.assessment_question.max_manual_points;
   }
 
   // Render rubric items: description, explanation and grader note
@@ -395,7 +396,8 @@ async function insertRubricGrading({
 
     // Fallback to assessment question points if total points is not yet populated in the rubric
     if (rubric_data.total_points == null) {
-      rubric_data.total_points = rubric_data.replace_auto_points ? max_points : max_manual_points;
+      rubric_data.total_points =
+        rubric_data.replace_auto_points || !max_manual_points ? max_points : max_manual_points;
     }
 
     const sum_rubric_item_points = _.sum(
@@ -540,13 +542,17 @@ export async function updateInstanceQuestionScore(
           rubric_items: score?.manual_rubric_data?.applied_rubric_items || [],
           adjust_points: score?.manual_rubric_data?.adjust_points ?? 0,
         });
-      if (replace_auto_points) {
+      if (total_points === 0) {
+        score.manual_points = 0;
+      } else if (replace_auto_points) {
         score.manual_points =
           (computed_points * (current_submission.max_points ?? 0)) / total_points -
           (new_auto_points ?? current_submission.auto_points ?? 0);
       } else {
         score.manual_points =
-          (computed_points * (current_submission.max_manual_points ?? 0)) / total_points;
+          (computed_points *
+            ((current_submission.max_manual_points || current_submission.max_points) ?? 0)) /
+          total_points;
       }
       score.manual_score_perc = undefined;
       manual_rubric_grading_id = rubric_grading_id;

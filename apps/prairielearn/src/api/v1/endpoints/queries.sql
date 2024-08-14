@@ -316,7 +316,8 @@ WITH
         rg.total_points,
         -- Fallback if total_points is not populated
         CASE
-          WHEN r.replace_auto_points THEN aq.max_points
+          WHEN r.replace_auto_points
+          OR aq.max_manual_points = 0 THEN aq.max_points
           ELSE aq.max_manual_points
         END
       ) AS rubric_grading_total_points,

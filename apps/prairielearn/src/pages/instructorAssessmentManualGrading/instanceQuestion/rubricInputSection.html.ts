@@ -12,10 +12,11 @@ export function RubricInputSection({
   if (!resLocals.rubric_data) return '';
   const rubric_data: RubricData = resLocals.rubric_data;
   const rubric_grading: RubricGradingData | null = resLocals.submission.rubric_grading;
-  const pointsRatio: number =
-    (rubric_data.replace_auto_points
-      ? resLocals.assessment_question.max_points
-      : resLocals.assessment_question.max_manual_points) / (rubric_data.total_points || 1);
+  const pointsRatio: number = !rubric_data.total_points
+    ? 0
+    : (rubric_data.replace_auto_points || !resLocals.assessment_question.max_manual_points
+        ? resLocals.assessment_question.max_points
+        : resLocals.assessment_question.max_manual_points) / rubric_data.total_points;
 
   return html`
     <style>
