@@ -7,6 +7,7 @@ columns
     modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     replace_auto_points: boolean not null
     starting_points: double precision not null
+    total_points: double precision
 
 indexes
     rubrics_pkey: PRIMARY KEY (id) USING btree (id)

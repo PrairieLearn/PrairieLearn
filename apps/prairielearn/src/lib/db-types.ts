@@ -836,6 +836,7 @@ export const RubricSchema = z.object({
   modified_at: DateFromISOString,
   replace_auto_points: z.boolean(),
   starting_points: z.number(),
+  total_points: z.number().nullable(),
 });
 export type Rubric = z.infer<typeof RubricSchema>;
 
@@ -847,6 +848,7 @@ export const RubricGradingSchema = z.object({
   min_points: z.number(),
   rubric_id: IdSchema,
   starting_points: z.number(),
+  total_points: z.number().nullable(),
 });
 export type RubricGrading = z.infer<typeof RubricGradingSchema>;
 

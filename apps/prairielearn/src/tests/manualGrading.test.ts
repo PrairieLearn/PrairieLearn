@@ -254,6 +254,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
           );
           assert.equal(
             container.find('[data-testid="rubric-item-points"]').text().trim(),
+            // TODO Add total
             `[${item.points >= 0 ? '+' : ''}${item.points}]`,
           );
           assert.equal(
@@ -276,6 +277,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
     if (adjust_points) {
       assert.equal(
         feedbackBlock.find('[data-testid="rubric-adjust-points"]').text().trim(),
+        // TODO Add total
         `[${adjust_points >= 0 ? '+' : ''}${adjust_points}]`,
       );
     } else {
@@ -293,6 +295,8 @@ function checkSettingsResults(
     const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
     const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
     const form = $manualGradingIQPage('form[name=rubric-settings]');
+
+    // TODO Add check for total_points
 
     assert.equal(
       form.find(`input[name="starting_points"][value="${starting_points}"]`).is(':checked'),
@@ -755,6 +759,7 @@ describe('Manual Grading', function () {
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
               use_rubric: 'true',
               replace_auto_points: 'false',
+              total_points: '6',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
               max_extra_points: '0.3',
@@ -798,6 +803,7 @@ describe('Manual Grading', function () {
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
               use_rubric: 'true',
               replace_auto_points: 'false',
+              total_points: '6',
               starting_points: '0', // Positive grading
               min_points: '-0.5',
               max_extra_points: '0.5',
@@ -839,6 +845,7 @@ describe('Manual Grading', function () {
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
               replace_auto_points: 'false',
               use_rubric: 'true',
+              total_points: '6',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
               max_extra_points: '0.3',
@@ -909,6 +916,7 @@ describe('Manual Grading', function () {
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
               replace_auto_points: 'false',
               use_rubric: 'true',
+              total_points: '6',
               starting_points: '0', // Positive grading
               min_points: '-0.3',
               max_extra_points: '-0.3',
@@ -987,6 +995,7 @@ describe('Manual Grading', function () {
               modified_at: form.find('input[name=modified_at]').attr('value') || '',
               replace_auto_points: 'false',
               use_rubric: 'true',
+              total_points: '6',
               starting_points: '6', // Negative grading
               min_points: '-0.6',
               max_extra_points: '0.6',

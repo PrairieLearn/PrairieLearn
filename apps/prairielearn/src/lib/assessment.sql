@@ -677,6 +677,15 @@ WITH
             ELSE (
               SELECT
                 JSONB_BUILD_OBJECT(
+                  'total_points',
+                  COALESCE(
+                    rg.total_points,
+                    -- Fallback if the rubric grading is not populated
+                    CASE
+                      WHEN r.replace_auto_points THEN aq.max_points
+                      ELSE aq.max_manual_points
+                    END
+                  ),
                   'computed_points',
                   rg.computed_points,
                   'adjust_points',
@@ -702,6 +711,7 @@ WITH
         JOIN questions AS q ON (q.id = aq.question_id)
         LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
         LEFT JOIN rubric_gradings AS rg ON (rg.id = gj.manual_rubric_grading_id)
+        LEFT JOIN rubrics AS r ON (r.id = rg.rubric_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
         AND gj.grading_method = 'Manual'

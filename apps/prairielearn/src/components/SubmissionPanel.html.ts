@@ -132,7 +132,8 @@ export function SubmissionPanel({
                                   />
                                   <span class="text-${item.points >= 0 ? 'success' : 'danger'}">
                                     <strong data-testid="rubric-item-points">
-                                      [${(item.points >= 0 ? '+' : '') + item.points}]
+                                      [${(item.points >= 0 ? '+' : '') + item.points}/${submission
+                                        .rubric_grading?.total_points ?? rubric_data?.total_points}]
                                     </strong>
                                   </span>
                                   <span
@@ -171,7 +172,8 @@ export function SubmissionPanel({
                                 >
                                   <strong data-testid="rubric-adjust-points">
                                     [${(submission.rubric_grading?.adjust_points >= 0 ? '+' : '') +
-                                    submission.rubric_grading?.adjust_points}]
+                                    submission.rubric_grading?.adjust_points}/${submission
+                                      .rubric_grading?.total_points ?? rubric_data?.total_points}]
                                   </strong>
                                 </span>
                               </div>

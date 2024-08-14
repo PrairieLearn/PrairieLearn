@@ -152,6 +152,7 @@ FOR NO KEY UPDATE;
 -- BLOCK insert_rubric
 INSERT INTO
   rubrics (
+    total_points,
     starting_points,
     min_points,
     max_extra_points,
@@ -159,6 +160,7 @@ INSERT INTO
   )
 VALUES
   (
+    $total_points,
     $starting_points,
     $min_points,
     $max_extra_points,
@@ -170,6 +172,7 @@ RETURNING
 -- BLOCK update_rubric
 UPDATE rubrics
 SET
+  total_points = $total_points,
   starting_points = $starting_points,
   min_points = $min_points,
   max_extra_points = $max_extra_points,
@@ -251,9 +254,13 @@ WITH
       iq.assessment_instance_id,
       iq.id AS instance_question_id,
       s.id AS submission_id,
-      rg.starting_points != r.starting_points
-      OR rg.max_extra_points != r.max_extra_points
-      OR rg.min_points != r.min_points AS rubric_settings_changed
+      (
+        rg.starting_points != r.starting_points
+        OR rg.total_points IS NULL -- If total_points is NULL, it has not been updated since the column has been introduced
+        OR rg.total_points != r.total_points
+        OR rg.max_extra_points != r.max_extra_points
+        OR rg.min_points != r.min_points
+      ) AS rubric_settings_changed
     FROM
       instance_questions AS iq
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -313,6 +320,7 @@ WITH
     INSERT INTO
       rubric_gradings (
         rubric_id,
+        total_points,
         computed_points,
         adjust_points,
         starting_points,
@@ -321,6 +329,7 @@ WITH
       )
     SELECT
       r.id,
+      $total_points, -- Can be replaced with r.total_points once all rubrics have total_points
       $computed_points,
       $adjust_points,
       r.starting_points,

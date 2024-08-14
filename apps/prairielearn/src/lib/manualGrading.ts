@@ -135,6 +135,13 @@ export async function populateRubricData(locals: Record<string, any>): Promise<v
     RubricDataSchema,
   );
 
+  // The total_points column is currently not fully populated in some cases. Use the max_points from the assessment question as a fallback.
+  if (rubric_data != null && rubric_data.total_points == null) {
+    rubric_data.total_points = rubric_data.replace_auto_points
+      ? locals.assessment_question.max_points
+      : locals.assessment_question.max_manual_points;
+  }
+
   // Render rubric items: description, explanation and grader note
   const mustache_data = {
     correct_answers: locals.variant?.true_answer,
@@ -185,28 +192,48 @@ export async function populateManualGradingData(submission: Record<string, any>)
  * @param assessment_question_id - The ID of the assessment question being updated. Assumed to be authenticated.
  * @param use_rubric - Indicates if a rubric should be used for manual grading.
  * @param replace_auto_points - If true, the rubric is used to compute the total points. If false, the rubric is used to compute the manual points.
- * @param starting_points - The points to assign to a question as a start, before rubric items are applied. Typically 0 for positive grading, or the total points for negative grading.
+ * @param total_points - The number of points that are considered a full score for the question. A value of 100 means each item's point correspond to the percentage of the total points.
+ * @param starting_points - The points to assign to a question as a start, before rubric items are applied. Typically 0 for positive grading, or total_points for negative grading.
  * @param min_points - The minimum number of points to assign based on a rubric (floor). Computed points from rubric items are never assigned less than this, even if items bring the total to less than this value, unless an adjustment is used.
- * @param max_extra_points - The maximum number of points to assign based on a rubric beyond the question's assigned points (ceiling). Computed points from rubric items over the assigned points are never assigned more than this, even if items bring the total to more than this value, unless an adjustment is used.
+ * @param max_extra_points - The maximum number of points to assign based on a rubric beyond total_points. Computed points from rubric items over the assigned points are never assigned more than this, even if items bring the total to more than this value, unless an adjustment is used.
  * @param rubric_items - An array of items available for grading. The `order` property is used to determine the order of the items. If an item has an `id` property that corresponds to an existing rubric item, it is updated, otherwise it is inserted.
  * @param tag_for_manual_grading - If true, tags all currently graded instance questions to be graded again using the new rubric values. If false, existing gradings are recomputed if necessary, but their grading status is retained.
  * @param authn_user_id - The user_id of the logged in user.
  */
-export async function updateAssessmentQuestionRubric(
-  assessment_question_id: string,
-  use_rubric: boolean,
-  replace_auto_points: boolean,
-  starting_points: number,
-  min_points: number,
-  max_extra_points: number,
-  rubric_items: RubricItemInput[],
-  tag_for_manual_grading: boolean,
-  authn_user_id: string,
-): Promise<void> {
+export async function updateAssessmentQuestionRubric({
+  assessment_question_id,
+  use_rubric,
+  replace_auto_points,
+  total_points,
+  starting_points,
+  min_points,
+  max_extra_points,
+  rubric_items,
+  tag_for_manual_grading,
+  authn_user_id,
+}: {
+  assessment_question_id: string;
+  use_rubric: boolean;
+  replace_auto_points: boolean;
+  total_points: number;
+  starting_points: number;
+  min_points: number;
+  max_extra_points: number;
+  rubric_items: RubricItemInput[];
+  tag_for_manual_grading: boolean;
+  authn_user_id: string;
+}): Promise<void> {
   // Basic validation: points and description must exist, description must be within size limits
   if (use_rubric) {
     if (!rubric_items?.length) {
       throw new Error('No rubric items were provided.');
+    }
+
+    const max_points = Number(total_points) + Number(max_extra_points);
+    if (max_points <= Number(min_points)) {
+      throw new Error(
+        `Question has no range of possible points. Rubric points are limited to a minimum of ${min_points} and a maximum of ${max_points}.`,
+      );
     }
 
     rubric_items.forEach((item) => {
@@ -231,21 +258,6 @@ export async function updateAssessmentQuestionRubric(
       AssessmentQuestionSchema,
     );
 
-    if (use_rubric) {
-      const max_points =
-        (replace_auto_points
-          ? (assessment_question.max_points ?? 0)
-          : (assessment_question.max_manual_points ?? 0)) + Number(max_extra_points);
-
-      // This test is done inside the transaction to avoid a race condition in case the assessment
-      // question's values change.
-      if (max_points <= Number(min_points)) {
-        throw new Error(
-          `Question has no range of possible points. Rubric points are limited to a minimum of ${min_points} and a maximum of ${max_points}.`,
-        );
-      }
-    }
-
     const current_rubric_id = assessment_question.manual_rubric_id;
     let new_rubric_id = current_rubric_id;
 
@@ -256,13 +268,14 @@ export async function updateAssessmentQuestionRubric(
       // Rubric does not exist yet, but should, insert new rubric
       new_rubric_id = await sqldb.queryRow(
         sql.insert_rubric,
-        { starting_points, min_points, max_extra_points, replace_auto_points },
+        { total_points, starting_points, min_points, max_extra_points, replace_auto_points },
         IdSchema,
       );
     } else {
       // Rubric already exists, update its settings
       await sqldb.queryAsync(sql.update_rubric, {
         rubric_id: new_rubric_id,
+        total_points,
         starting_points,
         min_points,
         max_extra_points,
@@ -355,19 +368,35 @@ async function recomputeInstanceQuestions(
  * @param adjust_points - number of points to add (positive) or subtract (negative) from the total computed from the items.
  * @returns The ID and points of the created rubric grading.
  */
-async function insertRubricGrading(
-  rubric_id: string,
-  max_points: number,
-  max_manual_points: number,
-  rubric_items: AppliedRubricItem[],
-  adjust_points: number | null,
-): Promise<{ id: string; computed_points: number; replace_auto_points: boolean }> {
+async function insertRubricGrading({
+  rubric_id,
+  max_points,
+  max_manual_points,
+  rubric_items,
+  adjust_points,
+}: {
+  rubric_id: string;
+  max_points: number;
+  max_manual_points: number;
+  rubric_items: AppliedRubricItem[];
+  adjust_points: number | null;
+}): Promise<{
+  rubric_grading_id: string;
+  computed_points: number;
+  total_points: number;
+  replace_auto_points: boolean;
+}> {
   return sqldb.runInTransactionAsync(async () => {
     const { rubric_data, rubric_item_data } = await sqldb.queryRow(
       sql.select_rubric_items,
       { rubric_id, rubric_items: rubric_items?.map((item) => item.rubric_item_id) || [] },
       z.object({ rubric_data: RubricSchema, rubric_item_data: z.array(RubricItemSchema) }),
     );
+
+    // Fallback to assessment question points if total points is not yet populated in the rubric
+    if (rubric_data.total_points == null) {
+      rubric_data.total_points = rubric_data.replace_auto_points ? max_points : max_manual_points;
+    }
 
     const sum_rubric_item_points = _.sum(
       rubric_items?.map(
@@ -380,14 +409,14 @@ async function insertRubricGrading(
     const computed_points =
       Math.min(
         Math.max(rubric_data.starting_points + sum_rubric_item_points, rubric_data.min_points),
-        (rubric_data.replace_auto_points ? max_points : max_manual_points) +
-          rubric_data.max_extra_points,
+        rubric_data.total_points + rubric_data.max_extra_points,
       ) + Number(adjust_points || 0);
 
     const rubric_grading_id = await sqldb.queryRow(
       sql.insert_rubric_grading,
       {
         rubric_id,
+        total_points: rubric_data.total_points,
         computed_points,
         adjust_points: adjust_points || 0,
         rubric_items: JSON.stringify(rubric_items || []),
@@ -396,8 +425,9 @@ async function insertRubricGrading(
     );
 
     return {
-      id: rubric_grading_id,
+      rubric_grading_id,
       computed_points,
+      total_points: rubric_data.total_points,
       replace_auto_points: rubric_data.replace_auto_points,
     };
   });
@@ -502,20 +532,24 @@ export async function updateInstanceQuestionScore(
     }
 
     if (current_submission.manual_rubric_id && score?.manual_rubric_data?.rubric_id) {
-      const manual_rubric_grading = await insertRubricGrading(
-        score?.manual_rubric_data?.rubric_id,
-        current_submission.max_points ?? 0,
-        current_submission.max_manual_points ?? 0,
-        score?.manual_rubric_data?.applied_rubric_items || [],
-        score?.manual_rubric_data?.adjust_points ?? 0,
-      );
-      score.manual_points =
-        manual_rubric_grading.computed_points -
-        (manual_rubric_grading.replace_auto_points
-          ? (new_auto_points ?? current_submission.auto_points ?? 0)
-          : 0);
+      const { rubric_grading_id, computed_points, total_points, replace_auto_points } =
+        await insertRubricGrading({
+          rubric_id: score?.manual_rubric_data?.rubric_id,
+          max_points: current_submission.max_points ?? 0,
+          max_manual_points: current_submission.max_manual_points ?? 0,
+          rubric_items: score?.manual_rubric_data?.applied_rubric_items || [],
+          adjust_points: score?.manual_rubric_data?.adjust_points ?? 0,
+        });
+      if (replace_auto_points) {
+        score.manual_points =
+          (computed_points * (current_submission.max_points ?? 0)) / total_points -
+          (new_auto_points ?? current_submission.auto_points ?? 0);
+      } else {
+        score.manual_points =
+          (computed_points * (current_submission.max_manual_points ?? 0)) / total_points;
+      }
       score.manual_score_perc = undefined;
-      manual_rubric_grading_id = manual_rubric_grading.id;
+      manual_rubric_grading_id = rubric_grading_id;
     } else if (
       current_submission.manual_rubric_id &&
       score?.points == null &&

@@ -312,6 +312,14 @@ WITH
       s.correct,
       s.feedback,
       rg.computed_points AS rubric_grading_computed_points,
+      COALESCE(
+        rg.total_points,
+        -- Fallback if total_points is not populated
+        CASE
+          WHEN r.replace_auto_points THEN aq.max_points
+          ELSE aq.max_manual_points
+        END
+      ) AS rubric_grading_total_points,
       rg.adjust_points AS rubric_grading_adjust_points,
       (
         SELECT
@@ -361,6 +369,7 @@ WITH
       JOIN variants AS v ON (v.instance_question_id = iq.id)
       JOIN submissions AS s ON (s.variant_id = v.id)
       LEFT JOIN rubric_gradings AS rg ON (rg.id = s.manual_rubric_grading_id)
+      LEFT JOIN rubrics AS r ON (r.id = rg.rubric_id)
     WHERE
       ci.id = $course_instance_id
       AND (

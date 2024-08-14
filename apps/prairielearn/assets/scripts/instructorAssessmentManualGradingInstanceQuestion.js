@@ -216,7 +216,7 @@ function checkRubricItemTotals() {
   const minPoints = Number(form.querySelector('[name="min_points"]').value);
   const maxPoints =
     Number(form.querySelector('[name="max_extra_points"]').value) +
-    Number(form.querySelector('.js-negative-grading').value);
+    Number(form.querySelector('[name="total_points"]').value);
   form.querySelector('.js-settings-points-warning-placeholder').innerHTML = '';
 
   if (totalPositive < maxPoints) {

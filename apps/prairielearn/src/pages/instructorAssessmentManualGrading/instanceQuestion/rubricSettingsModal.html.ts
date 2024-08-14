@@ -17,6 +17,14 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
           <input type="hidden" name="__action" value="modify_rubric_settings" />
           <input type="hidden" name="modified_at" value="${rubric_data?.modified_at.toString()}" />
           <input type="hidden" name="use_rubric" value="true" />
+          <input
+            type="hidden"
+            name="total_points"
+            value="${
+              // TODO Review this initial value, as well as the logic for starting points based on this
+              100
+            }"
+          />
 
           <div class="modal-content">
             <div class="modal-header bg-info text-light">
@@ -113,7 +121,10 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                         class="form-check-input js-rubric-item-limits js-negative-grading"
                         name="starting_points"
                         type="radio"
-                        value="${resLocals.assessment_question.max_manual_points}"
+                        value="${
+                          // TODO Handle in combination with total_points
+                          resLocals.assessment_question.max_manual_points
+                        }"
                         required
                         ${rubric_data?.starting_points ? 'checked' : ''}
                       />
