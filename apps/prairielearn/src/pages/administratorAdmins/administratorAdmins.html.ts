@@ -18,11 +18,6 @@ export function AdministratorAdmins({
         ${HeadContents({ resLocals, pageTitle: 'Administrators' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'administrators' })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">

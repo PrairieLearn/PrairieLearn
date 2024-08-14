@@ -33,11 +33,6 @@ export function Enroll({
         ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${Navbar({ resLocals, navPage: 'enroll' })}
         <main id="content" class="container">
           <div class="card mb-4">

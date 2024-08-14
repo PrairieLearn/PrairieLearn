@@ -45,11 +45,6 @@ export function UserSettings({
         ${HeadContents({ resLocals, pageTitle: 'User Settings' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${Navbar({ resLocals, navPage: 'user_settings' })}
         <main id="content" class="container">
           <h1 class="mb-4">Settings</h1>
@@ -128,8 +123,6 @@ export function UserSettings({
                         id: 'generateTokenButton',
                         csrfToken: resLocals.__csrf_token,
                       }).toString()}"
-                      data-trigger="manual"
-                      onclick="$(this).popover('show')"
                     >
                       <i class="fa fa-plus" aria-hidden="true"></i>
                       <span class="d-none d-sm-inline">Generate new token</span>
@@ -221,8 +214,6 @@ function TokenList({
             token_id: token.id,
             csrfToken: resLocals.__csrf_token,
           }).toString()}"
-          data-trigger="manual"
-          onclick="$(this).popover('show')"
         >
           Delete
         </button>

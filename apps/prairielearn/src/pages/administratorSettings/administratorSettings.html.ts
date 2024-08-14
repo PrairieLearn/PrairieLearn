@@ -13,11 +13,6 @@ export function AdministratorSettings({ resLocals }) {
         ${HeadContents({ resLocals, pageTitle: 'Administrator Settings' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'settings' })}
         <main id="content" class="container-fluid">
           <!-- Chunk generation -->

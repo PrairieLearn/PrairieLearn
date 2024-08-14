@@ -241,8 +241,6 @@ export function InstructorQuestionSettings({
                                     buttonId: 'copyQuestionButton',
                                   }),
                                 )}"
-                                data-trigger="manual"
-                                onclick="$(this).popover('show')"
                               >
                                 <i class="fa fa-clone"></i>
                                 <span>Make a copy of this question</span>

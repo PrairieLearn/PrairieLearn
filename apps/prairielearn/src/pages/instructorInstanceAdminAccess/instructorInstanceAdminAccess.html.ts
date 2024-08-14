@@ -22,11 +22,6 @@ export function InstructorInstanceAdminAccess({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          $(() => {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseInstanceSyncErrorsAndWarnings({

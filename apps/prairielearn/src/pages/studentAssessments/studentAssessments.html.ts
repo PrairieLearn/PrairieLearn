@@ -52,11 +52,6 @@ export function StudentAssessments({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${Navbar({ resLocals, navPage: 'assessments' })}
         <main id="content" class="container">
           <div class="card mb-4">

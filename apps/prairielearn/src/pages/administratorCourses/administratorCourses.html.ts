@@ -34,11 +34,6 @@ export function AdministratorCourses({
         ${HeadContents({ resLocals, pageTitle: 'Courses' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'courses' })}
         <main id="content" class="container-fluid">
           ${CourseRequestsTable({

@@ -172,11 +172,6 @@ export function InstructorCourseAdminSharing({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseSyncErrorsAndWarnings({
@@ -201,7 +196,6 @@ export function InstructorCourseAdminSharing({
                             title="Choose Sharing Name"
                             data-toggle="modal"
                             data-target="#chooseSharingNameModal"
-                            data-trigger="manual"
                           >
                             <i class="fas fa-share-nodes" aria-hidden="true"></i>
                             <span class="d-none d-sm-inline">Choose Sharing Name</span>

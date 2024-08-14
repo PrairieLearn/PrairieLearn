@@ -50,11 +50,6 @@ export function CourseSyncs({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
@@ -232,6 +227,7 @@ function ImageTable({
                         <button
                           class="btn btn-xs btn-secondary"
                           data-toggle="popover"
+                          data-container="body"
                           data-html="true"
                           title="Questions using ${image.image}"
                           data-content="${escapeHtml(ListQuestionsPopover({ image, urlPrefix }))}"

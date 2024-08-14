@@ -95,11 +95,6 @@ export function InstructorAssessmentInstance({
         ${compiledScriptTag('popover.ts')}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${ResetQuestionVariantsModal({
@@ -199,9 +194,9 @@ export function InstructorAssessmentInstance({
                             class="btn btn-xs btn-secondary"
                             id="editTotalPointsButton"
                             data-toggle="popover"
+                            data-container="body"
                             data-html="true"
                             data-placement="auto"
-                            data-container="body"
                             title="Change total points"
                             data-content="${escapeHtml(
                               EditTotalPointsForm({

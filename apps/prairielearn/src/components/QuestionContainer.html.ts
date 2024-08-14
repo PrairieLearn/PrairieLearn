@@ -442,13 +442,13 @@ function QuestionFooterContent({
                     <a
                       class="btn btn-xs align-self-center"
                       data-toggle="popover"
+                      data-trigger="focus"
+                      data-container="body"
                       data-html="true"
                       data-content="${escapeHtml(
                         NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
                       )}"
                       data-placement="auto"
-                      data-trigger="focus"
-                      data-container="body"
                       tabindex="0"
                     >
                       <i class="fa fa-question-circle" aria-hidden="true"></i>
@@ -525,11 +525,11 @@ function SubmitRateFooter({
           <a
             class="btn btn-xs"
             data-toggle="popover"
+            data-trigger="focus"
+            data-container="body"
             data-html="true"
             data-content="${escapeHtml(popoverContent)}"
             data-placement="auto"
-            data-trigger="focus"
-            data-container="body"
             tabindex="0"
           >
             <i class="fa fa-question-circle" aria-hidden="true"></i>
