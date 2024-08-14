@@ -188,17 +188,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if panel == "submission" and drawing_name and drawing_name in data["format_errors"]:
         errors = data["format_errors"][drawing_name]
 
+    render_data = {
+        "uuid": pl.get_uuid(),
+        "name": drawing_name,
+        "metadata": base64.b64encode(content_bytes).decode(),
+        "errors": errors,
+        "show_widget": show_widget,
+    }
+
     with open("pl-excalidraw.mustache", "r", encoding="utf-8") as template:
-        return chevron.render(
-            template,
-            {
-                "uuid": pl.get_uuid(),
-                "name": drawing_name,
-                "metadata": base64.b64encode(content_bytes).decode(),
-                "errors": errors,
-                "show_widget": show_widget,
-            },
-        )
+        return chevron.render(template, render_data)
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
