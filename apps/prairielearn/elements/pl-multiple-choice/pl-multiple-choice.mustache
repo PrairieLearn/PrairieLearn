@@ -59,27 +59,20 @@
 {{/radio}}
 {{^radio}}
 <!-- Weirdly enough putting this in a div causes it to display without the inline -->
-<span class="py-1 d-inline align-items-center">
+<span
+    class="py-1 d-inline align-items-center pl-multiple-choice-dropdown"
+    {{#size}}style="--pl-multiple-choice-dropdown-width: {{size}}px"{{/size}}
+>
     <script>
-        $(() => {
-            $('#pl-multiple-choice-select-{{uuid}}').selectpicker({})
-                .on('rendered.bs.select loaded.bs.select shown.bs.select', (e) => {
-                    // If any of the options has math, render the math as needed
-                    // Events: loaded (when the page opens), rendered (when the value changes),
-                    // shown (when the dropdown extends)
-                    MathJax.typesetPromise();
-                });
-        });
+        $(() => new window.PLMultipleChoice("{{uuid}}"));
     </script>
     <select
         name="{{name}}"
-        data-style="btn-light border border-secondary"
         id="pl-multiple-choice-select-{{uuid}}"
-        title="Nothing selected"
         class="d-inline-flex"
-        {{#size}}data-width="{{size}}px"{{/size}}
         {{^editable}}disabled{{/editable}}
     >
+        <option value="" disabled selected data-content="Select an option"></option>
         {{#answers}}
             <option
                 value="{{key}}"
