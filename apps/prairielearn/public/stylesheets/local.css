@@ -143,12 +143,7 @@ mjx-container {
   transform: rotateX(180deg);
 }
 
-/* Button in submission header context
-   prepends "hide" or "show" automatically */
-.submission-header {
-  cursor: pointer;
-}
-
+/* Button in submission header context prepends "hide" or "show" automatically */
 .submission-header .expand-icon {
   transition: transform 400ms;
 }
@@ -157,11 +152,11 @@ mjx-container {
   content: 'hide';
 }
 
-.submission-header.collapsed .expand-icon {
+.submission-header .expand-icon-container.collapsed .expand-icon {
   transform: rotateX(180deg);
 }
 
-.submission-header.collapsed .expand-icon-container::before {
+.submission-header .expand-icon-container.collapsed::before {
   content: 'show';
 }
 
