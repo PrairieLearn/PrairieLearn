@@ -1,7 +1,6 @@
 import base64
 import json
 from pathlib import Path
-from typing import List
 
 import chevron
 import lxml.html
@@ -184,7 +183,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         }
     ).encode()
 
-    errors: List = []
+    errors: list = []
     if panel == "submission" and drawing_name and drawing_name in data["format_errors"]:
         errors = data["format_errors"][drawing_name]
 
