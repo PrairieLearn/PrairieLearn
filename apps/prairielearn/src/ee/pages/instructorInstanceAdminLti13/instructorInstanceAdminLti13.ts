@@ -15,11 +15,11 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
-  sync_lineitems,
-  get_lineitems,
-  unlink_assessment,
-  query_and_link_lineitem,
-  create_and_link_lineitem,
+  syncLineitems,
+  getLineitems,
+  unlinkAssessment,
+  queryAndLinkLineitem,
+  createAndLinkLineitem,
   Lti13CombinedInstanceSchema,
 } from '../../lib/lti13.js';
 
@@ -62,7 +62,7 @@ router.get(
     }
 
     if ('lineitems' in req.query) {
-      res.send(LineitemsInputs(await get_lineitems(instance)));
+      res.send(LineitemsInputs(await getLineitems(instance)));
       return;
     }
 
@@ -148,12 +148,12 @@ router.post(
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
-        await sync_lineitems(instance, job);
+        await syncLineitems(instance, job);
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else if (req.body.__action === 'unlink_assessment') {
       // validate assessment_id off of course_instance here?
-      await unlink_assessment(instance.lti13_course_instance.id, req.body.assessment_id);
+      await unlinkAssessment(instance.lti13_course_instance.id, req.body.assessment_id);
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'create_link_assessment') {
       serverJobOptions.description = 'create lineitem from PL assessment';
@@ -177,11 +177,11 @@ router.post(
           url: `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
         };
 
-        await create_and_link_lineitem(instance, job, assessment_metadata);
+        await createAndLinkLineitem(instance, job, assessment_metadata);
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else if (req.body.__action === 'link_assessment') {
-      await query_and_link_lineitem(instance, req.body.lineitem_id, req.body.assessment_id);
+      await queryAndLinkLineitem(instance, req.body.lineitem_id, req.body.assessment_id);
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'bulk_unlink_assessments') {
       const group_id =
@@ -239,7 +239,7 @@ router.post(
             url: `${getCanonicalHost(req)}/pl/course_instance/${assessment.course_instance_id}/assessment/${assessment.id}`,
           };
 
-          await create_and_link_lineitem(instance, job, assessment_metadata);
+          await createAndLinkLineitem(instance, job, assessment_metadata);
         }
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);

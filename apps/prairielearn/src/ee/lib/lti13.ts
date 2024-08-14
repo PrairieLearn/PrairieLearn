@@ -21,13 +21,11 @@ import { selectLti13Instance } from '../models/lti13Instance.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+// Scope list at
+// https://canvas.instructure.com/doc/api/file.lti_dev_key_config.html#anatomy-of-a-json-configuration
 const TOKEN_SCOPES = [
   'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
-  //'https://purl.imsglobal.org/spec/lti-ags/scope/result.readonly',
   'https://purl.imsglobal.org/spec/lti-ags/scope/score',
-  //'https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly',
-  //'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem.readonly',
-  //'https://canvas.instructure.com/lti/public_jwk/scope/update',
 ];
 
 export const Lti13CombinedInstanceSchema = z.object({
@@ -52,6 +50,9 @@ export const Lti13LineitemSchema = z.object({
   }),
 });
 export type Lti13Lineitem = z.infer<typeof Lti13LineitemSchema>;
+
+export const Lti13LineitemsSchema = z.array(Lti13LineitemSchema);
+export type Lti13Lineitems = z.infer<typeof Lti13LineitemsSchema>;
 
 // Validate LTI 1.3
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
@@ -261,7 +262,7 @@ export async function validateLti13CourseInstance(
   );
 }
 
-export async function access_token(lti13_instance_id: string) {
+export async function getAccessToken(lti13_instance_id: string) {
   const lti13_instance = await selectLti13Instance(lti13_instance_id);
 
   let tokenSet: TokenSet = lti13_instance.access_tokenset;
@@ -282,7 +283,6 @@ export async function access_token(lti13_instance_id: string) {
     });
 
     // Store the token for reuse
-
     const expires_at = tokenSet.expires_at ? tokenSet.expires_at * 1000 : Date.now();
 
     await queryAsync(sql.update_token, {
@@ -294,42 +294,38 @@ export async function access_token(lti13_instance_id: string) {
   }
 }
 
-/*
- * Canvas supports an API call to get a single lineitem.
- * https://canvas.instructure.com/doc/api/line_items.html#method.lti/ims/line_items.show
- * But in testing Dave discovered its output might not be the same as
- * lineitems (plural).
- *
- * Instead of a get_lineitem() function, let's get_lineitems and filter.
- */
-export async function get_lineitems(instance: Lti13CombinedInstance) {
+export async function getLineitems(instance: Lti13CombinedInstance) {
   if (instance.lti13_course_instance.lineitems == null) {
     throw new Error('Lineitems not defined');
   }
-  const token = await access_token(instance.lti13_instance.id);
-  const lineitems: Lti13Lineitem[] = await fetchRetry(instance.lti13_course_instance.lineitems, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  /*
-  console.log(lineitems[0]);
-
-  const item = await fetchRetry(lineitems[0].id, {
-    method: 'GET',
-    headers: { Authorization: `Bearer ${token}` },
-  });
-  console.log(item);
-  */
+  const token = await getAccessToken(instance.lti13_instance.id);
+  const lineitems = Lti13LineitemsSchema.parse(
+    await fetchRetry(instance.lti13_course_instance.lineitems, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
 
   return lineitems;
 }
 
-export async function sync_lineitems(instance: Lti13CombinedInstance, job: ServerJob) {
+export async function getLineitem(instance: Lti13CombinedInstance, lineitem_id: string) {
+  const token = await getAccessToken(instance.lti13_instance.id);
+  const lineitem = Lti13LineitemSchema.parse(
+    fetchRetry(lineitem_id, {
+      method: 'GET',
+      headers: { Authorization: `Bearer ${token}` },
+    }),
+  );
+
+  return lineitem;
+}
+
+export async function syncLineitems(instance: Lti13CombinedInstance, job: ServerJob) {
   job.info(
     `Polling for external assignments from ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
   );
-  const lineitems = await get_lineitems(instance);
+  const lineitems = await getLineitems(instance);
   job.info(`Found ${lineitems.length} assignments.`);
 
   await runInTransactionAsync(async () => {
@@ -363,7 +359,7 @@ export async function sync_lineitems(instance: Lti13CombinedInstance, job: Serve
   });
 }
 
-export async function create_and_link_lineitem(
+export async function createAndLinkLineitem(
   instance: Lti13CombinedInstance,
   job: ServerJob,
   assessment: {
@@ -394,7 +390,7 @@ export async function create_and_link_lineitem(
     `Creating assignment for ${assessment.label} in ${instance.lti13_instance.name} ${instance.lti13_course_instance.context_label}`,
   );
 
-  const token = await access_token(instance.lti13_instance.id);
+  const token = await getAccessToken(instance.lti13_instance.id);
   const item: Lti13Lineitem = await fetchRetry(instance.lti13_course_instance.lineitems, {
     method: 'POST',
     headers: {
@@ -406,26 +402,25 @@ export async function create_and_link_lineitem(
 
   job.info('Associating PrairieLearn assessment with the new assignment');
 
-  await link_assessment(instance.lti13_course_instance.id, assessment.id, item);
+  await linkAssessment(instance.lti13_course_instance.id, assessment.id, item);
   job.info('Done.');
 }
 
-export async function query_and_link_lineitem(
+export async function queryAndLinkLineitem(
   instance: Lti13CombinedInstance,
   lineitem_id: string,
   assessment_id: string | number,
 ) {
-  const lineitems = await get_lineitems(instance);
-  const item = lineitems.find(({ id }) => id === lineitem_id);
+  const item = await getLineitem(instance, lineitem_id);
 
   if (item) {
-    await link_assessment(instance.lti13_course_instance.id, assessment_id, item);
+    await linkAssessment(instance.lti13_course_instance.id, assessment_id, item);
   } else {
     throw new HttpStatusError(400, 'Lineitem not found');
   }
 }
 
-export async function unlink_assessment(
+export async function unlinkAssessment(
   lti13_course_instance_id: string,
   assessment_id: string | number,
 ) {
@@ -435,7 +430,7 @@ export async function unlink_assessment(
   });
 }
 
-export async function link_assessment(
+export async function linkAssessment(
   lti13_course_instance_id: string,
   assessment_id: string | number,
   lineitem: Lti13Lineitem,

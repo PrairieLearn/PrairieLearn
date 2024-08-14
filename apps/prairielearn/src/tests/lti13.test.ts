@@ -8,7 +8,7 @@ import nodeJose from 'node-jose';
 
 import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
-import { access_token, fetchRetry } from '../ee/lib/lti13.js';
+import { fetchRetry, getAccessToken } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
 import { Lti13UserSchema } from '../lib/db-types.js';
 import { selectUserByUid } from '../models/user.js';
@@ -366,7 +366,7 @@ describe('LTI 1.3', () => {
     assert.equal(finishBadLoginResponse.status, 500);
   });
 
-  step('request access_token', async () => {
+  step('request access token', async () => {
     const ACCESS_TOKEN = '33679293-edd6-4415-af36-03113feb8447';
 
     // Run a server to respond to token requests.
@@ -404,7 +404,7 @@ describe('LTI 1.3', () => {
     });
 
     await withServer(app, oidcProviderPort, async () => {
-      const result = await access_token('1');
+      const result = await getAccessToken('1');
       assert.equal(result, ACCESS_TOKEN);
     });
   });
