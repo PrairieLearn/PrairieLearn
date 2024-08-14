@@ -6,6 +6,7 @@ columns
     min_points: double precision not null
     rubric_id: bigint not null
     starting_points: double precision not null
+    total_points: double precision
 
 indexes
     rubric_gradings_pkey: PRIMARY KEY (id) USING btree (id)
