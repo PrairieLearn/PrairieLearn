@@ -106,9 +106,10 @@ export function InstructorFileBrowserNoPermission({
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          <h1 class="sr-only">File Browser</h1>
           <div class="card mb-4">
-            <div class="card-header bg-danger text-white">File Browser</div>
+            <div class="card-header bg-danger text-white">
+              <h1 class="h6 font-weight-normal mb-0">Files</h1>
+            </div>
             <div class="card-body">
               <h2>Insufficient permissions</h2>
               <p>You must have at least &quot;Viewer&quot; permissions for this course.</p>
@@ -197,7 +198,7 @@ export function InstructorFileBrowser({
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${syncErrorsAndWarnings}
-          <h1 class="sr-only">File Browser</h1>
+          <h1 class="sr-only">Files</h1>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               <div class="row align-items-center justify-content-between">
