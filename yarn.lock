@@ -2816,7 +2816,7 @@ __metadata:
     "@actions/core": "npm:^1.10.1"
     "@actions/github": "npm:^6.0.0"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     typescript: "npm:^5.5.4"
     zod: "npm:^3.23.8"
   languageName: unknown
@@ -2827,7 +2827,7 @@ __metadata:
   resolution: "@prairielearn/aws-imds@workspace:packages/aws-imds"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     node-fetch: "npm:^3.3.2"
     typescript: "npm:^5.5.4"
     zod: "npm:^3.23.8"
@@ -2841,7 +2841,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@smithy/property-provider": "npm:^3.1.3"
     "@smithy/types": "npm:^3.3.0"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     typescript: "npm:^5.5.4"
   languageName: unknown
   linkType: soft
@@ -2887,7 +2887,7 @@ __metadata:
   dependencies:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
     commander: "npm:^12.1.0"
@@ -2919,7 +2919,7 @@ __metadata:
     "@types/fs-extra": "npm:^11.0.4"
     "@types/lodash": "npm:^4.17.7"
     "@types/mocha": "npm:^10.0.7"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
     fs-extra: "npm:^11.2.0"
@@ -2939,7 +2939,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": "npm:^10.0.7"
     "@types/multipipe": "npm:^3.0.5"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
     csv-stringify: "npm:^6.5.1"
@@ -2959,7 +2959,7 @@ __metadata:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": "npm:^10.0.7"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
     date-fns: "npm:^3.6.0"
@@ -2976,7 +2976,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/mocha": "npm:^10.0.7"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
     lodash: "npm:^4.17.21"
@@ -2991,7 +2991,7 @@ __metadata:
   resolution: "@prairielearn/eslint-plugin@workspace:packages/eslint-plugin-prairielearn"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     typescript: "npm:^5.5.4"
   languageName: unknown
   linkType: soft
@@ -3012,7 +3012,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/express": "npm:^4.17.21"
     "@types/express-session": "npm:^1.18.0"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
     mocha: "npm:^10.7.0"
@@ -3026,7 +3026,7 @@ __metadata:
   resolution: "@prairielearn/formatter@workspace:packages/formatter"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
     lodash: "npm:^4.17.21"
@@ -3056,7 +3056,7 @@ __metadata:
     "@types/chai": "npm:^4.3.17"
     "@types/dockerode": "npm:^3.3.31"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     "@types/sinon": "npm:^17.0.3"
     "@types/tmp": "npm:^0.2.6"
     async: "npm:^3.2.5"
@@ -3088,7 +3088,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/ejs": "npm:^3.1.5"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
     ejs: "npm:^3.1.10"
@@ -3103,7 +3103,7 @@ __metadata:
   resolution: "@prairielearn/html@workspace:packages/html"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
     mocha: "npm:^10.7.0"
@@ -3117,7 +3117,7 @@ __metadata:
   resolution: "@prairielearn/logger@workspace:packages/logger"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     logform: "npm:^2.6.1"
     typescript: "npm:^5.5.4"
     winston: "npm:^3.13.1"
@@ -3134,7 +3134,7 @@ __metadata:
     "@types/hast": "npm:^3.0.4"
     "@types/mdast": "npm:^4.0.4"
     "@types/mocha": "npm:^10.0.7"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     "@types/unist": "npm:^3.0.2"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
@@ -3166,7 +3166,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/mocha": "npm:^10.0.7"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
     chai-as-promised: "npm:^8.0.0"
@@ -3187,7 +3187,7 @@ __metadata:
   dependencies:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     pg: "npm:^8.12.0"
     typescript: "npm:^5.5.4"
   languageName: unknown
@@ -3223,7 +3223,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": "npm:^4.3.17"
     "@types/mocha": "npm:^10.0.7"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
     chai-as-promised: "npm:^8.0.0"
@@ -3240,7 +3240,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/chai": "npm:^4.3.17"
     "@types/mocha": "npm:^10.0.7"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
     mocha: "npm:^10.7.0"
@@ -3258,7 +3258,7 @@ __metadata:
     "@types/diff": "npm:^5.2.1"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/lodash": "npm:^4.17.7"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     "@types/yargs": "npm:^17.0.32"
     async: "npm:^3.2.5"
     chalk: "npm:^5.3.0"
@@ -3284,7 +3284,7 @@ __metadata:
     "@types/lodash": "npm:^4.17.7"
     "@types/mocha": "npm:^10.0.7"
     "@types/multipipe": "npm:^3.0.5"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     "@types/pg-cursor": "npm:^2.7.2"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
@@ -3377,7 +3377,7 @@ __metadata:
     "@types/mocha": "npm:^10.0.7"
     "@types/multer": "npm:^1.4.11"
     "@types/mustache": "npm:^4.2.5"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     "@types/node-fetch": "npm:^2.6.11"
     "@types/node-jose": "npm:^1.1.13"
     "@types/oauth-signature": "npm:^1.5.2"
@@ -3542,7 +3542,7 @@ __metadata:
   resolution: "@prairielearn/prettier-plugin-sql@workspace:packages/prettier-plugin-sql"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     prettier: "npm:3.3.3"
     sql-formatter: "npm:^15.3.2"
     typescript: "npm:^5.5.4"
@@ -3554,7 +3554,7 @@ __metadata:
   resolution: "@prairielearn/sanitize@workspace:packages/sanitize"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
     mocha: "npm:^10.7.0"
@@ -3570,7 +3570,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@sentry/node": "npm:^8.22.0"
     "@sentry/utils": "npm:^8.22.0"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     execa: "npm:^9.3.0"
     tsx: "npm:^4.16.5"
     typescript: "npm:^5.5.4"
@@ -3587,7 +3587,7 @@ __metadata:
     "@types/cookie": "npm:^0.6.0"
     "@types/cookie-signature": "npm:^1.1.2"
     "@types/express": "npm:^4.17.21"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     "@types/node-fetch": "npm:^2.6.11"
     "@types/on-headers": "npm:^1.0.3"
     "@types/set-cookie-parser": "npm:^2.4.10"
@@ -3616,7 +3616,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": "npm:^4.1.12"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     base64url: "npm:^3.0.1"
     debug: "npm:^4.3.6"
     lodash: "npm:^4.17.21"
@@ -3648,7 +3648,7 @@ __metadata:
     "@prairielearn/workspace-utils": "workspace:^"
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@socket.io/redis-emitter": "npm:^5.1.0"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.5"
     async-mutex: "npm:^0.5.0"
@@ -3681,7 +3681,7 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@socket.io/redis-emitter": "npm:^5.1.0"
-    "@types/node": "npm:^20.14.13"
+    "@types/node": "npm:^22.3.0"
     fast-glob: "npm:^3.3.2"
     filesize: "npm:^10.1.4"
     socket.io: "npm:^4.7.5"
@@ -5325,7 +5325,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.14.13":
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0":
   version: 20.14.13
   resolution: "@types/node@npm:20.14.13"
   dependencies:
@@ -5347,6 +5347,15 @@ __metadata:
   dependencies:
     undici-types: "npm:~5.26.4"
   checksum: 10c0/e985f50684def801801069e236165ee511f9195fc04ad4a2af7642d86aeaeaf7bfe34c147f894a48618a5c71c15b388ca91341a244792149543a712e38351988
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^22.3.0":
+  version: 22.3.0
+  resolution: "@types/node@npm:22.3.0"
+  dependencies:
+    undici-types: "npm:~6.18.2"
+  checksum: 10c0/855be3b97f4262a84818f889ff898e147dcef4f72b866e3551a8367380cdb63a45cf3929f09d9a0647f62706f8d4772e91a1ecd1bd7c6a80d6744c2b0cbca608
   languageName: node
   linkType: hard
 
@@ -14831,6 +14840,13 @@ __metadata:
   version: 5.26.5
   resolution: "undici-types@npm:5.26.5"
   checksum: 10c0/bb673d7876c2d411b6eb6c560e0c571eef4a01c1c19925175d16e3a30c4c428181fb8d7ae802a261f283e4166a0ac435e2f505743aa9e45d893f9a3df017b501
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~6.18.2":
+  version: 6.18.2
+  resolution: "undici-types@npm:6.18.2"
+  checksum: 10c0/dea28163891a5af7624c120107dc07a74c369ee94c6dd1d0de29af061ee129fac4846f97130589f4436b85f6102c73d30328ca908be02626dd8ab9fec5642aba
   languageName: node
   linkType: hard
 
