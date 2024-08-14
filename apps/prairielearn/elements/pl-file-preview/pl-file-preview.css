@@ -1,7 +1,3 @@
-[id^='file-preview'] .file-status-container {
-  cursor: pointer;
-}
-
 [id^='file-preview'] .file-status {
   margin-bottom: 0px;
   font-size: 0.8em;
