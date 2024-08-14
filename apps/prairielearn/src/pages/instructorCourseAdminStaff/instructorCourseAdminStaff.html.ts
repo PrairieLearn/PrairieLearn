@@ -5,7 +5,6 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { compiledScriptTag } from '../../lib/assets.js';
 import {
   CourseInstance,
   CourseInstanceSchema,
@@ -67,7 +66,6 @@ export function InstructorCourseAdminStaff({
             max-width: 35%;
           }
         </style>
-        ${compiledScriptTag('popover.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
@@ -87,7 +85,6 @@ export function InstructorCourseAdminStaff({
                   <button
                     type="button"
                     class="btn btn-light btn-sm ml-auto"
-                    id="coursePermissionsRemoveStudentDataAccessButton"
                     data-toggle="popover"
                     data-container="body"
                     data-html="true"
@@ -96,9 +93,9 @@ export function InstructorCourseAdminStaff({
                     data-content="${escapeHtml(
                       CoursePermissionsRemoveStudentDataAccessForm({
                         csrfToken: resLocals.__csrf_token,
-                        id: 'coursePermissionsRemoveStudentDataAccessButton',
                       }),
                     )}"
+                    data-testid="remove-all-student-data-access-button"
                   >
                     <i class="fas fa-eye-slash" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Remove all student data access</span>
@@ -106,7 +103,6 @@ export function InstructorCourseAdminStaff({
                   <button
                     type="button"
                     class="btn btn-light btn-sm ml-auto"
-                    id="coursePermissionsDeleteNoAccessButton"
                     data-toggle="popover"
                     data-container="body"
                     data-html="true"
@@ -115,9 +111,9 @@ export function InstructorCourseAdminStaff({
                     data-content="${escapeHtml(
                       CoursePermissionsDeleteNoAccessForm({
                         csrfToken: resLocals.__csrf_token,
-                        id: 'coursePermissionsDeleteNoAccessButton',
                       }),
                     )}"
+                    data-testid="delete-users-with-no-access-button"
                   >
                     <i class="fas fa-recycle" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Delete users with no access</span>
@@ -125,7 +121,6 @@ export function InstructorCourseAdminStaff({
                   <button
                     type="button"
                     class="btn btn-light btn-sm ml-auto"
-                    id="coursePermissionsDeleteNonOwnersButton"
                     data-toggle="popover"
                     data-container="body"
                     data-html="true"
@@ -134,9 +129,9 @@ export function InstructorCourseAdminStaff({
                     data-content="${escapeHtml(
                       CoursePermissionsDeleteNonOwnersForm({
                         csrfToken: resLocals.__csrf_token,
-                        id: 'coursePermissionsDeleteNonOwnersButton',
                       }),
                     )}"
+                    data-testid="delete-non-owners-button"
                   >
                     <i class="fas fa-users-slash" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Delete non-owners</span>
@@ -144,7 +139,6 @@ export function InstructorCourseAdminStaff({
                   <button
                     type="button"
                     class="btn btn-light btn-sm ml-auto"
-                    id="coursePermissionsInsertButton"
                     data-toggle="popover"
                     data-container="body"
                     data-html="true"
@@ -153,11 +147,11 @@ export function InstructorCourseAdminStaff({
                     data-content="${escapeHtml(
                       CoursePermissionsInsertForm({
                         csrfToken: resLocals.__csrf_token,
-                        id: 'coursePermissionsInsertButton',
                         uidsLimit,
                         courseInstances,
                       }),
                     )}"
+                    data-testid="add-users-button"
                   >
                     <i class="fas fa-users" aria-hidden="true"></i>
                     <span class="d-none d-sm-inline">Add users</span>
@@ -202,13 +196,7 @@ export function InstructorCourseAdminStaff({
   `.toString();
 }
 
-function CoursePermissionsRemoveStudentDataAccessForm({
-  csrfToken,
-  id,
-}: {
-  csrfToken: string;
-  id: string;
-}) {
+function CoursePermissionsRemoveStudentDataAccessForm({ csrfToken }: { csrfToken: string }) {
   return html`
     <form name="remove-student-data-access" method="POST">
       <input type="hidden" name="__action" value="remove_all_student_data_access" />
@@ -222,16 +210,14 @@ function CoursePermissionsRemoveStudentDataAccessForm({
       </div>
 
       <div class="text-right mt-4">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Remove all student data access</button>
       </div>
     </form>
   `;
 }
 
-function CoursePermissionsDeleteNoAccessForm({ csrfToken, id }: { csrfToken: string; id: string }) {
+function CoursePermissionsDeleteNoAccessForm({ csrfToken }: { csrfToken: string }) {
   return html`
     <form name="delete-no-access" method="POST">
       <input type="hidden" name="__action" value="delete_no_access" />
@@ -245,9 +231,7 @@ function CoursePermissionsDeleteNoAccessForm({ csrfToken, id }: { csrfToken: str
       </div>
 
       <div class="text-right mt-4">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Delete users with no access</button>
       </div>
     </form>
@@ -256,12 +240,10 @@ function CoursePermissionsDeleteNoAccessForm({ csrfToken, id }: { csrfToken: str
 
 function CoursePermissionsInsertForm({
   csrfToken,
-  id,
   uidsLimit,
   courseInstances,
 }: {
   csrfToken: string;
-  id: string;
   uidsLimit: number;
   courseInstances: CourseInstance[];
 }) {
@@ -340,22 +322,14 @@ function CoursePermissionsInsertForm({
         : ''}
 
       <div class="text-right mt-4">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Add users</button>
       </div>
     </form>
   `;
 }
 
-function CoursePermissionsDeleteNonOwnersForm({
-  csrfToken,
-  id,
-}: {
-  csrfToken: string;
-  id: string;
-}) {
+function CoursePermissionsDeleteNonOwnersForm({ csrfToken }: { csrfToken: string }) {
   return html`
     <form name="delete-non-owners" method="POST">
       <input type="hidden" name="__action" value="delete_non_owners" />
@@ -369,9 +343,7 @@ function CoursePermissionsDeleteNonOwnersForm({
       </div>
 
       <div class="text-right mt-4">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Delete non-owners</button>
       </div>
     </form>

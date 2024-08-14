@@ -107,11 +107,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                         >
                           Action for all instances <span class="caret"></span>
                         </button>
-                        <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
-                        <div
-                          class="dropdown-menu dropdown-menu-right"
-                          onclick="window.event.preventDefault();"
-                        >
+                        <div class="dropdown-menu dropdown-menu-right">
                           ${resLocals.authz_data.has_course_instance_permission_edit
                             ? html`
                                 <button

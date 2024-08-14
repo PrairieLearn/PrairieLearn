@@ -32,13 +32,7 @@ function AddSharingSetPopover({ csrfToken }: { csrfToken: string }) {
       </div>
 
       <div class="text-right mt-4">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          onclick="$('#courseSharingSetAdd').popover('hide')"
-        >
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Create Sharing Set</button>
       </div>
     </form>
@@ -76,11 +70,7 @@ function AddCourseToSharingSetPopover({
         />
       </div>
       <div>
-        <button
-          type="button"
-          class="btn btn-sm btn-secondary"
-          onclick="$('#addCourseToSS-${sharing_set.id}').popover('hide')"
-        >
+        <button type="button" class="btn btn-sm btn-secondary" data-dismiss="popover">
           Cancel
         </button>
         <button class="btn btn-sm btn-primary" type="Submit">Add Course</button>
@@ -257,7 +247,6 @@ export function InstructorCourseAdminSharing({
                       <button
                         type="button"
                         class="btn btn-light btn-sm ml-auto"
-                        id="courseSharingSetAdd"
                         data-toggle="popover"
                         data-container="body"
                         data-html="true"
@@ -296,7 +285,6 @@ export function InstructorCourseAdminSharing({
                               <button
                                 type="button"
                                 class="btn btn-sm btn-outline-dark"
-                                id="addCourseToSS-${sharing_set.id}"
                                 data-toggle="popover"
                                 data-container="body"
                                 data-html="true"
