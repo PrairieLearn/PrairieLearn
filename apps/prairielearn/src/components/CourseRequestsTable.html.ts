@@ -135,7 +135,7 @@ export function CourseRequestsTable({
                           >
                             <i class="fa fa-angle-up fa-fw expand-icon"></i>
                             Show Jobs
-                          </a>
+                          </button>
                         `
                       : ''}
                   </td>

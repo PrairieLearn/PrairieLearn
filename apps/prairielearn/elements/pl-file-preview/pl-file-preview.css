@@ -8,7 +8,7 @@
   transition: transform 400ms;
 }
 
-[id^='file-preview'] .file-status-container:not(.collapsed) .file-preview-icon {
+[id^='file-preview'] .file-status-container button:not(.collapsed) .file-preview-icon {
   transform: rotateX(180deg);
 }
 
