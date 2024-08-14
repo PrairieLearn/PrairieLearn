@@ -92,7 +92,7 @@
     "express": "^4.19.2",
     "express-async-handler": "^1.2.0",
     "express-session": "^1.18.0",
-    "fabric": "4.6.0-browser",
+    "fabric": "5.4.0",
     "fast-glob": "^3.3.2",
     "fast-json-stable-stringify": "^2.1.0",
     "fetch-cookie": "^3.0.1",
