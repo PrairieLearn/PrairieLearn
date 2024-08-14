@@ -114,6 +114,7 @@ const PostBodySchema = z.union([
         val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
       ),
     score_manual_adjust_points: z.coerce.number().nullish(),
+    score_manual_adjust_points_ratio: z.coerce.number().nullish(),
     use_score_perc: z.literal('on').optional(),
     score_manual_points: z.coerce.number().nullish(),
     score_manual_percent: z.coerce.number().nullish(),
@@ -194,8 +195,9 @@ router.post(
             applied_rubric_items: body.rubric_item_selected_manual.map((id) => ({
               rubric_item_id: id,
             })),
-            // TODO Convert score adjust points (based on max/manual points) to percentage and/or value based on rubric total points
-            adjust_points: body.score_manual_adjust_points || null,
+            // The adjust_points input on the form is based on the question points, not the rubric points, so adjust accordingly
+            adjust_points:
+              (body.score_manual_adjust_points || 0) / (body.score_manual_adjust_points_ratio || 1),
           }
         : undefined;
 

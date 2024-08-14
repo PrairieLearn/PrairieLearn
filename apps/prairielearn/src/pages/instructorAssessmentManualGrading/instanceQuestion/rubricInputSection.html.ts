@@ -32,6 +32,7 @@ export function RubricInputSection({
         margin-bottom: 0;
       }
     </style>
+    <input type="hidden" name="score_manual_adjust_points_ratio" value="${pointsRatio}" />
     ${rubric_data.rubric_items?.map(
       (item) => html`
         <div>
@@ -104,10 +105,8 @@ export function RubricInputSection({
                 name="score_manual_adjust_points"
                 data-max-points="${resLocals.assessment_question.max_manual_points ||
                 resLocals.assessment_question.max_points}"
-                value="${
-                  // TODO Adjust based on max points instead of rubric total points
-                  Math.round((rubric_grading?.adjust_points ?? 0) * 100) / 100 || ''
-                }"
+                value="${Math.round((rubric_grading?.adjust_points ?? 0) * pointsRatio * 100) /
+                  100 || ''}"
                 ${disable ? 'disabled' : ''}
               />
             </div>
