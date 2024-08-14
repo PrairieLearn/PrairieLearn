@@ -72,6 +72,7 @@ export function InstanceQuestion({
         </div>
         ${RubricSettingsModal({ resLocals })}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">Instance Question Manual Grading</h1>
           ${resLocals.assessment_instance.open
             ? html`
                 <div class="alert alert-danger" role="alert">

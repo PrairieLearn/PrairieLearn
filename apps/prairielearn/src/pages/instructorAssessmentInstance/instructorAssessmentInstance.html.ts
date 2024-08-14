@@ -99,6 +99,9 @@ export function InstructorAssessmentInstance({
           navPage: '',
         })}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">
+            ${resLocals.assessment_instance_label} instance for ${resLocals.instance_user.name}
+          </h1>
           ${ResetQuestionVariantsModal({
             csrfToken: resLocals.__csrf_token,
             groupWork: resLocals.assessment.group_work,

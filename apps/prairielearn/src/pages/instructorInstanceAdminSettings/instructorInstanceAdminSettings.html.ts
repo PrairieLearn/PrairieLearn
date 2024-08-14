@@ -41,7 +41,9 @@ export function InstructorInstanceAdminSettings({
           })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
-              Course instance ${resLocals.course_instance.short_name}
+              <h1 class="h6 font-weight-normal mb-0">
+                Course instance ${resLocals.course_instance.short_name}
+              </h1>
             </div>
             <table class="table table-sm table-hover two-column-description">
               <tbody>

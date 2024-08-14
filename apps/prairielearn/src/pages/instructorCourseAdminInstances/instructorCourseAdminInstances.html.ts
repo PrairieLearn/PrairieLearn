@@ -32,7 +32,7 @@ export function InstructorCourseAdminInstances({
             <div class="card-header bg-primary">
               <div class="row align-items-center justify-content-between">
                 <div class="col-auto">
-                  <span class="text-white">Course instances</span>
+                  <h1 class="text-white h6 font-weight-normal mb-0">Course instances</h1>
                 </div>
                 ${resLocals.authz_data.has_course_permission_edit &&
                 !resLocals.course.example_course &&
