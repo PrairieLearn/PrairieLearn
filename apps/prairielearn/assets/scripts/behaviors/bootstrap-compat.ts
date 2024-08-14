@@ -509,6 +509,14 @@ if (isBootstrapCompatEnabled()) {
   });
 
   makeMigrator({
+    selector: '.border-left-0, .border-right-0',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'border-left-0', 'border-start-0');
+      migrateClass(el, 'border-right-0', 'border-end-0');
+    },
+  });
+
+  makeMigrator({
     selector: '.rounded-left, .rounded-right',
     migrate(el, { migrateClass }) {
       migrateClass(el, 'rounded-left', 'rounded-start');
