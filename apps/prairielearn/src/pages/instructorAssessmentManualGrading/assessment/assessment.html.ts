@@ -51,7 +51,9 @@ export function ManualGradingAssessment({
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
-        ${GraderAssignmentModal({ courseStaff, csrfToken: resLocals.__csrf_token })}
+        ${resLocals.authz_data.has_course_instance_permission_edit
+          ? GraderAssignmentModal({ courseStaff, csrfToken: resLocals.__csrf_token })
+          : ''}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -216,36 +218,44 @@ function GraderAssignmentModal({
   return Modal({
     id: 'grader-assignment-modal',
     title: 'Assign instances to graders',
-    body: html`
-      <p>Assign instances to the following graders:</p>
-      ${courseStaff.map(
-        (staff) => html`
-          <div class="form-check">
-            <input
-              type="checkbox"
-              id="grader-assignment-${staff.user_id}"
-              name="assigned_grader"
-              value="${staff.user_id}"
-              class="form-check-input"
-            />
-            <label class="form-check-label" for="grader-assignment-${staff.user_id}">
-              ${staff.name ? `${staff.name} (${staff.uid})` : staff.uid}
-            </label>
-          </div>
-        `,
-      )}
-      <div class="mt-3 mb-0 small alert alert-info">
-        Only instances that require grading and are not yet assigned to a grader will be affected.
-        If more than one grader is selected, the instances will be randomly split between the
-        graders.
-      </div>
-    `,
+    body:
+      courseStaff.length > 0
+        ? html`
+            <p>Assign instances to the following graders:</p>
+            ${courseStaff.map(
+              (staff) => html`
+                <div class="form-check">
+                  <input
+                    type="checkbox"
+                    id="grader-assignment-${staff.user_id}"
+                    name="assigned_grader"
+                    value="${staff.user_id}"
+                    class="form-check-input"
+                  />
+                  <label class="form-check-label" for="grader-assignment-${staff.user_id}">
+                    ${staff.name ? `${staff.name} (${staff.uid})` : staff.uid}
+                  </label>
+                </div>
+              `,
+            )}
+            <div class="mt-3 mb-0 small alert alert-info">
+              Only instances that require grading and are not yet assigned to a grader will be
+              affected. If more than one grader is selected, the instances will be randomly split
+              between the graders.
+            </div>
+          `
+        : html`<p>
+            There are currently no staff members with Editor permission assigned to this course
+            instance.
+          </p>`,
     footer: html`
       <input type="hidden" name="unsafe_assessment_question_id" value="" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="__action" value="assign_graders" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-primary">Assign</button>
+      ${courseStaff.length > 0
+        ? html`<button type="submit" class="btn btn-primary">Assign</button>`
+        : ''}
     `,
   });
 }
