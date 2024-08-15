@@ -85,25 +85,12 @@ export function StudentAssessments({
                       : ''}
                     <tr>
                       <td class="align-middle" style="width: 1%">
-                        ${row.multiple_instance_header ||
-                        (!row.active && row.assessment_instance_id === null)
-                          ? html`
-                              <span
-                                class="badge color-${row.assessment_set_color}"
-                                data-testid="assessment-set-badge"
-                              >
-                                ${row.label}
-                              </span>
-                            `
-                          : html`
-                              <a
-                                href="${urlPrefix}${row.link}"
-                                class="badge color-${row.assessment_set_color} color-hover"
-                                data-testid="assessment-set-badge"
-                              >
-                                ${row.label}
-                              </a>
-                            `}
+                        <span
+                          class="badge color-${row.assessment_set_color}"
+                          data-testid="assessment-set-badge"
+                        >
+                          ${row.label}
+                        </span>
                       </td>
                       <td class="align-middle">
                         ${row.multiple_instance_header ||
