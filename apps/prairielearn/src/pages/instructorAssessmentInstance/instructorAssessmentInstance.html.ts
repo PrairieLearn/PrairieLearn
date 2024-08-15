@@ -115,10 +115,12 @@ export function InstructorAssessmentInstance({
           })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Summary:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2 class="h6 font-weight-normal mb-0">
+                ${resLocals.assessment_instance_label} Summary:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
 
             <table class="table table-sm table-hover two-column-description">
@@ -292,10 +294,12 @@ export function InstructorAssessmentInstance({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Questions:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2 class="h6 font-weight-normal mb-0">
+                ${resLocals.assessment_instance_label} Questions:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
 
             <table id="instanceQuestionList" class="table table-sm table-hover">
@@ -458,10 +462,12 @@ export function InstructorAssessmentInstance({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Statistics:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2 class="h6 font-weight-normal mb-0">
+                ${resLocals.assessment_instance_label} Statistics:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
             <table id="instanceQuestionStatsTable" class="table table-sm table-hover tablesorter">
               <thead>
@@ -510,10 +516,12 @@ export function InstructorAssessmentInstance({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Log:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2 class="h6 font-weight-normal mb-0">
+                ${resLocals.assessment_instance_label} Log:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
             <div class="card-body">
               <small>

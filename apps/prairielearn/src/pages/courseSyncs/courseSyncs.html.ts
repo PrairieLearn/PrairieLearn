@@ -54,7 +54,9 @@ export function CourseSyncs({
         <main id="content" class="container-fluid">
           <h1 class="sr-only">Course Sync</h1>
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Repository status</div>
+            <div class="card-header bg-primary text-white">
+              <h2 class="h6 font-weight-normal mb-0">Repository status</h2>
+            </div>
             <div class="table-responsive">
               <table class="table table-sm">
                 <tbody>
@@ -97,12 +99,16 @@ export function CourseSyncs({
           </div>
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Docker images</div>
+            <div class="card-header bg-primary text-white">
+              <h2 class="h6 font-weight-normal mb-0">Docker images</h2>
+            </div>
             ${ImageTable({ images, course, urlPrefix, __csrf_token })}
           </div>
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Sync job history</div>
+            <div class="card-header bg-primary text-white">
+              <h2 class="h6 font-weight-normal mb-0">Sync job history</h2>
+            </div>
             <div class="table-responsive">
               <table class="table table-sm table-hover">
                 <thead>

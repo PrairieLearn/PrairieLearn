@@ -7,7 +7,9 @@ import { formatStripePrice } from '../stripe.js';
 export function UserSettingsPurchasesCard({ purchases }: { purchases: Purchase[] }) {
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex">Purchases</div>
+      <div class="card-header bg-primary text-white d-flex">
+        <h2 class="h6 font-weight-normal mb-0">Purchases</h2>
+      </div>
 
       ${purchases.length === 0
         ? html` <div class="card-body text-muted">You don't currently have any purchases.</div> `

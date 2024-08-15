@@ -24,7 +24,7 @@ export function CourseRequestsTable({
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        ${headerPrefix} course requests
+        <h2 class="h6 font-weight-normal mb-0">${headerPrefix} course requests</h2>
         ${showAll
           ? ''
           : html`
