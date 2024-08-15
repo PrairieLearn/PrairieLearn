@@ -1,3 +1,4 @@
+import base64
 import collections
 import html
 import importlib
@@ -1810,3 +1811,44 @@ def is_int_json_serializable(n: int) -> bool:
 def full_unidecode(input_str: str) -> str:
     """Does unidecode of input and replaces the unicode minus with the normal one."""
     return unidecode(input_str.replace("\u2212", "-"))
+
+
+def add_files_format_error(data: dict, error: str) -> None:
+    """Adds a format error to the data dictionary."""
+
+    if data["format_errors"].get("_files") is None:
+        data["format_errors"]["_files"] = []
+    if isinstance(data["format_errors"]["_files"], list):
+        data["format_errors"].append(error)
+    else:
+        data["format_errors"] = [error]
+
+
+def add_submitted_file(
+    data: dict,
+    file_name: str,
+    *,
+    base64_contents: str | None = None,
+    file_contents: str | bytes | None = None,
+) -> None:
+    """Adds a submitted file to the data dictionary."""
+
+    if data["submitted_answers"].get("_files") is None:
+        data["submitted_answers"]["_files"] = []
+    if isinstance(data["submitted_answers"]["_files"], list):
+        if base64_contents is None:
+            if file_contents is None:
+                file_contents = ""
+            elif isinstance(file_contents, str):
+                file_contents = file_contents.encode("utf-8")
+            base64_contents = base64.b64encode(file_contents).decode("utf-8")
+        data["submitted_answers"]["_files"].append(
+            {
+                "name": file_name,
+                "contents": base64_contents,
+            }
+        )
+    else:
+        add_files_format_error(
+            data, '"_files" is present in "submitted_answers" but is not an array'
+        )

@@ -1,4 +1,3 @@
-import base64
 import json
 import math
 import os
@@ -725,16 +724,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             )
 
         if len(answer_code) == 0:
-            data["format_errors"]["_files"] = "The submitted file was empty."
+            pl.add_files_format_error(data, "The submitted file was empty.")
         else:
-            data["submitted_answers"]["_files"] = [
-                {
-                    "name": file_name,
-                    "contents": base64.b64encode(answer_code.encode("utf-8")).decode(
-                        "utf-8"
-                    ),
-                }
-            ]
+            pl.add_submitted_file(data, file_name, file_contents=answer_code)
 
     data["submitted_answers"][answer_name] = student_answer
     if answer_raw_name in data["submitted_answers"]:

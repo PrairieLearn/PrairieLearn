@@ -29,12 +29,6 @@ def get_answer_name(file_names: str) -> str:
     )
 
 
-def add_format_error(data: pl.QuestionData, error_string: str) -> None:
-    if "_files" not in data["format_errors"]:
-        data["format_errors"]["_files"] = []
-    data["format_errors"]["_files"].append(error_string)
-
-
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["file-names"]
@@ -94,7 +88,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get submitted answer or return parse_error if it does not exist
     files = data["submitted_answers"].get(answer_name, None)
     if not files:
-        add_format_error(data, "No submitted answer for file upload.")
+        pl.add_files_format_error(data, "No submitted answer for file upload.")
         return
 
     # We will store the files in the submitted_answer["_files"] key,
@@ -105,18 +99,15 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     try:
         parsed_files = json.loads(files)
     except Exception:
-        add_format_error(data, "Could not parse submitted files.")
+        pl.add_files_format_error(data, "Could not parse submitted files.")
         parsed_files = []
 
-    # Filter out any files that were not listed in file_names
-    parsed_files = [x for x in parsed_files if x.get("name", "") in required_file_names]
-
-    if data["submitted_answers"].get("_files", None) is None:
-        data["submitted_answers"]["_files"] = parsed_files
-    elif isinstance(data["submitted_answers"].get("_files", None), list):
-        data["submitted_answers"]["_files"].extend(parsed_files)
-    else:
-        add_format_error(data, "_files was present but was not an array.")
+    for x in parsed_files:
+        # Filter out any files that were not listed in file_names
+        if x.get("name", "") in required_file_names:
+            pl.add_submitted_file(
+                data, x.get("name", ""), base64_contents=x.get("contents", "")
+            )
 
     # Validate that all required files are present
     if parsed_files is not None:
@@ -126,7 +117,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         ]
 
         if len(missing_files) > 0:
-            add_format_error(
+            pl.add_files_format_error(
                 data,
                 "The following required files were missing: "
                 + ", ".join(missing_files),
