@@ -9,10 +9,6 @@ import prairielearn as pl
 from colors import PLColor
 
 
-def add_format_error(data: pl.QuestionData, error_string: str) -> None:
-    pl.add_files_format_error(data, error_string)
-
-
 def get_file_names_as_array(raw_file_names: str) -> list[str]:
     reader = csv.reader(
         StringIO(raw_file_names),
@@ -31,6 +27,10 @@ def get_answer_name(file_names: str) -> str:
     return "_file_upload_{0}".format(
         hashlib.sha1(file_names.encode("utf-8")).hexdigest()
     )
+
+
+def add_format_error(data: pl.QuestionData, error_string: str) -> None:
+    pl.add_files_format_error(data, error_string)
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
