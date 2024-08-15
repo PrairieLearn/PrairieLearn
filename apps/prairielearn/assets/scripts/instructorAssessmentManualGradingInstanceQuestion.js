@@ -1,5 +1,4 @@
 import ClipboardJS from 'clipboard';
-import e from 'express';
 
 import { mathjaxTypeset } from './lib/mathjax.js';
 
