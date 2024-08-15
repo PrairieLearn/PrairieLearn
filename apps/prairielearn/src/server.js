@@ -1550,8 +1550,6 @@ export async function initExpress() {
     (await import('./middlewares/logPageView.js')).default('studentAssessments'),
     (await import('./pages/studentAssessments/studentAssessments.js')).default,
   ]);
-  // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
-  // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)', [
     (await import('./middlewares/selectAndAuthzAssessment.js')).default,
     (await import('./middlewares/studentAssessmentAccess.js')).default,
