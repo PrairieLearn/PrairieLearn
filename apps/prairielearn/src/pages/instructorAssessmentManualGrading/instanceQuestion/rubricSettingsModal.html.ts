@@ -1,9 +1,19 @@
-import { html } from '@prairielearn/html';
+import { html, HtmlSafeString, joinHtml } from '@prairielearn/html';
 
 import { RubricData } from '../../../lib/manualGrading.js';
 
 export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, any> }) {
   const rubric_data = resLocals.rubric_data as RubricData | null | undefined;
+  // Group rubric items by parent; using empty string for root items
+  const grouped_rubric_items = {} as Record<string, RubricData['rubric_items'][0][]>;
+  rubric_data?.rubric_items?.forEach((item) => {
+    const parent = item.parent_id || '';
+    if (!grouped_rubric_items[parent]) {
+      grouped_rubric_items[parent] = [];
+    }
+    grouped_rubric_items[parent].push(item);
+  });
+
   return html`
     <div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog">
       <div class="modal-dialog border-info" style="max-width: 98vw" role="document">
@@ -180,16 +190,16 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                     <thead>
                       <tr class="text-nowrap">
                         <th style="width: 1px"><!-- Order --></th>
-                        <th>Points</th>
                         <th>Description</th>
                         <th>Detailed explanation (optional)</th>
                         <th>Grader note (optional, not visible to students)</th>
+                        <th>Points</th>
                         <th>Show to students</th>
                         <th>In use</th>
                       </tr>
                     </thead>
                     <tbody>
-                      ${rubric_data?.rubric_items?.map((item, index) => RubricItemRow(item, index))}
+                      ${RubricAsTree(grouped_rubric_items, '', 0, 0)[0]}
                       <tr
                         class="js-no-rubric-item-note ${rubric_data?.rubric_items?.length
                           ? 'd-none'
@@ -214,7 +224,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                   Add item
                 </button>
                 <template class="js-new-row-rubric-item">
-                  ${RubricItemRow(null, rubric_data?.rubric_items?.length ?? 0)}
+                  ${RubricItemRow(null, rubric_data?.rubric_items?.length ?? 0, 0)}
                 </template>
                 ${MustachePatterns({ resLocals })}
               </div>
@@ -272,11 +282,38 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
   `;
 }
 
-function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number) {
+function RubricAsTree(
+  grouped_rubric_items: Record<string, RubricData['rubric_items'][0][]>,
+  parent: string,
+  index: number,
+  indent: number,
+): [HtmlSafeString, number] {
+  const result = [] as HtmlSafeString[];
+  let current_index = index;
+  grouped_rubric_items[parent]?.forEach((item) => {
+    result.push(RubricItemRow(item, current_index, indent));
+    const [result_html, result_index] = RubricAsTree(
+      grouped_rubric_items,
+      item.id,
+      current_index + 1,
+      indent + 1,
+    );
+    result.push(result_html);
+    current_index = result_index;
+  });
+  return [joinHtml(result), current_index];
+}
+
+function RubricItemRow(
+  item: RubricData['rubric_items'][0] | null,
+  index: number,
+  indentLevel: number,
+) {
   const namePrefix = item ? `rubric_item[cur${item.id}]` : 'rubric_item[new]';
   return html`
     <tr>
       <td class="text-nowrap">
+        ${indentLevel > 0 ? html`<span>${'&nsbp'.repeat(indentLevel * 2)}&#5125;</span>` : ''}
         ${item ? html`<input type="hidden" name="${namePrefix}[id]" value="${item.id}" />` : ''}
         <input
           type="hidden"
@@ -297,17 +334,6 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
           <i class="fas fa-trash"></i>
           <span class="sr-only">Delete</span>
         </button>
-      </td>
-      <td>
-        <input
-          type="number"
-          class="form-control js-rubric-item-points"
-          style="width: 4rem"
-          step="any"
-          required
-          name="${namePrefix}[points]"
-          value="${item?.points}"
-        />
       </td>
       <td>
         <input
@@ -355,6 +381,17 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
         >
           <i class="fas fa-pencil"></i>
         </button>
+      </td>
+      <td>
+        <input
+          type="number"
+          class="form-control js-rubric-item-points"
+          style="width: 4rem"
+          step="any"
+          required
+          name="${namePrefix}[points]"
+          value="${item?.points}"
+        />
       </td>
       <td>
         <div class="form-check form-check-inline">
