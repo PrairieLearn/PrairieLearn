@@ -22,7 +22,7 @@
     "@types/fs-extra": "^11.0.4",
     "@types/lodash": "^4.17.7",
     "@types/node": "^20.14.13",
-    "@types/yargs": "^17.0.32",
+    "@types/yargs": "^17.0.33",
     "typescript": "^5.5.4",
     "typescript-cp": "^0.1.9"
   },
