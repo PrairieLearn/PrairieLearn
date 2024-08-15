@@ -74,7 +74,7 @@ export function InstructorInfoPanel({
   return html`
     <div class="card mb-4 border-warning">
       <div class="card-header bg-warning">
-        <h2 class="h6 font-weight-normal mb-0">Staff information</h2>
+        <h2>Staff information</h2>
       </div>
       <div class="card-body">
         ${StaffUserInfo({ user })}

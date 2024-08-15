@@ -81,7 +81,7 @@ export function StudentInstanceQuestion({
                 ? html`
                     <div class="card mb-4">
                       <div class="card-header bg-primary text-white">
-                        <h1 class="h6 font-weight-normal mb-0">
+                        <h1>
                           ${QuestionTitle({
                             questionContext,
                             question: resLocals.question,
@@ -103,7 +103,7 @@ export function StudentInstanceQuestion({
                 ? html`
                     <div class="card mb-4">
                       <div class="card-header bg-secondary">
-                        <h2 class="h6 font-weight-normal mb-0">
+                        <h2>
                           <a
                             class="text-white"
                             href="${resLocals.urlPrefix}/assessment_instance/${resLocals

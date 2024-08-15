@@ -19,7 +19,7 @@ export function AssessmentScorePanel({
   return html`
     <div class="card mb-4" id="assessment-score-panel">
       <div class="card-header bg-secondary">
-        <h2 class="h6 font-weight-normal mb-0">
+        <h2>
           <a class="text-white" href="${urlPrefix}/assessment_instance/${assessment_instance.id}/">
             ${assessment_set.name} ${assessment.number}
           </a>

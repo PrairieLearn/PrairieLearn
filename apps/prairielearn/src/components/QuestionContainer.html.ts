@@ -75,7 +75,7 @@ export function QuestionContainer({
 
       <div class="card mb-4 grading-block${showTrueAnswer ? '' : ' d-none'}">
         <div class="card-header bg-secondary text-white">
-          <h2 class="h6 font-weight-normal mb-0">Correct answer</h2>
+          <h2>Correct answer</h2>
         </div>
         <div class="card-body answer-body">${showTrueAnswer ? unsafeHtml(answerHtml) : ''}</div>
       </div>

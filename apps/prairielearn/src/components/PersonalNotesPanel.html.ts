@@ -28,7 +28,7 @@ export function PersonalNotesPanel({
     <div class="card mb-4" id="attach-file-panel">
       <div class="card-header bg-secondary text-white d-flex align-items-center">
         <i class="fas fa-paperclip"></i>
-        <h2 class="h6 font-weight-normal mb-0">&nbsp;Personal Notes</h2>
+        <h2>&nbsp;Personal Notes</h2>
       </div>
       <table class="table table-sm">
         <tbody>
