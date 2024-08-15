@@ -124,7 +124,7 @@ function AssessmentQuestionRow({
 
   return html`
     <tr>
-      <td>
+      <td class="align-middle">
         <a href="${gradingUrl}">
           ${question.alternative_group_number}.${question.alternative_group_size === 1
             ? ''
@@ -145,8 +145,8 @@ function AssessmentQuestionRow({
               </a>
             `}
       </td>
-      <td>${question.qid}</td>
-      <td class="text-center">
+      <td class="align-middle">${question.qid}</td>
+      <td class="text-center align-middle">
         ${question.max_auto_points
           ? resLocals.assessment.type === 'Exam'
             ? (question.points_list || [question.max_manual_points ?? 0])
@@ -155,14 +155,14 @@ function AssessmentQuestionRow({
             : (question.init_points ?? 0) - (question.max_manual_points ?? 0)
           : '—'}
       </td>
-      <td class="text-center">${question.max_manual_points || '—'}</td>
-      <td class="text-center" data-testid="iq-to-grade-count">
+      <td class="text-center align-middle">${question.max_manual_points || '—'}</td>
+      <td class="text-center align-middle" data-testid="iq-to-grade-count">
         ${question.num_instance_questions_to_grade} / ${question.num_instance_questions}
       </td>
-      <td>
+      <td class="align-middle">
         ${ProgressBar(question.num_instance_questions_to_grade, question.num_instance_questions)}
       </td>
-      <td>
+      <td class="align-middle">
         ${joinHtml(assignedGraders, ', ')}
         ${question.num_instance_questions_unassigned > 0
           ? html`
@@ -183,8 +183,10 @@ function AssessmentQuestionRow({
             `
           : ''}
       </td>
-      <td>${(question.actual_graders || []).map((u) => u.name ?? u.uid).join(', ')}</td>
-      <td>
+      <td class="align-middle">
+        ${(question.actual_graders || []).map((u) => u.name ?? u.uid).join(', ')}
+      </td>
+      <td class="align-middle">
         ${showGradingButton
           ? html`
               <a class="btn btn-xs btn-primary" href="${gradingUrl}/next_ungraded">
