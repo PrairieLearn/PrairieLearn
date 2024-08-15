@@ -92,7 +92,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get submitted answer or return parse_error if it does not exist
     files = data["submitted_answers"].get(answer_name, None)
     if not files:
-        pl.add_files_format_error(data, "No submitted answer for file upload.")
+        add_format_error(data, "No submitted answer for file upload.")
         return
 
     # We will store the files in the submitted_answer["_files"] key,
@@ -103,7 +103,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     try:
         parsed_files = json.loads(files)
     except Exception:
-        pl.add_files_format_error(data, "Could not parse submitted files.")
+        add_format_error(data, "Could not parse submitted files.")
         parsed_files = []
 
     for x in parsed_files:
@@ -119,7 +119,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         ]
 
         if len(missing_files) > 0:
-            pl.add_files_format_error(
+            add_format_error(
                 data,
                 "The following required files were missing: "
                 + ", ".join(missing_files),
