@@ -337,7 +337,9 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           <small id="uinAttributeHelp" class="form-text text-muted">
             The UIN is used as an internal, immutable identifier for the user. It
             <strong>MUST</strong> never change for a given individual, even if they change their
-            name or UID.
+            name or UID. Possibly
+            <code>["https://purl.imsglobal.org/spec/lti/claim/lis"]["person_sourcedid"]</code> or
+            <code>["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]</code>
           </small>
         </div>
 
