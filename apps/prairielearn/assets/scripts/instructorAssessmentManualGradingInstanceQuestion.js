@@ -1,4 +1,5 @@
 import ClipboardJS from 'clipboard';
+import e from 'express';
 
 import { mathjaxTypeset } from './lib/mathjax.js';
 
@@ -483,6 +484,7 @@ function rowDragOver(event) {
   const rowList = Array.from(row.parentNode.childNodes);
   const draggingRowIdx = rowList.indexOf(window.rubricItemRowDragging);
   const targetRowIdx = rowList.indexOf(row);
+  const targetRowItemIdx = row.querySelector('.js-rubric-item-row-order').value;
   event.preventDefault();
   if (targetRowIdx < draggingRowIdx) {
     row.parentNode.insertBefore(window.rubricItemRowDragging, row);
@@ -491,6 +493,33 @@ function rowDragOver(event) {
   } else {
     row.parentNode.appendChild(window.rubricItemRowDragging);
   }
+
+  var indentLevel = 0;
+
+  // There must be a parent above to allow indentation
+  if (targetRowItemIdx > 0) {
+    const potentialParentIndent =
+      rowList[targetRowIdx - 1].querySelector('.js-rubric-item-indent').value;
+    const dragOffset = event.clientX - row.getBoundingClientRect().left;
+    console.log(dragOffset);
+    // Do not allow a row to be considered as its own parent
+    if (draggingRowIdx === targetRowIdx - 1) {
+      indentLevel = Math.max(0, Math.min(potentialParentIndent, dragOffset % 25));
+    } else {
+      indentLevel = Math.max(0, Math.min(potentialParentIndent + 1, dragOffset % 25));
+    }
+    window.rubricItemRowDragging.querySelector('.js-rubric-item-indent').value = indentLevel;
+  } else {
+    window.rubricItemRowDragging.querySelector('.js-rubric-item-indent').value = 0;
+  }
+
+  if (indentLevel > 0) {
+    window.rubricItemRowDragging.querySelector('.js-rubric-item-render-indent').innerHTML =
+      '&nbsp;&nbsp;' + '&nbsp;'.repeat(indentLevel * 2) + '&#5125';
+  } else {
+    window.rubricItemRowDragging.querySelector('.js-rubric-item-render-indent').innerHTML = '';
+  }
+
   updateRubricItemOrderField();
 }
 

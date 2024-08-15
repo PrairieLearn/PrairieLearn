@@ -313,7 +313,6 @@ function RubricItemRow(
   return html`
     <tr>
       <td class="text-nowrap">
-        ${indentLevel > 0 ? html`<span>${'&nsbp'.repeat(indentLevel * 2)}&#5125;</span>` : ''}
         ${item ? html`<input type="hidden" name="${namePrefix}[id]" value="${item.id}" />` : ''}
         <input
           type="hidden"
@@ -321,6 +320,13 @@ function RubricItemRow(
           name="${namePrefix}[order]"
           value="${index}"
         />
+        <input
+          type="hidden"
+          class="js-rubric-item-indent"
+          name="${namePrefix}[indent]"
+          value="${indentLevel}"
+        />
+        <input type="hidden" class="js-rubric-item-indent-temp" value="${indentLevel}" />
         <button type="button" class="btn btn-sm js-rubric-item-move-button" draggable="true">
           <i class="fas fa-arrows-up-down"></i>
         </button>
@@ -330,6 +336,11 @@ function RubricItemRow(
         <button type="button" class="btn btn-sm sr-only js-rubric-item-move-up-button">
           Move up
         </button>
+        <span class="js-rubric-item-render-indent"
+          >${indentLevel > 0
+            ? html`&nbsp;&nbsp;${'&nbsp;'.repeat(indentLevel * 2)}&#5125;`
+            : ''}</span
+        >
         <button type="button" class="btn btn-sm js-rubric-item-delete text-danger">
           <i class="fas fa-trash"></i>
           <span class="sr-only">Delete</span>
