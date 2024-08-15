@@ -28,12 +28,6 @@ ORDER BY
 LIMIT
   1;
 
--- BLOCK select_graders
-SELECT
-  to_jsonb(
-    course_instances_select_graders ($course_instance_id)
-  ) AS graders;
-
 -- BLOCK update_assigned_grader
 UPDATE instance_questions AS iq
 SET
@@ -43,18 +37,7 @@ SET
     ELSE assigned_grader
   END
 WHERE
-  iq.id = $instance_question_id
-  AND (
-    $assigned_grader::BIGINT IS NULL
-    OR $assigned_grader IN (
-      SELECT
-        user_id
-      FROM
-        UNNEST(
-          course_instances_select_graders ($course_instance_id)
-        )
-    )
-  );
+  iq.id = $instance_question_id;
 
 -- BLOCK close_issues_for_instance_question
 WITH
