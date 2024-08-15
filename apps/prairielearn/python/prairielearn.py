@@ -1813,19 +1813,38 @@ def full_unidecode(input_str: str) -> str:
     return unidecode(input_str.replace("\u2212", "-"))
 
 
-def add_files_format_error(data: dict, error: str) -> None:
+def add_files_format_error(data: QuestionData, error: str) -> None:
     """Adds a format error to the data dictionary."""
 
     if data["format_errors"].get("_files") is None:
         data["format_errors"]["_files"] = []
     if isinstance(data["format_errors"]["_files"], list):
-        data["format_errors"].append(error)
+        data["format_errors"]["_files"].append(error)
     else:
-        data["format_errors"] = [error]
+        data["format_errors"]["_files"] = [
+            '"_files" was present in "format_errors" but was not an array',
+            error,
+        ]
 
 
+@overload
 def add_submitted_file(
-    data: dict,
+    data: QuestionData,
+    file_name: str,
+    *,
+    base64_contents: str | None,
+    file_contents: None = None,
+) -> None: ...
+@overload
+def add_submitted_file(
+    data: QuestionData,
+    file_name: str,
+    *,
+    base64_contents: None = None,
+    file_contents: str | bytes | None,
+) -> None: ...
+def add_submitted_file(
+    data: QuestionData,
     file_name: str,
     *,
     base64_contents: str | None = None,
@@ -1838,7 +1857,7 @@ def add_submitted_file(
     if isinstance(data["submitted_answers"]["_files"], list):
         if base64_contents is None:
             if file_contents is None:
-                file_contents = ""
+                file_contents = b""
             elif isinstance(file_contents, str):
                 file_contents = file_contents.encode("utf-8")
             base64_contents = base64.b64encode(file_contents).decode("utf-8")
