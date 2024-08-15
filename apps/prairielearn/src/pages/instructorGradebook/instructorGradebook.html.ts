@@ -80,7 +80,7 @@ export function InstructorGradebook({
             : html`
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white">
-                    <h1 class="h6 font-weight-normal mb-0">Gradebook</h1>
+                    <h1>Gradebook</h1>
                   </div>
                   <table id="gradebook-table"></table>
 
@@ -108,7 +108,7 @@ function StudentDataViewMissing({
   return html`
     <div class="card mb-4">
       <div class="card-header bg-danger text-white h6 font-weight-normal">
-        <h1 class="h6 font-weight-normal mb-0">Gradebook</h1>
+        <h1>Gradebook</h1>
       </div>
       <div class="card-body">
         <h2>Insufficient permissions</h2>

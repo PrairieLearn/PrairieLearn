@@ -11,14 +11,17 @@ import {
   compiledScriptTag,
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
+import type { User } from '../../../lib/db-types.js';
 
 import { InstanceQuestionTableData } from './assessmentQuestion.types.js';
 
 export function AssessmentQuestion({
   resLocals,
+  courseStaff,
   botGradingEnabled,
 }: {
   resLocals: Record<string, any>;
+  courseStaff: User[];
   botGradingEnabled: boolean;
 }) {
   const {
@@ -30,7 +33,6 @@ export function AssessmentQuestion({
     __csrf_token,
     authz_data,
     assessment_question,
-    course_staff,
     num_open_instances,
     course_instance,
     course,
@@ -66,7 +68,7 @@ export function AssessmentQuestion({
             groupWork: assessment.group_work,
             maxAutoPoints: assessment_question.max_auto_points,
             botGradingEnabled,
-            courseStaff: course_staff,
+            courseStaff,
             csrfToken: __csrf_token,
           },
           'instance-question-table-data',
@@ -106,7 +108,7 @@ export function AssessmentQuestion({
             : ''}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h1 class="h6 font-weight-normal mb-0">
+              <h1>
                 ${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}
               </h1>
             </div>

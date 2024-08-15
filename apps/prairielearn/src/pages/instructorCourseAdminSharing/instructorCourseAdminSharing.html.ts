@@ -171,7 +171,7 @@ export function InstructorCourseAdminSharing({
           })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
-              <h1 class="h6 font-weight-normal mb-0">Course Sharing Info</h1>
+              <h1>Course Sharing Info</h1>
             </div>
             <table class="table table-sm table-hover two-column-description">
               <tbody>
@@ -239,33 +239,29 @@ export function InstructorCourseAdminSharing({
           </div>
 
           <div class="card mb-4">
-            <div class="card-header bg-primary">
-              <div class="row align-items-center justify-content-between">
-                <div class="col-auto">
-                  <span class="text-white">Sharing Sets</span>
-                </div>
-                ${isCourseOwner
-                  ? html`<div class="col-auto">
-                      <button
-                        type="button"
-                        class="btn btn-light btn-sm ml-auto"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Create Sharing Set"
-                        data-content="${escapeHtml(
-                          AddSharingSetPopover({
-                            csrfToken: resLocals.__csrf_token,
-                          }),
-                        )}"
-                      >
-                        <i class="fas fa-plus" aria-hidden="true"></i>
-                        <span class="d-none d-sm-inline">Create Sharing Set</span>
-                      </button>
-                    </div>`
-                  : ''}
-              </div>
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+              <span>Sharing Sets</span>
+              ${isCourseOwner
+                ? html`
+                    <button
+                      type="button"
+                      class="btn btn-light btn-sm ml-auto"
+                      data-toggle="popover"
+                      data-container="body"
+                      data-html="true"
+                      data-placement="auto"
+                      title="Create Sharing Set"
+                      data-content="${escapeHtml(
+                        AddSharingSetPopover({
+                          csrfToken: resLocals.__csrf_token,
+                        }),
+                      )}"
+                    >
+                      <i class="fas fa-plus" aria-hidden="true"></i>
+                      <span class="d-none d-sm-inline">Create Sharing Set</span>
+                    </button>
+                  `
+                : ''}
             </div>
             <table class="table table-sm table-hover table-striped">
               <thead>

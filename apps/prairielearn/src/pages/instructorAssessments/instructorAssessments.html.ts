@@ -64,29 +64,19 @@ export function InstructorAssessments({
             urlPrefix,
           })}
           <div class="card mb-4">
-            <div class="card-header bg-primary">
-              <div class="row align-items-center justify-content-between">
-                <div class="col-auto">
-                  <h1 class="text-white h6 font-weight-normal mb-0">Assessments</h1>
-                </div>
-                ${authz_data.has_course_permission_edit && !course.example_course
-                  ? html`
-                      <div class="col-auto">
-                        <form name="add-assessment-form" method="POST">
-                          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                          <button
-                            name="__action"
-                            value="add_assessment"
-                            class="btn btn-sm btn-light"
-                          >
-                            <i class="fa fa-plus" aria-hidden="true"></i>
-                            <span class="d-none d-sm-inline">Add assessment</span>
-                          </button>
-                        </form>
-                      </div>
-                    `
-                  : ''}
-              </div>
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+              <h1>Assessments</h1>
+              ${authz_data.has_course_permission_edit && !course.example_course
+                ? html`
+                    <form class="ml-auto" name="add-assessment-form" method="POST">
+                      <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                      <button name="__action" value="add_assessment" class="btn btn-sm btn-light">
+                        <i class="fa fa-plus" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline">Add assessment</span>
+                      </button>
+                    </form>
+                  `
+                : ''}
             </div>
 
             <div class="table-responsive">
