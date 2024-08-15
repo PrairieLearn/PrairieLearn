@@ -46,7 +46,7 @@ export function NewsItems({
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
-              <h1 class="h6 font-weight-normal mb-0">News</h1>
+              <h1>News</h1>
             </div>
 
             ${newsItems.length === 0

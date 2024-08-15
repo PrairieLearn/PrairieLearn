@@ -29,7 +29,7 @@ export function InstructorCourseAdminTopics({
           })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h1 class="h6 font-weight-normal mb-0">Topics</h1>
+              <h1>Topics</h1>
             </div>
             <div class="table-responsive">
               <table class="table table-sm table-hover table-striped">

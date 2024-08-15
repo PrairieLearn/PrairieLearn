@@ -26,7 +26,7 @@ export function AdministratorAdmins({
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h1 class="h6 font-weight-normal mb-0">Administrators</h1>
+              <h1>Administrators</h1>
               <button
                 type="button"
                 class="btn btn-sm btn-light ml-auto"
