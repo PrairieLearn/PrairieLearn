@@ -52,18 +52,15 @@ export function StudentAssessments({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'assessments',
         })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Assessments</div>
+            <div class="card-header bg-primary text-white">
+              <h1 class="h6 font-weight-normal mb-0">Assessments</h1>
+            </div>
 
             <table class="table table-sm table-hover">
               <thead>

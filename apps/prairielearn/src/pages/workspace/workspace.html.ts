@@ -50,7 +50,9 @@ export function Workspace({
         >
           <div class="d-flex flex-column mr-3 text-white">
             <span>
-              <a href="${navTitleHref}" target="_blank" class="text-white">${navTitle}</a>
+              <h1 class="h6 font-weight-normal mb-0">
+                <a href="${navTitleHref}" target="_blank" class="text-white">${navTitle}</a>
+              </h1>
             </span>
             <span class="small">
               <i class="fa fa-laptop-code" aria-hidden="true"></i>
@@ -125,8 +127,9 @@ export function Workspace({
                   tabindex="0"
                   type="button"
                   class="nav-item btn btn-light"
-                  data-container="body"
                   data-toggle="popover"
+                  data-trigger="focus"
+                  data-container="body"
                   data-placement="bottom"
                   data-html="true"
                   data-content="${escapeHtml(HelpButtonContents())}"

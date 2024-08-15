@@ -291,8 +291,6 @@ function setupDynamicObjects() {
       link.classList.add('disabled');
     });
   });
-  // Enable popover
-  $('[data-toggle="popover"]').popover({ sanitize: false, container: 'body' });
 
   if (document.getElementById('submission-suspended-data')) {
     const countdownData = decodeData<{

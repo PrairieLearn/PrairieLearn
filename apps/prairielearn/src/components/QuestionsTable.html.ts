@@ -65,7 +65,7 @@ export function QuestionsTable({
       <div class="card-header bg-primary">
         <div class="row align-items-center justify-content-between">
           <div class="col-auto">
-            <span class="text-white">Questions</span>
+            <h1 class="text-white h6 font-weight-normal mb-0">Questions</h1>
           </div>
         </div>
       </div>
