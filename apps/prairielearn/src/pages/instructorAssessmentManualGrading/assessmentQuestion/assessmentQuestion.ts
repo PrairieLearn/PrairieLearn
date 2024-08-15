@@ -6,7 +6,9 @@ import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
 import { botGrade } from '../../../lib/bot-grading.js';
 import { features } from '../../../lib/features/index.js';
+import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
+import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { AssessmentQuestion } from './assessmentQuestion.html.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
@@ -20,8 +22,11 @@ router.get(
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
+    const courseStaff = await selectCourseInstanceGraderStaff({
+      course_instance_id: res.locals.course_instance.id,
+    });
     const botGradingEnabled = await features.enabledFromLocals('bot-grading', res.locals);
-    res.send(AssessmentQuestion({ resLocals: res.locals, botGradingEnabled }));
+    res.send(AssessmentQuestion({ resLocals: res.locals, courseStaff, botGradingEnabled }));
   }),
 );
 
@@ -79,8 +84,18 @@ router.post(
       const instance_question_ids = Array.isArray(req.body.instance_question_id)
         ? req.body.instance_question_id
         : [req.body.instance_question_id];
+      if (action_data?.assigned_grader != null) {
+        const courseStaff = await selectCourseInstanceGraderStaff({
+          course_instance_id: res.locals.course_instance.id,
+        });
+        if (!courseStaff.some((staff) => idsEqual(staff.user_id, action_data.assigned_grader))) {
+          throw new error.HttpStatusError(
+            400,
+            'Assigned grader does not have Student Data Editor permission',
+          );
+        }
+      }
       await queryAsync(sql.update_instance_questions, {
-        course_instance_id: res.locals.course_instance.id,
         assessment_question_id: res.locals.assessment_question.id,
         instance_question_ids,
         update_requires_manual_grading: 'requires_manual_grading' in action_data,
