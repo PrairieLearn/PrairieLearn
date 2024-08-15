@@ -91,7 +91,9 @@ export function InstructorQuestionSettings({
             urlPrefix: resLocals.urlPrefix,
           })}
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">Question Settings</div>
+            <div class="card-header bg-primary text-white d-flex">
+              <h1 class="h6 font-weight-normal mb-0">Question Settings</h1>
+            </div>
             <div class="card-body">
               <form>
                 <div class="form-group">
@@ -238,11 +240,8 @@ export function InstructorQuestionSettings({
                                     csrfToken: resLocals.__csrf_token,
                                     editableCourses,
                                     courseId: resLocals.course.id,
-                                    buttonId: 'copyQuestionButton',
                                   }),
                                 )}"
-                                data-trigger="manual"
-                                onclick="$(this).popover('show')"
                               >
                                 <i class="fa fa-clone"></i>
                                 <span>Make a copy of this question</span>
@@ -286,12 +285,10 @@ function CopyForm({
   csrfToken,
   editableCourses,
   courseId,
-  buttonId,
 }: {
   csrfToken: string;
   editableCourses: CourseWithPermissions[];
   courseId: string;
-  buttonId: string;
 }) {
   return html`
     <form name="copy-question-form" method="POST">
@@ -312,9 +309,7 @@ function CopyForm({
         </select>
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${buttonId}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Submit</button>
       </div>
     </form>

@@ -28,9 +28,6 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
       </head>
       <body>
         <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
           function copyToClipboard(element) {
             var $temp = $('<input>');
             $('body').append($temp);
@@ -45,7 +42,9 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
           ${!authz_data.has_course_permission_edit
             ? html`
                 <div class="card mb-4">
-                  <div class="card-header bg-danger text-white">LTI configuration</div>
+                  <div class="card-header bg-danger text-white">
+                    <h1 class="h6 font-weight-normal mb-0">LTI configuration</h1>
+                  </div>
                   <div class="card-body">
                     <h2>Insufficient permissions</h2>
                     <p>You must have at least &quot;Editor&quot; permissions for this course.</p>
@@ -66,7 +65,9 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
               `
             : html`
                 <div class="card mb-4">
-                  <div class="card-header bg-primary text-white">LTI configuration</div>
+                  <div class="card-header bg-primary text-white">
+                    <h1 class="h6 font-weight-normal mb-0">LTI configuration</h1>
+                  </div>
                   <div class="card-body">
                     <p>
                       The LTI (Learning Tools Interoperability) standard allows other online

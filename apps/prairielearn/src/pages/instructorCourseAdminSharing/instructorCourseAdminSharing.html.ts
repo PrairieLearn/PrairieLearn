@@ -32,13 +32,7 @@ function AddSharingSetPopover({ csrfToken }: { csrfToken: string }) {
       </div>
 
       <div class="text-right mt-4">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          onclick="$('#courseSharingSetAdd').popover('hide')"
-        >
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Create Sharing Set</button>
       </div>
     </form>
@@ -76,11 +70,7 @@ function AddCourseToSharingSetPopover({
         />
       </div>
       <div>
-        <button
-          type="button"
-          class="btn btn-sm btn-secondary"
-          onclick="$('#addCourseToSS-${sharing_set.id}').popover('hide')"
-        >
+        <button type="button" class="btn btn-sm btn-secondary" data-dismiss="popover">
           Cancel
         </button>
         <button class="btn btn-sm btn-primary" type="Submit">Add Course</button>
@@ -172,11 +162,6 @@ export function InstructorCourseAdminSharing({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${CourseSyncErrorsAndWarnings({
@@ -185,7 +170,9 @@ export function InstructorCourseAdminSharing({
             urlPrefix: resLocals.urlPrefix,
           })}
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">Course Sharing Info</div>
+            <div class="card-header bg-primary text-white d-flex">
+              <h1 class="h6 font-weight-normal mb-0">Course Sharing Info</h1>
+            </div>
             <table class="table table-sm table-hover two-column-description">
               <tbody>
                 <tr>
@@ -201,7 +188,6 @@ export function InstructorCourseAdminSharing({
                             title="Choose Sharing Name"
                             data-toggle="modal"
                             data-target="#chooseSharingNameModal"
-                            data-trigger="manual"
                           >
                             <i class="fas fa-share-nodes" aria-hidden="true"></i>
                             <span class="d-none d-sm-inline">Choose Sharing Name</span>
@@ -263,7 +249,6 @@ export function InstructorCourseAdminSharing({
                       <button
                         type="button"
                         class="btn btn-light btn-sm ml-auto"
-                        id="courseSharingSetAdd"
                         data-toggle="popover"
                         data-container="body"
                         data-html="true"
@@ -302,7 +287,6 @@ export function InstructorCourseAdminSharing({
                               <button
                                 type="button"
                                 class="btn btn-sm btn-outline-dark"
-                                id="addCourseToSS-${sharing_set.id}"
                                 data-toggle="popover"
                                 data-container="body"
                                 data-html="true"

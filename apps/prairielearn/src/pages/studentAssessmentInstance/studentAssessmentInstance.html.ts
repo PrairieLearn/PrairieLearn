@@ -69,7 +69,6 @@ export function StudentAssessmentInstance({
               'time-limit-data',
             )}`
           : ''}
-        ${compiledScriptTag('studentAssessmentInstanceClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -92,8 +91,10 @@ export function StudentAssessmentInstance({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <span>
-                ${resLocals.assessment_set.abbreviation}${resLocals.assessment.number}:
-                ${resLocals.assessment.title}
+                <h1 class="h6 font-weight-normal mb-0">
+                  ${resLocals.assessment_set.abbreviation}${resLocals.assessment.number}:
+                  ${resLocals.assessment.title}
+                </h1>
                 ${resLocals.assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
               </span>
             </div>
@@ -502,14 +503,16 @@ export function StudentAssessmentInstance({
             </div>
           </div>
 
-          ${PersonalNotesPanel({
-            fileList: resLocals.file_list,
-            context: 'assessment',
-            courseInstanceId: resLocals.course_instance.id,
-            assessment_instance: resLocals.assessment_instance,
-            csrfToken: resLocals.__csrf_token,
-            authz_result: resLocals.authz_result,
-          })}
+          ${resLocals.assessment.allow_personal_notes
+            ? PersonalNotesPanel({
+                fileList: resLocals.file_list,
+                context: 'assessment',
+                courseInstanceId: resLocals.course_instance.id,
+                assessment_instance: resLocals.assessment_instance,
+                csrfToken: resLocals.__csrf_token,
+                authz_result: resLocals.authz_result,
+              })
+            : ''}
           ${InstructorInfoPanel({
             course: resLocals.course,
             course_instance: resLocals.course_instance,

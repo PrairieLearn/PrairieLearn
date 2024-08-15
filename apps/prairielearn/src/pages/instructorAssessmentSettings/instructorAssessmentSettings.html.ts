@@ -42,7 +42,9 @@ export function InstructorAssessmentSettings({
           })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings
+              <h1 class="h6 font-weight-normal mb-0">
+                ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings
+              </h1>
             </div>
             <table class="table table-sm table-hover two-column-description">
               <tbody>

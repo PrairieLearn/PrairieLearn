@@ -91,7 +91,7 @@ export function QuestionContainer({
               ? html`
                   <div class="mb-4 d-flex justify-content-center">
                     <button
-                      class="show-hide-btn expand-icon-container btn btn-outline-secondary btn-sm collapsed"
+                      class="show-hide-btn btn btn-outline-secondary btn-sm collapsed"
                       type="button"
                       data-toggle="collapse"
                       data-target="#more-submissions-collapser"
@@ -442,13 +442,13 @@ function QuestionFooterContent({
                     <a
                       class="btn btn-xs align-self-center"
                       data-toggle="popover"
+                      data-trigger="focus"
+                      data-container="body"
                       data-html="true"
                       data-content="${escapeHtml(
                         NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
                       )}"
                       data-placement="auto"
-                      data-trigger="focus"
-                      data-container="body"
                       tabindex="0"
                     >
                       <i class="fa fa-question-circle" aria-hidden="true"></i>
@@ -525,11 +525,11 @@ function SubmitRateFooter({
           <a
             class="btn btn-xs"
             data-toggle="popover"
+            data-trigger="focus"
+            data-container="body"
             data-html="true"
             data-content="${escapeHtml(popoverContent)}"
             data-placement="auto"
-            data-trigger="focus"
-            data-container="body"
             tabindex="0"
           >
             <i class="fa fa-question-circle" aria-hidden="true"></i>
@@ -617,11 +617,13 @@ function QuestionPanel({
   return html`
     <div class="card mb-4 question-block">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        ${QuestionTitle({
-          questionContext,
-          question,
-          questionNumber: instance_question_info?.question_number,
-        })}
+        <h1 class="h6 font-weight-normal mb-0">
+          ${QuestionTitle({
+            questionContext,
+            question,
+            questionNumber: instance_question_info?.question_number,
+          })}
+        </h1>
         ${showCopyQuestionButton
           ? html`
               <button

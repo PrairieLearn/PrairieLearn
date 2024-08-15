@@ -48,28 +48,6 @@ export function InstructorAssessmentGroups({
       </head>
 
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-
-            // Prevent the dropdown menu from closing when the popover is opened.
-            $('.js-group-action[data-toggle="popover"]').on('click', (e) => {
-              e.stopPropagation();
-            });
-
-            $('.js-group-action-dropdown').on('hide.bs.dropdown', (e) => {
-              // If the click is inside a popover, don't hide the dropdown.
-              if (e.clickEvent.target.closest('.popover')) {
-                e.preventDefault();
-                e.stopPropagation();
-                return;
-              }
-
-              // Hide all popovers when the dropdown menu is closed.
-              $('.js-group-action[data-toggle="popover"]').popover('hide');
-            });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
@@ -83,7 +61,9 @@ export function InstructorAssessmentGroups({
             ? html`
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white d-flex align-items-center">
-                    ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Groups
+                    <h1 class="h6 font-weight-normal mb-0">
+                      ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Groups
+                    </h1>
                   </div>
                   <div class="card-body">
                     This is not a group assessment. To enable this functionality, please set
@@ -110,7 +90,9 @@ export function InstructorAssessmentGroups({
                   : ''}
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white d-flex align-items-center">
-                    ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Groups
+                    <h1 class="h6 font-weight-normal mb-0">
+                      ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Groups
+                    </h1>
                     ${resLocals.authz_data.has_course_instance_permission_edit
                       ? html`
                           <div class="ml-auto">
@@ -203,7 +185,6 @@ export function InstructorAssessmentGroups({
                                       </button>
                                       <div class="dropdown-menu">
                                         <button
-                                          id="row${row.group_id}PopoverAdd"
                                           class="dropdown-item js-group-action"
                                           data-toggle="popover"
                                           data-container="body"
@@ -221,7 +202,6 @@ export function InstructorAssessmentGroups({
                                           members
                                         </button>
                                         <button
-                                          id="row${row.group_id}Popoverdeletemember"
                                           class="dropdown-item js-group-action"
                                           ${row.users.length === 0
                                             ? 'disabled'
@@ -241,7 +221,6 @@ export function InstructorAssessmentGroups({
                                           members
                                         </button>
                                         <button
-                                          id="row${row.group_id}Popoverdeletegroup"
                                           class="dropdown-item js-group-action"
                                           data-toggle="popover"
                                           data-container="body"
@@ -340,13 +319,7 @@ function AddMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: str
       <input type="hidden" name="__action" value="add_member" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="group_id" value="${row.group_id}" />
-      <button
-        type="button"
-        class="btn btn-secondary"
-        onclick="$('#row${row.group_id}PopoverAdd').popover('hide')"
-      >
-        Cancel
-      </button>
+      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-primary">Add</button>
     </form>
   `;
@@ -359,13 +332,7 @@ function DeleteGroupForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: st
       <input type="hidden" name="__action" value="delete_group" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="group_id" value="${row.group_id}" />
-      <button
-        type="button"
-        class="btn btn-secondary"
-        onclick="$('#row${row.group_id}Popoverdeletegroup').popover('hide')"
-      >
-        Cancel
-      </button>
+      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete</button>
     </form>
   `;
@@ -385,13 +352,7 @@ function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: 
       <input type="hidden" name="__action" value="delete_member" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="group_id" value="${row.group_id}" />
-      <button
-        type="button"
-        class="btn btn-secondary"
-        onclick="$('#row${row.group_id}Popoverdeletemember').popover('hide')"
-      >
-        Cancel
-      </button>
+      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger" ${row.users.length > 0 ? '' : 'disabled'}>
         Delete
       </button>

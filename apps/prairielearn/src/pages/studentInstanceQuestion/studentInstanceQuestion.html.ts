@@ -164,15 +164,17 @@ export function StudentInstanceQuestion({
                 advanceScorePerc: resLocals.instance_question_info.advance_score_perc,
                 userGroupRoles: resLocals.assessment_instance.user_group_roles,
               })}
-              ${PersonalNotesPanel({
-                fileList: resLocals.file_list,
-                context: 'question',
-                courseInstanceId: resLocals.course_instance.id,
-                assessment_instance: resLocals.assessment_instance,
-                authz_result: resLocals.authz_result,
-                variantId: resLocals.variant?.id,
-                csrfToken: resLocals.__csrf_token,
-              })}
+              ${resLocals.assessment.allow_personal_notes
+                ? PersonalNotesPanel({
+                    fileList: resLocals.file_list,
+                    context: 'question',
+                    courseInstanceId: resLocals.course_instance.id,
+                    assessment_instance: resLocals.assessment_instance,
+                    authz_result: resLocals.authz_result,
+                    variantId: resLocals.variant?.id,
+                    csrfToken: resLocals.__csrf_token,
+                  })
+                : ''}
               ${InstructorInfoPanel({
                 course: resLocals.course,
                 course_instance: resLocals.course_instance,

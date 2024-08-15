@@ -107,7 +107,9 @@ export function InstructorFileBrowserNoPermission({
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
-            <div class="card-header bg-danger text-white">Files</div>
+            <div class="card-header bg-danger text-white">
+              <h1 class="h6 font-weight-normal mb-0">Files</h1>
+            </div>
             <div class="card-body">
               <h2>Insufficient permissions</h2>
               <p>You must have at least &quot;Viewer&quot; permissions for this course.</p>
@@ -196,6 +198,7 @@ export function InstructorFileBrowser({
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${syncErrorsAndWarnings}
+          <h1 class="sr-only">Files</h1>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               <div class="row align-items-center justify-content-between">
@@ -259,7 +262,6 @@ function FileBrowserActions({
     </a>
     <button
       type="button"
-      id="instructorFileUploadForm-${fileInfo.id}"
       class="btn btn-sm btn-light"
       data-toggle="popover"
       data-container="body"
@@ -284,7 +286,6 @@ function FileBrowserActions({
     </a>
     <button
       type="button"
-      id="instructorFileRenameForm-${fileInfo.id}"
       class="btn btn-sm btn-light"
       data-toggle="popover"
       data-container="body"
@@ -302,7 +303,6 @@ function FileBrowserActions({
     </button>
     <button
       type="button"
-      id="instructorFileDeleteForm-${fileInfo.id}"
       class="btn btn-sm btn-light"
       data-toggle="popover"
       data-container="body"
@@ -497,7 +497,6 @@ function DirectoryBrowserBody({
                 </a>
                 <button
                   type="button"
-                  id="instructorFileRenameForm-${f.id}"
                   class="btn btn-xs btn-secondary"
                   data-toggle="popover"
                   data-container="body"
@@ -508,6 +507,7 @@ function DirectoryBrowserBody({
                     FileRenameForm({ file: f, csrfToken, isViewingFile: false }),
                   )}"
                   data-trigger="click"
+                  data-testid="rename-file-button"
                   ${f.canRename ? '' : 'disabled'}
                 >
                   <i class="fa fa-i-cursor"></i>
@@ -515,7 +515,6 @@ function DirectoryBrowserBody({
                 </button>
                 <button
                   type="button"
-                  id="instructorFileDeleteForm-${f.id}"
                   class="btn btn-xs btn-secondary"
                   data-toggle="popover"
                   data-container="body"
@@ -524,6 +523,7 @@ function DirectoryBrowserBody({
                   title="Confirm delete"
                   data-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
                   data-trigger="click"
+                  data-testid="delete-file-button"
                   ${f.canDelete ? '' : 'disabled'}
                 >
                   <i class="far fa-trash-alt"></i>
@@ -584,13 +584,7 @@ function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: 
           ? html`<input type="hidden" name="file_path" value="${file.path}" />`
           : html`<input type="hidden" name="working_path" value="${file.working_path}" />`}
         <div class="text-right">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            onclick="$('#instructorFileUploadForm-${file.id}').popover('hide')"
-          >
-            Cancel
-          </button>
+          <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
           <button type="submit" class="btn btn-primary">Upload file</button>
         </div>
       </div>
@@ -606,13 +600,7 @@ function FileDeleteForm({ file, csrfToken }: { file: FileDeleteInfo; csrfToken: 
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="file_path" value="${file.path}" />
       <div class="text-right">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          onclick="$('#instructorFileDeleteForm-${file.id}').popover('hide')"
-        >
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Delete</button>
       </div>
     </form>
@@ -661,13 +649,7 @@ function FileRenameForm({
         />
       </div>
       <div class="text-right">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          onclick="$('#instructorFileRenameForm-${file.id}').popover('hide')"
-        >
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>
