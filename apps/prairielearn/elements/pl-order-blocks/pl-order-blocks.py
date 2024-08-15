@@ -728,7 +728,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             pl.add_files_format_error(data, "The submitted file was empty.")
         else:
             pl.add_submitted_file(
-                data, file_name, base64.b64encode(answer_code).decode("utf-8")
+                data,
+                file_name,
+                base64.b64encode(answer_code.encode("utf-8")).decode("utf-8"),
             )
 
     data["submitted_answers"][answer_name] = student_answer
