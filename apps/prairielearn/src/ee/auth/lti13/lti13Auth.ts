@@ -45,6 +45,8 @@ router.post(
 
     const ltiClaim = new Lti13Claim(req);
 
+    const inStateTest = req.body.state.endsWith(StateTest);
+
     // UID checking
     let uid: string;
     if (!lti13_instance.uid_attribute) {
@@ -56,7 +58,7 @@ router.post(
       // Reasonable default is "email"
       // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
       uid = ltiClaim.get(lti13_instance.uid_attribute);
-      if (!uid) {
+      if (!uid && !inStateTest) {
         // Canvas Student View does not include a uid but has a deterministic role, nicer error message
         if (ltiClaim.isRoleTestUser()) {
           throw new HttpStatusError(
@@ -79,7 +81,7 @@ router.post(
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Might look like ["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]
       uin = ltiClaim.get(lti13_instance.uin_attribute);
-      if (!uin) {
+      if (!uin && !inStateTest) {
         throw new HttpStatusError(
           500,
           `Missing UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing or empty)`,
@@ -115,7 +117,7 @@ router.post(
       institution_id: lti13_instance.institution_id,
     };
 
-    if (req.body.state.endsWith(StateTest)) {
+    if (inStateTest) {
       res.end(
         Lti13Test({
           lti13_claims,
