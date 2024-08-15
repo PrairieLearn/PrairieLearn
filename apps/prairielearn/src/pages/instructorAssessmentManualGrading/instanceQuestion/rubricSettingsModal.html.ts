@@ -326,19 +326,24 @@ function RubricItemRow(
           name="${namePrefix}[indent]"
           value="${indentLevel}"
         />
-        <input type="hidden" class="js-rubric-item-indent-temp" value="${indentLevel}" />
         <button type="button" class="btn btn-sm js-rubric-item-move-button" draggable="true">
           <i class="fas fa-arrows-up-down"></i>
-        </button>
-        <button type="button" class="btn btn-sm sr-only js-rubric-item-move-down-button">
-          Move down
         </button>
         <button type="button" class="btn btn-sm sr-only js-rubric-item-move-up-button">
           Move up
         </button>
+        <button type="button" class="btn btn-sm sr-only js-rubric-item-move-down-button">
+          Move down
+        </button>
+        <button type="button" class="btn btn-sm sr-only js-rubric-item-move-in-button">
+          Move inside previous item
+        </button>
+        <button type="button" class="btn btn-sm sr-only js-rubric-item-move-out-button">
+          Move outside previous item
+        </button>
         <span class="js-rubric-item-render-indent"
           >${indentLevel > 0
-            ? html`&nbsp;&nbsp;${'&nbsp;'.repeat(indentLevel * 2)}&#5125;`
+            ? html`&nbsp;&nbsp;${'&nbsp;'.repeat(indentLevel * 4)}&#5125;`
             : ''}</span
         >
         <button type="button" class="btn btn-sm js-rubric-item-delete text-danger">

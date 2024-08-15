@@ -163,7 +163,7 @@ function resetInstructorGradingPanel() {
     );
 
   resetRubricItemRowsListeners();
-  updateRubricItemOrderField();
+  updateRubricItemOrderAndIndentation();
   computePointsFromRubric();
 }
 
@@ -337,6 +337,12 @@ function resetRubricItemRowsListeners() {
     .querySelectorAll('.js-rubric-item-move-up-button')
     .forEach((button) => button.addEventListener('click', moveRowUp));
   document
+    .querySelectorAll('.js-rubric-item-move-in-button')
+    .forEach((button) => button.addEventListener('click', indentRow));
+  document
+    .querySelectorAll('.js-rubric-item-move-out-button')
+    .forEach((button) => button.addEventListener('click', unindentRow));
+  document
     .querySelectorAll('.js-rubric-item-delete')
     .forEach((button) => button.addEventListener('click', deleteRow));
   document
@@ -441,22 +447,57 @@ function enableRubricItemLongTextField(event) {
   adjustHeightFromContent(input);
 }
 
-function updateRubricItemOrderField() {
+function updateRubricItemOrderAndIndentation() {
   document.querySelectorAll('.js-rubric-item-row-order').forEach((input, index) => {
     input.value = index;
+  });
+
+  document.querySelectorAll('.js-rubric-item-indent').forEach((input) => {
+    input.parentElement.querySelector('.js-rubric-item-render-indent').innerHTML =
+      input.value > 0 ? '&nbsp;&nbsp;' + '&nbsp;'.repeat(input * 4) + '&#5125' : '';
   });
 }
 
 function moveRowDown(event) {
   const row = event.target.closest('tr');
   row.parentNode.insertBefore(row.nextElementSibling, row);
-  updateRubricItemOrderField();
+  updateRubricItemOrderAndIndentation();
 }
 
 function moveRowUp(event) {
   const row = event.target.closest('tr');
   row.parentNode.insertBefore(row.previousElementSibling, row.nextElementSibling);
-  updateRubricItemOrderField();
+  updateRubricItemOrderAndIndentation();
+}
+
+function indentRow(event) {
+  const row = event.target.closest('tr');
+  const rowList = Array.from(row.parentNode.childNodes);
+  const targetRowIdx = rowList.indexOf(row);
+  const rowItemIdx = row.querySelector('.js-rubric-item-row-order').value;
+  const oldIndent = parseInt(row.querySelector('.js-rubric-item-indent').value);
+
+  if (rowItemIdx > 0) {
+    const parentIndent = parseInt(
+      rowList[targetRowIdx - 1].querySelector('.js-rubric-item-indent').value,
+    );
+
+    const indentLevel = Math.max(0, Math.min(parentIndent + 1, oldIndent + 1));
+    row.querySelector('.js-rubric-item-indent').value = indentLevel;
+  }
+
+  updateRubricItemOrderAndIndentation();
+}
+
+function unindentRow(event) {
+  const row = event.target.closest('tr');
+  const oldIndent = parseInt(row.querySelector('.js-rubric-item-indent').value);
+
+  // Assuming that indentation was correct before, we can skip most checks when unindenting
+  const indentLevel = Math.max(0, oldIndent - 1);
+  row.querySelector('.js-rubric-item-indent').value = indentLevel;
+
+  updateRubricItemOrderAndIndentation();
 }
 
 function deleteRow(event) {
@@ -465,7 +506,7 @@ function deleteRow(event) {
   if (!table?.querySelectorAll('.js-rubric-item-row-order')?.length) {
     table.querySelector('.js-no-rubric-item-note').classList.remove('d-none');
   }
-  updateRubricItemOrderField();
+  updateRubricItemOrderAndIndentation();
   checkRubricItemTotals();
 }
 
@@ -493,33 +534,26 @@ function rowDragOver(event) {
     row.parentNode.appendChild(window.rubricItemRowDragging);
   }
 
-  var indentLevel = 0;
-
   // There must be a parent above to allow indentation
   if (targetRowItemIdx > 0) {
-    const potentialParentIndent =
-      rowList[targetRowIdx - 1].querySelector('.js-rubric-item-indent').value;
+    var parentIndent = parseInt(
+      rowList[targetRowIdx - 1].querySelector('.js-rubric-item-indent').value,
+    );
     const dragOffset = event.clientX - row.getBoundingClientRect().left;
-    console.log(dragOffset);
-    // Do not allow a row to be considered as its own parent
+
+    // Prevent a row from being considered as its own parent in certain drag states and allowed further indentation
     if (draggingRowIdx === targetRowIdx - 1) {
-      indentLevel = Math.max(0, Math.min(potentialParentIndent, dragOffset % 25));
-    } else {
-      indentLevel = Math.max(0, Math.min(potentialParentIndent + 1, dragOffset % 25));
+      parentIndent -= 1;
     }
-    window.rubricItemRowDragging.querySelector('.js-rubric-item-indent').value = indentLevel;
+    window.rubricItemRowDragging.querySelector('.js-rubric-item-indent').value = Math.max(
+      0,
+      Math.min(parentIndent + 1, Math.floor(dragOffset / 25)),
+    );
   } else {
     window.rubricItemRowDragging.querySelector('.js-rubric-item-indent').value = 0;
   }
 
-  if (indentLevel > 0) {
-    window.rubricItemRowDragging.querySelector('.js-rubric-item-render-indent').innerHTML =
-      '&nbsp;&nbsp;' + '&nbsp;'.repeat(indentLevel * 2) + '&#5125';
-  } else {
-    window.rubricItemRowDragging.querySelector('.js-rubric-item-render-indent').innerHTML = '';
-  }
-
-  updateRubricItemOrderField();
+  updateRubricItemOrderAndIndentation();
 }
 
 function addRubricItemRow() {
@@ -552,6 +586,6 @@ function addRubricItemRow() {
   table.querySelector('.js-no-rubric-item-note').classList.add('d-none');
 
   resetRubricItemRowsListeners();
-  updateRubricItemOrderField();
+  updateRubricItemOrderAndIndentation();
   checkRubricItemTotals();
 }
