@@ -11,10 +11,10 @@
     "test": "c8 mocha src/**/*.test.{js,ts}"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.621.0",
-    "@aws-sdk/client-s3": "^3.621.0",
-    "@aws-sdk/credential-providers": "^3.621.0",
-    "@aws-sdk/lib-storage": "^3.621.0",
+    "@aws-sdk/client-ecr": "^3.629.0",
+    "@aws-sdk/client-s3": "^3.629.0",
+    "@aws-sdk/credential-providers": "^3.630.0",
+    "@aws-sdk/lib-storage": "^3.629.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/cache": "workspace:^",
     "@prairielearn/config": "workspace:^",
@@ -44,9 +44,9 @@
     "@types/node": "^20.14.13",
     "c8": "^10.1.2",
     "chai": "^5.1.1",
-    "mocha": "^10.7.0",
+    "mocha": "^10.7.3",
     "nodemon": "^3.1.4",
-    "tsx": "^4.16.5",
+    "tsx": "^4.17.0",
     "typescript": "^5.5.4",
     "typescript-cp": "^0.1.9"
   },
