@@ -173,7 +173,9 @@ function AssessmentQuestionRow({
                 ? html`
                     <button
                       type="button"
-                      class="btn btn-sm js-assign-grader-btn"
+                      class="btn btn-sm"
+                      data-toggle="modal"
+                      data-target="#grader-assignment-modal"
                       data-assessment-question-id="${question.id}"
                     >
                       <i class="fas fa-pencil"></i><span class="sr-only">Assign to&hellip;</span>
