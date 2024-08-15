@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as async from 'async';
 // Use slim export, which relies on htmlparser2 instead of parse5. This provides
 // support for questions with legacy renderer.
-import * as cheerio from 'cheerio/lib/slim';
+import * as cheerio from 'cheerio/slim';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import _ from 'lodash';
