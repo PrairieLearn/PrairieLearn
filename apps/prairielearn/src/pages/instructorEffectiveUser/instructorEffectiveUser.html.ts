@@ -210,7 +210,7 @@ export function InstructorEffectiveUser({
             ? html`
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white">
-                    <h2 class="h6 font-weight-normal mb-0">ffective course instance role</h2>
+                    <h2 class="h6 font-weight-normal mb-0">Effective course instance role</h2>
                   </div>
 
                   <div class="card-body">
