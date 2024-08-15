@@ -2,7 +2,12 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
-import { type CourseInstance, CourseInstanceSchema } from '../lib/db-types.js';
+import {
+  type CourseInstance,
+  type CourseInstancePermission,
+  CourseInstanceSchema,
+  UserSchema,
+} from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -64,5 +69,30 @@ export async function selectCourseInstancesWithStaffAccess({
   const authnCourseIds = new Set(authnCourseInstances.map((c) => c.id));
   return authzCourseInstances.filter((authzCourseInstance) => {
     return authnCourseIds.has(authzCourseInstance.id);
+  });
+}
+
+export async function selectUsersWithCourseInstanceAccess({
+  course_instance_id,
+  minimal_role,
+}: {
+  course_instance_id: string;
+  minimal_role: Exclude<CourseInstancePermission['course_instance_role'], null>;
+}) {
+  return await queryRows(
+    sql.select_users_with_course_instance_access,
+    { course_instance_id, minimal_role },
+    UserSchema,
+  );
+}
+
+export async function selectCourseInstanceGraderStaff({
+  course_instance_id,
+}: {
+  course_instance_id: string;
+}) {
+  return await selectUsersWithCourseInstanceAccess({
+    course_instance_id,
+    minimal_role: 'Student Data Editor',
   });
 }
