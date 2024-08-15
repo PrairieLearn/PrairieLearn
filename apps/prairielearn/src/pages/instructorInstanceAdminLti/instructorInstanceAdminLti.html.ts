@@ -43,7 +43,7 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
             ? html`
                 <div class="card mb-4">
                   <div class="card-header bg-danger text-white">
-                    <h1 class="h6 font-weight-normal mb-0">LTI configuration</h1>
+                    <h1>LTI configuration</h1>
                   </div>
                   <div class="card-body">
                     <h2>Insufficient permissions</h2>
@@ -66,7 +66,7 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
             : html`
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white">
-                    <h1 class="h6 font-weight-normal mb-0">LTI configuration</h1>
+                    <h1>LTI configuration</h1>
                   </div>
                   <div class="card-body">
                     <p>

@@ -69,7 +69,7 @@ export function ManualGradingAssessment({
           })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h1 class="h6 font-weight-normal mb-0">
+              <h1>
                 ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Manual Grading
                 Queue
               </h1>

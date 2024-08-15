@@ -50,7 +50,7 @@ export function Workspace({
         >
           <div class="d-flex flex-column mr-3 text-white">
             <span>
-              <h1 class="h6 font-weight-normal mb-0">
+              <h1>
                 <a href="${navTitleHref}" target="_blank" class="text-white">${navTitle}</a>
               </h1>
             </span>
