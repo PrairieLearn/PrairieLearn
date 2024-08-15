@@ -171,4 +171,4 @@ def parse(element_html, data):
     # so delete the original submitted answer format to avoid
     # duplication
     del data["submitted_answers"][answer_name]
-    pl.add_submitted_file(data, file_name, base64_contents=file_contents)
+    pl.add_submitted_file(data, file_name, file_contents)

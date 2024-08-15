@@ -1,4 +1,3 @@
-import base64
 import collections
 import html
 import importlib
@@ -1827,40 +1826,16 @@ def add_files_format_error(data: QuestionData, error: str) -> None:
         ]
 
 
-@overload
 def add_submitted_file(
     data: QuestionData,
     file_name: str,
-    *,
-    base64_contents: str | None,
-    file_contents: None = None,
-) -> None: ...
-@overload
-def add_submitted_file(
-    data: QuestionData,
-    file_name: str,
-    *,
-    base64_contents: None = None,
-    file_contents: str | bytes | None,
-) -> None: ...
-def add_submitted_file(
-    data: QuestionData,
-    file_name: str,
-    *,
-    base64_contents: str | None = None,
-    file_contents: str | bytes | None = None,
+    base64_contents: str,
 ) -> None:
     """Adds a submitted file to the data dictionary."""
 
     if data["submitted_answers"].get("_files") is None:
         data["submitted_answers"]["_files"] = []
     if isinstance(data["submitted_answers"]["_files"], list):
-        if base64_contents is None:
-            if file_contents is None:
-                file_contents = b""
-            elif isinstance(file_contents, str):
-                file_contents = file_contents.encode("utf-8")
-            base64_contents = base64.b64encode(file_contents).decode("utf-8")
         data["submitted_answers"]["_files"].append(
             {
                 "name": file_name,

@@ -105,9 +105,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     for x in parsed_files:
         # Filter out any files that were not listed in file_names
         if x.get("name", "") in required_file_names:
-            pl.add_submitted_file(
-                data, x.get("name", ""), base64_contents=x.get("contents", "")
-            )
+            pl.add_submitted_file(data, x.get("name", ""), x.get("contents", ""))
 
     # Validate that all required files are present
     if parsed_files is not None:
