@@ -216,7 +216,8 @@ export function InstructorInstanceAdminLti13({
                               </td>
                               <td>
                                 ${Modal({
-                                  body: html`<p>Which ${lms_name} assignment should we link?</p>
+                                  body: html`
+                                    <p>Which ${lms_name} assignment should we link?</p>
                                     <form method="POST">
                                       <input
                                         type="hidden"
@@ -246,7 +247,8 @@ export function InstructorInstanceAdminLti13({
                                       >
                                         Pick from existing ${lms_name} assignments
                                       </button>
-                                    </form> `,
+                                    </form>
+                                  `,
                                   footer: html`<button
                                     type="button"
                                     class="btn btn-secondary"

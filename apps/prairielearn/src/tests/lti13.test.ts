@@ -381,11 +381,6 @@ describe('LTI 1.3', () => {
         'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
       );
 
-      const key = keystore.get('test');
-      const joseKey = await jose.importJWK(key.toJSON(true) as any);
-
-      console.log(req.body.client_assertion, joseKey);
-
       // Decodes but does not validate
       const jwt = JSON.parse(
         Buffer.from(req.body.client_assertion.split('.')[1], 'base64').toString(),
@@ -412,7 +407,7 @@ describe('LTI 1.3', () => {
 
 describe('fetchRetry()', async () => {
   let apiProviderPort: number;
-  let app;
+  const app = express();
   let baseUrl: string;
 
   let apiCount: number;
@@ -476,7 +471,7 @@ describe('fetchRetry()', async () => {
     res.json(returning);
   };
 
-  function resp403(res) {
+  function respond403(res) {
     console.warn('Throwing 403, attempt ' + apiCount);
     res.status(403).json([]);
   }
@@ -485,7 +480,6 @@ describe('fetchRetry()', async () => {
     apiProviderPort = await getPort();
     baseUrl = `http://localhost:${apiProviderPort}/`;
     // Run a server to respond to API requests.
-    app = express();
     app.use(express.urlencoded({ extended: true }));
 
     app.use((req, res, next) => {
@@ -494,12 +488,12 @@ describe('fetchRetry()', async () => {
     });
 
     app.get('/403all', async (req, res) => {
-      resp403(res);
+      respond403(res);
     });
 
     app.get('/403oddAttempt', async (req, res) => {
       if (apiCount % 2 === 1) {
-        resp403(res);
+        respond403(res);
       } else {
         productApi(req, res);
       }
