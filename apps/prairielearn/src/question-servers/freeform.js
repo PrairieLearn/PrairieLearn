@@ -409,7 +409,9 @@ async function execTemplate(htmlFilename, data) {
   let html = mustache.render(rawFile, data);
   html = markdown.processQuestion(html);
   const $ = cheerio.load(html, {
-    recognizeSelfClosing: true,
+    xml: {
+      recognizeSelfClosing: true,
+    },
   });
   return { html, $ };
 }
