@@ -30,9 +30,9 @@
     "c8": "^10.1.2",
     "chai": "^5.1.1",
     "chai-as-promised": "^8.0.0",
-    "mocha": "^10.7.0",
+    "mocha": "^10.7.3",
     "tmp-promise": "^3.0.3",
-    "tsx": "^4.16.5",
+    "tsx": "^4.17.0",
     "typescript": "^5.5.4",
     "typescript-cp": "^0.1.9"
   },
