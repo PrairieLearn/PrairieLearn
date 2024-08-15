@@ -3,23 +3,9 @@ import { observe } from 'selector-observer';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+import { getPopoverContainerForTrigger, getPopoverTriggerForContainer } from '../lib/popover.js';
+
 const openPopoverTriggers = new Set<HTMLElement>();
-
-function getPopoverContainerForTrigger(trigger: HTMLElement): HTMLElement | null {
-  const popoverId = trigger.getAttribute('aria-describedby');
-  if (!popoverId) return null;
-
-  const popoverContainer = document.querySelector<HTMLElement>(`#${popoverId}`);
-  return popoverContainer;
-}
-
-function getPopoverTriggerForContainer(container: HTMLElement): HTMLElement | null {
-  const popoverId = container.getAttribute('id');
-  if (!popoverId) return null;
-
-  const popoverTrigger = document.querySelector<HTMLElement>(`[aria-describedby="${popoverId}"]`);
-  return popoverTrigger;
-}
 
 // We need to wrap this in `onDocumentReady` because Bootstrap doesn't
 // add its jQuery API to the jQuery object until after this event.

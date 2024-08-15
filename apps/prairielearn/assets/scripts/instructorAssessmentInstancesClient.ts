@@ -6,6 +6,8 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { Scorebar } from '../../src/components/Scorebar.html.js';
 import { AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
+import { getPopoverTriggerForContainer } from './lib/popover.js';
+
 onDocumentReady(() => {
   const dataset = document.getElementById('usersTable')?.dataset;
   if (!dataset) {
@@ -120,11 +122,12 @@ onDocumentReady(() => {
     // HTTP request has finished. A potential improvement would be to disable
     // the form and show a spinner until the request completes, at which point
     // the popover would be closed.
-    const popover = event.currentTarget.closest('.popover');
+    const popover = event.currentTarget.closest<HTMLElement>('.popover');
     if (popover) {
-      // TODO: This won't work in Bootstrap 5, see the following:
-      // https://github.com/twbs/bootstrap/issues/36837
-      $(popover).popover('hide');
+      const trigger = getPopoverTriggerForContainer(popover);
+      if (trigger) {
+        $(trigger).popover('hide');
+      }
     }
   });
 
