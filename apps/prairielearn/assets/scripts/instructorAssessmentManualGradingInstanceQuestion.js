@@ -454,7 +454,7 @@ function updateRubricItemOrderAndIndentation() {
 
   document.querySelectorAll('.js-rubric-item-indent').forEach((input) => {
     input.parentElement.querySelector('.js-rubric-item-render-indent').innerHTML =
-      input.value > 0 ? '&nbsp;&nbsp;' + '&nbsp;'.repeat(input * 4) + '&#5125' : '';
+      input.value > 0 ? '&nbsp;&nbsp;' + '&nbsp;'.repeat((input.value - 1) * 4) + '&#5125' : '';
   });
 }
 

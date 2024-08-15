@@ -343,7 +343,7 @@ function RubricItemRow(
         </button>
         <span class="js-rubric-item-render-indent"
           >${indentLevel > 0
-            ? html`&nbsp;&nbsp;${'&nbsp;'.repeat(indentLevel * 4)}&#5125;`
+            ? html`&nbsp;&nbsp;${'&nbsp;'.repeat((indentLevel - 1) * 4)}&#5125;`
             : ''}</span
         >
         <button type="button" class="btn btn-sm js-rubric-item-delete text-danger">
