@@ -8,9 +8,10 @@ import authnMiddleware from '../../middlewares/authn.js';
 import csrfToken from '../../middlewares/csrfToken.js';
 import lti13Auth from '../auth/lti13/lti13Auth.js';
 import { getInstitutionAuthenticationProviders } from '../lib/institution.js';
-import { configPage, jwksPage } from '../lib/lti13Metadata.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
+import lti13Config from '../pages/lti13Config/lti13Config.js';
 import lti13CourseNavigation from '../pages/lti13CourseNavigation/lti13CourseNavigation.js';
+import lti13Jwks from '../pages/lti13Jwks/lti13Jwks.js';
 
 const router = Router({ mergeParams: true });
 
@@ -30,8 +31,8 @@ router.use(
   }),
 );
 
-router.use('/:lti13_instance_id/config', configPage);
-router.use('/:lti13_instance_id/jwks', jwksPage);
+router.use('/:lti13_instance_id/config', lti13Config);
+router.use('/:lti13_instance_id/jwks', lti13Jwks);
 
 // Everything past this middleware requires LTI 1.3 SSO to be configured
 router.use(
