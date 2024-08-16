@@ -310,3 +310,132 @@ small .user-output-invalid {
   margin-left: 5px;
   background: #fff;
 }
+
+/***********************************
+ * Button focus accessibility styles
+ ***********************************/
+
+/**
+ * TODO: After we're running with only Bootstrap 5, these can be collapsed into
+ * a single rule with all the different selectors, since they can all share the
+ * same var(--bs-btn-hover-color) value.
+ */
+
+.btn.btn-primary:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-secondary:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-success:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-danger:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-warning:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #000000) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-info:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-light:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #000000) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-dark:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-link:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #007bff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-primary:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #007bff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-secondary:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #6c757d) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-success:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #28a745) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-danger:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #dc3545) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-warning:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #ffc107) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-info:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #17a2b8) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-light:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #f8f9fa) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-dark:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #343a40) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
