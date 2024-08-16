@@ -60,8 +60,7 @@ export function InstructorAIGenerateJobs({
                         <td>${JobStatus({ status: row.job.status })}</td>
                         <td>
                           <a
-                            href="${resLocals.urlPrefix}/ai_generate_question_job/${row.job
-                              .id}"
+                            href="${resLocals.urlPrefix}/ai_generate_question_job/${row.job.id}"
                             class="btn btn-xs btn-info"
                           >
                             Details
