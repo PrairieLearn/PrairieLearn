@@ -521,7 +521,7 @@ function rowDragOver(event) {
   const row = event.target.closest('tr');
   // Rows in different tables don't count
   if (!row || row.parent !== window.rubricItemRowDragging.parent) return;
-  const rowList = Array.from(row.parentNode.childNodes);
+  const rowList = Array.from(row.parentNode.children);
   const draggingRowIdx = rowList.indexOf(window.rubricItemRowDragging);
   const targetRowIdx = rowList.indexOf(row);
   const targetRowItemIdx = row.querySelector('.js-rubric-item-row-order').value;
@@ -570,6 +570,7 @@ function addRubricItemRow() {
   table.querySelector('tbody').appendChild(row);
 
   row.querySelector('.js-rubric-item-row-order').name = `rubric_item[new${next_id}][order]`;
+  row.querySelector('.js-rubric-item-indent').name = `rubric_item[new${next_id}][indent]`;
   row.querySelector('.js-rubric-item-points').name = `rubric_item[new${next_id}][points]`;
   row.querySelector('.js-rubric-item-points').value = points;
   row.querySelector('.js-rubric-item-description').name = `rubric_item[new${next_id}][description]`;
