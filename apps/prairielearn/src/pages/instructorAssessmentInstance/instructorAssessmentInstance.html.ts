@@ -100,7 +100,10 @@ export function InstructorAssessmentInstance({
         })}
         <main id="content" class="container-fluid">
           <h1 class="sr-only">
-            ${resLocals.assessment_instance_label} instance for ${resLocals.instance_user.name}
+            ${resLocals.assessment_instance_label} instance for
+            ${resLocals.instance_group
+              ? html`${resLocals.instance_group.name}`
+              : html`${resLocals.instance_user.name}`}
           </h1>
           ${ResetQuestionVariantsModal({
             csrfToken: resLocals.__csrf_token,

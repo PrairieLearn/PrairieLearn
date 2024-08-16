@@ -179,27 +179,25 @@ export function InstructorCourseAdminSharing({
                   <th>Sharing name</th>
                   <td data-testid="sharing-name">
                     ${sharingName !== null ? sharingName : ''}
-                    ${
-                      isCourseOwner
-                        ? html`
-                            <button
-                              type="button"
-                              class="btn btn-xs btn-secondary mx-2"
-                              id="chooseSharingName"
-                              title="Choose Sharing Name"
-                              data-toggle="modal"
-                              data-target="#chooseSharingNameModal"
-                            >
-                              <i class="fas fa-share-nodes" aria-hidden="true"></i>
-                              <span class="d-none d-sm-inline">Choose Sharing Name</span>
-                            </button>
-                            ${ChooseSharingNameModal({
-                              canChooseSharingName,
-                              csrfToken: resLocals.__csrf_token,
-                            })}
-                          `
-                        : ''
-                    }
+                    ${isCourseOwner
+                      ? html`
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-secondary mx-2"
+                            id="chooseSharingName"
+                            title="Choose Sharing Name"
+                            data-toggle="modal"
+                            data-target="#chooseSharingNameModal"
+                          >
+                            <i class="fas fa-share-nodes" aria-hidden="true"></i>
+                            <span class="d-none d-sm-inline">Choose Sharing Name</span>
+                          </button>
+                          ${ChooseSharingNameModal({
+                            canChooseSharingName,
+                            csrfToken: resLocals.__csrf_token,
+                          })}
+                        `
+                      : ''}
                   </td>
                 </tr>
                 <tr>
@@ -242,30 +240,28 @@ export function InstructorCourseAdminSharing({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h2>Sharing Sets</span>
-              ${
-                isCourseOwner
-                  ? html`
-                      <button
-                        type="button"
-                        class="btn btn-light btn-sm ml-auto"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Create Sharing Set"
-                        data-content="${escapeHtml(
-                          AddSharingSetPopover({
-                            csrfToken: resLocals.__csrf_token,
-                          }),
-                        )}"
-                      >
-                        <i class="fas fa-plus" aria-hidden="true"></i>
-                        <span class="d-none d-sm-inline">Create Sharing Set</span>
-                      </button>
-                    `
-                  : ''
-              }
+              <h2>Sharing Sets</h2>
+              ${isCourseOwner
+                ? html`
+                    <button
+                      type="button"
+                      class="btn btn-light btn-sm ml-auto"
+                      data-toggle="popover"
+                      data-container="body"
+                      data-html="true"
+                      data-placement="auto"
+                      title="Create Sharing Set"
+                      data-content="${escapeHtml(
+                        AddSharingSetPopover({
+                          csrfToken: resLocals.__csrf_token,
+                        }),
+                      )}"
+                    >
+                      <i class="fas fa-plus" aria-hidden="true"></i>
+                      <span class="d-none d-sm-inline">Create Sharing Set</span>
+                    </button>
+                  `
+                : ''}
             </div>
             <table class="table table-sm table-hover table-striped">
               <thead>
