@@ -91,7 +91,7 @@ export function StudentAssessmentInstance({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <span>
-                <h1 class="h6 font-weight-normal mb-0">
+                <h1>
                   ${resLocals.assessment_set.abbreviation}${resLocals.assessment.number}:
                   ${resLocals.assessment.title}
                 </h1>

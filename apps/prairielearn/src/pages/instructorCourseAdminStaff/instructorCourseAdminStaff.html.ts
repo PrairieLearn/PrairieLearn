@@ -76,87 +76,83 @@ export function InstructorCourseAdminStaff({
             urlPrefix: resLocals.urlPrefix,
           })}
           <div class="card mb-4">
-            <div class="card-header bg-primary">
-              <div class="row align-items-center justify-content-between">
-                <div class="col-auto">
-                  <h1 class="text-white h6 font-weight-normal mb-0">Staff</h1>
-                </div>
-                <div class="col-auto">
-                  <button
-                    type="button"
-                    class="btn btn-light btn-sm ml-auto"
-                    data-toggle="popover"
-                    data-container="body"
-                    data-html="true"
-                    data-placement="auto"
-                    title="Remove all student data access"
-                    data-content="${escapeHtml(
-                      CoursePermissionsRemoveStudentDataAccessForm({
-                        csrfToken: resLocals.__csrf_token,
-                      }),
-                    )}"
-                    data-testid="remove-all-student-data-access-button"
-                  >
-                    <i class="fas fa-eye-slash" aria-hidden="true"></i>
-                    <span class="d-none d-sm-inline">Remove all student data access</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-light btn-sm ml-auto"
-                    data-toggle="popover"
-                    data-container="body"
-                    data-html="true"
-                    data-placement="auto"
-                    title="Delete users with no access"
-                    data-content="${escapeHtml(
-                      CoursePermissionsDeleteNoAccessForm({
-                        csrfToken: resLocals.__csrf_token,
-                      }),
-                    )}"
-                    data-testid="delete-users-with-no-access-button"
-                  >
-                    <i class="fas fa-recycle" aria-hidden="true"></i>
-                    <span class="d-none d-sm-inline">Delete users with no access</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-light btn-sm ml-auto"
-                    data-toggle="popover"
-                    data-container="body"
-                    data-html="true"
-                    data-placement="auto"
-                    title="Delete non-owners"
-                    data-content="${escapeHtml(
-                      CoursePermissionsDeleteNonOwnersForm({
-                        csrfToken: resLocals.__csrf_token,
-                      }),
-                    )}"
-                    data-testid="delete-non-owners-button"
-                  >
-                    <i class="fas fa-users-slash" aria-hidden="true"></i>
-                    <span class="d-none d-sm-inline">Delete non-owners</span>
-                  </button>
-                  <button
-                    type="button"
-                    class="btn btn-light btn-sm ml-auto"
-                    data-toggle="popover"
-                    data-container="body"
-                    data-html="true"
-                    data-placement="auto"
-                    title="Add users"
-                    data-content="${escapeHtml(
-                      CoursePermissionsInsertForm({
-                        csrfToken: resLocals.__csrf_token,
-                        uidsLimit,
-                        courseInstances,
-                      }),
-                    )}"
-                    data-testid="add-users-button"
-                  >
-                    <i class="fas fa-users" aria-hidden="true"></i>
-                    <span class="d-none d-sm-inline">Add users</span>
-                  </button>
-                </div>
+            <div class="card-header bg-primary text-white d-flex flex-wrap align-items-center">
+              <h1 class="mr-2">Staff</h1>
+              <div class="ml-auto">
+                <button
+                  type="button"
+                  class="btn btn-light btn-sm ml-auto"
+                  data-toggle="popover"
+                  data-container="body"
+                  data-html="true"
+                  data-placement="auto"
+                  title="Remove all student data access"
+                  data-content="${escapeHtml(
+                    CoursePermissionsRemoveStudentDataAccessForm({
+                      csrfToken: resLocals.__csrf_token,
+                    }),
+                  )}"
+                  data-testid="remove-all-student-data-access-button"
+                >
+                  <i class="fas fa-eye-slash" aria-hidden="true"></i>
+                  <span class="d-none d-sm-inline">Remove all student data access</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-light btn-sm ml-auto"
+                  data-toggle="popover"
+                  data-container="body"
+                  data-html="true"
+                  data-placement="auto"
+                  title="Delete users with no access"
+                  data-content="${escapeHtml(
+                    CoursePermissionsDeleteNoAccessForm({
+                      csrfToken: resLocals.__csrf_token,
+                    }),
+                  )}"
+                  data-testid="delete-users-with-no-access-button"
+                >
+                  <i class="fas fa-recycle" aria-hidden="true"></i>
+                  <span class="d-none d-sm-inline">Delete users with no access</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-light btn-sm ml-auto"
+                  data-toggle="popover"
+                  data-container="body"
+                  data-html="true"
+                  data-placement="auto"
+                  title="Delete non-owners"
+                  data-content="${escapeHtml(
+                    CoursePermissionsDeleteNonOwnersForm({
+                      csrfToken: resLocals.__csrf_token,
+                    }),
+                  )}"
+                  data-testid="delete-non-owners-button"
+                >
+                  <i class="fas fa-users-slash" aria-hidden="true"></i>
+                  <span class="d-none d-sm-inline">Delete non-owners</span>
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-light btn-sm ml-auto"
+                  data-toggle="popover"
+                  data-container="body"
+                  data-html="true"
+                  data-placement="auto"
+                  title="Add users"
+                  data-content="${escapeHtml(
+                    CoursePermissionsInsertForm({
+                      csrfToken: resLocals.__csrf_token,
+                      uidsLimit,
+                      courseInstances,
+                    }),
+                  )}"
+                  data-testid="add-users-button"
+                >
+                  <i class="fas fa-users" aria-hidden="true"></i>
+                  <span class="d-none d-sm-inline">Add users</span>
+                </button>
               </div>
             </div>
             ${StaffTable({

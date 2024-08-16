@@ -108,7 +108,7 @@ export function AssessmentQuestion({
             : ''}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h1 class="h6 font-weight-normal mb-0">
+              <h1>
                 ${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}
               </h1>
             </div>

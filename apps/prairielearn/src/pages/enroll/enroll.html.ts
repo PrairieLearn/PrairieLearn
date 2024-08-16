@@ -40,7 +40,7 @@ export function Enroll({
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h1 class="h6 font-weight-normal mb-0">Courses</h1>
+              <h1>Courses</h1>
             </div>
             <table class="table table-sm table-hover table-striped">
               <tbody>
