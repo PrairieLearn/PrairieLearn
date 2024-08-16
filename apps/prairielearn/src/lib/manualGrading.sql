@@ -241,7 +241,7 @@ VALUES
     $always_show_to_students
   )
 RETURNING
-  rubric_id;
+  id;
 
 -- BLOCK assign_rubric_item_parent
 UPDATE rubric_items

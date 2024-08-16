@@ -304,7 +304,7 @@ export async function updateAssessmentQuestionRubric(
           // Attempt to update the rubric item based on the ID. If the ID is not set or does not
           // exist, insert a new rubric item.
           if (item.id == null) {
-            item.id = await sqldb.queryRow(
+            rubric_items[item.number].id = await sqldb.queryRow(
               sql.insert_rubric_item,
               _.omit(item, ['order', 'indent', 'id']),
               IdSchema,
