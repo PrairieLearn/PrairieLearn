@@ -598,7 +598,6 @@ function StaffTable({
                             </div>
                             <button
                               type="submit"
-                              title="Remove access"
                               class="btn btn-sm btn-outline-primary"
                               aria-label="Remove access"
                             >
