@@ -92,7 +92,7 @@ export function InstructorQuestionSettings({
           })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
-              <h1 class="h6 font-weight-normal mb-0">Question Settings</h1>
+              <h1>Question Settings</h1>
             </div>
             <div class="card-body">
               <form>
