@@ -77,7 +77,7 @@ export function StudentAssessments({
                     ${row.start_new_assessment_group
                       ? html`
                           <tr>
-                            <th colspan="4" data-testid="assessment-group-heading">
+                            <th colspan="4" scope="row" data-testid="assessment-group-heading">
                               ${row.assessment_group_heading}
                             </th>
                           </tr>

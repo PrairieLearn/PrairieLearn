@@ -98,7 +98,7 @@ export function InstructorAssessments({
                       ${row.start_new_assessment_group
                         ? html`
                             <tr>
-                              <th colspan="7">${row.assessment_group_heading}</th>
+                              <th colspan="7" scope="row">${row.assessment_group_heading}</th>
                             </tr>
                           `
                         : ''}
