@@ -3,7 +3,7 @@ SELECT
   to_jsonb(j.*) AS job,
   to_jsonb(u.*) AS user
 FROM
-  jobs AS j
+  job_sequences AS j
   LEFT JOIN users AS u ON (j.authn_user_id = u.user_id)
 WHERE
   j.course_id = $course_id
@@ -12,5 +12,4 @@ WHERE
     OR j.type = 'ai_question_regenerate'
   )
 ORDER BY
-  j.number_in_sequence,
   j.id;

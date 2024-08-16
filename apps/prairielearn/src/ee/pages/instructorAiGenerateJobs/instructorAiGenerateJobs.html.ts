@@ -6,10 +6,10 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { JobStatus } from '../../../components/JobStatus.html.js';
-import { JobSchema, UserSchema } from '../../../lib/db-types.js';
+import { JobSequenceSchema, UserSchema } from '../../../lib/db-types.js';
 
 export const JobRowSchema = z.object({
-  job: JobSchema,
+  job: JobSequenceSchema,
   user: UserSchema.nullable(),
 });
 
