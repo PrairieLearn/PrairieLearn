@@ -1,15 +1,16 @@
 -- BLOCK select_generation_sequence_by_course
 SELECT
-  to_jsonb(j.*) AS job,
+  to_jsonb(js.*) AS job_sequence,
   to_jsonb(u.*) AS user
 FROM
-  job_sequences AS j
-  LEFT JOIN users AS u ON (j.authn_user_id = u.user_id)
+  job_sequences AS js
+  LEFT JOIN users AS u ON (js.authn_user_id = u.user_id)
 WHERE
-  j.course_id = $course_id
+  js.course_id = $course_id
   AND (
-    j.type = 'ai_question_generate'
-    OR j.type = 'ai_question_regenerate'
+    js.type = 'ai_question_generate'
+    OR js.type = 'ai_question_regenerate'
   )
 ORDER BY
-  j.id;
+  js.start_date,
+  js.id;
