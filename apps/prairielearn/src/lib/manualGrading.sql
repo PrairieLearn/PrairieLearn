@@ -239,7 +239,17 @@ VALUES
       ELSE MOD($number + 1, 10)
     END,
     $always_show_to_students
-  );
+  )
+RETURNING
+  rubric_id;
+
+-- BLOCK assign_rubric_item_parent
+UPDATE rubric_items
+SET
+  parent_id = $parent_id
+WHERE
+  id = $id
+  AND rubric_id = $rubric_id;
 
 -- BLOCK select_instance_questions_to_update
 WITH
