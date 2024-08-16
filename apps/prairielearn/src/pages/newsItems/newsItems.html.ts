@@ -42,7 +42,9 @@ export function NewsItems({
         ${Navbar({ resLocals, navPage: 'news_items' })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">News</div>
+            <div class="card-header bg-primary text-white d-flex">
+              <h1>News</h1>
+            </div>
 
             ${newsItems.length === 0
               ? html`

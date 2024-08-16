@@ -60,6 +60,7 @@ export function InstructorEffectiveUser({
       <body>
         ${Navbar({ resLocals, navPage: 'effective' })}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">Effective User</h1>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Authenticated user</div>
 

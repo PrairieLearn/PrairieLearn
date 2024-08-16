@@ -50,6 +50,7 @@ export function Home({
         <header>${Navbar({ resLocals, navPage: 'home' })}</header>
 
         <main id="content" class="flex-grow-1">
+          <h1 class="sr-only">PrairieLearn Homepage</h1>
           ${ActionsHeader()}
 
           <div id="content" class="container py-5">

@@ -50,6 +50,7 @@ export function RequestCourse({
       <body>
         ${Navbar({ resLocals, navPage: 'request_course' })}
         <main id="content" class="container">
+          <h1 class="sr-only">Request a Course</h1>
           ${CourseRequestsCard({ rows })}
           ${CourseNewRequestCard({ csrfToken: resLocals.__csrf_token })}
         </main>

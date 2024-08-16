@@ -62,6 +62,9 @@ export function InstructorAssessmentQuestionStatistics({
       <body>
         ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">
+            ${resLocals.assessment_set.name} ${resLocals.assessment.number} Question Statistics
+          </h1>
           ${AssessmentSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
             assessment: resLocals.assessment,

@@ -54,8 +54,12 @@ export function AdministratorWorkspaces({
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <span class="mr-auto">Workspace hosts</span>
-              <button class="btn btn-light" id="toggle-all-workspaces" data-state="collapsed">
+              <h1>Workspace hosts</h1>
+              <button
+                class="btn btn-light ml-auto"
+                id="toggle-all-workspaces"
+                data-state="collapsed"
+              >
                 Expand all
               </button>
             </div>

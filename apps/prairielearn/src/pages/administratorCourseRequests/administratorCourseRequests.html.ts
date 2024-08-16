@@ -26,6 +26,7 @@ export function AdministratorCourseRequests({
       <body>
         ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'courses' })}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">All Course Requests</h1>
           ${CourseRequestsTable({
             rows,
             institutions,

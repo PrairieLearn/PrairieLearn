@@ -53,9 +53,9 @@ export function Navbar({
       : ''}
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
-      <a class="navbar-brand" href="${homeUrl}">
+      <a class="navbar-brand" href="${homeUrl}" aria-label="Homepage">
         <span class="navbar-brand-label">PrairieLearn</span>
-        <span class="navbar-brand-hover-label text-secondary">
+        <span class="navbar-brand-hover-label">
           Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
         </span>
       </a>

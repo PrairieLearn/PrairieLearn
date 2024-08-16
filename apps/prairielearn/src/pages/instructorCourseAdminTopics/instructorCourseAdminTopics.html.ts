@@ -28,7 +28,9 @@ export function InstructorCourseAdminTopics({
             urlPrefix: resLocals.urlPrefix,
           })}
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Topics</div>
+            <div class="card-header bg-primary text-white">
+              <h1>Topics</h1>
+            </div>
             <div class="table-responsive">
               <table class="table table-sm table-hover table-striped">
                 <thead>

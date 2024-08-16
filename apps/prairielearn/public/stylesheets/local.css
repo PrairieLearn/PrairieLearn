@@ -143,12 +143,7 @@ mjx-container {
   transform: rotateX(180deg);
 }
 
-/* Button in submission header context
-   prepends "hide" or "show" automatically */
-.submission-header {
-  cursor: pointer;
-}
-
+/* Button in submission header context prepends "hide" or "show" automatically */
 .submission-header .expand-icon {
   transition: transform 400ms;
 }
@@ -157,11 +152,11 @@ mjx-container {
   content: 'hide';
 }
 
-.submission-header.collapsed .expand-icon {
+.submission-header .expand-icon-container.collapsed .expand-icon {
   transform: rotateX(180deg);
 }
 
-.submission-header.collapsed .expand-icon-container::before {
+.submission-header .expand-icon-container.collapsed::before {
   content: 'show';
 }
 
@@ -242,6 +237,14 @@ table td > .badge {
 .card > .table-responsive > table tr td:last-child,
 .card > .table-responsive > table tr th:last-child {
   padding-right: 1.25rem;
+}
+
+/** Ensure that headings in card headers are styled the same as standard card headers. */
+.card-header > :is(h1, h2, h3, h4, h5, h6) {
+  line-height: 1.5rem;
+  margin-bottom: 0;
+  font-size: 1rem;
+  font-weight: 400;
 }
 
 /* Custom button styles that look better in input groups */

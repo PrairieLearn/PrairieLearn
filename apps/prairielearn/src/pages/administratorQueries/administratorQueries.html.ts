@@ -43,7 +43,9 @@ export function AdministratorQueries({
         ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'queries' })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Queries</div>
+            <div class="card-header bg-primary text-white">
+              <h1>Queries</h1>
+            </div>
             <div class="table-responsive">
               <table class="table table-sm table-hover table-striped">
                 <tbody>

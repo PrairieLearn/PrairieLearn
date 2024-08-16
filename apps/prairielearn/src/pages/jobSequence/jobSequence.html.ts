@@ -26,6 +26,7 @@ export function JobSequence({
       <body>
         ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">Job Sequence</h1>
           <div class="row">
             <div class="col-12">
               <a class="btn btn-primary mb-4" href="javascript:history.back();">

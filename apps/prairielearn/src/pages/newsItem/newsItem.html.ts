@@ -48,16 +48,14 @@ export function NewsItem({
             </header>
 
             ${unsafeHtml(newsItemHtml)}
-
-            <aside>
-              <p class="text-right small border-top mt-5 pt-3">
-                Want to help make PrairieLearn better? It's open source and contributions are
-                welcome
-                <a href="https://github.com/PrairieLearn/PrairieLearn" target="_blank">on GitHub</a
-                >!
-              </p>
-            </aside>
           </article>
+
+          <aside>
+            <p class="text-right small border-top mt-5 pt-3">
+              Want to help make PrairieLearn better? It's open source and contributions are welcome
+              <a href="https://github.com/PrairieLearn/PrairieLearn" target="_blank">on GitHub</a>!
+            </p>
+          </aside>
         </main>
       </body>
     </html>

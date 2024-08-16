@@ -53,10 +53,7 @@
         const pre = preview.querySelector('pre');
 
         const downloadButton = li.querySelector('.file-preview-download');
-        downloadButton.addEventListener('click', (event) => {
-          // Prevent this click from toggling the collapse state.
-          event.stopPropagation();
-
+        downloadButton.addEventListener('click', () => {
           downloadFile(path, file)
             .then(() => {
               hideErrorMessage();

@@ -61,7 +61,7 @@ export function InstructorQuestionStatistics({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              Detailed assessment statistics for question ${resLocals.question.qid}
+              <h1>Detailed assessment statistics for question ${resLocals.question.qid}</h1>
             </div>
 
             <div class="table-responsive">

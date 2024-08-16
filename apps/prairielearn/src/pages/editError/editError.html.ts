@@ -42,22 +42,18 @@ export function EditError({
           </script>
 
           <div class="card mb-4">
-            <h5 class="card-header bg-danger text-white">
-              <div class="row align-items-center justify-content-between">
-                <div class="col-auto">Edit Failure</div>
-                <div class="col-auto">
-                  <button
-                    type="button"
-                    class="btn btn-light btn-sm"
-                    data-toggle="collapse"
-                    data-target="#job-sequence-results"
-                    id="job-sequence-results-button"
-                  >
-                    Show detail
-                  </button>
-                </div>
-              </div>
-            </h5>
+            <div class="card-header bg-danger text-white d-flex align-items-center">
+              <h1>Edit Failure</h1>
+              <button
+                type="button"
+                class="btn btn-light btn-sm ml-auto"
+                data-toggle="collapse"
+                data-target="#job-sequence-results"
+                id="job-sequence-results-button"
+              >
+                Show detail
+              </button>
+            </div>
             <div class="card-body">
               <p>The file edit did not complete successfully.</p>
               ${failedSync

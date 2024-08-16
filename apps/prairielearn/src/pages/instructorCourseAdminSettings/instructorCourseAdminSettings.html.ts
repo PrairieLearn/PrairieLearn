@@ -36,7 +36,9 @@ export function InstructorCourseAdminSettings({
           })}
 
           <div class="card  mb-4">
-            <div class="card-header bg-primary text-white d-flex">Course Settings</div>
+            <div class="card-header bg-primary text-white d-flex">
+              <h1>Course Settings</h1>
+            </div>
             <div class="card-body">
               ${!courseInfoExists || !coursePathExists
                 ? CourseDirectoryMissingAlert({

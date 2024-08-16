@@ -58,7 +58,7 @@ export function InstructorAssessmentDownloads({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Downloads
+              <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Downloads</h1>
             </div>
             ${resLocals.assessment.multiple_instance
               ? html`
