@@ -129,24 +129,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else:  # submission
                     initial_content = data["submitted_answers"][drawing_name]
             else:  # not gradable
-                if fresh:
-                    if source_available:
-                        initial_content = load_file_content(element, data)
-                    else:
-                        raise unreachable
-                else:  # submission
+                if fresh and source_available:
+                    initial_content = load_file_content(element, data)
+                else:
                     raise unreachable
 
         case "answer":
             if gradable:
                 show_widget = False
             else:  # not gradable
-                if source_available:
-                    if fresh:
-                        initial_content = load_file_content(element, data)
-                    else:  # submission
-                        raise unreachable
-                else:  # no source file
+                if fresh and source_available:
+                    initial_content = load_file_content(element, data)
+                else:
                     raise unreachable
 
         case "submission":
@@ -156,12 +150,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else:  # submission
                     initial_content = data["submitted_answers"][drawing_name]
             else:  # not gradable
-                if fresh:
-                    if source_available:
-                        initial_content = load_file_content(element, data)
-                    else:  # no source file
-                        raise unreachable
-                else:  # submission
+                if fresh and source_available:
+                    initial_content = load_file_content(element, data)
+                else:
                     raise unreachable
 
         case panel:
