@@ -23,7 +23,7 @@ export function AdministratorSettings({ resLocals }) {
           <!-- Chunk generation -->
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              Chunk generation
+              <h2>Chunk generation</h2>
             </div>
             <div class="card-body">
               <form name="generate_chunks_form" method="POST">
@@ -46,7 +46,9 @@ export function AdministratorSettings({ resLocals }) {
 
           <!-- Actions -->
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Actions</div>
+            <div class="card-header bg-primary text-white">
+              <h2>Actions</h2>
+            </div>
             <div class="card-body">
               <form name="invalidate-question-cache-form" method="POST">
                 <input type="hidden" name="__action" value="invalidate_question_cache" />

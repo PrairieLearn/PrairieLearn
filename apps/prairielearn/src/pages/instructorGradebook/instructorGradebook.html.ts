@@ -107,7 +107,7 @@ function StudentDataViewMissing({
 }) {
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-danger text-white h6 font-weight-normal">
+      <div class="card-header bg-danger text-white">
         <h1>Gradebook</h1>
       </div>
       <div class="card-body">
