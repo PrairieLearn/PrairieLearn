@@ -218,7 +218,5 @@ export async function validateLti13CourseInstance(
   }
 
   const instAuthProviders = await getInstitutionAuthenticationProviders(resLocals.institution.id);
-  const hasLti13SSO = instAuthProviders.some((a) => a.name === 'LTI 1.3');
-
-  return hasLti13SSO;
+  return instAuthProviders.some((a) => a.name === 'LTI 1.3');
 }
