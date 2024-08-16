@@ -32,8 +32,9 @@ export function StudentAccessRulesPopover({
       data-trigger="focus"
       data-container="body"
       data-html="true"
-      title="${assessmentSetName} ${assessmentNumber}"
+      title="Access details"
       data-content="${escapeHtml(StudentAccessRulesPopoverContent({ accessRules }))}"
+      aria-label="Access details"
     >
       <i class="fa fa-question-circle"></i>
     </a>
