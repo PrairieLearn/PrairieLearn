@@ -190,10 +190,10 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                     <thead>
                       <tr class="text-nowrap">
                         <th style="width: 1px"><!-- Order --></th>
+                        <th>Points</th>
                         <th>Description</th>
                         <th>Detailed explanation (optional)</th>
                         <th>Grader note (optional, not visible to students)</th>
-                        <th>Points</th>
                         <th>Show to students</th>
                         <th>In use</th>
                       </tr>
@@ -310,142 +310,138 @@ function RubricItemRow(
   indentLevel: number,
 ) {
   const namePrefix = item ? `rubric_item[cur${item.id}]` : 'rubric_item[new]';
-  return html`
-    <tr>
-      <td class="text-nowrap">
-        ${item ? html`<input type="hidden" name="${namePrefix}[id]" value="${item.id}" />` : ''}
-        <input
-          type="hidden"
-          class="js-rubric-item-row-order"
-          name="${namePrefix}[order]"
-          value="${index}"
-        />
-        <input
-          type="hidden"
-          class="js-rubric-item-indent"
-          name="${namePrefix}[indent]"
-          value="${indentLevel}"
-        />
-        <button type="button" class="btn btn-sm js-rubric-item-move-button" draggable="true">
-          <i class="fas fa-arrows-up-down"></i>
-        </button>
-        <button type="button" class="btn btn-sm sr-only js-rubric-item-move-up-button">
-          Move up
-        </button>
-        <button type="button" class="btn btn-sm sr-only js-rubric-item-move-down-button">
-          Move down
-        </button>
-        <button type="button" class="btn btn-sm sr-only js-rubric-item-move-in-button">
-          Move inside previous item
-        </button>
-        <button type="button" class="btn btn-sm sr-only js-rubric-item-move-out-button">
-          Move outside previous item
-        </button>
-        <span class="js-rubric-item-render-indent"
-          >${indentLevel > 0
-            ? html`&nbsp;&nbsp;${'&nbsp;'.repeat((indentLevel - 1) * 4)}&#5125;`
-            : ''}</span
-        >
-        <button type="button" class="btn btn-sm js-rubric-item-delete text-danger">
-          <i class="fas fa-trash"></i>
-          <span class="sr-only">Delete</span>
-        </button>
-      </td>
-      <td>
-        <input
-          type="text"
-          class="form-control js-rubric-item-description"
-          required
-          maxlength="100"
-          style="min-width: 15rem"
-          name="${namePrefix}[description]"
-          value="${item?.description}"
-        />
-      </td>
-      <td>
-        ${item?.explanation
-          ? html` <label
-              for="rubric-item-explanation-button-${item.id}"
-              style="white-space: pre-wrap;"
-              >${item?.explanation}</label
-            >`
-          : ''}
-        <button
-          ${item ? html`id="rubric-item-explanation-button-${item.id}"` : ''}
-          type="button"
-          class="btn btn-sm js-rubric-item-long-text-field js-rubric-item-explanation"
-          data-input-name="${namePrefix}[explanation]"
-          data-current-value="${item?.explanation}"
-        >
-          <i class="fas fa-pencil"></i>
-        </button>
-      </td>
-      <td>
-        ${item?.grader_note
-          ? html`<label
-              for="rubric-item-grader-note-button-${item.id}"
-              style="white-space: pre-wrap;"
-              >${item?.grader_note}</label
-            > `
-          : ''}
-        <button
-          ${item ? html`id="rubric-item-grader-note-button-${item.id}"` : ''}
-          type="button"
-          class="btn btn-sm js-rubric-item-long-text-field js-rubric-item-grader-note"
-          data-input-name="${namePrefix}[grader_note]"
-          data-current-value="${item?.grader_note}"
-        >
-          <i class="fas fa-pencil"></i>
-        </button>
-      </td>
-      <td>
-        <input
-          type="number"
-          class="form-control js-rubric-item-points"
-          style="width: 4rem"
-          step="any"
-          required
-          name="${namePrefix}[points]"
-          value="${item?.points}"
-        />
-      </td>
-      <td>
-        <div class="form-check form-check-inline">
-          <label class="form-check-label text-nowrap">
-            <input
-              type="radio"
-              class="form-check-input js-rubric-item-always-show"
-              required
-              name="${namePrefix}[always_show_to_students]"
-              value="true"
-              ${!item || item.always_show_to_students ? 'checked' : ''}
-            />Always
-          </label>
-        </div>
-        <div class="form-check form-check-inline">
-          <label class="form-check-label text-nowrap">
-            <input
-              type="radio"
-              class="form-check-input js-rubric-item-always-show"
-              required
-              name="${namePrefix}[always_show_to_students]"
-              value="false"
-              ${!item || item.always_show_to_students ? '' : 'checked'}
-            />If selected
-          </label>
-        </div>
-      </td>
-      <td class="text-nowrap">
-        ${!item
-          ? 'New'
-          : !item.num_submissions
-            ? 'No'
-            : item.num_submissions === 1
-              ? '1 submission'
-              : `${item.num_submissions} submissions`}
-      </td>
-    </tr>
-  `;
+  return html` <tr>
+    <td class="text-nowrap">
+      ${item ? html`<input type="hidden" name="${namePrefix}[id]" value="${item.id}" />` : ''}
+      <input
+        type="hidden"
+        class="js-rubric-item-row-order"
+        name="${namePrefix}[order]"
+        value="${index}"
+      />
+      <input
+        type="hidden"
+        class="js-rubric-item-indent"
+        name="${namePrefix}[indent]"
+        value="${indentLevel}"
+      />
+      <button type="button" class="btn btn-sm js-rubric-item-move-button" draggable="true">
+        <i class="fas fa-arrows-up-down"></i>
+      </button>
+      <button type="button" class="btn btn-sm sr-only js-rubric-item-move-up-button">
+        Move up
+      </button>
+      <button type="button" class="btn btn-sm sr-only js-rubric-item-move-down-button">
+        Move down
+      </button>
+      <button type="button" class="btn btn-sm sr-only js-rubric-item-move-in-button">
+        Move inside category
+      </button>
+      <button type="button" class="btn btn-sm sr-only js-rubric-item-move-out-button">
+        Move outside category
+      </button>
+      <span class="js-rubric-item-render-indent"
+        >${indentLevel > 0
+          ? html`&nbsp;&nbsp;${'&nbsp;'.repeat((indentLevel - 1) * 4)}&#5125;`
+          : ''}</span
+      >
+      <button type="button" class="btn btn-sm js-rubric-item-delete text-danger">
+        <i class="fas fa-trash"></i>
+        <span class="sr-only">Delete</span>
+      </button>
+    </td>
+    <td>
+      <input
+        type="number"
+        class="form-control js-rubric-item-points"
+        style="width: 4rem"
+        step="any"
+        required
+        name="${namePrefix}[points]"
+        value="${item?.points}"
+      />
+    </td>
+    <td>
+      <input
+        type="text"
+        class="form-control js-rubric-item-description"
+        required
+        maxlength="100"
+        style="min-width: 15rem"
+        name="${namePrefix}[description]"
+        value="${item?.description}"
+      />
+    </td>
+    <td>
+      ${item?.explanation
+        ? html` <label
+            for="rubric-item-explanation-button-${item.id}"
+            style="white-space: pre-wrap;"
+            >${item?.explanation}</label
+          >`
+        : ''}
+      <button
+        ${item ? html`id="rubric-item-explanation-button-${item.id}"` : ''}
+        type="button"
+        class="btn btn-sm js-rubric-item-long-text-field js-rubric-item-explanation"
+        data-input-name="${namePrefix}[explanation]"
+        data-current-value="${item?.explanation}"
+      >
+        <i class="fas fa-pencil"></i>
+      </button>
+    </td>
+    <td>
+      ${item?.grader_note
+        ? html`<label for="rubric-item-grader-note-button-${item.id}" style="white-space: pre-wrap;"
+            >${item?.grader_note}</label
+          > `
+        : ''}
+      <button
+        ${item ? html`id="rubric-item-grader-note-button-${item.id}"` : ''}
+        type="button"
+        class="btn btn-sm js-rubric-item-long-text-field js-rubric-item-grader-note"
+        data-input-name="${namePrefix}[grader_note]"
+        data-current-value="${item?.grader_note}"
+      >
+        <i class="fas fa-pencil"></i>
+      </button>
+    </td>
+    <td>
+      <div class="form-check form-check-inline">
+        <label class="form-check-label text-nowrap">
+          <input
+            type="radio"
+            class="form-check-input js-rubric-item-always-show"
+            required
+            name="${namePrefix}[always_show_to_students]"
+            value="true"
+            ${!item || item.always_show_to_students ? 'checked' : ''}
+          />Always
+        </label>
+      </div>
+      <div class="form-check form-check-inline">
+        <label class="form-check-label text-nowrap">
+          <input
+            type="radio"
+            class="form-check-input js-rubric-item-always-show"
+            required
+            name="${namePrefix}[always_show_to_students]"
+            value="false"
+            ${!item || item.always_show_to_students ? '' : 'checked'}
+          />If selected
+        </label>
+      </div>
+    </td>
+    <td class="text-nowrap">
+      ${!item
+        ? 'New'
+        : !item.num_submissions
+          ? 'No'
+          : item.num_submissions === 1
+            ? '1 submission'
+            : `${item.num_submissions} submissions`}
+    </td>
+  </tr>`;
 }
 
 function MustachePatterns({ resLocals }: { resLocals: Record<string, any> }) {
