@@ -53,7 +53,7 @@ export function UserSettings({
           <h1 class="mb-4">Settings</h1>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h2 class="h6 font-weight-normal mb-0">User profile</h2>
+              <h2>User profile</h2>
             </div>
             <table class="table table-sm two-column-description">
               <tbody>
@@ -89,7 +89,7 @@ export function UserSettings({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
-              <h2 class="h6 font-weight-normal mb-0">Browser configuration</h2>
+              <h2>Browser configuration</h2>
             </div>
             <div class="card-body">
               <p>
@@ -112,7 +112,7 @@ export function UserSettings({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h2 class="h6 font-weight-normal mb-0">Personal access tokens</h2>
+              <h2>Personal access tokens</h2>
               ${!isExamMode
                 ? html`
                     <button

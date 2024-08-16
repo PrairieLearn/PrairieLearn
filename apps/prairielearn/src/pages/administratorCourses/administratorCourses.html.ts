@@ -52,7 +52,7 @@ export function AdministratorCourses({
 
           <div id="courses" class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h2 class="h6 font-weight-normal mb-0">Courses</h2>
+              <h2>Courses</h2>
               <button
                 type="button"
                 class="btn btn-sm btn-light ml-auto"

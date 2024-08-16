@@ -66,7 +66,7 @@ export function InstructorEffectiveUser({
           <h1 class="sr-only">Effective User</h1>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h2 class="h6 font-weight-normal mb-0">Authenticated user</h2>
+              <h2>Authenticated user</h2>
             </div>
 
             <div class="card-body">
@@ -110,7 +110,7 @@ export function InstructorEffectiveUser({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h2 class="h6 font-weight-normal mb-0">Effective user</h2>
+              <h2>Effective user</h2>
             </div>
 
             <div class="card-body">
@@ -156,7 +156,7 @@ export function InstructorEffectiveUser({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h2 class="h6 font-weight-normal mb-0">Effective course role</h2>
+              <h2>Effective course role</h2>
             </div>
 
             <div class="card-body">
@@ -210,7 +210,7 @@ export function InstructorEffectiveUser({
             ? html`
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white">
-                    <h2 class="h6 font-weight-normal mb-0">Effective course instance role</h2>
+                    <h2>Effective course instance role</h2>
                   </div>
 
                   <div class="card-body">
@@ -270,7 +270,7 @@ export function InstructorEffectiveUser({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h2 class="h6 font-weight-normal mb-0">Effective date</h2>
+              <h2>Effective date</h2>
             </div>
 
             <div class="card-body">

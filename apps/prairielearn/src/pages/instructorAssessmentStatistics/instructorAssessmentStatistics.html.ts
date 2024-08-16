@@ -80,9 +80,7 @@ export function InstructorAssessmentStatistics({
           <h1 class="sr-only">${resLocals.assessment_set.name} ${assessment.number} Statistics</h1>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h2 class="h6 font-weight-normal mb-0">
-                ${resLocals.assessment_set.name} ${assessment.number}: Score statistics
-              </h2>
+              <h2>${resLocals.assessment_set.name} ${assessment.number}: Score statistics</h2>
             </div>
             ${assessment.score_stat_number > 0
               ? html`
@@ -158,9 +156,7 @@ export function InstructorAssessmentStatistics({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h2 class="h6 font-weight-normal mb-0">
-                ${resLocals.assessment_set.name} ${assessment.number}: Duration statistics
-              </h2>
+              <h2>${resLocals.assessment_set.name} ${assessment.number}: Duration statistics</h2>
             </div>
 
             ${assessment.score_stat_number > 0
@@ -216,9 +212,7 @@ export function InstructorAssessmentStatistics({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h2 class="h6 font-weight-normal mb-0">
-                ${resLocals.assessment_set.name} ${assessment.number}: Duration versus score
-              </h2>
+              <h2>${resLocals.assessment_set.name} ${assessment.number}: Duration versus score</h2>
             </div>
 
             ${assessment.score_stat_number > 0
@@ -250,7 +244,7 @@ export function InstructorAssessmentStatistics({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h2 class="h6 font-weight-normal mb-0">
+              <h2>
                 ${resLocals.assessment_set.name} ${assessment.number}: Score statistics by date
               </h2>
             </div>

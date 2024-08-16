@@ -135,7 +135,7 @@ function DevModeCard() {
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
-        <h2 class="h6 font-weight-normal mb-0">Development Mode</h2>
+        <h2>Development Mode</h2>
       </div>
       <div class="card-body">
         <p>
@@ -163,7 +163,7 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
-        <h2 class="h6 font-weight-normal mb-0">Courses with instructor access</h2>
+        <h2>Courses with instructor access</h2>
       </div>
 
       <table class="table table-sm table-hover table-striped">
@@ -211,9 +211,7 @@ function StudentCoursesCard({
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        <h2 class="h6 font-weight-normal mb-0">
-          ${hasInstructorCourses ? 'Courses with student access' : 'Courses'}
-        </h2>
+        <h2>${hasInstructorCourses ? 'Courses with student access' : 'Courses'}</h2>
         ${canAddCourses
           ? html`
               <a href="${config.urlPrefix}/enroll" class="btn btn-light btn-sm ml-auto">

@@ -242,28 +242,30 @@ export function InstructorCourseAdminSharing({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h2 class="h6 font-weight-normal mb-0 text-white">Sharing Sets</span>
-              ${isCourseOwner
-                ? html`
-                    <button
-                      type="button"
-                      class="btn btn-light btn-sm ml-auto"
-                      data-toggle="popover"
-                      data-container="body"
-                      data-html="true"
-                      data-placement="auto"
-                      title="Create Sharing Set"
-                      data-content="${escapeHtml(
-                        AddSharingSetPopover({
-                          csrfToken: resLocals.__csrf_token,
-                        }),
-                      )}"
-                    >
-                      <i class="fas fa-plus" aria-hidden="true"></i>
-                      <span class="d-none d-sm-inline">Create Sharing Set</span>
-                    </button>
-                  `
-                : ''}
+              <h2>Sharing Sets</span>
+              ${
+                isCourseOwner
+                  ? html`
+                      <button
+                        type="button"
+                        class="btn btn-light btn-sm ml-auto"
+                        data-toggle="popover"
+                        data-container="body"
+                        data-html="true"
+                        data-placement="auto"
+                        title="Create Sharing Set"
+                        data-content="${escapeHtml(
+                          AddSharingSetPopover({
+                            csrfToken: resLocals.__csrf_token,
+                          }),
+                        )}"
+                      >
+                        <i class="fas fa-plus" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline">Create Sharing Set</span>
+                      </button>
+                    `
+                  : ''
+              }
             </div>
             <table class="table table-sm table-hover table-striped">
               <thead>
