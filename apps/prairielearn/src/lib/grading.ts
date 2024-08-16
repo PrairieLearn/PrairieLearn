@@ -81,7 +81,7 @@ export async function insertSubmission({
   variant_id: string;
   auth_user_id: string | null;
   client_fingerprint_id?: string | null;
-}): Promise<string> {
+}): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
     await sqldb.callAsync('variants_lock', [variant_id]);
 
@@ -152,7 +152,7 @@ export async function insertSubmission({
       await sqldb.callAsync('instance_questions_calculate_stats', [variant.instance_question_id]);
     }
 
-    return submission_id;
+    return { submission_id, variant };
   });
 }
 
@@ -170,7 +170,7 @@ export async function saveSubmission(
   variant: Variant,
   question: Question,
   variant_course: Course,
-): Promise<string> {
+): Promise<{ submission_id: string; variant: Variant }> {
   const submission: Partial<Submission> & SubmissionDataForSaving = {
     ...submissionData,
     raw_submitted_answer: submissionData.submitted_answer,
@@ -422,9 +422,19 @@ export async function saveAndGradeSubmission(
   course: Course,
   overrideGradeRateCheck: boolean,
 ) {
-  const submission_id = await saveSubmission(submissionData, variant, question, course);
-  await gradeVariant(
+  const { submission_id, variant: updated_variant } = await saveSubmission(
+    submissionData,
     variant,
+    question,
+    course,
+  );
+
+  await gradeVariant(
+    // Note that parsing a submission may modify the `true_answer` of the variant
+    // (for v3 questions, this is `data["correct_answers"])`. This is why we need
+    // to use the variant returned from `saveSubmission` rather than the one passed
+    // to this function.
+    updated_variant,
     submission_id,
     question,
     course,
