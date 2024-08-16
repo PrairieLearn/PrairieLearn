@@ -61,7 +61,7 @@ export function InstructorAIGenerateJobs({
                         <td>
                           <a
                             href="${resLocals.urlPrefix}/ai_generate_question_job/${row.job
-                              .job_sequence_id}"
+                              .id}"
                             class="btn btn-xs btn-info"
                           >
                             Details
