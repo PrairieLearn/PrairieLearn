@@ -22,7 +22,7 @@ import { Lti13Test } from './lti13Auth.html.js';
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
-const StateTest = '-StateTest';
+const STATE_TEST = '-StateTest';
 
 //
 // Express routes
@@ -45,7 +45,7 @@ router.post(
 
     const ltiClaim = new Lti13Claim(req);
 
-    const inStateTest = req.body.state.endsWith(StateTest);
+    const inStateTest = req.body.state.endsWith(STATE_TEST);
 
     // UID checking
     let uid: string;
@@ -210,7 +210,7 @@ async function launchFlow(req: Request, res: Response, next: NextFunction) {
   // Generate our own OIDC state, use it to toggle if testing is happening
   let state = crypto.randomBytes(28).toString('hex');
   if ('test' in parameters) {
-    state = state.concat(StateTest);
+    state = state.concat(STATE_TEST);
   }
 
   const myPassport = await setupPassport(req.params.lti13_instance_id);
