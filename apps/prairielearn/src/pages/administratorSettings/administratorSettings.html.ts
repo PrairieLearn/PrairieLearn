@@ -88,6 +88,7 @@ export function AdministratorSettings({ resLocals }) {
               </script>
             </div>
           </div>
+
           ${isEnterprise() && config.openAiApiKey && config.openAiOrganization
             ? html`
                 <div class="card mb-4">
@@ -102,6 +103,41 @@ export function AdministratorSettings({ resLocals }) {
                 </div>
               `
             : ''}
+
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">
+              <h2>Bootstrap playground</h2>
+            </div>
+            <div class="card-body">
+              <p>
+                This serves as a testing ground for custom focus styles that are meant to comply
+                with stricter accessibility requirements.
+              </p>
+              <div class="mb-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <button type="button" class="btn btn-primary">Primary</button>
+                <button type="button" class="btn btn-secondary">Secondary</button>
+                <button type="button" class="btn btn-success">Success</button>
+                <button type="button" class="btn btn-danger">Danger</button>
+                <button type="button" class="btn btn-warning">Warning</button>
+                <button type="button" class="btn btn-info">Info</button>
+                <button type="button" class="btn btn-light">Light</button>
+                <button type="button" class="btn btn-dark">Dark</button>
+                <button type="button" class="btn btn-link">Link</button>
+              </div>
+              <div class="mb-4" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                <button type="button" class="btn btn-outline-primary">Primary</button>
+                <button type="button" class="btn btn-outline-secondary">Secondary</button>
+                <button type="button" class="btn btn-outline-success">Success</button>
+                <button type="button" class="btn btn-outline-danger">Danger</button>
+                <button type="button" class="btn btn-outline-warning">Warning</button>
+                <button type="button" class="btn btn-outline-info">Info</button>
+                <button type="button" class="btn btn-outline-dark">Dark</button>
+              </div>
+              <div class="p-4 bg-dark">
+                <button type="button" class="btn btn-outline-light">Light</button>
+              </div>
+            </div>
+          </div>
         </main>
       </body>
     </html>
