@@ -111,8 +111,6 @@ export function StudentAssessments({
                           : 'Assessment closed.'}
                         ${StudentAccessRulesPopover({
                           accessRules: row.access_rules,
-                          assessmentSetName: row.assessment_set_name,
-                          assessmentNumber: row.assessment_number,
                         })}
                       </td>
                       <td class="text-center align-middle">

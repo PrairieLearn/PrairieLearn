@@ -14,15 +14,7 @@ export const AuthzAccessRuleSchema = z.object({
 });
 export type AuthzAccessRule = z.infer<typeof AuthzAccessRuleSchema>;
 
-export function StudentAccessRulesPopover({
-  assessmentSetName,
-  assessmentNumber,
-  accessRules,
-}: {
-  assessmentSetName: string;
-  assessmentNumber: string;
-  accessRules: AuthzAccessRule[];
-}) {
+export function StudentAccessRulesPopover({ accessRules }: { accessRules: AuthzAccessRule[] }) {
   return html`
     <a
       tabindex="0"
