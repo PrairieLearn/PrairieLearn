@@ -104,7 +104,7 @@ export function InstructorInstanceAdminLti13({
                     <table class="table table-sm table-hover">
                       <thead>
                         <tr>
-                          <th colspan="2">PrairieLearn Assessment</th>
+                          <th colspan="2" scope="row">PrairieLearn Assessment</th>
                           <th>Actions</th>
                           <th>
                             <form method="POST">
@@ -199,12 +199,7 @@ export function InstructorInstanceAdminLti13({
                               : ''}
                             <tr id="row-${row.id}">
                               <td class="align-middle" style="width: 1%">
-                                <a
-                                  href="${urlPrefix}/assessment/${row.id}/"
-                                  class="badge color-${row.color} color-hover"
-                                >
-                                  ${row.label}
-                                </a>
+                                <span class="badge color-${row.color}">${row.label}</span>
                               </td>
                               <td class="align-middle">
                                 <a href="${urlPrefix}/assessment/${row.id}/"
