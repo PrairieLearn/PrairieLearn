@@ -502,7 +502,24 @@ function unindentRow(event) {
 
 function deleteRow(event) {
   const table = event.target.closest('table');
-  event.target.closest('tr').remove();
+  const targetRow = event.target.closest('tr');
+  const rowList = Array.from(targetRow.parentNode.children);
+  const targetRowIdx = rowList.indexOf(targetRow);
+  const targetRowIndent = rowList[targetRowIdx].querySelector('.js-rubric-item-indent').value;
+
+  // Decrease indentation of successors until hitting a row with a lower or equal indentation level
+  rowList.some((row, idx) => {
+    const indent = row.querySelector('.js-rubric-item-indent');
+    if (indent !== null && idx > targetRowIdx) {
+      if (indent.value <= targetRowIndent) {
+        return true;
+      }
+      indent.value -= 1;
+    }
+    return false;
+  });
+
+  targetRow.remove();
   if (!table?.querySelectorAll('.js-rubric-item-row-order')?.length) {
     table.querySelector('.js-no-rubric-item-note').classList.remove('d-none');
   }
@@ -567,7 +584,7 @@ function addRubricItemRow() {
   const row = modal
     .querySelector('.js-new-row-rubric-item')
     .content.firstElementChild.cloneNode(true);
-  table.querySelector('tbody').appendChild(row);
+  table.querySelector('tbody').insertBefore(row, table.querySelector('.js-no-rubric-item-note'));
 
   row.querySelector('.js-rubric-item-row-order').name = `rubric_item[new${next_id}][order]`;
   row.querySelector('.js-rubric-item-indent').name = `rubric_item[new${next_id}][indent]`;
