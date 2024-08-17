@@ -450,13 +450,19 @@ function enableRubricItemLongTextField(event) {
   adjustHeightFromContent(input);
 }
 
-function setDisablePoints(item, isDisabled) {
+function setAutoPoints(item, isAuto) {
   if (item !== null) {
     const itemRow = item.closest('tr');
     const pointsInput = itemRow.querySelector('.js-rubric-item-points');
-    if (isDisabled) {
-      if (!pointsInput.hasAttribute('disabled')) {
-        pointsInput.setAttribute('disabled', 'disabled');
+    if (isAuto) {
+      pointsInput.setAttribute('readonly', 'readonly');
+      pointsInput.setAttribute(
+        'title',
+        'Points are automatically calculated for items that contain other items',
+      );
+
+      // Save last non-auto value only once when item becomes auto
+      if (!pointsInput.hasAttribute('readonly')) {
         pointsInput.setAttribute('data-saved-value', pointsInput.value);
       }
 
@@ -464,6 +470,7 @@ function setDisablePoints(item, isDisabled) {
       const rowIdx = rowList.indexOf(itemRow);
       const rowIndent = parseInt(itemRow.querySelector('.js-rubric-item-indent').value);
 
+      // Update point calculation for auto item
       let sumOfChildPoints = 0;
       rowList.some((row, idx) => {
         const points = row.querySelector('.js-rubric-item-points');
@@ -478,14 +485,9 @@ function setDisablePoints(item, isDisabled) {
         }
         return false;
       });
-
       pointsInput.value = sumOfChildPoints;
-      pointsInput.setAttribute(
-        'title',
-        'Points are automatically calculated for items that contain other items',
-      );
     } else {
-      pointsInput.removeAttribute('disabled');
+      pointsInput.removeAttribute('readonly');
       pointsInput.removeAttribute('title');
       if (pointsInput.hasAttribute('data-saved-value')) {
         pointsInput.value = pointsInput.getAttribute('data-saved-value');
@@ -506,16 +508,17 @@ function updateRubricItemOrderAndIndentation() {
     input.value = Math.min(input.value, previousIndent + 1);
 
     // Update visual indentation
-    input.parentElement.querySelector('.js-rubric-item-render-indent').innerHTML =
-      input.value > 0 ? '&nbsp;&nbsp;' + '&nbsp;'.repeat((input.value - 1) * 4) + '&#5125' : '';
+    input.parentElement.querySelector('.js-rubric-item-render-indent').innerHTML = '&nbsp;'.repeat(
+      input.value * 4,
+    );
 
     previousIndent = parseInt(input.value);
   });
 
+  // Disable points for non-leaf items (traversing in reverse for full cascading in one pass)
   previousIndent = -1;
   [...document.querySelectorAll('.js-rubric-item-indent')].reverse().forEach((input) => {
-    // Disable points for non-leaf items
-    setDisablePoints(input, input.value < previousIndent);
+    setAutoPoints(input, input.value < previousIndent);
     previousIndent = input.value;
   });
 }
@@ -618,7 +621,7 @@ function rowDragOver(event) {
     var parentIndent = parseInt(
       rowList[targetRowIdx - 1].querySelector('.js-rubric-item-indent').value,
     );
-    const dragOffset = event.clientX - row.getBoundingClientRect().left;
+    const dragOffset = event.clientX - row.getBoundingClientRect().left - 5;
 
     // Prevent a row from being considered as its own parent in certain drag states and allowed further indentation
     if (draggingRowIdx === targetRowIdx - 1) {
@@ -626,7 +629,7 @@ function rowDragOver(event) {
     }
     window.rubricItemRowDragging.querySelector('.js-rubric-item-indent').value = Math.max(
       0,
-      Math.min(parentIndent + 1, Math.floor(dragOffset / 25)),
+      Math.min(parentIndent + 1, Math.floor(dragOffset / 18)),
     );
   } else {
     window.rubricItemRowDragging.querySelector('.js-rubric-item-indent').value = 0;

@@ -329,7 +329,10 @@ export async function updateAssessmentQuestionRubric(
         }
         // If there's any item left, the most recent one will be the parent
         if (rubric_parent_stack.length > 0) {
-          item.parent_id = rubric_parent_stack[rubric_parent_stack.length - 1].id;
+          const parent = rubric_parent_stack[rubric_parent_stack.length - 1];
+          item.parent_id = parent.id;
+          // Nodes with children are worth no points themselves
+          parent.points = 0;
         }
         // Add the current item as a potential parent for future ones
         rubric_parent_stack.push(item);
@@ -338,10 +341,11 @@ export async function updateAssessmentQuestionRubric(
       await async.eachOfSeries(
         rubric_items,
         async (item) =>
-          await sqldb.queryAsync(sql.assign_rubric_item_parent, {
+          await sqldb.queryAsync(sql.update_rubric_item_hierarchy, {
             id: item.id,
             rubric_id: new_rubric_id,
             parent_id: item.parent_id,
+            points: item.points,
           }),
       );
 

@@ -325,6 +325,7 @@ function RubricItemRow(
         name="${namePrefix}[indent]"
         value="${indentLevel}"
       />
+      <span class="js-rubric-item-render-indent"></span>
       <button type="button" class="btn btn-sm js-rubric-item-move-button" draggable="true">
         <i class="fas fa-arrows-up-down"></i>
       </button>
@@ -340,11 +341,6 @@ function RubricItemRow(
       <button type="button" class="btn btn-sm sr-only js-rubric-item-move-out-button">
         Move outside category
       </button>
-      <span class="js-rubric-item-render-indent"
-        >${indentLevel > 0
-          ? html`&nbsp;&nbsp;${'&nbsp;'.repeat((indentLevel - 1) * 4)}&#5125;`
-          : ''}</span
-      >
       <button type="button" class="btn btn-sm js-rubric-item-delete text-danger">
         <i class="fas fa-trash"></i>
         <span class="sr-only">Delete</span>

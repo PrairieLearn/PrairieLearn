@@ -243,10 +243,11 @@ VALUES
 RETURNING
   id;
 
--- BLOCK assign_rubric_item_parent
+-- BLOCK update_rubric_item_hierarchy
 UPDATE rubric_items
 SET
-  parent_id = $parent_id
+  parent_id = $parent_id,
+  points = $points
 WHERE
   id = $id
   AND rubric_id = $rubric_id;
