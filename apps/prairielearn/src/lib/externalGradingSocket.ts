@@ -6,8 +6,10 @@ import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken } from '@prairielearn/signed-token';
 
+import { gradingJobStatus } from '../models/grading-job.js';
+
 import { config } from './config.js';
-import { IdSchema } from './db-types.js';
+import { GradingJobSchema, IdSchema } from './db-types.js';
 import { renderPanelsForSubmission } from './question-render.js';
 import * as socketServer from './socket-server.js';
 
@@ -15,14 +17,12 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const SubmissionForVariantSchema = z.object({
   id: IdSchema,
-  grading_job_id: IdSchema.nullable(),
-  grading_job_status: z.string().nullable(),
+  grading_job: GradingJobSchema.nullable(),
 });
 
 const SubmissionForGradingJobSchema = z.object({
   id: IdSchema,
-  grading_job_id: IdSchema,
-  grading_job_status: z.string(),
+  grading_job: GradingJobSchema,
   variant_id: IdSchema,
 });
 
@@ -47,7 +47,14 @@ export function connection(socket: Socket) {
 
     getVariantSubmissionsStatus(msg.variant_id).then(
       (submissions) => {
-        callback({ variant_id: msg.variant_id, submissions });
+        callback({
+          variant_id: msg.variant_id,
+          submissions: submissions.map((s) => ({
+            id: s.id,
+            grading_job_id: s.grading_job?.id,
+            grading_job_status: gradingJobStatus(s.grading_job),
+          })),
+        });
       },
       (err) => {
         logger.error('Error getting variant submissions status', err);
@@ -127,7 +134,14 @@ export async function gradingJobStatusUpdated(grading_job_id: string) {
 
     const eventData = {
       variant_id: submission.variant_id,
-      submissions: [submission],
+      submissions: [
+        {
+          id: submission.id,
+          grading_job_id: submission.grading_job?.id,
+          grading_job_status: gradingJobStatus(submission.grading_job),
+          variant_id: submission.variant_id,
+        },
+      ],
     };
     namespace.to(`variant-${submission.variant_id}`).emit('change:status', eventData);
   } catch (err) {
