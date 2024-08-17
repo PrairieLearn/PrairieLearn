@@ -447,15 +447,52 @@ function enableRubricItemLongTextField(event) {
   adjustHeightFromContent(input);
 }
 
+function setDisablePoints(item, isDisabled) {
+  if (item !== null) {
+    const pointsInput = item.closest('tr').querySelector('.js-rubric-item-points');
+    if (isDisabled && !pointsInput.hasAttribute('disabled')) {
+      pointsInput.setAttribute('disabled', 'disabled');
+      pointsInput.removeAttribute('required');
+      pointsInput.setAttribute('data-saved-value', pointsInput.value);
+      pointsInput.value = '';
+      pointsInput.setAttribute(
+        'title',
+        'Points are automatically calculated for items that contain other items',
+      );
+    } else if (!isDisabled && pointsInput.hasAttribute('disabled')) {
+      pointsInput.removeAttribute('disabled');
+      pointsInput.removeAttribute('title');
+      pointsInput.setAttribute('required', 'required');
+      if (pointsInput.hasAttribute('data-saved-value')) {
+        pointsInput.value = pointsInput.getAttribute('data-saved-value');
+      }
+    }
+  }
+}
+
 function updateRubricItemOrderAndIndentation() {
   document.querySelectorAll('.js-rubric-item-row-order').forEach((input, index) => {
     input.value = index;
   });
 
+  let previousItem = null;
   document.querySelectorAll('.js-rubric-item-indent').forEach((input) => {
+    // Ensure consistent indentation when items are unindented or moved
+    const previousIndent = previousItem !== null ? parseInt(previousItem.value) : 0;
+    input.value = Math.min(input.value, previousIndent + 1);
+
+    // Update visual indentation
     input.parentElement.querySelector('.js-rubric-item-render-indent').innerHTML =
       input.value > 0 ? '&nbsp;&nbsp;' + '&nbsp;'.repeat((input.value - 1) * 4) + '&#5125' : '';
+
+    // Disable points for non-leaf items
+    setDisablePoints(previousItem, previousIndent < input.value);
+
+    previousItem = input;
   });
+
+  // Last item is always a leaf and therefore enabled
+  setDisablePoints(previousItem, false);
 }
 
 function moveRowDown(event) {
