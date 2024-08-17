@@ -348,6 +348,9 @@ function resetRubricItemRowsListeners() {
   document
     .querySelectorAll('.js-rubric-item-points, .js-rubric-item-limits')
     .forEach((input) => input.addEventListener('input', checkRubricItemTotals));
+  document
+    .querySelectorAll('.js-rubric-item-points')
+    .forEach((input) => input.addEventListener('input', updateRubricItemOrderAndIndentation));
 }
 
 function roundPoints(points) {
@@ -449,22 +452,44 @@ function enableRubricItemLongTextField(event) {
 
 function setDisablePoints(item, isDisabled) {
   if (item !== null) {
-    const pointsInput = item.closest('tr').querySelector('.js-rubric-item-points');
-    if (isDisabled && !pointsInput.hasAttribute('disabled')) {
-      pointsInput.setAttribute('disabled', 'disabled');
-      pointsInput.removeAttribute('required');
-      pointsInput.setAttribute('data-saved-value', pointsInput.value);
-      pointsInput.value = '';
+    const itemRow = item.closest('tr');
+    const pointsInput = itemRow.querySelector('.js-rubric-item-points');
+    if (isDisabled) {
+      if (!pointsInput.hasAttribute('disabled')) {
+        pointsInput.setAttribute('disabled', 'disabled');
+        pointsInput.setAttribute('data-saved-value', pointsInput.value);
+      }
+
+      const rowList = Array.from(itemRow.parentElement.children);
+      const rowIdx = rowList.indexOf(itemRow);
+      const rowIndent = parseInt(itemRow.querySelector('.js-rubric-item-indent').value);
+
+      let sumOfChildPoints = 0;
+      rowList.some((row, idx) => {
+        const points = row.querySelector('.js-rubric-item-points');
+        const indent = row.querySelector('.js-rubric-item-indent');
+        if (points !== null && idx > rowIdx) {
+          if (indent.value <= rowIndent) {
+            return true;
+          }
+          if (parseInt(indent.value) === rowIndent + 1) {
+            sumOfChildPoints += parseInt(points.value);
+          }
+        }
+        return false;
+      });
+
+      pointsInput.value = sumOfChildPoints;
       pointsInput.setAttribute(
         'title',
         'Points are automatically calculated for items that contain other items',
       );
-    } else if (!isDisabled && pointsInput.hasAttribute('disabled')) {
+    } else {
       pointsInput.removeAttribute('disabled');
       pointsInput.removeAttribute('title');
-      pointsInput.setAttribute('required', 'required');
       if (pointsInput.hasAttribute('data-saved-value')) {
         pointsInput.value = pointsInput.getAttribute('data-saved-value');
+        pointsInput.removeAttribute('data-saved-value');
       }
     }
   }
@@ -475,24 +500,24 @@ function updateRubricItemOrderAndIndentation() {
     input.value = index;
   });
 
-  let previousItem = null;
+  let previousIndent = -1;
   document.querySelectorAll('.js-rubric-item-indent').forEach((input) => {
     // Ensure consistent indentation when items are unindented or moved
-    const previousIndent = previousItem !== null ? parseInt(previousItem.value) : 0;
     input.value = Math.min(input.value, previousIndent + 1);
 
     // Update visual indentation
     input.parentElement.querySelector('.js-rubric-item-render-indent').innerHTML =
       input.value > 0 ? '&nbsp;&nbsp;' + '&nbsp;'.repeat((input.value - 1) * 4) + '&#5125' : '';
 
-    // Disable points for non-leaf items
-    setDisablePoints(previousItem, previousIndent < input.value);
-
-    previousItem = input;
+    previousIndent = parseInt(input.value);
   });
 
-  // Last item is always a leaf and therefore enabled
-  setDisablePoints(previousItem, false);
+  previousIndent = -1;
+  [...document.querySelectorAll('.js-rubric-item-indent')].reverse().forEach((input) => {
+    // Disable points for non-leaf items
+    setDisablePoints(input, input.value < previousIndent);
+    previousIndent = input.value;
+  });
 }
 
 function moveRowDown(event) {
