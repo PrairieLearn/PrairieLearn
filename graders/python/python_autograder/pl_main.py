@@ -91,6 +91,7 @@ if __name__ == "__main__":
         # Compile total number of points
         max_points = test_case.get_total_points()
         earned_points = sum([test["points"] for test in results])
+        score = 0 if max_points == 0 else float(earned_points) / float(max_points)
 
         # load output files to results
         add_files(results)
@@ -106,7 +107,7 @@ if __name__ == "__main__":
         # Assemble final grading results
         grading_result = {}
         grading_result["tests"] = results
-        grading_result["score"] = float(earned_points) / float(max_points)
+        grading_result["score"] = score
         grading_result["succeeded"] = True
         grading_result["gradable"] = gradable
         grading_result["max_points"] = max_points
@@ -114,6 +115,13 @@ if __name__ == "__main__":
             grading_result["output"] = text_output
         if len(format_errors) > 0:
             grading_result["format_errors"] = format_errors
+
+        # Instructors may have named their tests incorrectly or somehow misconfigured things.
+        # Help point them in the right direction.
+        if len(results) == 0:
+            grading_result["message"] = (
+                "No tests were found. Please check your test cases."
+            )
 
         # Save images
         grading_result["images"] = []
