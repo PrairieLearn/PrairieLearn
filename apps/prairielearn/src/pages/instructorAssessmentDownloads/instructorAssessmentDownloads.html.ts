@@ -1,6 +1,9 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+
 export interface Filenames {
   scoresCsvFilename: string;
   scoresAllCsvFilename: string;
@@ -40,20 +43,22 @@ export function InstructorAssessmentDownloads({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            assessment: resLocals.assessment,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Downloads
+              <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Downloads</h1>
             </div>
             ${resLocals.assessment.multiple_instance
               ? html`

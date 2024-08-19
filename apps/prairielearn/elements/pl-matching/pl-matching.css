@@ -33,6 +33,7 @@
 }
 
 .pl-matching-options ol > li:before {
+  content: counter(item, var(--pl-matching-counter-type)) '.';
   display: inline-block;
   width: 1em;
   padding-right: 0.5em;
@@ -46,4 +47,8 @@
   padding: 0.4rem 0.4rem;
   background-color: rgba(0, 0, 0, 0.03);
   margin-right: 0.5rem;
+}
+
+.pl-matching-container-bottom {
+  display: block;
 }

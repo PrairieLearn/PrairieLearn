@@ -1,14 +1,17 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import * as qs from 'qs';
+import qs from 'qs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { IdSchema, UserSchema } from '../../../lib/db-types.js';
+import { IdSchema } from '../../../lib/db-types.js';
+import { idsEqual } from '../../../lib/id.js';
+import { reportIssueFromForm } from '../../../lib/issues.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/question-render.js';
+import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 import { GradingJobData, GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html.js';
@@ -50,11 +53,9 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
     }
   }
 
-  const graders = await sqldb.queryOptionalRow(
-    sql.select_graders,
-    { course_instance_id: resLocals.course_instance.id },
-    UserSchema.array().nullable(),
-  );
+  const graders = await selectCourseInstanceGraderStaff({
+    course_instance_id: resLocals.course_instance.id,
+  });
   return { resLocals, conflict_grading_job, graders };
 }
 
@@ -77,8 +78,9 @@ router.get(
       question_id: res.locals.question.id,
       instance_question_id: res.locals.instance_question.id,
       variant_id: req.params.variant_id,
+      user_id: res.locals.user.user_id,
       urlPrefix: res.locals.urlPrefix,
-      questionContext: null,
+      questionContext: 'manual_grading',
       csrfToken: null,
       authorizedEdit: null,
       renderScorePanels: false,
@@ -160,6 +162,11 @@ const PostBodySchema = z.union([
     __action: z.custom<`reassign_${string}`>(
       (val) => typeof val === 'string' && val.startsWith('reassign_'),
     ),
+  }),
+  z.object({
+    __action: z.literal('report_issue'),
+    __variant_id: IdSchema,
+    description: z.string(),
   }),
 ]);
 
@@ -245,13 +252,23 @@ router.post(
         res.status(500).send({ err: String(err) });
       }
     } else if (typeof body.__action === 'string' && body.__action.startsWith('reassign_')) {
-      const assigned_grader = body.__action.substring(9);
+      const actionPrompt = body.__action.substring(9);
+      const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
+      if (assigned_grader != null) {
+        const courseStaff = await selectCourseInstanceGraderStaff({
+          course_instance_id: res.locals.course_instance.id,
+        });
+        if (!courseStaff.some((staff) => idsEqual(staff.user_id, assigned_grader))) {
+          throw new error.HttpStatusError(
+            400,
+            'Assigned grader does not have Student Data Editor permission',
+          );
+        }
+      }
       await sqldb.queryAsync(sql.update_assigned_grader, {
-        course_instance_id: res.locals.course_instance.id,
-        assessment_id: res.locals.assessment.id,
         instance_question_id: res.locals.instance_question.id,
-        assigned_grader: ['nobody', 'graded'].includes(assigned_grader) ? null : assigned_grader,
-        requires_manual_grading: assigned_grader !== 'graded',
+        assigned_grader,
+        requires_manual_grading: actionPrompt !== 'graded',
       });
 
       res.redirect(
@@ -263,6 +280,9 @@ router.post(
           res.locals.instance_question.id,
         ),
       );
+    } else if (body.__action === 'report_issue') {
+      await reportIssueFromForm(req, res);
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

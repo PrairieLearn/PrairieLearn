@@ -54,9 +54,17 @@ WITH
   ),
   setup_assessment_sets AS (
     INSERT INTO
-      assessment_sets (id, course_id)
+      assessment_sets (
+        id,
+        course_id,
+        abbreviation,
+        color,
+        heading,
+        name,
+        number
+      )
     VALUES
-      (1, 1)
+      (1, 1, 'HW', 'green1', 'Homeworks', 'Homework', 1)
   ),
   setup_assessments AS (
     INSERT INTO
@@ -108,12 +116,29 @@ WITH
         'Access Exam',
         1,
         1
+      ),
+      (
+        53,
+        'cff62cac-67d4-4ec7-a1b2-723722b72ba7',
+        'accessExam',
+        'Access Exam',
+        1,
+        1
+      ),
+      (
+        54,
+        'b57e29a2-c190-4587-8228-34db3e50a3cd',
+        'accessExam',
+        'Access Exam',
+        1,
+        1
       )
   ),
   setup_assessment_access_rule AS (
     INSERT INTO
       assessment_access_rules (
         assessment_id,
+        number,
         mode,
         start_date,
         end_date,
@@ -124,6 +149,7 @@ WITH
     VALUES
       (
         10,
+        1,
         'Exam',
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
@@ -133,6 +159,7 @@ WITH
       ),
       (
         11,
+        1,
         'Exam',
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
@@ -142,6 +169,7 @@ WITH
       ),
       (
         12,
+        1,
         'Exam',
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
@@ -151,6 +179,7 @@ WITH
       ),
       (
         50,
+        1,
         'Public',
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
@@ -160,11 +189,32 @@ WITH
       ),
       (
         52,
+        1,
         'Public',
         '2010-01-01 00:00:01-00',
         '2010-12-31 23:59:59-00',
         100,
         'bf6df059-6760-4cf0-ac32-35a43e28a3e7',
+        null
+      ),
+      (
+        53,
+        1,
+        null,
+        '2010-01-01 00:00:01-00',
+        '2010-12-31 23:59:59-00',
+        100,
+        '890884f9-aa9d-4fc0-b910-5229794906fb',
+        null
+      ),
+      (
+        54,
+        1,
+        null,
+        '2010-01-01 00:00:01-00',
+        '2010-12-31 23:59:59-00',
+        100,
+        null,
         null
       )
   )
@@ -172,27 +222,24 @@ SELECT
   true;
 
 -- BLOCK insert_pt_reservation
-WITH
-  remove_reservations AS (
-    DELETE FROM pt_reservations
-  ),
-  insert_new_reservation AS (
-    INSERT INTO
-      pt_reservations (
-        exam_id,
-        enrollment_id,
-        session_id,
-        access_start,
-        access_end
-      )
-    VALUES
-      (
-        $exam_id,
-        1,
-        1,
-        '2010-07-01 00:00:00-00',
-        '2010-07-31 23:59:59-00'
-      )
+INSERT INTO
+  pt_reservations (
+    exam_id,
+    enrollment_id,
+    session_id,
+    access_start,
+    access_end
   )
-SELECT
-  true;
+VALUES
+  (
+    $exam_id,
+    1,
+    1,
+    '2010-07-01 00:00:00-00',
+    '2010-07-31 23:59:59-00'
+  );
+
+-- BLOCK delete_pt_reservation
+DELETE FROM pt_reservations
+WHERE
+  exam_id = $exam_id;

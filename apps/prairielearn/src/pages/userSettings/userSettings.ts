@@ -3,12 +3,13 @@ import * as crypto from 'crypto';
 import express from 'express';
 import asyncHandler from 'express-async-handler';
 import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
-import { InstitutionSchema, ModeSchema, UserSchema } from '../../lib/db-types.js';
+import { InstitutionSchema, EnumModeSchema, UserSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 
 import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
@@ -48,10 +49,10 @@ router.get(
 
     const purchases = isEnterprise() ? await getPurchasesForUser(authn_user.user_id) : [];
 
-    const mode = await sqldb.callRow(
+    const { mode } = await sqldb.callRow(
       'ip_to_mode',
       [req.ip, res.locals.req_date, authn_user.user_id],
-      ModeSchema,
+      z.object({ mode: EnumModeSchema }),
     );
 
     res.send(
@@ -73,10 +74,10 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'token_generate') {
-      const mode = await sqldb.callRow(
+      const { mode } = await sqldb.callRow(
         'ip_to_mode',
         [req.ip, res.locals.req_date, res.locals.authn_user.user_id],
-        ModeSchema,
+        z.object({ mode: EnumModeSchema }),
       );
       if (mode !== 'Public') {
         throw new HttpStatusError(403, 'Cannot generate access tokens in exam mode.');

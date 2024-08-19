@@ -1,13 +1,10 @@
+import { on } from 'delegated-events';
+
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
+import { Scorebar } from '../../src/components/Scorebar.html.js';
 import { AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
-
-declare global {
-  interface Window {
-    popoverSubmitViaAjax: (e: any, popover: JQuery) => void;
-  }
-}
 
 onDocumentReady(() => {
   const dataset = document.getElementById('usersTable')?.dataset;
@@ -20,6 +17,15 @@ onDocumentReady(() => {
   const hasCourseInstancePermissionEdit = dataset.hasCourseInstancePermissionEdit === 'true';
 
   const bsTable = $('#usersTable').bootstrapTable({
+    // TODO: If we can pick up the following change, we can drop the `icons` config here:
+    // https://github.com/wenzhixin/bootstrap-table/pull/7190
+    iconsPrefix: 'fa',
+    icons: {
+      refresh: 'fa-sync',
+      autoRefresh: 'fa-clock',
+      columns: 'fa-table-list',
+    },
+
     buttons: {
       studentsOnly: {
         text: 'Students Only',
@@ -60,17 +66,9 @@ onDocumentReady(() => {
 
       updateTotals($('#usersTable').bootstrapTable('getData'));
 
-      $('[data-toggle="popover"]').popover({
-        sanitize: false,
-        trigger: 'manual',
-        container: 'body',
-        html: true,
-        placement: 'auto',
-      });
       $('.time-limit-edit-button')
         .popover({
           sanitize: false,
-          placement: 'right',
           title() {
             const row = $(this).data('row');
             return row.action === 'set_time_limit_all'
@@ -83,14 +81,53 @@ onDocumentReady(() => {
           html: true,
           trigger: 'click',
           content: timeLimitEditPopoverContent,
+          customClass: 'popover-wide',
         })
         .on('show.bs.popover', function () {
-          $($(this).data('bs.popover').getTipElement()).css('max-width', '350px');
-          $(this).find('.select-time-limit').change();
+          $(this).find('.select-time-limit').trigger('change');
         });
+    },
+    customSearch: (data: AssessmentInstanceRow[], searchText: string) => {
+      return data.filter((row) => {
+        const search = searchText.toLowerCase();
+        return assessmentGroupWork
+          ? row.group_name?.toLowerCase().includes(search) ||
+              row.uid_list?.some((uid) => uid.toLowerCase().includes(search)) ||
+              row.user_name_list?.some((name) => name?.toLowerCase().includes(search)) ||
+              row.group_roles?.some((role) => role.toLowerCase().includes(search))
+          : row.uid?.toLowerCase().includes(search) ||
+              row.name?.toLowerCase().includes(search) ||
+              row.role?.toLowerCase().includes(search);
+      });
     },
     columns: tableColumns(assessmentGroupWork),
   });
+
+  on('submit', 'form.js-popover-form', (event) => {
+    if (!event.currentTarget) return;
+
+    event.preventDefault();
+    $.post(
+      window.location.pathname,
+      $(event.currentTarget).serialize(),
+      function () {
+        refreshTable();
+      },
+      'json',
+    );
+
+    // Immediately close the popover. Note that this is done before the above
+    // HTTP request has finished. A potential improvement would be to disable
+    // the form and show a spinner until the request completes, at which point
+    // the popover would be closed.
+    const popover = event.currentTarget.closest('.popover');
+    if (popover) {
+      // TODO: This won't work in Bootstrap 5, see the following:
+      // https://github.com/twbs/bootstrap/issues/36837
+      $(popover).popover('hide');
+    }
+  });
+
   $(document).on('keydown', (event) => {
     if (
       (event.ctrlKey || event.metaKey) &&
@@ -155,16 +192,97 @@ onDocumentReady(() => {
   });
 
   function tableColumns(assessmentGroupWork: boolean) {
-    const assessmentInstanceIdColumn = {
-      field: 'assessment_instance_id',
-      title: '<span class="sr-only">Assessment Instance</span>',
-      sortable: true,
-      sorter: detailsLinkSorter,
-      formatter: detailsLinkFormatter,
-      class: 'align-middle sticky-column text-nowrap',
-      switchable: false,
-    };
-    const nonspecificColumns = [
+    return [
+      {
+        field: 'assessment_instance_id',
+        title: '<span class="sr-only">Assessment Instance</span>',
+        sortable: true,
+        sorter: detailsLinkSorter,
+        formatter: detailsLinkFormatter,
+        class: 'align-middle sticky-column text-nowrap',
+        switchable: false,
+      },
+      ...(assessmentGroupWork
+        ? [
+            {
+              field: 'group_name',
+              title: 'Name',
+              visible: false,
+              sortable: true,
+              class: 'align-middle',
+              switchable: true,
+              formatter: (value: string) => html`${value}`.toString(),
+            },
+            {
+              field: 'uid_list',
+              title: 'Group Members',
+              sortable: true,
+              class: 'text-center align-middle text-wrap',
+              formatter: listFormatter,
+              switchable: true,
+            },
+            {
+              field: 'user_name_list',
+              title: 'Group Member Name',
+              sortable: true,
+              visible: false,
+              class: 'text-center align-middle text-wrap',
+              formatter: listFormatter,
+              switchable: true,
+            },
+            {
+              field: 'group_roles',
+              title: html` Roles
+                <button
+                  class="btn btn-xs"
+                  type="button"
+                  title="Show roles help"
+                  data-toggle="modal"
+                  data-target="#role-help"
+                >
+                  <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                </button>`,
+              sortable: true,
+              class: 'text-center align-middle text-wrap',
+              formatter: uniqueListFormatter,
+              switchable: true,
+            },
+          ]
+        : [
+            {
+              field: 'uid',
+              title: 'UID',
+              visible: false,
+              sortable: true,
+              class: 'align-middle text-nowrap',
+              switchable: true,
+              formatter: (value: string) => html`${value}`.toString(),
+            },
+            {
+              field: 'name',
+              title: 'Name',
+              sortable: true,
+              class: 'align-middle text-nowrap',
+              switchable: true,
+              formatter: (value: string) => html`${value}`.toString(),
+            },
+            {
+              field: 'role',
+              title: html` Role
+                <button
+                  class="btn btn-xs"
+                  type="button"
+                  title="Show roles help"
+                  data-toggle="modal"
+                  data-target="#role-help"
+                >
+                  <i class="bi-question-circle-fill" aria-hidden="true"></i>
+                </button>`,
+              sortable: true,
+              class: 'text-center align-middle text-nowrap',
+              switchable: true,
+            },
+          ]),
       {
         field: 'number',
         title: 'Instance',
@@ -180,7 +298,6 @@ onDocumentReady(() => {
         class: 'text-center align-middle',
         formatter: scorebarFormatter,
         switchable: true,
-        searchFormatter: false,
       },
       {
         field: 'date_formatted',
@@ -225,7 +342,6 @@ onDocumentReady(() => {
         formatter: timeRemainingLimitFormatter,
         class: 'text-center align-middle text-nowrap',
         switchable: true,
-        searchFormatter: false,
       },
       {
         field: 'total_time',
@@ -236,150 +352,44 @@ onDocumentReady(() => {
         formatter: timeRemainingLimitFormatter,
         class: 'text-center align-middle',
         switchable: true,
-        searchFormatter: false,
+      },
+      {
+        field: 'client_fingerprint_id_change_count',
+        title: html` Fingerprint Changes
+          <button
+            class="btn btn-xs"
+            type="button"
+            title="Show fingerprint changes help"
+            data-toggle="modal"
+            data-target="#fingerprint-changes-help"
+          >
+            <i class="bi-question-circle-fill" aria-hidden="true"></i>
+          </button>`,
+        class: 'text-center align-middle',
+        // Hidden for groupwork by default, as it is not as relevant in that context
+        visible: !assessmentGroupWork,
+        switchable: true,
+        sortable: true,
+      },
+      {
+        field: 'action_button',
+        title: 'Actions',
+        formatter: actionButtonFormatter,
+        class: 'text-center align-middle',
+        switchable: false,
       },
     ];
-    const actionButton = {
-      field: 'action_button',
-      title: 'Actions',
-      formatter: actionButtonFormatter,
-      class: 'text-center align-middle',
-      switchable: false,
-      searchFormatter: false,
-    };
-
-    if (assessmentGroupWork) {
-      return [
-        assessmentInstanceIdColumn,
-        {
-          field: 'group_name',
-          title: 'Name',
-          visible: false,
-          sortable: true,
-          class: 'align-middle',
-          switchable: true,
-        },
-        {
-          field: 'uid_list',
-          title: 'Group Members',
-          sortable: true,
-          class: 'text-center align-middle text-wrap',
-          formatter: listFormatter,
-          switchable: true,
-        },
-        {
-          field: 'user_name_list',
-          title: 'Group Member Name',
-          sortable: true,
-          visible: false,
-          class: 'text-center align-middle text-wrap',
-          formatter: listFormatter,
-          switchable: true,
-        },
-        {
-          field: 'group_roles',
-          title: html` Roles
-            <button
-              class="btn btn-xs"
-              type="button"
-              title="Show roles help"
-              data-toggle="modal"
-              data-target="#role-help"
-            >
-              <i class="bi-question-circle-fill" aria-hidden="true"></i>
-            </button>`,
-          sortable: true,
-          class: 'text-center align-middle text-wrap',
-          formatter: uniqueListFormatter,
-          switchable: true,
-        },
-        ...nonspecificColumns,
-        actionButton,
-      ];
-    } else {
-      return [
-        assessmentInstanceIdColumn,
-        {
-          field: 'uid',
-          title: 'UID',
-          visible: false,
-          sortable: true,
-          class: 'align-middle text-nowrap',
-          switchable: true,
-        },
-        {
-          field: 'name',
-          title: 'Name',
-          sortable: true,
-          class: 'align-middle text-nowrap',
-          switchable: true,
-        },
-        {
-          field: 'role',
-          title: html` Role
-            <button
-              class="btn btn-xs"
-              type="button"
-              title="Show roles help"
-              data-toggle="modal"
-              data-target="#role-help"
-            >
-              <i class="bi-question-circle-fill" aria-hidden="true"></i>
-            </button>`,
-          sortable: true,
-          class: 'text-center align-middle text-nowrap',
-          switchable: true,
-        },
-        ...nonspecificColumns,
-        {
-          field: 'client_fingerprint_id_change_count',
-          title: html` Fingerprint Changes
-            <button
-              class="btn btn-xs"
-              ,
-              type="button"
-              title="Show figerprint changes help"
-              data-toggle="modal"
-              data-target="#fingerprint-changes-help"
-            >
-              <i class="bi-question-circle-fill" aria-hidden="true"></i>
-            </button>`,
-          class: 'text-center align-middle',
-          switchable: true,
-        },
-        actionButton,
-      ];
-    }
   }
 
   function refreshTable() {
     bsTable.bootstrapTable('refresh', { silent: true });
   }
 
-  window.popoverSubmitViaAjax = function (e: SubmitEvent, popover: JQuery) {
-    e.preventDefault();
-    if (e.target) {
-      $.post(
-        window.location.pathname,
-        $(e.target).serialize(),
-        function () {
-          refreshTable();
-        },
-        'json',
-      );
-      $(popover).popover('hide');
-    }
-  };
-
   function timeLimitEditPopoverContent(this: any) {
     const row = $(this).data('row');
     const action = row.action ? row.action : 'set_time_limit';
     return html`
-      <form
-        name="set-time-limit-form"
-        method="POST"
-        onsubmit="popoverSubmitViaAjax(event, $(this).parents('.popover'));"
-      >
+      <form name="set-time-limit-form" class="js-popover-form" method="POST">
         <p>
           Total time limit: ${row.total_time}<br />
           Remaining time: ${row.time_remaining}
@@ -394,7 +404,7 @@ onDocumentReady(() => {
             />`
           : ''}
         <select
-          class="form-control select-time-limit"
+          class="custom-select select-time-limit"
           name="plus_minus"
           onchange="
             $(this).parents('form').find('.time-limit-field').toggle(this.value !== 'unlimited' && this.value !== 'expire');
@@ -429,7 +439,7 @@ onDocumentReady(() => {
             style="width: 5em"
             value="5"
           />
-          <select class="form-control time-limit-field" name="time_ref">
+          <select class="custom-select time-limit-field" name="time_ref">
             <option value="minutes">minutes</option>
             ${row.time_remaining_sec !== null
               ? html`<option value="percent">% total limit</option>`
@@ -453,11 +463,7 @@ onDocumentReady(() => {
             `
           : ''}
         <div class="btn-toolbar pull-right">
-          <button
-            type="button"
-            class="btn btn-secondary mr-2"
-            onclick="$(this).parents('form').parents('.popover').popover('hide')"
-          >
+          <button type="button" class="btn btn-secondary mr-2" data-dismiss="popover">
             Cancel
           </button>
           <button type="submit" class="btn btn-success">Set</button>
@@ -466,24 +472,8 @@ onDocumentReady(() => {
     `.toString();
   }
 
-  function scorebarFormatter(score: number) {
-    if (score != null) {
-      return html`
-        <div class="progress bg" style="min-width: 5em; max-width: 20em;">
-          <div class="progress-bar bg-success" style="width: ${Math.floor(Math.min(100, score))}%">
-            ${score >= 50 ? `${Math.floor(score)}%` : ''}
-          </div>
-          <div
-            class="progress-bar bg-danger"
-            style="width: ${100 - Math.floor(Math.min(100, score))}%"
-          >
-            ${score < 50 ? `${Math.floor(score)}%` : ''}
-          </div>
-        </div>
-      `;
-    } else {
-      return '';
-    }
+  function scorebarFormatter(score: number | null) {
+    return Scorebar(score).toString();
   }
 
   function listFormatter(list: string[]) {
@@ -505,6 +495,8 @@ onDocumentReady(() => {
           class="btn btn-secondary btn-xs ml-1 time-limit-edit-button"
           id="row${row.assessment_instance_id}PopoverTimeLimit"
           data-row="${JSON.stringify(row)}"
+          data-placement="bottom"
+          data-boundary="window"
         >
           <i class="bi-pencil-square" aria-hidden="true"></i>
         </a>
@@ -519,7 +511,11 @@ onDocumentReady(() => {
     if (!assessmentMultipleInstance) {
       number = row.number === 1 ? '' : `#${row.number}`;
     }
-    return `<a href="${urlPrefix}/assessment_instance/${value}">${assessmentSetAbbr}${assessmentNumber}${number} for ${name}</a>`;
+    return html`
+      <a href="${urlPrefix}/assessment_instance/${value}">
+        ${assessmentSetAbbr}${assessmentNumber}${number} for ${name}
+      </a>
+    `.toString();
   }
 
   function detailsLinkSorter(
@@ -575,21 +571,7 @@ onDocumentReady(() => {
           >
             Action
           </button>
-          <div
-            id="row${ai_id}PopoverClose"
-            tabindex="0"
-            data-toggle="popover"
-            title="Confirm close"
-            data-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
-          ></div>
-          <div
-            id="row${ai_id}PopoverRegrade"
-            tabindex="0"
-            data-toggle="popover"
-            title="Confirm regrade"
-            data-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
-          ></div>
-          <div class="dropdown-menu" onclick="window.event.preventDefault()">
+          <div class="dropdown-menu">
             ${hasCourseInstancePermissionEdit
               ? html`
                   <button
@@ -610,7 +592,12 @@ onDocumentReady(() => {
                   </button>
                   <button
                     class="dropdown-item ${row.open ? '' : 'disabled'}"
-                    onclick="$('#row${ai_id}PopoverClose').popover('show')"
+                    data-toggle="popover"
+                    data-container="body"
+                    data-title="Confirm close"
+                    data-html="true"
+                    data-content="${escapeHtml(CloseForm({ csrfToken, ai_id }))}"
+                    data-placement="auto"
                   >
                     <i class="fas fa-ban mr-2" aria-hidden="true"></i>
                     Grade &amp; Close
@@ -624,7 +611,12 @@ onDocumentReady(() => {
                   </button>
                   <button
                     class="dropdown-item"
-                    onclick="$('#row${ai_id}PopoverRegrade').popover('show')"
+                    data-toggle="popover"
+                    data-container="body"
+                    data-title="Confirm regrade"
+                    data-html="true"
+                    data-content="${escapeHtml(RegradeForm({ csrfToken, ai_id }))}"
+                    data-placement="auto"
                   >
                     <i class="fas fa-sync mr-2" aria-hidden="true"></i>
                     Regrade
@@ -700,38 +692,24 @@ onDocumentReady(() => {
 
 function CloseForm({ csrfToken, ai_id }: { csrfToken: string; ai_id: number }) {
   return html`
-    <form
-      name="close-form"
-      method="POST"
-      onsubmit="popoverSubmitViaAjax(event, $(this).parents('.popover'))"
-    >
+    <form name="close-form" class="js-popover-form" method="POST">
       <input type="hidden" name="__action" value="close" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="assessment_instance_id" value="${ai_id}" />
-      <button
-        type="button"
-        class="btn btn-secondary"
-        onclick="$(this).parents('form').parents('.popover').popover('hide')"
-      >
-        Cancel
-      </button>
+      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger">Grade and close</button>
     </form>
   `;
 }
 
 function RegradeForm({ csrfToken, ai_id }: { csrfToken: string; ai_id: number }) {
-  return html` <form name="regrade-form" method="POST">
-    <input type="hidden" name="__action" value="regrade" />
-    <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-    <input type="hidden" name="assessment_instance_id" value="${ai_id}" />
-    <button
-      type="button"
-      class="btn btn-secondary"
-      onclick="$('#row${ai_id}PopoverRegrade').popover('hide')"
-    >
-      Cancel
-    </button>
-    <button type="submit" class="btn btn-primary">Regrade</button>
-  </form>`;
+  return html`
+    <form name="regrade-form" method="POST">
+      <input type="hidden" name="__action" value="regrade" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="assessment_instance_id" value="${ai_id}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
+      <button type="submit" class="btn btn-primary">Regrade</button>
+    </form>
+  `;
 }

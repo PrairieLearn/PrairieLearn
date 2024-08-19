@@ -4,6 +4,7 @@ import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Course, CourseInstance, Institution } from '../../lib/db-types.js';
 
@@ -36,7 +37,7 @@ export function AdministratorFeatures({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals, pageTitle: 'Features' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -46,7 +47,9 @@ export function AdministratorFeatures({
         })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Features</div>
+            <div class="card-header bg-primary text-white">
+              <h1>Features</h1>
+            </div>
             ${features.length > 0
               ? html`<div class="list-group list-group-flush">
                   ${features.map((feature) => {
@@ -87,8 +90,7 @@ export function AdministratorFeature({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('administratorFeaturesClient.ts')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('administratorFeaturesClient.ts')}
         <style>
           .list-inline-item:not(:first-child):before {
             margin-right: 0.5rem;
@@ -271,11 +273,7 @@ export function AddFeatureGrantModalBody({
           Institution
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
-        <select
-          class="form-control custom-select"
-          id="feature-grant-institution"
-          name="institution_id"
-        >
+        <select class="custom-select" id="feature-grant-institution" name="institution_id">
           <option value="">All institutions</option>
           ${institutions.map((institution) => {
             return html`
@@ -296,7 +294,7 @@ export function AddFeatureGrantModalBody({
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
         <select
-          class="form-control custom-select"
+          class="custom-select"
           id="feature-grant-course"
           name="course_id"
           ${!institution_id ? 'disabled' : ''}
@@ -318,7 +316,7 @@ export function AddFeatureGrantModalBody({
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
         <select
-          class="form-control custom-select"
+          class="custom-select"
           id="feature-grant-course-instance"
           name="course_instance_id"
           ${!course_id ? 'disabled' : ''}

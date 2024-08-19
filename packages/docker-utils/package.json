@@ -16,16 +16,16 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^20.12.11",
-    "c8": "^9.1.0",
+    "@types/mocha": "^10.0.7",
+    "@types/node": "^20.14.15",
+    "c8": "^10.1.2",
     "chai": "^5.1.1",
-    "mocha": "^10.4.0",
-    "tsx": "^4.10.4",
-    "typescript": "^5.4.5"
+    "mocha": "^10.7.3",
+    "tsx": "^4.17.0",
+    "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.574.0",
+    "@aws-sdk/client-ecr": "^3.631.0",
     "@prairielearn/logger": "workspace:^",
     "date-fns": "^3.6.0"
   },

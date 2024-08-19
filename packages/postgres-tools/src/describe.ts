@@ -1,4 +1,3 @@
-// @ts-check
 import chalk from 'chalk';
 import { parse as parsePostgresArray } from 'postgres-array';
 
@@ -239,7 +238,7 @@ export function formatDatabaseDescription(
               // Some unique indexes don't include the UNIQUE constraint
               // as part of the constraint definition, so we need to capture
               // that manually.
-              rowText += formatText(` UNIQUE`, chalk.green);
+              rowText += formatText(' UNIQUE', chalk.green);
             }
           }
           rowText += row.constraintdef ? formatText(` ${row.constraintdef}`, chalk.green) : '';

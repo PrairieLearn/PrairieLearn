@@ -40,12 +40,14 @@ describe('student data access', function () {
       'instructor@example.com',
       'Instructor User',
       '100000000',
+      'instructor@example.com',
       'dev',
     ]);
     await sqldb.callAsync('users_select_or_insert', [
       'student@example.com',
       'Student User',
       '000000001',
+      'student@example.com',
       'dev',
     ]);
     await insertCoursePermissionsByUserUid({
@@ -89,7 +91,7 @@ describe('student data access', function () {
     const headers = { cookie: 'pl_test_user=test_student; pl_test_mode=Exam' };
     const response = await helperClient.fetchCheerio(context.examAssessmentUrl, { headers });
     assert.isTrue(response.ok);
-    assert.equal(response.$('#start-assessment').text(), 'Start assessment');
+    assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
 
@@ -213,7 +215,7 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
+      assert.lengthOf(response.$('form[class=attach-text-form]'), 0);
       const form = {
         __action: 'attach_text',
         __csrf_token,
@@ -238,7 +240,7 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
+      assert.lengthOf(response.$('button[name=__action][value=grade]'), 0);
       const form = {
         __action: 'grade',
         __csrf_token,
@@ -263,7 +265,7 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
+      assert.lengthOf(response.$('form[class=attach-text-form]'), 0);
       const form = {
         __action: 'attach_text',
         __csrf_token,
@@ -286,7 +288,7 @@ describe('student data access', function () {
       let response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
+      assert.lengthOf(response.$('button[name=__action][value=grade]'), 0);
       const form = {
         __action: 'grade',
         __csrf_token,
@@ -304,7 +306,7 @@ describe('student data access', function () {
 
   step('instructor (student data viewer) cannot emulate student', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@example.com',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_uid=student@example.com',
     };
     const response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
       headers,
@@ -328,7 +330,7 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
+      assert.lengthOf(response.$('form[class=attach-text-form]'), 0);
       const form = {
         __action: 'attach_text',
         __csrf_token,
@@ -353,7 +355,7 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
+      assert.lengthOf(response.$('button[name=__action][value=grade]'), 0);
       const form = {
         __action: 'grade',
         __csrf_token,
@@ -378,7 +380,7 @@ describe('student data access', function () {
       });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`form[class=attach-text-form]`), 0);
+      assert.lengthOf(response.$('form[class=attach-text-form]'), 0);
       const form = {
         __action: 'attach_text',
         __csrf_token,
@@ -401,7 +403,7 @@ describe('student data access', function () {
       let response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers });
       assert.isTrue(response.ok);
       const __csrf_token = response.$('span[id=test_csrf_token]').text();
-      assert.lengthOf(response.$(`button[name=__action][value=grade]`), 0);
+      assert.lengthOf(response.$('button[name=__action][value=grade]'), 0);
       const form = {
         __action: 'grade',
         __csrf_token,
@@ -421,7 +423,7 @@ describe('student data access', function () {
     'instructor (student data editor) can attach file to HW1 instance of emulated student',
     async () => {
       const headers = {
-        cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@example.com',
+        cookie: 'pl_test_user=test_instructor; pl2_requested_uid=student@example.com',
       };
       let response = await helperClient.fetchCheerio(context.homeworkAssessmentInstanceUrl, {
         headers,
@@ -447,14 +449,14 @@ describe('student data access', function () {
     'instructor (student data editor) can submit answer to HW1/Q1 instance of emulated student',
     async () => {
       const headers = {
-        cookie: 'pl_test_user=test_instructor; pl_requested_uid=student@example.com',
+        cookie: 'pl_test_user=test_instructor; pl2_requested_uid=student@example.com',
       };
       let response = await helperClient.fetchCheerio(context.homeworkQuestionInstanceUrl, {
         headers,
       });
       assert.isTrue(response.ok);
       helperClient.extractAndSaveCSRFToken(context, response.$, 'form[name=question-form]');
-      assert.lengthOf(response.$(`button[name=__action][value=grade]`), 1);
+      assert.lengthOf(response.$('button[name=__action][value=grade]'), 1);
       const form = {
         __action: 'grade',
         __csrf_token: context.__csrf_token,
@@ -475,7 +477,7 @@ describe('student data access', function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl_requested_uid=student@example.com; pl_requested_mode=Exam',
+          'pl_test_user=test_instructor; pl2_requested_uid=student@example.com; pl_test_mode=Exam',
       };
       let response = await helperClient.fetchCheerio(context.examAssessmentInstanceUrl, {
         headers,
@@ -502,12 +504,12 @@ describe('student data access', function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl_requested_uid=student@example.com; pl_requested_mode=Exam',
+          'pl_test_user=test_instructor; pl2_requested_uid=student@example.com; pl_test_mode=Exam',
       };
       let response = await helperClient.fetchCheerio(context.examQuestionInstanceUrl, { headers });
       assert.isTrue(response.ok);
       helperClient.extractAndSaveCSRFToken(context, response.$, 'form[name=question-form]');
-      assert.lengthOf(response.$(`button[name=__action][value=grade]`), 1);
+      assert.lengthOf(response.$('button[name=__action][value=grade]'), 1);
       const form = {
         __action: 'grade',
         __csrf_token: context.__csrf_token,
@@ -582,7 +584,8 @@ describe('student data access', function () {
 
   step('instructor (student data viewer) can view gradebook', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer',
+      cookie:
+        'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook`,
@@ -593,7 +596,8 @@ describe('student data access', function () {
 
   step('instructor (student data viewer) can view gradebook raw data', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer',
+      cookie:
+        'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook/raw_data.json`,
@@ -604,7 +608,8 @@ describe('student data access', function () {
 
   step('instructor (student data viewer) can view homework assessment instances', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer',
+      cookie:
+        'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances`,
@@ -618,7 +623,7 @@ describe('student data access', function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer',
+          'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
       };
       const response = await helperClient.fetchCheerio(
         `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances/raw_data.json`,
@@ -630,7 +635,8 @@ describe('student data access', function () {
 
   step('instructor (student data viewer) can view exam assessment instances', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer',
+      cookie:
+        'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances`,
@@ -641,7 +647,8 @@ describe('student data access', function () {
 
   step('instructor (student data viewer) can view exam assessment instances raw data', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=Student Data Viewer',
+      cookie:
+        'pl_test_user=test_instructor; pl2_requested_course_instance_role=Student Data Viewer',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances/raw_data.json`,
@@ -652,7 +659,7 @@ describe('student data access', function () {
 
   step('instructor (no role) can view gradebook', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook`,
@@ -671,7 +678,7 @@ describe('student data access', function () {
 
   step('instructor (no role) cannot view gradebook raw data', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/instance_admin/gradebook/raw_data.json`,
@@ -682,7 +689,7 @@ describe('student data access', function () {
 
   step('instructor (no role) cannot view homework assessment instances', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances`,
@@ -693,7 +700,7 @@ describe('student data access', function () {
 
   step('instructor (no role) cannot view homework assessment instances raw data', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.homeworkAssessmentId}/instances/raw_data.json`,
@@ -704,7 +711,7 @@ describe('student data access', function () {
 
   step('instructor (no role) cannot view exam assessment instances', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances`,
@@ -715,7 +722,7 @@ describe('student data access', function () {
 
   step('instructor (no role) cannot view exam assessment instances raw data', async () => {
     const headers = {
-      cookie: 'pl_test_user=test_instructor; pl_requested_course_instance_role=None',
+      cookie: 'pl_test_user=test_instructor; pl2_requested_course_instance_role=None',
     };
     const response = await helperClient.fetchCheerio(
       `${context.courseInstanceBaseUrl}/instructor/assessment/${context.examAssessmentId}/instances/raw_data.json`,

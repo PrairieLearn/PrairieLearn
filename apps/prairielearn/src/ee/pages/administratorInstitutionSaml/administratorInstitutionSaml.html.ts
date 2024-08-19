@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
 import { type AuthnProvider, type Institution, type SamlProvider } from '../../../lib/db-types.js';
 
@@ -33,11 +34,7 @@ export function AdministratorInstitutionSaml({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          navPage: 'administrator_institution',
-          pageTitle: 'SAML',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'SAML - Institution Admin' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
@@ -49,7 +46,7 @@ export function AdministratorInstitutionSaml({
         })}
         ${DeleteSamlConfigurationModal({ csrfToken: resLocals.__csrf_token })}
 
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           ${hasSamlProvider && !hasEnabledSaml
             ? html`
                 <div class="alert alert-warning">
@@ -160,7 +157,7 @@ ${samlProvider?.certificate ?? ''}</textarea
                 id="validate_audience"
                 name="validate_audience"
                 value="1"
-                ${samlProvider?.validate_audience ?? true ? 'checked' : ''}
+                ${(samlProvider?.validate_audience ?? true) ? 'checked' : ''}
                 aria-describedBy="validateAudienceHelp"
               />
               <label class="form-check-label" for="validate_audience">Validate audience</label>
@@ -177,7 +174,7 @@ ${samlProvider?.certificate ?? ''}</textarea
                 id="want_assertions_signed"
                 name="want_assertions_signed"
                 value="1"
-                ${samlProvider?.want_assertions_signed ?? true ? 'checked' : ''}
+                ${(samlProvider?.want_assertions_signed ?? true) ? 'checked' : ''}
                 aria-describedBy="wantAssertionsSignedHelp"
               />
               <label class="form-check-label" for="want_assertions_signed">
@@ -196,7 +193,7 @@ ${samlProvider?.certificate ?? ''}</textarea
                 id="want_authn_response_signed"
                 name="want_authn_response_signed"
                 value="1"
-                ${samlProvider?.want_authn_response_signed ?? true ? 'checked' : ''}
+                ${(samlProvider?.want_authn_response_signed ?? true) ? 'checked' : ''}
                 aria-describedBy="wantAuthnResponseSignedHelp"
               />
               <label class="form-check-label" for="want_authn_response_signed">
@@ -270,6 +267,24 @@ ${samlProvider?.certificate ?? ''}</textarea
                 The UIN is used as an internal, immutable identifier for the user. It
                 <strong>MUST</strong> never change for a given individual, even if they change their
                 name or email.
+              </small>
+            </div>
+
+            <div class="form-group">
+              <label for="email_attribute">Email attribute</label>
+              <input
+                type="text"
+                class="form-control"
+                name="email_attribute"
+                id="email_attribute"
+                value="${samlProvider?.email_attribute ?? ''}"
+                aria-describedby="emailAttributeHelp"
+              />
+              <small id="emailAttributeHelp" class="form-text text-muted">
+                The email attribute should contain the email address of the user, like
+                "jwang123@example.com". This may be the same as the UID attribute for some
+                institutions. You should confirm that the values received in this attribute are
+                routable email addresses.
               </small>
             </div>
 
@@ -391,13 +406,11 @@ function DeleteSamlConfigurationModal({ csrfToken }: { csrfToken: string }) {
       </p>
     `,
     footer: html`
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
-      <form method="POST">
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button class="btn btn-danger" type="submit" name="__action" value="delete">
-          Delete SAML configuration
-        </button>
-      </form>
+      <button class="btn btn-danger" type="submit" name="__action" value="delete">
+        Delete SAML configuration
+      </button>
     `,
   });
 }

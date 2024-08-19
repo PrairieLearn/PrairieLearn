@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { InstitutionSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
@@ -27,17 +28,9 @@ export function AdministratorInstitutions({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          pageTitle: 'Institutions',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Institutions' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'admin',
@@ -46,7 +39,7 @@ export function AdministratorInstitutions({
         <main id="content" class="container-fluid">
           <div id="institutions" class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              Institutions
+              <h1>Institutions</h1>
               <button
                 type="button"
                 class="btn btn-sm btn-light ml-auto"
@@ -92,7 +85,7 @@ export function AdministratorInstitutions({
                 </div>
                 <div class="form-group">
                   <label for="display_timezone">Timezone</label>
-                  <select class="form-control" id="display_timezone" name="display_timezone">
+                  <select class="custom-select" id="display_timezone" name="display_timezone">
                     <option value="" selected disabled hidden>Timezone</option>
                     ${availableTimezones.map(
                       (tz, i) => html`
@@ -125,14 +118,7 @@ export function AdministratorInstitutions({
                 </div>
               `,
               footer: html`
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  data-dismiss="modal"
-                  onclick="$('#add-institution-modal').modal('hide')"
-                >
-                  Cancel
-                </button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-primary">Add institution</button>
               `,
             })}

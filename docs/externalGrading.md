@@ -87,8 +87,8 @@ Here's an example of a complete `externalGradingOptions` portion of a question's
 This config file specifies the following things:
 
 - External grading is enabled
-- The `prairielearn/centos7-python` image will be used
-- The files/directories under `serverFilesCourse/python_autograder` will copied into your image while grading
+- The `prairielearn/grader-python` image will be used
+- The files/directories under `serverFilesCourse/python_autograder` will be copied into your image while grading
 - The script `/grade/serverFilesCourse/python_autograder/run.sh` will be executed when your container starts up
 - If grading takes longer that 5 seconds, the container will be killed
 
@@ -255,4 +255,4 @@ For a working example of this, see [the implementation of `pl-file-upload`](http
 
 In order to run external graders in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found [in the installation instructions](installing.md#support-for-external-graders-and-workspaces).
 
-When not running in Docker, things are easier. The Docker socket can be used normally, and we're able to store job files automatically without setting `HOST_JOBS_DIR`. By default, they are stored in `$HOME/.pljobs` on Unix-based systems and `$USERPROFILE/.pljobs` on Windows. However, if you run PrairieLearn with an environment variable `JOBS_DIR=/abs/path/to/my/custom/jobs/directory/`, that directory will be used instead. Note that this environment variable has no effect when running on Docker, in which case the jobs directory is specified using `HOST_JOBS_DIR` instead of `JOBS_DIR`.
+When not running in Docker, things are easier. The Docker socket can be used normally, and we're able to store job files automatically without setting `HOST_JOBS_DIR`. By default, they are stored in `$HOME/.pljobs`. However, if you run PrairieLearn with an environment variable `JOBS_DIR=/abs/path/to/my/custom/jobs/directory/`, that directory will be used instead. Note that this environment variable has no effect when running on Docker, in which case the jobs directory is specified using `HOST_JOBS_DIR` instead of `JOBS_DIR`.

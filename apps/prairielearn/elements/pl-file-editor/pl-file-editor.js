@@ -19,7 +19,9 @@ window.PLFileEditor = function (uuid, options) {
   this.restoreOriginalConfirmContainer = this.element.find('.restore-original-confirm-container');
   this.restoreOriginalConfirm = this.element.find('.restore-original-confirm');
   this.restoreOriginalCancel = this.element.find('.restore-original-cancel');
-  this.editor = ace.edit(this.editorElement.get(0));
+  this.editor = ace.edit(this.editorElement.get(0), {
+    enableKeyboardAccessibility: true,
+  });
   this.editor.setTheme('ace/theme/chrome');
   this.editor.getSession().setUseWrapMode(true);
   this.editor.setShowPrintMargin(false);
@@ -105,8 +107,8 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
   const editor_value = this.editor.getValue();
   const default_preview_text = '<p>Begin typing above to preview</p>';
   const html_contents = editor_value
-    ? (await Promise.resolve(this.preview[preview_type]?.(editor_value))) ??
-      `<p>Unknown preview type: <code>${preview_type}</code></p>`
+    ? ((await Promise.resolve(this.preview[preview_type]?.(editor_value))) ??
+      `<p>Unknown preview type: <code>${preview_type}</code></p>`)
     : '';
 
   let preview = this.element.find('.preview')[0];
@@ -234,17 +236,20 @@ window.PLFileEditor.prototype.initRestoreOriginalButton = function () {
   this.restoreOriginalButton.click(() => {
     this.restoreOriginalButton.hide();
     this.restoreOriginalConfirmContainer.show();
+    this.restoreOriginalConfirm.focus();
   });
 
   this.restoreOriginalConfirm.click(() => {
     this.restoreOriginalConfirmContainer.hide();
     this.restoreOriginalButton.show();
+    this.restoreOriginalButton.focus();
     this.setEditorContents(this.b64DecodeUnicode(this.originalContents));
   });
 
   this.restoreOriginalCancel.click(() => {
     this.restoreOriginalConfirmContainer.hide();
     this.restoreOriginalButton.show();
+    this.restoreOriginalButton.focus();
   });
 };
 

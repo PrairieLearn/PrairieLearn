@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 
 export const AdministratorQueryResultSchema = z.object({
@@ -153,7 +154,7 @@ export function AdministratorQuery({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals, pageTitle: sqlFilename })}
         <link href="${nodeModulesAssetPath('highlight.js/styles/default.css')}" rel="stylesheet" />
         <link
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
@@ -176,7 +177,7 @@ export function AdministratorQuery({
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <span class="font-weight-bold text-monospace">${sqlFilename}</span>
+              <h1>Query: <span class="text-monospace">${sqlFilename}</span></h1>
               <button
                 class="btn btn-xs btn-light ml-2 my-n2"
                 type="button"

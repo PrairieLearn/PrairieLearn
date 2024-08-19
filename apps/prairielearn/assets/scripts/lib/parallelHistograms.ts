@@ -7,9 +7,9 @@ interface Data {
 }
 
 export function parallelHistograms(
-  selector: Element,
-  data: Data[],
-  options: {
+  selector: HTMLElement,
+  data?: Data[],
+  options?: {
     width?: number;
     height?: number;
     xTickLabels?: string[] | 'auto';
@@ -24,6 +24,10 @@ export function parallelHistograms(
     rightPadding?: number;
   },
 ) {
+  if (data === undefined) data = JSON.parse(selector.dataset.histograms ?? '[]');
+  if (options === undefined) options = JSON.parse(selector.dataset.options ?? '{}');
+  if (!data) return;
+
   const resolvedOptions = {
     width: 600,
     height: 370,

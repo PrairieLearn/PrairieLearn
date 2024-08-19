@@ -10,8 +10,12 @@ comment:
 coverage:
   status:
     project:
-      # Don't fail the status check if coverage decreases.
-      informational: true
+      default:
+        # Don't fail the status check if coverage decreases.
+        informational: true
     patch:
-      # Don't fail the status check if coverage decreases.
-      informational: true
+      default:
+        # Don't fail the status check if coverage decreases.
+        informational: true
+github_checks:
+  annotations: false

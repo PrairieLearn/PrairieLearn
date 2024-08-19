@@ -3,7 +3,8 @@ import { z } from 'zod';
 import { HtmlValue, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
-import { CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
 
 export const CourseRequestRowSchema = z.object({
   course_request: CourseRequestSchema,
@@ -22,9 +23,7 @@ export function RequestCourse({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head')%>", {
-          ...resLocals,
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Request a Course' })}
         <script>
           $(function () {
             $('input[name=cr-role]').change(function () {
@@ -54,6 +53,7 @@ export function RequestCourse({
           navPage: 'request_course',
         })}
         <main id="content" class="container">
+          <h1 class="sr-only">Request a Course</h1>
           ${CourseRequestsCard({ rows })}
           ${CourseNewRequestCard({ csrfToken: resLocals.__csrf_token })}
         </main>
@@ -69,7 +69,9 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
 
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex align-items-center">Course Requests</div>
+      <div class="card-header bg-primary text-white d-flex align-items-center">
+        <h2>Course Requests</h2>
+      </div>
       <div class="table-responsive">
         <table class="table table-sm table-hover table-striped">
           <thead>
@@ -100,11 +102,7 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
                 <tr>
                   <td>${course_request.short_name}</td>
                   <td>${course_request.title}</td>
-                  <td>
-                    ${renderEjs(import.meta.url, "<%- include('approvalStatusIcon')%>", {
-                      status: course_request.approved_status,
-                    })}
-                  </td>
+                  <td>${ApprovalStatusIcon({ status: course_request.approved_status })}</td>
                   <td>${details}</td>
                 </tr>
               `;
@@ -120,7 +118,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        Request a New Course
+        <h2>Request a New Course</h2>
       </div>
       <form class="question-form" name="course-request" method="POST">
         <div class="card-body">
@@ -252,22 +250,24 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
           </div>
           <div class="form-group">
             <label>Your Role in the Course</label>
-            <div class="form-control">
-              <input type="radio" id="role-instructor" name="cr-role" value="instructor" />
-              <label for="role-instructor">Official Course Instructor</label>
-            </div>
-            <div class="form-control">
-              <input type="radio" id="role-ta" name="cr-role" value="ta" />
-              <label for="role-ta">Teaching Assistant or other course staff</label>
-            </div>
-            <div class="form-control">
-              <input type="radio" id="role-admin" name="cr-role" value="admin" />
-              <label for="role-admin">Institution Administrative Staff</label>
-            </div>
-            <div class="form-control">
-              <input type="radio" id="role-student" name="cr-role" value="student" />
-              <label for="role-student">Student</label>
-            </div>
+            <ul class="list-group">
+              <li class="list-group-item">
+                <input type="radio" id="role-instructor" name="cr-role" value="instructor" />
+                <label for="role-instructor" class="mb-0">Official Course Instructor</label>
+              </li>
+              <li class="list-group-item">
+                <input type="radio" id="role-ta" name="cr-role" value="ta" />
+                <label for="role-ta" class="mb-0">Teaching Assistant or other course staff</label>
+              </li>
+              <li class="list-group-item">
+                <input type="radio" id="role-admin" name="cr-role" value="admin" />
+                <label for="role-admin" class="mb-0">Institution Administrative Staff</label>
+              </li>
+              <li class="list-group-item">
+                <input type="radio" id="role-student" name="cr-role" value="student" />
+                <label for="role-student" class="mb-0">Student</label>
+              </li>
+            </ul>
             <div
               style="display: none;"
               class="role-comment role-comment-ta role-comment-admin form-text card"
@@ -294,4 +294,14 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
       </form>
     </div>
   `;
+}
+
+function ApprovalStatusIcon({ status }: { status: CourseRequest['approved_status'] }) {
+  if (status === 'pending' || status === 'creating' || status === 'failed') {
+    return html`<span class="badge badge-secondary"> <i class="fa fa-clock"></i> Pending</span>`;
+  } else if (status === 'approved') {
+    return html`<span class="badge badge-success"> <i class="fa fa-check"></i> Approved</span>`;
+  } else if (status === 'denied') {
+    return html`<span class="badge badge-danger"><i class="fa fa-times"></i> Denied</span>`;
+  }
 }

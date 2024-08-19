@@ -110,6 +110,7 @@ const DevLoginParamsSchema = z.object({
   uid: z.string().min(1),
   name: z.string().min(1),
   uin: z.string().nullable().optional().default(null),
+  email: z.string().nullable().optional().default(null),
 });
 
 router.post(
@@ -126,12 +127,12 @@ router.post(
         uid: body.uid,
         name: body.name,
         uin: body.uin || null,
+        email: body.email || null,
         provider: 'dev',
       };
 
       await authLib.loadUser(req, res, authnParams, {
         redirect: true,
-        pl_authn_cookie: true,
       });
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);

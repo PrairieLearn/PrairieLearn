@@ -1,5 +1,41 @@
 # @prairielearn/postgres
 
+## 2.1.3
+
+### Patch Changes
+
+- 852c2e2: Upgrade all JavaScript dependencies
+
+## 2.1.2
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+
+## 2.1.1
+
+### Patch Changes
+
+- 24a93b8: Upgrade all JavaScript dependencies
+
+## 2.1.0
+
+### Minor Changes
+
+- 1de33d9: Add `formatQueryWithErrorPosition` function
+
+## 2.0.3
+
+### Patch Changes
+
+- 0f7c90f: Upgrade all JavaScript dependencies
+
+## 2.0.2
+
+### Patch Changes
+
+- fd8f6e6: Use processed SQL when throwing errors with a `position` property
+
 ## 2.0.1
 
 ### Patch Changes

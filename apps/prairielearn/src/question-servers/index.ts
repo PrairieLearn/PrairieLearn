@@ -77,7 +77,7 @@ export interface QuestionServer {
     renderSelection: { question: boolean; answer: boolean; submissions: boolean },
     variant: Variant,
     question: Question,
-    submission: Submission,
+    submission: Submission | null,
     submissions: Submission[],
     course: Course,
     locals: Record<string, any>,

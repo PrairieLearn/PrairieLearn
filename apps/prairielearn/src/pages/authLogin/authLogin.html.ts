@@ -1,6 +1,6 @@
 import { html, type HtmlValue } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { assetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
@@ -28,7 +28,7 @@ function LoginPageContainer({
     <!doctype html>
     <html lang="en" class="bg-dark">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
         <style>
           html,
           body {
@@ -116,11 +116,15 @@ function LoginPageContainer({
           }
         </style>
       </head>
-      <body class="d-flex bg-dark">
+      <body class="d-flex flex-column bg-dark">
         <main class="login-container-wrapper">
           <div class="login-container">
             <div>
-              <h1 class="text-center">PrairieLearn</h1>
+              <h1 class="text-center">
+                <a href="https://www.prairielearn.com/" target="_blank" class="text-body">
+                  PrairieLearn
+                </a>
+              </h1>
               <h2 class="text-center subheader mb-5">
                 Sign in ${service ? `to continue to ${service}` : ''}
               </h2>
@@ -128,6 +132,17 @@ function LoginPageContainer({
             </div>
           </div>
         </main>
+        ${config.homepageFooterText && config.homepageFooterTextHref
+          ? html`
+              <footer class="footer small font-weight-light text-light text-center">
+                <div class="bg-secondary p-1">
+                  <a class="text-light" href="${config.homepageFooterTextHref}">
+                    ${config.homepageFooterText}
+                  </a>
+                </div>
+              </footer>
+            `
+          : ''}
       </body>
     </html>
   `;
@@ -321,6 +336,13 @@ function DevModeLogin({ csrfToken }: { csrfToken: string }) {
         <label for="dev_uin">UIN</label>
         <input class="form-control" id="dev_uin" name="uin" aria-describedby="dev_uin_help" />
         <small id="dev_uin_help" class="form-text text-muted">
+          Optional; will be set to <tt>null</tt> if not specified.
+        </small>
+      </div>
+      <div class="form-group">
+        <label for="dev_email">Email</label>
+        <input class="form-control" id="dev_email" name="email" aria-describedby="dev_email_help" />
+        <small id="dev_email_help" class="form-text text-muted">
           Optional; will be set to <tt>null</tt> if not specified.
         </small>
       </div>

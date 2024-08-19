@@ -50,19 +50,19 @@ $$ s(t) = - {{params.a}} t^2 + {{params.b}} t + 30 $$
 {{/partial_scores.lines.feedback}}
 </pl-submission-panel>
 
-The <pl-dropdown answers-name="geo" weight="1">
+The <pl-multiple-choice display="dropdown" hide-letter-keys="true" answers-name="geo" weight="1">
   <pl-answer correct="false">end-point</pl-answer>
   <pl-answer correct="false">start-point</pl-answer>
   <pl-answer correct="false">mid-point</pl-answer>
   <pl-answer correct="false">length</pl-answer>
   <pl-answer correct="true">slope</pl-answer>
-</pl-dropdown> of the
-<pl-dropdown answers-name="geo2" weight="1">
+</pl-multiple-choice> of the
+<pl-multiple-choice display="dropdown" hide-letter-keys="true" answers-name="geo2" weight="1">
   <pl-answer correct="false">tangent</pl-answer>
   <pl-answer correct="false">quadratic</pl-answer>
   <pl-answer correct="false">axis</pl-answer>
   <pl-answer correct="true">secant</pl-answer>
-</pl-dropdown> line above provides the average rate of the change of the function $s(t)$ on the time interval $[ {{params.t0}}, {{params.t1}} ]$.
+</pl-multiple-choice> line above provides the average rate of the change of the function $s(t)$ on the time interval $[ {{params.t0}}, {{params.t1}} ]$.
 
 <p></p>
 

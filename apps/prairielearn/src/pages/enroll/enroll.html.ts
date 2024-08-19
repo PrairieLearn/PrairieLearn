@@ -3,6 +3,8 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+
 export const CourseInstanceRowSchema = z.object({
   label: z.string(),
   short_label: z.string(),
@@ -28,25 +30,18 @@ export function Enroll({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
-          ...resLocals,
-          navPage: 'enroll',
-          pageTitle: 'Courses',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'enroll',
         })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Courses</div>
+            <div class="card-header bg-primary text-white">
+              <h1>Courses</h1>
+            </div>
             <table class="table table-sm table-hover table-striped">
               <tbody>
                 ${courseInstances.map((course_instance, idx) => {
@@ -246,11 +241,7 @@ export function EnrollLtiMessage({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          navPage: 'enroll',
-          pageTitle: 'Courses',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -294,11 +285,7 @@ export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: Recor
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-          navPage: 'enroll',
-          pageTitle: 'Courses',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {

@@ -15,6 +15,12 @@ markdown_extensions:
   # allows indented code blocks inside lists
   - pymdownx.superfences
 
+  - toc:
+      permalink: true
+
+  # Allows note/warning boxes
+  - admonition
+
 extra_javascript:
   - mathjax-config.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
@@ -28,7 +34,9 @@ nav:
       - 'Requesting your course space': 'requestCourse.md'
       - 'Creating content in the browser': 'getStarted.md'
       - 'Workshop': 'workshop/index.md'
-  - User Guide:
+  - Student Guide:
+      - 'Accessibility': 'student-guide/accessibility.md'
+  - Instructor Guide:
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
       - 'Course configuration': 'course.md'
@@ -49,7 +57,7 @@ nav:
       - 'Java autograder': 'java-grader/index.md'
       - 'Workspaces': 'workspaces/index.md'
       - 'Manual grading': 'manualGrading/index.md'
-      - 'Question Sharing': 'questionSharing.md'
+      - 'Question sharing': 'questionSharing.md'
       - 'What to tell students': 'whatToTellStudents.md'
       - 'FAQ': 'faq.md'
       - 'API': 'api.md'
@@ -74,3 +82,17 @@ nav:
   - Deprecated Features:
       - 'Old v1/v2 question format': 'oldQuestion.md'
       - 'Old PrairieDraw graphics': 'PrairieDraw.md'
+
+not_in_nav: |
+  workshop/lesson1.md
+  workshop/lesson2.md
+  workshop/lesson3.md
+  workshop/lesson4.md
+  workshop/lesson5.md
+  python-grader/sphinx-docs.md
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn

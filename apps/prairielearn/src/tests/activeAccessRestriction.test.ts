@@ -25,8 +25,7 @@ describe('Exam and homework assessment with active access restriction', function
 
   const headers: Record<string, string> = {};
 
-  const VARIANT_FORBIDDEN_STRING =
-    'This question was not viewed while the assessment was open, so no variant was created.';
+  const VARIANT_FORBIDDEN_STRING = 'This question was not viewed while the assessment was open';
 
   before('set authenticated user', function (callback) {
     storedConfig.authUid = config.authUid;
@@ -138,7 +137,7 @@ describe('Exam and homework assessment with active access restriction', function
     });
     assert.isTrue(response.ok);
 
-    assert.equal(response.$('#start-assessment').text(), 'Start assessment');
+    assert.equal(response.$('#start-assessment').text().trim(), 'Start assessment');
 
     helperClient.extractAndSaveCSRFToken(context, response.$, 'form');
   });
@@ -550,7 +549,7 @@ describe('Exam and homework assessment with active access restriction', function
       form,
       headers,
     });
-    assert.equal(response.status, 500);
+    assert.equal(response.status, 403);
   });
 
   step('get CSRF token and variant ID for attaching text on question page', async () => {
@@ -611,7 +610,7 @@ describe('Exam and homework assessment with active access restriction', function
       form,
       headers,
     });
-    assert.equal(response.status, 500);
+    assert.equal(response.status, 403);
   });
 
   step('check that no files or text were attached', async () => {

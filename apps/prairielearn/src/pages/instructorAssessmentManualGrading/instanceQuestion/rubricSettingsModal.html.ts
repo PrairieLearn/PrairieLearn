@@ -39,8 +39,8 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                               value="false"
                               required
                               data-max-points="${resLocals.assessment_question.max_manual_points}"
-                              ${rubric_data?.replace_auto_points ??
-                              !resLocals.assessment_question.max_manual_points
+                              ${(rubric_data?.replace_auto_points ??
+                              !resLocals.assessment_question.max_manual_points)
                                 ? ''
                                 : 'checked'}
                             />
@@ -68,8 +68,8 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                               value="true"
                               required
                               data-max-points="${resLocals.assessment_question.max_points}"
-                              ${rubric_data?.replace_auto_points ??
-                              !resLocals.assessment_question.max_manual_points
+                              ${(rubric_data?.replace_auto_points ??
+                              !resLocals.assessment_question.max_manual_points)
                                 ? 'checked'
                                 : ''}
                             />
@@ -243,8 +243,8 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
             <div class="js-settings-error-alert-placeholder"></div>
             <div class="modal-footer">
               ${resLocals.authz_data.has_course_instance_permission_edit
-                ? [
-                    rubric_data
+                ? html`
+                    ${rubric_data
                       ? html`
                           <button
                             type="button"
@@ -253,11 +253,17 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                             Disable rubric
                           </button>
                         `
-                      : '',
-                    html`<button type="submit" class="btn btn-primary">Save rubric</button>`,
-                  ]
-                : ''}
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+                      : ''}
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                      Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">Save rubric</button>
+                  `
+                : html`
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                      Close
+                    </button>
+                  `}
             </div>
           </div>
         </form>
@@ -267,7 +273,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
 }
 
 function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number) {
-  const namePrefix = item ? `rubric_item[cur${item.id}]` : `rubric_item[new]`;
+  const namePrefix = item ? `rubric_item[cur${item.id}]` : 'rubric_item[new]';
   return html`
     <tr>
       <td class="text-nowrap">
@@ -315,28 +321,40 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
         />
       </td>
       <td>
-        <label
-          class="js-rubric-item-explanation"
+        ${item?.explanation
+          ? html` <label
+              for="rubric-item-explanation-button-${item.id}"
+              style="white-space: pre-wrap;"
+              >${item?.explanation}</label
+            >`
+          : ''}
+        <button
+          ${item ? html`id="rubric-item-explanation-button-${item.id}"` : ''}
+          type="button"
+          class="btn btn-sm js-rubric-item-long-text-field js-rubric-item-explanation"
           data-input-name="${namePrefix}[explanation]"
           data-current-value="${item?.explanation}"
         >
-          ${item?.explanation}
-          <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
-            <i class="fas fa-pencil"></i>
-          </button>
-        </label>
+          <i class="fas fa-pencil"></i>
+        </button>
       </td>
       <td>
-        <label
-          class="js-rubric-item-grader-note"
+        ${item?.grader_note
+          ? html`<label
+              for="rubric-item-grader-note-button-${item.id}"
+              style="white-space: pre-wrap;"
+              >${item?.grader_note}</label
+            > `
+          : ''}
+        <button
+          ${item ? html`id="rubric-item-grader-note-button-${item.id}"` : ''}
+          type="button"
+          class="btn btn-sm js-rubric-item-long-text-field js-rubric-item-grader-note"
           data-input-name="${namePrefix}[grader_note]"
           data-current-value="${item?.grader_note}"
         >
-          ${item?.grader_note}
-          <button type="button" class="btn btn-sm js-rubric-item-long-text-field">
-            <i class="fas fa-pencil"></i>
-          </button>
-        </label>
+          <i class="fas fa-pencil"></i>
+        </button>
       </td>
       <td>
         <div class="form-check form-check-inline">

@@ -10,7 +10,7 @@
   "dynamicDependencies": {
     "nodeModulesScripts": {
        "xx_purify" : "dompurify/dist/purify.min.js",
-       "xxnotebook" : "notebookjs/notebook.min.js",
+       "notebook" : "notebookjs/notebook.min.js",
        "marked" : "marked/lib/marked.esm.js"
     }
   }

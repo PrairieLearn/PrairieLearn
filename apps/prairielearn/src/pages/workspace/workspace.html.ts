@@ -1,9 +1,12 @@
-import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
+import { escapeHtml, html } from '@prairielearn/html';
 
-import { compiledScriptTag } from '../../lib/assets.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Modal } from '../../components/Modal.html.js';
+import { assetPath, compiledScriptTag } from '../../lib/assets.js';
 
 export function Workspace({
+  pageTitle,
+  pageNote,
   navTitle,
   navTitleHref,
   showLogs,
@@ -12,6 +15,8 @@ export function Workspace({
   socketToken,
   resLocals,
 }: {
+  pageTitle?: string;
+  pageNote?: string;
   navTitle: string;
   navTitleHref: string;
   showLogs: boolean;
@@ -20,112 +25,24 @@ export function Workspace({
   socketToken: string;
   resLocals: Record<string, any>;
 }) {
+  const { workspace_id, urlPrefix, __csrf_token } = resLocals;
   return html`
     <!doctype html>
     <html lang="en" class="h-100">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        <link href="${resLocals.asset_path('stylesheets/workspace.css')}" rel="stylesheet" />
+        ${HeadContents({ resLocals, pageNote, pageTitle })}
+        <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />
         ${compiledScriptTag('workspaceClient.ts')}
       </head>
 
       <body
         class="d-flex flex-column h-100"
         data-socket-token="${socketToken}"
-        data-workspace-id="${resLocals.workspace_id}"
+        data-workspace-id="${workspace_id}"
         data-heartbeat-interval-sec="${heartbeatIntervalSec}"
         data-visibility-timeout-sec="${visibilityTimeoutSec}"
       >
-        <div
-          class="modal fade"
-          id="rebootModal"
-          tabindex="-1"
-          aria-labelledby="rebootModalLabel"
-          aria-hidden="true"
-        >
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h1 class="h5 modal-title" id="rebootModalLabel">Reboot the workspace</h1>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
-              </div>
-              <div class="modal-body">
-                <p>Are you sure you want to reboot the virtual machine?</p>
-                <ul class="fa-ul">
-                  <li>
-                    <span class="fa-li"><i class="fas fa-save" aria-hidden="true"></i></span>Your
-                    files will remain intact through the reboot.
-                  </li>
-                  <li>
-                    <span class="fa-li"
-                      ><i class="fas fa-window-restore" aria-hidden="true"></i></span
-                    >Your workspace will reboot into this same tab.
-                  </li>
-                </ul>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <button name="__action" value="reboot" class="btn btn-info">
-                    <i class="fas fa-sync text-white" aria-hidden="true"></i>
-                    Reboot
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div
-          class="modal fade"
-          id="resetModal"
-          tabindex="-1"
-          aria-labelledby="resetModalLabel"
-          aria-hidden="true"
-        >
-          <div class="modal-dialog">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h1 class="h5 modal-title" id="resetModalLabel">Reset the workspace</h1>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
-              </div>
-              <div class="modal-body">
-                <p>Are you sure you want to reset the virtual machine?</p>
-                <ul class="fa-ul">
-                  <li>
-                    <span class="fa-li"
-                      ><i
-                        class="fas fa-exclamation-triangle text-danger"
-                        aria-hidden="true"
-                      ></i></span
-                    ><strong class="text-danger">Your file changes will be lost!</strong> The
-                    workspace will return to its original state upon reset.
-                  </li>
-                  <li>
-                    <span class="fa-li"
-                      ><i class="fas fa-window-restore" aria-hidden="true"></i></span
-                    >Your workspace will reset into this same tab.
-                  </li>
-                </ul>
-              </div>
-              <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <button name="__action" value="reset" class="btn btn-danger">
-                    <i class="fas fa-trash text-white" aria-hidden="true"></i>
-                    Reset
-                  </button>
-                </form>
-              </div>
-            </div>
-          </div>
-        </div>
+        ${RebootModal({ __csrf_token })} ${ResetModal({ __csrf_token })}
 
         <nav
           class="navbar navbar-expand-md navbar-dark bg-info align-items-center"
@@ -133,7 +50,9 @@ export function Workspace({
         >
           <div class="d-flex flex-column mr-3 text-white">
             <span>
-              <a href="${navTitleHref}" target="_blank" class="text-white">${navTitle}</a>
+              <h1 class="h6 font-weight-normal mb-0">
+                <a href="${navTitleHref}" target="_blank" class="text-white">${navTitle}</a>
+              </h1>
             </span>
             <span class="small">
               <i class="fa fa-laptop-code" aria-hidden="true"></i>
@@ -194,7 +113,7 @@ export function Workspace({
                     <li class="nav-item ml-2 my-1">
                       <a
                         class="nav-item btn btn-light"
-                        href="${resLocals.urlPrefix}/workspace/${resLocals.workspace_id}/logs"
+                        href="${urlPrefix}/workspace/${workspace_id}/logs"
                         target="_blank"
                       >
                         <i class="fas fa-bars-staggered" aria-hidden="true"></i>
@@ -208,16 +127,12 @@ export function Workspace({
                   tabindex="0"
                   type="button"
                   class="nav-item btn btn-light"
-                  data-container="body"
                   data-toggle="popover"
+                  data-trigger="focus"
+                  data-container="body"
                   data-placement="bottom"
                   data-html="true"
-                  data-content='<ul class="list-group list-group-flush">
-                              <li class="list-group-item p-2"><div class="row"><div class="col col-3 font-weight-bold d-flex align-items-center">Reloading</div><div class="col col-9">Use your browser reload button on this tab at any time, or close and re-open the tab.</div></div></li>
-                              <li class="list-group-item p-2"><div class="row"><div class="col col-3 font-weight-bold d-flex align-items-center">Rebooting</div> <div class="col col-9">The <span class="badge badge-outline badge-light"><i class="fas fa-sync" aria-hidden="true"></i> Reboot</span> button will restart the virtual machine. Your files will remain intact.</div></div></li>
-                              <li class="list-group-item p-2"><div class="row"><div class="col col-3 font-weight-bold d-flex align-items-center">Resetting</div> <div class="col col-9">The <span class="badge badge-outline badge-light"><i class="fas fa-trash text-secondary" aria-hidden="true"></i> Reset</span> button will delete all of your file edits and revert the virtual machine to its original state.</div></div></li>
-                              <li class="list-group-item p-2"><div class="row"><div class="col col-3 font-weight-bold d-flex align-items-center">Grading</div>   <div class="col col-9">Use the <span class="badge badge-outline badge-light">Save &amp; Grade</span> button on the PrairieLearn question page to submit your files for grading.</div></div></li>
-                            </ul>'
+                  data-content="${escapeHtml(HelpButtonContents())}"
                 >
                   <i class="fas fa-question-circle text-secondary" aria-hidden="true"></i>
                 </a>
@@ -226,7 +141,7 @@ export function Workspace({
           </div>
         </nav>
 
-        <main class="d-flex flex-column flex-grow h-100">
+        <main id="content" class="d-flex flex-column flex-grow h-100">
           <div
             id="loading"
             class="d-flex h-100 flex-grow justify-content-center align-items-center"
@@ -247,4 +162,112 @@ export function Workspace({
       </body>
     </html>
   `.toString();
+}
+
+function ResetModal({ __csrf_token }: { __csrf_token: string }) {
+  return Modal({
+    id: 'resetModal',
+    title: 'Reset the workspace',
+    body: html`
+      <p>Are you sure you want to reset the virtual machine?</p>
+      <ul class="fa-ul">
+        <li>
+          <span class="fa-li">
+            <i class="fas fa-exclamation-triangle text-danger" aria-hidden="true"></i>
+          </span>
+          <strong class="text-danger">Your file changes will be lost!</strong> The workspace will
+          return to its original state upon reset.
+        </li>
+        <li>
+          <span class="fa-li"><i class="fas fa-window-restore" aria-hidden="true"></i></span>
+          Your workspace will reset into this same tab.
+        </li>
+      </ul>
+    `,
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button name="__action" value="reset" class="btn btn-danger">
+        <i class="fas fa-trash text-white" aria-hidden="true"></i>
+        Reset
+      </button>
+    `,
+  });
+}
+
+function RebootModal({ __csrf_token }: { __csrf_token: string }) {
+  return Modal({
+    id: 'rebootModal',
+    title: 'Reboot the workspace',
+    body: html`
+      <p>Are you sure you want to reboot the virtual machine?</p>
+      <ul class="fa-ul">
+        <li>
+          <span class="fa-li"><i class="fas fa-save" aria-hidden="true"></i></span> Your files will
+          remain intact through the reboot.
+        </li>
+        <li>
+          <span class="fa-li"><i class="fas fa-window-restore" aria-hidden="true"></i></span> Your
+          workspace will reboot into this same tab.
+        </li>
+      </ul>
+    `,
+    footer: html`
+      <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button name="__action" value="reboot" class="btn btn-info">
+        <i class="fas fa-sync text-white" aria-hidden="true"></i>
+        Reboot
+      </button>
+    `,
+  });
+}
+
+function HelpButtonContents() {
+  return html`
+    <ul class="list-group list-group-flush">
+      <li class="list-group-item p-2">
+        <div class="row">
+          <div class="col col-3 font-weight-bold d-flex align-items-center">Reloading</div>
+          <div class="col col-9">
+            Use your browser reload button on this tab at any time, or close and re-open the tab.
+          </div>
+        </div>
+      </li>
+      <li class="list-group-item p-2">
+        <div class="row">
+          <div class="col col-3 font-weight-bold d-flex align-items-center">Rebooting</div>
+          <div class="col col-9">
+            The
+            <span class="badge badge-outline badge-light">
+              <i class="fas fa-sync" aria-hidden="true"></i> Reboot
+            </span>
+            button will restart the virtual machine. Your files will remain intact.
+          </div>
+        </div>
+      </li>
+      <li class="list-group-item p-2">
+        <div class="row">
+          <div class="col col-3 font-weight-bold d-flex align-items-center">Resetting</div>
+          <div class="col col-9">
+            The
+            <span class="badge badge-outline badge-light">
+              <i class="fas fa-trash text-secondary" aria-hidden="true"></i> Reset
+            </span>
+            button will delete all of your file edits and revert the virtual machine to its original
+            state.
+          </div>
+        </div>
+      </li>
+      <li class="list-group-item p-2">
+        <div class="row">
+          <div class="col col-3 font-weight-bold d-flex align-items-center">Grading</div>
+          <div class="col col-9">
+            Use the <span class="badge badge-outline badge-light">Save &amp; Grade</span> button on
+            the PrairieLearn question page to submit your files for grading.
+          </div>
+        </div>
+      </li>
+    </ul>
+  `;
 }

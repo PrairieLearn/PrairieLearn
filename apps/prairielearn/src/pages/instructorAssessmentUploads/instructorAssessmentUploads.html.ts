@@ -3,7 +3,10 @@ import { z } from 'zod';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { JobStatus } from '../../components/JobStatus.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 
 export const UploadJobSequenceSchema = z.object({
@@ -24,23 +27,18 @@ export function InstructorAssessmentUploads({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          // make the file inputs display the file name
-          $(document).on('change', '.custom-file-input', function () {
-            this.fileName = $(this).val().replace(/\\\\/g, '/').replace(/.*\\//, '');
-            $(this).parent('.custom-file').find('.custom-file-label').text(this.fileName);
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            assessment: resLocals.assessment,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           ${resLocals.authz_data.has_course_instance_permission_edit
             ? html`
                 ${UploadInstanceQuestionScoresModal({ csrfToken: resLocals.__csrf_token })}
@@ -76,7 +74,7 @@ function AssessmentUploadCard({
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
-        ${assessmentSetName} ${assessmentNumber}: Uploads
+        <h1>${assessmentSetName} ${assessmentNumber}: Uploads</h1>
       </div>
 
       ${authzHasPermissionEdit
@@ -155,11 +153,7 @@ function AssessmentUploadCard({
                       <td>${job_sequence.start_date_formatted}</td>
                       <td>${job_sequence.job_sequence.description}</td>
                       <td>${job_sequence.user_uid}</td>
-                      <td>
-                        ${renderEjs(import.meta.url, "<%- include('../partials/jobStatus'); %>", {
-                          status: job_sequence.job_sequence.status,
-                        })}
-                      </td>
+                      <td>${JobStatus({ status: job_sequence.job_sequence.status })}</td>
                       <td>
                         <a
                           href="${urlPrefix}/jobSequence/${job_sequence.job_sequence.id}"

@@ -10,6 +10,7 @@ let elemList;
 export function attachFile(locals, textFile) {
   describe('attachFile-1. GET to assessment_instance URL', () => {
     it('should load successfully', async () => {
+      console.log(locals.attachFilesUrl);
       const res = await fetch(locals.attachFilesUrl);
       assert.isOk(res.ok);
       locals.$ = cheerio.load(await res.text());
@@ -122,7 +123,7 @@ export function deleteAttachedFile(locals) {
 
   describe('deleteAttachedFile-2. the delete-file form', () => {
     it('should exist', () => {
-      elemList = locals.$('.attachFileDeleteButton');
+      elemList = locals.$('[data-testid="delete-personal-note-button"]');
       assert.lengthOf(elemList, 1);
     });
     it('should have data-content', () => {

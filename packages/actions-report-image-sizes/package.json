@@ -12,9 +12,9 @@
     "build": "tsc"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "*",
-    "@types/node": "^20.12.11",
-    "typescript": "^5.4.5"
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^20.14.15",
+    "typescript": "^5.5.4"
   },
   "dependencies": {
     "@actions/core": "^1.10.1",

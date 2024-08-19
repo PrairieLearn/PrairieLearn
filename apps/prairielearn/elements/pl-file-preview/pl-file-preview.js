@@ -1,7 +1,7 @@
 /* eslint-env browser,jquery */
 /* global nb */
-// Note about notebookjs: The notebook styling is less than ideal. It may make sense to create a 
-// low-priority story to address this in the future. Similarly, it may make sense to add syntax 
+// TODO: The notebook styling is less than ideal. Consider creating a low-priority story 
+// to address this in the future. Similarly, consider adding syntax 
 // highlighting in the future.
 
 (() => {
@@ -57,10 +57,7 @@
         const pre = preview.querySelector('pre');
 
         const downloadButton = li.querySelector('.file-preview-download');
-        downloadButton.addEventListener('click', (event) => {
-          // Prevent this click from toggling the collapse state.
-          event.stopPropagation();
-
+        downloadButton.addEventListener('click', () => {
           downloadFile(path, file)
             .then(() => {
               hideErrorMessage();
@@ -117,11 +114,7 @@
               const type = blob.type;
               if (type === 'text/plain') {
                 if (escapedFileName.endsWith('.ipynb')) {
-                  console.log("Here 1")
-                  // return math.sqrt(square(x1-x2)+square(y1-y2)) 
-                  //await import('./notebook_pl.min.js');
-                  const Marked = await import('marked');
-                  console.log('Here2');                          
+                  const Marked = await import('marked');                       
                   nb.markdown = Marked.marked.parse;
                   const notebook = nb.parse(JSON.parse(await blob.text()));
                   const rendered = notebook.render();
