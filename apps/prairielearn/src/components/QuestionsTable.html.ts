@@ -62,12 +62,8 @@ export function QuestionsTable({
     )}
 
     <div class="card mb-4">
-      <div class="card-header bg-primary">
-        <div class="row align-items-center justify-content-between">
-          <div class="col-auto">
-            <h1 class="text-white h6 font-weight-normal mb-0">Questions</h1>
-          </div>
-        </div>
+      <div class="card-header bg-primary text-white">
+        <h1>Questions</h1>
       </div>
 
       <form class="ml-1 btn-group" name="add-question-form" method="POST">

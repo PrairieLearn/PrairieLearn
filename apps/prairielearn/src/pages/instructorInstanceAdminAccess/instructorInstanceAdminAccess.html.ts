@@ -33,9 +33,7 @@ export function InstructorInstanceAdminAccess({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h1 class="h6 font-weight-normal mb-0">
-                ${course_instance.long_name} course instance access rules
-              </h1>
+              <h1>${course_instance.long_name} course instance access rules</h1>
             </div>
 
             <div class="table-responsive">

@@ -45,7 +45,7 @@ export function StudentGradebook({
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h1 class="h6 font-weight-normal mb-0">Gradebook</h1>
+              <h1>Gradebook</h1>
             </div>
 
             <table class="table table-sm table-hover">

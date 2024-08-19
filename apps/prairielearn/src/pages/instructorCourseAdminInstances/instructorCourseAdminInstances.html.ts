@@ -29,35 +29,25 @@ export function InstructorCourseAdminInstances({
             urlPrefix: resLocals.urlPrefix,
           })}
           <div class="card mb-4">
-            <div class="card-header bg-primary">
-              <div class="row align-items-center justify-content-between">
-                <div class="col-auto">
-                  <h1 class="text-white h6 font-weight-normal mb-0">Course instances</h1>
-                </div>
-                ${resLocals.authz_data.has_course_permission_edit &&
-                !resLocals.course.example_course &&
-                !resLocals.needToSync
-                  ? html`
-                      <div class="col-auto">
-                        <form name="add-course-instance-form" method="POST">
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <button
-                            name="__action"
-                            value="add_course_instance"
-                            class="btn btn-sm btn-light"
-                          >
-                            <i class="fa fa-plus" aria-hidden="true"></i>
-                            <span class="d-none d-sm-inline">Add course instance</span>
-                          </button>
-                        </form>
-                      </div>
-                    `
-                  : ''}
-              </div>
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+              <h1>Course instances</h1>
+              ${resLocals.authz_data.has_course_permission_edit &&
+              !resLocals.course.example_course &&
+              !resLocals.needToSync
+                ? html`
+                    <form class="ml-auto" name="add-course-instance-form" method="POST">
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <button
+                        name="__action"
+                        value="add_course_instance"
+                        class="btn btn-sm btn-light"
+                      >
+                        <i class="fa fa-plus" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline">Add course instance</span>
+                      </button>
+                    </form>
+                  `
+                : ''}
             </div>
 
             <div class="table-responsive">
