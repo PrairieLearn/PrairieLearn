@@ -207,7 +207,9 @@ function updateSettingsPointValues() {
 function checkRubricItemTotals() {
   const form = document.querySelector('.js-rubric-settings-modal form');
   const startingPoints = Number(form.querySelector('[name="starting_points"]:checked')?.value ?? 0);
-  const [totalPositive, totalNegative] = Array.from(form.querySelectorAll('.js-rubric-item-points'))
+  const [totalPositive, totalNegative] = Array.from(
+    form.querySelectorAll('.js-rubric-item-points:not([readonly])'),
+  )
     .map((input) => Number(input.value))
     .reduce(
       ([pos, neg], value) => (value > 0 ? [pos + value, neg] : [pos, neg + value]),
@@ -405,33 +407,33 @@ function updatePointsView(sourceInput) {
   });
 }
 
-function updateRubricItemSelection(sourceItem) {
+function updateRubricItemSelection(item) {
   // If item has children, recursively set their check state to same as this item
   document
-    .querySelectorAll('.js-selectable-rubric-item[data-parent-item="' + sourceItem.value + '"]')
-    .forEach((item) => {
-      if (item.checked !== sourceItem.checked) {
-        item.checked = sourceItem.checked;
-        updateRubricItemSelection(item);
+    .querySelectorAll('.js-selectable-rubric-item[data-parent-item="' + item.value + '"]')
+    .forEach((child) => {
+      if (child.checked !== item.checked) {
+        child.checked = item.checked;
+        updateRubricItemSelection(child);
       }
     });
 
-  // If item has parent and all siblings have same state, set parent state to same as this item
-  if (sourceItem.getAttribute('data-parent-item')) {
+  // Set parent state based on item and siblings (indeterminate if they are not all the same)
+  if (item.getAttribute('data-parent-item')) {
     const sameParentItems = document.querySelectorAll(
       '.js-selectable-rubric-item[data-parent-item="' +
-        sourceItem.getAttribute('data-parent-item') +
+        item.getAttribute('data-parent-item') +
         '"]',
     );
-
-    if (
-      Array.from(sameParentItems).every((otherItem) => otherItem.checked === sourceItem.checked)
-    ) {
-      const parentItem = document.querySelector(
-        '.js-selectable-rubric-item[value="' + sourceItem.getAttribute('data-parent-item') + '"]',
-      );
-      parentItem.checked = sourceItem.checked;
+    const parentItem = document.querySelector(
+      '.js-selectable-rubric-item[value="' + item.getAttribute('data-parent-item') + '"]',
+    );
+    if (Array.from(sameParentItems).every((otherItem) => otherItem.checked === item.checked)) {
+      parentItem.indeterminate = false;
+      parentItem.checked = item.checked;
       updateRubricItemSelection(parentItem);
+    } else {
+      parentItem.indeterminate = true;
     }
   }
 }
