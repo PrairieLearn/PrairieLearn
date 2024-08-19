@@ -589,7 +589,6 @@ export async function renderPanelsForSubmission({
   /** @type {SubmissionPanels} */
   const panels = {
     submissionPanel: null,
-    scorePanel: null,
     extraHeadersHtml: null,
   };
 
