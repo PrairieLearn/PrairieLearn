@@ -561,6 +561,9 @@ function updateRubricItemOrderAndIndentation() {
     setAutoPoints(input, input.value < previousIndent);
     previousIndent = input.value;
   });
+
+  // Point totals can change based on indentation
+  checkRubricItemTotals();
 }
 
 function moveRowDown(event) {
