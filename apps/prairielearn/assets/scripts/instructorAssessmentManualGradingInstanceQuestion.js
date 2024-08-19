@@ -165,21 +165,7 @@ function resetInstructorGradingPanel() {
   resetRubricItemRowsListeners();
   updateRubricItemOrderAndIndentation();
   // Partially checked rubric items are technically unchecked, so we need to re-compute their display manually
-  document.querySelectorAll('.js-selectable-rubric-item').forEach((item) => {
-    if (item.getAttribute('data-parent-item')) {
-      const sameParentItems = document.querySelectorAll(
-        '.js-selectable-rubric-item[data-parent-item="' +
-          item.getAttribute('data-parent-item') +
-          '"]',
-      );
-      const parentItem = document.querySelector(
-        '.js-selectable-rubric-item[value="' + item.getAttribute('data-parent-item') + '"]',
-      );
-      if (!Array.from(sameParentItems).every((otherItem) => otherItem.checked === item.checked)) {
-        parentItem.indeterminate = true;
-      }
-    }
-  });
+  document.querySelectorAll('.js-selectable-rubric-item').forEach(updateRubricItemCheckStates);
   computePointsFromRubric();
 }
 
@@ -422,17 +408,18 @@ function updatePointsView(sourceInput) {
   });
 }
 
-function updateRubricItemSelection(item) {
-  // If item has children, recursively set their check state to same as this item
+function checkContainedRubricItems(item) {
   document
     .querySelectorAll('.js-selectable-rubric-item[data-parent-item="' + item.value + '"]')
     .forEach((child) => {
       if (child.checked !== item.checked) {
         child.checked = item.checked;
-        updateRubricItemSelection(child);
+        checkContainedRubricItems(child, true);
       }
     });
+}
 
+function updateRubricItemCheckStates(item) {
   // Set parent state based on item and siblings (indeterminate if they are not all the same)
   if (item.getAttribute('data-parent-item')) {
     const sameParentItems = document.querySelectorAll(
@@ -443,19 +430,24 @@ function updateRubricItemSelection(item) {
     const parentItem = document.querySelector(
       '.js-selectable-rubric-item[value="' + item.getAttribute('data-parent-item') + '"]',
     );
-    if (Array.from(sameParentItems).every((otherItem) => otherItem.checked === item.checked)) {
+    if (
+      Array.from(sameParentItems).every(
+        (otherItem) =>
+          otherItem.checked === item.checked && otherItem.indeterminate === item.indeterminate,
+      )
+    ) {
       parentItem.indeterminate = false;
       parentItem.checked = item.checked;
-      updateRubricItemSelection(parentItem);
     } else {
       parentItem.indeterminate = true;
     }
+    updateRubricItemCheckStates(parentItem, false);
   }
 }
 
 function updatePointsAndItems(event) {
-  // This function can trigger recursive calls, but we only need to recompute points once in the end
-  updateRubricItemSelection(event.target);
+  checkContainedRubricItems(event.target);
+  updateRubricItemCheckStates(event.target);
   computePointsFromRubric(event.target);
 }
 
