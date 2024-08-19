@@ -341,7 +341,7 @@ function addAlert(placeholder, msg, classes = ['alert-danger']) {
 function resetRubricItemRowsListeners() {
   document
     .querySelectorAll('.js-rubric-items-table tbody tr')
-    .forEach((row) => row.addEventListener('dragover', rowDragOver));
+    .forEach((row) => row.addEventListener('dragenter', rowDragEnter));
   document
     .querySelectorAll('.js-rubric-item-move-button')
     .forEach((row) => row.addEventListener('dragstart', rowDragStart));
@@ -531,8 +531,10 @@ function updateItemPoints(item, points) {
 }
 
 function updateRubricItemOrderAndIndentation() {
+  const rows = document.querySelectorAll('.js-rubric-item-row');
+
   let previousIndent = -1;
-  document.querySelectorAll('.js-rubric-item-row').forEach((row, index) => {
+  rows.forEach((row, index) => {
     // Synchronize order
     row.querySelector('.js-rubric-item-row-order').value = index;
     const itemIndent = row.querySelector('.js-rubric-item-indent');
@@ -552,7 +554,7 @@ function updateRubricItemOrderAndIndentation() {
   let pointsTotals = {};
   let containsAlwaysShow = {};
 
-  [...document.querySelectorAll('.js-rubric-item-row')].reverse().forEach((row) => {
+  [...rows].reverse().forEach((row) => {
     const itemIndent = row.querySelector('.js-rubric-item-indent');
     const itemIndentValue = Number(itemIndent.value);
     const itemPoints = row.querySelector('.js-rubric-item-points');
@@ -668,10 +670,23 @@ function rowDragStart(event) {
   }
 }
 
-function rowDragOver(event) {
+function rowDragEnter(event) {
   const row = event.target.closest('tr');
+
   // Rows in different tables don't count
-  if (!row || row.parent !== window.rubricItemRowDragging.parent) return;
+  if (!row || row.parent !== window.rubricItemRowDragging.parent) {
+    return;
+  }
+
+  // Calculate indentation level based on dragging coordinates
+  const dragIndent = Math.floor((event.clientX - row.getBoundingClientRect().left - 5) / 18);
+  const currentIndent = window.rubricItemRowDragging.querySelector('.js-rubric-item-indent');
+
+  // Skip remaining computation if nothing will be changed to increase performance
+  if (row === window.rubricItemRowDragging && dragIndent === currentIndent.value) {
+    return;
+  }
+
   const rowList = Array.from(row.parentNode.children);
   const draggingRowIdx = rowList.indexOf(window.rubricItemRowDragging);
   const targetRowIdx = rowList.indexOf(row);
@@ -690,18 +705,14 @@ function rowDragOver(event) {
     var parentIndent = Number(
       rowList[targetRowIdx - 1].querySelector('.js-rubric-item-indent').value,
     );
-    const dragOffset = event.clientX - row.getBoundingClientRect().left - 5;
 
     // Prevent a row from being considered as its own parent in certain drag states
     if (draggingRowIdx === targetRowIdx - 1) {
       parentIndent -= 1;
     }
-    window.rubricItemRowDragging.querySelector('.js-rubric-item-indent').value = Math.max(
-      0,
-      Math.min(parentIndent + 1, Math.floor(dragOffset / 18)),
-    );
+    currentIndent.value = Math.max(0, Math.min(parentIndent + 1, dragIndent));
   } else {
-    window.rubricItemRowDragging.querySelector('.js-rubric-item-indent').value = 0;
+    currentIndent.value = 0;
   }
 
   updateRubricItemOrderAndIndentation();
