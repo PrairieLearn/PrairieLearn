@@ -6,10 +6,11 @@ import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken } from '@prairielearn/signed-token';
 
-import { type GradingJobStatus, gradingJobStatus } from '../models/grading-job.js';
+import { gradingJobStatus } from '../models/grading-job.js';
 
 import { config } from './config.js';
 import { GradingJobSchema, IdSchema } from './db-types.js';
+import { StatusMessage } from './externalGradingSocket.types.js';
 import { renderPanelsForSubmission } from './question-render.js';
 import * as socketServer from './socket-server.js';
 
@@ -25,15 +26,6 @@ const SubmissionForGradingJobSchema = z.object({
   grading_job: GradingJobSchema,
   variant_id: IdSchema,
 });
-
-export interface StatusMessage {
-  variant_id: string;
-  submissions: {
-    id: string;
-    grading_job_id: string | null | undefined;
-    grading_job_status: GradingJobStatus;
-  }[];
-}
 
 let namespace: Namespace;
 

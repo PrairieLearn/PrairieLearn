@@ -2,7 +2,10 @@ import { Socket, io } from 'socket.io-client';
 
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 
-import type { StatusMessage } from '../../src/lib/externalGradingSocket.js';
+import type {
+  StatusMessage,
+  StatusMessageSubmission,
+} from '../../src/lib/externalGradingSocket.types.js';
 import type { GradingJobStatus } from '../../src/models/grading-job.js';
 
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
@@ -262,7 +265,7 @@ function updateDynamicPanels(msg: any, submissionId: string) {
   setupDynamicObjects();
 }
 
-function updateStatus(submission: Omit<StatusMessage['submissions'][0], 'grading_job_id'>) {
+function updateStatus(submission: Omit<StatusMessageSubmission, 'grading_job_id'>) {
   const display = document.getElementById('grading-status-' + submission.id);
   if (!display) return;
   let label;
