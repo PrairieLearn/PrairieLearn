@@ -239,7 +239,8 @@ UPDATE rubric_items
 SET
   parent_id = $parent_id,
   points = $points,
-  key_binding = $key_binding
+  key_binding = $key_binding,
+  always_show_to_students = $always_show_to_students
 WHERE
   id = $id
   AND rubric_id = $rubric_id;

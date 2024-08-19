@@ -319,8 +319,9 @@ export async function updateAssessmentQuestionRubric(
         },
       );
 
-      // Assign parents to each rubric item based on indentation and update key bindings and points
+      // Assign parents to each rubric item based on indentation
       // This has to be done after inserting items so that new items have a known ID to reference
+      // Key bindings, student visibility settings and points are also updated in the same pass
       const rubric_parent_stack = [] as RubricItemInput[];
       let key_binding = 1;
       rubric_items.forEach((item) => {
@@ -339,6 +340,13 @@ export async function updateAssessmentQuestionRubric(
             parent.key_binding = null;
             key_binding--;
           }
+          // If an item is always shown to students, its parent is also always shown
+          // This should already be checked client-side, so this is unlikely to be triggered
+          if (item.always_show_to_students && !parent.always_show_to_students) {
+            rubric_parent_stack.forEach(
+              (current_parent) => (current_parent.always_show_to_students = true),
+            );
+          }
         }
         // Add the current item as a potential parent for future ones
         rubric_parent_stack.push(item);
@@ -355,6 +363,7 @@ export async function updateAssessmentQuestionRubric(
             parent_id: item.parent_id,
             points: item.points,
             key_binding: item.key_binding,
+            always_show_to_students: item.always_show_to_students,
           }),
       );
 
