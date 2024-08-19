@@ -412,8 +412,9 @@ function checkContainedRubricItems(item) {
   document
     .querySelectorAll('.js-selectable-rubric-item[data-parent-item="' + item.value + '"]')
     .forEach((child) => {
-      if (child.checked !== item.checked) {
+      if (child.checked !== item.checked || child.indeterminate) {
         child.checked = item.checked;
+        child.indeterminate = false;
         checkContainedRubricItems(child, true);
       }
     });
