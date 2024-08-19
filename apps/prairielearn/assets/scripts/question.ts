@@ -3,6 +3,7 @@ import { Socket, io } from 'socket.io-client';
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 
 import type { StatusMessage } from '../../src/lib/externalGradingSocket.js';
+import type { GradingJobStatus } from '../../src/models/grading-job.js';
 
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
 import { setupCountdown } from './lib/countdown.js';
@@ -57,7 +58,7 @@ function externalGradingLiveUpdate() {
     // Ensure that this is a valid submission element
     if (!/^submission-\d+$/.test(elem.id)) return;
 
-    const status = elem.dataset.gradingJobStatus;
+    const status = elem.dataset.gradingJobStatus as GradingJobStatus;
     const submissionId = elem.id.replace('submission-', '');
     updateStatus({ id: submissionId, grading_job_status: status });
     // Grading is not pending if it's done, or it's save-only, or has been canceled
@@ -261,7 +262,7 @@ function updateDynamicPanels(msg: any, submissionId: string) {
   setupDynamicObjects();
 }
 
-function updateStatus(submission: any) {
+function updateStatus(submission: Omit<StatusMessage['submissions'][0], 'grading_job_id'>) {
   const display = document.getElementById('grading-status-' + submission.id);
   if (!display) return;
   let label;
