@@ -164,6 +164,22 @@ function resetInstructorGradingPanel() {
 
   resetRubricItemRowsListeners();
   updateRubricItemOrderAndIndentation();
+  // Partially checked rubric items are technically unchecked, so we need to re-compute their display manually
+  document.querySelectorAll('.js-selectable-rubric-item').forEach((item) => {
+    if (item.getAttribute('data-parent-item')) {
+      const sameParentItems = document.querySelectorAll(
+        '.js-selectable-rubric-item[data-parent-item="' +
+          item.getAttribute('data-parent-item') +
+          '"]',
+      );
+      const parentItem = document.querySelector(
+        '.js-selectable-rubric-item[value="' + item.getAttribute('data-parent-item') + '"]',
+      );
+      if (!Array.from(sameParentItems).every((otherItem) => otherItem.checked === item.checked)) {
+        parentItem.indeterminate = true;
+      }
+    }
+  });
   computePointsFromRubric();
 }
 
