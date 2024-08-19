@@ -52,7 +52,7 @@ export function InstructorFileEditorNoPermission({
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-danger text-white">
-              <h1 class="h6 font-weight-normal mb-0">File editor</h1>
+              <h1>File editor</h1>
             </div>
             <div class="card-body">
               <h2>Insufficient permissions</h2>
@@ -348,7 +348,7 @@ export function InstructorFileEditor({
                       >
                         <div
                           id="js-json-reformat-error"
-                          class="toast hide bg-danger text-white border-0"
+                          class="toast hide text-bg-danger border-0"
                           role="alert"
                           aria-live="assertive"
                           aria-atomic="true"
@@ -359,7 +359,7 @@ export function InstructorFileEditor({
                             </div>
                             <button
                               type="button"
-                              class="mr-2 close"
+                              class="mr-2 m-auto btn-close-white close"
                               data-dismiss="toast"
                               aria-label="Close"
                             >

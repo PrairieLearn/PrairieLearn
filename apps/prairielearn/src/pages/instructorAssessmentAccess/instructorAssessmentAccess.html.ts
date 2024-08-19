@@ -49,9 +49,7 @@ export function InstructorAssessmentAccess({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <h1 class="h6 font-weight-normal mb-0">
-                ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access
-              </h1>
+              <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access</h1>
             </div>
 
             <div class="table-responsive">

@@ -108,7 +108,7 @@ export function InstructorFileBrowserNoPermission({
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-danger text-white">
-              <h1 class="h6 font-weight-normal mb-0">Files</h1>
+              <h1>Files</h1>
             </div>
             <div class="card-body">
               <h2>Insufficient permissions</h2>

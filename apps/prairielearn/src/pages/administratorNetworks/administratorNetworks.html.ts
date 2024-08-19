@@ -19,7 +19,7 @@ export function AdministratorNetworks({ resLocals }) {
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              <h1 class="h6 font-weight-normal mb-0">Exam-mode networks</h1>
+              <h1>Exam-mode networks</h1>
             </div>
             <div class="table-responsive">
               <table class="table table-sm table-hover table-striped">
