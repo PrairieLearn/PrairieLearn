@@ -1290,6 +1290,13 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_jobs', [
+    (await import('./ee/pages/instructorAiGenerateJobs/instructorAiGenerateJobs.js')).default,
+  ]);
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_job/:job_sequence_id(\\d+)',
+    [(await import('./ee/pages/instructorAiGenerateJob/instructorAiGenerateJob.js')).default],
+  );
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question', [
     function (req, res, next) {
       res.locals.navSubPage = 'questions';
@@ -1543,8 +1550,6 @@ export async function initExpress() {
     (await import('./middlewares/logPageView.js')).default('studentAssessments'),
     (await import('./pages/studentAssessments/studentAssessments.js')).default,
   ]);
-  // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
-  // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)', [
     (await import('./middlewares/selectAndAuthzAssessment.js')).default,
     (await import('./middlewares/studentAssessmentAccess.js')).default,
@@ -1833,6 +1838,12 @@ export async function initExpress() {
       next();
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
+  ]);
+  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_jobs', [
+    (await import('./ee/pages/instructorAiGenerateJobs/instructorAiGenerateJobs.js')).default,
+  ]);
+  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_job/:job_sequence_id(\\d+)', [
+    (await import('./ee/pages/instructorAiGenerateJob/instructorAiGenerateJob.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/ai_generate_question', [
     function (req, res, next) {

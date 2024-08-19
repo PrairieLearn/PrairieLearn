@@ -67,7 +67,7 @@
       {{/tests_missing_points}}
       {{#tests}}
         <div class="card mb-1 mt-1">
-          <div class="card-header d-flex collapsed" data-toggle="collapse" data-target="#card-{{uuid}}-{{index}}" style="cursor: pointer;">
+          <button class="card-header d-flex collapsed border-top-0 border-left-0 border-right-0" data-toggle="collapse" data-target="#card-{{uuid}}-{{index}}" aria-expanded="false" aria-controls="card-{{uuid}}-{{index}}">
             <div class="mr-auto">
               <span class="card-title">
                 {{#show_points}}
@@ -80,7 +80,7 @@
             <div>
               <span class="fa fa-angle-down"></span>
             </div>
-          </div>
+          </button>
           <div id="card-{{uuid}}-{{index}}" class="collapse">
             <ul class="list-group list-group-flush">
               {{#has_description}}

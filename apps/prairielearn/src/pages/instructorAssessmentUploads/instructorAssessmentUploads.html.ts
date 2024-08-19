@@ -74,7 +74,7 @@ function AssessmentUploadCard({
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
-        ${assessmentSetName} ${assessmentNumber}: Uploads
+        <h1>${assessmentSetName} ${assessmentNumber}: Uploads</h1>
       </div>
 
       ${authzHasPermissionEdit
