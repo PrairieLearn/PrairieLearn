@@ -1,5 +1,6 @@
 import { html, unsafeHtml, joinHtml } from '@prairielearn/html';
 
+import { AssessmentQuestion, RubricGradingItem } from '../../../lib/db-types.js';
 import { RubricData, RubricGradingData } from '../../../lib/manualGrading.js';
 
 export function RubricInputSection({
@@ -28,7 +29,12 @@ export function RubricInputSection({
         margin-bottom: 0;
       }
     </style>
-    ${RubricItemsWithIndent(resLocals, disable, rubric_data.rubric_items)}
+    ${RubricItemsWithIndent(
+      rubric_data.rubric_items,
+      rubric_grading?.rubric_items,
+      resLocals.assessment_question,
+      disable,
+    )}
     <div class="js-adjust-points d-flex justify-content-end">
       <button
         type="button"
@@ -92,9 +98,10 @@ export function RubricInputSection({
 }
 
 function RubricItemsWithIndent(
-  resLocals: Record<string, any>,
-  disable: boolean,
   rubric_items: RubricData['rubric_items'][0][] | null | undefined,
+  rubric_items_grading: Record<string, RubricGradingItem> | null | undefined,
+  assessment_question: AssessmentQuestion,
+  disable: boolean,
 ) {
   if (!rubric_items) return '';
   const parentStack = [''];
@@ -104,7 +111,13 @@ function RubricItemsWithIndent(
     parentStack.splice(cutoffIdx, parentStack.length - cutoffIdx);
 
     // Generate HTML for current item
-    const result = RubricItem(resLocals, disable, item, parentStack.length - 1);
+    const result = RubricItem(
+      item,
+      rubric_items_grading?.[item.id],
+      assessment_question,
+      disable,
+      parentStack.length - 1,
+    );
 
     // Push this item as potential parent for next item
     parentStack.push(item.id);
@@ -114,12 +127,12 @@ function RubricItemsWithIndent(
 }
 
 function RubricItem(
-  resLocals: Record<string, any>,
-  disable: boolean,
   item: RubricData['rubric_items'][0],
+  item_grading: RubricGradingItem | undefined | null,
+  assessment_question: AssessmentQuestion,
+  disable: boolean,
   indentLevel: number,
 ) {
-  const rubric_grading: RubricGradingData | null = resLocals.submission.rubric_grading;
   return html`
     <div>
       <label class="js-selectable-rubric-item-label w-100">
@@ -129,7 +142,7 @@ function RubricItem(
           name="rubric_item_selected_manual"
           class="js-selectable-rubric-item"
           value="${item.id}"
-          ${rubric_grading?.rubric_items?.[item.id]?.score ? 'checked' : ''}
+          ${item_grading?.score ? 'checked' : ''}
           ${disable ? 'disabled' : ''}
           data-parent-item="${item.parent_id}"
           data-rubric-item-points="${item.points}"
@@ -142,14 +155,14 @@ function RubricItem(
                 <span class="js-manual-grading-points" data-testid="rubric-item-points">
                   [${(item.points >= 0 ? '+' : '') + Math.round(item.points * 100) / 100}]
                 </span>
-                ${resLocals.assessment_question.max_points
+                ${assessment_question.max_points
                   ? html`
                       <span class="js-manual-grading-percentage">
                         [${(item.points >= 0 ? '+' : '') +
                         Math.round(
                           (item.points * 10000) /
-                            (resLocals.assessment_question.max_manual_points ||
-                              resLocals.assessment_question.max_points),
+                            (assessment_question.max_manual_points ||
+                              assessment_question.max_points),
                         ) /
                           100}%]
                       </span>
