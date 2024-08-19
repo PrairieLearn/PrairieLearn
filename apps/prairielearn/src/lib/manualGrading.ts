@@ -335,8 +335,10 @@ export async function updateAssessmentQuestionRubric(
           // Nodes with children are worth no points themselves
           parent.points = 0;
           // Nodes with children are skipped when assigning key bindings
-          parent.key_binding = null;
-          key_binding--;
+          if (parent.key_binding) {
+            parent.key_binding = null;
+            key_binding--;
+          }
         }
         // Add the current item as a potential parent for future ones
         rubric_parent_stack.push(item);
