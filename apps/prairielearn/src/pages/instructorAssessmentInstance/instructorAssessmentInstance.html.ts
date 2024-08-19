@@ -178,6 +178,7 @@ export function InstructorAssessmentInstance({
                             data-container="body"
                             data-html="false"
                             title="Client Fingerprint Changes"
+                            aria-label="Client Fingerprint Changes"
                             data-content="Client fingerprints are a record of a user's IP address, user agent and sesssion. These attributes are tracked while a user is accessing an assessment. This value indicates the amount of times that those attributes changed as the student accessed the assessment, while the assessment was active. Some changes may naturally occur during an assessment, such as if a student changes network connections or browsers. However, a high number of changes in an exam-like environment could be an indication of multiple people accessing the same assessment simultaneously, which may suggest an academic integrity issue. Accesses taking place after the assessment has been closed are not counted, as they typically indicate scenarios where a student is reviewing their results, which may happen outside of a controlled environment."
                             ><i class="fa fa-question-circle"></i
                           ></a>
@@ -208,6 +209,7 @@ export function InstructorAssessmentInstance({
                             data-html="true"
                             data-placement="auto"
                             title="Change total points"
+                            aria-label="Change total points"
                             data-content="${escapeHtml(
                               EditTotalPointsForm({
                                 resLocals,
@@ -237,6 +239,7 @@ export function InstructorAssessmentInstance({
                             data-html="true"
                             data-placement="auto"
                             title="Change total percentage score"
+                            aria-label="Change total percentage score"
                             data-content="${escapeHtml(
                               EditTotalScorePercForm({
                                 resLocals,
