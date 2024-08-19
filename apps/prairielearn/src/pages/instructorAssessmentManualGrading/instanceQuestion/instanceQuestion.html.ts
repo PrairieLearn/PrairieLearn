@@ -160,7 +160,7 @@ function ConflictGradingJobModal({
               applied. Please review the feedback below and select how you would like to proceed.
             </div>
             <div class="row mb-2">
-              <div class="col-lg-6 col-md-12">
+              <div class="col-lg-6 col-12">
                 <div><strong>Existing score and feedback</strong></div>
                 <div class="mb-2">
                   ${formatDateYMDHM(
@@ -180,7 +180,7 @@ function ConflictGradingJobModal({
                   })}
                 </div>
               </div>
-              <div class="col-lg-6 col-md-12">
+              <div class="col-lg-6 col-12">
                 <div><strong>Conflicting score and feedback</strong></div>
                 <div class="mb-2">
                   ${conflict_grading_job.date
