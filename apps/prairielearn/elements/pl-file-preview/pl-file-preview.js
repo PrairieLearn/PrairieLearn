@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global nb */
+/* global nb, DOMPurify */
 // TODO: The notebook styling is less than ideal. Consider creating a low-priority story 
 // to address this in the future. Similarly, consider adding syntax 
 // highlighting in the future.
@@ -114,11 +114,16 @@
               const type = blob.type;
               if (type === 'text/plain') {
                 if (escapedFileName.endsWith('.ipynb')) {
-                  const Marked = await import('marked');                       
-                  nb.markdown = Marked.marked.parse;
-                  const notebook = nb.parse(JSON.parse(await blob.text()));
-                  const rendered = notebook.render();
-                  pre.appendChild(rendered);
+
+                  // importing the notebookjs library doesn't return an object, it sets the global variable 'ns'
+                  // importing DOMPurify sets the global variable DOMPurify.
+                  Promise.all([import('marked'), import('purify'), import('notebook')]).then(async ([Marked]) => {                                    
+                     nb.markdown = Marked.marked.parse;
+                     nb.sanitizer = DOMPurify.sanitize;
+                     const notebook = nb.parse(JSON.parse(await blob.text()));
+                     const rendered = notebook.render();
+                     pre.appendChild(rendered);
+                  });
                 } else {
                   const text = await blob.text();
                   code.textContent = text;
@@ -146,7 +151,7 @@
               }
               wasOpened = true;
             })
-            .catch((err) => {
+           .catch((err) => {
               console.error(err);
               showErrorMessage('An error occurred while downloading the file.');
             });
