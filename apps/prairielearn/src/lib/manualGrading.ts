@@ -319,9 +319,10 @@ export async function updateAssessmentQuestionRubric(
         },
       );
 
-      // Assign parents to each rubric item based on indentation
+      // Assign parents to each rubric item based on indentation and update key bindings and points
       // This has to be done after inserting items so that new items have a known ID to reference
       const rubric_parent_stack = [] as RubricItemInput[];
+      let key_binding = 1;
       rubric_items.forEach((item) => {
         // Remove all items that are further (or equally) indented than the current one
         if (item.indent < rubric_parent_stack.length) {
@@ -333,9 +334,14 @@ export async function updateAssessmentQuestionRubric(
           item.parent_id = parent.id;
           // Nodes with children are worth no points themselves
           parent.points = 0;
+          // Nodes with children are skipped when assigning key bindings
+          parent.key_binding = null;
+          key_binding--;
         }
         // Add the current item as a potential parent for future ones
         rubric_parent_stack.push(item);
+        item.key_binding = key_binding.toString();
+        key_binding++;
       });
 
       await async.eachOfSeries(
@@ -346,6 +352,7 @@ export async function updateAssessmentQuestionRubric(
             rubric_id: new_rubric_id,
             parent_id: item.parent_id,
             points: item.points,
+            key_binding: item.key_binding,
           }),
       );
 
