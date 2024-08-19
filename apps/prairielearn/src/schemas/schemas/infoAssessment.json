@@ -65,6 +65,10 @@
       "description": "The maximum number of additional points that can be earned beyond maxPoints.",
       "type": "number"
     },
+    "allowPersonalNotes": {
+      "description": "Whether students are allowed to upload personal notes for this assessment.",
+      "type": "boolean"
+    },
     "autoClose": {
       "description": "Whether to automatically close the assessment after a period of inactivity.",
       "type": "boolean",
