@@ -123,7 +123,7 @@ export function deleteAttachedFile(locals) {
 
   describe('deleteAttachedFile-2. the delete-file form', () => {
     it('should exist', () => {
-      elemList = locals.$('.attachFileDeleteButton');
+      elemList = locals.$('[data-testid="delete-personal-note-button"]');
       assert.lengthOf(elemList, 1);
     });
     it('should have data-content', () => {

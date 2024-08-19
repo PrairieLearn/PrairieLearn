@@ -34,7 +34,7 @@ export function StudentAssessment({
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${assessment_set.abbreviation}${assessment.number}: ${assessment.title}
+              <h1>${assessment_set.abbreviation}${assessment.number}: ${assessment.title}</h1>
               ${assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
             </div>
 

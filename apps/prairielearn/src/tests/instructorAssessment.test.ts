@@ -175,7 +175,7 @@ describe('Instructor assessment editing', function () {
   describe('7. edit-question-points form', function () {
     it('should exist', function () {
       elemList = locals.$(
-        '#instanceQuestionList td:contains("addNumbers") ~ td [id^=editQuestionPoints]',
+        '#instanceQuestionList td:contains("addNumbers") ~ td button[data-testid="edit-question-points-score-button-points"]',
       );
       assert.lengthOf(elemList, 1);
     });
@@ -241,7 +241,7 @@ describe('Instructor assessment editing', function () {
   describe('9. edit-question-score-perc form', function () {
     it('should exist', function () {
       elemList = locals.$(
-        '#instanceQuestionList td:contains("addNumbers") ~ td [id^=editQuestionScore]',
+        '#instanceQuestionList td:contains("addNumbers") ~ td button[data-testid="edit-question-points-score-button-score_perc"]',
       );
       assert.lengthOf(elemList, 1);
     });

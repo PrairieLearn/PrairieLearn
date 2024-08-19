@@ -14,7 +14,6 @@ import { QuestionContainer, QuestionTitle } from '../../components/QuestionConta
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
-import { config } from '../../lib/config.js';
 
 export function StudentInstanceQuestion({
   resLocals,
@@ -65,7 +64,6 @@ export function StudentInstanceQuestion({
                 : ''}
               ${unsafeHtml(resLocals.extraHeadersHtml)}
             `}
-        ${compiledScriptTag('studentInstanceQuestionClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -166,7 +164,7 @@ export function StudentInstanceQuestion({
                 advanceScorePerc: resLocals.instance_question_info.advance_score_perc,
                 userGroupRoles: resLocals.assessment_instance.user_group_roles,
               })}
-              ${config.attachedFilesDialogEnabled
+              ${resLocals.assessment.allow_personal_notes
                 ? PersonalNotesPanel({
                     fileList: resLocals.file_list,
                     context: 'question',

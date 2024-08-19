@@ -185,10 +185,6 @@ onDocumentReady(() => {
         },
       },
     },
-    onPreBody() {},
-    onResetView() {
-      $('.js-sync-popover[data-toggle="popover"]').popover({ sanitize: false });
-    },
   };
 
   if (showAddQuestionButton) {
