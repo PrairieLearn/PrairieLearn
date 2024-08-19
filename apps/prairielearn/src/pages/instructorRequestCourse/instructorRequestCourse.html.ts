@@ -66,7 +66,9 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
 
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex align-items-center">Course Requests</div>
+      <div class="card-header bg-primary text-white d-flex align-items-center">
+        <h2>Course Requests</h2>
+      </div>
       <div class="table-responsive">
         <table class="table table-sm table-hover table-striped">
           <thead>
@@ -113,7 +115,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        Request a New Course
+        <h2>Request a New Course</h2>
       </div>
       <form class="question-form" name="course-request" method="POST">
         <div class="card-body">

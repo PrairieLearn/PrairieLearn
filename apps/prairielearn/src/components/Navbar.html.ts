@@ -53,39 +53,41 @@ export function Navbar({
       : ''}
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
-      <a class="navbar-brand" href="${homeUrl}" aria-label="Homepage">
-        <span class="navbar-brand-label">PrairieLearn</span>
-        <span class="navbar-brand-hover-label">
-          Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
-        </span>
-      </a>
-      <button
-        class="navbar-toggler"
-        type="button"
-        data-toggle="collapse"
-        data-target=".navbar-collapse"
-        aria-expanded="false"
-        aria-label="Toggle navigation"
-      >
-        <span class="navbar-toggler-icon"></span>
-      </button>
-      <div id="course-nav" class="collapse navbar-collapse">
-        <ul class="nav navbar-nav mr-auto" id="main-nav">
-          ${NavbarByType({ resLocals, navPage, navSubPage, navbarType })}
-        </ul>
+      <div class="container-fluid">
+        <a class="navbar-brand" href="${homeUrl}" aria-label="Homepage">
+          <span class="navbar-brand-label">PrairieLearn</span>
+          <span class="navbar-brand-hover-label">
+            Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
+          </span>
+        </a>
+        <button
+          class="navbar-toggler"
+          type="button"
+          data-toggle="collapse"
+          data-target=".navbar-collapse"
+          aria-expanded="false"
+          aria-label="Toggle navigation"
+        >
+          <span class="navbar-toggler-icon"></span>
+        </button>
+        <div id="course-nav" class="collapse navbar-collapse">
+          <ul class="nav navbar-nav mr-auto" id="main-nav">
+            ${NavbarByType({ resLocals, navPage, navSubPage, navbarType })}
+          </ul>
 
-        ${config.devMode
-          ? html`
-              <a
-                id="navbar-load-from-disk"
-                class="btn btn-success btn-sm"
-                href="${urlPrefix}/loadFromDisk"
-              >
-                Load from disk
-              </a>
-            `
-          : ''}
-        ${UserDropdownMenu({ resLocals, navPage, navbarType })}
+          ${config.devMode
+            ? html`
+                <a
+                  id="navbar-load-from-disk"
+                  class="btn btn-success btn-sm"
+                  href="${urlPrefix}/loadFromDisk"
+                >
+                  Load from disk
+                </a>
+              `
+            : ''}
+          ${UserDropdownMenu({ resLocals, navPage, navbarType })}
+        </div>
       </div>
     </nav>
 

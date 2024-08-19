@@ -50,7 +50,7 @@ export function UserSettings({
           <h1 class="mb-4">Settings</h1>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              User profile
+              <h2>User profile</h2>
             </div>
             <table class="table table-sm two-column-description">
               <tbody>
@@ -85,7 +85,9 @@ export function UserSettings({
           ${isEnterprise() ? UserSettingsPurchasesCard({ purchases }) : ''}
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">Browser configuration</div>
+            <div class="card-header bg-primary text-white d-flex">
+              <h2>Browser configuration</h2>
+            </div>
             <div class="card-body">
               <p>
                 This section will let you reset browser settings related to technology inside
@@ -107,7 +109,7 @@ export function UserSettings({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              Personal access tokens
+              <h2>Personal access tokens</h2>
               ${!isExamMode
                 ? html`
                     <button

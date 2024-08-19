@@ -48,7 +48,7 @@ export function AdministratorCourses({
 
           <div id="courses" class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              Courses
+              <h2>Courses</h2>
               <button
                 type="button"
                 class="btn btn-sm btn-light ml-auto"

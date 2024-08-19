@@ -94,7 +94,9 @@ export function InstructorAssessmentQuestionStatistics({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question difficulty
+              <h2>
+                ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question difficulty
+              </h2>
               vs discrimination
               <div class="ml-auto">
                 <small>
@@ -156,7 +158,9 @@ export function InstructorAssessmentQuestionStatistics({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question statistics
+              <h2>
+                ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question statistics
+              </h2>
               <div class="ml-auto">
                 <small>
                   <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
@@ -286,7 +290,9 @@ export function InstructorAssessmentQuestionStatistics({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Detailed question
+              <h2>
+                ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Detailed question
+              </h2>
               statistics
               <div class="ml-auto">
                 <small>

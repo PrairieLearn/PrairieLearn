@@ -240,7 +240,7 @@ export function InstructorCourseAdminSharing({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <span>Sharing Sets</span>
+              <h2>Sharing Sets</h2>
               ${isCourseOwner
                 ? html`
                     <button
