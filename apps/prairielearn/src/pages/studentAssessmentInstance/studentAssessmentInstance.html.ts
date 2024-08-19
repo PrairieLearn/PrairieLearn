@@ -69,7 +69,6 @@ export function StudentAssessmentInstance({
               'time-limit-data',
             )}`
           : ''}
-        ${compiledScriptTag('studentAssessmentInstanceClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -91,11 +90,11 @@ export function StudentAssessmentInstance({
           ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <span>
+              <h1>
                 ${resLocals.assessment_set.abbreviation}${resLocals.assessment.number}:
                 ${resLocals.assessment.title}
-                ${resLocals.assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
-              </span>
+              </h1>
+              ${resLocals.assessment.group_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
             </div>
 
             <div class="card-body">
@@ -502,14 +501,16 @@ export function StudentAssessmentInstance({
             </div>
           </div>
 
-          ${PersonalNotesPanel({
-            fileList: resLocals.file_list,
-            context: 'assessment',
-            courseInstanceId: resLocals.course_instance.id,
-            assessment_instance: resLocals.assessment_instance,
-            csrfToken: resLocals.__csrf_token,
-            authz_result: resLocals.authz_result,
-          })}
+          ${resLocals.assessment.allow_personal_notes
+            ? PersonalNotesPanel({
+                fileList: resLocals.file_list,
+                context: 'assessment',
+                courseInstanceId: resLocals.course_instance.id,
+                assessment_instance: resLocals.assessment_instance,
+                csrfToken: resLocals.__csrf_token,
+                authz_result: resLocals.authz_result,
+              })
+            : ''}
           ${InstructorInfoPanel({
             course: resLocals.course,
             course_instance: resLocals.course_instance,

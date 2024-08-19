@@ -510,7 +510,10 @@ WITH
           'variant_seed',
           v.variant_seed,
           'params',
-          v.params,
+          CASE
+            WHEN $include_files THEN v.params
+            ELSE (v.params - '_workspace_files')
+          END,
           'true_answer',
           v.true_answer,
           'options',

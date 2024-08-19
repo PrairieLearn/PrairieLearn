@@ -93,8 +93,6 @@ export function SubmissionPanel({
                 class="card-header bg-info text-white d-flex align-items-center submission-header ${!expanded
                   ? ' collapsed'
                   : ''}"
-                data-toggle="collapse"
-                data-target="#submission-feedback-${submission.id}-body"
               >
                 <div class="mr-auto">
                   Feedback from the Course Staff
@@ -102,7 +100,16 @@ export function SubmissionPanel({
                     ? `(for submitted answer ${submission.submission_number})`
                     : ''}
                 </div>
-                <button type="button" class="expand-icon-container btn btn-outline-light btn-sm">
+                <button
+                  type="button"
+                  class="expand-icon-container btn btn-outline-light btn-sm ${!expanded
+                    ? 'collapsed'
+                    : ''}"
+                  data-toggle="collapse"
+                  data-target="#submission-feedback-${submission.id}-body"
+                  aria-expanded="${expanded ? 'true' : 'false'}"
+                  aria-controls="submission-feedback-${submission.id}-body"
+                >
                   <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
                 </button>
               </div>
@@ -193,13 +200,7 @@ export function SubmissionPanel({
         : ''}
 
       <div class="card mb-4" data-testid="submission-block">
-        <div
-          class="card-header bg-light text-dark d-flex align-items-center submission-header ${!expanded
-            ? ' collapsed'
-            : ''}"
-          data-toggle="collapse"
-          data-target="#submission-${submission.id}-body"
-        >
+        <div class="card-header bg-light text-dark d-flex align-items-center submission-header">
           <div class="mr-2">
             <div>
               <span class="mr-2">
@@ -223,12 +224,24 @@ export function SubmissionPanel({
           </div>
           <button
             type="button"
-            class="btn btn-outline-secondary btn-sm mr-2"
+            class="btn btn-outline-secondary btn-sm ml-2 mr-2"
             data-submission-id="${submission.id}"
+            data-toggle="modal"
+            data-target="#submissionInfoModal-${submission.id}"
+            aria-label="Submission info"
           >
             <i class="fa fa-info-circle fa-fw"></i>
           </button>
-          <button type="button" class="expand-icon-container btn btn-outline-secondary btn-sm">
+          <button
+            type="button"
+            class="expand-icon-container btn btn-outline-secondary btn-sm text-nowrap ${!expanded
+              ? 'collapsed'
+              : ''}"
+            data-toggle="collapse"
+            data-target="#submission-${submission.id}-body"
+            aria-expanded="${expanded ? 'true' : 'false'}"
+            aria-controls="submission-${submission.id}-body"
+          >
             <i class="fa fa-angle-up fa-fw ml-1 expand-icon"></i>
           </button>
         </div>
@@ -264,16 +277,6 @@ export function SubmissionPanel({
           course_instance_id,
         })}
       </div>
-
-      <script>
-        $(function () {
-          $('button[data-submission-id="${submission.id}"]').on('click', function (e) {
-            // Prevent this click from also expanding the submission
-            $('#submissionInfoModal-${submission.id}').modal('show');
-            e.stopPropagation();
-          });
-        });
-      </script>
     </div>
   `;
 }
