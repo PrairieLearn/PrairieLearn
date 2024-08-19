@@ -298,7 +298,7 @@ function RubricItemRow(
   indentLevel: number,
 ) {
   const namePrefix = item ? `rubric_item[cur${item.id}]` : 'rubric_item[new]';
-  return html` <tr>
+  return html` <tr class="js-rubric-item-row">
     <td class="text-nowrap">
       ${item ? html`<input type="hidden" name="${namePrefix}[id]" value="${item.id}" />` : ''}
       <input

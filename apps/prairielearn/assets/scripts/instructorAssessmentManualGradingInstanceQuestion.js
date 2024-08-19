@@ -505,49 +505,70 @@ function enableRubricItemLongTextField(event) {
   adjustHeightFromContent(input);
 }
 
-function updateInternalItemStatus(item, isInternal) {
+function updateItemPoints(item, points) {
   if (item !== null) {
-    const itemRow = item.closest('tr');
-    const pointsInput = itemRow.querySelector('.js-rubric-item-points');
-    if (isInternal) {
-      pointsInput.setAttribute('readonly', 'readonly');
-      pointsInput.setAttribute(
+    if (points !== null) {
+      item.setAttribute('readonly', 'readonly');
+      item.setAttribute(
         'title',
         'Points are automatically calculated for items that contain other items',
       );
 
       // Save last manually set value only once when item becomes inner item
-      if (!pointsInput.hasAttribute('readonly')) {
-        pointsInput.setAttribute('data-saved-value', pointsInput.value);
+      if (!item.hasAttribute('readonly')) {
+        item.setAttribute('data-saved-value', item.value);
       }
+      item.value = points;
+    } else {
+      item.removeAttribute('readonly');
+      item.removeAttribute('title');
+      if (item.hasAttribute('data-saved-value')) {
+        item.value = item.getAttribute('data-saved-value');
+        item.removeAttribute('data-saved-value');
+      }
+    }
+  }
+}
 
-      const rowList = Array.from(itemRow.parentElement.children);
-      const rowIdx = rowList.indexOf(itemRow);
-      const rowIndent = parseInt(itemRow.querySelector('.js-rubric-item-indent').value);
+function updateRubricItemOrderAndIndentation() {
+  let previousIndent = -1;
+  document.querySelectorAll('.js-rubric-item-row').forEach((row, index) => {
+    // Synchronize order
+    row.querySelector('.js-rubric-item-row-order').value = index;
+    const itemIndent = row.querySelector('.js-rubric-item-indent');
 
-      // Update point calculation and for auto item and check if it has a child
-      // that is set to "always show to students"
-      let sumOfChildPoints = 0;
-      let containsAlwaysShow = false;
-      rowList.some((row, idx) => {
-        const points = row.querySelector('.js-rubric-item-points');
-        const indent = row.querySelector('.js-rubric-item-indent');
-        if (points !== null && idx > rowIdx) {
-          if (indent.value <= rowIndent) {
-            return true;
-          }
-          if (parseInt(indent.value) === rowIndent + 1) {
-            sumOfChildPoints += parseInt(points.value);
-            containsAlwaysShow =
-              containsAlwaysShow || row.querySelector('.js-rubric-item-always-show').checked;
-          }
-        }
-        return false;
-      });
-      pointsInput.value = sumOfChildPoints;
+    // Ensure consistent indentation when items are unindented or moved
+    itemIndent.value = Math.min(itemIndent.value, previousIndent + 1);
+    previousIndent = Number(itemIndent.value);
 
-      if (containsAlwaysShow && !itemRow.querySelector('.js-rubric-item-always-show').checked) {
-        itemRow.querySelector('.js-rubric-item-always-show').checked = true;
+    // Update visual indentation
+    row.querySelector('.js-rubric-item-render-indent').innerHTML = '&nbsp;'.repeat(
+      itemIndent.value * 4,
+    );
+  });
+
+  // Disable points for non-leaf items (traversing in reverse for full cascading in one pass)
+  previousIndent = -1;
+  let pointsTotals = {};
+  let containsAlwaysShow = {};
+
+  [...document.querySelectorAll('.js-rubric-item-row')].reverse().forEach((row) => {
+    const itemIndent = row.querySelector('.js-rubric-item-indent');
+    const itemIndentValue = Number(itemIndent.value);
+    const itemPoints = row.querySelector('.js-rubric-item-points');
+    const itemPointsValue = Number(itemPoints.value);
+    const itemAlwaysShow = row.querySelector('.js-rubric-item-always-show');
+
+    if (itemIndentValue >= previousIndent) {
+      // Leaf items are manually editable and don't need any further treatment
+      updateItemPoints(itemPoints, null);
+    } else {
+      // Internal items get assigned the sum of their immediate child nodes' points
+      updateItemPoints(itemPoints, pointsTotals[itemIndentValue + 1]);
+
+      // Internal items must have always-show flag if any child has the flag enabled
+      if (containsAlwaysShow[itemIndentValue + 1] && !itemAlwaysShow.checked) {
+        itemAlwaysShow.checked = true;
         document.querySelector('.js-settings-always-show-warning-placeholder').innerHTML = '';
         addAlert(
           document.querySelector('.js-settings-always-show-warning-placeholder'),
@@ -555,43 +576,19 @@ function updateInternalItemStatus(item, isInternal) {
           ['alert-warning'],
         );
       }
-    } else {
-      pointsInput.removeAttribute('readonly');
-      pointsInput.removeAttribute('title');
-      if (pointsInput.hasAttribute('data-saved-value')) {
-        pointsInput.value = pointsInput.getAttribute('data-saved-value');
-        pointsInput.removeAttribute('data-saved-value');
-      }
+
+      // Reset points and always-show flag for next-deeper children of this node are not counted again
+      pointsTotals[itemIndentValue + 1] = 0;
+      containsAlwaysShow[itemIndentValue + 1] = false;
     }
-  }
-}
 
-function updateRubricItemOrderAndIndentation() {
-  document.querySelectorAll('.js-rubric-item-row-order').forEach((input, index) => {
-    input.value = index;
+    // Update point totals and always-show status for current level
+    pointsTotals[itemIndentValue] = itemPointsValue + (pointsTotals[itemIndentValue] || 0);
+    containsAlwaysShow[itemIndentValue] =
+      itemAlwaysShow.checked || containsAlwaysShow[itemIndentValue];
+    previousIndent = itemIndentValue;
   });
 
-  let previousIndent = -1;
-  document.querySelectorAll('.js-rubric-item-indent').forEach((input) => {
-    // Ensure consistent indentation when items are unindented or moved
-    input.value = Math.min(input.value, previousIndent + 1);
-
-    // Update visual indentation
-    input.parentElement.querySelector('.js-rubric-item-render-indent').innerHTML = '&nbsp;'.repeat(
-      input.value * 4,
-    );
-
-    previousIndent = parseInt(input.value);
-  });
-
-  // Disable points for non-leaf items (traversing in reverse for full cascading in one pass)
-  previousIndent = -1;
-  [...document.querySelectorAll('.js-rubric-item-indent')].reverse().forEach((input) => {
-    updateInternalItemStatus(input, input.value < previousIndent);
-    previousIndent = input.value;
-  });
-
-  // Point totals can change based on indentation
   checkRubricItemTotals();
 }
 
@@ -612,10 +609,10 @@ function indentRow(event) {
   const rowList = Array.from(row.parentNode.childNodes);
   const targetRowIdx = rowList.indexOf(row);
   const rowItemIdx = row.querySelector('.js-rubric-item-row-order').value;
-  const oldIndent = parseInt(row.querySelector('.js-rubric-item-indent').value);
+  const oldIndent = Number(row.querySelector('.js-rubric-item-indent').value);
 
   if (rowItemIdx > 0) {
-    const parentIndent = parseInt(
+    const parentIndent = Number(
       rowList[targetRowIdx - 1].querySelector('.js-rubric-item-indent').value,
     );
 
@@ -628,7 +625,7 @@ function indentRow(event) {
 
 function unindentRow(event) {
   const row = event.target.closest('tr');
-  const oldIndent = parseInt(row.querySelector('.js-rubric-item-indent').value);
+  const oldIndent = Number(row.querySelector('.js-rubric-item-indent').value);
 
   // Assuming that indentation was correct before, we can skip most checks when unindenting
   const indentLevel = Math.max(0, oldIndent - 1);
@@ -690,7 +687,7 @@ function rowDragOver(event) {
 
   // There must be an item above that can serve as parent to allow indentation
   if (targetRowItemIdx > 0) {
-    var parentIndent = parseInt(
+    var parentIndent = Number(
       rowList[targetRowIdx - 1].querySelector('.js-rubric-item-indent').value,
     );
     const dragOffset = event.clientX - row.getBoundingClientRect().left - 5;
