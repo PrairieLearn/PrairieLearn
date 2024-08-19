@@ -2,6 +2,8 @@ import { Socket, io } from 'socket.io-client';
 
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 
+import type { StatusMessage } from '../../src/lib/externalGradingSocket.js';
+
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
 import { setupCountdown } from './lib/countdown.js';
 import { mathjaxTypeset } from './lib/mathjax.js';
@@ -70,17 +72,17 @@ function externalGradingLiveUpdate() {
   // By this point, it's safe to open a socket
   const socket = io('/external-grading');
 
-  socket.emit('init', { variant_id: variantId, variant_token: variantToken }, function (msg: any) {
-    handleStatusChange(socket, msg);
-  });
+  socket.emit(
+    'init',
+    { variant_id: variantId, variant_token: variantToken },
+    (msg: StatusMessage) => handleStatusChange(socket, msg),
+  );
 
-  socket.on('change:status', function (msg) {
-    handleStatusChange(socket, msg);
-  });
+  socket.on('change:status', (msg: StatusMessage) => handleStatusChange(socket, msg));
 }
 
-function handleStatusChange(socket: Socket, msg: any) {
-  msg.submissions.forEach((submission: any) => {
+function handleStatusChange(socket: Socket, msg: StatusMessage) {
+  msg.submissions.forEach((submission) => {
     // Always update results
     updateStatus(submission);
 

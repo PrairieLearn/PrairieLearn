@@ -6,7 +6,7 @@ import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken } from '@prairielearn/signed-token';
 
-import { gradingJobStatus } from '../models/grading-job.js';
+import { type GradingJobStatus, gradingJobStatus } from '../models/grading-job.js';
 
 import { config } from './config.js';
 import { GradingJobSchema, IdSchema } from './db-types.js';
@@ -25,6 +25,15 @@ const SubmissionForGradingJobSchema = z.object({
   grading_job: GradingJobSchema,
   variant_id: IdSchema,
 });
+
+export interface StatusMessage {
+  variant_id: string;
+  submissions: {
+    id: string;
+    grading_job_id: string | null | undefined;
+    grading_job_status: GradingJobStatus;
+  }[];
+}
 
 let namespace: Namespace;
 
@@ -54,7 +63,7 @@ export function connection(socket: Socket) {
             grading_job_id: s.grading_job?.id,
             grading_job_status: gradingJobStatus(s.grading_job),
           })),
-        });
+        } satisfies StatusMessage);
       },
       (err) => {
         logger.error('Error getting variant submissions status', err);
@@ -132,14 +141,13 @@ export async function gradingJobStatusUpdated(grading_job_id: string) {
       SubmissionForGradingJobSchema,
     );
 
-    const eventData = {
+    const eventData: StatusMessage = {
       variant_id: submission.variant_id,
       submissions: [
         {
           id: submission.id,
           grading_job_id: submission.grading_job?.id,
           grading_job_status: gradingJobStatus(submission.grading_job),
-          variant_id: submission.variant_id,
         },
       ],
     };
