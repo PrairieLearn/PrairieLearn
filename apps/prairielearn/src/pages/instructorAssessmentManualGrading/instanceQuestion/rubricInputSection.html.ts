@@ -1,4 +1,4 @@
-import { html, unsafeHtml } from '@prairielearn/html';
+import { HtmlSafeString, html, unsafeHtml, joinHtml } from '@prairielearn/html';
 
 import { RubricData, RubricGradingData } from '../../../lib/manualGrading.js';
 
@@ -28,56 +28,7 @@ export function RubricInputSection({
         margin-bottom: 0;
       }
     </style>
-    ${rubric_data.rubric_items?.map(
-      (item) => html`
-        <div>
-          <label class="js-selectable-rubric-item-label w-100">
-            <input
-              type="checkbox"
-              name="rubric_item_selected_manual"
-              class="js-selectable-rubric-item"
-              value="${item.id}"
-              ${rubric_grading?.rubric_items?.[item.id]?.score ? 'checked' : ''}
-              ${disable ? 'disabled' : ''}
-              data-rubric-item-points="${item.points}"
-              data-key-binding="${item.key_binding}"
-            />
-            <span class="badge badge-info">${item.key_binding}</span>
-            <span class="float-right text-${item.points >= 0 ? 'success' : 'danger'}">
-              <strong>
-                <span class="js-manual-grading-points" data-testid="rubric-item-points">
-                  [${(item.points >= 0 ? '+' : '') + Math.round(item.points * 100) / 100}]
-                </span>
-                ${resLocals.assessment_question.max_points
-                  ? html`
-                      <span class="js-manual-grading-percentage">
-                        [${(item.points >= 0 ? '+' : '') +
-                        Math.round(
-                          (item.points * 10000) /
-                            (resLocals.assessment_question.max_manual_points ||
-                              resLocals.assessment_question.max_points),
-                        ) /
-                          100}%]
-                      </span>
-                    `
-                  : ''}
-              </strong>
-            </span>
-            <span>
-              <div class="d-inline-block" data-testid="rubric-item-description">
-                ${unsafeHtml(item.description_rendered ?? '')}
-              </div>
-              <div class="small text-muted" data-testid="rubric-item-explanation">
-                ${unsafeHtml(item.explanation_rendered ?? '')}
-              </div>
-              <div class="small text-muted" data-testid="rubric-item-grader-note">
-                ${unsafeHtml(item.grader_note_rendered ?? '')}
-              </div>
-            </span>
-          </label>
-        </div>
-      `,
-    )}
+    ${RubricItemsWithIndent(resLocals, disable, rubric_data.rubric_items)}
     <div class="js-adjust-points d-flex justify-content-end">
       <button
         type="button"
@@ -136,6 +87,89 @@ export function RubricInputSection({
             : ''}
         </label>
       </div>
+    </div>
+  `;
+}
+
+function RubricItemsWithIndent(
+  resLocals: Record<string, any>,
+  disable: boolean,
+  rubric_items: RubricData['rubric_items'][0][] | null | undefined,
+): HtmlSafeString {
+  if (!rubric_items) return unsafeHtml('');
+  const parentStack = [''];
+  const itemRows = rubric_items.map((item) => {
+    // Find parent in stack and remove any items with deeper nesting than parent
+    const cutoffIdx = parentStack.indexOf(item.parent_id ?? '') + 1;
+    parentStack.splice(cutoffIdx, parentStack.length - cutoffIdx);
+
+    // Generate HTML for current item
+    const result = RubricItem(resLocals, disable, item, parentStack.length - 1);
+
+    // Push this item as potential parent for next item
+    parentStack.push(item.id);
+    return result;
+  });
+  return joinHtml(itemRows);
+}
+
+function RubricItem(
+  resLocals: Record<string, any>,
+  disable: boolean,
+  item: RubricData['rubric_items'][0],
+  indentLevel: number,
+): HtmlSafeString {
+  const rubric_grading: RubricGradingData | null = resLocals.submission.rubric_grading;
+  return html`
+    <div>
+      <label class="js-selectable-rubric-item-label w-100">
+        <span>${unsafeHtml('&nbsp;'.repeat(indentLevel * 4))}</span>
+        <input
+          type="checkbox"
+          name="rubric_item_selected_manual"
+          class="js-selectable-rubric-item"
+          value="${item.id}"
+          ${rubric_grading?.rubric_items?.[item.id]?.score ? 'checked' : ''}
+          ${disable ? 'disabled' : ''}
+          data-parent-item="${item.parent_id}"
+          data-rubric-item-points="${item.points}"
+          data-key-binding="${item.key_binding}"
+        />
+        <span class="badge badge-info">${item.key_binding}</span>
+        ${item.points !== 0
+          ? html`<span class="float-right text-${item.points >= 0 ? 'success' : 'danger'}">
+              <strong>
+                <span class="js-manual-grading-points" data-testid="rubric-item-points">
+                  [${(item.points >= 0 ? '+' : '') + Math.round(item.points * 100) / 100}]
+                </span>
+                ${resLocals.assessment_question.max_points
+                  ? html`
+                      <span class="js-manual-grading-percentage">
+                        [${(item.points >= 0 ? '+' : '') +
+                        Math.round(
+                          (item.points * 10000) /
+                            (resLocals.assessment_question.max_manual_points ||
+                              resLocals.assessment_question.max_points),
+                        ) /
+                          100}%]
+                      </span>
+                    `
+                  : ''}
+              </strong>
+            </span>`
+          : ''}
+        <span>
+          <div class="d-inline-block" data-testid="rubric-item-description">
+            ${unsafeHtml(item.description_rendered ?? '')}
+          </div>
+          <div class="small text-muted" data-testid="rubric-item-explanation">
+            ${unsafeHtml(item.explanation_rendered ?? '')}
+          </div>
+          <div class="small text-muted" data-testid="rubric-item-grader-note">
+            ${unsafeHtml(item.grader_note_rendered ?? '')}
+          </div>
+        </span>
+      </label>
     </div>
   `;
 }

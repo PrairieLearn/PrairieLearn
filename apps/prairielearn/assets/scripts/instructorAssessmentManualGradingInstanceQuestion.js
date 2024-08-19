@@ -110,7 +110,7 @@ function resetInstructorGradingPanel() {
 
   document
     .querySelectorAll('.js-selectable-rubric-item')
-    .forEach((item) => item.addEventListener('change', computePointsFromRubric));
+    .forEach((item) => item.addEventListener('change', updatePointsAndItems));
   document
     .querySelectorAll('.js-grading-score-input')
     .forEach((input) => input.addEventListener('input', () => computePointsFromRubric(input)));
@@ -348,6 +348,7 @@ function resetRubricItemRowsListeners() {
   document
     .querySelectorAll('.js-rubric-item-points, .js-rubric-item-limits')
     .forEach((input) => input.addEventListener('input', checkRubricItemTotals));
+
   document
     .querySelectorAll('.js-rubric-item-points')
     .forEach((input) => input.addEventListener('input', updateRubricItemOrderAndIndentation));
@@ -402,6 +403,43 @@ function updatePointsView(sourceInput) {
     form.querySelectorAll('.js-value-auto-percentage').forEach((v) => (v.innerText = auto_perc));
     form.querySelectorAll('.js-value-total-percentage').forEach((v) => (v.innerText = total_perc));
   });
+}
+
+function updateRubricItemSelection(sourceItem) {
+  // If item has children, recursively set their check state to same as this item
+  document
+    .querySelectorAll('.js-selectable-rubric-item[data-parent-item="' + sourceItem.value + '"]')
+    .forEach((item) => {
+      if (item.checked !== sourceItem.checked) {
+        item.checked = sourceItem.checked;
+        updateRubricItemSelection(item);
+      }
+    });
+
+  // If item has parent and all siblings have same state, set parent state to same as this item
+  if (sourceItem.getAttribute('data-parent-item')) {
+    const sameParentItems = document.querySelectorAll(
+      '.js-selectable-rubric-item[data-parent-item="' +
+        sourceItem.getAttribute('data-parent-item') +
+        '"]',
+    );
+
+    if (
+      Array.from(sameParentItems).every((otherItem) => otherItem.checked === sourceItem.checked)
+    ) {
+      const parentItem = document.querySelector(
+        '.js-selectable-rubric-item[value="' + sourceItem.getAttribute('data-parent-item') + '"]',
+      );
+      parentItem.checked = sourceItem.checked;
+      updateRubricItemSelection(parentItem);
+    }
+  }
+}
+
+function updatePointsAndItems(event) {
+  // This function can trigger recursive calls, but we only need to recompute points once in the end
+  updateRubricItemSelection(event.target);
+  computePointsFromRubric(event.target);
 }
 
 function computePointsFromRubric(sourceInput = null) {
