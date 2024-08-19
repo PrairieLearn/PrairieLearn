@@ -41,6 +41,9 @@ import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { getQuestionCourse, ensureVariant } from './question-variant.js';
 
+/** @import { SubmissionPanels } from './question-render.types.js'  */
+/** @import { SubmissionForRender } from '../components/SubmissionPanel.html.js' */
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const VariantSelectResultSchema = VariantSchema.extend({
@@ -90,19 +93,6 @@ const SubmissionInfoSchema = z.object({
   question_number: z.string().nullable(),
 });
 
-/**
- * @typedef {Object} SubmissionPanels
- * @property {string?} submissionPanel
- * @property {string?} scorePanel
- * @property {string?} extraHeadersHtml
- * @property {string?} [answerPanel]
- * @property {string?} [questionScorePanel]
- * @property {string?} [assessmentScorePanel]
- * @property {string?} [questionPanelFooter]
- * @property {string?} [questionNavNextButton]
- */
-
-/** @typedef {import('../components/SubmissionPanel.html.js').SubmissionForRender} SubmissionForRender */
 /**
  * To improve performance, we'll only render at most three submissions on page
  * load. If the user requests more, we'll render them on the fly.

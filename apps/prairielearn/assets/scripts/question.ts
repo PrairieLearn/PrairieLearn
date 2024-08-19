@@ -6,6 +6,7 @@ import type {
   StatusMessage,
   StatusMessageSubmission,
 } from '../../src/lib/externalGradingSocket.types.js';
+import type { SubmissionPanels } from '../../src/lib/question-render.types.js';
 import type { GradingJobStatus } from '../../src/models/grading-job.js';
 
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
@@ -150,7 +151,7 @@ function fetchResults(socket: Socket, submissionId: string) {
       // question is open in preview mode (authz_result==undefined)
       authorized_edit: authorizedEdit === 'true',
     },
-    function (msg: any) {
+    function (msg: SubmissionPanels | null) {
       // We're done with the socket for this incarnation of the page
       socket.close();
       if (msg) {
@@ -166,7 +167,7 @@ function fetchResults(socket: Socket, submissionId: string) {
   );
 }
 
-function updateDynamicPanels(msg: any, submissionId: string) {
+function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
   if (msg.extraHeadersHtml) {
     const parser = new DOMParser();
     const headers = parser.parseFromString(msg.extraHeadersHtml, 'text/html');
