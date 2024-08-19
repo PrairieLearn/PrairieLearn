@@ -1,4 +1,4 @@
-import { HtmlSafeString, html, unsafeHtml, joinHtml } from '@prairielearn/html';
+import { html, unsafeHtml, joinHtml } from '@prairielearn/html';
 
 import { RubricData, RubricGradingData } from '../../../lib/manualGrading.js';
 
@@ -95,8 +95,8 @@ function RubricItemsWithIndent(
   resLocals: Record<string, any>,
   disable: boolean,
   rubric_items: RubricData['rubric_items'][0][] | null | undefined,
-): HtmlSafeString {
-  if (!rubric_items) return unsafeHtml('');
+) {
+  if (!rubric_items) return '';
   const parentStack = [''];
   const itemRows = rubric_items.map((item) => {
     // Find parent in stack and remove any items with deeper nesting than parent
@@ -118,7 +118,7 @@ function RubricItem(
   disable: boolean,
   item: RubricData['rubric_items'][0],
   indentLevel: number,
-): HtmlSafeString {
+) {
   const rubric_grading: RubricGradingData | null = resLocals.submission.rubric_grading;
   return html`
     <div>

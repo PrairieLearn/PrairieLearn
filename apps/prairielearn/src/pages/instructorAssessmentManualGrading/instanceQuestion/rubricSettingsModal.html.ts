@@ -1,4 +1,4 @@
-import { html, HtmlSafeString, joinHtml, unsafeHtml } from '@prairielearn/html';
+import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
 
 import { RubricData } from '../../../lib/manualGrading.js';
 
@@ -274,9 +274,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
   `;
 }
 
-function RubricItemsWithIndent(
-  rubric_items: RubricData['rubric_items'][0][] | null | undefined,
-): HtmlSafeString {
+function RubricItemsWithIndent(rubric_items: RubricData['rubric_items'][0][] | null | undefined) {
   if (!rubric_items) return unsafeHtml('');
   const parentStack = [''];
   const itemRows = rubric_items.map((item) => {
@@ -298,7 +296,7 @@ function RubricItemRow(
   item: RubricData['rubric_items'][0] | null,
   index: number,
   indentLevel: number,
-): HtmlSafeString {
+) {
   const namePrefix = item ? `rubric_item[cur${item.id}]` : 'rubric_item[new]';
   return html` <tr>
     <td class="text-nowrap">
