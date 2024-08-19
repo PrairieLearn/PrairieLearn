@@ -1,18 +1,9 @@
-import { html, HtmlSafeString, joinHtml } from '@prairielearn/html';
+import { html, HtmlSafeString, joinHtml, unsafeHtml } from '@prairielearn/html';
 
 import { RubricData } from '../../../lib/manualGrading.js';
 
 export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, any> }) {
   const rubric_data = resLocals.rubric_data as RubricData | null | undefined;
-  // Group rubric items by parent; using empty string for root items
-  const grouped_rubric_items = {} as Record<string, RubricData['rubric_items'][0][]>;
-  rubric_data?.rubric_items?.forEach((item) => {
-    const parent = item.parent_id || '';
-    if (!grouped_rubric_items[parent]) {
-      grouped_rubric_items[parent] = [];
-    }
-    grouped_rubric_items[parent].push(item);
-  });
 
   return html`
     <div class="modal js-rubric-settings-modal" tabindex="-1" role="dialog">
@@ -199,7 +190,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                       </tr>
                     </thead>
                     <tbody>
-                      ${RubricAsTree(grouped_rubric_items, '', 0, 0)[0]}
+                      ${RubricItemsWithIndent(rubric_data?.rubric_items)}
                       <tr
                         class="js-no-rubric-item-note ${rubric_data?.rubric_items?.length
                           ? 'd-none'
@@ -282,33 +273,31 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
   `;
 }
 
-function RubricAsTree(
-  grouped_rubric_items: Record<string, RubricData['rubric_items'][0][]>,
-  parent: string,
-  index: number,
-  indent: number,
-): [HtmlSafeString, number] {
-  const result = [] as HtmlSafeString[];
-  let current_index = index;
-  grouped_rubric_items[parent]?.forEach((item) => {
-    result.push(RubricItemRow(item, current_index, indent));
-    const [result_html, result_index] = RubricAsTree(
-      grouped_rubric_items,
-      item.id,
-      current_index + 1,
-      indent + 1,
-    );
-    result.push(result_html);
-    current_index = result_index;
+function RubricItemsWithIndent(
+  rubric_items: RubricData['rubric_items'][0][] | null | undefined,
+): HtmlSafeString {
+  if (!rubric_items) return unsafeHtml('');
+  const parentStack = [''];
+  const itemRows = rubric_items.map((item) => {
+    // Find parent in stack and remove any items with deeper nesting than parent
+    const cutoffIdx = parentStack.indexOf(item.parent_id ?? '') + 1;
+    parentStack.splice(cutoffIdx, parentStack.length - cutoffIdx);
+
+    // Generate HTML for current item
+    const result = RubricItemRow(item, item.number, parentStack.length - 1);
+
+    // Push this item as potential parent for next item
+    parentStack.push(item.id);
+    return result;
   });
-  return [joinHtml(result), current_index];
+  return joinHtml(itemRows);
 }
 
 function RubricItemRow(
   item: RubricData['rubric_items'][0] | null,
   index: number,
   indentLevel: number,
-) {
+): HtmlSafeString {
   const namePrefix = item ? `rubric_item[cur${item.id}]` : 'rubric_item[new]';
   return html` <tr>
     <td class="text-nowrap">
