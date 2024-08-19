@@ -617,7 +617,7 @@ function QuestionPanel({
   return html`
     <div class="card mb-4 question-block">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        <h1 class="h6 font-weight-normal mb-0">
+        <h1>
           ${QuestionTitle({
             questionContext,
             question,

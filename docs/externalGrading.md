@@ -87,8 +87,8 @@ Here's an example of a complete `externalGradingOptions` portion of a question's
 This config file specifies the following things:
 
 - External grading is enabled
-- The `prairielearn/centos7-python` image will be used
-- The files/directories under `serverFilesCourse/python_autograder` will copied into your image while grading
+- The `prairielearn/grader-python` image will be used
+- The files/directories under `serverFilesCourse/python_autograder` will be copied into your image while grading
 - The script `/grade/serverFilesCourse/python_autograder/run.sh` will be executed when your container starts up
 - If grading takes longer that 5 seconds, the container will be killed
 
