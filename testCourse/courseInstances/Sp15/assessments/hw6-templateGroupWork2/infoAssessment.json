@@ -12,18 +12,16 @@
   "studentGroupLeave": true,
   "allowAccess": [
     {
-      "mode": "Public",
       "credit": 100,
       "startDate": "2019-01-18T00:00:01",
       "endDate": "2019-01-28T23:59:59"
     },
     {
-      "mode": "Public",
       "credit": 50,
       "startDate": "2019-01-28T00:00:01",
       "endDate": "2019-01-30T23:59:59"
     },
-    { "mode": "Public", "credit": 0, "startDate": "2019-01-30T00:00:01" }
+    { "credit": 0, "startDate": "2019-01-30T00:00:01" }
   ],
   "zones": [
     {
