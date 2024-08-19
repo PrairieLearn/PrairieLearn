@@ -514,7 +514,7 @@ function RubricItem(
         <span>${unsafeHtml('&nbsp;'.repeat(indentLevel * 4))}</span>
         <input type="checkbox" disabled ${item_grading?.score ? 'checked' : ''} />
         <span class="text-${item.points >= 0 ? 'success' : 'danger'}">
-          [${item.points !== 0
+          ${item.points !== 0
             ? html`<strong data-testid="rubric-item-points">
                 [${(item.points >= 0 ? '+' : '') + item.points}]
               </strong>`
