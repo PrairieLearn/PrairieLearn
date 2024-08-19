@@ -91,7 +91,7 @@ export function QuestionContainer({
               ? html`
                   <div class="mb-4 d-flex justify-content-center">
                     <button
-                      class="show-hide-btn expand-icon-container btn btn-outline-secondary btn-sm collapsed"
+                      class="show-hide-btn btn btn-outline-secondary btn-sm collapsed"
                       type="button"
                       data-toggle="collapse"
                       data-target="#more-submissions-collapser"
@@ -617,11 +617,13 @@ function QuestionPanel({
   return html`
     <div class="card mb-4 question-block">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        ${QuestionTitle({
-          questionContext,
-          question,
-          questionNumber: instance_question_info?.question_number,
-        })}
+        <h1>
+          ${QuestionTitle({
+            questionContext,
+            question,
+            questionNumber: instance_question_info?.question_number,
+          })}
+        </h1>
         ${showCopyQuestionButton
           ? html`
               <button

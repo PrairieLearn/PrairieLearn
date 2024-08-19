@@ -90,11 +90,11 @@ export function StudentAssessmentInstance({
           ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <span>
+              <h1>
                 ${resLocals.assessment_set.abbreviation}${resLocals.assessment.number}:
                 ${resLocals.assessment.title}
-                ${resLocals.assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
-              </span>
+              </h1>
+              ${resLocals.assessment.group_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
             </div>
 
             <div class="card-body">

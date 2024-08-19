@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
@@ -14,7 +15,7 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
-import { GradingJobSchema, User } from '../../../lib/db-types.js';
+import { DateFromISOString, GradingJobSchema, User } from '../../../lib/db-types.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
@@ -22,7 +23,6 @@ import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 export const GradingJobDataSchema = GradingJobSchema.extend({
   score_perc: z.number().nullable(),
   grader_name: z.string().nullable(),
-  grading_date_formatted: z.string().nullable(),
 });
 export type GradingJobData = z.infer<typeof GradingJobDataSchema>;
 
@@ -78,6 +78,7 @@ export function InstanceQuestion({
         </div>
         ${RubricSettingsModal({ resLocals })}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">Instance Question Manual Grading</h1>
           ${resLocals.assessment_instance.open
             ? html`
                 <div class="alert alert-danger" role="alert">
@@ -165,23 +166,16 @@ function ConflictGradingJobModal({
               applied. Please review the feedback below and select how you would like to proceed.
             </div>
             <div class="row mb-2">
-              <div class="col-6">
+              <div class="col-lg-6 col-12">
                 <div><strong>Existing score and feedback</strong></div>
-                <div>
-                  ${resLocals.instance_question.modified_at_formatted}, by
-                  ${resLocals.instance_question.last_grader_name}
+                <div class="mb-2">
+                  ${formatDateYMDHM(
+                    // The modified_at value may have come from a non-validated query
+                    DateFromISOString.parse(resLocals.instance_question.modified_at),
+                    resLocals.course_instance.display_timezone,
+                  )},
+                  by ${resLocals.instance_question.last_grader_name}
                 </div>
-              </div>
-              <div class="col-6">
-                <div><strong>Conflicting score and feedback</strong></div>
-                <div>
-                  ${conflict_grading_job.grading_date_formatted}, by
-                  ${conflict_grading_job.grader_name}
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-6">
                 <div class="card">
                   ${GradingPanel({
                     resLocals,
@@ -192,7 +186,17 @@ function ConflictGradingJobModal({
                   })}
                 </div>
               </div>
-              <div class="col-6">
+              <div class="col-lg-6 col-12">
+                <div><strong>Conflicting score and feedback</strong></div>
+                <div class="mb-2">
+                  ${conflict_grading_job.date
+                    ? `${formatDateYMDHM(
+                        conflict_grading_job.date,
+                        resLocals.course_instance.display_timezone,
+                      )},`
+                    : ''}
+                  by ${conflict_grading_job.grader_name}
+                </div>
                 <div class="card">
                   ${GradingPanel({
                     resLocals,

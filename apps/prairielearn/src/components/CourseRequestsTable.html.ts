@@ -24,7 +24,7 @@ export function CourseRequestsTable({
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        ${headerPrefix} course requests
+        <h2>${headerPrefix} course requests</h2>
         ${showAll
           ? ''
           : html`
@@ -126,9 +126,8 @@ export function CourseRequestsTable({
                   <td class="align-middle">
                     ${row.jobs.length > 0
                       ? html`
-                          <a
-                            href="${urlPrefix}/administrator/jobSequence/${row.jobs[0].id}"
-                            class="show-hide-btn expand-icon-container btn btn-secondary btn-sm collapsed btn-xs text-nowrap"
+                          <button
+                            class="show-hide-btn btn btn-secondary btn-sm collapsed btn-xs text-nowrap"
                             data-toggle="collapse"
                             data-target="#course-requests-job-list-${row.id}"
                             aria-expanded="false"
@@ -136,7 +135,7 @@ export function CourseRequestsTable({
                           >
                             <i class="fa fa-angle-up fa-fw expand-icon"></i>
                             Show Jobs
-                          </a>
+                          </button>
                         `
                       : ''}
                   </td>
@@ -144,7 +143,7 @@ export function CourseRequestsTable({
                 ${row.jobs.length > 0
                   ? html`
                       <tr>
-                        <td colspan="${showAll ? 10 : 9}" class="p-0">
+                        <td colspan="${showAll ? 11 : 10}" class="p-0">
                           <div id="course-requests-job-list-${row.id}" class="collapse">
                             <table class="table table-sm table-active mb-0">
                               <thead>

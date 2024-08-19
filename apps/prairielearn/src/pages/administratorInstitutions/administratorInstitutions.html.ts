@@ -39,7 +39,7 @@ export function AdministratorInstitutions({
         <main id="content" class="container-fluid">
           <div id="institutions" class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              Institutions
+              <h1>Institutions</h1>
               <button
                 type="button"
                 class="btn btn-sm btn-light ml-auto"

@@ -52,8 +52,11 @@ export function CourseSyncs({
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">Course Sync</h1>
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Repository status</div>
+            <div class="card-header bg-primary text-white">
+              <h2>Repository status</h2>
+            </div>
             <div class="table-responsive">
               <table class="table table-sm">
                 <tbody>
@@ -96,12 +99,16 @@ export function CourseSyncs({
           </div>
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Docker images</div>
+            <div class="card-header bg-primary text-white">
+              <h2>Docker images</h2>
+            </div>
             ${ImageTable({ images, course, urlPrefix, __csrf_token })}
           </div>
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Sync job history</div>
+            <div class="card-header bg-primary text-white">
+              <h2>Sync job history</h2>
+            </div>
             <div class="table-responsive">
               <table class="table table-sm table-hover">
                 <thead>

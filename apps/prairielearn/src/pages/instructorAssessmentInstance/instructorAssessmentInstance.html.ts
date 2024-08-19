@@ -99,6 +99,12 @@ export function InstructorAssessmentInstance({
           navPage: '',
         })}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">
+            ${resLocals.assessment_instance_label} instance for
+            ${resLocals.instance_group
+              ? html`${resLocals.instance_group.name}`
+              : html`${resLocals.instance_user.name}`}
+          </h1>
           ${ResetQuestionVariantsModal({
             csrfToken: resLocals.__csrf_token,
             groupWork: resLocals.assessment.group_work,
@@ -112,10 +118,12 @@ export function InstructorAssessmentInstance({
           })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Summary:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2>
+                ${resLocals.assessment_instance_label} Summary:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
 
             <table class="table table-sm table-hover two-column-description">
@@ -289,10 +297,12 @@ export function InstructorAssessmentInstance({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Questions:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2>
+                ${resLocals.assessment_instance_label} Questions:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
 
             <table id="instanceQuestionList" class="table table-sm table-hover">
@@ -455,10 +465,12 @@ export function InstructorAssessmentInstance({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Statistics:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2>
+                ${resLocals.assessment_instance_label} Statistics:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
             <table id="instanceQuestionStatsTable" class="table table-sm table-hover tablesorter">
               <thead>
@@ -507,10 +519,12 @@ export function InstructorAssessmentInstance({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Log:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2>
+                ${resLocals.assessment_instance_label} Log:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
             <div class="card-body">
               <small>
