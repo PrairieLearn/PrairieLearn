@@ -21,16 +21,6 @@ export function InstructorCourseAdminInstances({
         ${HeadContents({ resLocals, pageTitle: 'Course Instances' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('#earliest-access-date [data-toggle="popover"]').popover({
-              sanitize: false,
-            });
-            $('#latest-access-date [data-toggle="popover"]').popover({
-              sanitize: false,
-            });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${CourseSyncErrorsAndWarnings({
@@ -42,7 +32,7 @@ export function InstructorCourseAdminInstances({
             <div class="card-header bg-primary">
               <div class="row align-items-center justify-content-between">
                 <div class="col-auto">
-                  <span class="text-white">Course instances</span>
+                  <h1 class="text-white h6 font-weight-normal mb-0">Course instances</h1>
                 </div>
                 ${resLocals.authz_data.has_course_permission_edit &&
                 !resLocals.course.example_course &&
@@ -80,9 +70,10 @@ export function InstructorCourseAdminInstances({
                       Earliest Access Date
                       <button
                         class="btn btn-xs btn-light"
-                        data-placement="auto"
-                        data-trigger="focus"
                         data-toggle="popover"
+                        data-trigger="focus"
+                        data-container="body"
+                        data-placement="bottom"
                         data-html="true"
                         title="Earliest Access Date"
                         data-content="${PopoverStartDate()}"
@@ -95,9 +86,10 @@ export function InstructorCourseAdminInstances({
                       Latest Access Date
                       <button
                         class="btn btn-xs btn-light"
-                        data-placement="auto"
-                        data-trigger="focus"
                         data-toggle="popover"
+                        data-trigger="focus"
+                        data-container="body"
+                        data-placement="bottom"
                         data-html="true"
                         title="Latest Access Date"
                         data-content="${PopoverEndDate()}"

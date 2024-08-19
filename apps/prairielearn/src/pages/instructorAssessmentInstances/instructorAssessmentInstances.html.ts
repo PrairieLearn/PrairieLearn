@@ -93,7 +93,9 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Students
+              <h1 class="h6 font-weight-normal mb-0">
+                ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Students
+              </h1>
               ${resLocals.authz_data.has_course_instance_permission_edit
                 ? html`
                     <div class="ml-auto">
@@ -107,11 +109,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                         >
                           Action for all instances <span class="caret"></span>
                         </button>
-                        <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
-                        <div
-                          class="dropdown-menu dropdown-menu-right"
-                          onclick="window.event.preventDefault();"
-                        >
+                        <div class="dropdown-menu dropdown-menu-right">
                           ${resLocals.authz_data.has_course_instance_permission_edit
                             ? html`
                                 <button
@@ -124,6 +122,8 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                                 </button>
                                 <button
                                   class="dropdown-item time-limit-edit-button time-limit-edit-all-button"
+                                  data-placement="left"
+                                  data-bs-toggle-popover
                                 >
                                   <i class="far fa-clock" aria-hidden="true"></i> Change time limit
                                   for all instances

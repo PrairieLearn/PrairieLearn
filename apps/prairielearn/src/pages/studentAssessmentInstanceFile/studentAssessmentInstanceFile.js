@@ -28,6 +28,9 @@ router.get(
     if (file == null) {
       throw new HttpStatusError(404, 'File not found');
     }
+    if (file.type === 'student_upload' && !res.locals.assessment.allow_personal_notes) {
+      throw new HttpStatusError(403, 'Assessment does not allow access to personal notes');
+    }
 
     const stream = await fileStore.getStream(file.id);
     // Ensure the response is interpreted as an "attachment" (file to be downloaded)

@@ -87,7 +87,10 @@ export function AdministratorQuery({
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <span class="font-weight-bold text-monospace">${queryFilename}</span>
+              <h1 class="h6 font-weight-normal mb-0">
+                Query: <span class="text-monospace">${queryFilename}</span>
+              </h1>
+              <span class="ml-3">&mdash;</span>
               <span class="ml-3">${info.description}</span>
             </div>
 
