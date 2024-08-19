@@ -618,6 +618,24 @@ describe('Assessment syncing', () => {
     assert.equal(rulesForAssessment[0].mode, 'Public');
   });
 
+  it('sets mode to Exam if an access rule specifies an examUuid but not mode=Exam', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData);
+    assessment.allowAccess?.push({
+      examUuid: 'f593a8c9-ccd4-449c-936c-c26c96ea089b',
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['implicitexam'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('implicitexam');
+    const syncedAssessmentAccessRules = await util.dumpTable('assessment_access_rules');
+    const rulesForAssessment = syncedAssessmentAccessRules.filter((aar) =>
+      idsEqual(aar.assessment_id, syncedAssessment?.id),
+    );
+    assert.lengthOf(rulesForAssessment, 1);
+    assert.equal(rulesForAssessment[0].mode, 'Exam');
+    assert.equal(rulesForAssessment[0].exam_uuid, 'f593a8c9-ccd4-449c-936c-c26c96ea089b');
+  });
+
   it('syncs empty arrays correctly', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Exam');
@@ -1394,10 +1412,11 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it('records an error if an access rule specifies an examUuid but not mode=Exam', async () => {
+  it('records an error if an access rule specifies an examUuid and mode=Public', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData);
     assessment.allowAccess?.push({
+      mode: 'Public',
       examUuid: 'f593a8c9-ccd4-449c-936c-c26c96ea089b',
     });
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
@@ -1405,7 +1424,7 @@ describe('Assessment syncing', () => {
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
       syncedAssessment?.sync_warnings,
-      /Invalid allowAccess rule: examUuid can only be used with "mode": "Exam"/,
+      /Invalid allowAccess rule: examUuid cannot be used with "mode": "Public"/,
     );
   });
 

@@ -5,8 +5,8 @@
   "set": "Exam",
   "number": "0",
   "allowAccess": [
-    { "mode": "Exam", "examUuid": "9c1b3e5c-9caa-4c82-9445-ac564d51c40d", "credit": 100 },
-    { "mode": "Exam", "examUuid": "2b26b075-4c91-4fa0-8f1e-219326f4d046", "credit": 100 }
+    { "examUuid": "9c1b3e5c-9caa-4c82-9445-ac564d51c40d", "credit": 100 },
+    { "examUuid": "2b26b075-4c91-4fa0-8f1e-219326f4d046", "credit": 100 }
   ],
   "zones": [
     { "questions": [{ "id": "template/number-input/random-prompt", "points": [3, 1] }] },

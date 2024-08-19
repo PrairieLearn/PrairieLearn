@@ -11,7 +11,6 @@ If you are using PrairieTest for remote proctoring then the access control shoul
 ```json
 "allowAccess": [
     {
-        "mode": "Exam",
         "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
         "credit": 100
     }
@@ -30,13 +29,11 @@ Sometimes exams in a testing center ([see above](#exams-in-a-prairietest-managed
 ```json
 "allowAccess": [
     {
-        "mode": "Exam",
         "examUuid": "c48e40db-258d-43c8-bb26-1f559ffe2228",
         "credit": 100
     },
     {
         "uids": ["student1@example.com", "student2@example.com"],
-        "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T11:00:00",
         "endDate": "2020-04-20T12:40:00",
@@ -65,7 +62,6 @@ This configuration is good when:
 "allowAccess": [
     {
         "uids": ["student1@example.com", "student2@example.com"],
-        "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T11:00:00",
         "endDate": "2020-04-20T12:40:00",
@@ -74,7 +70,6 @@ This configuration is good when:
     },
     {
         "uids": ["student3@example.com", "student4@example.com"],
-        "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T23:00:00",
         "endDate": "2020-04-21T00:05:00",
@@ -82,7 +77,6 @@ This configuration is good when:
         "showClosedAssessment": false
     },
     {
-        "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T11:00:00",
         "endDate": "2020-04-20T12:05:00",
@@ -122,7 +116,6 @@ This configuration is good when:
 "allowAccess": [
     {
         "uids": ["student1@example.com", "student2@example.com"],
-        "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T06:00:00",
         "endDate": "2020-04-21T06:00:00",
@@ -130,7 +123,6 @@ This configuration is good when:
         "showClosedAssessment": false
     },
     {
-        "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T06:00:00",
         "endDate": "2020-04-21T06:00:00",
@@ -165,7 +157,6 @@ This configuration is good when:
 "allowAccess": [
     {
         "uids": ["student1@example.com", "student2@example.com"],
-        "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T11:00:00",
         "endDate": "2020-04-20T12:40:00",
@@ -173,7 +164,6 @@ This configuration is good when:
         "showClosedAssessment": false
     },
     {
-        "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T11:00:00",
         "endDate": "2020-04-20T12:10:00",
@@ -182,7 +172,6 @@ This configuration is good when:
     },
     {
         "uids": ["student3@example.com", "student4@example.com"],
-        "mode": "Public",
         "credit": 100,
         "startDate": "2020-04-20T23:00:00",
         "endDate": "2020-04-21T00:10:00",

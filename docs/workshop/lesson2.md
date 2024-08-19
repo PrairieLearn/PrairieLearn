@@ -136,7 +136,6 @@ When using [PrairieTest](https://us.prairietest.com/pt/docs/course/welcome) to s
 
   ```json
   {
-    "mode": "Exam",
     "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
     "credit": 100
   }
