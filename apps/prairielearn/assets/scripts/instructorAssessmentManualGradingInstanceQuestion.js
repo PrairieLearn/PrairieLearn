@@ -350,9 +350,8 @@ function resetRubricItemRowsListeners() {
   document
     .querySelectorAll('.js-rubric-item-points, .js-rubric-item-limits')
     .forEach((input) => input.addEventListener('input', checkRubricItemTotals));
-
   document
-    .querySelectorAll('.js-rubric-item-points')
+    .querySelectorAll('.js-rubric-item-points, .js-rubric-item-always-show')
     .forEach((input) => input.addEventListener('input', updateRubricItemOrderAndIndentation));
 }
 
@@ -490,18 +489,18 @@ function enableRubricItemLongTextField(event) {
   adjustHeightFromContent(input);
 }
 
-function setAutoPoints(item, isAuto) {
+function updateInternalItemStatus(item, isInternal) {
   if (item !== null) {
     const itemRow = item.closest('tr');
     const pointsInput = itemRow.querySelector('.js-rubric-item-points');
-    if (isAuto) {
+    if (isInternal) {
       pointsInput.setAttribute('readonly', 'readonly');
       pointsInput.setAttribute(
         'title',
         'Points are automatically calculated for items that contain other items',
       );
 
-      // Save last non-auto value only once when item becomes auto
+      // Save last manually set value only once when item becomes inner item
       if (!pointsInput.hasAttribute('readonly')) {
         pointsInput.setAttribute('data-saved-value', pointsInput.value);
       }
@@ -510,8 +509,10 @@ function setAutoPoints(item, isAuto) {
       const rowIdx = rowList.indexOf(itemRow);
       const rowIndent = parseInt(itemRow.querySelector('.js-rubric-item-indent').value);
 
-      // Update point calculation for auto item
+      // Update point calculation and for auto item and check if it has a child
+      // that is set to "always show to students"
       let sumOfChildPoints = 0;
+      let containsAlwaysShow = false;
       rowList.some((row, idx) => {
         const points = row.querySelector('.js-rubric-item-points');
         const indent = row.querySelector('.js-rubric-item-indent');
@@ -521,11 +522,23 @@ function setAutoPoints(item, isAuto) {
           }
           if (parseInt(indent.value) === rowIndent + 1) {
             sumOfChildPoints += parseInt(points.value);
+            containsAlwaysShow =
+              containsAlwaysShow || row.querySelector('.js-rubric-item-always-show').checked;
           }
         }
         return false;
       });
       pointsInput.value = sumOfChildPoints;
+
+      if (containsAlwaysShow && !itemRow.querySelector('.js-rubric-item-always-show').checked) {
+        itemRow.querySelector('.js-rubric-item-always-show').checked = true;
+        document.querySelector('.js-settings-always-show-warning-placeholder').innerHTML = '';
+        addAlert(
+          document.querySelector('.js-settings-always-show-warning-placeholder'),
+          'Rubric items that contain items always shown to students must be always shown as well.',
+          ['alert-warning'],
+        );
+      }
     } else {
       pointsInput.removeAttribute('readonly');
       pointsInput.removeAttribute('title');
@@ -558,7 +571,7 @@ function updateRubricItemOrderAndIndentation() {
   // Disable points for non-leaf items (traversing in reverse for full cascading in one pass)
   previousIndent = -1;
   [...document.querySelectorAll('.js-rubric-item-indent')].reverse().forEach((input) => {
-    setAutoPoints(input, input.value < previousIndent);
+    updateInternalItemStatus(input, input.value < previousIndent);
     previousIndent = input.value;
   });
 
@@ -659,14 +672,14 @@ function rowDragOver(event) {
     row.parentNode.appendChild(window.rubricItemRowDragging);
   }
 
-  // There must be a parent above to allow indentation
+  // There must be an item above that can serve as parent to allow indentation
   if (targetRowItemIdx > 0) {
     var parentIndent = parseInt(
       rowList[targetRowIdx - 1].querySelector('.js-rubric-item-indent').value,
     );
     const dragOffset = event.clientX - row.getBoundingClientRect().left - 5;
 
-    // Prevent a row from being considered as its own parent in certain drag states and allowed further indentation
+    // Prevent a row from being considered as its own parent in certain drag states
     if (draggingRowIdx === targetRowIdx - 1) {
       parentIndent -= 1;
     }
@@ -713,5 +726,4 @@ function addRubricItemRow() {
 
   resetRubricItemRowsListeners();
   updateRubricItemOrderAndIndentation();
-  checkRubricItemTotals();
 }

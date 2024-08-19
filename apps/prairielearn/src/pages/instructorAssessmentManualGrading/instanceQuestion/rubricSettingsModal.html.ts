@@ -211,6 +211,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                   </table>
                 </div>
                 <div class="js-settings-points-warning-placeholder"></div>
+                <div class="js-settings-always-show-warning-placeholder"></div>
                 <button type="button" class="btn btn-sm btn-secondary js-add-rubric-item-button">
                   Add item
                 </button>
