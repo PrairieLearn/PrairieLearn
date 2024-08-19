@@ -1,9 +1,5 @@
 /* eslint-env browser,jquery */
 /* global nb, DOMPurify */
-// TODO: The notebook styling is less than ideal. Consider creating a low-priority story 
-// to address this in the future. Similarly, consider adding syntax 
-// highlighting in the future.
-
 (() => {
   async function downloadFile(path, name) {
     const result = await fetch(path, { method: 'GET' });
@@ -117,7 +113,7 @@
 
                   // importing the notebookjs library doesn't return an object, it sets the global variable 'ns'
                   // importing DOMPurify sets the global variable DOMPurify.
-                  Promise.all([import('marked'), import('purify'), import('notebook')]).then(async ([Marked]) => {                                    
+                  await Promise.all([import('marked'), import('purify'), import('notebook')]).then(async ([Marked]) => {                                    
                      nb.markdown = Marked.marked.parse;
                      nb.sanitizer = DOMPurify.sanitize;
                      const notebook = nb.parse(JSON.parse(await blob.text()));
