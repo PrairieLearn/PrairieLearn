@@ -1,12 +1,13 @@
 import { differenceInMilliseconds } from 'date-fns';
 import { z } from 'zod';
 
-import { HtmlValue, html, unsafeHtml } from '@prairielearn/html';
+import { HtmlValue, html, unsafeHtml, joinHtml } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import {
   GradingJobSchema,
   GradingJobStatusSchema,
+  RubricGradingItem,
   SubmissionSchema,
   type AssessmentQuestion,
   type GradingJob,
@@ -120,53 +121,14 @@ export function SubmissionPanel({
                 <div class="card-body">
                   ${submission.rubric_grading
                     ? html`
-                        ${(rubric_data?.rubric_items || [])
-                          .filter(
+                        ${RubricItemsWithIndent(
+                          rubric_data?.rubric_items.filter(
                             (item) =>
                               item.always_show_to_students ||
                               submission.rubric_grading?.rubric_items?.[item.id]?.score,
-                          )
-                          .map(
-                            (item) => html`
-                              <div>
-                                <label class="w-100" data-testid="rubric-item-container-${item.id}">
-                                  <input
-                                    type="checkbox"
-                                    disabled
-                                    ${submission.rubric_grading?.rubric_items?.[item.id]?.score
-                                      ? 'checked'
-                                      : ''}
-                                  />
-                                  <span class="text-${item.points >= 0 ? 'success' : 'danger'}">
-                                    <strong data-testid="rubric-item-points">
-                                      [${(item.points >= 0 ? '+' : '') + item.points}]
-                                    </strong>
-                                  </span>
-                                  <span
-                                    class="d-inline-block"
-                                    data-testid="rubric-item-description"
-                                  >
-                                    ${unsafeHtml(item.description_rendered ?? '')}
-                                  </span>
-                                  ${item.explanation
-                                    ? html`
-                                        <button
-                                          type="button"
-                                          class="btn btn-xs text-info"
-                                          data-toggle="popover"
-                                          data-content="${item.explanation_rendered}"
-                                          data-html="true"
-                                          data-testid="rubric-item-explanation"
-                                        >
-                                          <i class="fas fa-circle-info"></i>
-                                          <span class="sr-only">Details</span>
-                                        </button>
-                                      `
-                                    : ''}
-                                </label>
-                              </div>
-                            `,
-                          )}
+                          ),
+                          submission.rubric_grading?.rubric_items,
+                        )}
                         ${submission.rubric_grading?.adjust_points
                           ? html`
                               <div class="mb-2">
@@ -518,6 +480,67 @@ function SubmissionInfoModal({
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
     `,
   });
+}
+
+function RubricItemsWithIndent(
+  rubric_items: RubricData['rubric_items'][0][] | null | undefined,
+  rubric_items_grading: Record<string, RubricGradingItem> | null | undefined,
+) {
+  if (!rubric_items) return '';
+  const parentStack = [''];
+  const itemRows = rubric_items.map((item) => {
+    // Find parent in stack and remove any items with deeper nesting than parent
+    const cutoffIdx = parentStack.indexOf(item.parent_id ?? '') + 1;
+    parentStack.splice(cutoffIdx, parentStack.length - cutoffIdx);
+
+    // Generate HTML for current item
+    const result = RubricItem(item, rubric_items_grading?.[item.id], parentStack.length - 1);
+
+    // Push this item as potential parent for next item
+    parentStack.push(item.id);
+    return result;
+  });
+  return joinHtml(itemRows);
+}
+
+function RubricItem(
+  item: RubricData['rubric_items'][0],
+  item_grading: RubricGradingItem | undefined | null,
+  indentLevel: number,
+) {
+  return html`
+    <div>
+      <label class="w-100" data-testid="rubric-item-container-${item.id}">
+        <span>${unsafeHtml('&nbsp;'.repeat(indentLevel * 4))}</span>
+        <input type="checkbox" disabled ${item_grading?.score ? 'checked' : ''} />
+        <span class="text-${item.points >= 0 ? 'success' : 'danger'}">
+          [${item.points !== 0
+            ? html`<strong data-testid="rubric-item-points">
+                [${(item.points >= 0 ? '+' : '') + item.points}]
+              </strong>`
+            : ''}
+        </span>
+        <span class="d-inline-block" data-testid="rubric-item-description">
+          ${unsafeHtml(item.description_rendered ?? '')}
+        </span>
+        ${item.explanation
+          ? html`
+              <button
+                type="button"
+                class="btn btn-xs text-info"
+                data-toggle="popover"
+                data-content="${item.explanation_rendered}"
+                data-html="true"
+                data-testid="rubric-item-explanation"
+              >
+                <i class="fas fa-circle-info"></i>
+                <span class="sr-only">Details</span>
+              </button>
+            `
+          : ''}
+      </label>
+    </div>
+  `;
 }
 
 function buildGradingJobStats(job: GradingJob | null) {
