@@ -535,7 +535,7 @@ function updateInternalItemStatus(item, isInternal) {
         document.querySelector('.js-settings-always-show-warning-placeholder').innerHTML = '';
         addAlert(
           document.querySelector('.js-settings-always-show-warning-placeholder'),
-          'Rubric items that contain items always shown to students must be always shown as well.',
+          'Rubric items that contain items always shown to students are always shown as well. Settings have been automatically updated.',
           ['alert-warning'],
         );
       }
