@@ -166,7 +166,10 @@ export function IssuePanel({
         ${issue.manually_reported ? 'Manually reported issue' : 'Issue'}
       </div>
 
-      <table class="table table-sm table-hover two-column-description">
+      <table
+        class="table table-sm table-hover two-column-description"
+        aria-label="Issue information"
+      >
         <tbody>
           ${showUserName
             ? html`

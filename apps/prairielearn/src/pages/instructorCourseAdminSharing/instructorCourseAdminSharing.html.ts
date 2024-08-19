@@ -171,9 +171,12 @@ export function InstructorCourseAdminSharing({
           })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
-              <h1>Course Sharing Info</h1>
+              <h1>Course sharing details</h1>
             </div>
-            <table class="table table-sm table-hover two-column-description">
+            <table
+              class="table table-sm table-hover two-column-description"
+              aria-label="Course sharing details"
+            >
               <tbody>
                 <tr>
                   <th>Sharing name</th>
@@ -263,7 +266,7 @@ export function InstructorCourseAdminSharing({
                   `
                 : ''}
             </div>
-            <table class="table table-sm table-hover table-striped">
+            <table class="table table-sm table-hover table-striped" aria-label="Sharing sets">
               <thead>
                 <th>Sharing Set Name</th>
                 <th>Shared With</th>

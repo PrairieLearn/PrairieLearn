@@ -123,7 +123,7 @@ export function AdministratorInstitutions({
               `,
             })}
             <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
+              <table class="table table-sm table-hover table-striped" aria-label="Institutions">
                 <thead>
                   <tr>
                     <th>Short name</th>

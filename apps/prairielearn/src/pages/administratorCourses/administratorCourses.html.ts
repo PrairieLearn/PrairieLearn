@@ -73,7 +73,7 @@ export function AdministratorCourses({
               </button>
             </div>
             <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
+              <table class="table table-sm table-hover table-striped" aria-label="Courses">
                 <thead>
                   <tr>
                     <th>Institution</th>

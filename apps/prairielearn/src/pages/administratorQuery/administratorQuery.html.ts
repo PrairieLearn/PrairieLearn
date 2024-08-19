@@ -266,7 +266,10 @@ export function AdministratorQuery({
             ${query_run?.result != null
               ? html`
                   <div class="table-responsive">
-                    <table class="table table-sm table-hover table-striped tablesorter">
+                    <table
+                      class="table table-sm table-hover table-striped tablesorter"
+                      aria-label="Query results"
+                    >
                       <thead>
                         <tr>
                           ${query_run.result.columns?.map((col) =>
@@ -297,7 +300,7 @@ export function AdministratorQuery({
             <div class="table-responsive">
               ${recent_query_runs.length > 0
                 ? html`
-                    <table class="table table-sm">
+                    <table class="table table-sm" aria-label="Recent query runs">
                       <thead>
                         <tr>
                           <th>Date</th>

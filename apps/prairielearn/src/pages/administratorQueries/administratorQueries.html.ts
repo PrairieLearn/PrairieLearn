@@ -51,7 +51,7 @@ export function AdministratorQueries({
               <h1>Queries</h1>
             </div>
             <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
+              <table class="table table-sm table-hover table-striped" aria-label="Queries">
                 <tbody>
                   ${queries.map(
                     (query) => html`

@@ -79,7 +79,7 @@ export function InstructorAssessmentDownloads({
               : ''}
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="File downloads">
                 <thead>
                   <tr>
                     <th>Data file</th>

@@ -33,7 +33,7 @@ export function AssessmentScorePanel({
           </a>
         </div>
       </div>
-      <table class="table table-sm">
+      <table class="table table-sm" aria-label="Assessment score">
         <tbody>
           <tr>
             <td>Total points:</td>

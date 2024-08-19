@@ -419,7 +419,7 @@ function DirectoryBrowserBody({
   csrfToken: string;
 }) {
   return html`
-    <table class="table table-sm table-hover">
+    <table class="table table-sm table-hover" aria-label="Directories and files">
       <tbody>
         ${directoryListings.files?.map(
           (f) => html`
