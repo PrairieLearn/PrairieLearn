@@ -111,15 +111,18 @@
               if (type === 'text/plain') {
                 const text = await blob.text();
                 if (escapedFileName.endsWith('.ipynb')) {
-
                   // importing the notebookjs library doesn't return an object, it sets the global variable 'ns'
                   // importing DOMPurify sets the global variable DOMPurify.
-                  await Promise.all([import('marked'), import('dompurify'), import('notebookjs')]).then(async ([Marked]) => {                                    
-                     nb.markdown = Marked.marked.parse;
-                     nb.sanitizer = DOMPurify.sanitize;
-                     const notebook = nb.parse(JSON.parse(text));
-                     const rendered = notebook.render();
-                     pre.appendChild(rendered);
+                  await Promise.all([
+                    import('marked'),
+                    import('dompurify'),
+                    import('notebookjs'),
+                  ]).then(async ([Marked]) => {
+                    nb.markdown = Marked.marked.parse;
+                    nb.sanitizer = DOMPurify.sanitize;
+                    const notebook = nb.parse(JSON.parse(text));
+                    const rendered = notebook.render();
+                    pre.appendChild(rendered);
                   });
                 } else {
                   code.textContent = text;
@@ -147,7 +150,7 @@
               }
               wasOpened = true;
             })
-           .catch((err) => {
+            .catch((err) => {
               console.error(err);
               showErrorMessage('An error occurred while downloading the file.');
             });
