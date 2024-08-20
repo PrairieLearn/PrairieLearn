@@ -132,6 +132,7 @@ onDocumentReady(() => {
                 <button
                   type="button"
                   class="btn btn-xs btn-secondary edit-score ml-1"
+                  aria-label="Edit score"
                   data-assessment-instance-id="${assessment_instance_id}"
                   data-score="${score}"
                   data-other-users="${JSON.stringify(uid_other_users_group ?? [])}"
