@@ -9,9 +9,11 @@ import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
+import { Lti13Claim } from '../../ee/lib/lti13.js';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import * as github from '../../lib/github.js';
+import { isEnterprise } from '../../lib/license.js';
 import * as opsbot from '../../lib/opsbot.js';
 
 import {
@@ -33,17 +35,25 @@ router.get(
     );
 
     let lti13Info: Lti13CourseRequestInput = null;
-    if ('lti13_claims' in req.session) {
-      lti13Info = {
-        'cr-firstname': req.session.lti13_claims.given_name ?? '',
-        'cr-lastname': req.session.lti13_claims.family_name ?? '',
-        'cr-email': req.session.lti13_claims.email ?? '',
-        'cr-shortname':
-          req.session.lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].label ?? '',
-        'cr-title':
-          req.session.lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].title ?? '',
-        'cr-institution': res.locals.authn_institution.long_name ?? '',
-      };
+    if (isEnterprise() && 'lti13_claims' in req.session) {
+      try {
+        const ltiClaim = new Lti13Claim(req);
+
+        lti13Info = {
+          'cr-firstname': ltiClaim.get('given_name') ?? '',
+          'cr-lastname': ltiClaim.get('family_name') ?? '',
+          'cr-email': ltiClaim.get('email') ?? '',
+          'cr-shortname':
+            ltiClaim.get("'https://purl.imsglobal.org/spec/lti/claim/context'.label") ?? '',
+          'cr-title':
+            ltiClaim.get("'https://purl.imsglobal.org/spec/lti/claim/context'.title") ?? '',
+          'cr-institution': res.locals.authn_institution.long_name ?? '',
+        };
+      } catch (err) {
+        // If LTI information timed out or is incorrect, don't error here.
+        // Continue on like there isn't LTI 1.3 information.
+        lti13Info = null;
+      }
     }
 
     res.send(RequestCourse({ rows, lti13Info, resLocals: res.locals }));
