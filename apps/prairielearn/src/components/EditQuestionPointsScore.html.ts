@@ -94,6 +94,7 @@ function EditQuestionPointsScoreForm({
             class="form-control"
             name="${field}"
             value="${pointsOrScore}"
+            aria-label="${field}"
           />
           <div class="input-group-append">
             <span class="input-group-text">

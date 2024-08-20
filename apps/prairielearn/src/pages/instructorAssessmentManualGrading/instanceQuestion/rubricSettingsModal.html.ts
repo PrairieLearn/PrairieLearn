@@ -307,6 +307,7 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
           required
           name="${namePrefix}[points]"
           value="${item?.points}"
+          aria-label="points"
         />
       </td>
       <td>
@@ -318,6 +319,7 @@ function RubricItemRow(item: RubricData['rubric_items'][0] | null, index: number
           style="min-width: 15rem"
           name="${namePrefix}[description]"
           value="${item?.description}"
+          aria-label="description"
         />
       </td>
       <td>

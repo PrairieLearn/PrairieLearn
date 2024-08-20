@@ -412,6 +412,7 @@ onDocumentReady(() => {
         <select
           class="custom-select select-time-limit"
           name="plus_minus"
+          aria-label="time limit options"
           onchange="
             $(this).parents('form').find('.time-limit-field').toggle(this.value !== 'unlimited' && this.value !== 'expire');
             $(this).parents('form').find('.reopen-closed-field').toggle(this.value !== '+1' && this.value !== '-1' && this.value !== 'expire');
@@ -442,10 +443,11 @@ onDocumentReady(() => {
             class="form-control time-limit-field"
             type="number"
             name="time_add"
+            aria-label="time value"
             style="width: 5em"
             value="5"
           />
-          <select class="custom-select time-limit-field" name="time_ref">
+          <select class="custom-select time-limit-field" name="time_ref" aria-label="time unit">
             <option value="minutes">minutes</option>
             ${row.time_remaining_sec !== null
               ? html`<option value="percent">% total limit</option>`
@@ -461,6 +463,7 @@ onDocumentReady(() => {
                   name="reopen_closed"
                   value="true"
                   id="reopen_closed"
+                  aria-label="reopen closed instances"
                 />
                 <label class="form-check-label" for="reopen_closed">
                   Also re-open closed instances

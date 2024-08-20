@@ -68,6 +68,7 @@ function ChangeIdForm({
           name="id"
           value="${currentValue}"
           pattern="[\\-A-Za-z0-9_\\/]+"
+          aria-label="${label}"
           required
         />
       </div>

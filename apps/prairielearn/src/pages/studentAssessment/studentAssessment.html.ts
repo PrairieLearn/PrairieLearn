@@ -223,6 +223,7 @@ function GroupCreationJoinForm({
                     name="groupName"
                     maxlength="30"
                     placeholder="e.g. teamOne"
+                    aria-label="group name"
                     aria-describedby="groupNameHelp"
                   />
                   <small id="groupNameHelp" class="form-text text-muted">
@@ -251,6 +252,7 @@ function GroupCreationJoinForm({
                     id="joinCodeInput"
                     name="join_code"
                     placeholder="abcd-1234"
+                    aria-label="join code"
                   />
                   <div class="mt-4 d-flex justify-content-center">
                     <div class="form-group mb-0">

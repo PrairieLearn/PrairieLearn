@@ -459,7 +459,7 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
           id="addGroupUids"
           name="uids"
           placeholder="student1@example.com, student2@example.com"
-          aria-describedby="addGroupUidsHelp"
+          aria-labelledby="addGroupUidsHelp"
         />
         <small id="addGroupUidsHelp" class="form-text text-muted">
           Separate multiple UIDs with commas.

@@ -350,7 +350,13 @@ function CourseUpdateColumnForm({
       <input type="hidden" name="course_id" value="${course.id}" />
       <input type="hidden" name="column_name" value="${column_name}" />
       <div class="form-group">
-        <input type="text" class="form-control" name="value" value="${course[column_name]}" />
+        <input
+          type="text"
+          class="form-control"
+          name="value"
+          value="${course[column_name]}"
+          aria-label="${column_name}"
+        />
       </div>
       <div class="text-right">
         <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>

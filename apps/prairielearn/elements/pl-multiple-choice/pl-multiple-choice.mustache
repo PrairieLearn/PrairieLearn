@@ -4,6 +4,7 @@
 {{#inline}}
 <span>
 {{/inline}}
+    <span aria-label="multiple choice options">
     {{#answers}}
         <div class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1 gap-2">
             <input
@@ -40,6 +41,7 @@
             {{/display_score_badge}}
         </div>
     {{/answers}}
+    </span>
 
 {{#display_score_badge}}
     {{#correct}}
@@ -62,6 +64,7 @@
 <span
     class="py-1 d-inline align-items-center pl-multiple-choice-dropdown"
     {{#size}}style="--pl-multiple-choice-dropdown-width: {{size}}px"{{/size}}
+    aria-label="multiple choice options"
 >
     <script>
         $(() => new window.PLMultipleChoice("{{uuid}}"));
@@ -154,7 +157,7 @@
 {{/submission}}
 {{#answer}}
     {{#radio}}
-        {{#inline}}<span class="d-inline-block"><ul class="list-inline mb-0">{{/inline}}
+        {{#inline}}<span class="d-inline-block" aria-label="multiple choice options"><ul class="list-inline mb-0">{{/inline}}
         {{^inline}}<div class="d-block"><ul class="list-unstyled mb-0">{{/inline}}
         {{#answers}}
             <li {{#inline}}class="list-inline-item"{{/inline}}>

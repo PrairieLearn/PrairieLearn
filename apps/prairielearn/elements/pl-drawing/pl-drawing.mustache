@@ -10,7 +10,7 @@
 </span>
 {{/parse_error}}
 {{^parse_error}}
-<div id="pl-drawing-{{uuid}}" class="pl-drawing-container pl-requires-svg-mathjax">
+<div id="pl-drawing-{{uuid}}" class="pl-drawing-container pl-requires-svg-mathjax" aria-label="drawing-container">
     <div>
         <canvas width="{{width}}" height="{{height}}"> </canvas>
         {{#show_tolerance}}
