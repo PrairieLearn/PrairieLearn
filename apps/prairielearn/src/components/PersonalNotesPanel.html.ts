@@ -233,6 +233,7 @@ function DeletePersonalNoteButton({
       data-html="true"
       data-placement="auto"
       title="Confirm delete"
+      aria-label="Delete personal note"
       data-content="${escapeHtml(popoverContent)}"
       data-testid="delete-personal-note-button"
     >

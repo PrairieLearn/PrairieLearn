@@ -44,100 +44,92 @@ export function Workspace({
       >
         ${RebootModal({ __csrf_token })} ${ResetModal({ __csrf_token })}
 
-        <nav
-          class="navbar navbar-expand-md navbar-dark bg-info align-items-center"
-          style="height:55px"
-        >
-          <div class="d-flex flex-column mr-3 text-white">
-            <span>
+        <nav class="navbar navbar-light navbar-expand-lg bg-info align-items-center">
+          <div class="container-fluid">
+            <div class="d-flex flex-column mr-3">
               <h1 class="h6 font-weight-normal mb-0">
-                <a href="${navTitleHref}" target="_blank" class="text-white">${navTitle}</a>
+                <a href="${navTitleHref}" target="_blank" style="color: #000;">${navTitle}</a>
               </h1>
-            </span>
-            <span class="small">
-              <i class="fa fa-laptop-code" aria-hidden="true"></i>
-              PrairieLearn Workspace
-            </span>
-          </div>
+              <span class="small" style="color: #000;">
+                <i class="fa fa-laptop-code" aria-hidden="true"></i>
+                PrairieLearn Workspace
+              </span>
+            </div>
 
-          <div class="d-flex flex-row ml-auto align-items-center">
-            <ul class="navbar-nav flex-row">
-              <li class="mr-2">
-                <span id="state" class="badge badge-dark badge-workspace text-uppercase"
-                  ><i class="fas fa-spinner fa-pulse"></i></span
-                ><span
-                  id="message"
-                  class="badge badge-dark badge-workspace badge-append font-weight-normal"
-                ></span>
-              </li>
-            </ul>
+            <div class="d-flex flex-row mr-auto align-items-center">
+              <span id="state" class="badge badge-dark badge-workspace text-uppercase">
+                <i class="fas fa-spinner fa-pulse"></i>
+              </span>
+              <span
+                id="message"
+                class="badge badge-dark badge-workspace badge-append font-weight-normal"
+              ></span>
+            </div>
+
             <button
-              class="navbar-toggler"
+              class="navbar-toggler ml-2"
               type="button"
               data-toggle="collapse"
               data-target="#workspace-nav"
             >
               <span class="navbar-toggler-icon"></span>
             </button>
-          </div>
 
-          <div class="collapse navbar-collapse" id="workspace-nav">
-            <ul class="navbar-nav ml-auto">
-              <li class="d-sm-none nav-item ml-2 my-1">
-                <span class="nav-item badge badge-light">${navTitle}</span>
-              </li>
-              <li class="nav-item ml-2 my-1">
-                <button
-                  id="reboot"
-                  class="nav-item btn btn-light"
-                  data-toggle="modal"
-                  data-target="#rebootModal"
-                >
-                  <i class="fas fa-sync text-info" aria-hidden="true"></i>
-                  Reboot
-                </button>
-              </li>
-              <li class="nav-item ml-2 my-1">
-                <button
-                  id="reset"
-                  class="nav-item btn btn-light"
-                  data-toggle="modal"
-                  data-target="#resetModal"
-                >
-                  <i class="fas fa-trash text-danger" aria-hidden="true"></i>
-                  Reset
-                </button>
-              </li>
-              ${showLogs
-                ? html`
-                    <li class="nav-item ml-2 my-1">
-                      <a
-                        class="nav-item btn btn-light"
-                        href="${urlPrefix}/workspace/${workspace_id}/logs"
-                        target="_blank"
-                      >
-                        <i class="fas fa-bars-staggered" aria-hidden="true"></i>
-                        Logs
-                      </a>
-                    </li>
-                  `
-                : null}
-              <li class="nav-item ml-2 ml-md-3 my-1">
-                <a
-                  tabindex="0"
-                  type="button"
-                  class="nav-item btn btn-light"
-                  data-toggle="popover"
-                  data-trigger="focus"
-                  data-container="body"
-                  data-placement="bottom"
-                  data-html="true"
-                  data-content="${escapeHtml(HelpButtonContents())}"
-                >
-                  <i class="fas fa-question-circle text-secondary" aria-hidden="true"></i>
-                </a>
-              </li>
-            </ul>
+            <div class="collapse navbar-collapse" id="workspace-nav">
+              <ul class="navbar-nav ml-auto">
+                <li class="nav-item ml-2 my-1">
+                  <button
+                    id="reboot"
+                    class="nav-item btn btn-light"
+                    data-toggle="modal"
+                    data-target="#rebootModal"
+                  >
+                    <i class="fas fa-sync text-info" aria-hidden="true"></i>
+                    Reboot
+                  </button>
+                </li>
+                <li class="nav-item ml-2 my-1">
+                  <button
+                    id="reset"
+                    class="nav-item btn btn-light"
+                    data-toggle="modal"
+                    data-target="#resetModal"
+                  >
+                    <i class="fas fa-trash text-danger" aria-hidden="true"></i>
+                    Reset
+                  </button>
+                </li>
+                ${showLogs
+                  ? html`
+                      <li class="nav-item ml-2 my-1">
+                        <a
+                          class="nav-item btn btn-light"
+                          href="${urlPrefix}/workspace/${workspace_id}/logs"
+                          target="_blank"
+                        >
+                          <i class="fas fa-bars-staggered" aria-hidden="true"></i>
+                          Logs
+                        </a>
+                      </li>
+                    `
+                  : null}
+                <li class="nav-item ml-2 ml-md-3 my-1">
+                  <a
+                    tabindex="0"
+                    type="button"
+                    class="nav-item btn btn-light"
+                    data-toggle="popover"
+                    data-trigger="focus"
+                    data-container="body"
+                    data-placement="bottom"
+                    data-html="true"
+                    data-content="${escapeHtml(HelpButtonContents())}"
+                  >
+                    <i class="fas fa-question-circle text-secondary" aria-hidden="true"></i>
+                  </a>
+                </li>
+              </ul>
+            </div>
           </div>
         </nav>
 
