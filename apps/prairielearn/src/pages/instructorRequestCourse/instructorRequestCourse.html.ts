@@ -1,9 +1,12 @@
 import { z } from 'zod';
 
+import { EncodedData } from '@prairielearn/browser-utils';
 import { HtmlValue, html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Modal } from '../../components/Modal.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
 
 export const CourseRequestRowSchema = z.object({
@@ -12,11 +15,25 @@ export const CourseRequestRowSchema = z.object({
 });
 type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 
+export const Lti13CourseRequestInputSchema = z
+  .object({
+    'cr-firstname': z.string(),
+    'cr-lastname': z.string(),
+    'cr-email': z.string(),
+    'cr-shortname': z.string(),
+    'cr-title': z.string(),
+    'cr-institution': z.string(),
+  })
+  .nullable();
+export type Lti13CourseRequestInput = z.infer<typeof Lti13CourseRequestInputSchema>;
+
 export function RequestCourse({
   rows,
+  lti13Info,
   resLocals,
 }: {
   rows: CourseRequestRow[];
+  lti13Info: Lti13CourseRequestInput;
   resLocals: Record<string, any>;
 }) {
   return html`
@@ -24,6 +41,7 @@ export function RequestCourse({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals, pageTitle: 'Request a Course' })}
+        ${compiledScriptTag('instructorRequestCourseLti13.ts')}
         <script>
           $(function () {
             $('input[name=cr-role]').change(function () {
@@ -54,7 +72,22 @@ export function RequestCourse({
         })}
         <main id="content" class="container">
           <h1 class="sr-only">Request a Course</h1>
-          ${CourseRequestsCard({ rows })}
+          ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'courseRequestLti13Info')}
+          ${Modal({
+            id: 'lti13FillModal',
+            title: html`Auto-fill with ${lti13Info?.['cr-institution'] ?? 'LMS'} data?`.toString(),
+            body: html`<p>
+                You appear to be coming from a course in another learning system. Should we
+                partially fill in this request form with information from that course?
+              </p>
+              <p>(You can edit it after it's auto-filled.)</p>`,
+            footer: html`
+              <button type="button" class="btn btn-success" id="fillCourseRequestLti13">
+                Fill from LMS data
+              </button>
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+            `,
+          })}
           ${CourseNewRequestCard({ csrfToken: resLocals.__csrf_token })}
         </main>
       </body>
@@ -220,7 +253,9 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             </small>
           </div>
           <div class="form-group">
-            <label id="cr-referral-source-label">How did you hear about PrairieLearn?</label>
+            <label id="cr-referral-source-label" for="cr-referral-source"
+              >How did you hear about PrairieLearn?</label
+            >
             <select
               class="custom-select"
               name="cr-referral-source"
@@ -249,7 +284,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             </small>
           </div>
           <div class="form-group">
-            <label>Your Role in the Course</label>
+            <label for="role-instructor">Your Role in the Course</label>
             <ul class="list-group">
               <li class="list-group-item">
                 <input type="radio" id="role-instructor" name="cr-role" value="instructor" />

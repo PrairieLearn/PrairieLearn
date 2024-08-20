@@ -14,7 +14,11 @@ import { IdSchema } from '../../lib/db-types.js';
 import * as github from '../../lib/github.js';
 import * as opsbot from '../../lib/opsbot.js';
 
-import { RequestCourse, CourseRequestRowSchema } from './instructorRequestCourse.html.js';
+import {
+  RequestCourse,
+  CourseRequestRowSchema,
+  Lti13CourseRequestInput,
+} from './instructorRequestCourse.html.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -28,7 +32,21 @@ router.get(
       CourseRequestRowSchema,
     );
 
-    res.send(RequestCourse({ rows, resLocals: res.locals }));
+    let lti13Info: Lti13CourseRequestInput = null;
+    if ('lti13_claims' in req.session) {
+      lti13Info = {
+        'cr-firstname': req.session.lti13_claims.given_name ?? '',
+        'cr-lastname': req.session.lti13_claims.family_name ?? '',
+        'cr-email': req.session.lti13_claims.email ?? '',
+        'cr-shortname':
+          req.session.lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].label ?? '',
+        'cr-title':
+          req.session.lti13_claims['https://purl.imsglobal.org/spec/lti/claim/context'].title ?? '',
+        'cr-institution': res.locals.authn_institution.long_name ?? '',
+      };
+    }
+
+    res.send(RequestCourse({ rows, lti13Info, resLocals: res.locals }));
   }),
 );
 

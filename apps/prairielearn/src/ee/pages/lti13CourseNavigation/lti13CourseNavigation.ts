@@ -81,7 +81,7 @@ router.get(
       }
 
       // LTI claims are not used after this page so remove them from the session
-      ltiClaim.remove();
+      // DAVE ltiClaim.remove();
 
       // Redirect to linked course instance
       res.redirect(
