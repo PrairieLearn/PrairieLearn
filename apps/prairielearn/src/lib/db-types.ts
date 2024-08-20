@@ -98,17 +98,6 @@ export const AssessmentsFormatForQuestionSchema = z.array(
   }),
 );
 
-// Result of grading_job_status sproc
-export const GradingJobStatusSchema = z.enum([
-  'none',
-  'canceled',
-  'queued',
-  'grading',
-  'graded',
-  'requested',
-]);
-export type GradingJobStatus = z.infer<typeof GradingJobStatusSchema>;
-
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
