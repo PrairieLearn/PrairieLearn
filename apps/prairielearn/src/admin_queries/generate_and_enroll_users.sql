@@ -1,4 +1,3 @@
--- BLOCK generate_and_enroll_users
 SELECT
   user_id,
   uid,
