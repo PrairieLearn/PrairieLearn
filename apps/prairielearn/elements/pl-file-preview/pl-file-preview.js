@@ -109,6 +109,7 @@
             .then(async (blob) => {
               const type = blob.type;
               if (type === 'text/plain') {
+                const text = await blob.text();
                 if (escapedFileName.endsWith('.ipynb')) {
 
                   // importing the notebookjs library doesn't return an object, it sets the global variable 'ns'
@@ -116,12 +117,11 @@
                   await Promise.all([import('marked'), import('purify'), import('notebook')]).then(async ([Marked]) => {                                    
                      nb.markdown = Marked.marked.parse;
                      nb.sanitizer = DOMPurify.sanitize;
-                     const notebook = nb.parse(JSON.parse(await blob.text()));
+                     const notebook = nb.parse(JSON.parse(text));
                      const rendered = notebook.render();
                      pre.appendChild(rendered);
                   });
                 } else {
-                  const text = await blob.text();
                   code.textContent = text;
                 }
 
