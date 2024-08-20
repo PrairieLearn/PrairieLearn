@@ -114,7 +114,7 @@
 
                   // importing the notebookjs library doesn't return an object, it sets the global variable 'ns'
                   // importing DOMPurify sets the global variable DOMPurify.
-                  await Promise.all([import('marked'), import('purify'), import('notebook')]).then(async ([Marked]) => {                                    
+                  await Promise.all([import('marked'), import('dompurify'), import('notebookjs')]).then(async ([Marked]) => {                                    
                      nb.markdown = Marked.marked.parse;
                      nb.sanitizer = DOMPurify.sanitize;
                      const notebook = nb.parse(JSON.parse(text));
