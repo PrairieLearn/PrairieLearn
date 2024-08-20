@@ -59,8 +59,10 @@ if __name__ == "__main__":
         all_results = []
         format_errors = []
         gradable = True
+        has_test_cases = False
         for i in range(test_case.total_iters):
             suite = loader.loadTestsFromTestCase(test_case)
+            has_test_cases = suite.countTestCases() > 0
             result = PLTestResult()
             suite.run(result)
             all_results.append(result.getResults())
@@ -118,10 +120,8 @@ if __name__ == "__main__":
 
         # Instructors may have named their tests incorrectly or somehow misconfigured things.
         # Help point them in the right direction.
-        if len(results) == 0:
-            grading_result["message"] = (
-                "No tests were found. Please check your test cases."
-            )
+        if not has_test_cases:
+            grading_result["message"] = "No tests were found."
 
         # Save images
         grading_result["images"] = []
