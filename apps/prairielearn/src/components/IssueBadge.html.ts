@@ -34,6 +34,7 @@ export function IssueBadge({
       href="${urlPrefix}/course_admin/issues${issueQid
         ? `?q=is%3Aopen+qid%3A${encodeURIComponent(issueQid)}`
         : ''}"
+      aria-label="${count} open ${count === 1 ? 'issue' : 'issues'}"
     >
       ${count}
     </a>

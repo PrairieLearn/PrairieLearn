@@ -596,7 +596,11 @@ function StaffTable({
                                 </button>
                               </div>
                             </div>
-                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                            <button
+                              type="submit"
+                              class="btn btn-sm btn-outline-primary"
+                              aria-label="Remove access"
+                            >
                               <i class="fa fa-times"></i>
                             </button>
                           </div>
