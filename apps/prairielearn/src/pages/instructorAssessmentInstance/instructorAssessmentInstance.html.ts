@@ -100,7 +100,10 @@ export function InstructorAssessmentInstance({
         })}
         <main id="content" class="container-fluid">
           <h1 class="sr-only">
-            ${resLocals.assessment_instance_label} instance for ${resLocals.instance_user.name}
+            ${resLocals.assessment_instance_label} instance for
+            ${resLocals.instance_group
+              ? html`${resLocals.instance_group.name}`
+              : html`${resLocals.instance_user.name}`}
           </h1>
           ${ResetQuestionVariantsModal({
             csrfToken: resLocals.__csrf_token,
@@ -115,10 +118,12 @@ export function InstructorAssessmentInstance({
           })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Summary:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2>
+                ${resLocals.assessment_instance_label} Summary:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
 
             <table class="table table-sm table-hover two-column-description">
@@ -173,6 +178,7 @@ export function InstructorAssessmentInstance({
                             data-container="body"
                             data-html="false"
                             title="Client Fingerprint Changes"
+                            aria-label="Client Fingerprint Changes"
                             data-content="Client fingerprints are a record of a user's IP address, user agent and sesssion. These attributes are tracked while a user is accessing an assessment. This value indicates the amount of times that those attributes changed as the student accessed the assessment, while the assessment was active. Some changes may naturally occur during an assessment, such as if a student changes network connections or browsers. However, a high number of changes in an exam-like environment could be an indication of multiple people accessing the same assessment simultaneously, which may suggest an academic integrity issue. Accesses taking place after the assessment has been closed are not counted, as they typically indicate scenarios where a student is reviewing their results, which may happen outside of a controlled environment."
                             ><i class="fa fa-question-circle"></i
                           ></a>
@@ -203,6 +209,7 @@ export function InstructorAssessmentInstance({
                             data-html="true"
                             data-placement="auto"
                             title="Change total points"
+                            aria-label="Change total points"
                             data-content="${escapeHtml(
                               EditTotalPointsForm({
                                 resLocals,
@@ -232,6 +239,7 @@ export function InstructorAssessmentInstance({
                             data-html="true"
                             data-placement="auto"
                             title="Change total percentage score"
+                            aria-label="Change total percentage score"
                             data-content="${escapeHtml(
                               EditTotalScorePercForm({
                                 resLocals,
@@ -292,10 +300,12 @@ export function InstructorAssessmentInstance({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Questions:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2>
+                ${resLocals.assessment_instance_label} Questions:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
 
             <table id="instanceQuestionList" class="table table-sm table-hover">
@@ -458,10 +468,12 @@ export function InstructorAssessmentInstance({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Statistics:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2>
+                ${resLocals.assessment_instance_label} Statistics:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
             <table id="instanceQuestionStatsTable" class="table table-sm table-hover tablesorter">
               <thead>
@@ -510,10 +522,12 @@ export function InstructorAssessmentInstance({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Log:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2>
+                ${resLocals.assessment_instance_label} Log:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
             <div class="card-body">
               <small>

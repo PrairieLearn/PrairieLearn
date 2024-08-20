@@ -77,7 +77,7 @@ export function StudentAssessments({
                     ${row.start_new_assessment_group
                       ? html`
                           <tr>
-                            <th colspan="4" data-testid="assessment-group-heading">
+                            <th colspan="4" scope="row" data-testid="assessment-group-heading">
                               ${row.assessment_group_heading}
                             </th>
                           </tr>
@@ -85,25 +85,12 @@ export function StudentAssessments({
                       : ''}
                     <tr>
                       <td class="align-middle" style="width: 1%">
-                        ${row.multiple_instance_header ||
-                        (!row.active && row.assessment_instance_id === null)
-                          ? html`
-                              <span
-                                class="badge color-${row.assessment_set_color}"
-                                data-testid="assessment-set-badge"
-                              >
-                                ${row.label}
-                              </span>
-                            `
-                          : html`
-                              <a
-                                href="${urlPrefix}${row.link}"
-                                class="badge color-${row.assessment_set_color} color-hover"
-                                data-testid="assessment-set-badge"
-                              >
-                                ${row.label}
-                              </a>
-                            `}
+                        <span
+                          class="badge color-${row.assessment_set_color}"
+                          data-testid="assessment-set-badge"
+                        >
+                          ${row.label}
+                        </span>
                       </td>
                       <td class="align-middle">
                         ${row.multiple_instance_header ||
@@ -124,8 +111,6 @@ export function StudentAssessments({
                           : 'Assessment closed.'}
                         ${StudentAccessRulesPopover({
                           accessRules: row.access_rules,
-                          assessmentSetName: row.assessment_set_name,
-                          assessmentNumber: row.assessment_number,
                         })}
                       </td>
                       <td class="text-center align-middle">

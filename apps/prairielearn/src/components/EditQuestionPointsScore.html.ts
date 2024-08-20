@@ -37,6 +37,7 @@ export function EditQuestionPointsScoreButton({
     data-html="true"
     data-placement="auto"
     title="Change question ${label}"
+    aria-label="Change question ${label}"
     data-content="${escapeHtml(editForm)}"
     data-testid="edit-question-points-score-button-${field}"
   >
