@@ -26,7 +26,7 @@ router.get(
   '/:query',
   asyncHandler(async (req, res, next) => {
     const jsonFilename = req.params.query + '.json';
-    const jsFilename = req.params.query + '.js';
+    const queryFilename = req.params.query + '.js';
 
     const info = AdministratorQuerySchema.parse(
       await jsonLoad.readJSON(path.join(queriesDir, jsonFilename)),
@@ -69,7 +69,7 @@ router.get(
           resLocals: res.locals,
           query_run_id,
           query_run,
-          queryFilename: jsFilename,
+          queryFilename,
           info,
           recent_query_runs,
         }),
