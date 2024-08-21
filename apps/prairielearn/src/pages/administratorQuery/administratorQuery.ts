@@ -22,20 +22,11 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const queriesDir = path.resolve(import.meta.dirname, '..', '..', 'admin_queries');
 
-export interface AdministratorQueryRunParams {
-  name: string;
-  sql: string;
-  params: Record<string, any>;
-  authn_user_id: string;
-  error?: string | null;
-  result: AdministratorQueryResult | null;
-}
-
 router.get(
   '/:query',
   asyncHandler(async (req, res, next) => {
     const jsonFilename = req.params.query + '.json';
-    const jsFilename = req.params.query + '.js';
+    const queryFilename = req.params.query + '.js';
 
     const info = AdministratorQuerySchema.parse(
       await jsonLoad.readJSON(path.join(queriesDir, jsonFilename)),
@@ -78,7 +69,7 @@ router.get(
           resLocals: res.locals,
           query_run_id,
           query_run,
-          queryFilename: jsFilename,
+          queryFilename,
           info,
           recent_query_runs,
         }),
@@ -91,7 +82,7 @@ router.post(
   '/:query',
   asyncHandler(async (req, res, _next) => {
     const jsonFilename = req.params.query + '.json';
-    const jsFilename = req.params.query + '.js';
+    const queryFilename = req.params.query + '.js';
 
     const info = AdministratorQuerySchema.parse(
       await jsonLoad.readJSON(path.join(queriesDir, jsonFilename)),
@@ -102,12 +93,10 @@ router.post(
       queryParams[p.name] = req.body[p.name];
     });
 
-    let sqlOrModuleInfo = '';
     let error: string | null = null;
     let result: AdministratorQueryResult | null = null;
     try {
-      const module = await import(path.join(queriesDir, jsFilename));
-      sqlOrModuleInfo = module.default.toString();
+      const module = await import(path.join(queriesDir, queryFilename));
       result = (await module.default(queryParams)) as AdministratorQueryResult;
     } catch (err) {
       logger.error(err);
@@ -118,7 +107,6 @@ router.post(
       sql.insert_query_run,
       {
         name: req.params.query,
-        sql: sqlOrModuleInfo,
         params: queryParams,
         authn_user_id: res.locals.authn_user.user_id,
         error,

@@ -36,7 +36,7 @@ describe('AdministratorQuery page', function () {
     assert.isTrue(response.ok);
 
     // we should have results from the query
-    const results = response.$('[data-test-id="row-count"]');
+    const results = response.$('[data-testid="row-count"]');
     assert.lengthOf(results, 1);
   });
 
@@ -53,10 +53,10 @@ describe('AdministratorQuery page', function () {
     assert.isTrue(postResponse.ok);
 
     // we should have results from the query
-    const results = postResponse.$('[data-test-id="row-count"]');
+    const results = postResponse.$('[data-testid="row-count"]');
     assert.lengthOf(results, 1);
     assert.equal(results.text().replaceAll(/\s+/g, ' ').trim(), '3 rows');
-    const table = postResponse.$('[data-test-id="results-table"]');
+    const table = postResponse.$('[data-testid="results-table"]');
     assert.lengthOf(table, 1);
     assert.lengthOf(table.find('tbody tr'), 3);
   });

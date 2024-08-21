@@ -133,7 +133,7 @@ export function AdministratorQuery({
                     ${query_run?.result != null
                       ? html`
                           <div class="ml-auto">
-                            <span class="mr-2" data-test-id="row-count">
+                            <span class="mr-2" data-testid="row-count">
                               ${query_run.result.rows?.length ?? 0}
                               ${query_run.result.rows?.length === 1 ? 'row' : 'rows'}
                             </span>
@@ -163,7 +163,7 @@ export function AdministratorQuery({
                   <div class="table-responsive">
                     <table
                       class="table table-sm table-hover table-striped tablesorter"
-                      data-test-id="results-table"
+                      data-testid="results-table"
                     >
                       <thead>
                         <tr>
