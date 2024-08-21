@@ -98,17 +98,6 @@ export const AssessmentsFormatForQuestionSchema = z.array(
   }),
 );
 
-// Result of grading_job_status sproc
-export const GradingJobStatusSchema = z.enum([
-  'none',
-  'canceled',
-  'queued',
-  'grading',
-  'graded',
-  'requested',
-]);
-export type GradingJobStatus = z.infer<typeof GradingJobStatusSchema>;
-
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -151,6 +140,7 @@ export const AssessmentSchema = z.object({
   advance_score_perc: z.number().nullable(),
   allow_issue_reporting: z.boolean().nullable(),
   allow_real_time_grading: z.boolean().nullable(),
+  allow_personal_notes: z.boolean(),
   assessment_module_id: IdSchema.nullable(),
   assessment_set_id: IdSchema.nullable(),
   auto_close: z.boolean().nullable(),

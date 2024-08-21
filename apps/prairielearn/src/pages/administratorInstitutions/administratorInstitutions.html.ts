@@ -31,11 +31,6 @@ export function AdministratorInstitutions({
         ${HeadContents({ resLocals, pageTitle: 'Institutions' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
           ...resLocals,
           navPage: 'admin',
@@ -44,7 +39,7 @@ export function AdministratorInstitutions({
         <main id="content" class="container-fluid">
           <div id="institutions" class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              Institutions
+              <h1>Institutions</h1>
               <button
                 type="button"
                 class="btn btn-sm btn-light ml-auto"
@@ -123,14 +118,7 @@ export function AdministratorInstitutions({
                 </div>
               `,
               footer: html`
-                <button
-                  type="button"
-                  class="btn btn-secondary"
-                  data-dismiss="modal"
-                  onclick="$('#add-institution-modal').modal('hide')"
-                >
-                  Cancel
-                </button>
+                <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
                 <button type="submit" class="btn btn-primary">Add institution</button>
               `,
             })}

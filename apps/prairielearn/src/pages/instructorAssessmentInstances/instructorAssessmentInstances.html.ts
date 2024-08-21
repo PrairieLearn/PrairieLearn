@@ -93,7 +93,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Students
+              <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Students</h1>
               ${resLocals.authz_data.has_course_instance_permission_edit
                 ? html`
                     <div class="ml-auto">
@@ -107,11 +107,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                         >
                           Action for all instances <span class="caret"></span>
                         </button>
-                        <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
-                        <div
-                          class="dropdown-menu dropdown-menu-right"
-                          onclick="window.event.preventDefault();"
-                        >
+                        <div class="dropdown-menu dropdown-menu-right">
                           ${resLocals.authz_data.has_course_instance_permission_edit
                             ? html`
                                 <button
@@ -124,6 +120,8 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                                 </button>
                                 <button
                                   class="dropdown-item time-limit-edit-button time-limit-edit-all-button"
+                                  data-placement="left"
+                                  data-bs-toggle-popover
                                 >
                                   <i class="far fa-clock" aria-hidden="true"></i> Change time limit
                                   for all instances
@@ -305,32 +303,30 @@ function TimeRemainingHelpModal() {
     id: 'time-remaining-help',
     title: 'Time Remaining',
     body: html`
-      <div class="modal-body">
-        <p>
-          For open assessments with a time limit, this column will indicate the number of minutes
-          (rounded down) the student has left to complete the assessment. If the value is
-          <strong>&lt; 1 min</strong>, the student has less than one minute to complete it. This
-          column may also contain one of the following special values.
-        </p>
-        <ul>
-          <li>
-            <strong>Expired</strong> indicates the assessment time limit has expired, and will be
-            automatically closed as soon as possible. If an assessment is Expired for a prolonged
-            period of time, this typically means the student has closed their browser or lost
-            connectivity, and the assessment will be closed as soon as the student opens the
-            assessment. No further submissions are accepted at this point.
-          </li>
-          <li>
-            <strong>Closed</strong> indicates the assessment has been closed, and no further
-            submissions are accepted.
-          </li>
-          <li>
-            <strong>Open (no time limit)</strong> indicates that the assessment is still open and
-            accepting submissions, and there is no time limit to submit the assessment (other than
-            those indicated by access rules).
-          </li>
-        </ul>
-      </div>
+      <p>
+        For open assessments with a time limit, this column will indicate the number of minutes
+        (rounded down) the student has left to complete the assessment. If the value is
+        <strong>&lt; 1 min</strong>, the student has less than one minute to complete it. This
+        column may also contain one of the following special values.
+      </p>
+      <ul>
+        <li>
+          <strong>Expired</strong> indicates the assessment time limit has expired, and will be
+          automatically closed as soon as possible. If an assessment is Expired for a prolonged
+          period of time, this typically means the student has closed their browser or lost
+          connectivity, and the assessment will be closed as soon as the student opens the
+          assessment. No further submissions are accepted at this point.
+        </li>
+        <li>
+          <strong>Closed</strong> indicates the assessment has been closed, and no further
+          submissions are accepted.
+        </li>
+        <li>
+          <strong>Open (no time limit)</strong> indicates that the assessment is still open and
+          accepting submissions, and there is no time limit to submit the assessment (other than
+          those indicated by access rules).
+        </li>
+      </ul>
     `,
     footer: html`
       <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>

@@ -97,3 +97,40 @@ WHERE
   AND q.deleted_at IS NULL
 ORDER BY
   aq.number;
+
+-- BLOCK count_instance_questions_to_grade
+SELECT
+  COUNT(*)::INTEGER
+FROM
+  instance_questions AS iq
+  JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+WHERE
+  iq.assessment_question_id = $unsafe_assessment_question_id
+  AND aq.assessment_id = $assessment_id
+  AND iq.requires_manual_grading
+  AND iq.assigned_grader IS NULL
+  AND iq.status != 'unanswered';
+
+-- BLOCK update_instance_question_graders
+UPDATE instance_questions
+SET
+  assigned_grader = $assigned_grader
+WHERE
+  id IN (
+    SELECT
+      iq.id
+    FROM
+      instance_questions AS iq
+      JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+    WHERE
+      iq.assessment_question_id = $unsafe_assessment_question_id
+      AND aq.assessment_id = $assessment_id
+      AND iq.requires_manual_grading
+      AND iq.assigned_grader IS NULL
+      AND iq.status != 'unanswered'
+    ORDER BY
+      RANDOM(),
+      iq.id
+    LIMIT
+      $limit
+  );

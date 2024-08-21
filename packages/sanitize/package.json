@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/sanitize",
-  "version": "2.0.3",
+  "version": "2.0.5",
   "type": "module",
   "main": "./dist/index.js",
   "repository": {
@@ -15,12 +15,12 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.14.9",
+    "@types/node": "^20.14.15",
     "c8": "^10.1.2",
     "chai": "^5.1.1",
-    "mocha": "^10.6.0",
-    "tsx": "^4.16.2",
-    "typescript": "^5.5.3"
+    "mocha": "^10.7.3",
+    "tsx": "^4.17.0",
+    "typescript": "^5.5.4"
   },
   "c8": {
     "reporter": [

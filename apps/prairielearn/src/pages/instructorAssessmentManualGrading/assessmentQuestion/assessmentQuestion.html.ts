@@ -11,14 +11,17 @@ import {
   compiledScriptTag,
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
+import type { User } from '../../../lib/db-types.js';
 
 import { InstanceQuestionTableData } from './assessmentQuestion.types.js';
 
 export function AssessmentQuestion({
   resLocals,
+  courseStaff,
   botGradingEnabled,
 }: {
   resLocals: Record<string, any>;
+  courseStaff: User[];
   botGradingEnabled: boolean;
 }) {
   const {
@@ -30,7 +33,6 @@ export function AssessmentQuestion({
     __csrf_token,
     authz_data,
     assessment_question,
-    course_staff,
     num_open_instances,
     course_instance,
     course,
@@ -66,7 +68,7 @@ export function AssessmentQuestion({
             groupWork: assessment.group_work,
             maxAutoPoints: assessment_question.max_auto_points,
             botGradingEnabled,
-            courseStaff: course_staff,
+            courseStaff,
             csrfToken: __csrf_token,
           },
           'instance-question-table-data',
@@ -106,7 +108,9 @@ export function AssessmentQuestion({
             : ''}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}
+              <h1>
+                ${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}
+              </h1>
             </div>
             <form name="grading-form" method="POST">
               <input type="hidden" name="__action" value="batch_action" />
@@ -126,8 +130,8 @@ function GradingConflictModal() {
     title: 'Grading conflict detected',
     body: html`<p>Another grader has already graded this submission.</p>`,
     footer: html`
-      <a class="btn btn-primary conflict-details-link" href="/">See details</a>
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Dismiss</button>
+      <a class="btn btn-primary conflict-details-link" href="/">See details</a>
     `,
   });
 }

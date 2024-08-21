@@ -177,7 +177,7 @@ export function AdministratorQuery({
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <span class="font-weight-bold text-monospace">${sqlFilename}</span>
+              <h1>Query: <span class="text-monospace">${sqlFilename}</span></h1>
               <button
                 class="btn btn-xs btn-light ml-2 my-n2"
                 type="button"

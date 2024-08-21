@@ -300,7 +300,7 @@ This element supports additional preview options through [element extensions](el
 
 - [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
 - [`pl-file-preview` to display previously submitted files](#pl-file-preview-element)
-- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results-element)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-string-input` for receiving a single string value](#pl-string-input-element)
 
@@ -309,7 +309,7 @@ This element supports additional preview options through [element extensions](el
 ### `pl-file-upload` element
 
 Provides a way to accept file uploads as part of an answer. They will be stored
-in [the format expected by externally graded questions](externalGrading.md#file-submission-format).
+in the format expected by externally graded questions.
 
 #### Sample element
 
@@ -333,7 +333,7 @@ in [the format expected by externally graded questions](externalGrading.md#file-
 #### See also
 
 - [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
-- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results-element)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-string-input` for receiving a single string value](#pl-string-input-element)
 
@@ -415,7 +415,7 @@ Note that answers can include underscores which are ignored (i.e., `1_000` will 
 
 ### `pl-matching` element
 
-Given a list of statements, select a matching option for each entry from a drop-down list.
+Given a list of statements, select a matching option for each entry from a dropdown list.
 
 #### Sample element
 
@@ -439,12 +439,13 @@ Given a list of statements, select a matching option for each entry from a drop-
 | --------------------- | ---------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `answers-name`        | string                                                     | —             | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                   |
 | `weight`              | integer                                                    | 1             | Weight to use when computing a weighted average score over elements.                                                                                                                                                   |
-| `fixed-order`         | boolean                                                    | False         | Whether or not to display the statements in a fixed order; otherwise they are shuffled.                                                                                                                                |
-| `fixed-options-order` | boolean                                                    | False         | Whether or not to display the options in a fixed order; otherwise they are shuffled. See the details of `pl-option` below for more information on option ordering.                                                     |
+| `fixed-order`         | boolean                                                    | false         | Whether or not to display the statements in a fixed order; otherwise they are shuffled.                                                                                                                                |
+| `fixed-options-order` | boolean                                                    | false         | Whether or not to display the options in a fixed order; otherwise they are shuffled. See the details of `pl-option` below for more information on option ordering.                                                     |
 | `number-statements`   | integer                                                    | special       | The number of statements to display. Defaults to all statements.                                                                                                                                                       |
 | `number-options`      | integer                                                    | special       | The number of options to display. Defaults to all options. The `none-of-the-above` option does not count towards this number.                                                                                          |
 | `none-of-the-above`   | boolean                                                    | false         | Whether or not to add a "None of the above" to the end of the options.                                                                                                                                                 |
-| `blank`               | boolean                                                    | True          | Option to add blank dropdown entry as the default selection in each drop-down list.                                                                                                                                    |
+| `blank`               | boolean                                                    | true          | Option to add blank dropdown entry as the default selection in each dropdown list.                                                                                                                                     |
+| `allow-blank`         | boolean                                                    | false         | Whether or not a blank submission is allowed. If this is set to true, a statement that selects the blank entry will be marked as incorrect instead of invalid.                                                         |
 | `counter-type`        | "decimal" or "lower-alpha" or "upper-alpha" or "full-text" | "lower-alpha" | The type of counter to use when enumerating the options. If set to "full-text", the column of options will be hidden, and the text of each option will be used in the statements' dropdown lists, instead of counters. |
 | `hide-score-badge`    | boolean                                                    | false         | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.                                                                                                                            |
 | `options-placement`   | "right" or "bottom"                                        | "right"       | The placement of options relative to the statements in order to make it visually cohesive. Especially useful when dealing with long statements or options.                                                             |
@@ -886,6 +887,7 @@ Provides an in-browser rich text editor, aimed mostly at manual grading essay-ty
 | `format`             | `html` or `markdown`          | `html`             | Format used to save the student's response. This format also affects how the source file name or inner HTML is interpreted.                                                                                                                                                                                                                                                                                                                           |
 | `markdown-shortcuts` | boolean                       | `true`             | Whether or not the editor accepts shortcuts based on markdown format (e.g., typing `_word_` causes the word to become italic).                                                                                                                                                                                                                                                                                                                        |
 | `counter`            | `word`, `character` or `none` | `none`             | Whether a word or character count should be displayed at the bottom of the editor.                                                                                                                                                                                                                                                                                                                                                                    |
+| `allow-blank`        | boolean                       | false              | Whether or not an empty input box is allowed. By default, empty submissions will not be graded (invalid format).                                                                                                                                                                                                                                                                                                                                      |
 
 #### Example implementations
 
@@ -1451,7 +1453,7 @@ Commonly appears in the submission panel with companion `pl-external-grader-resu
 
 - [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
 - [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
-- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results-element)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 
 ---
@@ -2042,7 +2044,7 @@ Displays results from externally-graded questions.
 
 #### Details
 
-It expects results to follow [the reference schema for external grading results](externalGrading.md#grading-result).
+It expects results to follow [the reference schema for external grading results](externalGrading.md#grading-results).
 
 #### Example Implementations
 
@@ -2051,7 +2053,7 @@ It expects results to follow [the reference schema for external grading results]
 
 #### See also
 
-- [External Grading Reference Schema](externalGrading.md#grading-result)
+- [External Grading Reference Schema](externalGrading.md#grading-results)
 
 ---
 
@@ -2342,6 +2344,7 @@ def generate(data):
 | `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
 | `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                    |
 | `blank`        | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.                                                                                           |
+| `allow-blank`  | boolean | false   | Whether or not an empty submission is allowed. By default, empty dropdowns will not be graded (invalid format).                                                      |
 
 #### Example implementation
 
