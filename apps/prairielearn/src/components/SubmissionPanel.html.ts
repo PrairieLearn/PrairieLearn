@@ -431,7 +431,10 @@ function SubmissionInfoModal({
     body: !gradingJobStats
       ? html`<p>This submission has not been graded.</p>`
       : html`
-          <table class="table table-sm table-borderless two-column-description mb-0">
+          <table
+            class="table table-sm table-borderless two-column-description mb-0"
+            aria-label="Submission info"
+          >
             <tbody>
               <tr>
                 <th>Submission time</th>

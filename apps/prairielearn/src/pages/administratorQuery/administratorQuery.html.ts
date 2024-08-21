@@ -163,6 +163,7 @@ export function AdministratorQuery({
                   <div class="table-responsive">
                     <table
                       class="table table-sm table-hover table-striped tablesorter"
+                      aria-label="Query results"
                       data-testid="results-table"
                     >
                       <thead>
@@ -197,7 +198,7 @@ export function AdministratorQuery({
             <div class="table-responsive">
               ${recent_query_runs.length > 0
                 ? html`
-                    <table class="table table-sm">
+                    <table class="table table-sm" aria-label="Recent query runs">
                       <thead>
                         <tr>
                           <th>Date</th>
