@@ -1,6 +1,6 @@
 # LTI 1.3 configuration
 
-LTI 1.3 is available in early beta. Reach out to support@prairielearn.com to get it set up.
+LTI 1.3 is available in beta. Reach out to support@prairielearn.com to get it set up.
 
 Learning Tools Interoperability (LTI) provides app integration between Learning Management Systems (LMSes) like Canvas, Moodle, etc. and PrairieLearn. It includes single sign on from the LMS with additional features like course context information and roles. Version 1.3 enhances LTI to include an API for asynchronous two-way updates for assessments, scores, and rosters.
 
