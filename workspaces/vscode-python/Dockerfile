@@ -57,8 +57,11 @@ RUN export arch=`uname -m` \
  && . "/home/coder/conda/etc/profile.d/conda.sh" \
  && . "/home/coder/conda/etc/profile.d/mamba.sh" \
  && mamba activate \
- # Mamba can install pygraphviz without compile errors if we do so first, separately from the rest of the requirements:
- && mamba install --yes --quiet $(grep pygraphviz /requirements.txt | head -n 1) \
+ # Installing `pygraphviz` with pip would require `build-essentials`, `graphviz`,
+ # and `graphviz-dev` to be installed at the OS level, which would increase the
+ # image size. Instead, we install it from Conda, which prebuilds it and also
+ # automatically installs a Conda-specific `graphviz` dependency.
+ && mamba install --yes $(grep pygraphviz /requirements.txt | head -n 1) \
  && pip install -r /requirements.txt \
  && rm "Miniforge3-Linux-${arch}.sh" \
  && mamba clean --all --yes --quiet \
