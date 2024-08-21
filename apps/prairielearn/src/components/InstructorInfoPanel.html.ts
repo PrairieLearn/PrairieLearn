@@ -130,7 +130,7 @@ function InstanceUserInfo({
               </div>
             `
           : html`
-              <h3 class="card-title d-inline-block h5">Student details</h3>
+              <summary><h3 class="card-title d-inline-block h5">Student details</h3></summary>
               <div class="d-flex flex-wrap pb-2">
                 <div class="pr-1">${instance_user?.name}</div>
                 <div class="pr-1">${instance_user?.uid}</div>
