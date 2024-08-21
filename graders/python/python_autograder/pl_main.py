@@ -93,7 +93,9 @@ if __name__ == "__main__":
         # Compile total number of points
         max_points = test_case.get_total_points()
         earned_points = sum([test["points"] for test in results])
-        score = 0 if float(max_points) == 0 else float(earned_points) / float(max_points)
+        score = (
+            0 if float(max_points) == 0 else float(earned_points) / float(max_points)
+        )
 
         # load output files to results
         add_files(results)
