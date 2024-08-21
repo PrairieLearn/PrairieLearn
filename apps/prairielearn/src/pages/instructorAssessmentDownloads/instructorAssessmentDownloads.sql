@@ -390,7 +390,7 @@ SELECT
       END
     ) || '_' || qid || '_' || submission_id || '_' || filename
   ) AS filename,
-  base64_safe_decode (contents) AS contents
+  contents
 FROM
   all_files
 WHERE
@@ -536,7 +536,7 @@ SELECT
       END
     ) || '_' || assessment_instance_number || '_' || qid || '_' || variant_number || '_' || submission_number || '_' || submission_id || '_' || filename
   ) AS filename,
-  base64_safe_decode (contents) AS contents
+  contents
 FROM
   all_files
 WHERE
