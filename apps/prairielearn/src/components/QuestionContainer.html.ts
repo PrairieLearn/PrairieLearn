@@ -74,7 +74,9 @@ export function QuestionContainer({
         : QuestionPanel({ resLocals, questionContext })}
 
       <div class="card mb-4 grading-block${showTrueAnswer ? '' : ' d-none'}">
-        <div class="card-header bg-secondary text-white">Correct answer</div>
+        <div class="card-header bg-secondary text-white">
+          <h2>Correct answer</h2>
+        </div>
         <div class="card-body answer-body">${showTrueAnswer ? unsafeHtml(answerHtml) : ''}</div>
       </div>
 

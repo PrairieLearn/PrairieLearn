@@ -73,7 +73,9 @@ export function InstructorInfoPanel({
 
   return html`
     <div class="card mb-4 border-warning">
-      <div class="card-header bg-warning">Staff information</div>
+      <div class="card-header bg-warning">
+        <h2>Staff information</h2>
+      </div>
       <div class="card-body">
         ${StaffUserInfo({ user })}
         ${InstanceUserInfo({ instance_user, instance_group, instance_group_uid_list })}
@@ -97,7 +99,7 @@ export function InstructorInfoPanel({
 
 function StaffUserInfo({ user }: { user: User }) {
   return html`
-    <h2 class="card-title h5">Staff user:</h2>
+    <h3 class="card-title h5">Staff user:</h3>
     <div class="d-flex flex-wrap pb-2">
       <div class="pr-1">${user.name}</div>
       <div class="pr-1">${user.uid}</div>
@@ -121,16 +123,14 @@ function InstanceUserInfo({
       <details>
         ${instance_group != null
           ? html`
-              <summary><h2 class="card-title h5">Group details</h2></summary>
+              <summary><h3 class="card-title h5">Group details</h3></summary>
               <div class="d-flex flex-wrap pb-2">
                 <div class="pr-1">${instance_group.name}</div>
                 <div class="pr-1">(${instance_group_uid_list?.join(', ')})</div>
               </div>
             `
           : html`
-              <summary>
-                <h2 class="card-title d-inline-block h5">Student details</h2>
-              </summary>
+              <summary><h3 class="card-title d-inline-block h5">Student details</h3></summary>
               <div class="d-flex flex-wrap pb-2">
                 <div class="pr-1">${instance_user?.name}</div>
                 <div class="pr-1">${instance_user?.uid}</div>
@@ -176,7 +176,7 @@ function QuestionInfo({
 
   return html`
     <hr />
-    <h2 class="card-title h5">Question:</h2>
+    <h3 class="card-title h5">Question:</h3>
 
     <div class="d-flex flex-wrap">
       <div class="pr-1">QID:</div>
@@ -276,7 +276,7 @@ function AssessmentInstanceInfo({
 
   return html`
     <hr />
-    <h2 class="card-title h5">Assessment Instance:</h2>
+    <h3 class="card-title h5">Assessment Instance:</h3>
     <div class="d-flex flex-wrap">
       <div class="pr-1">AID:</div>
       <div>
@@ -326,7 +326,7 @@ function ManualGradingInfo({
 
   return html`
     <hr />
-    <h2 class="card-title h5">Manual Grading:</h2>
+    <h3 class="card-title h5">Manual Grading:</h3>
 
     <div class="d-flex flex-wrap">
       <div class="pr-1">Status:</div>

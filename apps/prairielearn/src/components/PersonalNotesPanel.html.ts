@@ -26,9 +26,9 @@ export function PersonalNotesPanel({
 }) {
   return html`
     <div class="card mb-4" id="attach-file-panel">
-      <div class="card-header bg-secondary text-white">
+      <div class="card-header bg-secondary text-white d-flex align-items-center">
         <i class="fas fa-paperclip"></i>
-        Personal Notes
+        <h2>&nbsp;Personal Notes</h2>
       </div>
       ${fileList.length === 0
         ? html`<div class="card-body"><i>No attached notes</i></div>`
