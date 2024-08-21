@@ -778,7 +778,7 @@ export const QueryRunSchema = z.object({
   name: z.string(),
   params: z.record(z.string(), z.any()).nullable(),
   result: z.record(z.string(), z.any()).nullable(),
-  sql: z.string(),
+  // The sql column is deprecated and slated for removal in a near-future PR, so it is not included.
 });
 export type QueryRun = z.infer<typeof QueryRunSchema>;
 

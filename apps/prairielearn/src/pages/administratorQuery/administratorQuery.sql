@@ -1,15 +1,8 @@
 -- BLOCK insert_query_run
 INSERT INTO
-  query_runs (name, sql, params, error, result, authn_user_id)
+  query_runs (name, params, error, result, authn_user_id)
 VALUES
-  (
-    $name,
-    $sql,
-    $params,
-    $error,
-    $result,
-    $authn_user_id
-  )
+  ($name, $params, $error, $result, $authn_user_id)
 RETURNING
   id;
 
