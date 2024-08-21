@@ -172,7 +172,7 @@ function ImageTable({
 
   return html`
     <div class="table-responsive">
-      <table class="table table-sm" arial-label="Docker images">
+      <table class="table table-sm" aria-label="Docker images">
         <thead>
           <tr>
             <th>Image name</th>

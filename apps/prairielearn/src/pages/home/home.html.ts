@@ -169,7 +169,7 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
 
       <table
         class="table table-sm table-hover table-striped"
-        arial-label="Courses with instructor access"
+        aria-label="Courses with instructor access"
       >
         <tbody>
           ${instructorCourses.map(
