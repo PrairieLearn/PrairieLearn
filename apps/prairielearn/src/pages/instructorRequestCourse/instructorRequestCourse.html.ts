@@ -70,7 +70,7 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
         <h2>Course Requests</h2>
       </div>
       <div class="table-responsive">
-        <table class="table table-sm table-hover table-striped">
+        <table class="table table-sm table-hover table-striped" aria-label="Course requests">
           <thead>
             <tr>
               <th>Short Name</th>

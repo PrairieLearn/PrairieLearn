@@ -157,6 +157,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
 
             <table
               id="usersTable"
+              aria-label="Assessment instances"
               data-unique-id="assessment_instance_id"
               data-classes="table table-sm table-hover table-bordered"
               data-show-button-text="true"

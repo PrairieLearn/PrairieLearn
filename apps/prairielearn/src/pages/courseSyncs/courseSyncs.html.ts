@@ -58,7 +58,7 @@ export function CourseSyncs({
               <h2>Repository status</h2>
             </div>
             <div class="table-responsive">
-              <table class="table table-sm">
+              <table class="table table-sm" aria-label="Repository status">
                 <tbody>
                   <tr>
                     <th class="align-middle">Current commit hash</th>
@@ -110,7 +110,7 @@ export function CourseSyncs({
               <h2>Sync job history</h2>
             </div>
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="Sync job history">
                 <thead>
                   <tr>
                     <th>Number</th>
@@ -172,7 +172,7 @@ function ImageTable({
 
   return html`
     <div class="table-responsive">
-      <table class="table table-sm">
+      <table class="table table-sm" aria-label="Docker images">
         <thead>
           <tr>
             <th>Image name</th>

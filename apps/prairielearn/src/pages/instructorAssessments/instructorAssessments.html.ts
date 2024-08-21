@@ -81,7 +81,7 @@ export function InstructorAssessments({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="Assessments">
                 <thead>
                   <tr>
                     <th style="width: 1%"><span class="sr-only">Label</span></th>

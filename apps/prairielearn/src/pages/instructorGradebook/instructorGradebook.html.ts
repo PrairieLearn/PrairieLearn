@@ -82,7 +82,7 @@ export function InstructorGradebook({
                   <div class="card-header bg-primary text-white">
                     <h1>Gradebook</h1>
                   </div>
-                  <table id="gradebook-table"></table>
+                  <table id="gradebook-table" aria-label="Gradebook"></table>
 
                   <div class="spinning-wheel card-body spinner-border">
                     <span class="sr-only">Loading...</span>

@@ -59,7 +59,7 @@ export function StudentAssessments({
               <h1>Assessments</h1>
             </div>
 
-            <table class="table table-sm table-hover">
+            <table class="table table-sm table-hover" aria-label="Assessments">
               <thead>
                 <tr>
                   <th style="width: 1%"><span class="sr-only">Label</span></th>

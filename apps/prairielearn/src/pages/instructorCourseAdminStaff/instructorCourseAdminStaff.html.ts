@@ -360,7 +360,7 @@ function StaffTable({
   isAdministrator: boolean;
 }) {
   return html`
-    <table class="table table-sm table-hover table-striped">
+    <table class="table table-sm table-hover table-striped" aria-label="Course staff members">
       <thead>
         <th>UID</th>
         <th>Name</th>
@@ -682,7 +682,11 @@ function StaffTable({
 
 function AccessLevelsTable() {
   return html`
-    <table class="table table-striped table-sm border" style="max-width: 45em">
+    <table
+      class="table table-striped table-sm border"
+      style="max-width: 45em"
+      aria-label="Recommended access levels"
+    >
       <tr>
         <th scope="col">Role</th>
         <th class="text-center" scope="col">Course content access</th>

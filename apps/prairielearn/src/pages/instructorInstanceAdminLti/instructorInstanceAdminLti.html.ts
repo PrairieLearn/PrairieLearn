@@ -121,7 +121,7 @@ function LtiCredentialsCard({
         </p>
       </div>
 
-      <table class="table table-sm table-hover">
+      <table class="table table-sm table-hover" aria-label="LTI credentials">
         <thead>
           <tr>
             <th>Launch URL</th>
@@ -244,7 +244,7 @@ function LtiLinkTargetsCard({
         </p>
       </div>
 
-      <table class="table table-sm table-hover">
+      <table class="table table-sm table-hover" aria-label="LTI link targets">
         <thead>
           <tr>
             <th>Link info</th>

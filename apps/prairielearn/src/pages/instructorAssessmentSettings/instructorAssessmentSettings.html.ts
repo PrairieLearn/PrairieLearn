@@ -44,7 +44,10 @@ export function InstructorAssessmentSettings({
             <div class="card-header bg-primary text-white d-flex">
               <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
             </div>
-            <table class="table table-sm table-hover two-column-description">
+            <table
+              class="table table-sm table-hover two-column-description"
+              aria-label="Assessment settings"
+            >
               <tbody>
                 <tr>
                   <th scope="row">Title</th>

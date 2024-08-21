@@ -52,7 +52,10 @@ export function UserSettings({
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <h2>User profile</h2>
             </div>
-            <table class="table table-sm two-column-description">
+            <table
+              class="table table-sm two-column-description"
+              aria-label="User profile information"
+            >
               <tbody>
                 <tr>
                   <th>UID</th>

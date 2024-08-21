@@ -80,7 +80,7 @@ function AssessmentUploadCard({
       ${authzHasPermissionEdit
         ? html`
             <div class="table-responsive pb-0">
-              <table class="table">
+              <table class="table" aria-label="Score uploads">
                 <tr>
                   <td style="width: 1%">
                     <button
@@ -133,7 +133,7 @@ function AssessmentUploadCard({
         : ''}
 
       <div class="table-responsive">
-        <table class="table table-sm table-hover">
+        <table class="table table-sm table-hover" aria-label="Score upload job history">
           <thead>
             <tr>
               <th>Number</th>

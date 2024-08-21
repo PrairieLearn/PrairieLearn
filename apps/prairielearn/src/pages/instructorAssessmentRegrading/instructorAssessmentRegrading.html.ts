@@ -83,7 +83,7 @@ export function InstructorAssessmentRegrading({
               : ''}
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="Regrading job history">
                 <thead>
                   <tr>
                     <th>Number</th>

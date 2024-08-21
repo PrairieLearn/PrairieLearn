@@ -32,7 +32,7 @@ export function InstructorCourseAdminTags({
               <h1>Tags</h1>
             </div>
             <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
+              <table class="table table-sm table-hover table-striped" aria-label="Tags">
                 <thead>
                   <tr>
                     <th>Number</th>

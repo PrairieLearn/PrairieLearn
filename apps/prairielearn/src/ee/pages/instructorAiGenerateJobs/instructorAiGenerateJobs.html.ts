@@ -34,7 +34,7 @@ export function InstructorAIGenerateJobs({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Generation job history</div>
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="AI question generation jobs">
                 <thead>
                   <tr>
                     <th>Date</th>

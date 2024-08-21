@@ -143,7 +143,11 @@ export function InstructorAssessmentGroups({
                       `
                     : ''}
                   <div class="table-responsive">
-                    <table id="usersTable" class="table table-sm table-hover tablesorter">
+                    <table
+                      id="usersTable"
+                      class="table table-sm table-hover tablesorter"
+                      aria-label="Groups"
+                    >
                       <thead>
                         <tr>
                           <th>Name</th>

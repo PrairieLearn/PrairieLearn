@@ -162,7 +162,10 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
         <h2>Courses with instructor access</h2>
       </div>
 
-      <table class="table table-sm table-hover table-striped">
+      <table
+        class="table table-sm table-hover table-striped"
+        aria-label="Courses with instructor access"
+      >
         <tbody>
           ${instructorCourses.map(
             (course) => html`
@@ -204,10 +207,11 @@ function StudentCoursesCard({
   hasInstructorCourses: boolean;
   canAddCourses: boolean;
 }) {
+  const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        <h2>${hasInstructorCourses ? 'Courses with student access' : 'Courses'}</h2>
+        <h2>${heading}</h2>
         ${canAddCourses
           ? html`
               <a href="${config.urlPrefix}/enroll" class="btn btn-light btn-sm ml-auto">
@@ -243,7 +247,7 @@ function StudentCoursesCard({
                 </div>
               `
         : html`
-            <table class="table table-sm table-hover table-striped">
+            <table class="table table-sm table-hover table-striped" aria-label="${heading}">
               <tbody>
                 ${studentCourses.map(
                   (courseInstance) => html`

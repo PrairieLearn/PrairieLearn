@@ -123,7 +123,10 @@ export function InstructorAssessmentInstance({
               </h2>
             </div>
 
-            <table class="table table-sm table-hover two-column-description">
+            <table
+              class="table table-sm table-hover two-column-description"
+              aria-label="Assessment instance summary"
+            >
               <tbody>
                 ${resLocals.instance_group
                   ? html`
@@ -305,7 +308,11 @@ export function InstructorAssessmentInstance({
               </h2>
             </div>
 
-            <table id="instanceQuestionList" class="table table-sm table-hover">
+            <table
+              id="instanceQuestionList"
+              class="table table-sm table-hover"
+              aria-label="Assessment instance questions"
+            >
               <thead>
                 <tr>
                   <th>Student question</th>
@@ -472,7 +479,11 @@ export function InstructorAssessmentInstance({
                   : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
               </h2>
             </div>
-            <table id="instanceQuestionStatsTable" class="table table-sm table-hover tablesorter">
+            <table
+              id="instanceQuestionStatsTable"
+              class="table table-sm table-hover tablesorter"
+              aria-label="Assessment instance statistics"
+            >
               <thead>
                 <tr>
                   <th>Instructor question</th>
@@ -543,7 +554,11 @@ export function InstructorAssessmentInstance({
               </small>
             </div>
 
-            <table id="logTable" class="table table-sm table-hover tablesorter">
+            <table
+              id="logTable"
+              class="table table-sm table-hover tablesorter"
+              aria-label="Assessment instance log"
+            >
               <thead>
                 <tr>
                   <th>Time</th>

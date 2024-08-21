@@ -78,11 +78,13 @@ export function StudentInstanceQuestion({
                 ? html`
                     <div class="card mb-4">
                       <div class="card-header bg-primary text-white">
-                        ${QuestionTitle({
-                          questionContext,
-                          question: resLocals.question,
-                          questionNumber: resLocals.instance_question_info.question_number,
-                        })}
+                        <h1>
+                          ${QuestionTitle({
+                            questionContext,
+                            question: resLocals.question,
+                            questionNumber: resLocals.instance_question_info.question_number,
+                          })}
+                        </h1>
                       </div>
                       <div class="card-body">
                         This question was not viewed while the assessment was open, so no variant
@@ -98,13 +100,15 @@ export function StudentInstanceQuestion({
                 ? html`
                     <div class="card mb-4">
                       <div class="card-header bg-secondary">
-                        <a
-                          class="text-white"
-                          href="${resLocals.urlPrefix}/assessment_instance/${resLocals
-                            .assessment_instance.id}/"
-                        >
-                          ${resLocals.assessment_set.name} ${resLocals.assessment.number}
-                        </a>
+                        <h2>
+                          <a
+                            class="text-white"
+                            href="${resLocals.urlPrefix}/assessment_instance/${resLocals
+                              .assessment_instance.id}/"
+                          >
+                            ${resLocals.assessment_set.name} ${resLocals.assessment.number}
+                          </a>
+                        </h2>
                       </div>
 
                       <div class="card-body">

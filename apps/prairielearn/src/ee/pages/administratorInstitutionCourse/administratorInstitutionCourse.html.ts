@@ -129,7 +129,10 @@ export function AdministratorInstitutionCourse({
 
           <h2 class="h4">Course instances</h2>
           <div class="table-responsive">
-            <table class="table table-hover table-striped table-bordered table">
+            <table
+              class="table table-hover table-striped table-bordered table"
+              aria-label="Course instances"
+            >
               <thead>
                 <tr>
                   <th>Name</th>

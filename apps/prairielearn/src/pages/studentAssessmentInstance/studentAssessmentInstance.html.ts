@@ -189,7 +189,11 @@ export function StudentAssessmentInstance({
                 : ''}
             </div>
 
-            <table class="table table-sm table-hover" data-testid="assessment-questions">
+            <table
+              class="table table-sm table-hover"
+              aria-label="Questions"
+              data-testid="assessment-questions"
+            >
               <thead>
                 ${InstanceQuestionTableHeader({ resLocals })}
               </thead>

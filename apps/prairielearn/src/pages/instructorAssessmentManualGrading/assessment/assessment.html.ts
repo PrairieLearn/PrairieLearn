@@ -76,7 +76,11 @@ export function ManualGradingAssessment({
             </div>
 
             <div class="table-responsive">
-              <table id="instanceQuestionGradingTable" class="table table-sm table-hover">
+              <table
+                id="instanceQuestionGradingTable"
+                class="table table-sm table-hover"
+                aria-label="Questions for manual grading"
+              >
                 <thead>
                   <tr>
                     <th>Question</th>

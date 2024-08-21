@@ -54,7 +54,10 @@ export function NewsItems({
                 `
               : html`
                   <div class="table-responsive">
-                    <table class="table table-hover table-striped news-items-table">
+                    <table
+                      class="table table-hover table-striped news-items-table"
+                      aria-label="News items"
+                    >
                       <tbody>
                         ${newsItems.map(
                           (newsItem) => html`
