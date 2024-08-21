@@ -6,7 +6,6 @@ import { HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 import { config } from '../lib/config.js';
 import {
   GradingJobSchema,
-  GradingJobStatusSchema,
   SubmissionSchema,
   type AssessmentQuestion,
   type GradingJob,
@@ -14,6 +13,7 @@ import {
   type Question,
 } from '../lib/db-types.js';
 import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
+import { gradingJobStatus } from '../models/grading-job.js';
 
 import { Modal } from './Modal.html.js';
 import type { QuestionContext } from './QuestionContainer.types.js';
@@ -30,7 +30,6 @@ const detailedSubmissionColumns = {
 
 export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
   grading_job: GradingJobSchema.nullable(),
-  grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string().nullable(),
   user_uid: z.string().nullable(),
 });
@@ -82,7 +81,7 @@ export function SubmissionPanel({
   return html`
     <div
       data-testid="submission-with-feedback"
-      data-grading-job-status="${submission.grading_job_status}"
+      data-grading-job-status="${gradingJobStatus(submission.grading_job)}"
       data-grading-job-id="${submission.grading_job?.id}"
       id="submission-${submission.id}"
     >
