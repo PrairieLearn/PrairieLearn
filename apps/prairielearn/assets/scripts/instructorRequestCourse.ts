@@ -19,7 +19,7 @@ onDocumentReady(() => {
 
   const courseRequestLti13Info = decodeData('course-request-lti13-info');
   if (courseRequestLti13Info !== null) {
-    $('#lti13FillModal').modal('show');
+    $('#fill-course-request-lti13-modal').modal('show');
 
     const autoFillLti13Button = document.getElementById('fill-course-request-lti13-info');
 
@@ -40,7 +40,7 @@ onDocumentReady(() => {
         }
       }
 
-      $('#lti13FillModal').modal('hide');
+      $('#fill-course-request-lti13-modal').modal('hide');
     });
   }
 });

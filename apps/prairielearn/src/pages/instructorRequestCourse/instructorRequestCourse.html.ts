@@ -52,7 +52,7 @@ export function RequestCourse({
           <h1 class="sr-only">Request a Course</h1>
           ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
           ${Modal({
-            id: 'lti13FillModal',
+            id: 'fill-course-request-lti13-modal',
             title: `Auto-fill with ${lti13Info?.['cr-institution'] ?? 'LMS'} data?`,
             body: html`
               <p>
