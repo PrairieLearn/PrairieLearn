@@ -44,9 +44,9 @@ router.get(
           'cr-lastname': ltiClaim.get('family_name') ?? '',
           'cr-email': ltiClaim.get('email') ?? '',
           'cr-shortname':
-            ltiClaim.get("'https://purl.imsglobal.org/spec/lti/claim/context'.label") ?? '',
+            ltiClaim.get(['https://purl.imsglobal.org/spec/lti/claim/context', 'label']) ?? '',
           'cr-title':
-            ltiClaim.get("'https://purl.imsglobal.org/spec/lti/claim/context'.title") ?? '',
+            ltiClaim.get(['https://purl.imsglobal.org/spec/lti/claim/context', 'title']) ?? '',
           'cr-institution': res.locals.authn_institution.long_name ?? '',
         };
       } catch (err) {

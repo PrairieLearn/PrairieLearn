@@ -41,29 +41,7 @@ export function RequestCourse({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals, pageTitle: 'Request a Course' })}
-        ${compiledScriptTag('instructorRequestCourseLti13.ts')}
-        <script>
-          $(function () {
-            $('input[name=cr-role]').change(function () {
-              var role = this.value;
-              $('.question-form button').prop('disabled', role != 'instructor');
-              $('.role-comment').hide();
-              $('.role-comment-' + role).show();
-            });
-
-            // Only show the "other" referral source input when "other" is selected.
-            $('#cr-referral-source').change(function () {
-              if (this.value === 'other') {
-                $('#cr-referral-source-other')
-                  .removeClass('d-none')
-                  .attr('required', 'required')
-                  .focus();
-              } else {
-                $('#cr-referral-source-other').addClass('d-none').removeAttr('required');
-              }
-            });
-          });
-        </script>
+        ${compiledScriptTag('instructorRequestCourse.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar')%>", {
@@ -72,20 +50,22 @@ export function RequestCourse({
         })}
         <main id="content" class="container">
           <h1 class="sr-only">Request a Course</h1>
-          ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'courseRequestLti13Info')}
+          ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
           ${Modal({
             id: 'lti13FillModal',
-            title: html`Auto-fill with ${lti13Info?.['cr-institution'] ?? 'LMS'} data?`.toString(),
-            body: html`<p>
+            title: `Auto-fill with ${lti13Info?.['cr-institution'] ?? 'LMS'} data?`,
+            body: html`
+              <p>
                 You appear to be coming from a course in another learning system. Should we
                 partially fill in this request form with information from that course?
               </p>
-              <p>(You can edit it after it's auto-filled.)</p>`,
+              <p>(You can edit it after it's auto-filled.)</p>
+            `,
             footer: html`
-              <button type="button" class="btn btn-success" id="fillCourseRequestLti13">
+              <button type="button" class="btn btn-success" id="fill-course-request-lti13-info">
                 Fill from LMS data
               </button>
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">Ignore</button>
             `,
           })}
           ${CourseNewRequestCard({ csrfToken: resLocals.__csrf_token })}
@@ -253,9 +233,9 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             </small>
           </div>
           <div class="form-group">
-            <label id="cr-referral-source-label" for="cr-referral-source"
-              >How did you hear about PrairieLearn?</label
-            >
+            <label id="cr-referral-source-label" for="cr-referral-source">
+              How did you hear about PrairieLearn?
+            </label>
             <select
               class="custom-select"
               name="cr-referral-source"
