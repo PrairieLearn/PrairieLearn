@@ -136,11 +136,10 @@ function RubricItem(
   return html`
     <div>
       <label class="js-selectable-rubric-item-label w-100">
-        <span>${unsafeHtml('&nbsp;'.repeat(indentLevel * 4))}</span>
         <input
           type="checkbox"
           name="rubric_item_selected_manual"
-          class="js-selectable-rubric-item"
+          class="js-selectable-rubric-item ms-{${indentLevel}}"
           value="${item.id}"
           ${item_grading?.score ? 'checked' : ''}
           ${disable ? 'disabled' : ''}

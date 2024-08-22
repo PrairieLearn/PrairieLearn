@@ -299,7 +299,7 @@ function RubricItemRow(
 ) {
   const namePrefix = item ? `rubric_item[cur${item.id}]` : 'rubric_item[new]';
   return html` <tr class="js-rubric-item-row">
-    <td class="text-nowrap">
+    <td class="text-nowrap js-rubric-item-render-indent">
       ${item ? html`<input type="hidden" name="${namePrefix}[id]" value="${item.id}" />` : ''}
       <input
         type="hidden"
@@ -313,7 +313,6 @@ function RubricItemRow(
         name="${namePrefix}[indent]"
         value="${indentLevel}"
       />
-      <span class="js-rubric-item-render-indent"></span>
       <button type="button" class="btn btn-sm js-rubric-item-move-button" draggable="true">
         <i class="fas fa-arrows-up-down"></i>
       </button>

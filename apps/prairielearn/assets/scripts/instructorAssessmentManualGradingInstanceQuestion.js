@@ -537,9 +537,8 @@ function updateRubricItemOrderAndIndentation() {
     previousIndent = Number(itemIndent.value);
 
     // Update visual indentation
-    row.querySelector('.js-rubric-item-render-indent').innerHTML = '&nbsp;'.repeat(
-      itemIndent.value * 4,
-    );
+    row.querySelector('.js-rubric-item-render-indent').style.paddingLeft =
+      itemIndent.value * 0.25 + 'rem';
   });
 
   // Disable points for non-leaf items (traversing in reverse for full cascading in one pass)

@@ -511,8 +511,12 @@ function RubricItem(
   return html`
     <div>
       <label class="w-100" data-testid="rubric-item-container-${item.id}">
-        <span>${unsafeHtml('&nbsp;'.repeat(indentLevel * 4))}</span>
-        <input type="checkbox" disabled ${item_grading?.score ? 'checked' : ''} />
+        <input
+          type="checkbox"
+          class="ms-${indentLevel}"
+          disabled
+          ${item_grading?.score ? 'checked' : ''}
+        />
         <span class="text-${item.points >= 0 ? 'success' : 'danger'}">
           ${item.points !== 0
             ? html`<strong data-testid="rubric-item-points">
