@@ -330,10 +330,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     insert_text = f" at most <b>{max_options_to_select}</b> options."
                 else:
                     # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
-                    if allow_blank == True:
-                        insert_text = " at least 0 options."
-                    else:
-                        insert_text = " at least 1 option."
+                    insert_text = (
+                        " at least 0 options." if allow_blank else " at least 1 option."
+                    )
 
             insert_text += number_correct_text
 
