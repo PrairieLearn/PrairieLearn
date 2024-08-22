@@ -34,8 +34,6 @@ router.get(
       CourseRequestRowSchema,
     );
 
-    console.log(req.session);
-
     let lti13Info: Lti13CourseRequestInput = null;
     if (isEnterprise() && 'lti13_claims' in req.session) {
       try {
