@@ -34,6 +34,8 @@ router.get(
       CourseRequestRowSchema,
     );
 
+    console.log(req.session);
+
     let lti13Info: Lti13CourseRequestInput = null;
     if (isEnterprise() && 'lti13_claims' in req.session) {
       try {
@@ -50,7 +52,7 @@ router.get(
           'cr-institution': res.locals.authn_institution.long_name ?? '',
         };
       } catch (err) {
-        // If LTI information timed out or is incorrect, don't error here.
+        // If LTI information expired or otherwise errors, don't error here.
         // Continue on like there isn't LTI 1.3 information.
         lti13Info = null;
       }

@@ -2,7 +2,7 @@ import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 
 onDocumentReady(() => {
   $('input[name=cr-role]').on('change', function () {
-    const role = (this as HTMLFormElement).value;
+    const role = (this as HTMLInputElement).value;
     $('.question-form button').prop('disabled', role !== 'instructor');
     $('.role-comment').hide();
     $('.role-comment-' + role).show();
@@ -10,7 +10,7 @@ onDocumentReady(() => {
 
   // Only show the "other" referral source input when "other" is selected.
   $('#cr-referral-source').on('change', function () {
-    if ((this as HTMLFormElement).value === 'other') {
+    if ((this as HTMLInputElement).value === 'other') {
       $('#cr-referral-source-other').removeClass('d-none').attr('required', 'required').focus();
     } else {
       $('#cr-referral-source-other').addClass('d-none').removeAttr('required');

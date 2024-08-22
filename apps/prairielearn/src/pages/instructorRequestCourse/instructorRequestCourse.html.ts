@@ -41,7 +41,7 @@ export function RequestCourse({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals, pageTitle: 'Request a Course' })}
-        ${compiledScriptTag('instructorRequestCourse.ts')}
+        ${compiledScriptTag('instructorRequestCourseClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar')%>", {
@@ -65,7 +65,9 @@ export function RequestCourse({
               <button type="button" class="btn btn-success" id="fill-course-request-lti13-info">
                 Fill from LMS data
               </button>
-              <button type="button" class="btn btn-secondary" data-dismiss="modal">Ignore</button>
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                Don't fill
+              </button>
             `,
           })}
           ${CourseNewRequestCard({ csrfToken: resLocals.__csrf_token })}
