@@ -1,7 +1,7 @@
 import math
 import random
 from itertools import count
-from typing import List, NamedTuple, Optional, Tuple
+from typing import NamedTuple
 
 import chevron
 import lxml.html
@@ -12,7 +12,7 @@ class AnswerTuple(NamedTuple):
     index: int
     correct: bool
     html: str
-    feedback: Optional[str]
+    feedback: str | None
 
 
 WEIGHT_DEFAULT = 1
@@ -30,15 +30,12 @@ MIN_CORRECT_DEFAULT = 1
 MIN_SELECT_DEFAULT = 1
 FEEDBACK_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
-EXTERNAL_JSON_DEFAULT = None
-EXTERNAL_JSON_CORRECT_KEY_DEFAULT = "correct"
-EXTERNAL_JSON_INCORRECT_KEY_DEFAULT = "incorrect"
 MIN_SELECT_BLANK = 0
 
 
 def categorize_options(
     element: lxml.html.HtmlElement, data: pl.QuestionData
-) -> Tuple[List[AnswerTuple], List[AnswerTuple]]:
+) -> tuple[list[AnswerTuple], list[AnswerTuple]]:
     """Get provided correct and incorrect answers"""
 
     correct_answers = []
