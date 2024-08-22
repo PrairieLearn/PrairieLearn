@@ -97,8 +97,7 @@ export function Workspace({
                         Time remaining: <span id="countdownDisplay"></span>
                       </div>
                     </li>
-                  `
-                : ''}
+                    : ''}
                 <li class="nav-item ml-2 my-1">
                   <button
                     id="reboot"
