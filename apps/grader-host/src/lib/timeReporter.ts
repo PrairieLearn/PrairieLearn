@@ -1,13 +1,12 @@
+import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 function reportTime(sqlBlockName: string) {
-  return async function (jobId) {
-    const results = await sqldb.queryOneRowAsync(sql[sqlBlockName], {
-      job_id: jobId,
-    });
-    return results.rows[0].time;
+  return async function (jobId: string | number) {
+    return await sqldb.queryRow(sql[sqlBlockName], { job_id: jobId }, z.date());
   };
 }
 

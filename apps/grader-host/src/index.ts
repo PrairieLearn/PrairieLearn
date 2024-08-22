@@ -32,6 +32,17 @@ import * as timeReporter from './lib/timeReporter.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+interface GradingResults {
+  job_id?: string | number;
+  timedOut?: boolean;
+  received_time?: Date;
+  start_time?: Date;
+  end_time?: Date;
+  succeeded?: boolean;
+  results?: any;
+  message?: string;
+}
+
 // catch SIGTERM and exit after waiting for all current jobs to finish
 let processTerminating = false;
 process.on('SIGTERM', () => {
@@ -169,6 +180,10 @@ async function isJobCanceled(job: GradingJobMessage) {
   return result.rows[0].canceled;
 }
 
+function run<T>(fn: () => T): T {
+  return fn();
+}
+
 async function handleJob(job: GradingJobMessage) {
   load.startJob();
 
@@ -188,23 +203,62 @@ async function handleJob(job: GradingJobMessage) {
   try {
     const receivedTime = await timeReporter.reportReceivedTime(job.jobId);
 
-    const initResults = await Promise.all([
+    const initResults = await Promise.allSettled([
       reportReceived(context, receivedTime),
       initDocker(context),
       initFiles(context),
     ]);
 
-    const results = await runJob(context, receivedTime, initResults[2].tempDir);
+    const results = await run(async () => {
+      const initSucceeded = initResults.every((result) => result.status === 'fulfilled');
+      if (initSucceeded && initResults[2].status === 'fulfilled') {
+        const tempDir = initResults[2].value;
+        return await runJob(context, receivedTime, tempDir?.tempDir);
+      } else {
+        const message = run(() => {
+          const dockerInitSucceeded = initResults[1].status === 'fulfilled';
+          const fileInitSucceeded = initResults[2].status === 'fulfilled';
+
+          const messages: string[] = [];
+          if (!dockerInitSucceeded) {
+            messages.push(`Could not pull Docker image ${job.image}.`);
+          }
+          if (!fileInitSucceeded) {
+            messages.push('Could not initialize files for grading.');
+          }
+
+          // This should never occur, as `reportReceived` should never reject. But,
+          // just in case, we'll return a generic error message.
+          if (messages.length === 0) {
+            return 'An unknown error occurred.';
+          }
+
+          return messages.join('\n');
+        });
+
+        return {
+          job_id: job.jobId,
+          received_time: receivedTime,
+          start_time: new Date(),
+          end_time: new Date(),
+          succeeded: false,
+          message,
+        };
+      }
+    });
+
+    const tempDir = initResults[2].status === 'fulfilled' ? initResults[2].value : undefined;
 
     logger.info(`Job ${job.jobId} completed with results:`, results);
 
     await Promise.all([
       uploadResults(context, results),
-      uploadArchive(context, initResults[2].tempDir),
+      // Only attempt to upload the archive if the directory was created.
+      tempDir ? uploadArchive(context, tempDir.tempDir) : Promise.resolve(),
     ]);
 
     logger.info('Removing temporary directories');
-    await initResults[2].tempDirCleanup();
+    await tempDir?.tempDirCleanup();
     logger.info('Successfully removed temporary directories');
   } finally {
     load.endJob();
@@ -338,7 +392,11 @@ async function initFiles(context: Context) {
   }
 }
 
-async function runJob(context: Context, receivedTime: Date, tempDir: string) {
+async function runJob(
+  context: Context,
+  receivedTime: Date,
+  tempDir: string,
+): Promise<GradingResults> {
   const {
     docker,
     logger,
@@ -352,7 +410,10 @@ async function runJob(context: Context, receivedTime: Date, tempDir: string) {
   // this.
   const jobTimeout = timeout + config.timeoutOverhead;
 
-  const results: Record<string, any> = {};
+  const results: GradingResults = {
+    job_id: jobId,
+    received_time: receivedTime,
+  };
 
   logger.info('Launching Docker container to run grading job');
 
@@ -363,7 +424,7 @@ async function runJob(context: Context, receivedTime: Date, tempDir: string) {
   const runImage = repository.getCombined();
   logger.info(`Run image: ${runImage}`);
 
-  const timeoutDeferredPromise = deferredPromise();
+  const timeoutDeferredPromise = deferredPromise<never>();
   const jobTimeoutId = setTimeout(() => {
     healthCheck.flagUnhealthy('Job timeout exceeded; Docker presumed dead.');
     timeoutDeferredPromise.reject(new Error(`Job timeout of ${jobTimeout}s exceeded.`));
@@ -496,16 +557,13 @@ async function runJob(context: Context, receivedTime: Date, tempDir: string) {
       // the timeout here if needed.
       clearTimeout(jobTimeoutId);
 
-      results.job_id = jobId;
-      results.received_time = receivedTime;
-
       return results;
     });
 
   return await Promise.race([task, timeoutDeferredPromise.promise]);
 }
 
-async function uploadResults(context: Context, results: any) {
+async function uploadResults(context: Context, results: GradingResults) {
   const {
     logger,
     s3,
