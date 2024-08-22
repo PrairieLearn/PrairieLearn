@@ -5,6 +5,7 @@ from typing import NamedTuple
 import chevron
 import lxml.html
 import prairielearn as pl
+from typing_extensions import assert_never
 
 
 class AnswerTuple(NamedTuple):
@@ -512,7 +513,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html = ""
 
     else:
-        raise ValueError("Invalid panel type: %s" % data["panel"])
+        assert_never(data["panel"])
 
     return html
 
@@ -698,7 +699,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["raw_submitted_answers"][name] = None
         data["format_errors"][name] = "You must select at least one option."
     else:
-        raise Exception("invalid result: %s" % result)
+        assert_never(result)
 
 
 # TODO remove default here
