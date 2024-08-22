@@ -1,4 +1,3 @@
-import math
 import random
 from itertools import count
 from typing import NamedTuple
@@ -18,6 +17,8 @@ class AnswerTuple(NamedTuple):
 WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False
 INLINE_DEFAULT = False
+
+# TODO combine these and make them into an enum
 PARTIAL_CREDIT_DEFAULT = False
 PARTIAL_CREDIT_METHOD_DEFAULT = "PC"
 HIDE_ANSWER_PANEL_DEFAULT = False
@@ -32,11 +33,13 @@ FEEDBACK_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
 MIN_SELECT_BLANK = 0
 
+CHECKBOX_MUSTACHE_TEMPLATE_NAME = "pl-checkbox.mustache"
+
 
 def categorize_options(
-    element: lxml.html.HtmlElement, data: pl.QuestionData
+    element: lxml.html.HtmlElement,
 ) -> tuple[list[AnswerTuple], list[AnswerTuple]]:
-    """Get provided correct and incorrect answers"""
+    """Get provided correct and incorrect answers."""
 
     correct_answers = []
     incorrect_answers = []
@@ -55,6 +58,13 @@ def categorize_options(
                 correct_answers.append(answer_tuple)
             else:
                 incorrect_answers.append(answer_tuple)
+        elif child.tag is lxml.etree.Comment:
+            continue
+
+        else:
+            raise ValueError(
+                f'Tags inside of pl-checkbox must be pl-answer, not "{child.tag}".'
+            )
 
     return correct_answers, incorrect_answers
 
@@ -81,29 +91,26 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "allow-blank",
         "max-select",
         "show-number-correct",
-        "external-json",
-        "external-json-correct-key",
-        "external-json-incorrect-key",
     ]
 
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
 
     if name in data["params"]:
-        raise Exception("duplicate params variable name: %s" % name)
+        raise ValueError(f"duplicate params variable name: {name}")
     if name in data["correct_answers"]:
-        raise Exception("duplicate correct_answers variable name: %s" % name)
+        raise ValueError(f"Duplicate correct_answers variable name: {name}")
 
     partial_credit = pl.get_boolean_attrib(
         element, "partial-credit", PARTIAL_CREDIT_DEFAULT
     )
     partial_credit_method = pl.get_string_attrib(element, "partial-credit-method", None)
     if not partial_credit and partial_credit_method is not None:
-        raise Exception(
+        raise ValueError(
             "Cannot specify partial-credit-method if partial-credit is not enabled"
         )
 
-    correct_answers, incorrect_answers = categorize_options(element, data)
+    correct_answers, incorrect_answers = categorize_options(element)
 
     len_correct = len(correct_answers)
     len_incorrect = len(incorrect_answers)
@@ -111,6 +118,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if len_correct == 0:
         raise ValueError("At least one option must be true.")
+
+    # TODO move this junk to a helper function.
 
     number_answers = pl.get_integer_attrib(element, "number-answers", len_total)
     min_correct = pl.get_integer_attrib(element, "min-correct", MIN_CORRECT_DEFAULT)
@@ -120,9 +129,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if min_correct < 1:
         raise ValueError(
-            "The attribute min-correct is {:d} but must be at least 1".format(
-                min_correct
-            )
+            f"The attribute min-correct is {min_correct} but must be at least 1"
         )
 
     # No longer need max number of options, this was an old limitation of the index2key function
@@ -135,15 +142,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     max_correct = min(len_correct, min(number_answers, max(min_correct, max_correct)))
     if not (0 <= min_correct <= max_correct <= len_correct):
         raise ValueError(
-            "INTERNAL ERROR: correct number: (%d, %d, %d, %d)"
-            % (min_correct, max_correct, len_correct, len_incorrect)
+            f"INTERNAL ERROR: correct number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
         )
     min_incorrect = number_answers - max_correct
     max_incorrect = number_answers - min_correct
     if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
         raise ValueError(
-            "INTERNAL ERROR: incorrect number: (%d, %d, %d, %d)"
-            % (min_incorrect, max_incorrect, len_incorrect, len_correct)
+            f"INTERNAL ERROR: incorrect number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
         )
 
     min_select_default = MIN_SELECT_BLANK if allow_blank else MIN_SELECT_DEFAULT
@@ -191,9 +196,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     display_answers = []
     correct_answer_list = []
-    for i, answer in enumerate(sampled_answers):
+    for key, answer in zip(pl.iter_keys(), sampled_answers):
         keyed_answer = {
-            "key": pl.index2key(i),
+            "key": key,
             "html": answer.html,
             "feedback": answer.feedback,
         }
@@ -393,7 +398,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             info_params.update({"gradingtext": gradingtext})
 
-        with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+        with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
 
         html_params = {
@@ -413,18 +418,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["helptext"] = helptext
 
         if score is not None:
-            try:
-                score = float(score)
-                if score >= 1:
-                    html_params["correct"] = True
-                elif score > 0:
-                    html_params["partial"] = math.floor(score * 100)
-                else:
-                    html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            score_type, score_value = pl.determine_score_params(score)
+            html_params[score_type] = score_value
 
-        with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+        with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -466,18 +463,22 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             }
 
             if html_params["display_score_badge"]:
-                try:
-                    score = float(score)
-                    if score >= 1:
-                        html_params["correct"] = True
-                    elif score > 0:
-                        html_params["partial"] = math.floor(score * 100)
-                    else:
-                        html_params["incorrect"] = True
-                except Exception:
-                    raise ValueError("invalid score" + score)
+                score_type, score_value = pl.determine_score_params(score)
+                html_params[score_type] = score_value
 
-            with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+            # if html_params["display_score_badge"]:
+            #     try:
+            #         score = float(score)
+            #         if score >= 1:
+            #             html_params["correct"] = True
+            #         elif score > 0:
+            #             html_params["partial"] = math.floor(score * 100)
+            #         else:
+            #             html_params["incorrect"] = True
+            #     except Exception:
+            #         raise ValueError("invalid score" + score)
+
+            with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html_params = {
@@ -486,7 +487,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "parse_error": parse_error,
                 "inline": inline,
             }
-            with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+            with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -505,7 +506,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                         element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
                     ),
                 }
-                with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+                with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
                     html = chevron.render(f, html_params).strip()
         else:
             html = ""
