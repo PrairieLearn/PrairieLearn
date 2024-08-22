@@ -500,7 +500,7 @@ function RubricItemsWithIndent(
     parentStack.push(item.id);
     return result;
   });
-  return joinHtml(itemRows);
+  return html`<div aria-role="tree">${joinHtml(itemRows)}</div>`;
 }
 
 function RubricItem(
@@ -509,11 +509,11 @@ function RubricItem(
   indentLevel: number,
 ) {
   return html`
-    <div>
+    <div aria-role="treeitem">
       <label class="w-100" data-testid="rubric-item-container-${item.id}">
         <input
           type="checkbox"
-          class="ms-${indentLevel}"
+          style="margin-left: ${indentLevel}rem"
           disabled
           ${item_grading?.score ? 'checked' : ''}
         />

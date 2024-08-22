@@ -123,7 +123,7 @@ function RubricItemsWithIndent(
     parentStack.push(item.id);
     return result;
   });
-  return joinHtml(itemRows);
+  return html`<div aria-role="tree">${joinHtml(itemRows)}</div>`;
 }
 
 function RubricItem(
@@ -134,12 +134,13 @@ function RubricItem(
   indentLevel: number,
 ) {
   return html`
-    <div>
+    <div aria-role="treeitem">
       <label class="js-selectable-rubric-item-label w-100">
         <input
           type="checkbox"
           name="rubric_item_selected_manual"
-          class="js-selectable-rubric-item ms-{${indentLevel}}"
+          class="js-selectable-rubric-item"
+          style="margin-left: ${indentLevel}rem"
           value="${item.id}"
           ${item_grading?.score ? 'checked' : ''}
           ${disable ? 'disabled' : ''}
