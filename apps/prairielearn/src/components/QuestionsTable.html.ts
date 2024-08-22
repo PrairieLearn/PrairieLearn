@@ -73,6 +73,7 @@ export function QuestionsTable({
 
       <table
         id="questionsTable"
+        aria-label="Questions"
         data-data="${JSON.stringify(questions)}"
         data-classes="table table-sm table-hover table-bordered"
         data-thead-classes="thead-light"

@@ -202,8 +202,10 @@ export function SubmissionPanel({
         <div class="card-header bg-light text-dark d-flex align-items-center submission-header">
           <div class="mr-2">
             <div>
-              <span class="mr-2">
-                Submitted answer ${submissionCount > 1 ? submission.submission_number : ''}
+              <span class="mr-2 d-flex align-items-center">
+                <h2 class="h6 font-weight-normal mb-0">
+                  Submitted answer ${submissionCount > 1 ? submission.submission_number : ''}
+                </h2>
               </span>
             </div>
             <span class="small">
@@ -429,7 +431,10 @@ function SubmissionInfoModal({
     body: !gradingJobStats
       ? html`<p>This submission has not been graded.</p>`
       : html`
-          <table class="table table-sm table-borderless two-column-description mb-0">
+          <table
+            class="table table-sm table-borderless two-column-description mb-0"
+            aria-label="Submission info"
+          >
             <tbody>
               <tr>
                 <th>Submission time</th>

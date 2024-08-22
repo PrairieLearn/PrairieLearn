@@ -37,7 +37,7 @@ export function InstructorInstanceAdminAccess({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="Access rules">
                 <thead>
                   <tr>
                     <th>UIDs</th>
