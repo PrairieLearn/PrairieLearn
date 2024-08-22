@@ -362,7 +362,7 @@ function FilterHelpModal() {
         Issues can be filtered and searched in a variety of ways. Filtering is done with the
         following set of qualifiers.
       </p>
-      <table class="table table-bordered">
+      <table class="table table-bordered" aria-label="Filtering qualifiers">
         <thead>
           <th>Qualifier</th>
           <th>Explanation</th>
