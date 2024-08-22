@@ -191,6 +191,7 @@ as checkboxes.
 | `min-select`            | integer | special | The minimum number of answers that must be selected in any valid submission. Defaults to `min-correct` if that attribute is specified along with `detailed-help-text="true"`; otherwise, defaults to 1.                              |
 | `max-select`            | integer | special | The maximum number of answers that can be selected in any valid submission. Defaults to `max-correct` if that attribute is specified along with `detailed-help-text="true"`; otherwise, defaults to the number of displayed answers. |
 | `show-number-correct`   | boolean | false   | Display the number of correct choices in the help text.                                                                                                                                                                              |
+| `allow-blank`           | boolean | false   | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, no response will be marked as incorrect instead of invalid.                                                                                        |
 
 Inside the `pl-checkbox` element, each choice must be specified with
 a `pl-answer` that has attributes:
