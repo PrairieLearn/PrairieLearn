@@ -205,8 +205,14 @@ async function handleJob(job: GradingJobMessage) {
 
     const initResults = await Promise.allSettled([
       reportReceived(context, receivedTime),
+      // It's possible that this could fail for normal reasons, e.g. a Docker
+      // image not existing in our cache. We'll allow this error to bubble up
+      // but we won't report it to Sentry.
       initDocker(context),
-      initFiles(context),
+      initFiles(context).catch((err) => {
+        Sentry.captureException(err);
+        throw err;
+      }),
     ]);
 
     const results = await run(async () => {
@@ -251,15 +257,23 @@ async function handleJob(job: GradingJobMessage) {
 
     logger.info(`Job ${job.jobId} completed with results:`, results);
 
-    await Promise.all([
-      uploadResults(context, results),
-      // Only attempt to upload the archive if the directory was created.
-      tempDir ? uploadArchive(context, tempDir.tempDir) : Promise.resolve(),
-    ]);
+    try {
+      await Promise.all([
+        uploadResults(context, results),
+        // Only attempt to upload the archive if the directory was created.
+        tempDir ? uploadArchive(context, tempDir.tempDir) : Promise.resolve(),
+      ]);
 
-    logger.info('Removing temporary directories');
-    await tempDir?.tempDirCleanup();
-    logger.info('Successfully removed temporary directories');
+      logger.info('Removing temporary directories');
+      await tempDir?.tempDirCleanup();
+      logger.info('Successfully removed temporary directories');
+    } catch (err) {
+      Sentry.captureException(err);
+      throw err;
+    } finally {
+      // Do this last so that we capture all relevant logs.
+      await uploadLogs(context);
+    }
   } finally {
     load.endJob();
   }
@@ -280,19 +294,18 @@ async function reportReceived(context: Context, receivedTime: Date) {
   const { job, logger } = context;
   logger.info('Sending job acknowledgement to PrairieLearn');
 
-  const messageBody = {
-    jobId: job.jobId,
-    event: 'job_received',
-    data: {
-      receivedTime,
-    },
-  };
-  const sqs = new SQSClient(makeAwsClientConfig());
   try {
+    const sqs = new SQSClient(makeAwsClientConfig());
     await sqs.send(
       new SendMessageCommand({
         QueueUrl: config.resultsQueueUrl,
-        MessageBody: JSON.stringify(messageBody),
+        MessageBody: JSON.stringify({
+          jobId: job.jobId,
+          event: 'job_received',
+          data: {
+            receivedTime,
+          },
+        }),
       }),
     );
   } catch (err) {
@@ -630,17 +643,25 @@ async function uploadArchive(context: Context, tempDir: string) {
         Body: fs.createReadStream(archiveFile.path),
       },
     }).done();
-
-    // Upload all logs to S3.
-    await new Upload({
-      client: s3,
-      params: {
-        Bucket: s3Bucket,
-        Key: `${s3RootKey}/output.log`,
-        Body: logger.getBuffer(),
-      },
-    }).done();
   } finally {
     await archiveFile.cleanup();
   }
+}
+
+async function uploadLogs(context: Context) {
+  const {
+    logger,
+    s3,
+    job: { s3Bucket, s3RootKey },
+  } = context;
+
+  // Upload all logs to S3.
+  await new Upload({
+    client: s3,
+    params: {
+      Bucket: s3Bucket,
+      Key: `${s3RootKey}/output.log`,
+      Body: logger.getBuffer(),
+    },
+  }).done();
 }
