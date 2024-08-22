@@ -9,7 +9,7 @@ from typing_extensions import assert_never
 
 
 class AnswerTuple(NamedTuple):
-    index: int
+    idx: int
     correct: bool
     html: str
     feedback: str | None
@@ -193,7 +193,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if fixed_order:
         # we can't simply skip the shuffle because we already broke the original
         # order by separating into correct/incorrect lists
-        sampled_answers.sort(key=lambda a: a.index)  # sort by stored original index
+        sampled_answers.sort(key=lambda a: a.idx)  # sort by stored original index
 
     display_answers = []
     correct_answer_list = []
