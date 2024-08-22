@@ -145,7 +145,13 @@ export function AdministratorInstitutionSaml({
 
             <div class="form-group">
               <label for="certificate">Public Certificate</label>
-              <textarea class="form-control" name="certificate" id="certificate" rows="20">
+              <textarea
+                class="form-control"
+                name="certificate"
+                id="certificate"
+                rows="20"
+                aria-describedby="certificateHelp"
+              >
 ${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----'}</textarea
               >
               <small id="certificateHelp" class="form-text text-muted">
