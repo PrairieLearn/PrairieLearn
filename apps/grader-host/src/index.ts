@@ -272,7 +272,10 @@ async function handleJob(job: GradingJobMessage) {
       throw err;
     } finally {
       // Do this last so that we capture all relevant logs.
-      await uploadLogs(context);
+      await uploadLogs(context).catch((err) => {
+        Sentry.captureException(err);
+        throw err;
+      });
     }
   } finally {
     load.endJob();
