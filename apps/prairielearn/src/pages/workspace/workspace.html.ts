@@ -89,15 +89,15 @@ export function Workspace({
             </button>
             <div class="collapse navbar-collapse" id="workspace-nav">
               <ul class="navbar-nav ml-auto">
-                ${resLocals.assessment?.type === 'Exam' && resLocals.assessment_instance_remaining_ms
-                ? html`
-                    <li class="nav-item ml-2 my-1">
+                ${resLocals.assessment?.type === 'Exam' &&
+                resLocals.assessment_instance_remaining_ms
+                  ? html` <li class="nav-item ml-2 my-1">
                       <div id="countdownProgress"></div>
                       <div class="text-white small">
                         Time remaining: <span id="countdownDisplay"></span>
                       </div>
-                    </li>
-                    : ''}
+                    </li>`
+                  : ''}
                 <li class="nav-item ml-2 my-1">
                   <button
                     id="reboot"
