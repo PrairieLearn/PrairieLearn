@@ -53,6 +53,7 @@ export function RequestCourse({
           navPage: 'request_course',
         })}
         <main id="content" class="container">
+          <h1 class="sr-only">Request a Course</h1>
           ${CourseRequestsCard({ rows })}
           ${CourseNewRequestCard({ csrfToken: resLocals.__csrf_token })}
         </main>
@@ -68,9 +69,11 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
 
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex align-items-center">Course Requests</div>
+      <div class="card-header bg-primary text-white d-flex align-items-center">
+        <h2>Course Requests</h2>
+      </div>
       <div class="table-responsive">
-        <table class="table table-sm table-hover table-striped">
+        <table class="table table-sm table-hover table-striped" aria-label="Course requests">
           <thead>
             <tr>
               <th>Short Name</th>
@@ -115,7 +118,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        Request a New Course
+        <h2>Request a New Course</h2>
       </div>
       <form class="question-form" name="course-request" method="POST">
         <div class="card-body">

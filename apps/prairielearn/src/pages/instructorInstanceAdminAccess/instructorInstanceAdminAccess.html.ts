@@ -22,11 +22,6 @@ export function InstructorInstanceAdminAccess({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          $(() => {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${CourseInstanceSyncErrorsAndWarnings({
@@ -38,11 +33,11 @@ export function InstructorInstanceAdminAccess({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${course_instance.long_name} course instance access rules
+              <h1>${course_instance.long_name} course instance access rules</h1>
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="Access rules">
                 <thead>
                   <tr>
                     <th>UIDs</th>

@@ -18,8 +18,8 @@ export function RegenerateInstanceModal({ csrfToken }: { csrfToken: string }) {
       <form method="POST">
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
         <input type="hidden" name="__action" value="regenerate_instance" />
-        <button type="submit" class="btn btn-danger">Regenerate assessment instance</button>
         <button type="button" data-dismiss="modal" class="btn btn-secondary">Cancel</button>
+        <button type="submit" class="btn btn-danger">Regenerate assessment instance</button>
       </form>
     `,
   });
