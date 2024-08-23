@@ -144,9 +144,20 @@ export function AdministratorInstitutionSaml({
 
             <div class="form-group">
               <label for="certificate">Public Certificate</label>
-              <textarea class="form-control" name="certificate" id="certificate" rows="20">
-${samlProvider?.certificate ?? ''}</textarea
+              <textarea
+                class="form-control"
+                name="certificate"
+                id="certificate"
+                rows="20"
+                aria-describedby="certificateHelp"
               >
+${samlProvider?.certificate ?? '-----BEGIN CERTIFICATE-----\n-----END CERTIFICATE-----'}</textarea
+              >
+              <small id="certificateHelp" class="form-text text-muted">
+                The public certificate of the Identity Provider. This is used to verify the
+                signature of the SAML response. This <strong>must</strong> be a valid X.509
+                certificate in PEM format, including the header and footer.
+              </small>
             </div>
 
             <div class="form-group form-check">
