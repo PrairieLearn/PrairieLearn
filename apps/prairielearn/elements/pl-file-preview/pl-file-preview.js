@@ -30,12 +30,12 @@
       const filePreview = document.querySelector('#file-preview-' + uuid);
       const submissionFilesUrl = filePreview.dataset.submissionFilesUrl;
 
-      filePreview.querySelectorAll('li').forEach((li) => {
-        const file = li.dataset.file;
+      filePreview.querySelectorAll('.js-file-preview-item').forEach((item) => {
+        const file = item.dataset.file;
         const escapedFileName = escapePath(file);
         const path = `${submissionFilesUrl}/${escapedFileName}`;
 
-        const errorMessage = li.querySelector('.alert.error');
+        const errorMessage = item.querySelector('.alert.error');
 
         function showErrorMessage(message) {
           errorMessage.textContent = message;
@@ -46,13 +46,15 @@
           errorMessage.classList.add('d-none');
         }
 
-        const toggleShowPreviewText = li.querySelector('.js-toggle-show-preview-text');
-        const toggleExpandPreviewText = li.querySelector('.js-toggle-expand-preview-text');
+        const toggleShowPreviewText = item.querySelector('.js-toggle-show-preview-text');
+        const toggleExpandPreviewText = item.querySelector('.js-toggle-expand-preview-text');
 
-        const preview = li.querySelector('.file-preview');
+        const preview = item.querySelector('.file-preview');
+        const container = item.querySelector('.file-preview-container');
+        const notebookPreview = item.querySelector('.js-notebook-preview');
         const pre = preview.querySelector('pre');
 
-        const downloadButton = li.querySelector('.file-preview-download');
+        const downloadButton = item.querySelector('.file-preview-download');
         downloadButton.addEventListener('click', () => {
           downloadFile(path, file)
             .then(() => {
@@ -64,7 +66,7 @@
             });
         });
 
-        const expandButton = li.querySelector('.file-preview-expand');
+        const expandButton = item.querySelector('.file-preview-expand');
 
         function updateExpandButton(expanded) {
           toggleExpandPreviewText.textContent = expanded ? 'Collapse' : 'Expand';
@@ -77,17 +79,21 @@
           }
         }
 
-        expandButton.addEventListener('click', () => {
-          // The `<pre>` has a class with a `max-height` set which will only take
+        function toggleExpanded(expanded) {
+          const shouldExpand = expanded ?? !container.style.maxHeight;
+
+          // The container has a class with a `max-height` set which will only take
           // effect if there is no `max-height` set via the `style` attribute.
-          if (pre.style.maxHeight) {
-            pre.style.removeProperty('max-height');
-            updateExpandButton(false);
-          } else {
-            pre.style.maxHeight = 'none';
+          if (shouldExpand) {
+            container.style.maxHeight = 'none';
             updateExpandButton(true);
+          } else {
+            container.style.removeProperty('max-height');
+            updateExpandButton(false);
           }
-        });
+        }
+
+        expandButton.addEventListener('click', () => toggleExpanded());
 
         let wasOpened = false;
 
@@ -130,19 +136,30 @@
                       DOMPurify.sanitize(code, { SANITIZE_NAMED_PROPS: true });
                     const notebook = nb.parse(JSON.parse(text));
                     const rendered = notebook.render();
-                    pre.appendChild(rendered);
+
+                    notebookPreview.appendChild(rendered);
+                    notebookPreview.classList.remove('d-none');
+
+                    // Typeset any math that might be in the notebook.
+                    window.MathJax.typesetPromise();
                   });
                 } else {
                   code.textContent = text;
+                  pre.classList.remove('d-none');
                 }
 
-                pre.classList.remove('d-none');
                 hideErrorMessage();
 
                 // Only show the expand/collapse button if the content is tall
-                // enough where scrolling is necessary.
-                if (pre.scrollHeight > pre.clientHeight) {
+                // enough where scrolling is necessary. This must be done before
+                // auto-expansion happens below.
+                if (container.scrollHeight > container.clientHeight) {
                   expandButton.classList.remove('d-none');
+                }
+
+                // Always fully expand notebook previews.
+                if (escapedFileName.endsWith('.ipynb')) {
+                  toggleExpanded(true);
                 }
               } else if (type.startsWith('image/')) {
                 const url = URL.createObjectURL(blob);
