@@ -219,7 +219,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                   Add item
                 </button>
                 <template class="js-new-row-rubric-item">
-                  ${RubricItemRow(null, rubric_data?.rubric_items?.length ?? 0, 0, [])}
+                  ${RubricItemRow(null, rubric_data?.rubric_items?.length ?? 0, null, 0, [])}
                 </template>
                 ${MustachePatterns({ resLocals })}
               </div>
@@ -279,7 +279,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
 
 function RubricItemsWithIndent(rubric_items: RubricData['rubric_items'][0][] | null | undefined) {
   if (!rubric_items) return unsafeHtml('');
-  const parentStack = [];
+  const parentStack = [] as RubricData['rubric_items'][0][];
   const itemRows = rubric_items.map((item) => {
     // Find parent in stack and remove any items with deeper nesting than parent
     const cutoffIdx = item.parent_id
@@ -292,17 +292,12 @@ function RubricItemsWithIndent(rubric_items: RubricData['rubric_items'][0][] | n
       .filter((i) => i.parent_id === item.id)
       .map((i) => 'rubric-item-' + i.number);
 
+    const parentId = parentStack.length > 0 ? parentStack[parentStack.length - 1].number : null;
     // Generate HTML for current item
-    const result = RubricItemRow(
-      item,
-      item.number,
-      parentStack[parentStack.length - 1].number,
-      parentStack.length - 1,
-      childIds,
-    );
+    const result = RubricItemRow(item, item.number, parentId, parentStack.length, childIds);
 
     // Push this item as potential parent for next item
-    parentStack.push(item.id);
+    parentStack.push(item);
     return result;
   });
   return joinHtml(itemRows);
@@ -311,7 +306,7 @@ function RubricItemsWithIndent(rubric_items: RubricData['rubric_items'][0][] | n
 function RubricItemRow(
   item: RubricData['rubric_items'][0] | null,
   index: number,
-  parent_index: number,
+  parent_index: number | null,
   indent_level: number,
   child_idxs: string[],
 ) {
@@ -321,7 +316,7 @@ function RubricItemRow(
     role="treeitem"
     ${item ? html`id="rubric-item-${item.number}"` : ''}
     aria-owns="${child_idxs.join(' ')}"
-    ${item?.parent_id ? html`data-parent-item="rubric-item-${parent_index}"` : ''}
+    ${parent_index ? html`data-parent-item="rubric-item-${parent_index}"` : ''}
   >
     <td class="text-nowrap js-rubric-item-render-indent">
       ${item ? html`<input type="hidden" name="${namePrefix}[id]" value="${item.id}" />` : ''}
