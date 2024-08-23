@@ -6,7 +6,6 @@ import { HtmlValue, html, unsafeHtml, joinHtml } from '@prairielearn/html';
 import { config } from '../lib/config.js';
 import {
   GradingJobSchema,
-  GradingJobStatusSchema,
   RubricGradingItem,
   SubmissionSchema,
   type AssessmentQuestion,
