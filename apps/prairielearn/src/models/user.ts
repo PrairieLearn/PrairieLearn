@@ -34,3 +34,7 @@ export async function generateUsers(count: number): Promise<User[]> {
   }
   return users;
 }
+
+export async function generateUser(): Promise<User> {
+  return (await generateUsers(1))[0];
+}
