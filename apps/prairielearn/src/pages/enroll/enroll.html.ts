@@ -42,7 +42,7 @@ export function Enroll({
             <div class="card-header bg-primary text-white">
               <h1>Courses</h1>
             </div>
-            <table class="table table-sm table-hover table-striped">
+            <table class="table table-sm table-hover table-striped" aria-label="Courses">
               <tbody>
                 ${courseInstances.map((course_instance, idx) => {
                   return html`

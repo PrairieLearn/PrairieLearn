@@ -15,6 +15,7 @@ import {
   type Question,
 } from '../lib/db-types.js';
 import type { RubricData, RubricGradingData } from '../lib/manualGrading.js';
+import { gradingJobStatus } from '../models/grading-job.js';
 
 import { Modal } from './Modal.html.js';
 import type { QuestionContext } from './QuestionContainer.types.js';
@@ -31,7 +32,6 @@ const detailedSubmissionColumns = {
 
 export const SubmissionBasicSchema = SubmissionSchema.omit(detailedSubmissionColumns).extend({
   grading_job: GradingJobSchema.nullable(),
-  grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string().nullable(),
   user_uid: z.string().nullable(),
 });
@@ -83,7 +83,7 @@ export function SubmissionPanel({
   return html`
     <div
       data-testid="submission-with-feedback"
-      data-grading-job-status="${submission.grading_job_status}"
+      data-grading-job-status="${gradingJobStatus(submission.grading_job)}"
       data-grading-job-id="${submission.grading_job?.id}"
       id="submission-${submission.id}"
     >
@@ -165,8 +165,10 @@ export function SubmissionPanel({
         <div class="card-header bg-light text-dark d-flex align-items-center submission-header">
           <div class="mr-2">
             <div>
-              <span class="mr-2">
-                Submitted answer ${submissionCount > 1 ? submission.submission_number : ''}
+              <span class="mr-2 d-flex align-items-center">
+                <h2 class="h6 font-weight-normal mb-0">
+                  Submitted answer ${submissionCount > 1 ? submission.submission_number : ''}
+                </h2>
               </span>
             </div>
             <span class="small">
@@ -392,7 +394,10 @@ function SubmissionInfoModal({
     body: !gradingJobStats
       ? html`<p>This submission has not been graded.</p>`
       : html`
-          <table class="table table-sm table-borderless two-column-description mb-0">
+          <table
+            class="table table-sm table-borderless two-column-description mb-0"
+            aria-label="Submission info"
+          >
             <tbody>
               <tr>
                 <th>Submission time</th>

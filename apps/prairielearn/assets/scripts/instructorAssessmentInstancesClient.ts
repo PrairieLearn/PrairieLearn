@@ -500,6 +500,7 @@ onDocumentReady(() => {
         <button
           class="btn btn-secondary btn-xs ml-1 time-limit-edit-button"
           id="row${row.assessment_instance_id}PopoverTimeLimit"
+          aria-label="Change time limit"
           data-row="${JSON.stringify(row)}"
           data-placement="bottom"
           data-boundary="window"

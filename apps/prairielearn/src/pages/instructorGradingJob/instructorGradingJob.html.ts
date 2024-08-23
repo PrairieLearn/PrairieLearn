@@ -48,7 +48,10 @@ export function InstructorGradingJob({
               <h1>Grading Job ${gradingJobRow.grading_job.id}</h1>
             </div>
 
-            <table class="table table-sm table-hover two-column-description">
+            <table
+              class="table table-sm table-hover two-column-description"
+              aria-label="Grading job details"
+            >
               <tbody>
                 <tr>
                   <th>Question</th>
@@ -90,7 +93,7 @@ export function InstructorGradingJob({
             ? html`
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white">Downloads</div>
-                  <table class="table table-sm table-hover">
+                  <table class="table table-sm table-hover" aria-label="Grading job downloads">
                     <thead>
                       <tr>
                         <th>File</th>

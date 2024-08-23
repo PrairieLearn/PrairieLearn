@@ -2330,8 +2330,10 @@ if (esMain(import.meta) && config.startServer) {
             },
 
             // We have our own OpenTelemetry setup, so ensure Sentry doesn't
-            // try to set that up for itself.
-            skipOpenTelemetrySetup: true,
+            // try to set that up for itself, but only if OpenTelemetry is
+            // enabled. Otherwise, allow Sentry to install its own stuff so
+            // that request isolation works correctly.
+            skipOpenTelemetrySetup: config.openTelemetryEnabled,
 
             beforeSend: (event) => {
               // This will be necessary until we can consume the following change:

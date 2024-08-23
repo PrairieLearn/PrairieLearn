@@ -48,7 +48,7 @@ export function AdministratorAdmins({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
+              <table class="table table-sm table-hover table-striped" aria-label="Administrators">
                 <thead>
                   <tr>
                     <th>UID</th>

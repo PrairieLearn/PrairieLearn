@@ -48,7 +48,7 @@ export function StudentGradebook({
               <h1>Gradebook</h1>
             </div>
 
-            <table class="table table-sm table-hover">
+            <table class="table table-sm table-hover" aria-label="Gradebook">
               <thead>
                 <tr>
                   <th style="width: 1%"><span class="sr-only">Label</span></th>

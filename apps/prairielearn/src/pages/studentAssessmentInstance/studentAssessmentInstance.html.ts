@@ -22,13 +22,7 @@ import { Scorebar } from '../../components/Scorebar.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import {
-  Assessment,
-  AssessmentInstance,
-  AssessmentSet,
-  GroupConfig,
-  InstanceQuestion,
-} from '../../lib/db-types.js';
+import { AssessmentInstance, GroupConfig, InstanceQuestion } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 import { GroupInfo } from '../../lib/groups.js';
 
@@ -127,8 +121,6 @@ export function StudentAssessmentInstance({
                       </div>
                       <div class="col-md-9 col-sm-12">
                         ${AssessmentStatus({
-                          assessment: resLocals.assessment,
-                          assessment_set: resLocals.assessment_set,
                           assessment_instance: resLocals.assessment_instance,
                           authz_result: resLocals.authz_result,
                         })}
@@ -156,8 +148,6 @@ export function StudentAssessmentInstance({
                       </div>
                       <div class="col-md-6 col-sm-12">
                         ${AssessmentStatus({
-                          assessment: resLocals.assessment,
-                          assessment_set: resLocals.assessment_set,
                           assessment_instance: resLocals.assessment_instance,
                           authz_result: resLocals.authz_result,
                         })}
@@ -202,7 +192,11 @@ export function StudentAssessmentInstance({
                 : ''}
             </div>
 
-            <table class="table table-sm table-hover" data-testid="assessment-questions">
+            <table
+              class="table table-sm table-hover"
+              aria-label="Questions"
+              data-testid="assessment-questions"
+            >
               <thead>
                 ${InstanceQuestionTableHeader({ resLocals })}
               </thead>
@@ -532,13 +526,9 @@ export function StudentAssessmentInstance({
 }
 
 function AssessmentStatus({
-  assessment,
-  assessment_set,
   assessment_instance,
   authz_result,
 }: {
-  assessment: Assessment;
-  assessment_set: AssessmentSet;
   assessment_instance: AssessmentInstance;
   authz_result: any;
 }) {
@@ -549,8 +539,6 @@ function AssessmentStatus({
       Available credit: ${authz_result.credit_date_string}
       ${StudentAccessRulesPopover({
         accessRules: authz_result.access_rules,
-        assessmentSetName: assessment_set.name,
-        assessmentNumber: assessment.number,
       })}
     `;
   }

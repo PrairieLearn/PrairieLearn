@@ -98,7 +98,10 @@ export function InstructorAssessmentStatistics({
                   </div>
 
                   <div class="table-responsive">
-                    <table class="table table-sm table-hover">
+                    <table
+                      class="table table-sm table-hover"
+                      aria-label="Assessment score statistics"
+                    >
                       <tbody>
                         <tr>
                           <td>Number of students</td>
@@ -176,7 +179,10 @@ export function InstructorAssessmentStatistics({
                   </div>
 
                   <div class="table-responsive">
-                    <table class="table table-sm table-hover">
+                    <table
+                      class="table table-sm table-hover"
+                      aria-label="Assessment duration statistics"
+                    >
                       <tbody>
                         <tr>
                           <td>Mean duration</td>

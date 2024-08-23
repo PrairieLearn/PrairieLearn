@@ -139,7 +139,10 @@ export function InstructorQuestionSettings({
                 </div>
 
                 <div class="table-responsive card mb-3">
-                  <table class="table two-column-description">
+                  <table
+                    class="table two-column-description"
+                    aria-label="Question topic, tags, and assessments"
+                  >
                     <tr>
                       <th class="border-top-0">Topic</th>
                       <td class="border-top-0">${TopicBadge(resLocals.topic)}</td>

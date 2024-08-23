@@ -62,7 +62,7 @@ export function StudentAssessments({
               <h1>Assessments</h1>
             </div>
 
-            <table class="table table-sm table-hover">
+            <table class="table table-sm table-hover" aria-label="Assessments">
               <thead>
                 <tr>
                   <th style="width: 1%"><span class="sr-only">Label</span></th>
@@ -111,8 +111,6 @@ export function StudentAssessments({
                           : 'Assessment closed.'}
                         ${StudentAccessRulesPopover({
                           accessRules: row.access_rules,
-                          assessmentSetName: row.assessment_set_name,
-                          assessmentNumber: row.assessment_number,
                         })}
                       </td>
                       <td class="text-center align-middle">
