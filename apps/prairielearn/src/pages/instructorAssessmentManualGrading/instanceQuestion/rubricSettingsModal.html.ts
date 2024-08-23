@@ -189,7 +189,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                         <th>In use</th>
                       </tr>
                     </thead>
-                    <tbody>
+                    <tbody role="tree">
                       ${RubricItemsWithIndent(rubric_data?.rubric_items)}
                       <tr
                         class="js-no-rubric-item-note ${rubric_data?.rubric_items?.length
@@ -216,7 +216,7 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
                   Add item
                 </button>
                 <template class="js-new-row-rubric-item">
-                  ${RubricItemRow(null, rubric_data?.rubric_items?.length ?? 0, 0)}
+                  ${RubricItemRow(null, rubric_data?.rubric_items?.length ?? 0, 0, [])}
                 </template>
                 ${MustachePatterns({ resLocals })}
               </div>
@@ -282,8 +282,13 @@ function RubricItemsWithIndent(rubric_items: RubricData['rubric_items'][0][] | n
     const cutoffIdx = parentStack.indexOf(item.parent_id ?? '') + 1;
     parentStack.splice(cutoffIdx, parentStack.length - cutoffIdx);
 
+    // Get child ids needed for ARIA mapping
+    const childIds = rubric_items
+      .filter((i) => i.parent_id === item.id)
+      .map((i) => 'rubric-item-' + i.id);
+
     // Generate HTML for current item
-    const result = RubricItemRow(item, item.number, parentStack.length - 1);
+    const result = RubricItemRow(item, item.number, parentStack.length - 1, childIds);
 
     // Push this item as potential parent for next item
     parentStack.push(item.id);
@@ -296,9 +301,15 @@ function RubricItemRow(
   item: RubricData['rubric_items'][0] | null,
   index: number,
   indentLevel: number,
+  childIds: string[],
 ) {
   const namePrefix = item ? `rubric_item[cur${item.id}]` : 'rubric_item[new]';
-  return html` <tr class="js-rubric-item-row">
+  return html` <tr
+    class="js-rubric-item-row"
+    role="treeitem"
+    ${item ? html`id="rubric-item-${item.id}"` : ''}
+    aria-owns="${childIds.join(' ')}"
+  >
     <td class="text-nowrap js-rubric-item-render-indent">
       ${item ? html`<input type="hidden" name="${namePrefix}[id]" value="${item.id}" />` : ''}
       <input
