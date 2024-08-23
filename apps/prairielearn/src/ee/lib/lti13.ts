@@ -180,7 +180,7 @@ export class Lti13Claim {
     return role_instructor;
   }
 
-  get(property: string): any {
+  get(property: _.PropertyPath): any {
     this.assertValid();
     // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
     return _.get(this.claims, property);
