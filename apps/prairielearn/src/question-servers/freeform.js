@@ -1717,6 +1717,10 @@ export async function grade(submission, variant, question, question_course) {
 
     const context = await getContext(question, question_course);
     let data = {
+      // Note that `params` and `true_answer` can change during `parse()`/`grade()`.
+      // We can safely use the variant's values because we currently always write the
+      // updated values to both the submission and the variant. If that ever changes,
+      // we may need to update this to pull those values from the submission.
       params: variant.params,
       correct_answers: variant.true_answer,
       submitted_answers: submission.submitted_answer,
