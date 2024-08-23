@@ -44,10 +44,12 @@ export const LineitemSchema = z.object({
   startDateTime: DateFromISOString.optional(),
   endDateTime: DateFromISOString.optional(),
   gradesReleased: z.boolean().optional(),
-  'https://canvas.instructure.com/lti/submission_type': z.object({
-    type: z.enum(['none', 'external_tool']).optional(),
-    external_tool_url: z.string().optional(),
-  }),
+  'https://canvas.instructure.com/lti/submission_type': z
+    .object({
+      type: z.enum(['none', 'external_tool']).optional(),
+      external_tool_url: z.string().optional(),
+    })
+    .optional(),
 });
 export type Lineitem = z.infer<typeof LineitemSchema>;
 
