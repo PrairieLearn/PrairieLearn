@@ -487,38 +487,51 @@ function RubricItemsWithIndent(
   rubric_items_grading: Record<string, RubricGradingItem> | null | undefined,
 ) {
   if (!rubric_items) return '';
-  const parentStack = [''];
-  const itemRows = rubric_items.map((item) => {
-    // Find parent in stack and remove any items with deeper nesting than parent
-    const cutoffIdx = parentStack.indexOf(item.parent_id ?? '') + 1;
-    parentStack.splice(cutoffIdx, parentStack.length - cutoffIdx);
 
-    // Generate HTML for current item
-    const result = RubricItem(item, rubric_items_grading?.[item.id], parentStack.length - 1);
-
-    // Push this item as potential parent for next item
-    parentStack.push(item.id);
-    return result;
+  // First group rubric items by parent
+  const itemsByParent = {};
+  rubric_items.forEach((item) => {
+    const parent = item.parent_id ?? '';
+    if (!itemsByParent[parent]) {
+      itemsByParent[parent] = [];
+    }
+    itemsByParent[parent].push(item);
   });
-  return html`<div aria-role="tree">${joinHtml(itemRows)}</div>`;
+
+  // Then print item tree recursively, starting with root node
+  const itemTree = RubricItemsWithIndentRecursive('', itemsByParent, rubric_items_grading);
+  return html`<div role="tree">${joinHtml(itemTree)}</div>`;
+}
+
+function RubricItemsWithIndentRecursive(
+  current_parent: string,
+  rubric_items_by_parent: Record<string, RubricData['rubric_items'][0][]>,
+  rubric_items_grading: Record<string, RubricGradingItem> | null | undefined,
+) {
+  return rubric_items_by_parent[current_parent].map((item) => {
+    const isLeafNode = !(item.id in rubric_items_by_parent);
+    const itemRendered = RubricItem(item, isLeafNode, rubric_items_grading?.[item.id]);
+    const childrenRendered = isLeafNode
+      ? ''
+      : RubricItemsWithIndentRecursive(item.id, rubric_items_by_parent, rubric_items_grading);
+    return html`<div role="treeitem">
+      ${itemRendered}
+      ${isLeafNode ? '' : html`<div role="group" class="ms-4">${childrenRendered}</div>`}
+    </div>`;
+  });
 }
 
 function RubricItem(
   item: RubricData['rubric_items'][0],
+  is_leaf_node: boolean,
   item_grading: RubricGradingItem | undefined | null,
-  indentLevel: number,
 ) {
   return html`
-    <div aria-role="treeitem">
+    <div role="treeitem">
       <label class="w-100" data-testid="rubric-item-container-${item.id}">
-        <input
-          type="checkbox"
-          style="margin-left: ${indentLevel}rem"
-          disabled
-          ${item_grading?.score ? 'checked' : ''}
-        />
+        <input type="checkbox" disabled ${item_grading?.score ? 'checked' : ''} />
         <span class="text-${item.points >= 0 ? 'success' : 'danger'}">
-          ${item.points !== 0
+          ${is_leaf_node
             ? html`<strong data-testid="rubric-item-points">
                 [${(item.points >= 0 ? '+' : '') + item.points}]
               </strong>`

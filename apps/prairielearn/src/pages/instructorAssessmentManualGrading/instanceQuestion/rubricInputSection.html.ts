@@ -104,85 +104,113 @@ function RubricItemsWithIndent(
   disable: boolean,
 ) {
   if (!rubric_items) return '';
-  const parentStack = [''];
-  const itemRows = rubric_items.map((item) => {
-    // Find parent in stack and remove any items with deeper nesting than parent
-    const cutoffIdx = parentStack.indexOf(item.parent_id ?? '') + 1;
-    parentStack.splice(cutoffIdx, parentStack.length - cutoffIdx);
 
-    // Generate HTML for current item
-    const result = RubricItem(
+  // First group rubric items by parent
+  const itemsByParent = {};
+  rubric_items.forEach((item) => {
+    const parent = item.parent_id ?? '';
+    if (!itemsByParent[parent]) {
+      itemsByParent[parent] = [];
+    }
+    itemsByParent[parent].push(item);
+  });
+
+  // Then print item tree recursively, starting with root node
+  const itemTree = RubricItemsWithIndentRecursive(
+    '',
+    itemsByParent,
+    rubric_items_grading,
+    assessment_question,
+    disable,
+  );
+  return html`<div role="tree">${joinHtml(itemTree)}</div>`;
+}
+
+function RubricItemsWithIndentRecursive(
+  current_parent: string,
+  rubric_items_by_parent: Record<string, RubricData['rubric_items'][0][]>,
+  rubric_items_grading: Record<string, RubricGradingItem> | null | undefined,
+  assessment_question: AssessmentQuestion,
+  disable: boolean,
+) {
+  return rubric_items_by_parent[current_parent].map((item) => {
+    const isLeafNode = !(item.id in rubric_items_by_parent);
+    const itemRendered = RubricItem(
       item,
+      isLeafNode,
       rubric_items_grading?.[item.id],
       assessment_question,
       disable,
-      parentStack.length - 1,
     );
-
-    // Push this item as potential parent for next item
-    parentStack.push(item.id);
-    return result;
+    const childrenRendered = isLeafNode
+      ? ''
+      : RubricItemsWithIndentRecursive(
+          item.id,
+          rubric_items_by_parent,
+          rubric_items_grading,
+          assessment_question,
+          disable,
+        );
+    return html`<div role="treeitem">
+      ${itemRendered}
+      ${isLeafNode ? '' : html`<div role="group" class="ms-4">${childrenRendered}</div>`}
+    </div>`;
   });
-  return html`<div aria-role="tree">${joinHtml(itemRows)}</div>`;
 }
 
 function RubricItem(
   item: RubricData['rubric_items'][0],
+  is_leaf_node: boolean,
   item_grading: RubricGradingItem | undefined | null,
   assessment_question: AssessmentQuestion,
   disable: boolean,
-  indentLevel: number,
 ) {
   return html`
-    <div aria-role="treeitem">
-      <label class="js-selectable-rubric-item-label w-100">
-        <input
-          type="checkbox"
-          name="rubric_item_selected_manual"
-          class="js-selectable-rubric-item"
-          style="margin-left: ${indentLevel}rem"
-          value="${item.id}"
-          ${item_grading?.score ? 'checked' : ''}
-          ${disable ? 'disabled' : ''}
-          data-parent-item="${item.parent_id}"
-          data-rubric-item-points="${item.points}"
-          data-key-binding="${item.key_binding}"
-        />
-        <span class="badge badge-info">${item.key_binding}</span>
-        ${item.points !== 0
-          ? html`<span class="float-right text-${item.points >= 0 ? 'success' : 'danger'}">
-              <strong>
-                <span class="js-manual-grading-points" data-testid="rubric-item-points">
-                  [${(item.points >= 0 ? '+' : '') + Math.round(item.points * 100) / 100}]
-                </span>
-                ${assessment_question.max_points
-                  ? html`
-                      <span class="js-manual-grading-percentage">
-                        [${(item.points >= 0 ? '+' : '') +
-                        Math.round(
-                          (item.points * 10000) /
-                            (assessment_question.max_manual_points ||
-                              assessment_question.max_points),
-                        ) /
-                          100}%]
-                      </span>
-                    `
-                  : ''}
-              </strong>
-            </span>`
-          : ''}
-        <span>
-          <div class="d-inline-block" data-testid="rubric-item-description">
-            ${unsafeHtml(item.description_rendered ?? '')}
-          </div>
-          <div class="small text-muted" data-testid="rubric-item-explanation">
-            ${unsafeHtml(item.explanation_rendered ?? '')}
-          </div>
-          <div class="small text-muted" data-testid="rubric-item-grader-note">
-            ${unsafeHtml(item.grader_note_rendered ?? '')}
-          </div>
-        </span>
-      </label>
-    </div>
+    <label class="js-selectable-rubric-item-label w-100">
+      <input
+        type="checkbox"
+        name="rubric_item_selected_manual"
+        class="js-selectable-rubric-item"
+        value="${item.id}"
+        ${item_grading?.score ? 'checked' : ''}
+        ${disable ? 'disabled' : ''}
+        data-parent-item="${item.parent_id}"
+        data-rubric-item-points="${item.points}"
+        data-key-binding="${item.key_binding}"
+      />
+      <span class="badge badge-info">${item.key_binding}</span>
+      ${is_leaf_node
+        ? html`<span class="float-right text-${item.points >= 0 ? 'success' : 'danger'}">
+            <strong>
+              <span class="js-manual-grading-points" data-testid="rubric-item-points">
+                [${(item.points >= 0 ? '+' : '') + Math.round(item.points * 100) / 100}]
+              </span>
+              ${assessment_question.max_points
+                ? html`
+                    <span class="js-manual-grading-percentage">
+                      [${(item.points >= 0 ? '+' : '') +
+                      Math.round(
+                        (item.points * 10000) /
+                          (assessment_question.max_manual_points || assessment_question.max_points),
+                      ) /
+                        100}%]
+                    </span>
+                  `
+                : ''}
+            </strong>
+          </span>`
+        : ''}
+      <span>
+        <div class="d-inline-block" data-testid="rubric-item-description">
+          ${unsafeHtml(item.description_rendered ?? '')}
+        </div>
+        <div class="small text-muted" data-testid="rubric-item-explanation">
+          ${unsafeHtml(item.explanation_rendered ?? '')}
+        </div>
+        <div class="small text-muted" data-testid="rubric-item-grader-note">
+          ${unsafeHtml(item.grader_note_rendered ?? '')}
+        </div>
+      </span>
+    </label>
   `;
 }

@@ -433,14 +433,14 @@ function updateRubricItemCheckStates(item) {
     );
     if (
       Array.from(sameParentItems).every(
-        (otherItem) =>
-          otherItem.checked === item.checked && otherItem.indeterminate === item.indeterminate,
+        (otherItem) => otherItem.checked === item.checked && !otherItem.indeterminate,
       )
     ) {
       parentItem.indeterminate = false;
       parentItem.checked = item.checked;
     } else {
       parentItem.indeterminate = true;
+      parentItem.checked = false;
     }
     updateRubricItemCheckStates(parentItem, false);
   }

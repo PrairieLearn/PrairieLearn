@@ -255,7 +255,7 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
           );
           assert.equal(
             container.find('[data-testid="rubric-item-points"]').text().trim(),
-            item.points !== 0 ? `[${item.points >= 0 ? '+' : ''}${item.points}]` : '',
+            `[${item.points >= 0 ? '+' : ''}${item.points}]`,
           );
           assert.equal(
             container.find('[data-testid="rubric-item-description"]').html()?.trim(),
@@ -343,7 +343,7 @@ function checkSettingsResults(
       assert.equal(container.length, 1);
       assert.equal(
         container.find('[data-testid="rubric-item-points"]').text().trim(),
-        item.points !== 0 ? `[${item.points >= 0 ? '+' : ''}${item.points}]` : '',
+        `[${item.points >= 0 ? '+' : ''}${item.points}]`,
       );
       assert.equal(
         container.find('[data-testid="rubric-item-description"]').html()?.trim(),
