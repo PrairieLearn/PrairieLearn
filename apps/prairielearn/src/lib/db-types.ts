@@ -748,12 +748,12 @@ export const LtiCredentialsSchema = z.object({
 export type LtiCredentials = z.infer<typeof LtiCredentialsSchema>;
 
 export const Lti13LineitemsSchema = z.object({
-  id: IdSchema,
   assessment_id: IdSchema,
+  id: IdSchema,
   last_activity: DateFromISOString,
-  lti13_course_instance_id: IdSchema,
   lineitem_id: z.string(),
   lineitem: z.record(z.string(), z.any()),
+  lti13_course_instance_id: IdSchema,
 });
 export type Lti13Lineitems = z.infer<typeof Lti13LineitemsSchema>;
 

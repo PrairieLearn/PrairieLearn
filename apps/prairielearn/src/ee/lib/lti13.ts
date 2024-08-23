@@ -273,25 +273,26 @@ export async function getAccessToken(lti13_instance_id: string) {
     lti13_instance.access_token_expires_at > new Date(Date.now() - 5 * 60 * 1000)
   ) {
     return tokenSet.access_token;
-  } else {
-    const issuer = new Issuer(lti13_instance.issuer_params);
-    const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
-
-    tokenSet = await client.grant({
-      grant_type: 'client_credentials',
-      scope: TOKEN_SCOPES.join(' '),
-    });
-
-    // Store the token for reuse
-    const expires_at = tokenSet.expires_at ? tokenSet.expires_at * 1000 : Date.now();
-
-    await queryAsync(sql.update_token, {
-      lti13_instance_id,
-      access_tokenset: tokenSet,
-      access_token_expires_at: new Date(expires_at),
-    });
-    return tokenSet.access_token;
   }
+
+  // Fetch the token
+  const issuer = new Issuer(lti13_instance.issuer_params);
+  const client = new issuer.Client(lti13_instance.client_params, lti13_instance.keystore);
+
+  tokenSet = await client.grant({
+    grant_type: 'client_credentials',
+    scope: TOKEN_SCOPES.join(' '),
+  });
+
+  // Store the token for reuse
+  const expires_at = tokenSet.expires_at ? tokenSet.expires_at * 1000 : Date.now();
+
+  await queryAsync(sql.update_token, {
+    lti13_instance_id,
+    access_tokenset: tokenSet,
+    access_token_expires_at: new Date(expires_at),
+  });
+  return tokenSet.access_token;
 }
 
 export async function getLineitems(instance: Lti13CombinedInstance) {
@@ -372,8 +373,7 @@ export async function createAndLinkLineitem(
     throw new Error('Lineitems not defined');
   }
 
-  const createBody: Lineitem = {
-    id: 'new_lineitem', // will be ignored/overwritten by the LMS platform
+  const createBody: Omit<Lineitem, 'id'> = {
     scoreMaximum: 100,
     label: assessment.label,
     resourceId: assessment.id,
