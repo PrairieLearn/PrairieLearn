@@ -51,7 +51,7 @@ export function Enroll({
             </div>
             <table class="table table-sm table-hover table-striped" aria-label="Courses">
               <tbody>
-                ${courseInstances.map((course_instance, idx) => {
+                ${courseInstances.map((course_instance) => {
                   return html`
                     <tr>
                       <td class="align-middle">${course_instance.label}</td>
