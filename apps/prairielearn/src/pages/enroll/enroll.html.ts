@@ -67,7 +67,7 @@ export function Enroll({
                                 ? html`
                                     <button
                                       type="button"
-                                      class="btn btn-sm btn-info js-add-course"
+                                      class="btn btn-sm btn-info"
                                       data-toggle="modal"
                                       data-target="#add-course-modal"
                                       data-course-instance-id="${course_instance.course_instance_id}"
@@ -83,7 +83,7 @@ export function Enroll({
                                 ? html`
                                     <button
                                       type="button"
-                                      class="btn btn-sm btn-danger js-remove-course"
+                                      class="btn btn-sm btn-danger"
                                       data-toggle="modal"
                                       data-target="#remove-course-modal"
                                       data-course-instance-id="${course_instance.course_instance_id}"
@@ -198,7 +198,7 @@ function AddCourseModal({ csrfToken }: { csrfToken: string }) {
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="course_instance_id" class="js-course-instance-id" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-danger" name="__action" value="enroll">
+      <button type="submit" class="btn btn-info" name="__action" value="enroll">
         Add <span class="js-course-instance-short-label"></span>
       </button>
     `,
