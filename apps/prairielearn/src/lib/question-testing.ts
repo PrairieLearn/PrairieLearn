@@ -208,7 +208,7 @@ async function testVariant(
   const courseIssues = compareSubmissions(expected_submission, test_submission);
   const studentMessage = 'Question test failure';
   const courseData = {
-    updated_variant,
+    variant: updated_variant,
     question,
     course,
     expected_submission,
