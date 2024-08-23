@@ -279,19 +279,27 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
 
 function RubricItemsWithIndent(rubric_items: RubricData['rubric_items'][0][] | null | undefined) {
   if (!rubric_items) return unsafeHtml('');
-  const parentStack = [''];
+  const parentStack = [];
   const itemRows = rubric_items.map((item) => {
     // Find parent in stack and remove any items with deeper nesting than parent
-    const cutoffIdx = parentStack.indexOf(item.parent_id ?? '') + 1;
+    const cutoffIdx = item.parent_id
+      ? parentStack.findIndex((i) => i.id === item.parent_id) + 1
+      : 0;
     parentStack.splice(cutoffIdx, parentStack.length - cutoffIdx);
 
     // Get child ids needed for ARIA mapping
     const childIds = rubric_items
       .filter((i) => i.parent_id === item.id)
-      .map((i) => 'rubric-item-' + i.id);
+      .map((i) => 'rubric-item-' + i.number);
 
     // Generate HTML for current item
-    const result = RubricItemRow(item, item.number, parentStack.length - 1, childIds);
+    const result = RubricItemRow(
+      item,
+      item.number,
+      parentStack[parentStack.length - 1].number,
+      parentStack.length - 1,
+      childIds,
+    );
 
     // Push this item as potential parent for next item
     parentStack.push(item.id);
@@ -303,15 +311,17 @@ function RubricItemsWithIndent(rubric_items: RubricData['rubric_items'][0][] | n
 function RubricItemRow(
   item: RubricData['rubric_items'][0] | null,
   index: number,
-  indentLevel: number,
-  childIds: string[],
+  parent_index: number,
+  indent_level: number,
+  child_idxs: string[],
 ) {
   const namePrefix = item ? `rubric_item[cur${item.id}]` : 'rubric_item[new]';
   return html` <tr
     class="js-rubric-item-row"
     role="treeitem"
-    ${item ? html`id="rubric-item-${item.id}"` : ''}
-    aria-owns="${childIds.join(' ')}"
+    ${item ? html`id="rubric-item-${item.number}"` : ''}
+    aria-owns="${child_idxs.join(' ')}"
+    ${item?.parent_id ? html`data-parent-item="rubric-item-${parent_index}"` : ''}
   >
     <td class="text-nowrap js-rubric-item-render-indent">
       ${item ? html`<input type="hidden" name="${namePrefix}[id]" value="${item.id}" />` : ''}
@@ -325,7 +335,7 @@ function RubricItemRow(
         type="hidden"
         class="js-rubric-item-indent"
         name="${namePrefix}[indent]"
-        value="${indentLevel}"
+        value="${indent_level}"
       />
       <button type="button" class="btn btn-sm js-rubric-item-move-button" draggable="true">
         <i class="fas fa-arrows-up-down"></i>

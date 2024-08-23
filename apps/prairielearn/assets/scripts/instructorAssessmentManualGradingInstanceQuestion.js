@@ -526,31 +526,51 @@ function updateItemPoints(item, points) {
 function updateRubricItemOrderAndIndentation() {
   const rows = document.querySelectorAll('.js-rubric-item-row');
 
-  let previousIndent = -1;
+  let parentStack = [];
   rows.forEach((row, index) => {
     // Synchronize order
     row.querySelector('.js-rubric-item-row-order').value = index;
     const itemIndent = row.querySelector('.js-rubric-item-indent');
 
     // Ensure consistent indentation when items are unindented or moved
-    itemIndent.value = Math.min(itemIndent.value, previousIndent + 1);
-    previousIndent = Number(itemIndent.value);
+    itemIndent.value = Math.min(itemIndent.value, parentStack.length);
+
+    // Update parent stack and this row's parent based on new indentation
+    parentStack.splice(itemIndent.value, parentStack.length - itemIndent.value);
+    if (parentStack.length > 0) {
+      row.setAttribute(
+        'data-parent-item',
+        parentStack[parentStack.length - 1].querySelector('.js-rubric-item-row-order').value,
+      );
+    } else {
+      row.removeAttribute('data-parent-item');
+    }
+
+    // Add this row as potential parent to stack
+    parentStack.push(row);
 
     // Update visual indentation
     row.querySelector('.js-rubric-item-render-indent').style.paddingLeft = itemIndent.value + 'rem';
   });
 
-  // Disable points for non-leaf items (traversing in reverse for full cascading in one pass)
-  previousIndent = -1;
+  // Second pass in reverse to ensure full cascading of changes
+  let previousIndent = -1;
   let pointsTotals = {};
   let containsAlwaysShow = {};
 
   [...rows].reverse().forEach((row) => {
+    const itemIndex = row.querySelector('.js-rubric-item-row-order').value;
     const itemIndent = row.querySelector('.js-rubric-item-indent');
     const itemIndentValue = Number(itemIndent.value);
     const itemPoints = row.querySelector('.js-rubric-item-points');
     const itemPointsValue = Number(itemPoints.value);
     const itemAlwaysShow = row.querySelector('.js-rubric-item-always-show');
+
+    // Update aria-owns attribute based on previously computed parent data
+    const children = document.querySelectorAll(
+      '.js-rubric-item-row[data-parent-item="' + itemIndex + '"]',
+    );
+    row.setAttribute('aria-owns', [...children].map((i) => i.id).join(' '));
 
     if (itemIndentValue >= previousIndent) {
       // Leaf items are manually editable and don't need any further treatment
@@ -634,6 +654,8 @@ function deleteRow(event) {
   const targetRowIdx = rowList.indexOf(targetRow);
   const targetRowIndent = rowList[targetRowIdx].querySelector('.js-rubric-item-indent').value;
 
+  targetRow.remove();
+
   // Decrease indentation of successors until hitting a row with a lower or equal indentation level
   rowList.some((row, idx) => {
     const indent = row.querySelector('.js-rubric-item-indent');
@@ -646,7 +668,6 @@ function deleteRow(event) {
     return false;
   });
 
-  targetRow.remove();
   if (!table?.querySelectorAll('.js-rubric-item-row-order')?.length) {
     table.querySelector('.js-no-rubric-item-note').classList.remove('d-none');
   }
@@ -720,6 +741,7 @@ function addRubricItemRow() {
   const row = modal
     .querySelector('.js-new-row-rubric-item')
     .content.firstElementChild.cloneNode(true);
+  row.id = `rubric-item-${next_id}`;
   table.querySelector('tbody').insertBefore(row, table.querySelector('.js-no-rubric-item-note'));
 
   row.querySelector('.js-rubric-item-row-order').name = `rubric_item[new${next_id}][order]`;
