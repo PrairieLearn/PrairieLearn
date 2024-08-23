@@ -1134,20 +1134,22 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
   }
 
   const data = {
-    params: _.get(variant, 'params', {}),
-    correct_answers: _.get(variant, 'true_answer', {}),
-    submitted_answers: submission ? _.get(submission, 'submitted_answer', {}) : {},
+    // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
+    // so we'll use the submission's values if they exist.
+    params: submission?.params ?? variant.params ?? {},
+    correct_answers: submission?.true_answer ?? variant.true_answer ?? {},
+    submitted_answers: submission?.submitted_answer ?? {},
     format_errors: submission?.format_errors ?? {},
     partial_scores: submission?.partial_scores ?? {},
     score: submission?.score ?? 0,
     feedback: submission?.feedback ?? {},
     variant_seed: parseInt(variant.variant_seed ?? '0', 36),
-    options: _.get(variant, 'options') ?? {},
-    raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
+    options: variant.options ?? {},
+    raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(locals.allowAnswerEditing && !locals.manualGradingInterface),
     manual_grading: !!locals.manualGradingInterface,
     panel,
-    num_valid_submissions: _.get(variant, 'num_tries', null),
+    num_valid_submissions: variant.num_tries ?? null,
   };
 
   // This URL is submission-specific, so we have to compute it here (that is,
