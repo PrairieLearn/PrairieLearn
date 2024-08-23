@@ -164,6 +164,7 @@ function resetInstructorGradingPanel() {
 
   resetRubricItemRowsListeners();
   updateRubricItemOrderAndIndentation();
+  updateAllItemPoints();
   // Partially checked rubric items are technically unchecked, so we need to re-compute their display manually
   document.querySelectorAll('.js-selectable-rubric-item').forEach(updateRubricItemCheckStates);
   computePointsFromRubric();
@@ -325,12 +326,20 @@ function addAlert(placeholder, msg, classes = ['alert-danger']) {
 }
 
 function resetRubricItemRowsListeners() {
+  // dragenter fires much less frequently, so it is a better handler for dragging,
+  // but dragover still needs to implemented with preventDefault for drops to register
   document
     .querySelectorAll('.js-rubric-items-table tbody tr')
     .forEach((row) => row.addEventListener('dragenter', rowDragEnter));
   document
+    .querySelectorAll('.js-rubric-items-table tbody tr')
+    .forEach((row) => row.addEventListener('dragover', (e) => e.preventDefault()));
+  document
     .querySelectorAll('.js-rubric-item-move-button')
     .forEach((row) => row.addEventListener('dragstart', rowDragStart));
+  document
+    .querySelectorAll('.js-rubric-item-row')
+    .forEach((row) => row.addEventListener('drop', updateAllItemPoints));
   document
     .querySelectorAll('.js-rubric-item-long-text-field')
     .forEach((button) => button.addEventListener('click', enableRubricItemLongTextField));
@@ -498,28 +507,12 @@ function enableRubricItemLongTextField(event) {
   adjustHeightFromContent(input);
 }
 
-function updateItemPoints(item, points) {
-  if (item !== null) {
-    if (points !== null) {
-      item.setAttribute('readonly', 'readonly');
-      item.setAttribute(
-        'title',
-        'Points are automatically calculated for items that contain other items',
-      );
-
-      // Save last manually set value only once when item becomes inner item
-      if (!item.hasAttribute('readonly')) {
-        item.setAttribute('data-saved-value', item.value);
-      }
-      item.value = points;
-    } else {
-      item.removeAttribute('readonly');
-      item.removeAttribute('title');
-      if (item.hasAttribute('data-saved-value')) {
-        item.value = item.getAttribute('data-saved-value');
-        item.removeAttribute('data-saved-value');
-      }
-    }
+function updatePointsVisibility(item, isVisible) {
+  if (item === null) return;
+  if (isVisible) {
+    item.classList.remove('d-none');
+  } else {
+    item.classList.add('d-none');
   }
 }
 
@@ -552,18 +545,21 @@ function updateRubricItemOrderAndIndentation() {
     // Update visual indentation
     row.querySelector('.js-rubric-item-render-indent').style.paddingLeft = itemIndent.value + 'rem';
   });
+}
 
-  // Second pass in reverse to ensure full cascading of changes
+function updateAllItemPoints() {
+  const rows = document.querySelectorAll('.js-rubric-item-row');
+
   let previousIndent = -1;
   let pointsTotals = {};
   let containsAlwaysShow = {};
 
+  // Pass in reverse to ensure full cascading of changes
   [...rows].reverse().forEach((row) => {
     const itemIndex = row.querySelector('.js-rubric-item-row-order').value;
     const itemIndent = row.querySelector('.js-rubric-item-indent');
     const itemIndentValue = Number(itemIndent.value);
     const itemPoints = row.querySelector('.js-rubric-item-points');
-    const itemPointsValue = Number(itemPoints.value);
     const itemAlwaysShow = row.querySelector('.js-rubric-item-always-show');
 
     // Update aria-owns attribute based on previously computed parent data
@@ -572,13 +568,9 @@ function updateRubricItemOrderAndIndentation() {
     );
     row.setAttribute('aria-owns', [...children].map((i) => i.id).join(' '));
 
-    if (itemIndentValue >= previousIndent) {
-      // Leaf items are manually editable and don't need any further treatment
-      updateItemPoints(itemPoints, null);
-    } else {
-      // Internal items get assigned the sum of their immediate child nodes' points
-      updateItemPoints(itemPoints, pointsTotals[itemIndentValue + 1]);
+    updatePointsVisibility(itemPoints, itemIndentValue >= previousIndent);
 
+    if (itemIndentValue < previousIndent) {
       // Internal items must have always-show flag if any child has the flag enabled
       if (containsAlwaysShow[itemIndentValue + 1] && !itemAlwaysShow.checked) {
         itemAlwaysShow.checked = true;
@@ -590,13 +582,11 @@ function updateRubricItemOrderAndIndentation() {
         );
       }
 
-      // Reset points and always-show flag for next-deeper children of this node are not counted again
-      pointsTotals[itemIndentValue + 1] = 0;
+      // Reset always-show flag for next-deeper children of this node are not counted again
       containsAlwaysShow[itemIndentValue + 1] = false;
     }
 
     // Update point totals and always-show status for current level
-    pointsTotals[itemIndentValue] = itemPointsValue + (pointsTotals[itemIndentValue] || 0);
     containsAlwaysShow[itemIndentValue] =
       itemAlwaysShow.checked || containsAlwaysShow[itemIndentValue];
     previousIndent = itemIndentValue;
@@ -609,12 +599,14 @@ function moveRowDown(event) {
   const row = event.target.closest('tr');
   row.parentNode.insertBefore(row.nextElementSibling, row);
   updateRubricItemOrderAndIndentation();
+  updateAllItemPoints();
 }
 
 function moveRowUp(event) {
   const row = event.target.closest('tr');
   row.parentNode.insertBefore(row.previousElementSibling, row.nextElementSibling);
   updateRubricItemOrderAndIndentation();
+  updateAllItemPoints();
 }
 
 function indentRow(event) {
@@ -634,6 +626,7 @@ function indentRow(event) {
   }
 
   updateRubricItemOrderAndIndentation();
+  updateAllItemPoints();
 }
 
 function unindentRow(event) {
@@ -645,6 +638,7 @@ function unindentRow(event) {
   row.querySelector('.js-rubric-item-indent').value = indentLevel;
 
   updateRubricItemOrderAndIndentation();
+  updateAllItemPoints();
 }
 
 function deleteRow(event) {
@@ -672,7 +666,7 @@ function deleteRow(event) {
     table.querySelector('.js-no-rubric-item-note').classList.remove('d-none');
   }
   updateRubricItemOrderAndIndentation();
-  checkRubricItemTotals();
+  updateAllItemPoints();
 }
 
 function rowDragStart(event) {
@@ -683,6 +677,8 @@ function rowDragStart(event) {
 }
 
 function rowDragEnter(event) {
+  event.preventDefault();
+
   const row = event.target.closest('tr');
 
   // Rows in different tables don't count
@@ -703,7 +699,7 @@ function rowDragEnter(event) {
   const draggingRowIdx = rowList.indexOf(window.rubricItemRowDragging);
   const targetRowIdx = rowList.indexOf(row);
   const targetRowItemIdx = row.querySelector('.js-rubric-item-row-order').value;
-  event.preventDefault();
+
   if (targetRowIdx < draggingRowIdx) {
     row.parentNode.insertBefore(window.rubricItemRowDragging, row);
   } else if (row.nextSibling) {
@@ -763,4 +759,5 @@ function addRubricItemRow() {
 
   resetRubricItemRowsListeners();
   updateRubricItemOrderAndIndentation();
+  updateAllItemPoints();
 }
