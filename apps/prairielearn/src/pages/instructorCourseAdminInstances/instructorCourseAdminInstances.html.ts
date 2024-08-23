@@ -51,7 +51,7 @@ export function InstructorCourseAdminInstances({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
+              <table class="table table-sm table-hover table-striped" aria-label="Course instances">
                 <thead>
                   <tr>
                     <th>Long Name</th>

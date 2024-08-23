@@ -65,7 +65,10 @@ export function InstructorQuestionStatistics({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover tablesorter table-bordered">
+              <table
+                class="table table-sm table-hover tablesorter table-bordered"
+                aria-label="Question statistics by assessment"
+              >
                 <thead>
                   <tr>
                     <th class="text-center">Course Instance</th>

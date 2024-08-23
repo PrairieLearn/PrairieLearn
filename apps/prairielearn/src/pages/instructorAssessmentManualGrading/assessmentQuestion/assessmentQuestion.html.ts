@@ -115,7 +115,7 @@ export function AssessmentQuestion({
             <form name="grading-form" method="POST">
               <input type="hidden" name="__action" value="batch_action" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-              <table id="grading-table"></table>
+              <table id="grading-table" aria-label="Instance questions for manual grading"></table>
             </form>
           </div>
         </main>

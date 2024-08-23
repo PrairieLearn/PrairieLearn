@@ -147,7 +147,7 @@ function AssessmentQuestionsTable({
 
   return html`
     <div class="table-responsive">
-      <table class="table table-sm table-hover">
+      <table class="table table-sm table-hover" aria-label="Assessment questions">
         <thead>
           <tr>
             <th><span class="sr-only">Name</span></th>

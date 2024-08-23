@@ -6,10 +6,10 @@ import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { JobStatus } from '../../../components/JobStatus.html.js';
-import { JobSchema, UserSchema } from '../../../lib/db-types.js';
+import { JobSequenceSchema, UserSchema } from '../../../lib/db-types.js';
 
 export const JobRowSchema = z.object({
-  job: JobSchema,
+  job_sequence: JobSequenceSchema,
   user: UserSchema.nullable(),
 });
 
@@ -38,7 +38,7 @@ export function InstructorAIGenerateJobs({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Generation job history</div>
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="AI question generation jobs">
                 <thead>
                   <tr>
                     <th>Date</th>
@@ -52,16 +52,19 @@ export function InstructorAIGenerateJobs({
                     (row) => html`
                       <tr>
                         <td>
-                          ${row.job.start_date == null
+                          ${row.job_sequence.start_date == null
                             ? html`&mdash;`
-                            : formatDate(row.job.start_date, resLocals.course.display_timezone)}
+                            : formatDate(
+                                row.job_sequence.start_date,
+                                resLocals.course.display_timezone,
+                              )}
                         </td>
                         <td>${row.user?.uid ?? '(System)'}</td>
-                        <td>${JobStatus({ status: row.job.status })}</td>
+                        <td>${JobStatus({ status: row.job_sequence.status })}</td>
                         <td>
                           <a
-                            href="${resLocals.urlPrefix}/ai_generate_question_job/${row.job
-                              .job_sequence_id}"
+                            href="${resLocals.urlPrefix}/ai_generate_question_job/${row.job_sequence
+                              .id}"
                             class="btn btn-xs btn-info"
                           >
                             Details

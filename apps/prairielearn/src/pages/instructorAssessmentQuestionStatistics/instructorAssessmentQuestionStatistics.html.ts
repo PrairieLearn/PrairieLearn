@@ -96,8 +96,8 @@ export function InstructorAssessmentQuestionStatistics({
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <h2>
                 ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question difficulty
+                vs discrimination
               </h2>
-              vs discrimination
               <div class="ml-auto">
                 <small>
                   <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
@@ -177,7 +177,10 @@ export function InstructorAssessmentQuestionStatistics({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover tablesorter">
+              <table
+                class="table table-sm table-hover tablesorter"
+                aria-label="Question statistics"
+              >
                 <thead>
                   <tr>
                     <th class="text-center">Question</th>
@@ -292,8 +295,8 @@ export function InstructorAssessmentQuestionStatistics({
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <h2>
                 ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Detailed question
+                statistics
               </h2>
-              statistics
               <div class="ml-auto">
                 <small>
                   <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
@@ -310,7 +313,10 @@ export function InstructorAssessmentQuestionStatistics({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover tablesorter table-bordered">
+              <table
+                class="table table-sm table-hover tablesorter table-bordered"
+                aria-label="Detailed question statistics"
+              >
                 <thead>
                   <tr>
                     <th class="text-center">Question</th>
