@@ -84,21 +84,19 @@ $(function() {
         </li>
         {{/distractor_feedback}}
         {{^distractor_feedback}}
-        <li class="{{#is_disordered}}{{#disorder_feedback}}pl-order-blocks-pairing-indicator list-group-item-warning{{/disorder_feedback}}{{/is_disordered}}">
+        <li class="{{#return_messages}}pl-order-blocks-pairing-indicator list-group-item-warning{{/return_messages}}">
                 <div class="pl-order-blocks-correctness-badge-container">
                     {{#allow_feedback_badges}}
                     <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
                     {{/allow_feedback_badges}}
                     <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
                 </div>
-            {{#is_disordered}}
-                {{#disorder_feedback}}
-                <div>
-                    <span class="pl-order-blocks-feedback-icon"><i class="fa fa-question-circle" aria-hidden="true"></i></span>
-                    {{disorder_feedback}}
-                </div>
-                {{/disorder_feedback}}
-            {{/is_disordered}}
+            {{#return_messages}}
+            <div>
+                <span class="pl-order-blocks-feedback-icon"><i class="fa fa-question-circle" aria-hidden="true"></i></span>
+                {{.}}
+            </div>
+            {{/return_messages}}
         </li>
         {{/distractor_feedback}}
         {{/student_submission}}
