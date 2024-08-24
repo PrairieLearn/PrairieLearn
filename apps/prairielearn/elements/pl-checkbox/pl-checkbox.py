@@ -37,6 +37,55 @@ MIN_SELECT_BLANK = 0
 CHECKBOX_MUSTACHE_TEMPLATE_NAME = "pl-checkbox.mustache"
 
 
+def validate_min_max_options(
+    min_correct: int,
+    max_correct: int,
+    len_correct: int,
+    len_incorrect: int,
+    number_answers: int,
+    min_select: int,
+    max_select: int,
+    min_select_default: int,
+) -> None:
+    """
+    Raise an exception if any of these are invalid. TODO do a better job comparmentalizing the logic here.
+    """
+    if not (0 <= min_correct <= max_correct <= len_correct):
+        raise ValueError(
+            f"INTERNAL ERROR: correct number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
+        )
+
+    min_incorrect = number_answers - max_correct
+    max_incorrect = number_answers - min_correct
+    if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
+        raise ValueError(
+            f"INTERNAL ERROR: incorrect number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
+        )
+
+    if min_select < min_select_default:
+        raise ValueError(
+            f"The attribute min-select is {min_select}, but must be at least {min_select_default}"
+        )
+
+        # Check that min_select, max_select, number_answers, min_correct, and max_correct all have sensible values relative to each other.
+    if min_select > max_select:
+        raise ValueError(
+            f"min-select ({min_select}) is greater than max-select ({max_select})"
+        )
+    if min_select > number_answers:
+        raise ValueError(
+            f"min-select ({min_select}) is greater than the total number of answers to display ({number_answers})"
+        )
+    if min_select > min_correct:
+        raise ValueError(
+            f"min-select ({min_select}) is greater than the minimum possible number of correct answers ({min_correct})"
+        )
+    if max_select < max_correct:
+        raise ValueError(
+            f"max-select ({max_select}) is less than the maximum possible number of correct answers ({max_correct})"
+        )
+
+
 def categorize_options(
     element: lxml.html.HtmlElement,
 ) -> tuple[list[AnswerTuple], list[AnswerTuple]]:
@@ -120,8 +169,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if len_correct == 0:
         raise ValueError("At least one option must be true.")
 
-    # TODO move this junk to a helper function.
-
     number_answers = pl.get_integer_attrib(element, "number-answers", len_total)
     min_correct = pl.get_integer_attrib(element, "min-correct", MIN_CORRECT_DEFAULT)
     max_correct = pl.get_integer_attrib(element, "max-correct", len(correct_answers))
@@ -141,43 +188,22 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         min(number_answers, max(0, max(number_answers - len_incorrect, min_correct))),
     )
     max_correct = min(len_correct, min(number_answers, max(min_correct, max_correct)))
-    if not (0 <= min_correct <= max_correct <= len_correct):
-        raise ValueError(
-            f"INTERNAL ERROR: correct number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
-        )
-    min_incorrect = number_answers - max_correct
-    max_incorrect = number_answers - min_correct
-    if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
-        raise ValueError(
-            f"INTERNAL ERROR: incorrect number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
-        )
 
     min_select_default = MIN_SELECT_BLANK if allow_blank else MIN_SELECT_DEFAULT
     min_select = pl.get_integer_attrib(element, "min-select", min_select_default)
-    if min_select < min_select_default:
-        raise ValueError(
-            f"The attribute min-select is {min_select} but must be at least {min_select_default}"
-        )
 
     max_select = pl.get_integer_attrib(element, "max-select", number_answers)
 
-    # Check that min_select, max_select, number_answers, min_correct, and max_correct all have sensible values relative to each other.
-    if min_select > max_select:
-        raise ValueError(
-            f"min-select ({min_select}) is greater than max-select ({max_select})"
-        )
-    if min_select > number_answers:
-        raise ValueError(
-            f"min-select ({min_select}) is greater than the total number of answers to display ({number_answers})"
-        )
-    if min_select > min_correct:
-        raise ValueError(
-            f"min-select ({min_select}) is greater than the minimum possible number of correct answers ({min_correct})"
-        )
-    if max_select < max_correct:
-        raise ValueError(
-            f"max-select ({max_select}) is less than the maximum possible number of correct answers ({max_correct})"
-        )
+    validate_min_max_options(
+        min_correct,
+        max_correct,
+        len_correct,
+        len_incorrect,
+        number_answers,
+        min_select,
+        max_select,
+        min_select_default,
+    )
 
     number_correct = random.randint(min_correct, max_correct)
     number_incorrect = number_answers - number_correct
