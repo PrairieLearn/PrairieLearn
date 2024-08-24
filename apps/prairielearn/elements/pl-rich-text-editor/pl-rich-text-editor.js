@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global Quill, he, MathJax, QuillMarkdown, showdown, DOMPurify */
+/* global Quill, he, MathJax, QuillMarkdown, DOMPurify */
 
 (() => {
   const rtePurify = DOMPurify();
@@ -43,7 +43,7 @@
     }
   }
 
-  window.PLRTE = function (uuid, options) {
+  window.PLRTE = async function (uuid, options) {
     if (!options.modules) options.modules = {};
     if (options.readOnly) {
       options.modules.toolbar = false;
@@ -78,18 +78,15 @@
 
     let inputElement = $('#rte-input-' + uuid);
     let quill = new Quill('#rte-' + uuid, options);
-    let renderer = null;
+    let marked = null;
     if (options.format === 'markdown') {
-      renderer = new showdown.Converter({
-        literalMidWordUnderscores: true,
-        literalMidWordAsterisks: true,
-      });
+      marked = (await import('marked')).marked;
     }
 
     if (options.markdownShortcuts && !options.readOnly) new QuillMarkdown(quill, {});
 
     let contents = atob(inputElement.val());
-    if (contents && renderer) contents = renderer.makeHtml(contents);
+    if (contents && marked) contents = marked.parse(contents);
     contents = rtePurify.sanitize(contents, rtePurifyConfig);
 
     quill.setContents(quill.clipboard.convert({ html: contents }));
@@ -120,7 +117,6 @@
       let contents = quill.editor?.isBlank?.()
         ? ''
         : rtePurify.sanitize(quill.getSemanticHTML(), rtePurifyConfig);
-      if (contents && renderer) contents = renderer.makeMarkdown(contents);
       inputElement.val(
         btoa(
           he.encode(contents, {
