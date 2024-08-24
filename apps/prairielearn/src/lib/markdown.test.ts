@@ -16,13 +16,13 @@ describe('Markdown processing', () => {
 
   it('handles multiple <markdown> tags', async () => {
     const question = '<markdown>`nice`</markdown><markdown>`also nice`</markdown>';
-    const expected = '<p><code>nice</code></p><p><code>also nice</code></p>';
+    const expected = '<p><code>nice</code></p>\n<p><code>also nice</code></p>';
     testMarkdownQuestion(question, expected);
   });
 
   it('handles code blocks', async () => {
     const question = '<markdown>\n```\nint a = 12;\n```\n</markdown>';
-    const expected = '<pl-code>int a = 12;</pl-code>';
+    const expected = '<pl-code >int a = 12;</pl-code>';
     testMarkdownQuestion(question, expected);
   });
 
@@ -46,13 +46,13 @@ describe('Markdown processing', () => {
 
   it('handles escaped <markdown> tags', async () => {
     const question = '<markdown>```html\n<markdown#></markdown#>\n```</markdown>';
-    const expected = '<pl-code language="html">&#x3C;markdown>&#x3C;/markdown></pl-code>';
+    const expected = '<pl-code language="html">&lt;markdown&gt;&lt;/markdown&gt;</pl-code>';
     testMarkdownQuestion(question, expected);
   });
 
   it('handles weird escaped <markdown> tags', async () => {
     const question = '<markdown>```html\n<markdown###></markdown###>\n```</markdown>';
-    const expected = '<pl-code language="html">&#x3C;markdown##>&#x3C;/markdown##></pl-code>';
+    const expected = '<pl-code language="html">&lt;markdown##&gt;&lt;/markdown##&gt;</pl-code>';
     testMarkdownQuestion(question, expected);
   });
 

@@ -262,7 +262,10 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
           );
           if (item.explanation) {
             assert.equal(
-              container.find('[data-testid="rubric-item-explanation"]').attr('data-content'),
+              container
+                .find('[data-testid="rubric-item-explanation"]')
+                .attr('data-content')
+                ?.trim(),
               item.explanation_render ?? `<p>${item.explanation}</p>`,
             );
           } else {
