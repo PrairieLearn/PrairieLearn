@@ -1,8 +1,6 @@
-import type { Root as MdastRoot, Code, Html } from 'mdast';
-import { visit } from 'unist-util-visit';
+import { marked, Renderer, type Tokens } from 'marked';
 
 import { type HtmlValue, html, joinHtml } from '@prairielearn/html';
-import { createProcessor } from '@prairielearn/markdown';
 
 // The ? symbol is used to make the match non-greedy (i.e., match the shortest
 // possible string that fulfills the regex). See
@@ -11,11 +9,9 @@ const regex = /<markdown>(.*?)<\/markdown>/gms;
 const escapeRegex = /(<\/?markdown)(#+)>/g;
 const langRegex = /([^\\{]*)?(\{(.*)\})?/;
 
-function visitCodeBlock(ast: MdastRoot) {
-  return visit(ast, 'code', (node: Code, index, parent) => {
-    const { lang, value } = node;
+class QuestionRenderer extends Renderer {
+  code({ text, lang }: Tokens.Code): string {
     const attrs: HtmlValue[] = [];
-
     const res = lang?.match(langRegex);
     if (res) {
       const language = res[1];
@@ -27,18 +23,11 @@ function visitCodeBlock(ast: MdastRoot) {
         attrs.push(html`highlight-lines="${highlightLines}"`);
       }
     }
-
-    const newNode: Html = {
-      type: 'html',
-      value: html`<pl-code ${joinHtml(attrs, ' ')}>${value}</pl-code>`.toString(),
-    };
-    parent?.children.splice(index ?? 0, 1, newNode);
-  });
+    return html`<pl-code ${joinHtml(attrs, ' ')}>${text}</pl-code>`.toString();
+  }
 }
 
-// The question processor also includes the use of pl-code instead of pre,
-// and does not sanitize scripts
-const questionProcessor = createProcessor({ mdastVisitors: [visitCodeBlock], sanitize: false });
+const renderer = new QuestionRenderer();
 
 export function processQuestion(html: string) {
   return html.replace(regex, (_match, originalContents: string) => {
@@ -49,7 +38,6 @@ export function processQuestion(html: string) {
         return `${prefix}${'#'.repeat(hashes.length - 1)}>`;
       },
     );
-    const res = questionProcessor.processSync(decodedContents);
-    return res.value.toString();
+    return marked.parse(decodedContents, { renderer, async: false });
   });
 }
