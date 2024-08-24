@@ -1,9 +1,10 @@
 import random
 from enum import Enum
 from itertools import count
-from typing import NamedTuple
+from typing import NamedTuple, cast
 
 import chevron
+import lxml.etree
 import lxml.html
 import prairielearn as pl
 from typing_extensions import assert_never
@@ -16,8 +17,8 @@ class PartialCreditType(Enum):
 
     NONE = "none"
     COVERAGE = "coverage"
-    EVERY_DECISION_COUNTS = "every decision counts"
-    PERCENT_CORRECT = "percent correct"
+    EVERY_DECISION_COUNTS = "every_decision_counts"
+    PERCENT_CORRECT = "percent_correct"
 
 
 class AnswerTuple(NamedTuple):
@@ -310,7 +311,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "question":
         partial_score = data["partial_scores"].get(name, {"score": None})
         score = partial_score.get("score", None)
-        feedback = partial_score.get("feedback", None)
+        # Change the type becasue of how this element works
+        feedback = cast(dict[str, str], partial_score.get("feedback", None))
 
         answerset = []
         for answer in display_answers:
@@ -331,13 +333,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 answer_html["incorrect"] = answer["key"] not in correct_keys
             answerset.append(answer_html)
 
-        info_params = {"format": True}
+        info_params: dict[str, bool | str] = {"format": True}
         # Adds decorative help text per bootstrap formatting guidelines:
         # http://getbootstrap.com/docs/4.0/components/forms/#help-text
         # Determine whether we should add a choice selection requirement
         hide_help_text = pl.get_boolean_attrib(
             element, "hide-help-text", HIDE_HELP_TEXT_DEFAULT
         )
+        helptext = None
+
         if not hide_help_text:
             # Should we reveal the depth of the choice?
             detailed_help_text = pl.get_boolean_attrib(
@@ -405,6 +409,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             insert_text += number_correct_text
 
+            # TODO move this into the template as well
             if detailed_help_text or show_min_select or show_max_select:
                 helptext = (
                     '<small class="form-text text-muted">Select '
@@ -419,47 +424,49 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     + "</small>"
                 )
 
-            # TODO move this into the mustache template
-            if partial_credit_mode is PartialCreditType.PERCENT_CORRECT:
-                gradingtext = (
-                    "You must select"
-                    + insert_text
-                    + " You will receive a score of <code>100% * (t - f) / n</code>, "
-                    + "where <code>t</code> is the number of true options that you select, <code>f</code> "
-                    + "is the number of false options that you select, and <code>n</code> is the total number of true options. "
-                    + "At minimum, you will receive a score of 0%."
-                )
-            elif partial_credit_mode is PartialCreditType.EVERY_DECISION_COUNTS:
-                gradingtext = (
-                    "You must select"
-                    + insert_text
-                    + " You will receive a score of <code>100% * (t + f) / "
-                    + str(len(display_answers))
-                    + "</code>, "
-                    + "where <code>t</code> is the number of true options that you select and <code>f</code> "
-                    + "is the number of false options that you do not select."
-                )
-            elif partial_credit_mode is PartialCreditType.COVERAGE:
-                gradingtext = (
-                    "You must select"
-                    + insert_text
-                    + " You will receive a score of <code>100% * (t / c) * (t / n)</code>, "
-                    + "where <code>t</code> is the number of true options that you select, <code>c</code> is the total number of true options, "
-                    + "and <code>n</code> is the total number of options you select."
-                )
+            # # TODO move this into the mustache template
+            # if partial_credit_mode is PartialCreditType.PERCENT_CORRECT:
+            #     gradingtext = (
+            #         "You must select"
+            #         + insert_text
+            #         + " You will receive a score of <code>100% * (t - f) / n</code>, "
+            #         + "where <code>t</code> is the number of true options that you select, <code>f</code> "
+            #         + "is the number of false options that you select, and <code>n</code> is the total number of true options. "
+            #         + "At minimum, you will receive a score of 0%."
+            #     )
+            # elif partial_credit_mode is PartialCreditType.EVERY_DECISION_COUNTS:
+            #     gradingtext = (
+            #         "You must select"
+            #         + insert_text
+            #         + " You will receive a score of <code>100% * (t + f) / "
+            #         + str(len(display_answers))
+            #         + "</code>, "
+            #         + "where <code>t</code> is the number of true options that you select and <code>f</code> "
+            #         + "is the number of false options that you do not select."
+            #     )
+            # elif partial_credit_mode is PartialCreditType.COVERAGE:
+            #     gradingtext = (
+            #         "You must select"
+            #         + insert_text
+            #         + " You will receive a score of <code>100% * (t / c) * (t / n)</code>, "
+            #         + "where <code>t</code> is the number of true options that you select, <code>c</code> is the total number of true options, "
+            #         + "and <code>n</code> is the total number of options you select."
+            #     )
 
-            elif partial_credit_mode is PartialCreditType.NONE:
-                gradingtext = (
-                    "You must select"
-                    + insert_text
-                    + " You will receive a score of 100% "
-                    + "if you select all options that are true and no options that are false. "
-                    + "Otherwise, you will receive a score of 0%."
-                )
-            else:
-                assert_never(partial_credit_mode)
+            # elif partial_credit_mode is PartialCreditType.NONE:
+            #     gradingtext = (
+            #         "You must select"
+            #         + insert_text
+            #         + " You will receive a score of 100% "
+            #         + "if you select all options that are true and no options that are false. "
+            #         + "Otherwise, you will receive a score of 0%."
+            #     )
+            # else:
+            #     assert_never(partial_credit_mode)
 
-            info_params.update({"gradingtext": gradingtext})
+            info_params[partial_credit_mode.value] = True
+            info_params["insert_text"] = insert_text
+            info_params["num_display_answers"] = len(display_answers)
 
         with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
@@ -475,10 +482,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "hide_letter_keys": pl.get_boolean_attrib(
                 element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
             ),
+            "helptext": helptext,
         }
-
-        if not hide_help_text:
-            html_params["helptext"] = helptext
 
         if score is not None:
             score_type, score_value = pl.determine_score_params(score)
@@ -491,13 +496,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         parse_error = data["format_errors"].get(name, None)
         if parse_error is None:
             partial_score = data["partial_scores"].get(name, {"score": None})
-            feedback = partial_score.get("feedback", None)
+
+            # Change the type becasue of how this element works
+            feedback = cast(dict[str, str], partial_score.get("feedback", None))
             score = partial_score.get("score", None)
 
             answers = []
             for submitted_key in submitted_keys:
                 submitted_answer = next(
-                    filter(lambda a: a["key"] == submitted_key, display_answers), None
+                    filter(lambda a: a["key"] == submitted_key, display_answers)
                 )
                 answer_item = {
                     "key": submitted_key,
