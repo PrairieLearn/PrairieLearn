@@ -1,4 +1,5 @@
 import random
+from enum import Enum
 from itertools import count
 from typing import NamedTuple
 
@@ -6,6 +7,17 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from typing_extensions import assert_never
+
+
+class PartialCreditType(Enum):
+    """
+    Stands for 'COV' (Coverage), 'EDC' (Every Decision Counts), and 'PC' (Percent Correct)
+    """
+
+    NONE = "none"
+    COVERAGE = "coverage"
+    EVERY_DECISION_COUNTS = "every decision counts"
+    PERCENT_CORRECT = "percent correct"
 
 
 class AnswerTuple(NamedTuple):
@@ -18,10 +30,7 @@ class AnswerTuple(NamedTuple):
 WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False
 INLINE_DEFAULT = False
-
-# TODO combine these and make them into an enum
-PARTIAL_CREDIT_DEFAULT = False
-PARTIAL_CREDIT_METHOD_DEFAULT = "PC"
+PARTIAL_CREDIT_MODE_DEFAULT = PartialCreditType.PERCENT_CORRECT
 HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
@@ -35,6 +44,39 @@ ALLOW_BLANK_DEFAULT = False
 MIN_SELECT_BLANK = 0
 
 CHECKBOX_MUSTACHE_TEMPLATE_NAME = "pl-checkbox.mustache"
+
+
+def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType:
+    if pl.has_attrib(element, "partial-credit-mode"):
+        return pl.get_enum_attrib(
+            element,
+            "partial-credit-mode",
+            PartialCreditType,
+            PARTIAL_CREDIT_MODE_DEFAULT,
+        )
+
+    partial_credit_default = False
+    partial_credit_method_default = "PC"
+    partial_credit_mapping = {
+        "PC": PartialCreditType.PERCENT_CORRECT,
+        "COV": PartialCreditType.COVERAGE,
+        "EDC": PartialCreditType.EVERY_DECISION_COUNTS,
+    }
+    # Use old partial credit method otherwise
+    partial_credit = pl.get_boolean_attrib(
+        element, "partial-credit", partial_credit_default
+    )
+
+    if not partial_credit and pl.has_attrib(element, "partial-credit-method"):
+        raise ValueError(
+            "Cannot specify partial-credit-method if partial-credit is not enabled"
+        )
+
+    return partial_credit_mapping[
+        pl.get_string_attrib(
+            element, "partial-credit-method", partial_credit_method_default
+        )
+    ]
 
 
 def validate_min_max_options(
@@ -133,14 +175,16 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "hide-answer-panel",
         "hide-help-text",
         "detailed-help-text",
-        "partial-credit",
-        "partial-credit-method",
+        "partial-credit-mode",
         "hide-letter-keys",
         "hide-score-badge",
         "min-select",
         "allow-blank",
         "max-select",
         "show-number-correct",
+        # Keep the old partial credit attributes for backwards compatibility
+        "partial-credit",
+        "partial-credit-method",
     ]
 
     pl.check_attribs(element, required_attribs, optional_attribs)
@@ -151,14 +195,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if name in data["correct_answers"]:
         raise ValueError(f"Duplicate correct_answers variable name: {name}")
 
-    partial_credit = pl.get_boolean_attrib(
-        element, "partial-credit", PARTIAL_CREDIT_DEFAULT
-    )
-    partial_credit_method = pl.get_string_attrib(element, "partial-credit-method", None)
-    if not partial_credit and partial_credit_method is not None:
-        raise ValueError(
-            "Cannot specify partial-credit-method if partial-credit is not enabled"
-        )
+    # Don't use value but call getter here to do validation right away.
+    get_partial_credit_mode(element)
 
     correct_answers, incorrect_answers = categorize_options(element)
 
@@ -240,12 +278,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
-    partial_credit = pl.get_boolean_attrib(
-        element, "partial-credit", PARTIAL_CREDIT_DEFAULT
-    )
-    partial_credit_method = pl.get_string_attrib(
-        element, "partial-credit-method", PARTIAL_CREDIT_METHOD_DEFAULT
-    )
+
+    partial_credit_mode = get_partial_credit_mode(element)
+
     hide_score_badge = pl.get_boolean_attrib(
         element, "hide-score-badge", HIDE_SCORE_BADGE_DEFAULT
     )
@@ -254,7 +289,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # answer feedback is not displayed when partial credit is True
     # (unless the question is disabled)
     show_answer_feedback = True
-    if (partial_credit and editable) or hide_score_badge:
+    if (
+        partial_credit_mode is not PartialCreditType.NONE and editable
+    ) or hide_score_badge:
         show_answer_feedback = False
 
     display_answers = data["params"].get(name, [])
@@ -382,39 +419,36 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     + "</small>"
                 )
 
-            if partial_credit:
-                if partial_credit_method == "PC":
-                    gradingtext = (
-                        "You must select"
-                        + insert_text
-                        + " You will receive a score of <code>100% * (t - f) / n</code>, "
-                        + "where <code>t</code> is the number of true options that you select, <code>f</code> "
-                        + "is the number of false options that you select, and <code>n</code> is the total number of true options. "
-                        + "At minimum, you will receive a score of 0%."
-                    )
-                elif partial_credit_method == "EDC":
-                    gradingtext = (
-                        "You must select"
-                        + insert_text
-                        + " You will receive a score of <code>100% * (t + f) / "
-                        + str(len(display_answers))
-                        + "</code>, "
-                        + "where <code>t</code> is the number of true options that you select and <code>f</code> "
-                        + "is the number of false options that you do not select."
-                    )
-                elif partial_credit_method == "COV":
-                    gradingtext = (
-                        "You must select"
-                        + insert_text
-                        + " You will receive a score of <code>100% * (t / c) * (t / n)</code>, "
-                        + "where <code>t</code> is the number of true options that you select, <code>c</code> is the total number of true options, "
-                        + "and <code>n</code> is the total number of options you select."
-                    )
-                else:
-                    raise ValueError(
-                        f"Unknown value for partial_credit_method: {partial_credit_method}"
-                    )
-            else:
+            # TODO move this into the mustache template
+            if partial_credit_mode is PartialCreditType.PERCENT_CORRECT:
+                gradingtext = (
+                    "You must select"
+                    + insert_text
+                    + " You will receive a score of <code>100% * (t - f) / n</code>, "
+                    + "where <code>t</code> is the number of true options that you select, <code>f</code> "
+                    + "is the number of false options that you select, and <code>n</code> is the total number of true options. "
+                    + "At minimum, you will receive a score of 0%."
+                )
+            elif partial_credit_mode is PartialCreditType.EVERY_DECISION_COUNTS:
+                gradingtext = (
+                    "You must select"
+                    + insert_text
+                    + " You will receive a score of <code>100% * (t + f) / "
+                    + str(len(display_answers))
+                    + "</code>, "
+                    + "where <code>t</code> is the number of true options that you select and <code>f</code> "
+                    + "is the number of false options that you do not select."
+                )
+            elif partial_credit_mode is PartialCreditType.COVERAGE:
+                gradingtext = (
+                    "You must select"
+                    + insert_text
+                    + " You will receive a score of <code>100% * (t / c) * (t / n)</code>, "
+                    + "where <code>t</code> is the number of true options that you select, <code>c</code> is the total number of true options, "
+                    + "and <code>n</code> is the total number of options you select."
+                )
+
+            elif partial_credit_mode is PartialCreditType.NONE:
                 gradingtext = (
                     "You must select"
                     + insert_text
@@ -422,6 +456,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     + "if you select all options that are true and no options that are false. "
                     + "Otherwise, you will receive a score of 0%."
                 )
+            else:
+                assert_never(partial_credit_mode)
 
             info_params.update({"gradingtext": gradingtext})
 
@@ -449,7 +485,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params[score_type] = score_value
 
         with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-            html = chevron.render(f, html_params).strip()
+            return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
@@ -493,20 +529,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 score_type, score_value = pl.determine_score_params(score)
                 html_params[score_type] = score_value
 
-            # if html_params["display_score_badge"]:
-            #     try:
-            #         score = float(score)
-            #         if score >= 1:
-            #             html_params["correct"] = True
-            #         elif score > 0:
-            #             html_params["partial"] = math.floor(score * 100)
-            #         else:
-            #             html_params["incorrect"] = True
-            #     except Exception:
-            #         raise ValueError("invalid score" + score)
-
             with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-                html = chevron.render(f, html_params).strip()
+                return chevron.render(f, html_params).strip()
         else:
             html_params = {
                 "submission": True,
@@ -515,33 +539,30 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "inline": inline,
             }
             with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-                html = chevron.render(f, html_params).strip()
+                return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
-        if not pl.get_boolean_attrib(
+        if pl.get_boolean_attrib(
             element, "hide-answer-panel", HIDE_ANSWER_PANEL_DEFAULT
         ):
-            correct_answer_list = data["correct_answers"].get(name, [])
-            if len(correct_answer_list) == 0:
-                raise ValueError("At least one option must be true.")
-            else:
-                html_params = {
-                    "answer": True,
-                    "inline": inline,
-                    "answers": correct_answer_list,
-                    "hide_letter_keys": pl.get_boolean_attrib(
-                        element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
-                    ),
-                }
-                with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
-                    html = chevron.render(f, html_params).strip()
+            return ""
+        correct_answer_list = data["correct_answers"].get(name, [])
+        if len(correct_answer_list) == 0:
+            raise ValueError("At least one option must be true.")
         else:
-            html = ""
+            html_params = {
+                "answer": True,
+                "inline": inline,
+                "answers": correct_answer_list,
+                "hide_letter_keys": pl.get_boolean_attrib(
+                    element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
+                ),
+            }
+            with open(CHECKBOX_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+                return chevron.render(f, html_params).strip()
 
     else:
         assert_never(data["panel"])
-
-    return html
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
@@ -592,13 +613,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-    partial_credit = pl.get_boolean_attrib(
-        element, "partial-credit", PARTIAL_CREDIT_DEFAULT
-    )
     number_answers = len(data["params"][name])
-    partial_credit_method = pl.get_string_attrib(
-        element, "partial-credit-method", PARTIAL_CREDIT_METHOD_DEFAULT
-    )
+    partial_credit_mode = get_partial_credit_mode(element)
 
     submittedSet = set(data["submitted_answers"].get(name, []))
     correctSet = {answer["key"] for answer in data["correct_answers"].get(name, [])}
@@ -607,30 +623,25 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     }
 
     score = 0
-    if not partial_credit and submittedSet == correctSet:
-        score = 1
-    elif partial_credit:
-        if partial_credit_method == "PC":
-            if submittedSet == correctSet:
-                score = 1
-            else:
-                n_correct_answers = len(correctSet) - len(correctSet - submittedSet)
-                points = n_correct_answers - len(submittedSet - correctSet)
-                score = max(0, points / len(correctSet))
-        elif partial_credit_method == "EDC":
-            number_wrong = len(submittedSet - correctSet) + len(
-                correctSet - submittedSet
-            )
-            score = 1 - 1.0 * number_wrong / number_answers
-        elif partial_credit_method == "COV":
-            n_correct_answers = len(correctSet & submittedSet)
-            base_score = n_correct_answers / len(correctSet)
-            guessing_factor = n_correct_answers / len(submittedSet)
-            score = base_score * guessing_factor
+    if partial_credit_mode is PartialCreditType.NONE:
+        score = 1 if submittedSet == correctSet else 0
+    if partial_credit_mode is PartialCreditType.PERCENT_CORRECT:
+        if submittedSet == correctSet:
+            score = 1
         else:
-            raise ValueError(
-                f"Unknown value for partial_credit_method: {partial_credit_method}"
-            )
+            n_correct_answers = len(correctSet) - len(correctSet - submittedSet)
+            points = n_correct_answers - len(submittedSet - correctSet)
+            score = max(0, points / len(correctSet))
+    elif partial_credit_mode is PartialCreditType.EVERY_DECISION_COUNTS:
+        number_wrong = len(submittedSet - correctSet) + len(correctSet - submittedSet)
+        score = 1 - 1.0 * number_wrong / number_answers
+    elif partial_credit_mode is PartialCreditType.COVERAGE:
+        n_correct_answers = len(correctSet & submittedSet)
+        base_score = n_correct_answers / len(correctSet)
+        guessing_factor = n_correct_answers / len(submittedSet)
+        score = base_score * guessing_factor
+    else:
+        assert_never(partial_credit_mode)
 
     data["partial_scores"][name] = {
         "score": score,
@@ -643,12 +654,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name")
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
-    partial_credit = pl.get_boolean_attrib(
-        element, "partial-credit", PARTIAL_CREDIT_DEFAULT
-    )
-    partial_credit_method = pl.get_string_attrib(
-        element, "partial-credit-method", PARTIAL_CREDIT_METHOD_DEFAULT
-    )
+
+    partial_credit_mode = get_partial_credit_mode(element)
 
     correct_keys = {answer["key"] for answer in data["correct_answers"].get(name, [])}
     number_answers = len(data["params"][name])
@@ -688,26 +695,24 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 and min_options_to_select <= len(ans) <= max_options_to_select
             ):
                 break
-        if partial_credit:
-            if partial_credit_method == "PC":
+        if partial_credit_mode is not PartialCreditType.NONE:
+            if partial_credit_mode is PartialCreditType.PERCENT_CORRECT:
                 if ans == correct_keys:
                     score = 1
                 else:
                     n_correct_answers = len(correct_keys) - len(correct_keys - ans)
                     points = n_correct_answers - len(ans - correct_keys)
                     score = max(0, points / len(correct_keys))
-            elif partial_credit_method == "EDC":
+            elif partial_credit_mode is PartialCreditType.EVERY_DECISION_COUNTS:
                 number_wrong = len(ans - correct_keys) + len(correct_keys - ans)
                 score = 1 - 1.0 * number_wrong / number_answers
-            elif partial_credit_method == "COV":
+            elif partial_credit_mode is PartialCreditType.COVERAGE:
                 n_correct_answers = len(correct_keys & ans)
                 base_score = n_correct_answers / len(correct_keys)
                 guessing_factor = n_correct_answers / len(ans)
                 score = base_score * guessing_factor
             else:
-                raise ValueError(
-                    f"Unknown value for partial_credit_method: {partial_credit_method}"
-                )
+                assert_never(partial_credit_mode)
         else:
             score = 0
         feedback = {
