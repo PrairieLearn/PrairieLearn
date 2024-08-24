@@ -3,29 +3,23 @@ import random
 
 
 def generate(data):
-    
     # gravity (m/s^2)
     g = 9.8
-
-    # Stops question failure if time is zero
-    t = 0
-
-    while t == 0:
-        # mass of the ball (kg)
-        m = random.choice([3, 1.4, 1.6, 1.8])
-        # horizontal distance (m)
-        d = random.randint(4, 16)
-        # angle with horizontal (in degrees)
-        theta = random.randint(20, 40)
-        # initial velocity  (m/s)
-        v0 = random.randint(18, 25)
-        # initial velocity components (m/s)
-        v0x = v0 * math.cos(theta * math.pi / 180)
-        v0y = v0 * math.sin(theta * math.pi / 180)
-        # time in the air (s)
-        t = round(d / v0x)
-        # height of the cliff (m)
-        h = round(v0y * t + 0.5 * g * t**2, 3)
+    # mass of the ball (kg)
+    m = random.choice([3, 1.4, 1.6, 1.8])
+    # horizontal distance (m)
+    d = random.randint(4, 16)
+    # angle with horizontal (in degrees)
+    theta = random.randint(20, 40)
+    # initial velocity  (m/s)
+    v0 = random.randint(18, 25)
+    # initial velocity components (m/s)
+    v0x = v0 * math.cos(theta * math.pi / 180)
+    v0y = v0 * math.sin(theta * math.pi / 180)
+    # time in the air (s)
+    t = round(d / v0x, 3)
+    # height of the cliff (m)
+    h = round(v0y * t + 0.5 * g * t**2, 3)
 
     # storing the parameters
     data["params"]["m"] = m
