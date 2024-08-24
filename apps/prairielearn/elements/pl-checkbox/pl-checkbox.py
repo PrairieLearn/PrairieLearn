@@ -21,6 +21,13 @@ class PartialCreditType(Enum):
     PERCENT_CORRECT = "percent_correct"
 
 
+class OrderType(Enum):
+    RANDOM = "random"
+    ASCEND = "ascend"
+    DESCEND = "descend"
+    FIXED = "fixed"
+
+
 class AnswerTuple(NamedTuple):
     idx: int
     correct: bool
@@ -29,7 +36,6 @@ class AnswerTuple(NamedTuple):
 
 
 WEIGHT_DEFAULT = 1
-FIXED_ORDER_DEFAULT = False
 INLINE_DEFAULT = False
 PARTIAL_CREDIT_MODE_DEFAULT = PartialCreditType.PERCENT_CORRECT
 HIDE_ANSWER_PANEL_DEFAULT = False
@@ -47,8 +53,28 @@ MIN_SELECT_BLANK = 0
 CHECKBOX_MUSTACHE_TEMPLATE_NAME = "pl-checkbox.mustache"
 
 
+def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
+    """Gets order type in a backwards-compatible way. New display overwrites old."""
+
+    if pl.has_attrib(element, "fixed-order") and pl.has_attrib(element, "order"):
+        raise ValueError(
+            'Setting answer choice order should be done with the "order" attribute.'
+        )
+
+    fixed_order_default = False
+    fixed_order = pl.get_boolean_attrib(element, "fixed-order", fixed_order_default)
+    order_type_default = OrderType.FIXED if fixed_order else OrderType.RANDOM
+
+    return pl.get_enum_attrib(element, "order", OrderType, order_type_default)
+
+
 def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType:
     if pl.has_attrib(element, "partial-credit-mode"):
+        if pl.has_attrib(element, "partial-credit"):
+            raise ValueError(
+                'Setting partial credit mode should be done with the "partial-credit-mode" attribute.'
+            )
+
         return pl.get_enum_attrib(
             element,
             "partial-credit-mode",
@@ -171,7 +197,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "number-answers",
         "min-correct",
         "max-correct",
-        "fixed-order",
+        "order",
         "inline",
         "hide-answer-panel",
         "hide-help-text",
@@ -186,6 +212,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         # Keep the old partial credit attributes for backwards compatibility
         "partial-credit",
         "partial-credit-method",
+        # Legacy order attribute
+        "fixed-order",
     ]
 
     pl.check_attribs(element, required_attribs, optional_attribs)
@@ -254,11 +282,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     random.shuffle(sampled_answers)
 
     # TODO change to use the same scheme as the unified multiple choice
-    fixed_order = pl.get_boolean_attrib(element, "fixed-order", FIXED_ORDER_DEFAULT)
-    if fixed_order:
-        # we can't simply skip the shuffle because we already broke the original
-        # order by separating into correct/incorrect lists
+    order_type = get_order_type(element)
+    if order_type is OrderType.FIXED:
         sampled_answers.sort(key=lambda a: a.idx)  # sort by stored original index
+    elif order_type is OrderType.DESCEND:
+        sampled_answers.sort(key=lambda a: a.html, reverse=True)
+    elif order_type is OrderType.ASCEND:
+        sampled_answers.sort(key=lambda a: a.html, reverse=False)
+    elif order_type is OrderType.RANDOM:
+        random.shuffle(sampled_answers)
+    else:
+        assert_never(order_type)
 
     display_answers = []
     correct_answer_list = []
