@@ -1,7 +1,7 @@
 import random
 from enum import Enum
 from itertools import count
-from typing import NamedTuple, cast
+from typing import Any, NamedTuple, cast
 
 import chevron
 import lxml.etree
@@ -333,7 +333,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 answer_html["incorrect"] = answer["key"] not in correct_keys
             answerset.append(answer_html)
 
-        info_params: dict[str, bool | str] = {"format": True}
+        info_params: dict[str, Any] = {"format": True}
         # Adds decorative help text per bootstrap formatting guidelines:
         # http://getbootstrap.com/docs/4.0/components/forms/#help-text
         # Determine whether we should add a choice selection requirement
@@ -532,7 +532,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 ),
             }
 
-            if html_params["display_score_badge"]:
+            # Add parameter for displaying overall score badge
+            if score is not None:
                 score_type, score_value = pl.determine_score_params(score)
                 html_params[score_type] = score_value
 
@@ -632,7 +633,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     score = 0
     if partial_credit_mode is PartialCreditType.NONE:
         score = 1 if submittedSet == correctSet else 0
-    if partial_credit_mode is PartialCreditType.PERCENT_CORRECT:
+    elif partial_credit_mode is PartialCreditType.PERCENT_CORRECT:
         if submittedSet == correctSet:
             score = 1
         else:
