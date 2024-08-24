@@ -298,12 +298,12 @@ export async function getAccessToken(lti13_instance_id: string) {
 }
 
 export async function getLineitems(instance: Lti13CombinedInstance) {
-  if (instance.lti13_course_instance.lineitems == null) {
+  if (instance.lti13_course_instance.lineitems_url == null) {
     throw new Error('Lineitems not defined');
   }
   const token = await getAccessToken(instance.lti13_instance.id);
   const lineitems = LineitemsSchema.parse(
-    await fetchRetry(instance.lti13_course_instance.lineitems, {
+    await fetchRetry(instance.lti13_course_instance.lineitems_url, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     }),
@@ -371,7 +371,7 @@ export async function createAndLinkLineitem(
     url: string;
   },
 ) {
-  if (instance.lti13_course_instance.lineitems == null) {
+  if (instance.lti13_course_instance.lineitems_url == null) {
     throw new Error('Lineitems not defined');
   }
 
@@ -394,7 +394,7 @@ export async function createAndLinkLineitem(
 
   const token = await getAccessToken(instance.lti13_instance.id);
   const item = LineitemSchema.parse(
-    await fetchRetry(instance.lti13_course_instance.lineitems, {
+    await fetchRetry(instance.lti13_course_instance.lineitems_url, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,

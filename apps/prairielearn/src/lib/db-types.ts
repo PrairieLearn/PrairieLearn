@@ -705,7 +705,7 @@ export const Lti13CourseInstanceSchema = z.object({
   deployment_id: z.string(),
   id: IdSchema,
   lti13_instance_id: IdSchema,
-  lineitems: z.string().nullable(),
+  lineitems_url: z.string().nullable(),
 });
 export type Lti13CourseInstance = z.infer<typeof Lti13CourseInstanceSchema>;
 

@@ -6,7 +6,7 @@ columns
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     deployment_id: text not null
     id: bigint not null default nextval('lti13_course_instances_id_seq'::regclass)
-    lineitems: text
+    lineitems_url: text
     lti13_instance_id: bigint
 
 indexes

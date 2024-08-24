@@ -1,5 +1,5 @@
 ALTER TABLE lti13_course_instances
-ADD COLUMN IF NOT EXISTS lineitems TEXT;
+ADD COLUMN IF NOT EXISTS lineitems_url TEXT;
 
 CREATE TABLE IF NOT EXISTS lti13_lineitems (
   id BIGSERIAL PRIMARY KEY,
