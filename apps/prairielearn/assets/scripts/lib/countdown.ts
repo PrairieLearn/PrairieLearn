@@ -47,6 +47,7 @@ export function setupCountdown(options: {
   initialServerTimeLimitMS: number;
   serverUpdateURL?: string;
   onTimerOut?: () => void;
+  onRemainingTime?: Record<number, () => void>;
   onServerUpdateFail?: () => void;
   getBackgroundColor?: (remainingSec: number) => string;
 }) {
@@ -60,6 +61,13 @@ export function setupCountdown(options: {
   let clientStart: number;
   let updateServerIfExpired = true;
   let nextCountdownDisplay: ReturnType<typeof setTimeout> | null = null;
+  // Do not repeat outdated timer value events
+  const remainingTimeEvents = options.onRemainingTime
+    ? Object.keys(options.onRemainingTime)
+        .map((v) => Number(v))
+        .filter((v) => Number(v) < options.initialServerRemainingMS)
+        .sort()
+    : [];
 
   countdownProgress.classList.add('progress');
   countdownProgress.innerHTML = '<div class="progress-bar progress-bar-primary"></div>';
@@ -115,6 +123,14 @@ export function setupCountdown(options: {
     countdownDisplay.innerText = remainingSec >= 60 ? remainingMin + ' min' : remainingSec + ' sec';
 
     if (remainingMS > 0) {
+      if (
+        options.onRemainingTime &&
+        remainingTimeEvents.length > 0 &&
+        remainingMS < remainingTimeEvents[remainingTimeEvents.length - 1]
+      ) {
+        const event = remainingTimeEvents.pop() ?? 0;
+        options.onRemainingTime[event]();
+      }
       // cancel any existing scheduled call to displayCountdown
       if (nextCountdownDisplay != null) clearTimeout(nextCountdownDisplay);
       // reschedule for the next half-second time
