@@ -1,5 +1,26 @@
 # @prairielearn/browser-utils
 
+## 2.2.0
+
+### Minor Changes
+
+- d7f1045: Add `trapFocus` and `focusFirstFocusbaleChild` functions
+
+## 2.1.3
+
+### Patch Changes
+
+- Updated dependencies [852c2e2]
+  - @prairielearn/html@4.0.5
+
+## 2.1.2
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+- Updated dependencies [a8438ff]
+  - @prairielearn/html@4.0.4
+
 ## 2.1.1
 
 ### Patch Changes

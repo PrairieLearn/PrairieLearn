@@ -50,7 +50,7 @@ export function WorkspaceLogs({
 
           <h2>Versions</h2>
           <div class="table-responsive">
-            <table class="table table-sm">
+            <table class="table table-sm" aria-label="Workspace versions">
               <thead>
                 <th>Version</th>
                 <th>Created</th>
@@ -149,7 +149,7 @@ export function WorkspaceLogsTable({
 }) {
   return html`
     <div class="table-responsive">
-      <table class="table table-sm">
+      <table class="table table-sm" aria-label="Workspace logs">
         <thead>
           <tr>
             <th>Date</th>

@@ -188,8 +188,8 @@ def prepare(data):
     pass
 
 def parse(data):
-    # data["raw_submitted_answer"][NAME] is the exact raw answer submitted by the student.
-    # data["submitted_answer"][NAME] is the answer parsed by elements (e.g., strings converted to numbers).
+    # data["raw_submitted_answers"][NAME] is the exact raw answer submitted by the student.
+    # data["submitted_answers"][NAME] is the answer parsed by elements (e.g., strings converted to numbers).
     # data["format_errors"][NAME] is the answer format error (if any) from elements.
     # We can modify or delete format errors if we have custom logic (rarely needed).
     # If there are format errors then the submission is "invalid" and is not graded.
@@ -493,7 +493,7 @@ Any custom grading function for the whole question should set `data["score"]` as
 
 More detailed information can be found in the docstrings for these functions. If you would prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
 
-To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above question](#Question-server.py) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feeback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
+To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above question](#question-serverpy) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feeback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
 
 For generated floating point answers, it's important to use consistent rounding when displaying numbers to students _and_ when computing the correct answer. For example, the following is problematic:
 

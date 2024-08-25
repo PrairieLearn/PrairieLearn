@@ -24,7 +24,7 @@ export function CourseRequestsTable({
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        ${headerPrefix} course requests
+        <h2>${headerPrefix} course requests</h2>
         ${showAll
           ? ''
           : html`
@@ -38,7 +38,7 @@ export function CourseRequestsTable({
             `}
       </div>
       <div class="table-responsive">
-        <table class="table table-sm">
+        <table class="table table-sm" aria-label="Course requests">
           <thead>
             <tr>
               <th>Created At</th>
@@ -85,7 +85,6 @@ export function CourseRequestsTable({
                           <button
                             type="button"
                             class="btn btn-sm btn-danger text-nowrap mr-2"
-                            id="deny-request-button-${row.id}"
                             data-toggle="popover"
                             data-container="body"
                             data-boundary="window"
@@ -94,7 +93,6 @@ export function CourseRequestsTable({
                             title="Deny course request"
                             data-content="${escapeHtml(
                               CourseRequestDenyForm({
-                                id: `deny-request-button-${row.id}`,
                                 request: row,
                                 csrfToken,
                               }),
@@ -105,7 +103,6 @@ export function CourseRequestsTable({
                           <button
                             type="button"
                             class="btn btn-sm btn-success text-nowrap"
-                            id="approve-request-button-${row.id}"
                             data-toggle="popover"
                             data-container="body"
                             data-boundary="window"
@@ -114,7 +111,6 @@ export function CourseRequestsTable({
                             title="Approve course request"
                             data-content="${escapeHtml(
                               CourseRequestApproveForm({
-                                id: `approve-request-button-${row.id}`,
                                 request: row,
                                 institutions,
                                 coursesRoot,
@@ -130,9 +126,8 @@ export function CourseRequestsTable({
                   <td class="align-middle">
                     ${row.jobs.length > 0
                       ? html`
-                          <a
-                            href="${urlPrefix}/administrator/jobSequence/${row.jobs[0].id}"
-                            class="show-hide-btn expand-icon-container btn btn-secondary btn-sm collapsed btn-xs text-nowrap"
+                          <button
+                            class="show-hide-btn btn btn-secondary btn-sm collapsed btn-xs text-nowrap"
                             data-toggle="collapse"
                             data-target="#course-requests-job-list-${row.id}"
                             aria-expanded="false"
@@ -140,7 +135,7 @@ export function CourseRequestsTable({
                           >
                             <i class="fa fa-angle-up fa-fw expand-icon"></i>
                             Show Jobs
-                          </a>
+                          </button>
                         `
                       : ''}
                   </td>
@@ -148,9 +143,12 @@ export function CourseRequestsTable({
                 ${row.jobs.length > 0
                   ? html`
                       <tr>
-                        <td colspan="${showAll ? 10 : 9}" class="p-0">
+                        <td colspan="${showAll ? 11 : 10}" class="p-0">
                           <div id="course-requests-job-list-${row.id}" class="collapse">
-                            <table class="table table-sm table-active mb-0">
+                            <table
+                              class="table table-sm table-active mb-0"
+                              aria-label="Course request jobs"
+                            >
                               <thead>
                                 <th>Number</th>
                                 <th>Start Date</th>
@@ -203,13 +201,11 @@ export function CourseRequestsTable({
 }
 
 function CourseRequestApproveForm({
-  id,
   request,
   institutions,
   coursesRoot,
   csrfToken,
 }: {
-  id: string;
   request: CourseRequestRow;
   institutions: Institution[];
   coursesRoot: string;
@@ -300,9 +296,7 @@ function CourseRequestApproveForm({
       </div>
 
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Create course</button>
       </div>
     </form>
@@ -310,11 +304,9 @@ function CourseRequestApproveForm({
 }
 
 function CourseRequestDenyForm({
-  id,
   request,
   csrfToken,
 }: {
-  id: string;
   request: CourseRequestRow;
   csrfToken: string;
 }) {
@@ -324,9 +316,7 @@ function CourseRequestDenyForm({
       <input type="hidden" name="__action" value="approve_deny_course_request" />
       <input type="hidden" name="approve_deny_action" value="deny" />
       <input type="hidden" name="request_id" value="${request.id}" />
-      <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-        Cancel
-      </button>
+      <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger">Deny</button>
     </form>
   `;

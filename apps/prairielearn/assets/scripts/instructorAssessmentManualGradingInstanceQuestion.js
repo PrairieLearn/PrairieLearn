@@ -35,8 +35,6 @@ $(() => {
 });
 
 function resetInstructorGradingPanel() {
-  $('[data-toggle="tooltip"]').tooltip();
-
   document.querySelectorAll('.js-rubric-settings-modal').forEach((modal) => {
     let clipboard = new ClipboardJS(modal.querySelectorAll('.js-copy-on-click'), {
       container: modal,

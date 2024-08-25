@@ -62,12 +62,8 @@ export function QuestionsTable({
     )}
 
     <div class="card mb-4">
-      <div class="card-header bg-primary">
-        <div class="row align-items-center justify-content-between">
-          <div class="col-auto">
-            <span class="text-white">Questions</span>
-          </div>
-        </div>
+      <div class="card-header bg-primary text-white">
+        <h1>Questions</h1>
       </div>
 
       <form class="ml-1 btn-group" name="add-question-form" method="POST">
@@ -77,6 +73,7 @@ export function QuestionsTable({
 
       <table
         id="questionsTable"
+        aria-label="Questions"
         data-data="${JSON.stringify(questions)}"
         data-classes="table table-sm table-hover table-bordered"
         data-thead-classes="thead-light"
