@@ -85,10 +85,6 @@ onDocumentReady(() => {
           showWarningPopup(
             'Failed to refresh exam timer. The displayed remaining time might be inaccurate.',
           );
-        } else {
-          showWarningPopup(
-            'Your exam has likely ended. You can reload the page to refresh the exam timer.',
-          );
         }
       }
     },
