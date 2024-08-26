@@ -275,14 +275,28 @@
           if (isExpanded) {
             $preview.addClass('show');
           }
+
           try {
-            var fileContents = this.b64DecodeUnicode(fileData);
-            if (!this.isBinary(fileContents)) {
-              $preview.find('code').text(fileContents);
+            if (this.isPdf(fileData)) {
+              var $objectPreview = $(
+                `<div class="embed-responsive embed-responsive-4by3">
+                   <object type="application/pdf" 
+                           class="embed-responsive-item" 
+                           data="data:application/pdf;base64,${fileData}">
+                     PDF file cannot be displayed.
+                   </object>
+                 </div>`,
+              );
+              $preview.append($objectPreview);
             } else {
-              $preview.find('code').text('Binary file not previewed.');
+              var fileContents = this.b64DecodeUnicode(fileData);
+              if (!this.isBinary(fileContents)) {
+                $preview.find('code').text(fileContents);
+              } else {
+                $preview.find('code').text('Binary file not previewed.');
+              }
+              $codePreview.removeClass('d-none');
             }
-            $codePreview.removeClass('d-none');
           } catch (e) {
             $imgPreview
               .on('load', () => {
@@ -330,6 +344,18 @@
       var nulIdx = decodedFileContents.indexOf('\0');
       var fileLength = decodedFileContents.length;
       return nulIdx !== -1 && nulIdx <= (fileLength <= 8000 ? fileLength : 8000);
+    }
+
+    /** Checks if the given file contents should be interpreted as a PDF file.
+     * Based on the file signature, as determined by:
+     * https://github.com/file/file/blob/master/magic/Magdir/pdf
+     */
+    isPdf(base64FileData) {
+      return (
+        base64FileData.match(/^JVBERi[0-3]/) || // "%PDF-"
+        base64FileData.match(/^CiVQREYt/) || // "\x0a%PDF-"
+        base64FileData.match(/^77u\/JVBERi[0-3]/) // "\xef\xbb\xbf%PDF-"
+      );
     }
 
     /**
