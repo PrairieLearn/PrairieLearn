@@ -1,9 +1,9 @@
 import * as async from 'async';
 import _ from 'lodash';
-import { marked } from 'marked';
 import mustache from 'mustache';
 import { z } from 'zod';
 
+import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
@@ -143,14 +143,14 @@ export async function populateRubricData(locals: Record<string, any>): Promise<v
   };
 
   await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
-    // TODO Sanitize?
-    item.description_rendered = await marked.parseInline(
+    item.description_rendered = await markdownToHtml(
       mustache.render(item.description || '', mustache_data),
+      { inline: true },
     );
-    item.explanation_rendered = await marked.parse(
+    item.explanation_rendered = await markdownToHtml(
       mustache.render(item.explanation || '', mustache_data),
     );
-    item.grader_note_rendered = await marked.parse(
+    item.grader_note_rendered = await markdownToHtml(
       mustache.render(item.grader_note || '', mustache_data),
     );
   });
@@ -174,8 +174,7 @@ export async function populateManualGradingData(submission: Record<string, any>)
     );
   }
   if (submission.feedback?.manual) {
-    // TODO Sanitize?
-    submission.feedback_manual_html = await marked.parse(
+    submission.feedback_manual_html = await markdownToHtml(
       submission.feedback?.manual?.toString() || '',
     );
   }

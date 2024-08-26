@@ -38,6 +38,7 @@
     "@prairielearn/html": "workspace:^",
     "@prairielearn/html-ejs": "workspace:^",
     "@prairielearn/logger": "workspace:^",
+    "@prairielearn/markdown": "workspace:^",
     "@prairielearn/migrations": "workspace:^",
     "@prairielearn/named-locks": "workspace:^",
     "@prairielearn/opentelemetry": "workspace:^",

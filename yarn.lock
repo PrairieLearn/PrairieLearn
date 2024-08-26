@@ -3140,6 +3140,25 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/markdown@workspace:^, @prairielearn/markdown@workspace:packages/markdown":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/markdown@workspace:packages/markdown"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/chai": "npm:^4.3.17"
+    "@types/dompurify": "npm:^3"
+    "@types/mocha": "npm:^10.0.7"
+    "@types/node": "npm:^20.14.15"
+    c8: "npm:^10.1.2"
+    chai: "npm:^5.1.1"
+    dompurify: "npm:^3.1.6"
+    marked: "npm:^14.1.0"
+    mocha: "npm:^10.7.3"
+    tsx: "npm:^4.17.0"
+    typescript: "npm:^5.5.4"
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/migrations@workspace:^, @prairielearn/migrations@workspace:packages/migrations":
   version: 0.0.0-use.local
   resolution: "@prairielearn/migrations@workspace:packages/migrations"
@@ -3315,6 +3334,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/html-ejs": "workspace:^"
     "@prairielearn/logger": "workspace:^"
+    "@prairielearn/markdown": "workspace:^"
     "@prairielearn/migrations": "workspace:^"
     "@prairielearn/named-locks": "workspace:^"
     "@prairielearn/opentelemetry": "workspace:^"
@@ -5029,6 +5049,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/dompurify@npm:^3":
+  version: 3.0.5
+  resolution: "@types/dompurify@npm:3.0.5"
+  dependencies:
+    "@types/trusted-types": "npm:*"
+  checksum: 10c0/a34dcc4498ca250815ccf9aecbe82df96ba5db247d0440cf266a876757d47c52519c240db3475e794d7deb0d6b1af23328e02879be368ad0e26b20c0f0865dba
+  languageName: node
+  linkType: hard
+
 "@types/ejs@npm:^3.1.5":
   version: 3.1.5
   resolution: "@types/ejs@npm:3.1.5"
@@ -5581,6 +5610,13 @@ __metadata:
   version: 1.3.2
   resolution: "@types/triple-beam@npm:1.3.2"
   checksum: 10c0/2e936cff7cde9df7da854a54a5f63e0a434b2ae1d6c1eb6de5f7a0b1107b023b3c272abecbba28614a54b8831226b29e37a49e3e34a7490a6a24d770a5b44eb9
+  languageName: node
+  linkType: hard
+
+"@types/trusted-types@npm:*":
+  version: 2.0.7
+  resolution: "@types/trusted-types@npm:2.0.7"
+  checksum: 10c0/4c4855f10de7c6c135e0d32ce462419d8abbbc33713b31d294596c0cc34ae1fa6112a2f9da729c8f7a20707782b0d69da3b1f8df6645b0366d08825ca1522e0c
   languageName: node
   linkType: hard
 
@@ -10657,6 +10693,15 @@ __metadata:
   bin:
     marked: bin/marked.js
   checksum: 10c0/57a47cb110f7b1a10f398b0a7236f9183aad2dcd5345ee73f2732b6387e585d04cef472bc655d2f84c542296be9728e179aebe3ed7f2f8666b8a0a9dae592876
+  languageName: node
+  linkType: hard
+
+"marked@npm:^14.1.0":
+  version: 14.1.0
+  resolution: "marked@npm:14.1.0"
+  bin:
+    marked: bin/marked.js
+  checksum: 10c0/85bb74e5514975093b2772e6844503b373f422edd4e8a5382549b7c06808c5fb7422d3314846f48d30acffdc2f935196ab8f44b47c24ce0d18a62b0376e6e3f0
   languageName: node
   linkType: hard
 
