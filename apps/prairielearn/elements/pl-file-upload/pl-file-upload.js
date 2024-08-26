@@ -347,8 +347,10 @@
     }
 
     /** Checks if the given file contents should be interpreted as a PDF file.
-     * Based on the file signature, as determined by:
+     * Using the magic numbers from the `file` utility command:
      * https://github.com/file/file/blob/master/magic/Magdir/pdf
+     * The signatures are converted to base64 for comparison, to avoid issues
+     * with converting from base64 to binary.
      */
     isPdf(base64FileData) {
       return (
