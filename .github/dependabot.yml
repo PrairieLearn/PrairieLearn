@@ -28,6 +28,9 @@ updates:
       # Recent versions of `bootstrap-table` broke behavior we rely on:
       # https://github.com/wenzhixin/bootstrap-table/issues/6745
       - dependency-name: 'bootstrap-table'
+      # We're still waiting for the following PR to be released:
+      # https://github.com/twbs/bootstrap/pull/38725
+      - dependency-name: 'bootstrap'
       # We're putting off this upgrade for now:
       # https://github.com/PrairieLearn/PrairieLearn/pull/6835
       - dependency-name: 'fabric'
