@@ -48,7 +48,7 @@ export function setupCountdown(options: {
   serverUpdateURL?: string;
   onTimerOut?: () => void;
   onRemainingTime?: Record<number, () => void>;
-  onServerUpdateFail?: () => void;
+  onServerUpdateFail?: (lastRemainingMS: number) => void;
   getBackgroundColor?: (remainingSec: number) => string;
 }) {
   const countdownDisplay = document.querySelector<HTMLElement>(options.displaySelector);
@@ -96,7 +96,7 @@ export function setupCountdown(options: {
     }
   }
 
-  function updateServerRemainingMS() {
+  function updateServerRemainingMS(lastRemainingMS: number) {
     if (options.serverUpdateURL) {
       fetch(options.serverUpdateURL)
         .then(async (response) => {
@@ -104,7 +104,8 @@ export function setupCountdown(options: {
         })
         .catch((err) => {
           console.log('Error retrieving remaining time', err);
-          options.onServerUpdateFail?.();
+          options.onServerUpdateFail?.(lastRemainingMS);
+          displayCountdown();
         });
     }
   }
@@ -128,6 +129,7 @@ export function setupCountdown(options: {
         remainingTimeEvents.length > 0 &&
         remainingMS < remainingTimeEvents[remainingTimeEvents.length - 1]
       ) {
+        // need to provide fallback here although remainingTimeEvents.pop() will never fail
         const event = remainingTimeEvents.pop() ?? 0;
         options.onRemainingTime[event]();
       }
@@ -137,7 +139,7 @@ export function setupCountdown(options: {
       nextCountdownDisplay = setTimeout(displayCountdown, (remainingMS - 500) % 1000);
     } else if (options.serverUpdateURL && updateServerIfExpired) {
       // If the timer runs out, trigger a new server update to confirm before closing
-      updateServerRemainingMS();
+      updateServerRemainingMS(remainingMS);
     } else {
       options.onTimerOut?.();
     }

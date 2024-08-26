@@ -43,6 +43,7 @@ export function Workspace({
                 serverUpdateURL: `${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance_id}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
                 canTriggerFinish: false,
                 showsTimeoutWarning: true,
+                reloadOnFail: false,
                 csrfToken: resLocals.__csrf_token,
               },
               'time-limit-data',

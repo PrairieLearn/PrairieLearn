@@ -40,6 +40,7 @@ export function StudentInstanceQuestion({
                   serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
                   canTriggerFinish: resLocals.authz_result.authorized_edit,
                   showsTimeoutWarning: false,
+                  reloadOnFail: true,
                   csrfToken: resLocals.__csrf_token,
                 },
                 'time-limit-data',
