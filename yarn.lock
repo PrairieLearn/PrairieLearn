@@ -3497,6 +3497,7 @@ __metadata:
     node-fetch: "npm:^3.3.2"
     node-jose: "npm:^2.2.0"
     nodemon: "npm:^3.1.4"
+    notebookjs: "npm:^0.8.3"
     numeric: "npm:^1.2.6"
     oauth-signature: "npm:^1.5.0"
     object-hash: "npm:^3.0.0"
@@ -7973,7 +7974,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"dompurify@npm:^3.1.6":
+"dompurify@npm:^3.0.8, dompurify@npm:^3.1.6":
   version: 3.1.6
   resolution: "dompurify@npm:3.1.6"
   checksum: 10c0/3de1cca187c78d3d8cb4134fc2985b644d6a81f6b4e024c77cfb04c1c2f38544ccf7b0ea37a48ce22fcca64594170ed7c22252574c75b801c44345cdd7b06c64
@@ -10356,7 +10357,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jsdom@npm:^24.1.1":
+"jsdom@npm:^24.0.0, jsdom@npm:^24.1.1":
   version: 24.1.1
   resolution: "jsdom@npm:24.1.1"
   dependencies:
@@ -10877,6 +10878,15 @@ __metadata:
   version: 3.0.3
   resolution: "markdown-table@npm:3.0.3"
   checksum: 10c0/47433a3f31e4637a184e38e873ab1d2fadfb0106a683d466fec329e99a2d8dfa09f091fa42202c6f13ec94aef0199f449a684b28042c636f2edbc1b7e1811dcd
+  languageName: node
+  linkType: hard
+
+"marked@npm:^11.1.1":
+  version: 11.2.0
+  resolution: "marked@npm:11.2.0"
+  bin:
+    marked: bin/marked.js
+  checksum: 10c0/4713cceabdcd0b4de9a156d601a55ae7e9091cd89ba75d8283042ddbbedb7cd765e02445a80be01131aa24a79003346fc650d66bf4423f7aa186dcc46b403849
   languageName: node
   linkType: hard
 
@@ -12048,6 +12058,18 @@ __metadata:
   version: 3.0.0
   resolution: "normalize-path@npm:3.0.0"
   checksum: 10c0/e008c8142bcc335b5e38cf0d63cfd39d6cf2d97480af9abdbe9a439221fd4d749763bab492a8ee708ce7a194bb00c9da6d0a115018672310850489137b3da046
+  languageName: node
+  linkType: hard
+
+"notebookjs@npm:^0.8.3":
+  version: 0.8.3
+  resolution: "notebookjs@npm:0.8.3"
+  dependencies:
+    ansi_up: "npm:^6.0.2"
+    dompurify: "npm:^3.0.8"
+    jsdom: "npm:^23.2.0"
+    marked: "npm:^11.1.1"
+  checksum: 10c0/35343fa8b4b870ab7933514394234c0d104c43f337a10f98ca31277b10cb851a0d04d0ba300574b8bd4d9275e66d2b9756a79cd0d2205d8392adb428876fb4f5
   languageName: node
   linkType: hard
 
