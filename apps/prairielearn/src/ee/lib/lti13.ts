@@ -7,7 +7,7 @@ import fetch, { RequestInfo, RequestInit } from 'node-fetch';
 import { Issuer, TokenSet } from 'openid-client';
 import { z } from 'zod';
 
-import { HttpStatusError } from '@prairielearn/error';
+import { HttpStatusError, makeWithData } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
 
 import {
@@ -312,10 +312,10 @@ export async function getLineitems(instance: Lti13CombinedInstance) {
   return lineitems;
 }
 
-export async function getLineitem(instance: Lti13CombinedInstance, lineitem_id: string) {
+export async function getLineitem(instance: Lti13CombinedInstance, lineitem_id_url: string) {
   const token = await getAccessToken(instance.lti13_instance.id);
   const lineitem = LineitemSchema.parse(
-    await fetchRetry(lineitem_id, {
+    await fetchRetry(lineitem_id_url, {
       method: 'GET',
       headers: { Authorization: `Bearer ${token}` },
     }),
@@ -339,7 +339,7 @@ export async function syncLineitems(instance: Lti13CombinedInstance, job: Server
 
       await queryAsync(sql.insert_lineitems_temp, {
         lti13_course_instance_id: instance.lti13_course_instance.id,
-        lineitem_id: item.id,
+        lineitem_id_url: item.id,
         lineitem: JSON.stringify(item),
       });
     }
@@ -412,10 +412,10 @@ export async function createAndLinkLineitem(
 
 export async function queryAndLinkLineitem(
   instance: Lti13CombinedInstance,
-  lineitem_id: string,
+  lineitem_id_url: string,
   assessment_id: string | number,
 ) {
-  const item = await getLineitem(instance, lineitem_id);
+  const item = await getLineitem(instance, lineitem_id_url);
 
   if (item) {
     await linkAssessment(instance.lti13_course_instance.id, assessment_id, item);
@@ -441,7 +441,7 @@ export async function linkAssessment(
 ) {
   await queryAsync(sql.update_lineitem, {
     lti13_course_instance_id,
-    lineitem_id: lineitem.id,
+    lineitem_id_url: lineitem.id,
     lineitem: JSON.stringify(lineitem),
     assessment_id,
   });
@@ -470,7 +470,11 @@ export async function fetchRetry(
     const response = await fetch(input, opts);
 
     if (!response.ok) {
-      throw new HttpStatusError(response.status, response.statusText);
+      throw makeWithData('LTI 1.3 fetch error, please try again', {
+        status: response.status,
+        statusText: response.statusText,
+        body: response.text(),
+      });
     }
 
     const parsed = parseLinkHeader(response.headers.get('link')) ?? {};

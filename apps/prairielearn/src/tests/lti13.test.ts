@@ -523,7 +523,7 @@ describe('fetchRetry()', async () => {
   step('should throw an error on all 403s', async () => {
     apiCount = 0;
     await withServer(app, apiProviderPort, async () => {
-      await assert.isRejected(fetchRetry(baseUrl + '403all', {}, { sleepMs: 100 }), /Forbidden/);
+      await assert.isRejected(fetchRetry(baseUrl + '403all', {}, { sleepMs: 100 }), /fetch error/);
       assert.equal(apiCount, 5);
     });
   });

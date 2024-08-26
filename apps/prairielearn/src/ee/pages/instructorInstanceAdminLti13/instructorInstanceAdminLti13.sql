@@ -93,11 +93,11 @@ ORDER BY
 SELECT
   *
 FROM
-  lti13_lineitems
+  lti13_assessments
 WHERE
   lti13_course_instance_id = $lti13_course_instance_id
 ORDER BY
-  lineitem_id;
+  id;
 
 -- BLOCK select_assessment_to_create
 SELECT
@@ -118,7 +118,7 @@ SELECT
 FROM
   assessments AS a
   LEFT JOIN assessment_sets AS aset ON aset.id = a.assessment_set_id
-  LEFT JOIN lti13_lineitems AS li ON li.assessment_id = a.id
+  LEFT JOIN lti13_assessments AS la ON la.assessment_id = a.id
 WHERE
   a.course_instance_id = $course_instance_id
   AND a.deleted_at IS NULL
@@ -126,10 +126,10 @@ WHERE
     WHEN $assessments_group_by = 'Set' THEN a.assessment_set_id = $group_id
     WHEN $assessments_group_by = 'Module' THEN a.assessment_module_id = $group_id
   END
-  AND li.assessment_id IS NULL;
+  AND la.assessment_id IS NULL;
 
 -- BLOCK delete_bulk_lineitems
-DELETE FROM lti13_lineitems
+DELETE FROM lti13_assessments
 WHERE
   lti13_course_instance_id = $lti13_course_instance_id
   AND assessment_id IN (

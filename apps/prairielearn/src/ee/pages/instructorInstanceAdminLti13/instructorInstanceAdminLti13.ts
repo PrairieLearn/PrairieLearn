@@ -9,7 +9,7 @@ import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prair
 import {
   AssessmentSchema,
   Lti13CourseInstanceSchema,
-  Lti13LineitemsSchema,
+  Lti13AssessmentsSchema,
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
@@ -82,7 +82,7 @@ router.get(
       {
         lti13_course_instance_id: instance.lti13_course_instance.id,
       },
-      Lti13LineitemsSchema,
+      Lti13AssessmentsSchema,
     );
 
     res.send(

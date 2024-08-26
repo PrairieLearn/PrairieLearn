@@ -19,9 +19,9 @@ WHERE
 
 -- BLOCK update_lineitem
 INSERT INTO
-  lti13_lineitems (
+  lti13_assessments (
     lti13_course_instance_id,
-    lineitem_id,
+    lineitem_id_url,
     lineitem,
     assessment_id,
     last_activity
@@ -29,12 +29,12 @@ INSERT INTO
 VALUES
   (
     $lti13_course_instance_id,
-    $lineitem_id,
+    $lineitem_id_url,
     $lineitem,
     $assessment_id,
     NOW()
   )
-ON CONFLICT (lti13_course_instance_id, lineitem_id) DO
+ON CONFLICT (lti13_course_instance_id, lineitem_id_url) DO
 UPDATE
 SET
   lineitem = $lineitem,
@@ -44,7 +44,7 @@ SET
 -- BLOCK create_lineitems_temp
 CREATE TEMPORARY TABLE new_lineitems (
   lti13_course_instance_id bigint,
-  lineitem_id text,
+  lineitem_id_url text,
   lineitem jsonb
 ) ON
 COMMIT
@@ -52,36 +52,40 @@ DROP;
 
 -- BLOCK insert_lineitems_temp
 INSERT INTO
-  new_lineitems (lti13_course_instance_id, lineitem_id, lineitem)
+  new_lineitems (
+    lti13_course_instance_id,
+    lineitem_id_url,
+    lineitem
+  )
 VALUES
   (
     $lti13_course_instance_id,
-    $lineitem_id,
+    $lineitem_id_url,
     $lineitem
   );
 
 -- BLOCK sync_lti13_lineitems
 WITH
   updating AS (
-    UPDATE lti13_lineitems
+    UPDATE lti13_assessments
     SET
       lineitem = new_lineitems.lineitem
     FROM
       new_lineitems
     WHERE
-      lti13_lineitems.lineitem_id = new_lineitems.lineitem_id
-      AND lti13_lineitems.lti13_course_instance_id = new_lineitems.lti13_course_instance_id
-      AND lti13_lineitems.lineitem != new_lineitems.lineitem -- only update if changed
+      lti13_assessments.lineitem_id_url = new_lineitems.lineitem_id_url
+      AND lti13_assessments.lti13_course_instance_id = new_lineitems.lti13_course_instance_id
+      AND lti13_assessments.lineitem != new_lineitems.lineitem -- only update if changed
     RETURNING
       *
   ),
   deleting AS (
-    DELETE FROM lti13_lineitems
+    DELETE FROM lti13_assessments
     WHERE
       lti13_course_instance_id = $lti13_course_instance_id
-      AND lineitem_id NOT IN (
+      AND lineitem_id_url NOT IN (
         SELECT
-          lineitem_id
+          lineitem_id_url
         FROM
           new_lineitems
       )
@@ -103,7 +107,7 @@ SELECT
   ) AS deleted;
 
 -- BLOCK delete_lineitem_by_assessment_id
-DELETE FROM lti13_lineitems
+DELETE FROM lti13_assessments
 WHERE
   lti13_course_instance_id = $lti13_course_instance_id
   AND assessment_id = $assessment_id;
