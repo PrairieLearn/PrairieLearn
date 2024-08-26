@@ -278,7 +278,7 @@
 
           try {
             if (this.isPdf(fileData)) {
-              var $objectPreview = $(
+              const $objectPreview = $(
                 `<div class="embed-responsive embed-responsive-4by3">
                    <object type="application/pdf" 
                            class="embed-responsive-item" 
