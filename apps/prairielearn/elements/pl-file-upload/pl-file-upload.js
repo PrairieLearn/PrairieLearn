@@ -279,7 +279,7 @@
           try {
             if (this.isPdf(fileData)) {
               const $objectPreview = $(
-                `<div class="embed-responsive embed-responsive-4by3">
+                `<div class="mt-2 embed-responsive embed-responsive-4by3">
                    <object type="application/pdf" 
                            class="embed-responsive-item" 
                            data="data:application/pdf;base64,${fileData}">
@@ -346,7 +346,8 @@
       return nulIdx !== -1 && nulIdx <= (fileLength <= 8000 ? fileLength : 8000);
     }
 
-    /** Checks if the given file contents should be interpreted as a PDF file.
+    /**
+     * Checks if the given file contents should be interpreted as a PDF file.
      * Using the magic numbers from the `file` utility command:
      * https://github.com/file/file/blob/master/magic/Magdir/pdf
      * The signatures are converted to base64 for comparison, to avoid issues
