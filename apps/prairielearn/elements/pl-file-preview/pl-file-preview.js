@@ -104,6 +104,7 @@
 
           const code = preview.querySelector('code');
           const img = preview.querySelector('img');
+          const object = preview.querySelector('object');
 
           fetch(path, { method: 'GET' })
             .then((result) => {
@@ -166,6 +167,14 @@
                   URL.revokeObjectURL(url);
                 };
                 img.classList.remove('d-none');
+                hideErrorMessage();
+              } else if (type === 'application/pdf') {
+                const url = URL.createObjectURL(blob);
+                object.data = url;
+                object.onload = () => {
+                  URL.revokeObjectURL(url);
+                };
+                object.closest('.embed-responsive').classList.remove('d-none');
                 hideErrorMessage();
               } else {
                 // We can't preview this file.
