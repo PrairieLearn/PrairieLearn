@@ -54,6 +54,7 @@ updates:
       - '/graders/python'
       - '/images/plbase'
       - '/workspaces/jupyterlab-python'
+      - '/workspaces/vscode-python'
     schedule:
       interval: monthly
     rebase-strategy: disabled
