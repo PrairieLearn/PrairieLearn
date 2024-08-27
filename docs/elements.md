@@ -1433,10 +1433,8 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 ### `pl-file-preview` element
 
-Provides an in-browser preview of pure-text or image files submitted by a student as part of an external grading system.
-Does not support other file types (e.g., PDF). Shows the submitted file in the corresponding submission panel.
-Used in conjunction with submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`.
-Commonly appears in the submission panel with companion `pl-external-grader-results` element.
+Provides an in-browser list of all files submitted by a student through submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`, or through [workspaces](workspaces/index.md). For text-only files (including source code), images, PDF files and Jupyter Notebooks, a preview of the file content is also displayed.
+It is commonly used in the submission panel in conjunction with the `pl-external-grader-results` element, though it can also be used when manual or internal grading is used to grade files.
 
 #### Sample element
 
