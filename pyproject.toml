@@ -5,7 +5,7 @@ include = [
     "./graders/**/*.py",
     "./exampleCourse/**/*.py",
     "./testCourse/**/*.py",
-    "./grader/python/python_autograder/**/*.py",
+    "./grader/python/python_autograder/tests/*.py",
 ]
 exclude = [
     # These files are intentionally not parseable as Python.
