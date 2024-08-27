@@ -14,7 +14,6 @@ import { QuestionContainer, QuestionTitle } from '../../components/QuestionConta
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
-import { config } from '../../lib/config.js';
 
 export function StudentInstanceQuestion({
   resLocals,
@@ -65,7 +64,6 @@ export function StudentInstanceQuestion({
                 : ''}
               ${unsafeHtml(resLocals.extraHeadersHtml)}
             `}
-        ${compiledScriptTag('studentInstanceQuestionClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
@@ -83,11 +81,13 @@ export function StudentInstanceQuestion({
                 ? html`
                     <div class="card mb-4">
                       <div class="card-header bg-primary text-white">
-                        ${QuestionTitle({
-                          questionContext,
-                          question: resLocals.question,
-                          questionNumber: resLocals.instance_question_info.question_number,
-                        })}
+                        <h1>
+                          ${QuestionTitle({
+                            questionContext,
+                            question: resLocals.question,
+                            questionNumber: resLocals.instance_question_info.question_number,
+                          })}
+                        </h1>
                       </div>
                       <div class="card-body">
                         This question was not viewed while the assessment was open, so no variant
@@ -103,13 +103,15 @@ export function StudentInstanceQuestion({
                 ? html`
                     <div class="card mb-4">
                       <div class="card-header bg-secondary">
-                        <a
-                          class="text-white"
-                          href="${resLocals.urlPrefix}/assessment_instance/${resLocals
-                            .assessment_instance.id}/"
-                        >
-                          ${resLocals.assessment_set.name} ${resLocals.assessment.number}
-                        </a>
+                        <h2>
+                          <a
+                            class="text-white"
+                            href="${resLocals.urlPrefix}/assessment_instance/${resLocals
+                              .assessment_instance.id}/"
+                          >
+                            ${resLocals.assessment_set.name} ${resLocals.assessment.number}
+                          </a>
+                        </h2>
                       </div>
 
                       <div class="card-body">
@@ -166,7 +168,7 @@ export function StudentInstanceQuestion({
                 advanceScorePerc: resLocals.instance_question_info.advance_score_perc,
                 userGroupRoles: resLocals.assessment_instance.user_group_roles,
               })}
-              ${config.attachedFilesDialogEnabled
+              ${resLocals.assessment.allow_personal_notes
                 ? PersonalNotesPanel({
                     fileList: resLocals.file_list,
                     context: 'question',

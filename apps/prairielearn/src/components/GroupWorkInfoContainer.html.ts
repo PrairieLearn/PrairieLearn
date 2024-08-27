@@ -100,9 +100,9 @@ function LeaveGroupModal({ csrfToken }: { csrfToken: string }) {
       </p>
     `,
     footer: html`
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       <input type="hidden" name="__action" value="leave_group" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       <button id="leave-group" type="submit" class="btn btn-danger">Leave group</button>
     `,
   });
@@ -151,7 +151,10 @@ function GroupRoleTable({
         </p>
 
         <form id="role-select-form" name="role-select-form" method="POST">
-          <table class="table table-bordered table-striped table-sm">
+          <table
+            class="table table-bordered table-striped table-sm"
+            aria-label="Group users and roles"
+          >
             <thead>
               <tr>
                 <th scope="col">User</th>
@@ -207,7 +210,10 @@ function GroupRoleTable({
         </form>
       </div>
       <div class="card-footer small">
-        <table class="table table-bordered table-striped table-sm w-auto">
+        <table
+          class="table table-bordered table-striped table-sm w-auto"
+          aria-label="Role requirements and restrictions"
+        >
           <thead>
             <tr>
               <th scope="col">Role</th>

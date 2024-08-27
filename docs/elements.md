@@ -300,7 +300,7 @@ This element supports additional preview options through [element extensions](el
 
 - [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
 - [`pl-file-preview` to display previously submitted files](#pl-file-preview-element)
-- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results-element)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-string-input` for receiving a single string value](#pl-string-input-element)
 
@@ -309,7 +309,7 @@ This element supports additional preview options through [element extensions](el
 ### `pl-file-upload` element
 
 Provides a way to accept file uploads as part of an answer. They will be stored
-in [the format expected by externally graded questions](externalGrading.md#file-submission-format).
+in the format expected by externally graded questions.
 
 Note that there is a file size limit of **5 MB per answer**. This limit is not customizable as larger
 requests will be rejected by the server. For the same reason, it is also not possible to bypass the
@@ -360,7 +360,7 @@ not "file_5.txt". Ranges can also be combined. For example,`file\_[0-9a-z]` allo
 #### See also
 
 - [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
-- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results-element)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-string-input` for receiving a single string value](#pl-string-input-element)
 
@@ -1480,7 +1480,7 @@ Commonly appears in the submission panel with companion `pl-external-grader-resu
 
 - [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
 - [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
-- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results-element)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 
 ---
@@ -2071,7 +2071,7 @@ Displays results from externally-graded questions.
 
 #### Details
 
-It expects results to follow [the reference schema for external grading results](externalGrading.md#grading-result).
+It expects results to follow [the reference schema for external grading results](externalGrading.md#grading-results).
 
 #### Example Implementations
 
@@ -2080,7 +2080,7 @@ It expects results to follow [the reference schema for external grading results]
 
 #### See also
 
-- [External Grading Reference Schema](externalGrading.md#grading-result)
+- [External Grading Reference Schema](externalGrading.md#grading-results)
 
 ---
 

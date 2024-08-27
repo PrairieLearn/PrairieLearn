@@ -119,6 +119,7 @@ export async function generateQuestion(
     courseId,
     type: 'ai_question_generate',
     description: 'Generate a question with AI',
+    authnUserId,
   });
 
   const jobData = await serverJob.execute(async (job) => {
@@ -174,7 +175,7 @@ Keep in mind you are not just generating an example; you are generating an actua
  */
 export async function regenerateQuestion(
   client: OpenAI,
-  courseId: string | undefined,
+  courseId: string,
   authnUserId: string,
   originalPrompt: string,
   revisionPrompt: string,
@@ -187,8 +188,9 @@ export async function regenerateQuestion(
 }> {
   const serverJob = await createServerJob({
     courseId,
-    type: 'llm_question_regen',
+    type: 'ai_question_regenerate',
     description: 'Revise a question using the LLM',
+    authnUserId,
   });
 
   const jobData = await serverJob.execute(async (job) => {

@@ -82,8 +82,8 @@ export async function buildDirectory(
 
     // This uses the same fields passed v3's server.grade functions
     const data = {
-      params: variant.params,
-      correct_answers: variant.true_answer,
+      params: submission.params ?? {},
+      correct_answers: submission.true_answer ?? {},
       submitted_answers: submission.submitted_answer,
       format_errors: submission.format_errors,
       partial_scores: submission.partial_scores ?? {},

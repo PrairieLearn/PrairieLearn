@@ -129,9 +129,7 @@ def add_format_error(
 ) -> None:
     # Adding format errors to both answer_name and "_files" keys for display next to this
     # element and in submissions
-    if "_files" not in data["format_errors"]:
-        data["format_errors"]["_files"] = []
-    data["format_errors"]["_files"].append(error_string)
+    pl.add_files_format_error(data, error_string)
 
     if answer_name not in data["format_errors"]:
         data["format_errors"][answer_name] = []
@@ -268,12 +266,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if not parsed_files and not allow_blank:
         add_format_error(answer_name, data, "No submitted answer for file upload.")
 
-    if data["submitted_answers"].get("_files") is None:
-        data["submitted_answers"]["_files"] = parsed_files
-    elif isinstance(data["submitted_answers"].get("_files", None), list):
-        data["submitted_answers"]["_files"].extend(parsed_files)
-    else:
-        add_format_error(answer_name, data, "_files was present but was not an array.")
+    for x in parsed_files:
+        pl.add_submitted_file(data, x.get("name", ""), x.get("contents", ""))
 
     # Validate that all required files are present
     if parsed_files is not None:

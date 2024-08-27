@@ -169,7 +169,7 @@
           // Show the preview for the newly-uploaded file
           const container = this.element.find(`li[data-file="${name}"]`);
           container.find('.file-preview').addClass('show');
-          container.find('.file-status-container').removeClass('collapsed');
+          container.find('.file-preview-button').removeClass('collapsed');
 
           // Ensure that students see a prompt if they try to navigate away
           // from the page without saving the form. This check is initially
@@ -257,11 +257,12 @@
 
         var $file = $(`<li class="list-group-item" data-file="${fileName}"></li>`);
         var $fileStatusContainer = $(
-          `<div class="file-status-container collapsed d-flex flex-row mathjax_ignore" data-toggle="collapse" data-target="#file-preview-${uuid}-${index}"></div>`,
+          `<div class="file-status-container d-flex flex-row"></div>`,
         );
         if (isExpanded) {
           $fileStatusContainer.removeClass('collapsed');
         }
+
         if (fileData) {
           $fileStatusContainer.addClass('has-preview');
         }
@@ -316,7 +317,7 @@
         }
         if (fileData) {
           var $download = $(
-            `<a download="${fileName}" class="btn btn-outline-secondary btn-sm mr-1" onclick="event.stopPropagation();" href="data:application/octet-stream;base64,${fileData}">Download</a>`,
+            `<a download="${fileName}" class="btn btn-outline-secondary btn-sm mr-1" href="data:application/octet-stream;base64,${fileData}">Download</a>`,
           );
 
           var $preview = $(
@@ -341,14 +342,28 @@
           if (isExpanded) {
             $preview.addClass('show');
           }
+
           try {
-            var fileContents = this.b64DecodeUnicode(fileData);
-            if (!this.isBinary(fileContents)) {
-              $preview.find('code').text(fileContents);
+            if (this.isPdf(fileData)) {
+              const $objectPreview = $(
+                `<div class="mt-2 embed-responsive embed-responsive-4by3">
+                   <object type="application/pdf" 
+                           class="embed-responsive-item" 
+                           data="data:application/pdf;base64,${fileData}">
+                     PDF file cannot be displayed.
+                   </object>
+                 </div>`,
+              );
+              $preview.append($objectPreview);
             } else {
-              $preview.find('code').text('Binary file not previewed.');
+              var fileContents = this.b64DecodeUnicode(fileData);
+              if (!this.isBinary(fileContents)) {
+                $preview.find('code').text(fileContents);
+              } else {
+                $preview.find('code').text('Binary file not previewed.');
+              }
+              $codePreview.removeClass('d-none');
             }
-            $codePreview.removeClass('d-none');
           } catch (e) {
             $imgPreview
               .on('load', () => {
@@ -369,7 +384,7 @@
             $fileButtons.append($deleteUpload);
           }
           $fileButtons.append(
-            '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>',
+            '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-toggle="collapse" data-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}"><span class="file-preview-icon fa fa-angle-down"></span></button></div>',
           );
           $fileStatusContainer.append($fileButtons);
         }
@@ -411,6 +426,21 @@
       var nulIdx = decodedFileContents.indexOf('\0');
       var fileLength = decodedFileContents.length;
       return nulIdx !== -1 && nulIdx <= (fileLength <= 8000 ? fileLength : 8000);
+    }
+
+    /**
+     * Checks if the given file contents should be interpreted as a PDF file.
+     * Using the magic numbers from the `file` utility command:
+     * https://github.com/file/file/blob/master/magic/Magdir/pdf
+     * The signatures are converted to base64 for comparison, to avoid issues
+     * with converting from base64 to binary.
+     */
+    isPdf(base64FileData) {
+      return (
+        base64FileData.match(/^JVBERi[0-3]/) || // "%PDF-"
+        base64FileData.match(/^CiVQREYt/) || // "\x0a%PDF-"
+        base64FileData.match(/^77u\/JVBERi[0-3]/) // "\xef\xbb\xbf%PDF-"
+      );
     }
 
     /**

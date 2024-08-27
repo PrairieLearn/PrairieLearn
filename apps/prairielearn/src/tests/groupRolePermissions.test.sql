@@ -6,17 +6,6 @@ FROM
 WHERE
   a.tid = $assessment_tid;
 
--- BLOCK generate_and_enroll_3_users
-SELECT
-  user_id,
-  uid,
-  name,
-  uin
-FROM
-  users_randomly_generate (3, 1)
-ORDER BY
-  user_id;
-
 -- BLOCK select_assessment_group_roles
 SELECT
   gr.id,
