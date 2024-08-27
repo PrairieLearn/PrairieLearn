@@ -508,6 +508,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if check_indentation:
             help_text += "<br><b>Your answer should be indented. </b> Indent your tiles by dragging them horizontally in the answer area."
 
+        help_text += "<br>Keyboard Controls: Arrows to navigate. Enter to select, escape to deselect blocks."
+
         uuid = pl.get_uuid()
         html_params = {
             "question": True,
