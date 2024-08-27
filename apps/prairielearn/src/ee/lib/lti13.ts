@@ -19,6 +19,8 @@ import { features } from '../../lib/features/index.js';
 import { ServerJob } from '../../lib/server-jobs.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
+import { getInstitutionAuthenticationProviders } from './institution.js';
+
 const sql = loadSqlEquiv(import.meta.url);
 
 // Scope list at
@@ -230,7 +232,7 @@ export class Lti13Claim {
     return role_instructor;
   }
 
-  get(property: string): any {
+  get(property: _.PropertyPath): any {
     this.assertValid();
     // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
     return _.get(this.claims, property);
@@ -255,13 +257,20 @@ export async function validateLti13CourseInstance(
     return false;
   }
 
-  return await queryRow(
+  const hasLti13CourseInstance = await queryRow(
     sql.select_ci_validation,
     {
       course_instance_id: resLocals.course_instance.id,
     },
     z.boolean(),
   );
+
+  if (!hasLti13CourseInstance) {
+    return false;
+  }
+
+  const instAuthProviders = await getInstitutionAuthenticationProviders(resLocals.institution.id);
+  return instAuthProviders.some((a) => a.name === 'LTI 1.3');
 }
 
 export async function getAccessToken(lti13_instance_id: string) {

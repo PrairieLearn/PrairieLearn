@@ -40,12 +40,61 @@ WHERE
 
 -- BLOCK close_assessment_instance
 WITH
+  all_dates AS (
+    (
+      SELECT
+        ai.date
+      FROM
+        assessment_instances AS ai
+      WHERE
+        ai.id = $assessment_instance_id
+    )
+    UNION ALL
+    (
+      SELECT
+        s.date
+      FROM
+        submissions AS s
+        JOIN variants AS v ON (v.id = s.variant_id)
+        JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
+      WHERE
+        iq.assessment_instance_id = $assessment_instance_id
+    )
+  ),
+  all_gaps AS (
+    SELECT
+      date - lag(date) OVER (
+        ORDER BY
+          date
+      ) AS gap
+    FROM
+      all_dates
+  ),
+  total_gap AS (
+    SELECT
+      sum(gap) AS duration
+    FROM
+      all_gaps
+      JOIN assessment_instances AS ai ON (ai.id = $assessment_instance_id)
+      JOIN assessments AS a ON (a.id = ai.assessment_id)
+    WHERE
+      a.type != 'Homework'
+      OR gap < '1 hour'::INTERVAL
+  ),
   updated_assessment_instance AS (
     UPDATE assessment_instances AS ai
     SET
       open = FALSE,
       closed_at = CURRENT_TIMESTAMP,
-      duration = assessment_instances_duration (ai.id),
+      duration = COALESCE(
+        (
+          SELECT
+            duration
+          FROM
+            total_gap
+        ),
+        '0 seconds'::INTERVAL
+      ),
       modified_at = now(),
       -- Mark the assessment instance as in need of grading. We'll start
       -- grading immediately, but in case the PrairieLearn process dies in
@@ -461,7 +510,10 @@ WITH
           'variant_seed',
           v.variant_seed,
           'params',
-          v.params,
+          CASE
+            WHEN $include_files THEN v.params
+            ELSE (v.params - '_workspace_files')
+          END,
           'true_answer',
           v.true_answer,
           'options',
@@ -685,7 +737,7 @@ WITH
             ELSE (s.submitted_answer - '_files')
           END,
           'true_answer',
-          v.true_answer
+          s.true_answer
         ) AS data
       FROM
         grading_jobs AS gj

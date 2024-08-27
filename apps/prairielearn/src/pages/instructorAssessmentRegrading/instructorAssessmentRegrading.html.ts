@@ -30,11 +30,6 @@ export function InstructorAssessmentRegrading({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
@@ -56,7 +51,7 @@ export function InstructorAssessmentRegrading({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Regrading
+              <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Regrading</h1>
             </div>
 
             ${resLocals.authz_data.has_course_instance_permission_edit
@@ -88,7 +83,7 @@ export function InstructorAssessmentRegrading({
               : ''}
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="Regrading job history">
                 <thead>
                   <tr>
                     <th>Number</th>

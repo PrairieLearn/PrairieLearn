@@ -170,7 +170,6 @@ def render(element_html, data):
             "shortinfo": shortinfo,
             "input_array": input_array,
             "inline": True,
-            "uuid": pl.get_uuid(),
         }
 
         partial_score = data["partial_scores"].get(name, {"score": None})
@@ -196,7 +195,6 @@ def render(element_html, data):
             "submission": True,
             "label": label,
             "parse_error": parse_error,
-            "uuid": pl.get_uuid(),
         }
 
         if parse_error is None:
@@ -310,7 +308,6 @@ def render(element_html, data):
                 "answer": True,
                 "label": label,
                 "latex_data": latex_data,
-                "uuid": pl.get_uuid(),
             }
 
             with open("pl-matrix-component-input.mustache", "r", encoding="utf-8") as f:
@@ -529,7 +526,11 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
     if format == "output-invalid":
         display_array = "<table>"
         display_array += "<tr>"
-        display_array += '<td class="close-left" rowspan="' + str(m) + '"></td>'
+        display_array += (
+            '<td class="pl-matrix-component-input-close-left" rowspan="'
+            + str(m)
+            + '"></td>'
+        )
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
         # First row of array
         for j in range(n):
@@ -547,7 +548,11 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
             display_array += escape(pl.escape_unicode_string(raw_submitted_answer))
             display_array += "</code></td> "
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
-        display_array += '<td class="close-right" rowspan="' + str(m) + '"></td>'
+        display_array += (
+            '<td class="pl-matrix-component-input-close-right" rowspan="'
+            + str(m)
+            + '"></td>'
+        )
         # Add the other rows
         for i in range(1, m):
             display_array += " <tr>"
@@ -593,7 +598,11 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
         # Add the prefix
         if label is not None:
             display_array += '<td rowspan="0">' + label + "&nbsp;</td>"
-        display_array += '<td class="close-left" rowspan="' + str(m) + '"></td>'
+        display_array += (
+            '<td class="pl-matrix-component-input-close-left" rowspan="'
+            + str(m)
+            + '"></td>'
+        )
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
         # First row of array
         for j in range(n):
@@ -612,7 +621,11 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
             display_array += "</td> "
         # Add the suffix
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
-        display_array += '<td class="close-right" rowspan="' + str(m) + '"></td>'
+        display_array += (
+            '<td class="pl-matrix-component-input-close-right" rowspan="'
+            + str(m)
+            + '"></td>'
+        )
         if score_message is not None:
             display_array += '<td rowspan="0">&nbsp;' + score_message + "</td>"
         display_array += "</tr>"
@@ -640,7 +653,11 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
         display_array = "<table>"
         display_array += "<tr>"
         # Add first row
-        display_array += '<td class="close-left" rowspan="' + str(m) + '"></td>'
+        display_array += (
+            '<td class="pl-matrix-component-input-close-left" rowspan="'
+            + str(m)
+            + '"></td>'
+        )
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
         for j in range(n):
             each_entry_name = name + str(j + 1)
@@ -657,7 +674,11 @@ def createTableForHTMLDisplay(m, n, name, label, data, format):
                 display_array += escape(raw_submitted_answer)
             display_array += '" /> </td>'
         display_array += '<td style="width:4px" rowspan="' + str(m) + '"></td>'
-        display_array += '<td class="close-right" rowspan="' + str(m) + '"></td>'
+        display_array += (
+            '<td class="pl-matrix-component-input-close-right" rowspan="'
+            + str(m)
+            + '"></td>'
+        )
         # Add other rows
         for i in range(1, m):
             display_array += " <tr>"

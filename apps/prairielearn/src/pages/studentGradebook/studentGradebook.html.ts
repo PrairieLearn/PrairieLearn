@@ -44,9 +44,11 @@ export function StudentGradebook({
         })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Gradebook</div>
+            <div class="card-header bg-primary text-white">
+              <h1>Gradebook</h1>
+            </div>
 
-            <table class="table table-sm table-hover">
+            <table class="table table-sm table-hover" aria-label="Gradebook">
               <thead>
                 <tr>
                   <th style="width: 1%"><span class="sr-only">Label</span></th>

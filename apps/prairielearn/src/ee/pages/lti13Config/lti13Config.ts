@@ -2,25 +2,11 @@ import { URL } from 'url';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import _ from 'lodash';
-import jose from 'node-jose';
 
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
 const router = Router({ mergeParams: true });
-
-router.get(
-  '/jwks',
-  asyncHandler(async (req, res) => {
-    const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
-    const keystore = await jose.JWK.asKeyStore(lti13_instance.keystore || []);
-
-    res.setHeader('Content-Type', 'application/json; charset=UTF-8');
-    // Only extract the public keys, pass false
-    res.end(JSON.stringify(keystore.toJSON(false), null, 2));
-  }),
-);
 
 const ltiConfig = {
   title: 'PrairieLearn',
@@ -58,7 +44,7 @@ const ltiConfig = {
 };
 
 router.get(
-  '/config',
+  '/',
   asyncHandler(async (req, res) => {
     // This function is largely Canvas-specific. If different LMSes have different imports,
     // we can extend this to look at the LTI 1.3 instance `platform` and respond accordingly.
@@ -69,7 +55,7 @@ router.get(
 
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
-    const lmsConfig = _.cloneDeep(ltiConfig);
+    const lmsConfig = structuredClone(ltiConfig);
     const host = getCanonicalHost(req);
     const url = new URL(host);
 

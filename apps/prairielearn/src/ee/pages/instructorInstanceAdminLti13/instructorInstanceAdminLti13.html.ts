@@ -69,7 +69,9 @@ export function InstructorInstanceAdminLti13({
         })}
         <main id="content" class="container-fluid mb-4">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">LTI 1.3 configuration</div>
+            <div class="card-header bg-primary text-white d-flex">
+              <h1>LTI 1.3 configuration</h1>
+            </div>
             <div class="card-body">
               <div class="row">
                 <div class="col-2">

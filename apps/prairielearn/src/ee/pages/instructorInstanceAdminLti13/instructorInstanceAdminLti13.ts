@@ -20,6 +20,7 @@ import {
   unlinkAssessment,
   queryAndLinkLineitem,
   createAndLinkLineitem,
+  validateLti13CourseInstance,
   Lti13CombinedInstanceSchema,
 } from '../../lib/lti13.js';
 
@@ -31,6 +32,15 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
+
+router.use(
+  asyncHandler(async (req, res, next) => {
+    if (!(await validateLti13CourseInstance(res.locals))) {
+      throw new error.HttpStatusError(403, 'LTI 1.3 is not available');
+    }
+    next();
+  }),
+);
 
 router.get(
   '/:unsafe_lti13_course_instance_id?',
