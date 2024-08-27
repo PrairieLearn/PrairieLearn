@@ -119,10 +119,11 @@ def get_answer_name(file_names: str, optional_file_names: str = "") -> str:
     return "_file_upload_{0}".format(
         # Using / as separator as the only character guaranteed not to appear in file names
         hashlib.sha1(
-            [file_names].encode("utf-8")
-            + ("/" + optional_file_names.encode("utf-8") if optional_file_names else "")
-        ).hexdigest()
-    )
+            file_names.encode("utf-8") + ("/" + optional_file_names).encode("utf-8")
+            if optional_file_names
+            else ""
+        )
+    ).hexdigest()
 
 
 def add_format_error(
