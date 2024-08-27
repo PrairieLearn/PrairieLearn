@@ -41,41 +41,24 @@ SET
   assessment_id = $assessment_id,
   last_activity = NOW();
 
--- BLOCK create_lineitems_temp
-CREATE TEMPORARY TABLE new_lineitems (
-  lti13_course_instance_id bigint,
-  lineitem_id_url text,
-  lineitem jsonb
-) ON
-COMMIT
-DROP;
-
--- BLOCK insert_lineitems_temp
-INSERT INTO
-  new_lineitems (
-    lti13_course_instance_id,
-    lineitem_id_url,
-    lineitem
-  )
-VALUES
-  (
-    $lti13_course_instance_id,
-    $lineitem_id_url,
-    $lineitem
-  );
-
 -- BLOCK sync_lti13_lineitems
 WITH
+  imported AS (
+    SELECT
+      *
+    FROM
+      jsonb_populate_recordset(null::lti13_assessments, $lineitems_import::jsonb)
+  ),
   updating AS (
     UPDATE lti13_assessments
     SET
-      lineitem = new_lineitems.lineitem
+      lineitem = imported.lineitem
     FROM
-      new_lineitems
+      imported
     WHERE
-      lti13_assessments.lineitem_id_url = new_lineitems.lineitem_id_url
-      AND lti13_assessments.lti13_course_instance_id = new_lineitems.lti13_course_instance_id
-      AND lti13_assessments.lineitem != new_lineitems.lineitem -- only update if changed
+      lti13_assessments.lineitem_id_url = imported.lineitem_id_url
+      AND lti13_assessments.lti13_course_instance_id = imported.lti13_course_instance_id
+      AND lti13_assessments.lineitem != imported.lineitem -- only update if changed
     RETURNING
       *
   ),
@@ -87,7 +70,7 @@ WITH
         SELECT
           lineitem_id_url
         FROM
-          new_lineitems
+          imported
       )
     RETURNING
       *

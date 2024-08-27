@@ -331,23 +331,20 @@ export async function syncLineitems(instance: Lti13CombinedInstance, job: Server
   const lineitems = await getLineitems(instance);
   job.info(`Found ${lineitems.length} assignments.`);
 
+  const lineitems_import = lineitems.map((item) => {
+    return {
+      lineitem: item,
+      lineitem_id_url: item.id,
+      lti13_course_instance_id: instance.lti13_course_instance.id,
+    };
+  });
+
   await runInTransactionAsync(async () => {
-    await queryAsync(sql.create_lineitems_temp, {});
-
-    for (const item of lineitems) {
-      job.info(`* ${item.label}`);
-
-      await queryAsync(sql.insert_lineitems_temp, {
-        lti13_course_instance_id: instance.lti13_course_instance.id,
-        lineitem_id_url: item.id,
-        lineitem: JSON.stringify(item),
-      });
-    }
-
     const output = await queryRow(
       sql.sync_lti13_lineitems,
       {
         lti13_course_instance_id: instance.lti13_course_instance.id,
+        lineitems_import: JSON.stringify(lineitems_import),
       },
       z.object({
         updated: z.string(),
@@ -358,8 +355,8 @@ export async function syncLineitems(instance: Lti13CombinedInstance, job: Server
     job.info(
       `\nSummary of PrairieLearn changes: ${output.updated} updated, ${output.deleted} deleted.`,
     );
-    job.info('Done.');
   });
+  job.info('Done.');
 }
 
 export async function createAndLinkLineitem(
