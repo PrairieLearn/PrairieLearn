@@ -119,7 +119,7 @@ def get_answer_name(file_names: str, optional_file_names: str = "") -> str:
         "/" + optional_file_names if optional_file_names else ""
     )
 
-    return "_file_upload_{0}".format(
+    return "_file_upload_" + hashlib.sha1(combined_name.encode("utf-8")).hexdigest()
         hashlib.sha1(combined_name.encode("utf-8")).hexdigest()
     )
 
