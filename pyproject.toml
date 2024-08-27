@@ -4,7 +4,8 @@ include = [
     "./apps/prairielearn/python/*.py",
     "./graders/**/*.py",
     "./exampleCourse/**/*.py",
-    "./testCourse/**/*.py"
+    "./testCourse/**/*.py",
+    "./grader/python/python_autograder/**/*.py",
 ]
 exclude = [
     # These files are intentionally not parseable as Python.
@@ -95,6 +96,8 @@ include = [
     "./apps/prairielearn/python/zygote.py",
     "./apps/prairielearn/python/zygote_utils.py",
     "./apps/prairielearn/python/zygote_utils_test.py",
+    "./graders/python/python_autograder/code_feedback.py",
+    "./graders/python/python_autograder/tests/code_feedback_test.py",
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
@@ -105,4 +108,5 @@ addopts = "--cov=apps"
 testpaths = [
     "apps/prairielearn/elements",
     "apps/prairielearn/python",
+    "graders/python/python_autograder/code_feedback_test.py",
 ]
