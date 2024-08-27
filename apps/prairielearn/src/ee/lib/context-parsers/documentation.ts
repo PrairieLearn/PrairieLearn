@@ -108,7 +108,6 @@ function cleanElementSections(elementSections: ElementSection[]) {
 
     // Rewrite all headings so that they can be nested under L2 headings.
     section.content.forEach((node) => {
-      console.log(node);
       if (node.type === 'heading') {
         // Safety check: all headings should be at least level 4.
         if (node.depth < 4) {
