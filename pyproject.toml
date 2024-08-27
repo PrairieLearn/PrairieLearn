@@ -52,6 +52,7 @@ include = [
     "./apps/prairielearn/elements/pl-card",
     "./apps/prairielearn/elements/pl-code",
     "./apps/prairielearn/elements/pl-dataframe",
+    "./apps/prairielearn/elements/pl-excalidraw",
     "./apps/prairielearn/elements/pl-external-grader-results",
     "./apps/prairielearn/elements/pl-external-grader-variables",
     "./apps/prairielearn/elements/pl-figure",

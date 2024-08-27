@@ -24,7 +24,8 @@
         { "id": "element/richTextEditor", "points": 2 },
         { "id": "element/fileEditor", "points": 2, "maxPoints": 10 },
         { "id": "element/fileUpload", "points": 2 },
-        { "id": "element/codeDocumentation", "points": 2, "maxPoints": 10 }
+        { "id": "element/codeDocumentation", "points": 2, "maxPoints": 10 },
+        { "id": "element/excalidraw", "manualPoints": 2, "singleVariant": true }
       ]
     },
     {

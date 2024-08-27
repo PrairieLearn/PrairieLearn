@@ -1,0 +1,28 @@
+.excalidraw-root .excalidraw-button.save-button {
+  padding: 0.5rem;
+  margin-left: 1rem;
+  cursor: initial;
+  --button-height: 2.5rem;
+  --button-width: 5rem;
+}
+
+.excalidraw-root .excalidraw-button.save-button-unsaved {
+  background: #ffc107;
+  cursor: initial;
+}
+
+/* Hide the Library button. There is no way to disable this in component props */
+.excalidraw-root label[title='Library'] {
+  display: none;
+}
+
+/* Fix style leakage from bootstrap: https://github.com/excalidraw/excalidraw/issues/3825 */
+.excalidraw-root .popover {
+  border: unset;
+  max-width: unset;
+  background-color: unset;
+}
+
+.excalidraw-root label {
+  margin-bottom: initial;
+}

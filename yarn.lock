@@ -3025,6 +3025,13 @@ __metadata:
   languageName: unknown
   linkType: soft
 
+"@prairielearn/excalidraw-builds@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "@prairielearn/excalidraw-builds@npm:1.0.0"
+  checksum: 10c0/c433ca980604d0f9e0e685ad6c9f2ca99a2f87eedde11299e85538bef0e829a52e4faefad95a2e266829197971fbbde4241b11e4205dc24432783d2c6b0a3015
+  languageName: node
+  linkType: hard
+
 "@prairielearn/express-test-utils@workspace:^, @prairielearn/express-test-utils@workspace:packages/express-test-utils":
   version: 0.0.0-use.local
   resolution: "@prairielearn/express-test-utils@workspace:packages/express-test-utils"
@@ -3354,6 +3361,7 @@ __metadata:
     "@prairielearn/csv": "workspace:^"
     "@prairielearn/docker-utils": "workspace:^"
     "@prairielearn/error": "workspace:^"
+    "@prairielearn/excalidraw-builds": "npm:^1.0.0"
     "@prairielearn/express-test-utils": "workspace:^"
     "@prairielearn/flash": "workspace:^"
     "@prairielearn/html": "workspace:^"
