@@ -119,7 +119,8 @@ def get_answer_name(file_names: str, optional_file_names: str = "") -> str:
     return "_file_upload_{0}".format(
         # Using / as separator as the only character guaranteed not to appear in file names
         hashlib.sha1(
-            "/".join([file_names, optional_file_names]).encode("utf-8")
+            [file_names].encode("utf-8")
+            + ("/" + optional_file_names.encode("utf-8") if optional_file_names else "")
         ).hexdigest()
     )
 
@@ -167,11 +168,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
-    element = lxml.html.fragment_fromstring(element_html)
-    uuid = pl.get_uuid()
-
     if data["panel"] != "question":
         return ""
+
+    element = lxml.html.fragment_fromstring(element_html)
+    uuid = pl.get_uuid()
 
     raw_file_names = pl.get_string_attrib(element, "file-names", "")
     file_names = sorted(get_file_names_as_array(raw_file_names))
@@ -205,7 +206,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     submitted_file_names_json = json.dumps(accepted_file_names, allow_nan=False)
 
     html_params = {
-        "question": True,
         "name": answer_name,
         "file_names": file_names_json,
         "optional_file_names": optional_file_plain_json,
