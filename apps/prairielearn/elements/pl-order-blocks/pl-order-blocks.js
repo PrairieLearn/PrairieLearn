@@ -177,35 +177,6 @@ window.PLOrderBlocks = function (uuid, options) {
               }
             });
             break;
-          // case 'Delete':
-          // case 'Backspace':
-          //   handleKey(ev, block, () => {
-          //     if (inDropzone(block)) {
-          //       block.style.marginLeft = '0px';
-          //     }
-          //     $(optionsElementId)[0].insertAdjacentElement('beforeend', block);
-          //     correctPairing(block);
-          //   });
-          //   break;
-          // case 'Enter':
-          //   handleKey(ev, block, () => {
-          //     if (!inDropzone(block)) {
-          //       $(dropzoneElementId)[0].insertAdjacentElement('beforeend', block);
-          //     }
-          //   });
-          //   break;
-          // case 'Tab':
-          //   handleKey(ev, block, () => {
-          //     if (inDropzone(block) && enableIndentation) {
-          //       const currentIndent = getIndentation(block);
-          //       if (ev.shiftKey) {
-          //         setIndentation(block, currentIndent - 1);
-          //       } else {
-          //         setIndentation(block, currentIndent + 1);
-          //       }
-          //     }
-          //   });
-          //   break;
           case 'Escape':
             handleKey(ev, block, removeSelectedAttribute);
             break;
