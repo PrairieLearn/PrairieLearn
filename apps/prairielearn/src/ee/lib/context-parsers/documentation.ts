@@ -1,3 +1,4 @@
+import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import { unified } from 'unified';
@@ -12,6 +13,13 @@ interface ElementSection {
 export interface DocumentChunk {
   text: string;
   chunkId: string;
+}
+
+function stringify(content: any) {
+  return unified().use(remarkStringify).use(remarkGfm).stringify({
+    type: 'root',
+    children: content,
+  });
 }
 
 function extractElementSections(ast: any) {
@@ -100,6 +108,7 @@ function cleanElementSections(elementSections: ElementSection[]) {
 
     // Rewrite all headings so that they can be nested under L2 headings.
     section.content.forEach((node) => {
+      console.log(node);
       if (node.type === 'heading') {
         // Safety check: all headings should be at least level 4.
         if (node.depth < 4) {
@@ -107,6 +116,39 @@ function cleanElementSections(elementSections: ElementSection[]) {
           throw new Error('Expected heading to be at least level 4');
         }
         node.depth -= 1;
+      }
+
+      if (node.type === 'table') {
+        const firstRow = node.children[0];
+        if (
+          firstRow.children.length === 4 &&
+          firstRow.children[0].children[0].value === 'Attribute' &&
+          firstRow.children[1].children[0].value === 'Type' &&
+          firstRow.children[2].children[0].value === 'Default' &&
+          firstRow.children[3].children[0].value === 'Description'
+        ) {
+          const optionalStatements = [];
+          const mandatoryStatements = [];
+          for (let row_idx = 1; row_idx < node.children.length; row_idx++) {
+            const row = node.children[row_idx];
+            const attribute = stringify([row.children[0]]).trimEnd();
+            const type = stringify([row.children[1]]).trimEnd();
+            const defaultVal = stringify([row.children[2]]).trimEnd();
+            const description = stringify([row.children[3]]).trimEnd();
+
+            if (defaultVal === '-') {
+              const statement = `You must provide ${attribute}, a ${type} which indicates ${description}`;
+              mandatoryStatements.push(statement);
+            } else {
+              const statement = `You may provide ${attribute}, a ${type} which indicates ${description}. Otherwise, it defaults to ${defaultVal}.`;
+              optionalStatements.push(statement);
+            }
+          }
+          node.type = 'text';
+          node.value =
+            '\n\n' + mandatoryStatements.join('\n') + '\n\n' + optionalStatements.join('\n');
+          node.children = [];
+        }
       }
       return node;
     });
@@ -119,7 +161,7 @@ function cleanElementSections(elementSections: ElementSection[]) {
 }
 
 export async function buildContextForElementDocs(rawMarkdown: string): Promise<DocumentChunk[]> {
-  const file = unified().use(remarkParse).parse(rawMarkdown);
+  const file = unified().use(remarkParse).use(remarkGfm).parse(rawMarkdown);
 
   const elementSections = cleanElementSections(extractElementSections(file));
 
@@ -129,10 +171,9 @@ export async function buildContextForElementDocs(rawMarkdown: string): Promise<D
       depth: 2,
       children: [{ type: 'text', value: section.elementName }],
     });
-    const markdown = unified().use(remarkStringify).stringify({
-      type: 'root',
-      children: section.content,
-    });
+
+    const markdown = stringify(section.content);
+    console.log(markdown);
 
     return {
       chunkId: section.elementName,
