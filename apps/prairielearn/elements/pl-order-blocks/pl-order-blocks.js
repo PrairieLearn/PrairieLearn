@@ -190,7 +190,7 @@ window.PLOrderBlocks = function (uuid, options) {
 
     block.addEventListener('keydown', (ev) => handleKeyPress(ev));
 
-    block.addEventListener('blur', (ev) => {
+    block.addEventListener('blur', () => {
       block.setAttribute('tabindex', '-1');
       const blocks = fullContainer.querySelectorAll('.pl-order-block');
       if (
@@ -202,7 +202,7 @@ window.PLOrderBlocks = function (uuid, options) {
         block.setAttribute('tabindex', '0');
       }
     });
-    block.addEventListener('focus', (ev) => {
+    block.addEventListener('focus', () => {
       fullContainer
         .querySelectorAll('.pl-order-block')
         .forEach((item) => item.setAttribute('tabindex', '-1'));
