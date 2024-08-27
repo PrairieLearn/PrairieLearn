@@ -38,32 +38,32 @@ describe('Markdown processing', () => {
 
   it('handles block latex', async () => {
     const question = '$$\na^2 + b^2 = c^2\n$$';
-    const expected = '<p>$$\na^2 + b^2 = c^2\n$$</p>';
+    const expected = '$$\na^2 + b^2 = c^2\n$$';
     await testMarkdown(question, expected);
   });
 
   it('handles block latex with asterisks', async () => {
     const question = '$$\na **b** c\n$$';
-    const expected = '<p>$$\na **b** c\n$$</p>';
+    const expected = '$$\na **b** c\n$$';
     await testMarkdown(question, expected);
   });
 
   it('handles two consecutive latex blocks', async () => {
     const question = '$$\na **b** c\n$$\n$$\na+b=c\n$$';
-    const expected = '<p>$$\na **b** c\n$$</p>\n<p>$$\na+b=c\n$$</p>';
+    const expected = '$$\na **b** c\n$$\n$$\na+b=c\n$$';
     await testMarkdown(question, expected);
   });
 
   it('handles block latex with asterisks and surrounding text', async () => {
     const question = 'testing\n$$\na **b** c\n$$\ntesting';
-    const expected = '<p>testing</p>\n<p>$$\na **b** c\n$$</p>\n<p>testing</p>';
+    const expected = '<p>testing</p>\n$$\na **b** c\n$$\n<p>testing</p>';
     await testMarkdown(question, expected);
   });
 
   it('handles GFM extension for tables', async () => {
     const question = '| foo | bar |\n| --- | --- |\n| baz | bim |';
     const expected =
-      '<table>\n<thead>\n<tr>\n<th>foo</th>\n<th>bar</th>\n</tr>\n</thead>\n<tbody><tr>\n<td>baz</td>\n<td>bim</td>\n</tr>\n</tbody></table>';
+      '<table><thead><tr><th>foo</th><th>bar</th></tr></thead><tbody><tr><td>baz</td><td>bim</td></tr></tbody></table>';
     await testMarkdown(question, expected);
   });
 
