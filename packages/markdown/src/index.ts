@@ -1,6 +1,50 @@
-import { marked, type MarkedOptions } from 'marked';
+import { marked, Tokenizer, type Tokens, type MarkedOptions } from 'marked';
 
 // TODO Create a parser that handles math blocks (i.e., ignores `_` and `*` inside `$...$` blocks)
+
+class MathTokenizer extends Tokenizer {
+  paragraph(src: string): Tokens.Paragraph | undefined {
+    if (src.startsWith('$$')) {
+      const match = src.match(/^\$\$(([^$]|\$[^$])+)\$\$/);
+      if (match) {
+        return {
+          type: 'paragraph',
+          raw: match[0],
+          text: `$$${match[1]}$$`,
+          tokens: [
+            {
+              type: 'text',
+              raw: match[0],
+              text: `$$${match[1]}$$`,
+            },
+          ],
+        };
+      }
+    }
+    if (src.includes('$$')) {
+      src = src.substring(0, src.indexOf('$$'));
+    }
+    return super.paragraph(src);
+  }
+  inlineText(src: string): Tokens.Text | undefined {
+    if (src.startsWith('$')) {
+      const match = src.match(/^\$([^$]+)\$/);
+      if (match) {
+        return {
+          type: 'text',
+          raw: match[0],
+          text: `$${match[1]}$`,
+        };
+      }
+    }
+    if (src.includes('$')) {
+      src = src.substring(0, src.indexOf('$'));
+    }
+    return super.inlineText(src);
+  }
+}
+
+const tokenizer = new MathTokenizer();
 
 /**
  * Converts markdown to HTML. If `inline` is true, and the result fits a single
@@ -14,6 +58,7 @@ export function markdownToHtml(
 ) {
   const output = (options.inline ? marked.parseInline : marked.parse)(original, {
     ...options,
+    tokenizer,
     async: false,
   });
   if (options.sanitize ?? true) {
