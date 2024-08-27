@@ -21,7 +21,7 @@
   max-width: 30rem;
 }
 
-@keyframes jiggle {
+@keyframes pulse {
   0%,
   40%,
   60%,
@@ -39,6 +39,6 @@
   }
 }
 
-.jiggle {
-  animation: jiggle 3s infinite;
+.pulse {
+  animation: pulse 3s infinite;
 }
