@@ -5,8 +5,8 @@ import _ from 'lodash';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { makeAwsClientConfig } from '../lib/aws.js';
-import { config } from '../lib/config.js';
+import { makeAwsClientConfig } from '../../lib/aws.js';
+import { config } from '../../lib/config.js';
 
 export async function run() {
   if (!config.runningInEc2) return;
