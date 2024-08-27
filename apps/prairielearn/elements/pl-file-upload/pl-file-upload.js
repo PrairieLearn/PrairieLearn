@@ -319,7 +319,7 @@
           );
 
           var $preview = $(
-            `<div class="file-preview collapse" id="file-preview-{uuid}-${index}"></div>`,
+            `<div class="file-preview collapse" id="file-preview-${uuid}-${index}"></div>`,
           );
 
           var $deleteUpload = $(
