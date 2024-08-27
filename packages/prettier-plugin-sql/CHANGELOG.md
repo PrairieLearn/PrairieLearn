@@ -1,5 +1,17 @@
 # @prairielearn/prettier-plugin-sql
 
+## 2.0.6
+
+### Patch Changes
+
+- 852c2e2: Upgrade all JavaScript dependencies
+
+## 2.0.5
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+
 ## 2.0.4
 
 ### Patch Changes

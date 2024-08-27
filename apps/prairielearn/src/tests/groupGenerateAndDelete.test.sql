@@ -1,11 +1,3 @@
--- BLOCK generate_500
-SELECT
-  user_id
-FROM
-  users_randomly_generate (500, 1)
-ORDER BY
-  user_id;
-
 -- BLOCK select_group_work_assessment
 SELECT
   a.id

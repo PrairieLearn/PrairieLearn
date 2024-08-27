@@ -64,33 +64,23 @@ export function InstructorAssessments({
             urlPrefix,
           })}
           <div class="card mb-4">
-            <div class="card-header bg-primary">
-              <div class="row align-items-center justify-content-between">
-                <div class="col-auto">
-                  <span class="text-white">Assessments</span>
-                </div>
-                ${authz_data.has_course_permission_edit && !course.example_course
-                  ? html`
-                      <div class="col-auto">
-                        <form name="add-assessment-form" method="POST">
-                          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                          <button
-                            name="__action"
-                            value="add_assessment"
-                            class="btn btn-sm btn-light"
-                          >
-                            <i class="fa fa-plus" aria-hidden="true"></i>
-                            <span class="d-none d-sm-inline">Add assessment</span>
-                          </button>
-                        </form>
-                      </div>
-                    `
-                  : ''}
-              </div>
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+              <h1>Assessments</h1>
+              ${authz_data.has_course_permission_edit && !course.example_course
+                ? html`
+                    <form class="ml-auto" name="add-assessment-form" method="POST">
+                      <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                      <button name="__action" value="add_assessment" class="btn btn-sm btn-light">
+                        <i class="fa fa-plus" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline">Add assessment</span>
+                      </button>
+                    </form>
+                  `
+                : ''}
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="Assessments">
                 <thead>
                   <tr>
                     <th style="width: 1%"><span class="sr-only">Label</span></th>
@@ -108,18 +98,13 @@ export function InstructorAssessments({
                       ${row.start_new_assessment_group
                         ? html`
                             <tr>
-                              <th colspan="7">${row.assessment_group_heading}</th>
+                              <th colspan="7" scope="row">${row.assessment_group_heading}</th>
                             </tr>
                           `
                         : ''}
                       <tr id="row-${row.id}">
                         <td class="align-middle" style="width: 1%">
-                          <a
-                            href="${urlPrefix}/assessment/${row.id}/"
-                            class="badge color-${row.color} color-hover"
-                          >
-                            ${row.label}
-                          </a>
+                          <span class="badge color-${row.color}">${row.label}</span>
                         </td>
                         <td class="align-middle">
                           ${row.sync_errors
@@ -197,6 +182,7 @@ ${unsafeHtml(ansiUp.ansi_to_html(output))}</pre
       data-html="true"
       data-title="${title}"
       data-content="${escapeHtml(popoverContent)}"
+      data-custom-class="popover-wide"
     >
       <i class="fa ${classes}" aria-hidden="true"></i>
     </button>

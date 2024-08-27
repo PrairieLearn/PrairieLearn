@@ -82,11 +82,6 @@ export function InstructorIssues({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })} ${compiledStylesheetTag('instructorIssues.css')}
-        <script>
-          $(() => {
-            $('[data-toggle=tooltip]').tooltip();
-          });
-        </script>
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
@@ -105,7 +100,7 @@ export function InstructorIssues({
             <div class="card-header bg-primary text-white">
               <div class="d-flex flex-row align-items-center mb-2">
                 <div class="d-flex flex-column">
-                  Issues
+                  <h1 class="h6 font-weight-normal mb-0">Issues</h1>
                   <small>
                     <a href="${formattedCommonQueries.allOpenQuery}" class="mr-3 text-white">
                       <i class="fa fa-exclamation-circle"></i> ${openCount} open
@@ -345,17 +340,15 @@ function CloseMatchingIssuesModal({
       </p>
     `,
     footer: html`
-      <div class="modal-footer">
-        <input type="hidden" name="__action" value="close_matching" />
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <input
-          type="hidden"
-          name="unsafe_issue_ids"
-          value="${issues.map((issue) => issue.id).join(',')}"
-        />
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-danger">Close issues</button>
-      </div>
+      <input type="hidden" name="__action" value="close_matching" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input
+        type="hidden"
+        name="unsafe_issue_ids"
+        value="${issues.map((issue) => issue.id).join(',')}"
+      />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Close issues</button>
     `,
   });
 }
@@ -369,7 +362,7 @@ function FilterHelpModal() {
         Issues can be filtered and searched in a variety of ways. Filtering is done with the
         following set of qualifiers.
       </p>
-      <table class="table table-bordered">
+      <table class="table table-bordered" aria-label="Filtering qualifiers">
         <thead>
           <th>Qualifier</th>
           <th>Explanation</th>
@@ -415,20 +408,20 @@ function FilterHelpModal() {
           </tr>
         </tbody>
       </table>
-      <h4>Full-text search</h4>
+      <h3 class="h4">Full-text search</h3>
       <p>
         You can also search the issue message by simply entering text. For example,
         <code>no picture</code> would return any issues that contain text like "no picture".
       </p>
 
-      <h4>Qualifier negation</h4>
+      <h3 class="h4">Qualifier negation</h3>
       <p>
         Any qualifier can be negated with the a hyphen (<code>-</code>). For example,
         <code>-is:manually-reported</code> would return all issues that were
         <strong>not</strong> manually reported.
       </p>
 
-      <h4>Combining qualifiers</h4>
+      <h3 class="h4">Combining qualifiers</h3>
       <p>These can be combined to form complex searches. An example:</p>
       <code><pre>is:open qid:vector answer is wrong</pre></code>
       <p>

@@ -36,7 +36,7 @@ export function Modal({
             ${formAction ? html`action="${formAction}"` : ''}
           >
             <div class="modal-header">
-              <h4 class="modal-title" id=${titleId}>${title}</h4>
+              <h2 class="modal-title h4" id=${titleId}>${title}</h2>
             </div>
             ${body ? html`<div class="modal-body">${body}</div>` : ''} ${content ? content : ''}
             ${footer ? html`<div class="modal-footer">${footer}</div>` : ''}

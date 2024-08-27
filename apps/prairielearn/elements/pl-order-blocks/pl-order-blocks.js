@@ -372,5 +372,4 @@ window.PLOrderBlocks = function (uuid, options) {
   if (enableIndentation) {
     $(dropzoneElementId).sortable('option', 'grid', [TABWIDTH, 1]);
   }
-  $('[data-toggle="popover"]').popover();
 };

@@ -61,7 +61,7 @@ router.use(
 router.use((await import('./notFound.js')).default);
 
 // The Sentry error handler must come before our own.
-router.use(Sentry.Handlers.errorHandler());
+router.use(Sentry.expressErrorHandler());
 
 // Handle errors independently from the normal PL error handling
 router.use((await import('./error.js')).default);

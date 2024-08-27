@@ -18,6 +18,9 @@ markdown_extensions:
   - toc:
       permalink: true
 
+  # Allows note/warning boxes
+  - admonition
+
 extra_javascript:
   - mathjax-config.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
@@ -79,3 +82,17 @@ nav:
   - Deprecated Features:
       - 'Old v1/v2 question format': 'oldQuestion.md'
       - 'Old PrairieDraw graphics': 'PrairieDraw.md'
+
+not_in_nav: |
+  workshop/lesson1.md
+  workshop/lesson2.md
+  workshop/lesson3.md
+  workshop/lesson4.md
+  workshop/lesson5.md
+  python-grader/sphinx-docs.md
+
+validation:
+  omitted_files: warn
+  absolute_links: warn
+  unrecognized_links: warn
+  anchors: warn

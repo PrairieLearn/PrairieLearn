@@ -1,8 +1,7 @@
 -- BLOCK select_submissions_for_variant
 SELECT DISTINCT
   ON (s.id) s.id AS id,
-  gj.id AS grading_job_id,
-  grading_job_status (gj.id) AS grading_job_status
+  to_jsonb(gj) AS grading_job
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
@@ -19,8 +18,7 @@ ORDER BY
 -- BLOCK select_submission_for_grading_job
 SELECT
   s.id AS id,
-  gj.id AS grading_job_id,
-  grading_job_status (gj.id) AS grading_job_status,
+  to_jsonb(gj) AS grading_job,
   s.variant_id AS variant_id
 FROM
   grading_jobs AS gj_orig

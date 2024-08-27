@@ -38,7 +38,9 @@ export function InstructorCourseAdminSettings({
           })}
 
           <div class="card  mb-4">
-            <div class="card-header bg-primary text-white d-flex">Course Settings</div>
+            <div class="card-header bg-primary text-white d-flex">
+              <h1>Course Settings</h1>
+            </div>
             <div class="card-body">
               ${!courseInfoExists || !coursePathExists
                 ? CourseDirectoryMissingAlert({
@@ -206,8 +208,7 @@ function CourseDirectoryMissingAlert({
     return html`
       <div class="alert alert-danger">
         Course directory not found. You must
-        <a href="${resLocals.urlPrefix}/${resLocals.navPage}/syncs"> sync your course </a>
-        .
+        <a href="${resLocals.urlPrefix}/${resLocals.navPage}/syncs">sync your course</a>.
       </div>
     `;
   } else if (!courseInfoExists) {
