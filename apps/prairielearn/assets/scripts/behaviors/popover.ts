@@ -129,7 +129,7 @@ onDocumentReady(() => {
     const container = getPopoverContainerForTrigger(event.target);
 
     // If the popover is focus-triggered, we'll skip the focus trap and
-    // autofocus logic. If the move the focus off the trigger, the popover
+    // autofocus logic. If we move the focus off the trigger, the popover
     // will immediately close, which we don't want.
     if (container && !isFocusTrigger(target)) {
       // Trap focus inside this new popover.
