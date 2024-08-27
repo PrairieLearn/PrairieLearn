@@ -7,12 +7,10 @@
   <pl-file-upload file-names="solution.txt"></pl-file-upload>
 
   <p> Instead of (or in addition to) mandatory file names, it is possible to provide an <code>optional-file-names</code> 
-    list that marks files as optional. By default, even if all files are listed as optional, at least one file 
-    must be uploaded for the submission to be valid. Setting <code>allow-blank="true"</code> and only listing 
-    optional files also allows empty submissions.
+    list that marks files as optional. Note that if no mandatory file names are specified, empty submissions are considered valid.
   </p>
 
-  <pl-file-upload allow-blank="true" optional-file-names="solution.txt,solution.pdf"></pl-file-upload>
+  <pl-file-upload file-names="solution.py" optional-file-names="explanation.txt"></pl-file-upload>
 
   <p> <code>optional-file-names</code> supports a number of 
     <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-upload-element">wildcard patterns</a>
@@ -23,6 +21,6 @@
   <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-upload-element">it is not recommended</a> to
     use more than one for real questions.</p>
 
-  <pl-file-upload optional-file-names="solution.???,*.py"></pl-file-upload>
+  <pl-file-upload optional-file-names="solution.???,*.pdf"></pl-file-upload>
    
 </pl-question-panel>

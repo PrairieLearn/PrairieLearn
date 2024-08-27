@@ -334,7 +334,6 @@ potentially misleading error messages for large file uploads, we recommend not u
 | --------------------- | -------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `file-names`          | CSV list | ""      | List of files that must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.                                                                                                                               |
 | `optional-file-names` | CSV list | ""      | List of files that can be submitted, but are optional. Wildcards are supported (see below). Commas should be escaped with a backslash, reserved wildcard characters in file names should be escaped with double backslashes, and filenames cannot contain quotes. |
-| `allow-blank`         | boolean  | false   | Whether or not an empty file input is allowed. By default, at least one file must be uploaded, even if only `optional-file-names` are specified                                                                                                                   |
 
 #### Supported wildcards
 
