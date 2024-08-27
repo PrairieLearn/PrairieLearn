@@ -344,26 +344,33 @@ class Feedback:
         if not isinstance(data, dict):
             return bad(f"{name} is not a dict")
 
-        if partial_keys is not None and len(ref) != len(data):
-            return bad(
-                f"{name} has the wrong number of entries, expected {len(ref)}, got {len(data)}"
-            )
+        if partial_keys is not None and len(partial_keys) >= 1:
+            for partial_key in partial_keys:
+                if partial_key not in data:
+                    return bad(f"{name} does not contain key {partial_key}")
+            return True
+
+        if partial_keys is None:
+            if check_only_values:
+                if len(ref.values()) != len(data.values()):
+                    return bad(
+                        f"{name} has the wrong length for values--expected {len(ref.values())}, got {len(data.values())}"
+                    )
+
+            if len(ref) != len(data):  # this is default length of keys check
+                return bad(
+                    f"{name} has the wrong number of entries, expected {len(ref)}, got {len(data)}"
+                )
 
         if entry_type_value is not None:
             for value in data.values():
                 if not isinstance(value, entry_type_value):
-                    return bad(f"{name} has the wrong type for value {value}")
+                    return bad(f"{name} has the wrong type for value {value}, expecting type {entry_type_value}")
 
         if entry_type_key is not None:
             for key in data.keys():
                 if not isinstance(key, entry_type_key):
-                    return bad(f"{name} has the wrong type for key {key}")
-
-        if partial_keys is not None and len(partial_keys) > 1:
-            for partial_key in partial_keys:
-                if partial_key not in data:
-                    return bad(f"{name} does not contain key {key}")
-            return True
+                    return bad(f"{name} has the wrong type for key {key}, expecting type {entry_type_key}")
 
         if check_only_keys or check_only_values:
             check_keys = False
