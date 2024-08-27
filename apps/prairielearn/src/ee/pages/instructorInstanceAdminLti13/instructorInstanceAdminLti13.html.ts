@@ -272,7 +272,7 @@ export function InstructorInstanceAdminLti13({
                                           data-toggle="modal"
                                           data-target="#assignment-${row.id}"
                                         >
-                                          Link to ${lms_name}
+                                          Link assignment
                                         </button>
                                       `
                                     : html`
@@ -282,12 +282,12 @@ export function InstructorInstanceAdminLti13({
                                           value="send_grades"
                                           onClick="event.preventDefault();alert('Coming soon &#128512;');"
                                         >
-                                          Send grades to ${lms_name}
+                                          Send grades
                                         </button>
                                         <span class="dropdown js-question-actions">
                                           <button
                                             type="button"
-                                            class="btn btn-xs dropdown-toggle"
+                                            class="btn btn-xs btn-light dropdown-toggle"
                                             data-toggle="dropdown"
                                             aria-haspopup="true"
                                             aria-expanded="false"
@@ -345,7 +345,7 @@ export function InstructorInstanceAdminLti13({
 function lineItem(item: Lti13Assessments, timezone: string) {
   return html`
     <span title="${item.lineitem_id_url}">${item.lineitem.label}</span>
-    <p class="text-right">
+    <p>
       <em>Last activity: ${formatDateYMDHM(item.last_activity, timezone)}</em>
     </p>
   `;
