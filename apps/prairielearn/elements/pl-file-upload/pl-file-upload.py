@@ -9,8 +9,6 @@ import lxml.html
 import prairielearn as pl
 from colors import PLColor
 
-ALLOW_BLANK_DEFAULT = False
-
 
 def get_file_names_as_array(raw_file_names: str) -> list[str]:
     """
@@ -143,20 +141,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     # Either "file-names" or "optional-file-names" is required, which is checked separately
     required_attribs = []
-    optional_attribs = ["file-names", "optional-file-names", "allow-blank"]
+    optional_attribs = ["file-names", "optional-file-names"]
     pl.check_attribs(element, required_attribs, optional_attribs)
     if not pl.get_string_attrib(element, "file-names", "") and not pl.get_string_attrib(
         element, "optional-file-names", ""
     ):
         raise ValueError(
             'One of the required attributes "file-names" or "optional-file-names" is missing'
-        )
-
-    if pl.get_string_attrib(element, "file-names", "") and pl.get_boolean_attrib(
-        element, "allow-blank", ALLOW_BLANK_DEFAULT
-    ):
-        raise ValueError(
-            'The attribute "allow-blank" cannot be used when (mandatory) "file-names" are specified'
         )
 
     if "_required_file_names" not in data["params"]:
@@ -225,7 +216,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     raw_required_file_names = pl.get_string_attrib(element, "file-names", "")
     required_file_names = get_file_names_as_array(raw_required_file_names)
     raw_optional_file_names = pl.get_string_attrib(element, "optional-file-names", "")
@@ -234,9 +224,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     # Get submitted answer or return format error if it does not exist
     files = data["submitted_answers"].get(answer_name)
-    if not files and not allow_blank:
-        add_format_error(answer_name, data, "No submitted answer for file upload.")
-        return
 
     # We will store the files in the submitted_answer["_files"] key,
     # so delete the original submitted answer format to avoid duplication
@@ -262,10 +249,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         or x.get("name", "") in optional_files_plain
         or x.get("name", "") in wildcard_files
     ]
-
-    # Return format error if cleaned file list is empty and allow_blank is not set
-    if not parsed_files and not allow_blank:
-        add_format_error(answer_name, data, "No submitted answer for file upload.")
 
     for x in parsed_files:
         pl.add_submitted_file(data, x.get("name", ""), x.get("contents", ""))
