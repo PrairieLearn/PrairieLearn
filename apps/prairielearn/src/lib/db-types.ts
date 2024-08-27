@@ -98,17 +98,6 @@ export const AssessmentsFormatForQuestionSchema = z.array(
   }),
 );
 
-// Result of grading_job_status sproc
-export const GradingJobStatusSchema = z.enum([
-  'none',
-  'canceled',
-  'queued',
-  'grading',
-  'graded',
-  'requested',
-]);
-export type GradingJobStatus = z.infer<typeof GradingJobStatusSchema>;
-
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -151,6 +140,7 @@ export const AssessmentSchema = z.object({
   advance_score_perc: z.number().nullable(),
   allow_issue_reporting: z.boolean().nullable(),
   allow_real_time_grading: z.boolean().nullable(),
+  allow_personal_notes: z.boolean(),
   assessment_module_id: IdSchema.nullable(),
   assessment_set_id: IdSchema.nullable(),
   auto_close: z.boolean().nullable(),
@@ -475,6 +465,22 @@ export const FileSchema = z.object({
 });
 export type File = z.infer<typeof FileSchema>;
 
+export const FileEditSchema = z.object({
+  course_id: IdSchema,
+  created_at: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
+  did_save: z.boolean().nullable(),
+  did_sync: z.boolean().nullable(),
+  dir_name: z.string(),
+  file_id: IdSchema.nullable(),
+  file_name: z.string(),
+  id: IdSchema,
+  job_sequence_id: IdSchema.nullable(),
+  orig_hash: z.string(),
+  user_id: IdSchema,
+});
+export type FileEdit = z.infer<typeof FileEditSchema>;
+
 export const GradingJobSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   auto_points: z.number().nullable(),
@@ -752,6 +758,18 @@ export const PlanGrantSchema = z.object({
   user_id: IdSchema.nullable(),
 });
 export type PlanGrant = z.infer<typeof PlanGrantSchema>;
+
+export const QueryRunSchema = z.object({
+  authn_user_id: IdSchema,
+  date: DateFromISOString,
+  error: z.string().nullable(),
+  id: IdSchema,
+  name: z.string(),
+  params: z.record(z.string(), z.any()).nullable(),
+  result: z.record(z.string(), z.any()).nullable(),
+  // The sql column is deprecated and slated for removal in a near-future PR, so it is not included.
+});
+export type QueryRun = z.infer<typeof QueryRunSchema>;
 
 export const QuestionGenerationContextEmbeddingSchema = z.object({
   id: IdSchema,

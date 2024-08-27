@@ -1,161 +1,72 @@
 version: 2
 updates:
-  - package-ecosystem: npm
-    directory: '/'
+  - package-ecosystem: docker
+    directories:
+      - '/'
+      - '/graders/*'
+      - '/images/*'
+      - '/workspaces/*'
     schedule:
       interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
     rebase-strategy: disabled
-    groups:
-      ace:
-        patterns:
-          - 'ace-code'
-          - 'ace-builds'
-      aws:
-        patterns:
-          - '@aws-sdk/*'
-          - '@smithy/*'
-      opentelemetry:
-        patterns:
-          - '@opentelemetry/*'
-      pg:
-        patterns:
-          - 'pg'
-          - 'pg-*'
-      sentry:
-        patterns:
-          - '@sentry/*'
-      typescript-eslint:
-        patterns:
-          - '@typescript-eslint/*'
+
   - package-ecosystem: github-actions
     directory: '/'
     schedule:
       interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
     rebase-strategy: disabled
-  - package-ecosystem: docker
-    directory: '/'
+
+  - package-ecosystem: npm
+    directories:
+      - '/'
+      - '/workspaces/desktop/server'
+      - '/workspaces/xtermjs/src'
     schedule:
       interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
     rebase-strategy: disabled
-  - package-ecosystem: pip
-    directory: '/graders/python'
-    schedule:
-      interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
-    rebase-strategy: disabled
-  - package-ecosystem: docker
-    directory: '/graders/python'
-    schedule:
-      interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
-    rebase-strategy: disabled
-  - package-ecosystem: pip
-    directory: '/graders/c'
-    schedule:
-      interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
-    rebase-strategy: disabled
-  - package-ecosystem: docker
-    directory: '/graders/c'
-    schedule:
-      interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
-    rebase-strategy: disabled
-  - package-ecosystem: docker
-    directory: '/graders/java'
-    schedule:
-      interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
-    rebase-strategy: disabled
-  - package-ecosystem: docker
-    directory: '/images/plbase'
-    schedule:
-      interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
-    rebase-strategy: disabled
-  - package-ecosystem: pip
-    directory: '/images/plbase'
-    schedule:
-      interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
-    rebase-strategy: disabled
+    ignore:
+      # We're still waiting for the following PR to be released:
+      # https://github.com/twbs/bootstrap/pull/38725
+      - dependency-name: 'bootstrap'
+      # Recent versions of `bootstrap-table` broke behavior we rely on:
+      # https://github.com/wenzhixin/bootstrap-table/issues/6745
+      - dependency-name: 'bootstrap-table'
+      # We're putting off this upgrade for now:
+      # https://github.com/PrairieLearn/PrairieLearn/pull/6835
+      - dependency-name: 'fabric'
+      # Recent versions of `threejs` don't include the pre-bundled file we rely on.
+      - dependency-name: 'three'
     groups:
-      pandas:
+      # Many OpenTelemetry packages are still pre-v1, so updates frequently won't
+      # be considered patch/minor updates. We always want to bump these all
+      # together, so we'll include a special group for them. Dependabot evaluates
+      # groups in the order that they're listed, so this will take precedence over
+      # the catch-all patch/minor group below.
+      opentelemetry:
         patterns:
-          - 'pandas'
-          - 'pandas-stubs'
-      lxml:
-        patterns:
-          - 'lxml'
-          - 'types-lxml'
-  - package-ecosystem: docker
-    directory: '/workspaces/jupyterlab'
-    schedule:
-      interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
-    rebase-strategy: disabled
+          - '@opentelemetry/*'
+      all-patch-minor:
+        update-types:
+          - 'patch'
+          - 'minor'
+
   - package-ecosystem: pip
-    directory: '/workspaces/jupyterlab-python'
+    directories:
+      - '/docs'
+      - '/graders/c'
+      - '/graders/python'
+      - '/images/plbase'
+      - '/workspaces/jupyterlab-python'
+      - '/workspaces/vscode-python'
     schedule:
       interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
     rebase-strategy: disabled
-  - package-ecosystem: docker
-    directory: '/workspaces/xtermjs'
-    schedule:
-      interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
-    rebase-strategy: disabled
-  - package-ecosystem: npm
-    directory: '/workspaces/xtermjs/src'
-    schedule:
-      interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
-    rebase-strategy: disabled
-  - package-ecosystem: docker
-    directory: '/workspaces/desktop'
-    schedule:
-      interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
-    rebase-strategy: disabled
-  - package-ecosystem: npm
-    directory: '/workspaces/desktop/server'
-    schedule:
-      interval: monthly
-      time: '06:00'
-      timezone: America/Chicago
-    open-pull-requests-limit: 99
-    rebase-strategy: disabled
+    ignore:
+      # We're not ready to jump to the latest version of `numpy` yet.
+      - dependency-name: 'numpy'
+        versions: ['>=2']
+    groups:
+      all-patch-minor:
+        update-types:
+          - 'patch'
+          - 'minor'

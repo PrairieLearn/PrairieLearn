@@ -11,9 +11,9 @@
     typical "^7.1.1"
 
 "@novnc/novnc@^1.4.0":
-  version "1.4.0"
-  resolved "https://registry.yarnpkg.com/@novnc/novnc/-/novnc-1.4.0.tgz#68adae81a741624142b518323441e852c1f34281"
-  integrity sha512-kW6ALMc5BuH08e/ond/I1naYcfjc19JYMN1EdtmgjjjzPGCjW8fMtVM3MwM6q7YLRjPlQ3orEvoKMgSS7RkEVQ==
+  version "1.5.0"
+  resolved "https://registry.yarnpkg.com/@novnc/novnc/-/novnc-1.5.0.tgz#7df3e4aca48eaa7c0d6f690e7dee89480232e2f1"
+  integrity sha512-4yGHOtUCnEJUCsgEt/L78eeJu00kthurLBWXFiaXfonNx0pzbs6R/3gJb1byZe6iAE8V9MF0syQb0xIL8MSOtQ==
 
 accepts@~1.3.8:
   version "1.3.8"
@@ -555,9 +555,9 @@ side-channel@^1.0.4:
     object-inspect "^1.13.1"
 
 spin.js@^4.1.1:
-  version "4.1.1"
-  resolved "https://registry.yarnpkg.com/spin.js/-/spin.js-4.1.1.tgz#567464a08620541e523da856cb5f67af2d0f48ad"
-  integrity sha512-3cjbjZBw8TmZmvzcmlXqArUpefJ1vGgQZ+dh1CdyDyxZZNxNmw+2Dq5jyoP/OCqQP+z78rWgSJX9m3uMuGaxxw==
+  version "4.1.2"
+  resolved "https://registry.yarnpkg.com/spin.js/-/spin.js-4.1.2.tgz#866180f0489ce90432201363e71c314f0db28824"
+  integrity sha512-ua/yEpxEwyEUWs57tMQYdik/KJ12sQRyMXjSlK/Ai927aEUDVY3FXUi4ml4VvlLCTQNIjC6tHyjSLBrJzFAqMA==
 
 statuses@2.0.1:
   version "2.0.1"

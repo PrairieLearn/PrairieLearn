@@ -432,8 +432,6 @@ function editPost(
           __action: action,
           __csrf_token: locals.__csrf_token,
           file_edit_contents: b64Util.b64EncodeUnicode(fileEditContents),
-          file_edit_user_id: locals.file_edit_user_id,
-          file_edit_course_id: locals.file_edit_course_id,
           file_edit_orig_hash: locals.file_edit_orig_hash,
         }),
       });
@@ -490,20 +488,6 @@ function verifyEdit(
     assert.nestedProperty(elemList[0], 'attribs.value');
     locals.__csrf_token = elemList[0].attribs.value;
     assert.isString(locals.__csrf_token);
-  });
-  it('should have a file_edit_user_id', function () {
-    elemList = locals.$('form[name="editor-form"] input[name="file_edit_user_id"]');
-    assert.lengthOf(elemList, 1);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.file_edit_user_id = elemList[0].attribs.value;
-    assert.isString(locals.file_edit_user_id);
-  });
-  it('should have a file_edit_course_id', function () {
-    elemList = locals.$('form[name="editor-form"] input[name="file_edit_course_id"]');
-    assert.lengthOf(elemList, 1);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.file_edit_course_id = elemList[0].attribs.value;
-    assert.isString(locals.file_edit_course_id);
   });
   it('should have a file_edit_orig_hash', function () {
     elemList = locals.$('form[name="editor-form"] input[name="file_edit_orig_hash"]');
@@ -1041,7 +1025,7 @@ function testRenameFile(params: {
     });
     it('should have a CSRF token, old_file_name, working_path', () => {
       const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
-      elemList = row.find('button[id^="instructorFileRenameForm-"]');
+      elemList = row.find('button[data-testid="rename-file-button"]');
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
@@ -1091,7 +1075,7 @@ function testDeleteFile(params: { url: string; path: string }) {
     });
     it('should have a CSRF token and a file_path', () => {
       const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
-      elemList = row.find('button[id^="instructorFileDeleteForm-"]');
+      elemList = row.find('button[data-testid="delete-file-button"]');
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token

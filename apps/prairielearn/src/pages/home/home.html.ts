@@ -54,7 +54,8 @@ export function Home({
           })}
         </header>
 
-        <main class="flex-grow-1">
+        <main id="content" class="flex-grow-1">
+          <h1 class="sr-only">PrairieLearn Homepage</h1>
           ${ActionsHeader()}
 
           <div id="content" class="container py-5">
@@ -94,9 +95,9 @@ function ActionsHeader() {
                 <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                 <i class="fas fa-user-graduate fa-stack-1x text-light"></i>
               </span>
-              <span class="small p-2 font-weight-bold text-uppercase text-secondary">
+              <h2 class="small p-2 font-weight-bold text-uppercase text-secondary mb-0">
                 Students
-              </span>
+              </h2>
               <a href="${config.urlPrefix}/enroll" class="btn btn-xs btn-outline-primary">
                 Enroll course
               </a>
@@ -110,9 +111,9 @@ function ActionsHeader() {
                 <i class="fas fa-circle fa-stack-2x text-secondary"></i>
                 <i class="fas fa-user-tie fa-stack-1x text-light"></i>
               </span>
-              <span class="small p-2 font-weight-bold text-uppercase text-secondary">
+              <h2 class="small p-2 font-weight-bold text-uppercase text-secondary mb-0">
                 Instructors
-              </span>
+              </h2>
               <a href="${config.urlPrefix}/request_course" class="btn btn-xs btn-outline-primary">
                 Request course
               </a>
@@ -134,7 +135,9 @@ function DevModeCard() {
   if (!config.devMode) return '';
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-primary text-white">Development Mode</div>
+      <div class="card-header bg-primary text-white">
+        <h2>Development Mode</h2>
+      </div>
       <div class="card-body">
         <p>
           PrairieLearn is running in Development Mode. Click the
@@ -160,9 +163,14 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
   if (instructorCourses.length === 0) return '';
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-primary text-white">Courses with instructor access</div>
+      <div class="card-header bg-primary text-white">
+        <h2>Courses with instructor access</h2>
+      </div>
 
-      <table class="table table-sm table-hover table-striped">
+      <table
+        class="table table-sm table-hover table-striped"
+        aria-label="Courses with instructor access"
+      >
         <tbody>
           ${instructorCourses.map(
             (course) => html`
@@ -204,10 +212,11 @@ function StudentCoursesCard({
   hasInstructorCourses: boolean;
   canAddCourses: boolean;
 }) {
+  const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        ${hasInstructorCourses ? 'Courses with student access' : 'Courses'}
+        <h2>${heading}</h2>
         ${canAddCourses
           ? html`
               <a href="${config.urlPrefix}/enroll" class="btn btn-light btn-sm ml-auto">
@@ -243,7 +252,7 @@ function StudentCoursesCard({
                 </div>
               `
         : html`
-            <table class="table table-sm table-hover table-striped">
+            <table class="table table-sm table-hover table-striped" aria-label="${heading}">
               <tbody>
                 ${studentCourses.map(
                   (courseInstance) => html`

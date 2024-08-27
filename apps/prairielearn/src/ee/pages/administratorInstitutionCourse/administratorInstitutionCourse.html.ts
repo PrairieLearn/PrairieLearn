@@ -50,7 +50,7 @@ export function AdministratorInstitutionCourse({
             </li>
           </ol>
         </nav>
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h2 class="h4">Limits</h2>
           <form method="POST" class="mb-3">
             <div class="form-group">
@@ -130,7 +130,10 @@ export function AdministratorInstitutionCourse({
 
           <h2 class="h4">Course instances</h2>
           <div class="table-responsive">
-            <table class="table table-hover table-striped table-bordered table">
+            <table
+              class="table table-hover table-striped table-bordered table"
+              aria-label="Course instances"
+            >
               <thead>
                 <tr>
                   <th>Name</th>

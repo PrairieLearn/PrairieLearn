@@ -45,7 +45,9 @@ export function NewsItems({
         })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">News</div>
+            <div class="card-header bg-primary text-white d-flex">
+              <h1>News</h1>
+            </div>
 
             ${newsItems.length === 0
               ? html`
@@ -55,7 +57,10 @@ export function NewsItems({
                 `
               : html`
                   <div class="table-responsive">
-                    <table class="table table-hover table-striped news-items-table">
+                    <table
+                      class="table table-hover table-striped news-items-table"
+                      aria-label="News items"
+                    >
                       <tbody>
                         ${newsItems.map(
                           (newsItem) => html`

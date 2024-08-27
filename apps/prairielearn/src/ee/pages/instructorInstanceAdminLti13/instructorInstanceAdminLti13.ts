@@ -7,11 +7,21 @@ import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prair
 
 import { Lti13CourseInstanceSchema, Lti13InstanceSchema } from '../../../lib/db-types.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
+import { validateLti13CourseInstance } from '../../lib/lti13.js';
 
 import { InstructorInstanceAdminLti13 } from './instructorInstanceAdminLti13.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
+
+router.use(
+  asyncHandler(async (req, res, next) => {
+    if (!(await validateLti13CourseInstance(res.locals))) {
+      throw new error.HttpStatusError(403, 'LTI 1.3 is not available');
+    }
+    next();
+  }),
+);
 
 router.get(
   '/:unsafe_lti13_course_instance_id?',
