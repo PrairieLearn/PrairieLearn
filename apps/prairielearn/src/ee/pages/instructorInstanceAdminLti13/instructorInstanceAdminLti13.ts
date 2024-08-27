@@ -197,7 +197,7 @@ router.post(
           group_id,
           assessments_group_by: res.locals.course_instance.assessments_group_by,
         },
-        Lti13LineitemsSchema,
+        Lti13AssessmentsSchema,
       );
 
       flash(

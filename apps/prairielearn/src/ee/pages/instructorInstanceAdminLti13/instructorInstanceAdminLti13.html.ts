@@ -11,7 +11,7 @@ import {
   Lti13Instance,
   AssessmentSchema,
   AssessmentSetSchema,
-  Lti13Lineitems,
+  Lti13Assessments,
 } from '../../../lib/db-types.js';
 import { Lineitems } from '../../lib/lti13.js';
 
@@ -40,7 +40,7 @@ export function InstructorInstanceAdminLti13({
   instance: Lti13FullInstance;
   instances: Lti13FullInstance[];
   assessments: AssessmentRow[];
-  lineitems: Lti13Lineitems[];
+  lineitems: Lti13Assessments[];
 }): string {
   const { urlPrefix } = resLocals;
   const { assessments_group_by } = resLocals.course_instance;
@@ -340,9 +340,9 @@ export function InstructorInstanceAdminLti13({
   `.toString();
 }
 
-function lineItem(item: Lti13Lineitems, timezone: string) {
+function lineItem(item: Lti13Assessments, timezone: string) {
   return html`
-    <span title="${item.lineitem_id}">${item.lineitem.label}</span>
+    <span title="${item.lineitem_id_url}">${item.lineitem.label}</span>
     <p class="text-right">
       <em>Last activity: ${formatDateYMDHM(item.last_activity, timezone)}</em>
     </p>

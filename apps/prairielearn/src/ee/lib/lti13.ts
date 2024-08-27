@@ -376,9 +376,6 @@ export async function createAndLinkLineitem(
     scoreMaximum: 100,
     label: assessment.label,
     resourceId: assessment.id,
-    // tag ???
-    // startDateTime null
-    // endDateTime null
     'https://canvas.instructure.com/lti/submission_type': {
       type: 'external_tool',
       external_tool_url: assessment.url,
