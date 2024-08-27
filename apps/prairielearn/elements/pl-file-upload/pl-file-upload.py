@@ -120,8 +120,6 @@ def get_answer_name(file_names: str, optional_file_names: str = "") -> str:
     )
 
     return "_file_upload_" + hashlib.sha1(combined_name.encode("utf-8")).hexdigest()
-        hashlib.sha1(combined_name.encode("utf-8")).hexdigest()
-    )
 
 
 def add_format_error(
