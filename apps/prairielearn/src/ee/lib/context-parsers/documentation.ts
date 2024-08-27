@@ -126,8 +126,8 @@ function cleanElementSections(elementSections: ElementSection[]) {
           firstRow.children[2].children[0].value === 'Default' &&
           firstRow.children[3].children[0].value === 'Description'
         ) {
-          const optionalStatements = [];
-          const mandatoryStatements = [];
+          const optionalStatements: string[] = [];
+          const mandatoryStatements: string[] = [];
           for (let row_idx = 1; row_idx < node.children.length; row_idx++) {
             const row = node.children[row_idx];
             const attribute = stringify([row.children[0]]).trimEnd();
