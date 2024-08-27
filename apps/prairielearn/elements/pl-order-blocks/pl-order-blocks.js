@@ -41,7 +41,7 @@ window.PLOrderBlocks = function (uuid, options) {
 
     function handleKey(ev, block, handle, focus = true) {
       // When we manipulate the location of the block, the focus is automatically removed by the browser,
-      // so we immediately refocus it. In some browsers, the blur even will still fire in this case even
+      // so we immediately refocus it. In some browsers, the blur event will still fire in this case even
       // though we don't want it to, so we temporarily remove and then reattach the blur event listener.
       block.removeEventListener('blur', removeSelectedAttribute);
       handle();
