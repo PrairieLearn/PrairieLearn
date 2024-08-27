@@ -1453,6 +1453,7 @@ It is commonly used in the submission panel in conjunction with the `pl-external
 - [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
 - [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results-element)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
+- [`pl-xss-safe` to display HTML or Markdown code provided by students](#pl-xss-safe-element)
 
 ---
 
