@@ -77,11 +77,6 @@ export async function init() {
       intervalSec: 'daily',
     },
     {
-      name: 'externalGraderLoad',
-      module: await import('./externalGraderLoad.js'),
-      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
-    },
-    {
       name: 'serverLoad',
       module: await import('./serverLoad.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerLoadSec,
@@ -122,6 +117,12 @@ export async function init() {
   ];
 
   if (isEnterprise()) {
+    jobs.push({
+      name: 'externalGraderLoad',
+      module: await import('../ee/cron/externalGraderLoad.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
+    });
+
     jobs.push({
       name: 'workspaceHostLoads',
       module: await import('../ee/cron/workspaceHostLoads.js'),

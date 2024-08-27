@@ -2,6 +2,13 @@ import { Socket, io } from 'socket.io-client';
 
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 
+import type {
+  StatusMessage,
+  StatusMessageSubmission,
+} from '../../src/lib/externalGradingSocket.types.js';
+import type { SubmissionPanels } from '../../src/lib/question-render.types.js';
+import type { GradingJobStatus } from '../../src/models/grading-job.js';
+
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
 import { setupCountdown } from './lib/countdown.js';
 import { mathjaxTypeset } from './lib/mathjax.js';
@@ -55,7 +62,7 @@ function externalGradingLiveUpdate() {
     // Ensure that this is a valid submission element
     if (!/^submission-\d+$/.test(elem.id)) return;
 
-    const status = elem.dataset.gradingJobStatus;
+    const status = elem.dataset.gradingJobStatus as GradingJobStatus;
     const submissionId = elem.id.replace('submission-', '');
     updateStatus({ id: submissionId, grading_job_status: status });
     // Grading is not pending if it's done, or it's save-only, or has been canceled
@@ -70,17 +77,17 @@ function externalGradingLiveUpdate() {
   // By this point, it's safe to open a socket
   const socket = io('/external-grading');
 
-  socket.emit('init', { variant_id: variantId, variant_token: variantToken }, function (msg: any) {
-    handleStatusChange(socket, msg);
-  });
+  socket.emit(
+    'init',
+    { variant_id: variantId, variant_token: variantToken },
+    (msg: StatusMessage) => handleStatusChange(socket, msg),
+  );
 
-  socket.on('change:status', function (msg) {
-    handleStatusChange(socket, msg);
-  });
+  socket.on('change:status', (msg: StatusMessage) => handleStatusChange(socket, msg));
 }
 
-function handleStatusChange(socket: Socket, msg: any) {
-  msg.submissions.forEach((submission: any) => {
+function handleStatusChange(socket: Socket, msg: StatusMessage) {
+  msg.submissions.forEach((submission) => {
     // Always update results
     updateStatus(submission);
 
@@ -144,7 +151,7 @@ function fetchResults(socket: Socket, submissionId: string) {
       // question is open in preview mode (authz_result==undefined)
       authorized_edit: authorizedEdit === 'true',
     },
-    function (msg: any) {
+    function (msg: SubmissionPanels | null) {
       // We're done with the socket for this incarnation of the page
       socket.close();
       if (msg) {
@@ -160,7 +167,7 @@ function fetchResults(socket: Socket, submissionId: string) {
   );
 }
 
-function updateDynamicPanels(msg: any, submissionId: string) {
+function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
   if (msg.extraHeadersHtml) {
     const parser = new DOMParser();
     const headers = parser.parseFromString(msg.extraHeadersHtml, 'text/html');
@@ -259,7 +266,7 @@ function updateDynamicPanels(msg: any, submissionId: string) {
   setupDynamicObjects();
 }
 
-function updateStatus(submission: any) {
+function updateStatus(submission: Omit<StatusMessageSubmission, 'grading_job_id'>) {
   const display = document.getElementById('grading-status-' + submission.id);
   if (!display) return;
   let label;
@@ -291,8 +298,6 @@ function setupDynamicObjects() {
       link.classList.add('disabled');
     });
   });
-  // Enable popover
-  $('[data-toggle="popover"]').popover({ sanitize: false, container: 'body' });
 
   if (document.getElementById('submission-suspended-data')) {
     const countdownData = decodeData<{

@@ -1,5 +1,10 @@
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import {
   PotentialEnterpriseEnrollmentStatus,
@@ -15,6 +20,8 @@ import {
 import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
 import { assertNever } from '../lib/types.js';
+
+import { generateUsers } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -94,4 +101,20 @@ export async function getEnrollmentForUserInCourseInstance({
     { user_id, course_instance_id },
     EnrollmentSchema,
   );
+}
+
+export async function generateAndEnrollUsers({
+  count,
+  course_instance_id,
+}: {
+  count: number;
+  course_instance_id: string;
+}) {
+  return await runInTransactionAsync(async () => {
+    const users = await generateUsers(count);
+    for (const user of users) {
+      await ensureEnrollment({ course_instance_id, user_id: user.user_id });
+    }
+    return users;
+  });
 }

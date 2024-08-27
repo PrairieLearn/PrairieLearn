@@ -1025,7 +1025,7 @@ function testRenameFile(params: {
     });
     it('should have a CSRF token, old_file_name, working_path', () => {
       const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
-      elemList = row.find('button[id^="instructorFileRenameForm-"]');
+      elemList = row.find('button[data-testid="rename-file-button"]');
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
@@ -1075,7 +1075,7 @@ function testDeleteFile(params: { url: string; path: string }) {
     });
     it('should have a CSRF token and a file_path', () => {
       const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
-      elemList = row.find('button[id^="instructorFileDeleteForm-"]');
+      elemList = row.find('button[data-testid="delete-file-button"]');
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token

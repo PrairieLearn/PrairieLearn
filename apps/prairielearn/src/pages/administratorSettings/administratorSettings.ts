@@ -56,7 +56,7 @@ router.post(
 
       const { syncContextDocuments } = await import('../../ee/lib/contextEmbeddings.js');
       const jobSequenceId = await syncContextDocuments(client, res.locals.authn_user.user_id);
-      res.redirect('/pl/jobSequence/' + jobSequenceId);
+      res.redirect('/pl/administrator/jobSequence/' + jobSequenceId);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

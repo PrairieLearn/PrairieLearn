@@ -25,17 +25,6 @@ SELECT
 FROM
   users AS u;
 
--- BLOCK generate_and_enroll_5_users
-SELECT
-  user_id,
-  uid,
-  name,
-  uin
-FROM
-  users_randomly_generate (5, 1)
-ORDER BY
-  user_id;
-
 -- BLOCK select_all_user_in_group
 SELECT
   group_id,

@@ -30,6 +30,15 @@ onDocumentReady(() => {
 
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
   $('#grading-table').bootstrapTable({
+    // TODO: If we can pick up the following change, we can drop the `icons` config here:
+    // https://github.com/wenzhixin/bootstrap-table/pull/7190
+    iconsPrefix: 'fa',
+    icons: {
+      refresh: 'fa-sync',
+      autoRefresh: 'fa-clock',
+      columns: 'fa-table-list',
+    },
+
     classes: 'table table-sm table-bordered',
     url: instancesUrl,
     responseHandler: (res: { instance_questions: InstanceQuestionRow[] }) =>
@@ -121,9 +130,10 @@ onDocumentReady(() => {
     },
     onPostBody: () => {
       updateGradingTagButton();
-      $('#grading-table [data-toggle="popover"]')
-        .popover({ sanitize: false })
-        .on('shown.bs.popover', updatePointsPopoverHandlers);
+      $('#grading-table [data-toggle="popover"]').on(
+        'shown.bs.popover',
+        updatePointsPopoverHandlers,
+      );
     },
     columns: [
       [
@@ -135,20 +145,35 @@ onDocumentReady(() => {
           sortable: true,
           switchable: false,
           formatter: (_value: number, row: InstanceQuestionRowWithIndex) =>
-            html`<a
+            html`
+              <a
                 href="${urlPrefix}/assessment/${row.assessment_question
                   .assessment_id}/manual_grading/instance_question/${row.id}"
+                >Instance ${row.index + 1}</a
               >
-                Instance ${row.index + 1}
-                ${row.open_issue_count
-                  ? html`<span class="badge badge-pill badge-danger">${row.open_issue_count}</span>`
-                  : ''}
-              </a>
+              ${row.open_issue_count
+                ? html`
+                    <a
+                      href="#"
+                      class="badge badge-pill badge-danger"
+                      title="Instance question has ${row.open_issue_count} open ${row.open_issue_count >
+                      1
+                        ? 'issues'
+                        : 'issue'}"
+                      data-toggle="tooltip"
+                    >
+                      ${row.open_issue_count}
+                    </a>
+                  `
+                : ''}
               ${row.assessment_open
-                ? html`<span title="Assessment instance is still open" data-toggle="tooltip">
-                    <i class="fas fa-exclamation-triangle text-warning"></i>
-                  </span>`
-                : ''}`.toString(),
+                ? html`
+                    <a href="#" title="Assessment instance is still open" data-toggle="tooltip">
+                      <i class="fas fa-exclamation-triangle text-warning"></i>
+                    </a>
+                  `
+                : ''}
+            `.toString(),
         },
         {
           field: 'user_or_group_name',
@@ -365,7 +390,6 @@ function pointsFormatter(
 ) {
   const points = row[field];
   const maxPoints = row.assessment_question[`max_${field}`];
-  const buttonId = `editQuestionPoints_${field}_${row.id}`;
 
   return html`${formatPoints(points ?? 0)}
     <small>/<span class="text-muted">${maxPoints ?? 0}</span></small>
@@ -376,7 +400,6 @@ function pointsFormatter(
           assessment_question: row.assessment_question,
           urlPrefix: urlPrefix ?? '',
           csrfToken: csrfToken ?? '',
-          buttonId,
         })
       : ''}`;
 }
@@ -388,8 +411,6 @@ function scorebarFormatter(
   urlPrefix: string,
   csrfToken: string,
 ) {
-  const buttonId = `editQuestionScorePerc${row.id}`;
-
   return html`<div class="d-inline-block align-middle">
       ${score == null ? '' : Scorebar(score, { minWidth: '10em' })}
     </div>
@@ -400,7 +421,6 @@ function scorebarFormatter(
           assessment_question: row.assessment_question,
           urlPrefix: urlPrefix ?? '',
           csrfToken: csrfToken ?? '',
-          buttonId,
         })
       : ''}`.toString();
 }

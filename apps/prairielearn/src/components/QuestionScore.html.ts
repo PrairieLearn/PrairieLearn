@@ -50,9 +50,9 @@ export function QuestionScorePanel({
   return html`
     <div class="card mb-4" id="question-score-panel">
       <div class="card-header bg-secondary text-white">
-        Question ${instance_question_info.question_number}
+        <h2>Question ${instance_question_info.question_number}</h2>
       </div>
-      <table class="table table-sm two-column-description-no-header">
+      <table class="table table-sm two-column-description-no-header" aria-label="Question score">
         <tbody>
           <tr>
             <td>Submission status:</td>
@@ -196,6 +196,7 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
             rows="5"
             name="description"
             placeholder="Describe the error in this question"
+            required
           ></textarea>
         </div>
         <input type="hidden" name="__variant_id" value="${variant.id}" />
@@ -271,11 +272,11 @@ export function ExamQuestionStatus({
             <a
               class="grade-rate-limit-popover btn btn-xs"
               data-toggle="popover"
+              data-trigger="focus"
+              data-container="body"
               data-html="true"
               data-content="This question limits the rate of submissions. Further grade allowed ${instance_question.allow_grade_interval} (as of the loading of this page)."
               data-placement="auto"
-              data-trigger="focus"
-              data-container="body"
               tabindex="0"
             >
               <i class="fa fa-hourglass-half" aria-hidden="true"></i>
@@ -443,19 +444,13 @@ export function ExamQuestionAvailablePoints({
       type="button"
       class="btn btn-xs js-available-points-popover"
       data-toggle="popover"
+      data-trigger="focus"
+      data-container="body"
       data-html="true"
       data-content="${escapeHtml(popoverContent)}"
       data-placement="auto"
-      data-trigger="focus"
-      data-container="body"
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </a>
-
-    <script>
-      $(() => {
-        $('.js-available-points-popover[data-toggle="popover"]').popover({ sanitize: false });
-      });
-    </script>
   `;
 }

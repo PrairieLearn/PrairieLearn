@@ -7,7 +7,6 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobStatus } from '../../components/JobStatus.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { compiledScriptTag } from '../../lib/assets.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 
 export const UploadJobSequenceSchema = z.object({
@@ -28,7 +27,7 @@ export function InstructorAssessmentUploads({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })} ${compiledScriptTag('instructorAssessmentUploadsClient.ts')}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
@@ -75,13 +74,13 @@ function AssessmentUploadCard({
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
-        ${assessmentSetName} ${assessmentNumber}: Uploads
+        <h1>${assessmentSetName} ${assessmentNumber}: Uploads</h1>
       </div>
 
       ${authzHasPermissionEdit
         ? html`
             <div class="table-responsive pb-0">
-              <table class="table">
+              <table class="table" aria-label="Score uploads">
                 <tr>
                   <td style="width: 1%">
                     <button
@@ -134,7 +133,7 @@ function AssessmentUploadCard({
         : ''}
 
       <div class="table-responsive">
-        <table class="table table-sm table-hover">
+        <table class="table table-sm table-hover" aria-label="Score upload job history">
           <thead>
             <tr>
               <th>Number</th>

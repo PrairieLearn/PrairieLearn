@@ -29,7 +29,10 @@ export function AdministratorInstitutionCourses({
         })}
         <main id="content" class="container mb-4">
           <div class="table-responsive">
-            <table class="table table-hover table-striped table-bordered table">
+            <table
+              class="table table-hover table-striped table-bordered table"
+              aria-label="Courses"
+            >
               <thead>
                 <tr>
                   <th>Name</th>

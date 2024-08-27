@@ -17,13 +17,14 @@ import { EditAssessmentQuestionsTable } from './lib/editAssessmentQuestionsTable
 import { histmini } from './lib/histmini.js';
 
 onDocumentReady(() => {
-  $('[data-toggle="popover"]').popover({ sanitize: false });
+  $('#resetQuestionVariantsModal').on('show.bs.modal', (e) => {
+    const button = (e as any).relatedTarget as HTMLElement;
+    const modal = e.target as HTMLElement;
 
-  $('.js-sync-popover[data-toggle="popover"]')
-    .popover({ sanitize: false })
-    .on('show.bs.popover', function () {
-      $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
+    templateFromAttributes(button, modal, {
+      'data-assessment-question-id': '.js-assessment-question-id',
     });
+  });
 
   document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => histmini(element));
 
@@ -70,15 +71,6 @@ onDocumentReady(() => {
       question.is_alternative_group = false;
       zones[zones.length - 1].questions.push(question);
     }
-  });
-
-  $('#resetQuestionVariantsModal').on('show.bs.modal', (e) => {
-    const button = (e as any).relatedTarget as HTMLElement;
-    const modal = e.target as HTMLElement;
-
-    templateFromAttributes(button, modal, {
-      'data-assessment-question-id': '.js-assessment-question-id',
-    });
   });
 
   // This refreshes the DOM after any updates to the table.
