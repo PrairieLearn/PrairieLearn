@@ -39,7 +39,7 @@ def match_regex_with_files(
     remaining_files = files_names.copy()
     for pattern in regex_patterns:
         regex = re.compile(pattern, re.IGNORECASE)
-        for file in remaining_files:
+        for file in remaining_files.copy():
             if regex.match(file) and (not limit_1 or pattern in unmatched_patterns):
                 if pattern in unmatched_patterns:
                     unmatched_patterns.remove(pattern)
