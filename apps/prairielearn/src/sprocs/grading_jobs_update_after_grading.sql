@@ -114,6 +114,8 @@ BEGIN
         graded_at = now(),
         gradable = new_gradable,
         broken = new_broken,
+        params = COALESCE(new_params, params),
+        true_answer = COALESCE(new_true_answer, true_answer),
         format_errors = new_format_errors,
         partial_scores = new_partial_scores,
         score = new_score,
