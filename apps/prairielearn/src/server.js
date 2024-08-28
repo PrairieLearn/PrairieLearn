@@ -2019,6 +2019,7 @@ export async function initExpress() {
         res.locals.assessment_id = req.params.assessment_id;
         res.locals.navPage = 'public_question';
         res.locals.navSubPage = 'questions'; // TEST, use?
+        res.locals.navbarType = 'public';
         next();
       },
       (
@@ -2031,8 +2032,10 @@ export async function initExpress() {
   // Public Course Instructor Assessments Page
   app.use('/pl/public/course_instance/:course_instance_id(\\d+)/instructor/assessments', [ // TEST, was /pl/public/course/:course_id(\\d+)/instructor/instance_admin/assessments
     function (req, res, next) {
-      res.locals.navPage = 'assessments';
       res.locals.course_instance_id = req.params.course_instance_id;
+      res.locals.navPage = 'public_assessments';
+      res.locals.navSubPage = 'assessments';
+      res.locals.navbarType = 'public';
       next();
     },
     (await import('./pages/publicInstructorAssessments/publicInstructorAssessments.js')).default,
