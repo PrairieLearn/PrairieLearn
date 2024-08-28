@@ -1,4 +1,5 @@
 import { type Response } from 'express';
+import { z } from 'zod';
 
 import { callRow } from '@prairielearn/postgres';
 
@@ -36,7 +37,11 @@ export async function shouldRedirectToTermsPage(user: User, ip: string) {
   });
   if (!featureEnabled) return false;
 
-  const mode = await callRow('ip_to_mode', [ip, new Date(), user.user_id], EnumModeSchema);
+  const { mode } = await callRow(
+    'ip_to_mode',
+    [ip, new Date(), user.user_id],
+    z.object({ mode: EnumModeSchema }),
+  );
   return mode === 'Public';
 }
 

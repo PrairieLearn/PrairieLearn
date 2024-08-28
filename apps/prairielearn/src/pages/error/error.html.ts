@@ -6,6 +6,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 import { formatQueryWithErrorPosition } from '@prairielearn/postgres';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { config } from '../../lib/config.js';
 
 function formatJson(value: any): string {
@@ -45,10 +46,7 @@ export function ErrorPage({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
-          ...resLocals,
-          pageTitle: `Error ${error.status}`,
-        })}
+        ${HeadContents({ resLocals, pageTitle: `Error ${error.status}` })}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
@@ -57,10 +55,12 @@ export function ErrorPage({
         })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-danger text-white">Error processing request</div>
+            <div class="card-header bg-danger text-white">
+              <h1>Error processing request</h1>
+            </div>
 
             <div class="card-body">
-              <h4 class="mb-3">${error.message}</h4>
+              <h2 class="mb-3 h4">${error.message}</h2>
 
               ${unsafeHtml(errorInfo ?? '')}
 

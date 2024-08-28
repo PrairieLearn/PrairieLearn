@@ -25,7 +25,7 @@ const debug = debugfn('prairielearn:authzCourseOrInstance');
 function clearOverrideCookies(res, overrides) {
   overrides.forEach((override) => {
     debug(`clearing cookie: ${override.cookie}`);
-    const newName = override.cookie.replace(/^pl_/, 'pl2_');
+    const newName = override.cookie.replace(/^pl2_/, 'pl_');
     clearCookie(res, [override.cookie, newName]);
   });
 }
@@ -70,6 +70,7 @@ export async function authzCourseOrInstance(req, res) {
   res.locals.authz_data = {
     authn_user: _.cloneDeep(res.locals.authn_user),
     authn_mode: result.rows[0].mode,
+    authn_mode_reason: result.rows[0].mode_reason,
     authn_is_administrator: res.locals.is_administrator,
     authn_course_role: permissions_course.course_role,
     authn_has_course_permission_preview: permissions_course.has_course_permission_preview,
@@ -78,6 +79,7 @@ export async function authzCourseOrInstance(req, res) {
     authn_has_course_permission_own: permissions_course.has_course_permission_own,
     user: _.cloneDeep(res.locals.authn_user),
     mode: result.rows[0].mode,
+    mode_reason: result.rows[0].mode_reason,
     is_administrator: res.locals.is_administrator,
     course_role: permissions_course.course_role,
     has_course_permission_preview: permissions_course.has_course_permission_preview,
@@ -115,46 +117,41 @@ export async function authzCourseOrInstance(req, res) {
     res.locals,
   );
 
+  res.locals.use_bootstrap_4 = await features.enabledFromLocals('bootstrap-4', res.locals);
+
   // Check if it is necessary to request a user data override - if not, return
   let overrides = [];
-  if (req.cookies.pl_requested_uid) {
+  if (req.cookies.pl2_requested_uid) {
     // If the requested uid is the same as the authn user uid, then silently clear the cookie and continue
-    if (req.cookies.pl_requested_uid === res.locals.authn_user.uid) {
+    if (req.cookies.pl2_requested_uid === res.locals.authn_user.uid) {
       clearCookie(res, ['pl_requested_uid', 'pl2_requested_uid']);
     } else {
       overrides.push({
         name: 'UID',
-        value: req.cookies.pl_requested_uid,
-        cookie: 'pl_requested_uid',
+        value: req.cookies.pl2_requested_uid,
+        cookie: 'pl2_requested_uid',
       });
     }
   }
-  if (req.cookies.pl_requested_course_role) {
+  if (req.cookies.pl2_requested_course_role) {
     overrides.push({
       name: 'Course role',
-      value: req.cookies.pl_requested_course_role,
-      cookie: 'pl_requested_course_role',
+      value: req.cookies.pl2_requested_course_role,
+      cookie: 'pl2_requested_course_role',
     });
   }
-  if (req.cookies.pl_requested_course_instance_role) {
+  if (req.cookies.pl2_requested_course_instance_role) {
     overrides.push({
       name: 'Course instance role',
-      value: req.cookies.pl_requested_course_instance_role,
-      cookie: 'pl_requested_course_instance_role',
+      value: req.cookies.pl2_requested_course_instance_role,
+      cookie: 'pl2_requested_course_instance_role',
     });
   }
-  if (req.cookies.pl_requested_mode) {
-    overrides.push({
-      name: 'Mode',
-      value: req.cookies.pl_requested_mode,
-      cookie: 'pl_requested_mode',
-    });
-  }
-  if (req.cookies.pl_requested_date) {
+  if (req.cookies.pl2_requested_date) {
     overrides.push({
       name: 'Date',
-      value: req.cookies.pl_requested_date,
-      cookie: 'pl_requested_date',
+      value: req.cookies.pl2_requested_date,
+      cookie: 'pl2_requested_date',
     });
   }
   if (overrides.length === 0) {
@@ -200,9 +197,9 @@ export async function authzCourseOrInstance(req, res) {
   let user_with_requested_uid_has_instructor_access_to_course_instance = false;
 
   // Verify requested UID
-  if (req.cookies.pl_requested_uid) {
+  if (req.cookies.pl2_requested_uid) {
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_user, {
-      uid: req.cookies.pl_requested_uid,
+      uid: req.cookies.pl2_requested_uid,
       course_instance_id: isCourseInstance ? res.locals.course_instance.id : null,
     });
 
@@ -215,7 +212,7 @@ export async function authzCourseOrInstance(req, res) {
         info: html`
           <p>
             You have tried to change the effective user to one with uid
-            <code>${req.cookies.pl_requested_uid}</code>, when no such user exists. All requested
+            <code>${req.cookies.pl2_requested_uid}</code>, when no such user exists. All requested
             changes to the effective user have been removed.
           </p>
           ${config.devMode && is_administrator
@@ -273,10 +270,10 @@ export async function authzCourseOrInstance(req, res) {
   }
 
   let req_date = res.locals.req_date;
-  if (req.cookies.pl_requested_date) {
-    req_date = parseISO(req.cookies.pl_requested_date);
+  if (req.cookies.pl2_requested_date) {
+    req_date = parseISO(req.cookies.pl2_requested_date);
     if (!isValid(req_date)) {
-      debug(`requested date is invalid: ${req.cookies.pl_requested_date}, ${req_date}`);
+      debug(`requested date is invalid: ${req.cookies.pl2_requested_date}, ${req_date}`);
       clearOverrideCookies(res, overrides);
 
       throw new AugmentedError('Access denied', {
@@ -284,7 +281,7 @@ export async function authzCourseOrInstance(req, res) {
         info: html`
           <p>
             You have requested an invalid effective date:
-            <code>${req.cookies.pl_requested_date}</code>. All requested changes to the effective
+            <code>${req.cookies.pl2_requested_date}</code>. All requested changes to the effective
             user have been removed.
           </p>
         `,
@@ -302,9 +299,9 @@ export async function authzCourseOrInstance(req, res) {
     allow_example_course_override: false,
     ip: req.ip,
     req_date,
-    req_mode: req.cookies.pl_requested_mode || res.locals.authz_data.mode,
-    req_course_role: req.cookies.pl_requested_course_role || null,
-    req_course_instance_role: req.cookies.pl_requested_course_instance_role || null,
+    req_mode: res.locals.authz_data.mode,
+    req_course_role: req.cookies.pl2_requested_course_role || null,
+    req_course_instance_role: req.cookies.pl2_requested_course_instance_role || null,
   };
 
   const effectiveResult = await sqldb.queryZeroOrOneRowAsync(
@@ -317,7 +314,7 @@ export async function authzCourseOrInstance(req, res) {
   // to pages (e.g., the effective user page) for which only authn permissions
   // are required.
   if (effectiveResult.rowCount === 0) {
-    debug(`effective user was denied access`);
+    debug('effective user was denied access');
 
     res.locals.authz_data.user = user;
     res.locals.authz_data.is_administrator = false;
@@ -574,6 +571,7 @@ export async function authzCourseOrInstance(req, res) {
   res.locals.is_administrator = res.locals.authz_data.is_administrator;
 
   res.locals.authz_data.mode = effectiveResult.rows[0].mode;
+  res.locals.authz_data.mode_reason = effectiveResult.rows[0].mode_reason;
   res.locals.req_date = req_date;
 }
 

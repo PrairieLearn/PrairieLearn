@@ -16,7 +16,7 @@ interface CheerioResponse extends Response {
  *
  * If desired, you can set cookies via the `cookie` header:
  * ```
- * options.headers = {cookie: 'pl_access_as_administrator=active'};
+ * options.headers = {cookie: 'pl2_access_as_administrator=active'};
  * ```
  */
 export async function fetchCheerio(

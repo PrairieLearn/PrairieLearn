@@ -19,17 +19,19 @@ onDocumentReady(() => {
     initialServerTimeLimitMS: timeLimitData.serverTimeLimitMS,
     serverUpdateURL: timeLimitData.serverUpdateURL,
     onTimerOut: () => {
+      const countdown = document.querySelector('#countdownDisplay');
+      if (countdown) countdown.innerHTML = 'expired';
       // if viewing exam as a different effective user, do not trigger time limit finish
       if (timeLimitData.canTriggerFinish) {
         // do not trigger unsaved warning dialog
         saveQuestionFormData(document.querySelector('form.question-form'));
-        const form = parseHTMLElement(
+        const form = parseHTMLElement<HTMLFormElement>(
           document,
           html`<form method="POST">
             <input type="hidden" name="__action" value="timeLimitFinish" />
             <input type="hidden" name="__csrf_token" value="${timeLimitData.csrfToken}" />
           </form>`,
-        ) as HTMLFormElement;
+        );
         document.body.append(form);
         form.submit();
       }

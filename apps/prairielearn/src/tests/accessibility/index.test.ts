@@ -170,7 +170,7 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/sharedElements/course/:producing_course_id/cacheableElements/:cachebuster/*',
   '/pl/course/:course_id/sharedElements/course/:producing_course_id/elements/*',
   '/pl/news_item/:news_item_id/*',
-  '/pl/public/course/:course_id/cacheableElements/:cachebuster',
+  '/pl/public/course/:course_id/cacheableElements/:cachebuster/*',
   '/pl/public/course/:course_id/elements/*',
   '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion/*',
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:variant_id/*',
@@ -232,6 +232,12 @@ const SKIP_ROUTES = [
   // TODO: submit an answer to a question so we can test this page.
   '/pl/course_instance/:course_instance_id/instructor/grading_job/:job_id',
   '/pl/course/:course_id/grading_job/:job_id',
+
+  // TODO: create a test course with AI generation feature flag enabled to test page
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question',
+  '/pl/course/:course_id/ai_generate_question',
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_jobs/:job_id',
+  '/pl/course/:course_id/ai_generate_question_job/:job_id',
 ];
 
 function shouldSkipPath(path) {

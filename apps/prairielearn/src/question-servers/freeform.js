@@ -389,12 +389,12 @@ async function execPythonServer(codeCaller, phase, data, html, context) {
       pythonFunction,
       pythonArgs,
     );
-    debug(`execPythonServer(): completed`);
+    debug('execPythonServer(): completed');
     return { result, output };
   } catch (err) {
     if (err instanceof FunctionMissingError) {
       // function wasn't present in server
-      debug(`execPythonServer(): function not present`);
+      debug('execPythonServer(): function not present');
       return {
         result: defaultServerRet(phase, data, html, context),
         output: '',
@@ -1134,20 +1134,22 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
   }
 
   const data = {
-    params: _.get(variant, 'params', {}),
-    correct_answers: _.get(variant, 'true_answer', {}),
-    submitted_answers: submission ? _.get(submission, 'submitted_answer', {}) : {},
+    // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
+    // so we'll use the submission's values if they exist.
+    params: submission?.params ?? variant.params ?? {},
+    correct_answers: submission?.true_answer ?? variant.true_answer ?? {},
+    submitted_answers: submission?.submitted_answer ?? {},
     format_errors: submission?.format_errors ?? {},
     partial_scores: submission?.partial_scores ?? {},
     score: submission?.score ?? 0,
     feedback: submission?.feedback ?? {},
     variant_seed: parseInt(variant.variant_seed ?? '0', 36),
-    options: _.get(variant, 'options') ?? {},
-    raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
+    options: variant.options ?? {},
+    raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(locals.allowAnswerEditing && !locals.manualGradingInterface),
     manual_grading: !!locals.manualGradingInterface,
     panel,
-    num_valid_submissions: _.get(variant, 'num_tries', null),
+    num_valid_submissions: variant.num_tries ?? null,
   };
 
   // This URL is submission-specific, so we have to compute it here (that is,
@@ -1429,7 +1431,7 @@ export async function render(
 
         for (const type in elementDynamicDependencies) {
           for (const key in elementDynamicDependencies[type]) {
-            if (!_.has(dynamicDependencies[type], key)) {
+            if (!Object.hasOwn(dynamicDependencies[type], key)) {
               dynamicDependencies[type][key] = elementDynamicDependencies[type][key];
             } else if (dynamicDependencies[type][key] !== elementDynamicDependencies[type][key]) {
               courseIssues.push(
@@ -1487,7 +1489,7 @@ export async function render(
             }
             for (const type in extensionDynamic) {
               for (const key in extensionDynamic[type]) {
-                if (!_.has(dynamicDependencies[type], key)) {
+                if (!Object.hasOwn(dynamicDependencies[type], key)) {
                   dynamicDependencies[type][key] = extensionDynamic[type][key];
                 } else if (dynamicDependencies[type][key] !== extensionDynamic[type][key]) {
                   courseIssues.push(
@@ -1610,7 +1612,7 @@ export async function render(
         // The import map must come before any scripts that use imports
         !_.isEmpty(importMap.imports)
           ? `<script type="importmap">${JSON.stringify(importMap)}</script>`
-          : ``,
+          : '',
         // It's important that any library-style scripts come first
         ...coreScriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
         ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
@@ -1715,8 +1717,10 @@ export async function grade(submission, variant, question, question_course) {
 
     const context = await getContext(question, question_course);
     let data = {
-      params: variant.params,
-      correct_answers: variant.true_answer,
+      // Note that `params` and `true_answer` can change during `parse()`, so we
+      // use the submission's values when grading.
+      params: submission.params,
+      correct_answers: submission.true_answer,
       submitted_answers: submission.submitted_answer,
       format_errors: submission.format_errors,
       partial_scores: submission.partial_scores == null ? {} : submission.partial_scores,

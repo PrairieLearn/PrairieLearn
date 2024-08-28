@@ -23,7 +23,7 @@ export default function (req, res, next) {
   // unauthorized page for some reason other than emulating, they
   // will receive an error page as expected.
 
-  if (req.cookies.pl_requested_data_changed) {
+  if (req.cookies.pl2_requested_data_changed) {
     clearCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed']);
     res.locals.pl_requested_data_changed = true;
   }

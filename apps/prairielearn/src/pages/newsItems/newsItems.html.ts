@@ -4,6 +4,7 @@ import { formatDateYMD } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { NewsItemSchema } from '../../lib/db-types.js';
 
 export const NewsItemRowSchema = NewsItemSchema.extend({
@@ -28,11 +29,13 @@ export function NewsItems({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
-          ...resLocals,
+        ${HeadContents({
+          resLocals,
           pageTitle: 'News',
           pageNote:
-            newsItemNotificationCount ?? 0 > 0 ? `${newsItemNotificationCount} Unread` : undefined,
+            (newsItemNotificationCount ?? 0 > 0)
+              ? `${newsItemNotificationCount} Unread`
+              : undefined,
         })}
       </head>
       <body>
@@ -42,7 +45,9 @@ export function NewsItems({
         })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">News</div>
+            <div class="card-header bg-primary text-white d-flex">
+              <h1>News</h1>
+            </div>
 
             ${newsItems.length === 0
               ? html`
@@ -52,7 +57,10 @@ export function NewsItems({
                 `
               : html`
                   <div class="table-responsive">
-                    <table class="table table-hover table-striped news-items-table">
+                    <table
+                      class="table table-hover table-striped news-items-table"
+                      aria-label="News items"
+                    >
                       <tbody>
                         ${newsItems.map(
                           (newsItem) => html`

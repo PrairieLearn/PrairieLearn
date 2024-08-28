@@ -77,7 +77,10 @@ async function createTestSubmission(
 
   if (hasFatalIssue) data.gradable = false;
 
-  const submission_id = await insertSubmission({
+  // We discard the returned updated variant here. We don't need it later in
+  // this function, and the caller of this function will re-select the variant
+  // before grading the submission.
+  const { submission_id } = await insertSubmission({
     submitted_answer: {},
     raw_submitted_answer: data.raw_submitted_answer,
     format_errors: data.format_errors,
@@ -193,14 +196,19 @@ async function testVariant(
     auth_user_id: authn_user_id,
     submitted_answer: expected_submission.raw_submitted_answer || {},
   };
-  const test_submission_id = await saveSubmission(submission_data, variant, question, course);
-  await gradeVariant(variant, test_submission_id, question, course, authn_user_id, true);
+  const { submission_id: test_submission_id, variant: updated_variant } = await saveSubmission(
+    submission_data,
+    variant,
+    question,
+    course,
+  );
+  await gradeVariant(updated_variant, test_submission_id, question, course, authn_user_id, true);
   const test_submission = await selectSubmission(test_submission_id);
 
   const courseIssues = compareSubmissions(expected_submission, test_submission);
   const studentMessage = 'Question test failure';
   const courseData = {
-    variant,
+    variant: updated_variant,
     question,
     course,
     expected_submission,
@@ -445,7 +453,7 @@ export async function startTestQuestion(
     printStats('Parse/grade:     ', 'gradeDuration');
 
     if (!success) {
-      throw new Error('Some tests failed. See the "Errors" page for details.');
+      throw new Error('Some tests failed. See the "Issues" page for details.');
     }
   });
 

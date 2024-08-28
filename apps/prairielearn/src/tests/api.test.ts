@@ -53,7 +53,7 @@ describe('API', function () {
       assert.isTrue(res.ok);
       const page$ = cheerio.load(await res.text());
 
-      const button = page$('#generateTokenButton').get(0);
+      const button = page$('[data-testid="generate-token-button"]').get(0);
       assert(button);
 
       // Load the popover content
@@ -250,7 +250,7 @@ describe('API', function () {
     });
 
     step('GET to API for gradebook', async function () {
-      locals.apiGradebookUrl = locals.apiCourseInstanceUrl + `/gradebook`;
+      locals.apiGradebookUrl = locals.apiCourseInstanceUrl + '/gradebook';
       const res = await fetch(locals.apiGradebookUrl, {
         headers: {
           'Private-Token': locals.api_token,
@@ -300,7 +300,7 @@ describe('API', function () {
 
     step('GET to API for course instance access rules succeeds', async function () {
       locals.apiCourseInstanceAccessRulesUrl =
-        locals.apiCourseInstanceUrl + `/course_instance_access_rules`;
+        locals.apiCourseInstanceUrl + '/course_instance_access_rules';
       const res = await fetch(locals.apiCourseInstanceAccessRulesUrl, {
         headers: {
           'Private-Token': locals.api_token,

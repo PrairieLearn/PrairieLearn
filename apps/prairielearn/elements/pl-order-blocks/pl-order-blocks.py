@@ -193,7 +193,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         and feedback_type is not FeedbackType.NONE
     ):
         raise Exception(
-            "feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
+            f"feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
         )
 
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
@@ -725,16 +725,13 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             )
 
         if len(answer_code) == 0:
-            data["format_errors"]["_files"] = "The submitted file was empty."
+            pl.add_files_format_error(data, "The submitted file was empty.")
         else:
-            data["submitted_answers"]["_files"] = [
-                {
-                    "name": file_name,
-                    "contents": base64.b64encode(answer_code.encode("utf-8")).decode(
-                        "utf-8"
-                    ),
-                }
-            ]
+            pl.add_submitted_file(
+                data,
+                file_name,
+                base64.b64encode(answer_code.encode("utf-8")).decode("utf-8"),
+            )
 
     data["submitted_answers"][answer_name] = student_answer
     if answer_raw_name in data["submitted_answers"]:

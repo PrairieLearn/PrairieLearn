@@ -1,4 +1,3 @@
-import { filesize } from 'filesize';
 import { z } from 'zod';
 
 import {
@@ -82,7 +81,29 @@ const ConfigSchema = z.object({
   /** Sets the default user email in development. */
   authEmail: z.string().nullable().default('dev@example.com'),
   authnCookieMaxAgeMilliseconds: z.number().default(30 * 24 * 60 * 60 * 1000),
-  sessionStoreExpireSeconds: z.number().default(86400),
+  /**
+   * How long a session should be kept alive in the session store.
+   */
+  sessionStoreExpireSeconds: z.number().default(30 * 24 * 60 * 60),
+  /**
+   * Used to determine how often the session will have its expiration time
+   * automatically extended. The session will be extended if the session is
+   * set to expire within the next `expireSeconds - throttleSeconds`. For
+   * instance, if `sessionStoreExpireSeconds = 24 * 60 * 60` (24 hours) and
+   * `sessionStoreAutoExtendThrottleSeconds = 1 * 60 * 60` (1 hour), then the
+   * session will be extended if it is set to expire within the next 23 hours.
+   *
+   * Another way to think about this is that, assuming frequent user activity,
+   * the session will be extended roughly every hour.
+   *
+   * See the full implementation of this in `server.js`.
+   *
+   * This should most likely be set to a value that's significantly smaller than
+   * `sessionStoreExpireSeconds` to ensure that users don't unexpectedly find
+   * themselves logged out. The default (1 hour) was chosen to complement the
+   * default session duration of 30 days.
+   */
+  sessionStoreAutoExtendThrottleSeconds: z.number().default(1 * 60 * 60),
   sessionCookieSameSite: z
     .union([z.boolean(), z.enum(['none', 'lax', 'strict'])])
     .default(process.env.NODE_ENV === 'production' ? 'none' : 'lax'),
@@ -119,7 +140,6 @@ const ConfigSchema = z.object({
   sslKeyFile: z.string().default('/etc/pki/tls/private/localhost.key'),
   sslCAFile: z.string().default('/etc/pki/tls/certs/server-chain.crt'),
   fileUploadMaxBytes: z.number().default(1e7),
-  fileUploadMaxBytesFormatted: z.string().default('10MB'),
   fileUploadMaxParts: z.number().default(1000),
   fileStoreS3Bucket: z.string().default('file-store'),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
@@ -303,7 +323,10 @@ const ConfigSchema = z.object({
    * https://expressjs.com/en/4x/api.html#trust.proxy.options.table
    */
   trustProxy: z.union([z.boolean(), z.number(), z.string()]).default(false),
-  workspaceLogsS3Bucket: z.string().nullable().default(null),
+  workspaceLogsS3Bucket: z
+    .string()
+    .nullable()
+    .default(process.env.NODE_ENV !== 'production' ? 'workspace-logs' : null),
   workspaceLogsFlushIntervalSec: z.number().default(60),
   /**
    * The number of days after which a workspace version's logs should no longer
@@ -415,8 +438,6 @@ const ConfigSchema = z.object({
    */
   sentryDsn: z.string().nullable().default(null),
   sentryEnvironment: z.string().default('development'),
-  sentryTracesSampleRate: z.number().nullable().default(null),
-  sentryProfilesSampleRate: z.number().nullable().default(null),
   /**
    * In some markets, such as China, the title of all pages needs to be a
    * specific string in order to comply with local regulations. If this option
@@ -457,7 +478,6 @@ const ConfigSchema = z.object({
    * create a course if the course request meets certain criteria.
    */
   courseRequestAutoApprovalEnabled: z.boolean().default(false),
-  attachedFilesDialogEnabled: z.boolean().default(true),
   devMode: z.boolean().default((process.env.NODE_ENV ?? 'development') === 'development'),
   /** The client ID of your app in AAD; required. */
   azureClientID: z.string().default('<your_client_id>'),
@@ -519,6 +539,8 @@ const ConfigSchema = z.object({
    * Maps a plan name ("basic", "compute", etc.) to a Stripe product ID.
    */
   stripeProductIds: z.record(z.string(), z.string()).default({}),
+  openAiApiKey: z.string().nullable().default(null),
+  openAiOrganization: z.string().nullable().default(null),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -545,10 +567,6 @@ export async function loadConfig(paths: string[]) {
     );
     config.cacheType = config.questionRenderCacheType;
   }
-
-  // TODO: once the usages of this are no longer EJS, we should format the
-  // size on the fly instead of setting it on the global config.
-  config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, { base: 10, round: 0 });
 
   // `cookieDomain` defaults to null, so we can't do these checks via `refine()`
   // since we parse the schema to get defaults. Instead, we do the checks here
