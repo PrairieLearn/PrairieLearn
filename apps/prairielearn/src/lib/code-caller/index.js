@@ -169,6 +169,15 @@ export async function finish() {
   debug('finish(): pool finished draining');
 }
 
+export function getMetrics() {
+  return {
+    size: pool?.size ?? 0,
+    available: pool?.available ?? 0,
+    borrowed: pool?.borrowed ?? 0,
+    pending: pool?.pending ?? 0,
+  };
+}
+
 /**
  * Acquires a Python worker and automatically returns it to the pool or
  * disposes of it once it has been used.
