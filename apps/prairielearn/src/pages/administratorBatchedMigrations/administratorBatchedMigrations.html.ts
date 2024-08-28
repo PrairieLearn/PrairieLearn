@@ -31,7 +31,7 @@ export function AdministratorBatchedMigrations({
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <span class="mr-auto">Batched migrations</span>
+              <h1>Batched migrations</h1>
             </div>
             ${hasBatchedMigrations
               ? html`<div class="list-group list-group-flush">
@@ -82,10 +82,10 @@ export function AdministratorBatchedMigration({
         })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-              <span class="mr-auto">Migration details</span>
+            <div class="card-header bg-primary text-white">
+              <h1>Migration details</h1>
             </div>
-            <table class="table table-sm two-column-description">
+            <table class="table table-sm two-column-description" aria-label="Migration details">
               <tbody>
                 <tr>
                   <th>Filename</th>

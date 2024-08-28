@@ -30,9 +30,7 @@ def get_answer_name(file_names: str) -> str:
 
 
 def add_format_error(data: pl.QuestionData, error_string: str) -> None:
-    if "_files" not in data["format_errors"]:
-        data["format_errors"]["_files"] = []
-    data["format_errors"]["_files"].append(error_string)
+    pl.add_files_format_error(data, error_string)
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -108,15 +106,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         add_format_error(data, "Could not parse submitted files.")
         parsed_files = []
 
-    # Filter out any files that were not listed in file_names
-    parsed_files = [x for x in parsed_files if x.get("name", "") in required_file_names]
-
-    if data["submitted_answers"].get("_files", None) is None:
-        data["submitted_answers"]["_files"] = parsed_files
-    elif isinstance(data["submitted_answers"].get("_files", None), list):
-        data["submitted_answers"]["_files"].extend(parsed_files)
-    else:
-        add_format_error(data, "_files was present but was not an array.")
+    for x in parsed_files:
+        # Filter out any files that were not listed in file_names
+        if x.get("name", "") in required_file_names:
+            pl.add_submitted_file(data, x.get("name", ""), x.get("contents", ""))
 
     # Validate that all required files are present
     if parsed_files is not None:

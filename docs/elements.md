@@ -16,6 +16,8 @@ PrairieLearn presently provides the following templated **input field** elements
   representing asymptotic input.
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
+- [`pl-excalidraw`](#pl-excalidraw-element): Draw a **vector diagram** using
+  [excalidraw](https://github.com/excalidraw/excalidraw).
 - [`pl-file-editor`](#pl-file-editor-element): Provide an in-browser code editor
   for writing and submitting code.
 - [`pl-file-upload`](#pl-file-upload-element): Provide a submission area
@@ -243,6 +245,46 @@ To compute `max-select`, we use a similar algorithm (note the different default 
 
 ---
 
+### `pl-excalidraw` element
+
+Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidraw). Only manual grading is supported.
+
+![](elements/pl-excalidraw.png)
+
+**question.html**
+
+```html
+<p>Draw something else, with a starter diagram</p>
+
+<pl-excalidraw
+  gradable="true"
+  answers-name="vector"
+  source-file-name="starter.excalidraw"
+  directory="client_files_question_path"
+  width="100%"
+  height="600px"
+></pl-excalidraw>
+```
+
+#### Customizations
+
+| Attribute          | Type                                                                                             | Default | Description                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `gradable`         | boolean                                                                                          | "true"  | Whether a diagram accepts input from the user.                                                                          |
+| `answers-name`     | string                                                                                           | -       | Unique name to identify the widget with. Drawing submissions are saved with this name. Required when `gradable` is set. |
+| `source-file-name` | string                                                                                           | -       | Optional file to load as the starter diagram.                                                                           |
+| `directory`        | `serverFilesCourse` or `clientFilesCourse` or `clientFilesQuestion` or `courseExtensions` or `.` | "."     | Directory where the `source-file-name` is loaded from. By default, it refers to the question directory `"."`.           |
+| `width`            | string                                                                                           | `100%`  | Width of the widget, compatible with the [CSS width][css-width-mdn] specification.                                      |
+| `height`           | string                                                                                           | `800px` | Height of the widget, compatible with the [CSS width][css-width-mdn] specification.                                     |
+
+[css-width-mdn]: https://developer.mozilla.org/en-US/docs/Web/CSS/width
+
+#### Example implementation
+
+[element/excalidraw]
+
+---
+
 ### `pl-file-editor` element
 
 Provides an in-browser file editor that's compatible with the other file elements
@@ -300,7 +342,7 @@ This element supports additional preview options through [element extensions](el
 
 - [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
 - [`pl-file-preview` to display previously submitted files](#pl-file-preview-element)
-- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results-element)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-string-input` for receiving a single string value](#pl-string-input-element)
 
@@ -309,7 +351,7 @@ This element supports additional preview options through [element extensions](el
 ### `pl-file-upload` element
 
 Provides a way to accept file uploads as part of an answer. They will be stored
-in [the format expected by externally graded questions](externalGrading.md#file-submission-format).
+in the format expected by externally graded questions.
 
 #### Sample element
 
@@ -333,7 +375,7 @@ in [the format expected by externally graded questions](externalGrading.md#file-
 #### See also
 
 - [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
-- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results-element)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
 - [`pl-string-input` for receiving a single string value](#pl-string-input-element)
 
@@ -415,7 +457,7 @@ Note that answers can include underscores which are ignored (i.e., `1_000` will 
 
 ### `pl-matching` element
 
-Given a list of statements, select a matching option for each entry from a drop-down list.
+Given a list of statements, select a matching option for each entry from a dropdown list.
 
 #### Sample element
 
@@ -439,12 +481,13 @@ Given a list of statements, select a matching option for each entry from a drop-
 | --------------------- | ---------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `answers-name`        | string                                                     | —             | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                                                   |
 | `weight`              | integer                                                    | 1             | Weight to use when computing a weighted average score over elements.                                                                                                                                                   |
-| `fixed-order`         | boolean                                                    | False         | Whether or not to display the statements in a fixed order; otherwise they are shuffled.                                                                                                                                |
-| `fixed-options-order` | boolean                                                    | False         | Whether or not to display the options in a fixed order; otherwise they are shuffled. See the details of `pl-option` below for more information on option ordering.                                                     |
+| `fixed-order`         | boolean                                                    | false         | Whether or not to display the statements in a fixed order; otherwise they are shuffled.                                                                                                                                |
+| `fixed-options-order` | boolean                                                    | false         | Whether or not to display the options in a fixed order; otherwise they are shuffled. See the details of `pl-option` below for more information on option ordering.                                                     |
 | `number-statements`   | integer                                                    | special       | The number of statements to display. Defaults to all statements.                                                                                                                                                       |
 | `number-options`      | integer                                                    | special       | The number of options to display. Defaults to all options. The `none-of-the-above` option does not count towards this number.                                                                                          |
 | `none-of-the-above`   | boolean                                                    | false         | Whether or not to add a "None of the above" to the end of the options.                                                                                                                                                 |
-| `blank`               | boolean                                                    | True          | Option to add blank dropdown entry as the default selection in each drop-down list.                                                                                                                                    |
+| `blank`               | boolean                                                    | true          | Option to add blank dropdown entry as the default selection in each dropdown list.                                                                                                                                     |
+| `allow-blank`         | boolean                                                    | false         | Whether or not a blank submission is allowed. If this is set to true, a statement that selects the blank entry will be marked as incorrect instead of invalid.                                                         |
 | `counter-type`        | "decimal" or "lower-alpha" or "upper-alpha" or "full-text" | "lower-alpha" | The type of counter to use when enumerating the options. If set to "full-text", the column of options will be hidden, and the text of each option will be used in the statements' dropdown lists, instead of counters. |
 | `hide-score-badge`    | boolean                                                    | false         | Whether or not to hide the correct/incorrect score badge next to each graded answer choice.                                                                                                                            |
 | `options-placement`   | "right" or "bottom"                                        | "right"       | The placement of options relative to the statements in order to make it visually cohesive. Especially useful when dealing with long statements or options.                                                             |
@@ -886,6 +929,7 @@ Provides an in-browser rich text editor, aimed mostly at manual grading essay-ty
 | `format`             | `html` or `markdown`          | `html`             | Format used to save the student's response. This format also affects how the source file name or inner HTML is interpreted.                                                                                                                                                                                                                                                                                                                           |
 | `markdown-shortcuts` | boolean                       | `true`             | Whether or not the editor accepts shortcuts based on markdown format (e.g., typing `_word_` causes the word to become italic).                                                                                                                                                                                                                                                                                                                        |
 | `counter`            | `word`, `character` or `none` | `none`             | Whether a word or character count should be displayed at the bottom of the editor.                                                                                                                                                                                                                                                                                                                                                                    |
+| `allow-blank`        | boolean                       | false              | Whether or not an empty input box is allowed. By default, empty submissions will not be graded (invalid format).                                                                                                                                                                                                                                                                                                                                      |
 
 #### Example implementations
 
@@ -1431,10 +1475,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 ### `pl-file-preview` element
 
-Provides an in-browser preview of pure-text or image files submitted by a student as part of an external grading system.
-Does not support other file types (e.g., PDF). Shows the submitted file in the corresponding submission panel.
-Used in conjunction with submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`.
-Commonly appears in the submission panel with companion `pl-external-grader-results` element.
+Provides an in-browser list of all files submitted by a student through submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`, or through [workspaces](workspaces/index.md). A preview of each file's content is also displayed for text-only files (including source code), images, PDF files and Jupyter Notebooks. It is commonly used in the submission panel in conjunction with the `pl-external-grader-results` element, though it can also be used when manual or internal grading is used to grade files.
 
 #### Sample element
 
@@ -1451,8 +1492,9 @@ Commonly appears in the submission panel with companion `pl-external-grader-resu
 
 - [`pl-file-editor` to provide an in-browser code environment](#pl-file-editor-element)
 - [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
-- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results)
+- [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results-element)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
+- [`pl-xss-safe` to display HTML or Markdown code provided by students](#pl-xss-safe-element)
 
 ---
 
@@ -2042,7 +2084,7 @@ Displays results from externally-graded questions.
 
 #### Details
 
-It expects results to follow [the reference schema for external grading results](externalGrading.md#grading-result).
+It expects results to follow [the reference schema for external grading results](externalGrading.md#grading-results).
 
 #### Example Implementations
 
@@ -2051,7 +2093,7 @@ It expects results to follow [the reference schema for external grading results]
 
 #### See also
 
-- [External Grading Reference Schema](externalGrading.md#grading-result)
+- [External Grading Reference Schema](externalGrading.md#grading-results)
 
 ---
 
@@ -2342,6 +2384,7 @@ def generate(data):
 | `weight`       | integer | 1       | Weight to use when computing a weighted average score over elements.                                                                                                 |
 | `sort`         | string  | random  | Options are 'random', 'ascend', and 'descend', and 'fixed' for drop-down answers.                                                                                    |
 | `blank`        | boolean | True    | Option to add blank dropdown entry as default selection in drop-down list.                                                                                           |
+| `allow-blank`  | boolean | false   | Whether or not an empty submission is allowed. By default, empty dropdowns will not be graded (invalid format).                                                      |
 
 #### Example implementation
 
@@ -2512,6 +2555,7 @@ that if there are many submitted answers, the page will load slowly.
 [element/drawinggallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [element/codedocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/codeDocumentation
 [element/dropdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dropdown
+[element/excalidraw]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/excalidraw
 [element/figure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/figure
 [element/filedownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileDownload
 [element/fileeditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileEditor
