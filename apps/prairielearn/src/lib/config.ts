@@ -580,6 +580,10 @@ export async function loadConfig(paths: string[]) {
       throw new Error('cookieDomain must start with a dot, e.g. ".example.com"');
     }
   }
+
+  if (config.serveUntrustedContentFromSubdomains && !config.cookieDomain) {
+    throw new Error('cookieDomain must be set when serveUntrustedContentFromSubdomains is true');
+  }
 }
 
 export function setLocalsFromConfig(locals: Record<string, any>) {
