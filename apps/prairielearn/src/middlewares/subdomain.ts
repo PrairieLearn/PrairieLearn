@@ -200,7 +200,7 @@ export function validateSubdomainRequest(req: Request, res: Response, next: Next
   if (allowAccess(requestHostname, requestOrigin, req.originalUrl)) {
     next();
   } else {
-    next(error.make(403, 'Forbidden'));
+    next(new error.HttpStatusError(403, 'Forbidden'));
   }
 }
 
