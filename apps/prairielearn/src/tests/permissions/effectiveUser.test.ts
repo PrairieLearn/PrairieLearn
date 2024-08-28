@@ -463,6 +463,18 @@ describe('effective user', function () {
     },
   );
 
+  step(
+    'less-privileged instructor cannot request access as institution administrator',
+    async () => {
+      const headers = {
+        cookie:
+          'pl_test_user=test_instructor; pl2_access_as_administrator=inactive; pl2_requested_uid=institution-admin@example.com',
+      };
+      const res = await helperClient.fetchCheerio(context.pageUrlTestCourse, { headers });
+      assert.equal(res.status, 403);
+    },
+  );
+
   step('reset instructor course role to maximum permissions', async () => {
     await updateCoursePermissionsRole({
       course_id: '1',
