@@ -540,6 +540,7 @@ const ConfigSchema = z.object({
   stripeProductIds: z.record(z.string(), z.string()).default({}),
   openAiApiKey: z.string().nullable().default(null),
   openAiOrganization: z.string().nullable().default(null),
+  requireTermsAcceptance: z.boolean().default(false),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

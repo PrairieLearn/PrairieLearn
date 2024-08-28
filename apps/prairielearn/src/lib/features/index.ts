@@ -12,7 +12,6 @@ const featureNames = [
   'bootstrap-4',
   // Should only be applied to institutions.
   'lti13',
-  'terms-clickthrough',
 ] as const;
 
 const features = new FeatureManager(featureNames);
