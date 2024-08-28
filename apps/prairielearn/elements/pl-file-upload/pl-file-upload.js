@@ -15,20 +15,27 @@
       this.maxFileSizeMB = 5;
       this.uuid = uuid;
       this.files = [];
-      this.acceptedFiles = options.acceptedFiles || [];
-      this.acceptedFilesLowerCase = this.acceptedFiles.map((f) => f.toLowerCase());
-      this.optionalFilesPlain = options.optionalFilesPlain || [];
-      this.optionalFilesLowerCase = this.optionalFilesPlain.map((f) => f.toLowerCase());
+      this.requiredFiles = options.requiredFiles || [];
+      this.requiredFilesLowerCase = this.requiredFiles.map((f) => f.toLowerCase());
+      this.requiredFilesRegex = options.requiredFilesRegex || [];
+      // Initialized after files are downloaded
+      this.requiredFilesUnmatchedRegex = this.requiredFilesRegex.slice();
+      this.optionalFiles = options.optionalFiles || [];
+      this.optionalFilesLowerCase = this.optionalFiles.map((f) => f.toLowerCase());
       this.optionalFilesRegex = options.optionalFilesRegex || [];
 
       // Checks whether a file name is acceptable
       // If yes, it returns the canonical name of the file, if not, it returns null
+      // Note the priority order: first, fill required file names, then required patterns, then optional names, then optional patterns
       this.findAcceptedFileName = (fileName) => {
-        if (this.acceptedFilesLowerCase.includes(fileName)) {
-          return this.acceptedFiles[this.acceptedFilesLowerCase.indexOf(fileName)];
+        if (this.requiredFilesLowerCase.includes(fileName)) {
+          return this.requiredFiles[this.requiredFilesLowerCase.indexOf(fileName)];
+        }
+        if (this.requiredFilesUnmatchedRegex.some((f) => new RegExp(f[0], 'i').test(fileName))) {
+          return fileName;
         }
         if (this.optionalFilesLowerCase.includes(fileName)) {
-          return this.optionalFilesPlain[this.optionalFilesLowerCase.indexOf(fileName)];
+          return this.optionalFiles[this.optionalFilesLowerCase.indexOf(fileName)];
         }
         if (this.optionalFilesRegex.some((f) => new RegExp(f[0], 'i').test(fileName))) {
           return fileName;
@@ -46,6 +53,15 @@
       }
 
       if (options.submittedFileNames) {
+        options.submittedFileNames.forEach((n) => {
+          if (this.requiredFiles.includes(n)) return;
+          const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex(
+            (f) => new RegExp(f[0], 'i').test(n) && this.requiredFilesUnmatchedRegex.includes(f),
+          );
+          if (matchingRegex >= 0) {
+            this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
+          }
+        });
         this.downloadExistingFiles(options.submittedFileNames).then(() => {
           this.syncFilesToHiddenInput();
         });
@@ -129,6 +145,16 @@
               `<strong>${file.name}</strong> did not match any accepted file for this question.`,
             );
             return;
+          }
+
+          // Special case: if a file was accepted via a required regex, remove that regex from the unmatched list to ensure it is not re-used
+          if (!this.requiredFilesLowerCase.includes(fileNameLowerCase)) {
+            const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex((f) =>
+              new RegExp(f[0], 'i').test(fileNameLowerCase),
+            );
+            if (matchingRegex >= 0) {
+              this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
+            }
           }
 
           this.addFileFromBlob(acceptedFileName, file.size, file, false);
@@ -225,6 +251,18 @@
         this.files.splice(idx, 1);
       }
 
+      // Recompute which regexes are matched by remaining files
+      this.requiredFilesUnmatchedRegex = this.requiredFilesRegex.slice();
+      this.files.forEach((n) => {
+        if (this.requiredFiles.includes(n.name)) return;
+        const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex(
+          (f) => new RegExp(f[0], 'i').test(n.name) && this.requiredFilesUnmatchedRegex.includes(f),
+        );
+        if (matchingRegex >= 0) {
+          this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
+        }
+      });
+
       this.syncFilesToHiddenInput();
       this.renderFileList();
     }
@@ -286,12 +324,18 @@
         }
         if (isOptional) {
           if (isWildcard) {
-            $fileStatusContainerLeft.append(`Files with pattern: <em>${fileName}</em> (optional)`);
+            $fileStatusContainerLeft.append(
+              `Any files with pattern: <em>${fileName}</em> (optional)`,
+            );
           } else {
             $fileStatusContainerLeft.append(`${fileName} (optional)`);
           }
         } else {
-          $fileStatusContainerLeft.append(fileName);
+          if (isWildcard) {
+            $fileStatusContainerLeft.append(`One file with pattern: <em>${fileName}</em>`);
+          } else {
+            $fileStatusContainerLeft.append(fileName);
+          }
         }
         if (this.pendingFileDownloads.has(fileName)) {
           $fileStatusContainerLeft.append(
@@ -377,10 +421,8 @@
           $file.append($preview);
           var $fileButtons = $('<div class="align-self-center"></div>');
           $fileButtons.append($download);
-          if (isOptional) {
-            $deleteUpload.on('click', () => this.deleteUploadedFile(fileName));
-            $fileButtons.append($deleteUpload);
-          }
+          $deleteUpload.on('click', () => this.deleteUploadedFile(fileName));
+          $fileButtons.append($deleteUpload);
           $fileButtons.append(
             `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-toggle="collapse" data-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}"><span class="file-preview-icon fa fa-angle-down"></span></button></div>`,
           );
@@ -392,13 +434,39 @@
       };
 
       // First list required files...
-      this.acceptedFiles.forEach((n) => renderFileListEntry(n));
-      // ...then static optional files...
-      this.optionalFilesPlain.forEach((n) => renderFileListEntry(n, true));
-      // ...then all remaining uploaded files...
+      this.requiredFiles.forEach((n) => renderFileListEntry(n));
+      // ... then uploaded files matching a required regex (in 1:1 mapping) ...
+      const matchedRegex = [];
+      const matchedRegexFiles = [];
       this.files
         .map((f) => f.name)
-        .filter((n) => !this.acceptedFiles.includes(n) && !this.optionalFilesPlain.includes(n))
+        .filter((n) => {
+          if (this.requiredFiles.includes(n)) return false;
+          const matchingRegex = this.requiredFilesRegex.findIndex(
+            (f) => new RegExp(f[0], 'i').test(n) && !matchedRegex.includes(f),
+          );
+          if (matchingRegex >= 0) {
+            matchedRegex.push(this.requiredFilesRegex[matchingRegex]);
+            matchedRegexFiles.push(n);
+            return true;
+          } else {
+            return false;
+          }
+        })
+        .forEach((n) => renderFileListEntry(n));
+      // ...then unmatched required regexes ...
+      this.requiredFilesUnmatchedRegex.forEach((n) => renderFileListEntry(n[1], false, true));
+      // ...then optional file names...
+      this.optionalFiles.forEach((n) => renderFileListEntry(n, true));
+      // ...then all remaining uploaded files (matching a wildcard regex)...
+      this.files
+        .map((f) => f.name)
+        .filter(
+          (n) =>
+            !this.requiredFiles.includes(n) &&
+            !this.optionalFiles.includes(n) &&
+            !matchedRegexFiles.includes(n),
+        )
         .forEach((n) => renderFileListEntry(n, true));
       // ...and finally all wildcard patterns (which might accept an arbitrary number of uploads)
       this.optionalFilesRegex.map((n) => n[1]).forEach((n) => renderFileListEntry(n, true, true));

@@ -28,44 +28,24 @@ def get_file_names_as_array(raw_file_names: str) -> list[str]:
     return next(reader)
 
 
-def find_matching_files(
-    regex_patterns: list[list[str]], files_names: list[str]
-) -> set[str]:
+def match_regex_with_files(
+    regex_patterns: list[str], files_names: list[str], limit_1: bool
+) -> tuple[list[str], list[str]]:
     """
-    Takes a list of regexes (as returned by extract_patterns) and a list of file names and
-    returns the set of file names that match any of the given patterns.
+    Takes a list of regexes (as returned by extract_patterns) and a list of file names and matches them 1:n or 1:1, depending on limit_1 parameter
+    Returns a tuple of matched file names and unmatched patterns
     """
-    result = set()
+    unmatched_patterns = regex_patterns.copy()
+    remaining_files = files_names.copy()
     for pattern in regex_patterns:
-        regex = re.compile(pattern[0], re.IGNORECASE)
-        for file in files_names:
-            if regex.match(file):
-                result.add(file)
+        regex = re.compile(pattern, re.IGNORECASE)
+        for file in remaining_files:
+            if regex.match(file) and (not limit_1 or pattern in unmatched_patterns):
+                if pattern in unmatched_patterns:
+                    unmatched_patterns.remove(pattern)
+                remaining_files.remove(file)
 
-    return result
-
-
-def extract_patterns(optional_files: list[str]) -> tuple[list[list[str]], list[str]]:
-    """
-    Takes a list of file names and returns it split into wildcard patterns and plain names
-
-    File names with with wildcards are converted into regular expressions and returned as a
-    list of two-item lists, each containing both the regex for matching and the plain pattern
-    for display. Plain file names are returned in a list with escapes removed for simple
-    string-based comparison
-    """
-    optional_files_plain = []
-    optional_files_regex = []
-
-    for file in optional_files:
-        # glob_to_regex returns an empty string if the file name contains no wildcard
-        regex_raw = glob_to_regex(file)
-        if regex_raw:
-            optional_files_regex.append([regex_raw, file])
-        else:
-            optional_files_plain.append(file.replace("\\", ""))
-
-    return optional_files_regex, optional_files_plain
+    return [f for f in files_names if f not in remaining_files], unmatched_patterns
 
 
 def glob_to_regex(glob_pattern: str) -> str:
@@ -101,22 +81,34 @@ def glob_to_regex(glob_pattern: str) -> str:
         else:
             result.append(re.escape(c))
 
-    # If there are no wildcards, return an empty string
+    # If there are no wildcards, raise an error as this is likely a mistake, and patterns without wildcards might confuse students
     if not has_wildcard:
-        return ""
+        raise ValueError(
+            'The file name pattern "'
+            + glob_pattern
+            + '" does not contain any wildcards. It should be listed as a regular file name.'
+        )
 
     result.append("$")
     return "".join(result)
 
 
-def get_answer_name(file_names: str, optional_file_names: str = "") -> str:
+def get_answer_name(
+    file_names: str,
+    optional_file_names: str = "",
+    file_patterns: str = "",
+    optional_file_patterns: str = "",
+) -> str:
     """
-    Computes the unique identifer of a pl-file-upload element, which is the SHA1 hash of its
-    file-names and optional-file-names attributes
+    Computes the unique identifer of a pl-file-upload element, which is the SHA1 hash of all its
+    file name attributes
     """
     # Using / as separator as the only character guaranteed not to appear in file names
-    combined_name = file_names + (
-        "/" + optional_file_names if optional_file_names else ""
+    combined_name = (
+        file_names
+        + ("/" + optional_file_names if optional_file_names else "")
+        + ("//" + file_patterns if file_patterns else "")
+        + ("////" + optional_file_patterns if optional_file_patterns else "")
     )
 
     return "_file_upload_" + hashlib.sha1(combined_name.encode("utf-8")).hexdigest()
@@ -139,13 +131,21 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     # Either "file-names" or "optional-file-names" is required, which is checked separately
     required_attribs = []
-    optional_attribs = ["file-names", "optional-file-names"]
+    optional_attribs = [
+        "file-names",
+        "optional-file-names",
+        "file-patterns",
+        "optional-file-patterns",
+    ]
     pl.check_attribs(element, required_attribs, optional_attribs)
-    if not pl.get_string_attrib(element, "file-names", "") and not pl.get_string_attrib(
-        element, "optional-file-names", ""
+    if (
+        not pl.get_string_attrib(element, "file-names", "")
+        and not pl.get_string_attrib(element, "optional-file-names", "")
+        and not pl.get_string_attrib(element, "file-patterns", "")
+        and not pl.get_string_attrib(element, "optional-file-patterns", "")
     ):
         raise ValueError(
-            'One of the required attributes "file-names" or "optional-file-names" is missing'
+            'At least one attribute of "file-names", "optional-file-names", "file-patterns" or "optional-file-patterns" must be provided.'
         )
 
     if "_required_file_names" not in data["params"]:
@@ -168,16 +168,32 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     file_names = sorted(get_file_names_as_array(raw_file_names))
     file_names_json = json.dumps(file_names, allow_nan=False)
 
-    raw_optional_file_names = pl.get_string_attrib(element, "optional-file-names", "")
-    optional_file_names = sorted(get_file_names_as_array(raw_optional_file_names))
+    raw_opt_file_names = pl.get_string_attrib(element, "optional-file-names", "")
+    opt_file_names = sorted(get_file_names_as_array(raw_opt_file_names))
+    opt_file_names_json = json.dumps(opt_file_names, allow_nan=False)
 
-    # Split optional names into two separate lists: wildcard patterns and plain names
-    optional_file_regex, optional_file_plain = extract_patterns(optional_file_names)
+    raw_file_patterns = pl.get_string_attrib(element, "file-patterns", "")
+    file_patterns = sorted(get_file_names_as_array(raw_file_patterns))
 
-    optional_file_plain_json = json.dumps(optional_file_plain, allow_nan=False)
-    optional_file_regex_json = json.dumps(optional_file_regex, allow_nan=False)
+    raw_opt_file_patterns = pl.get_string_attrib(element, "optional-file-patterns", "")
+    opt_file_patterns = sorted(get_file_names_as_array(raw_opt_file_patterns))
 
-    answer_name = get_answer_name(raw_file_names, raw_optional_file_names)
+    # Convert patterns into regular expressions
+    file_regex = [glob_to_regex(f) for f in file_patterns]
+    opt_file_regex = [glob_to_regex(f) for f in opt_file_patterns]
+
+    # Need to send both converted regex and original pattern to client for matching and printing
+    file_regex_json = json.dumps(list(zip(file_regex, file_patterns)), allow_nan=False)
+    opt_file_regex_json = json.dumps(
+        list(zip(opt_file_regex, opt_file_patterns)), allow_nan=False
+    )
+
+    answer_name = get_answer_name(
+        raw_file_names,
+        raw_opt_file_names,
+        raw_file_patterns,
+        raw_opt_file_patterns,
+    )
     parse_error = data["format_errors"].get(answer_name, [])
 
     # Only send the file names to the client. We don't include the contents
@@ -186,20 +202,30 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     submitted_files = data["submitted_answers"].get("_files", [])
     submitted_file_names = [x.get("name") for x in submitted_files]
 
-    # We find any files that match a required file name, an optional one, or a wildcard pattern
+    # We find any files that match an accepted file name/pattern
     required_files = set(submitted_file_names) & set(file_names)
-    optional_files = set(submitted_file_names) & set(optional_file_plain)
-    wildcard_files = find_matching_files(optional_file_regex, submitted_file_names)
+    remaining_files = [x for x in submitted_file_names if x not in file_names]
+    wildcard_files = set(
+        match_regex_with_files(file_regex, remaining_files, limit_1=True)[0]
+    )
+    remaining_files = [x for x in remaining_files if x not in file_names]
+    optional_files = set(submitted_file_names) & set(opt_file_names)
+    opt_wildcard_files = set(
+        match_regex_with_files(opt_file_regex, submitted_file_names, limit_1=False)[0]
+    )
 
-    accepted_file_names = list(required_files | optional_files | wildcard_files)
+    accepted_file_names = list(
+        required_files | optional_files | wildcard_files | opt_wildcard_files
+    )
 
     submitted_file_names_json = json.dumps(accepted_file_names, allow_nan=False)
 
     html_params = {
         "name": answer_name,
         "file_names": file_names_json,
-        "optional_file_names": optional_file_plain_json,
-        "optional_file_regex": optional_file_regex_json,
+        "file_regex": file_regex_json,
+        "optional_file_names": opt_file_names_json,
+        "optional_file_regex": opt_file_regex_json,
         "uuid": uuid,
         "editable": data["editable"],
         "submission_files_url": data["options"].get("submission_files_url"),
@@ -214,11 +240,21 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
-    raw_required_file_names = pl.get_string_attrib(element, "file-names", "")
-    required_file_names = get_file_names_as_array(raw_required_file_names)
-    raw_optional_file_names = pl.get_string_attrib(element, "optional-file-names", "")
-    optional_file_names = get_file_names_as_array(raw_optional_file_names)
-    answer_name = get_answer_name(raw_required_file_names, raw_optional_file_names)
+    raw_file_names = pl.get_string_attrib(element, "file-names", "")
+    file_names = get_file_names_as_array(raw_file_names)
+    raw_opt_file_names = pl.get_string_attrib(element, "optional-file-names", "")
+    opt_file_names = get_file_names_as_array(raw_opt_file_names)
+    raw_file_patterns = pl.get_string_attrib(element, "file-patterns", "")
+    file_patterns = get_file_names_as_array(raw_file_patterns)
+    raw_opt_file_patterns = pl.get_string_attrib(element, "optional-file-patterns", "")
+    opt_file_patterns = get_file_names_as_array(raw_opt_file_patterns)
+
+    answer_name = get_answer_name(
+        raw_file_names,
+        raw_opt_file_names,
+        raw_file_patterns,
+        raw_opt_file_patterns,
+    )
 
     # Get submitted answer or return format error if it does not exist
     files = data["submitted_answers"].get(answer_name)
@@ -233,30 +269,27 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         add_format_error(answer_name, data, "Could not parse submitted files.")
         parsed_files = []
 
-    # Split optional names into two separate lists: wildcard patterns and plain names
-    optional_files_regex, optional_files_plain = extract_patterns(optional_file_names)
-
-    wildcard_files = find_matching_files(
-        optional_files_regex, [x.get("name", "") for x in parsed_files]
-    )
-
-    parsed_files = [
-        x
-        for x in parsed_files
-        if x.get("name", "") in required_file_names
-        or x.get("name", "") in optional_files_plain
-        or x.get("name", "") in wildcard_files
-    ]
-
-    for x in parsed_files:
-        pl.add_submitted_file(data, x.get("name", ""), x.get("contents", ""))
-
-    # Validate that all required files are present
     if parsed_files is not None:
-        submitted_file_names = [x.get("name", "") for x in parsed_files]
-        missing_files = [
-            x for x in required_file_names if x not in submitted_file_names
-        ]
+        parsed_file_names = [f.get("name", "") for f in parsed_files]
+
+        # Split optional names into two separate lists: wildcard patterns and plain names
+        files_regex = [glob_to_regex(f) for f in file_patterns]
+        opt_files_regex = [glob_to_regex(f) for f in opt_file_patterns]
+
+        # Match submitted and accepted files 1:1 in this order: required_files, then required patterns, then optional files.
+        # All remaining files are then matched 1:n with optional patterns, and eventually discarded in there is no match
+        required_files = [x for x in parsed_file_names if x in file_names]
+        remaining_files = [x for x in parsed_file_names if x not in required_files]
+
+        pattern_files, missing_regex = match_regex_with_files(
+            files_regex,
+            [x for x in remaining_files],
+            limit_1=True,
+        )
+        remaining_files = [x for x in remaining_files if x not in pattern_files]
+
+        # Validate that all required files are present
+        missing_files = [x for x in file_names if x not in parsed_file_names]
 
         if len(missing_files) > 0:
             add_format_error(
@@ -265,3 +298,37 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 "The following required files were missing: "
                 + ", ".join(missing_files),
             )
+
+        if len(missing_regex) > 0:
+            # Need some awkward mapping to patterns here to ensure we don't remove duplicates
+            missing_patterns = []
+            for r in missing_regex:
+                missing_patterns.append(file_patterns[files_regex.index(r)])
+            add_format_error(
+                answer_name,
+                data,
+                "The following required file patterns were missing: "
+                + ", ".join(missing_patterns),
+            )
+
+        optional_files = [x for x in remaining_files if x in opt_file_names]
+        remaining_files = [x for x in remaining_files if x not in optional_files]
+        # We don't care which optional patterns are matched
+        opt_pattern_files, _ = match_regex_with_files(
+            opt_files_regex,
+            [x for x in remaining_files],
+            limit_1=False,
+        )
+
+        # Finally, we combine all file categories into one big list
+        parsed_files = [
+            x
+            for x in parsed_files
+            if x.get("name", "") in required_files
+            or x.get("name", "") in pattern_files
+            or x.get("name", "") in optional_files
+            or x.get("name", "") in opt_pattern_files
+        ]
+
+        for x in parsed_files:
+            pl.add_submitted_file(data, x.get("name", ""), x.get("contents", ""))

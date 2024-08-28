@@ -6,21 +6,20 @@
 
   <pl-file-upload file-names="solution.txt"></pl-file-upload>
 
-  <p> Instead of (or in addition to) mandatory file names, it is possible to provide an <code>optional-file-names</code> 
-    list that marks files as optional. Note that if no mandatory file names are specified, empty submissions are considered valid.
-  </p>
+  <p> Besides mandatory file names, <code>pl-file-upload</code> supports 3 other attributes to customize which files students can upload in a more fine-grained way:</p>
+  
+  <ul>
+    <li><code>optional-file-names</code> defines list of file names that students can (are not required to) upload.</li>
+    <li><code>file-patterns</code> defines list of file names that can include <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-upload-element">wildcard patterns</a> and therefore allow a range of different names. Exactly one file must be provided to match each pattern.</li>
+    <li><code>optional-file-patterns</code> defines another list of <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-upload-element">wildcard patterns</a> that can include wildcards. For each pattern, any number of files may be uploaded.</li>
+  </ul> 
 
-  <pl-file-upload file-names="solution.py" optional-file-names="explanation.txt"></pl-file-upload>
+  A single <code>pl-file-upload</code> element can use any combination of mandatory and optional file names and patterns. For example, the following element requires the upload of a Python file named "solution.py" and at least 2 additional Python files, and also allows an optional "explanation.txt" file to be uploaded. 
 
-  <p> <code>optional-file-names</code> supports a number of 
-    <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-upload-element">wildcard patterns</a>
-    to allow ranges of file names.</p>
-  <p> Note that using wildcard patterns will allow multiple files to be uploaded per pattern, as long as each 
-    file name matches at least one pattern.</p>
-  <p> Also note that we use multiple <code>pl-file-upload</code> elements here for illustrative purposes, but that
+  <pl-file-upload file-names="solution.py" file-patterns="*.py,*.py" optional-file-names="explanation.txt" optional-file-patterns="*.py"></pl-file-upload>
+
+  <p> While patterns can be repeated as shown above, we discourage using overlapping patterns as they might produce in unexpected results. Please refer to <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-upload-element">the documentation</a> for a more detailed explanation on how the different file lists interact.</p>
+  <p> Note that we use multiple <code>pl-file-upload</code> elements here for illustrative purposes, but that
   <a href="http://prairielearn.readthedocs.io/en/latest/elements/#pl-file-upload-element">it is not recommended</a> to
     use more than one for real questions.</p>
-
-  <pl-file-upload optional-file-names="solution.???,*.pdf"></pl-file-upload>
-   
 </pl-question-panel>
