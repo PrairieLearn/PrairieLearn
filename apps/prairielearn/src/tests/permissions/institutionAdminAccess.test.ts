@@ -4,9 +4,9 @@ import fetch from 'node-fetch';
 
 import { queryAsync, queryRow } from '@prairielearn/postgres';
 
+import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
 import { config } from '../../lib/config.js';
 import { UserSchema } from '../../lib/db-types.js';
-import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
 import { selectUserByUid } from '../../models/user.js';
 import * as helperServer from '../helperServer.js';
 import { withUser } from '../utils/auth.js';

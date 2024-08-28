@@ -6,6 +6,7 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
 import { config } from '../../lib/config.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import {
@@ -15,7 +16,6 @@ import {
   updateCoursePermissionsRole,
 } from '../../models/course-permissions.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
-import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
 

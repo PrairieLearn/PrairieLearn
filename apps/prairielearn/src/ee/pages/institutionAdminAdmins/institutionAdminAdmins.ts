@@ -6,12 +6,12 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryValidatedRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { parseUidsString } from '../../../lib/user.js';
+import { selectUserByUid } from '../../../models/user.js';
+import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
 import {
   deleteInstitutionAdministrator,
   ensureInstitutionAdministrator,
 } from '../../models/institution-administrator.js';
-import { selectUserByUid } from '../../../models/user.js';
-import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
 
 import {
   InstitutionAdminAdmins,
