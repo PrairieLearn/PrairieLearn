@@ -88,7 +88,7 @@ router.get(
     );
 
     const lineitems = await queryRows(
-      sql.select_lineitems,
+      sql.select_lti13_assessments,
       {
         lti13_course_instance_id: instance.lti13_course_instance.id,
       },
@@ -200,7 +200,7 @@ router.post(
           : req.body.assessment_module_id || null;
 
       const lineitems = await queryRows(
-        sql.delete_bulk_lineitems,
+        sql.delete_lti13_assessments,
         {
           lti13_course_instance_id: instance.lti13_course_instance.id,
           course_instance_id: instance.lti13_course_instance.course_instance_id,

@@ -17,7 +17,7 @@ SET
 WHERE
   id = $lti13_instance_id;
 
--- BLOCK update_lineitem
+-- BLOCK upsert_lti13_assessment
 INSERT INTO
   lti13_assessments (
     lti13_course_instance_id,
@@ -41,7 +41,7 @@ SET
   assessment_id = $assessment_id,
   last_activity = NOW();
 
--- BLOCK sync_lti13_lineitems
+-- BLOCK sync_lti13_assessments
 WITH
   imported AS (
     SELECT
@@ -89,7 +89,7 @@ SELECT
       deleting
   ) AS deleted;
 
--- BLOCK delete_lineitem_by_assessment_id
+-- BLOCK delete_lti13_assessment
 DELETE FROM lti13_assessments
 WHERE
   lti13_course_instance_id = $lti13_course_instance_id

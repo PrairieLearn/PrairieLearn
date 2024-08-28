@@ -350,7 +350,7 @@ export async function syncLineitems(instance: Lti13CombinedInstance, job: Server
 
   await runInTransactionAsync(async () => {
     const output = await queryRow(
-      sql.sync_lti13_lineitems,
+      sql.sync_lti13_assessments,
       {
         lti13_course_instance_id: instance.lti13_course_instance.id,
         lineitems_import: JSON.stringify(lineitems_import),
@@ -431,7 +431,7 @@ export async function unlinkAssessment(
   lti13_course_instance_id: string,
   assessment_id: string | number,
 ) {
-  await queryAsync(sql.delete_lineitem_by_assessment_id, {
+  await queryAsync(sql.delete_lti13_assessment, {
     lti13_course_instance_id,
     assessment_id,
   });
@@ -442,7 +442,7 @@ export async function linkAssessment(
   assessment_id: string | number,
   lineitem: Lineitem,
 ) {
-  await queryAsync(sql.update_lineitem, {
+  await queryAsync(sql.upsert_lti13_assessment, {
     lti13_course_instance_id,
     lineitem_id_url: lineitem.id,
     lineitem: JSON.stringify(lineitem),

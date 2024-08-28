@@ -89,7 +89,7 @@ ORDER BY
   a.order_by,
   a.id;
 
--- BLOCK select_lineitems
+-- BLOCK select_lti13_assessments
 SELECT
   *
 FROM
@@ -128,7 +128,7 @@ WHERE
   END
   AND la.assessment_id IS NULL;
 
--- BLOCK delete_bulk_lineitems
+-- BLOCK delete_lti13_assessments
 DELETE FROM lti13_assessments
 WHERE
   lti13_course_instance_id = $lti13_course_instance_id
