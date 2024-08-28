@@ -181,15 +181,6 @@ export async function initExpress() {
     next();
   });
 
-  // Redirect as early as possible for the best performance.
-  app.use((await import('./middlewares/subdomain.js')).autoAssertSubdomainOrRedirect);
-
-  // Together, these two middlewares help to implement our client-side security
-  // feature that ensures that code executing on question pages can't interact
-  // with other parts of the site.
-  app.use((await import('./middlewares/subdomain.js')).subdomainRedirect);
-  app.use((await import('./middlewares/subdomain.js')).validateSubdomainRequest);
-
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
   // Special handling of file-upload routes so that we can parse multipart/form-data
@@ -442,6 +433,20 @@ export async function initExpress() {
   // Note that this comes before routes that serve static files that might be
   // subject to CORS restrictions.
   app.use((await import('./middlewares/cors.js')).default);
+
+  app.use((req, res, next) => {
+    console.log('processing request...', req.originalUrl);
+    next();
+  });
+
+  // Redirect as early as possible for the best performance.
+  app.use((await import('./middlewares/subdomain.js')).autoAssertSubdomainOrRedirect);
+
+  // Together, these two middlewares help to implement our client-side security
+  // feature that ensures that code executing on question pages can't interact
+  // with other parts of the site.
+  app.use((await import('./middlewares/subdomain.js')).subdomainRedirect);
+  app.use((await import('./middlewares/subdomain.js')).validateSubdomainRequest);
 
   assets.applyMiddleware(app);
 

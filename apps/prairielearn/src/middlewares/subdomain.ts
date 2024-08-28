@@ -30,6 +30,7 @@ const SUBDOMAINS = [
     patternPrefix: 'q',
     pattern: /^q\d+$/,
     routes: [
+      /^\/pl\/public\/course\/\d+\/question\/(\d+)/i,
       /^\/pl\/course\/\d+\/question\/(\d+)\/preview/i,
       /^\/pl\/course\/\d+\/question\/(\d+)\/clientFilesQuestion/i,
       /^\/pl\/course\/\d+\/question\/(\d+)\/submission/i,
@@ -121,7 +122,16 @@ export function allowAccess(
     ...(matchedSubdomain ? matchedSubdomain.routes : []),
   ];
 
-  if (requestOrigin) {
+  // The `Origin` header can be `null` in some cases:
+  // https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Origin
+  //
+  // The one that matters for us is when a fetch/XHR request redirects across
+  // origins, which can happen in e.g. v2 questions that dynamically load HTML
+  // documents on the client. We'll treat this as though the `Origin` header
+  // wasn't sent at all.
+  //
+  // TODO: is that actually the right thing to do?
+  if (requestOrigin && requestOrigin !== 'null') {
     // If the `Origin` header is present, that means we're probably crossing
     // origins.
     //
@@ -270,7 +280,6 @@ export function assertSubdomainOrRedirect(
 }
 
 export function autoAssertSubdomainOrRedirect(req, res, next) {
-  console.log(`Checking ${req.originalUrl} for subdomain`);
   for (const subdomain of SUBDOMAINS) {
     for (const route of subdomain.routes) {
       const match = req.originalUrl.match(route);
@@ -283,13 +292,11 @@ export function autoAssertSubdomainOrRedirect(req, res, next) {
         }
 
         const expectedSubdomain = `${subdomain.patternPrefix}${subdomainId}`;
-        console.log(`Redirecting ${req.originalUrl} to ${expectedSubdomain}`);
         return assertSubdomainOrRedirect(() => expectedSubdomain, true)(req, res, next);
       }
     }
   }
 
-  console.log(`Not redirecting ${req.originalUrl}`);
   return next();
 }
 
