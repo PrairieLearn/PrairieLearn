@@ -8,7 +8,7 @@ import { loadSqlEquiv, queryValidatedRows, runInTransactionAsync } from '@prairi
 import { parseUidsString } from '../../../lib/user.js';
 import {
   deleteInstitutionAdministrator,
-  insertInstitutionAdministrator,
+  ensureInstitutionAdministrator,
 } from '../../models/institution-administrator.js';
 import { selectUserByUid } from '../../../models/user.js';
 import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
@@ -76,7 +76,7 @@ router.post(
             continue;
           }
 
-          await insertInstitutionAdministrator({
+          await ensureInstitutionAdministrator({
             user_id: user.user_id,
             institution_id: institution.id,
             authn_user_id: res.locals.authn_user.user_id,

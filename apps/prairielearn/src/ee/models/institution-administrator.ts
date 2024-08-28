@@ -1,16 +1,11 @@
-import {
-  loadSqlEquiv,
-  queryOptionalRow,
-  queryRow,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { InstitutionAdministratorSchema } from '../../lib/db-types.js';
 import { insertAuditLog } from '../../models/audit-log.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export async function insertInstitutionAdministrator({
+export async function ensureInstitutionAdministrator({
   user_id,
   institution_id,
   authn_user_id,
@@ -20,21 +15,23 @@ export async function insertInstitutionAdministrator({
   authn_user_id: string;
 }) {
   await runInTransactionAsync(async () => {
-    const institution_admin = await queryRow(
+    const institution_admin = await queryOptionalRow(
       sql.insert_institution_admin,
       { user_id, institution_id },
       InstitutionAdministratorSchema,
     );
 
-    await insertAuditLog({
-      authn_user_id,
-      table_name: 'institution_administrators',
-      action: 'insert',
-      institution_id: institution_admin.institution_id,
-      user_id: institution_admin.user_id,
-      row_id: institution_admin.id,
-      new_state: institution_admin,
-    });
+    if (institution_admin) {
+      await insertAuditLog({
+        authn_user_id,
+        table_name: 'institution_administrators',
+        action: 'insert',
+        institution_id: institution_admin.institution_id,
+        user_id: institution_admin.user_id,
+        row_id: institution_admin.id,
+        new_state: institution_admin,
+      });
+    }
 
     return institution_admin;
   });

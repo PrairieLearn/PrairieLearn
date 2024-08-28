@@ -15,7 +15,7 @@ import {
   updateCoursePermissionsRole,
 } from '../../models/course-permissions.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
-import { insertInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
+import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
 
@@ -70,7 +70,7 @@ describe('effective user', function () {
       UserWithIdSchema,
     );
     institutionAdminId = institutionAdmin.user_id;
-    await insertInstitutionAdministrator({
+    await ensureInstitutionAdministrator({
       institution_id: '1',
       user_id: institutionAdminId,
       authn_user_id: '1',

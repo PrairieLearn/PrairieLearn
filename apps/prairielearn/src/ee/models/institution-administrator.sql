@@ -1,8 +1,9 @@
--- BLOCK insert_institution_admin
+-- BLOCK ensure_institution_admin
 INSERT INTO
   institution_administrators (institution_id, user_id)
 VALUES
   ($institution_id, $user_id)
+ON CONFLICT DO NOTHING
 RETURNING
   *;
 
