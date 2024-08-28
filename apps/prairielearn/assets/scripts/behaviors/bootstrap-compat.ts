@@ -580,6 +580,30 @@ if (isBootstrapCompatEnabled()) {
   // *******
 
   makeMigrator({
+    selector:
+      '.embed-responsive, .embed-responsive-1by1, .embed-responsive-4by3, .embed-responsive-16by9, .embed-responsive-21by9',
+    migrate(el, { migrateClass }) {
+      migrateClass(el, 'embed-responsive', 'ratio');
+      migrateClass(el, 'embed-responsive-1by1', 'ratio-1x1');
+      migrateClass(el, 'embed-responsive-4by3', 'ratio-4x3');
+      migrateClass(el, 'embed-responsive-16by9', 'ratio-16x9');
+      migrateClass(el, 'embed-responsive-21by9', 'ratio-21x9');
+    },
+  });
+
+  makeMigrator({
+    selector: '.embed-responsive-item',
+    migrate(el) {
+      if (!el.parentElement?.classList.contains('embed-responsive')) return;
+
+      console.warn(
+        'Bootstrap 5 no longer requires .embed-responsive-item. Please update your HTML.',
+        el,
+      );
+    },
+  });
+
+  makeMigrator({
     selector: '.sr-only, .sr-only-focusable',
     migrate(el, { addClass }) {
       const hasSrOnly = el.classList.contains('sr-only');
