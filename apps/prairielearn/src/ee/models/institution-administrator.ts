@@ -5,9 +5,8 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { InstitutionAdministratorSchema } from '../lib/db-types.js';
-
-import { insertAuditLog } from './audit-log.js';
+import { InstitutionAdministratorSchema } from '../../lib/db-types.js';
+import { insertAuditLog } from '../../models/audit-log.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

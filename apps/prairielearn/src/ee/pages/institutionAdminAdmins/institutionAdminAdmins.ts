@@ -9,7 +9,7 @@ import { parseUidsString } from '../../../lib/user.js';
 import {
   deleteInstitutionAdministrator,
   insertInstitutionAdministrator,
-} from '../../../models/institution-administrator.js';
+} from '../../models/institution-administrator.js';
 import { selectUserByUid } from '../../../models/user.js';
 import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
 

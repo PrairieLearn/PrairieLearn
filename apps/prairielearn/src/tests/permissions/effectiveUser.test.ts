@@ -15,7 +15,7 @@ import {
   updateCoursePermissionsRole,
 } from '../../models/course-permissions.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
-import { insertInstitutionAdministrator } from '../../models/institution-administrator.js';
+import { insertInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
 

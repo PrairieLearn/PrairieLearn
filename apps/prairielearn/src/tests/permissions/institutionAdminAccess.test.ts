@@ -6,7 +6,7 @@ import { queryAsync, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { UserSchema } from '../../lib/db-types.js';
-import { insertInstitutionAdministrator } from '../../models/institution-administrator.js';
+import { insertInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
 import { selectUserByUid } from '../../models/user.js';
 import * as helperServer from '../helperServer.js';
 import { withUser } from '../utils/auth.js';
