@@ -293,7 +293,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             add_format_error(
                 answer_name,
                 data,
-                f"The following required files were missing: {", ".join(missing_files)}",
+                f"The following required files were missing: {', '.join(missing_files)}",
             )
 
         if len(missing_regex) > 0:
@@ -304,7 +304,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             add_format_error(
                 answer_name,
                 data,
-                f"The following required file patterns were missing: {", ".join(missing_patterns)}",
+                f"The following required file patterns were missing: {', '.join(missing_patterns)}",
             )
 
         optional_files = [x for x in remaining_files if x in opt_file_names]
