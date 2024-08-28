@@ -67,7 +67,7 @@ def test_match_regex_with_files_fn(
     regex_patterns: list[str],
     file_names: list[str],
     limit_1: bool,
-    expected_output: set[str],
+    expected_output: tuple[list[str], list[str]],
 ) -> None:
     output = file_upload.match_regex_with_files(regex_patterns, file_names, limit_1)
     assert output == expected_output

@@ -32,7 +32,7 @@ def match_regex_with_files(
     regex_patterns: list[str], files_names: list[str], limit_1: bool
 ) -> tuple[list[str], list[str]]:
     """
-    Takes a list of regexes (as returned by extract_patterns) and a list of file names and matches them 1:n or 1:1, depending on limit_1 parameter
+    Takes a list of regexes and a list of file names and matches them 1:n or 1:1, depending on limit_1 parameter
     Returns a tuple of matched file names and unmatched patterns
     """
     unmatched_patterns = regex_patterns.copy()
@@ -51,7 +51,7 @@ def match_regex_with_files(
 def glob_to_regex(glob_pattern: str) -> str:
     """
     Translates a glob pattern into a regex that can be handled consistently across Python and JS
-    Returns the regex if wildcards are present, and an empty string otherwise
+    Returns the regex as string, or raises a ValueError if there are no wildcards to be translated
     """
     result = ["^"]
     has_wildcard = False
