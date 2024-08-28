@@ -260,7 +260,7 @@ Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidra
   gradable="true"
   answers-name="vector"
   source-file-name="starter.excalidraw"
-  directory="client_files_question_path"
+  directory="clientFilesQuestion"
   width="100%"
   height="600px"
 ></pl-excalidraw>
