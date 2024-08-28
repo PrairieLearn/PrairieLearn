@@ -2030,7 +2030,7 @@ export async function initExpress() {
     ],
   );
   // Public Course Instructor Assessments Page
-  app.use('/pl/public/course_instance/:course_instance_id(\\d+)/instructor/assessments', [ // TEST, was /pl/public/course/:course_id(\\d+)/instructor/instance_admin/assessments
+  app.use('/pl/public/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments', [
     function (req, res, next) {
       res.locals.course_instance_id = req.params.course_instance_id;
       res.locals.navPage = 'public_assessments';

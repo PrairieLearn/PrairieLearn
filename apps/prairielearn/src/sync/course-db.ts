@@ -423,9 +423,13 @@ export async function loadFullCourse(
       questions,
     );
 
+    //const sharedPublicly = courseInstance.data?.allowAccess.some((rule) => rule.mode === 'Public'); // TODO/TEST: How to get the sharedPublicly value?
+    const sharedPublicly = false; // TEST, remove when sharedPublicly is implemented above
+
     courseInstances[courseInstanceId] = {
       courseInstance,
       assessments,
+      sharedPublicly, // TODO: Implement sharedPublicly
     };
   }
   return {

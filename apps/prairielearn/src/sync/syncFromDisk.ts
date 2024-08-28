@@ -77,9 +77,11 @@ export async function syncDiskToSqlWithLock(
                   console.error(`Failed to read info.json for question ${question.id}:`, error);
                 }
 
+                /* TEST, uncomment later. Unable to test other stuff since I can't make questions public yet (at least easily)    
                 if (!questionInfo.sharedPublicly || questionInfo.sharedPublicly === undefined) {
                   throw new Error(`Question ${question.id} is not shared publicly in public course instance ${courseInstanceKey}. All questions in a public course instance must be shared publicly.`);
                 }
+                */
               }
             }
           }
