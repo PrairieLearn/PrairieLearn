@@ -46,13 +46,13 @@ export async function syncDiskToSqlWithLock(
   const courseData = await perf.timed('loadCourseData', () =>
     courseDB.loadFullCourse(courseId, courseDir),
   );
-
+  
   /*
    * Check that all questions in publicly shared course instances are also shared publicly
    */
   for (const courseInstanceKey in courseData.courseInstances) {
     const courseInstance = courseData.courseInstances[courseInstanceKey];
-
+  
     courseInstance.sharedPublicly = true; // TEST
     if (courseInstance.sharedPublicly) {
       for (const assessmentKey in courseInstance.assessments) {
@@ -68,16 +68,23 @@ export async function syncDiskToSqlWithLock(
                   question.id || '',
                   'info.json',
                 );
-
+  
                 let questionInfo;
                 try {
-                  // Read and parse the info.json file
-                  const infoJsonData = await fs.promises.readFile(infoJsonPath, 'utf-8');
-                  questionInfo = JSON.parse(infoJsonData);
+                  // Check if the file exists
+                  if (fs.existsSync(infoJsonPath)) {
+                    // Read and parse the info.json file
+                    const fileContent = fs.readFileSync(infoJsonPath, 'utf8');
+                    questionInfo = JSON.parse(fileContent);
+                  } else {
+                    console.error(`Missing JSON file: ${infoJsonPath}`);
+                    continue;
+                  }
                 } catch (error) {
-                  console.error(`Failed to read info.json for question ${question.id}:`, error);
+                  console.error(`Error reading or parsing JSON file: ${infoJsonPath}`, error);
+                  continue;
                 }
-
+  
                 /* TEST, uncomment later. Unable to test other stuff since I can't make questions public yet (at least easily)    
                 if (!questionInfo.sharedPublicly || questionInfo.sharedPublicly === undefined) {
                   throw new Error(`Question ${question.id} is not shared publicly in public course instance ${courseInstanceKey}. All questions in a public course instance must be shared publicly.`);
