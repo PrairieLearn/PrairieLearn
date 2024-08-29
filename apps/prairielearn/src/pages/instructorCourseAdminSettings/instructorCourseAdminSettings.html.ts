@@ -1,6 +1,8 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { formatTimezone, type Timezone } from '../../lib/timezones.js';
 
@@ -21,25 +23,22 @@ export function InstructorCourseAdminSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", {
-          ...resLocals,
-        })}
+        ${HeadContents({ resLocals })}
         ${compiledScriptTag('instructorCourseAdminSettingsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-        })}
+        ${Navbar({ resLocals })}
         <main id="content" class="container">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/courseSyncErrorsAndWarnings'); %>",
-            {
-              ...resLocals,
-            },
-          )}
+          ${CourseSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
+
           <div class="card  mb-4">
-            <div class="card-header bg-primary text-white d-flex">Course Settings</div>
+            <div class="card-header bg-primary text-white d-flex">
+              <h1>Course Settings</h1>
+            </div>
             <div class="card-body">
               ${!courseInfoExists || !coursePathExists
                 ? CourseDirectoryMissingAlert({
@@ -207,8 +206,7 @@ function CourseDirectoryMissingAlert({
     return html`
       <div class="alert alert-danger">
         Course directory not found. You must
-        <a href="${resLocals.urlPrefix}/${resLocals.navPage}/syncs"> sync your course </a>
-        .
+        <a href="${resLocals.urlPrefix}/${resLocals.navPage}/syncs">sync your course</a>.
       </div>
     `;
   } else if (!courseInfoExists) {

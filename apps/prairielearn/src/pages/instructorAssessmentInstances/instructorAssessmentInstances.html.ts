@@ -1,7 +1,9 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 
 export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record<string, any> }) {
@@ -9,7 +11,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
 
         <script src="${nodeModulesAssetPath(
             'bootstrap-table/dist/bootstrap-table.min.js',
@@ -33,34 +35,16 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
 
         ${compiledScriptTag('instructorAssessmentInstancesClient.ts')}
       </head>
-      <style>
-        .sticky-column {
-          position: sticky;
-          left: 0;
-          background: white;
-          background-clip: padding-box;
-          box-shadow: inset -1px 0 #dee2e6;
-        }
-        .table-hover tbody tr:hover td.sticky-column {
-          color: #212529;
-          background-color: #efefef;
-        }
-        .fixed-table-toolbar {
-          padding: 0 1em 0 1em;
-        }
-        .fixed-table-toolbar div.pagination,
-        .fixed-table-toolbar div.pagination-detail {
-          margin: 0 1em 0 0 !important;
-        }
-      </style>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            assessment: resLocals.assessment,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           ${resLocals.authz_data.has_course_instance_permission_edit
             ? html`
                 ${DeleteAssessmentInstanceModal({
@@ -89,7 +73,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Students
+              <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Students</h1>
               ${resLocals.authz_data.has_course_instance_permission_edit
                 ? html`
                     <div class="ml-auto">
@@ -103,11 +87,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                         >
                           Action for all instances <span class="caret"></span>
                         </button>
-                        <!-- Capture all clicks to dropdown items to prevent scrolling to the top of the page -->
-                        <div
-                          class="dropdown-menu dropdown-menu-right"
-                          onclick="window.event.preventDefault();"
-                        >
+                        <div class="dropdown-menu dropdown-menu-right">
                           ${resLocals.authz_data.has_course_instance_permission_edit
                             ? html`
                                 <button
@@ -120,6 +100,8 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
                                 </button>
                                 <button
                                   class="dropdown-item time-limit-edit-button time-limit-edit-all-button"
+                                  data-placement="left"
+                                  data-bs-toggle-popover
                                 >
                                   <i class="far fa-clock" aria-hidden="true"></i> Change time limit
                                   for all instances
@@ -155,6 +137,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
 
             <table
               id="usersTable"
+              aria-label="Assessment instances"
               data-unique-id="assessment_instance_id"
               data-classes="table table-sm table-hover table-bordered"
               data-show-button-text="true"
@@ -301,32 +284,30 @@ function TimeRemainingHelpModal() {
     id: 'time-remaining-help',
     title: 'Time Remaining',
     body: html`
-      <div class="modal-body">
-        <p>
-          For open assessments with a time limit, this column will indicate the number of minutes
-          (rounded down) the student has left to complete the assessment. If the value is
-          <strong>&lt; 1 min</strong>, the student has less than one minute to complete it. This
-          column may also contain one of the following special values.
-        </p>
-        <ul>
-          <li>
-            <strong>Expired</strong> indicates the assessment time limit has expired, and will be
-            automatically closed as soon as possible. If an assessment is Expired for a prolonged
-            period of time, this typically means the student has closed their browser or lost
-            connectivity, and the assessment will be closed as soon as the student opens the
-            assessment. No further submissions are accepted at this point.
-          </li>
-          <li>
-            <strong>Closed</strong> indicates the assessment has been closed, and no further
-            submissions are accepted.
-          </li>
-          <li>
-            <strong>Open (no time limit)</strong> indicates that the assessment is still open and
-            accepting submissions, and there is no time limit to submit the assessment (other than
-            those indicated by access rules).
-          </li>
-        </ul>
-      </div>
+      <p>
+        For open assessments with a time limit, this column will indicate the number of minutes
+        (rounded down) the student has left to complete the assessment. If the value is
+        <strong>&lt; 1 min</strong>, the student has less than one minute to complete it. This
+        column may also contain one of the following special values.
+      </p>
+      <ul>
+        <li>
+          <strong>Expired</strong> indicates the assessment time limit has expired, and will be
+          automatically closed as soon as possible. If an assessment is Expired for a prolonged
+          period of time, this typically means the student has closed their browser or lost
+          connectivity, and the assessment will be closed as soon as the student opens the
+          assessment. No further submissions are accepted at this point.
+        </li>
+        <li>
+          <strong>Closed</strong> indicates the assessment has been closed, and no further
+          submissions are accepted.
+        </li>
+        <li>
+          <strong>Open (no time limit)</strong> indicates that the assessment is still open and
+          accepting submissions, and there is no time limit to submit the assessment (other than
+          those indicated by access rules).
+        </li>
+      </ul>
     `,
     footer: html`
       <button type="button" class="btn btn-primary" data-dismiss="modal">Close</button>

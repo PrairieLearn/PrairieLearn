@@ -3,6 +3,7 @@ import _ from 'lodash';
 import mustache from 'mustache';
 import { z } from 'zod';
 
+import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
@@ -16,7 +17,6 @@ import {
 } from './db-types.js';
 import { idsEqual } from './id.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
-import * as markdown from './markdown.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -137,21 +137,22 @@ export async function populateRubricData(locals: Record<string, any>): Promise<v
 
   // Render rubric items: description, explanation and grader note
   const mustache_data = {
-    correct_answers: locals.variant?.true_answer,
-    params: locals.variant?.params,
+    correct_answers: locals.submission?.true_answer ?? {},
+    params: locals.submission?.params ?? {},
     submitted_answers: locals.submission?.submitted_answer,
   };
 
   await async.eachLimit(rubric_data?.rubric_items || [], 3, async (item) => {
-    item.description_rendered = (
-      await markdown.processContentInline(mustache.render(item.description || '', mustache_data))
-    ).toString();
-    item.explanation_rendered = (
-      await markdown.processContent(mustache.render(item.explanation || '', mustache_data))
-    ).toString();
-    item.grader_note_rendered = (
-      await markdown.processContent(mustache.render(item.grader_note || '', mustache_data))
-    ).toString();
+    item.description_rendered = await markdownToHtml(
+      mustache.render(item.description || '', mustache_data),
+      { inline: true },
+    );
+    item.explanation_rendered = await markdownToHtml(
+      mustache.render(item.explanation || '', mustache_data),
+    );
+    item.grader_note_rendered = await markdownToHtml(
+      mustache.render(item.grader_note || '', mustache_data),
+    );
   });
 
   locals.rubric_data = rubric_data;
@@ -173,7 +174,7 @@ export async function populateManualGradingData(submission: Record<string, any>)
     );
   }
   if (submission.feedback?.manual) {
-    submission.feedback_manual_html = await markdown.processContent(
+    submission.feedback_manual_html = await markdownToHtml(
       submission.feedback?.manual?.toString() || '',
     );
   }
@@ -233,8 +234,8 @@ export async function updateAssessmentQuestionRubric(
     if (use_rubric) {
       const max_points =
         (replace_auto_points
-          ? assessment_question.max_points ?? 0
-          : assessment_question.max_manual_points ?? 0) + Number(max_extra_points);
+          ? (assessment_question.max_points ?? 0)
+          : (assessment_question.max_manual_points ?? 0)) + Number(max_extra_points);
 
       // This test is done inside the transaction to avoid a race condition in case the assessment
       // question's values change.
@@ -511,7 +512,7 @@ export async function updateInstanceQuestionScore(
       score.manual_points =
         manual_rubric_grading.computed_points -
         (manual_rubric_grading.replace_auto_points
-          ? new_auto_points ?? current_submission.auto_points ?? 0
+          ? (new_auto_points ?? current_submission.auto_points ?? 0)
           : 0);
       score.manual_score_perc = undefined;
       manual_rubric_grading_id = manual_rubric_grading.id;

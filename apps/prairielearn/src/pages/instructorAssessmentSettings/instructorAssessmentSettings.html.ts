@@ -1,8 +1,10 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 
 export function InstructorAssessmentSettings({
@@ -20,8 +22,7 @@ export function InstructorAssessmentSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('instructorAssessmentSettingsClient.ts')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('instructorAssessmentSettingsClient.ts')}
         <style>
           .popover {
             max-width: 50%;
@@ -30,18 +31,23 @@ export function InstructorAssessmentSettings({
       </head>
 
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            assessment: resLocals.assessment,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings
+              <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
             </div>
-            <table class="table table-sm table-hover two-column-description">
+            <table
+              class="table table-sm table-hover two-column-description"
+              aria-label="Assessment settings"
+            >
               <tbody>
                 <tr>
                   <th scope="row">Title</th>
@@ -147,57 +153,47 @@ export function InstructorAssessmentSettings({
             </table>
             ${resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course
               ? html`
-                  <div class="card-footer">
-                    <div class="row">
-                      <div class="col-auto">
-                        <form name="copy-assessment-form" class="form-inline" method="POST">
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <button
-                            name="__action"
-                            value="copy_assessment"
-                            class="btn btn-sm btn-primary"
-                          >
-                            <i class="fa fa-clone"></i> Make a copy of this assessment
-                          </button>
-                        </form>
-                      </div>
-                      <div class="col-auto">
-                        <button
-                          class="btn btn-sm btn-primary"
-                          href="#"
-                          data-toggle="modal"
-                          data-target="#deleteAssessmentModal"
-                        >
-                          <i class="fa fa-times" aria-hidden="true"></i> Delete this assessment
+                  <div class="card-footer d-flex flex-wrap align-items-center">
+                    <form name="copy-assessment-form" class="mr-2" method="POST">
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <button
+                        name="__action"
+                        value="copy_assessment"
+                        class="btn btn-sm btn-primary"
+                      >
+                        <i class="fa fa-clone"></i> Make a copy of this assessment
+                      </button>
+                    </form>
+                    <button
+                      class="btn btn-sm btn-primary"
+                      href="#"
+                      data-toggle="modal"
+                      data-target="#deleteAssessmentModal"
+                    >
+                      <i class="fa fa-times" aria-hidden="true"></i> Delete this assessment
+                    </button>
+                    ${Modal({
+                      id: 'deleteAssessmentModal',
+                      title: 'Delete assessment',
+                      body: html`
+                        <p>
+                          Are you sure you want to delete the assessment
+                          <strong>${resLocals.assessment.tid}</strong>?
+                        </p>
+                      `,
+                      footer: html`
+                        <input type="hidden" name="__action" value="delete_assessment" />
+                        <input
+                          type="hidden"
+                          name="__csrf_token"
+                          value="${resLocals.__csrf_token}"
+                        />
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                          Cancel
                         </button>
-                      </div>
-                      ${Modal({
-                        id: 'deleteAssessmentModal',
-                        title: 'Delete assessment',
-                        body: html`
-                          <p>
-                            Are you sure you want to delete the assessment
-                            <strong>${resLocals.assessment.tid}</strong>?
-                          </p>
-                        `,
-                        footer: html`
-                          <input type="hidden" name="__action" value="delete_assessment" />
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <button type="button" class="btn btn-secondary" data-dismiss="modal">
-                            Cancel
-                          </button>
-                          <button type="submit" class="btn btn-danger">Delete</button>
-                        `,
-                      })}
-                    </div>
+                        <button type="submit" class="btn btn-danger">Delete</button>
+                      `,
+                    })}
                   </div>
                 `
               : ''}

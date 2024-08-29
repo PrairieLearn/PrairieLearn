@@ -1,6 +1,7 @@
 import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
+import { AssessmentBadge } from '../../src/components/AssessmentBadge.html.js';
 import {
   AssessmentInstanceScoreResult,
   GradebookRow,
@@ -13,6 +14,14 @@ onDocumentReady(() => {
 
   // @ts-expect-error The BootstrapTableOptions type does not handle extensions properly
   $('#gradebook-table').bootstrapTable({
+    // TODO: If we can pick up the following change, we can drop the `icons` config here:
+    // https://github.com/wenzhixin/bootstrap-table/pull/7190
+    iconsPrefix: 'fa',
+    icons: {
+      refresh: 'fa-sync',
+      columns: 'fa-table-list',
+    },
+
     url: `${urlPrefix}/instance_admin/gradebook/raw_data.json`,
     uniqueId: 'user_id',
     classes: 'table table-sm table-hover table-bordered',
@@ -108,15 +117,9 @@ onDocumentReady(() => {
       },
       ...courseAssessments.map((assessment) => ({
         field: `scores.${assessment.assessment_id}.score_perc`,
-        title: html`
-          <a
-            href="${urlPrefix}/assessment/${assessment.assessment_id}"
-            class="badge color-${assessment.color} color-hover"
-          >
-            ${assessment.label}
-          </a>
-        `.toString(),
+        title: AssessmentBadge({ urlPrefix, assessment }).toString(),
         class: 'text-nowrap',
+        searchable: false,
         sortable: true,
         sortOrder: 'desc',
         formatter: (score: number | null, row: GradebookRow) => {
@@ -129,6 +132,7 @@ onDocumentReady(() => {
                 <button
                   type="button"
                   class="btn btn-xs btn-secondary edit-score ml-1"
+                  aria-label="Edit score"
                   data-assessment-instance-id="${assessment_instance_id}"
                   data-score="${score}"
                   data-other-users="${JSON.stringify(uid_other_users_group ?? [])}"

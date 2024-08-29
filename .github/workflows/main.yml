@@ -119,6 +119,20 @@ jobs:
           no-cache: true
           tags: prairielearn/workspace-xtermjs:${{ env.COMMIT_SHA }}
 
+      ######################################################################################################
+      # prairielearn/workspace-vscode-python
+      - name: Check whether workspaces/vscode-python was modified
+        run: tools/check_path_modified.sh workspaces/vscode-python workspaces_vscode_python_modified
+      - name: Build and push prairielearn/workspace-vscode-python
+        if: ${{ env.workspaces_vscode_python_modified }}
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: workspaces/vscode-python
+          platforms: linux/amd64,linux/arm64
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          no-cache: true
+          tags: prairielearn/workspace-vscode-python:${{ env.COMMIT_SHA }}
+
   build-grader-images:
     runs-on: ubuntu-latest
 
@@ -350,6 +364,8 @@ jobs:
       - name: Run the Python tests
         run: make test-python
         timeout-minutes: 5
+      - name: Check for warnings in documentation
+        run: make build-docs
       - name: Check dependency structure
         run: make check-dependencies
 
@@ -402,6 +418,7 @@ jobs:
             prairielearn/workspace-jupyterlab-python
             prairielearn/workspace-rstudio
             prairielearn/workspace-xtermjs
+            prairielearn/workspace-vscode-python
             prairielearn/grader-c
             prairielearn/grader-java
             prairielearn/grader-python

@@ -1,7 +1,8 @@
 import { formatDateYMD } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import type { NewsItem } from '../../lib/db-types.js';
 
 export function NewsItem({
@@ -21,17 +22,10 @@ export function NewsItem({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
-          ...resLocals,
-          pageNote: formattedDate,
-          pageTitle: newsItem.title,
-        })}
+        ${HeadContents({ resLocals, pageNote: formattedDate, pageTitle: newsItem.title })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'news_item',
-        })}
+        ${Navbar({ resLocals, navPage: 'news_item' })}
         <main id="content" class="container">
           <article>
             <header>
@@ -54,16 +48,14 @@ export function NewsItem({
             </header>
 
             ${unsafeHtml(newsItemHtml)}
-
-            <aside>
-              <p class="text-right small border-top mt-5 pt-3">
-                Want to help make PrairieLearn better? It's open source and contributions are
-                welcome
-                <a href="https://github.com/PrairieLearn/PrairieLearn" target="_blank">on GitHub</a
-                >!
-              </p>
-            </aside>
           </article>
+
+          <aside>
+            <p class="text-right small border-top mt-5 pt-3">
+              Want to help make PrairieLearn better? It's open source and contributions are welcome
+              <a href="https://github.com/PrairieLearn/PrairieLearn" target="_blank">on GitHub</a>!
+            </p>
+          </aside>
         </main>
       </body>
     </html>

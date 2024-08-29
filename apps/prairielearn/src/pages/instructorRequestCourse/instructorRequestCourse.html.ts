@@ -1,8 +1,12 @@
 import { z } from 'zod';
 
+import { EncodedData } from '@prairielearn/browser-utils';
 import { HtmlValue, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
 
 export const CourseRequestRowSchema = z.object({
@@ -11,50 +15,58 @@ export const CourseRequestRowSchema = z.object({
 });
 type CourseRequestRow = z.infer<typeof CourseRequestRowSchema>;
 
+export const Lti13CourseRequestInputSchema = z
+  .object({
+    'cr-firstname': z.string(),
+    'cr-lastname': z.string(),
+    'cr-email': z.string(),
+    'cr-shortname': z.string(),
+    'cr-title': z.string(),
+    'cr-institution': z.string(),
+  })
+  .nullable();
+export type Lti13CourseRequestInput = z.infer<typeof Lti13CourseRequestInputSchema>;
+
 export function RequestCourse({
   rows,
+  lti13Info,
   resLocals,
 }: {
   rows: CourseRequestRow[];
+  lti13Info: Lti13CourseRequestInput;
   resLocals: Record<string, any>;
 }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head')%>", {
-          ...resLocals,
-        })}
-        <script>
-          $(function () {
-            $('input[name=cr-role]').change(function () {
-              var role = this.value;
-              $('.question-form button').prop('disabled', role != 'instructor');
-              $('.role-comment').hide();
-              $('.role-comment-' + role).show();
-            });
-
-            // Only show the "other" referral source input when "other" is selected.
-            $('#cr-referral-source').change(function () {
-              if (this.value === 'other') {
-                $('#cr-referral-source-other')
-                  .removeClass('d-none')
-                  .attr('required', 'required')
-                  .focus();
-              } else {
-                $('#cr-referral-source-other').addClass('d-none').removeAttr('required');
-              }
-            });
-          });
-        </script>
+        ${HeadContents({ resLocals, pageTitle: 'Request a Course' })}
+        ${compiledScriptTag('instructorRequestCourseClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar')%>", {
-          ...resLocals,
-          navPage: 'request_course',
-        })}
+        ${Navbar({ resLocals, navPage: 'request_course' })}
         <main id="content" class="container">
-          ${CourseRequestsCard({ rows })}
+          <h1 class="sr-only">Request a Course</h1>
+          ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}
+          ${Modal({
+            id: 'fill-course-request-lti13-modal',
+            title: `Auto-fill with ${lti13Info?.['cr-institution'] ?? 'LMS'} data?`,
+            body: html`
+              <p>
+                You appear to be coming from a course in another learning system. Should we
+                partially fill in this request form with information from that course?
+              </p>
+              <p>(You can edit it after it's auto-filled.)</p>
+            `,
+            footer: html`
+              <button type="button" class="btn btn-success" id="fill-course-request-lti13-info">
+                Fill from LMS data
+              </button>
+              <button type="button" class="btn btn-secondary" data-dismiss="modal">
+                Don't fill
+              </button>
+            `,
+          })}
           ${CourseNewRequestCard({ csrfToken: resLocals.__csrf_token })}
         </main>
       </body>
@@ -69,9 +81,11 @@ function CourseRequestsCard({ rows }: { rows: CourseRequestRow[] }): HtmlValue {
 
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex align-items-center">Course Requests</div>
+      <div class="card-header bg-primary text-white d-flex align-items-center">
+        <h2>Course Requests</h2>
+      </div>
       <div class="table-responsive">
-        <table class="table table-sm table-hover table-striped">
+        <table class="table table-sm table-hover table-striped" aria-label="Course requests">
           <thead>
             <tr>
               <th>Short Name</th>
@@ -116,7 +130,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
   return html`
     <div class="card mb-4">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        Request a New Course
+        <h2>Request a New Course</h2>
       </div>
       <form class="question-form" name="course-request" method="POST">
         <div class="card-body">
@@ -218,7 +232,9 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             </small>
           </div>
           <div class="form-group">
-            <label id="cr-referral-source-label">How did you hear about PrairieLearn?</label>
+            <label id="cr-referral-source-label" for="cr-referral-source">
+              How did you hear about PrairieLearn?
+            </label>
             <select
               class="custom-select"
               name="cr-referral-source"
@@ -247,23 +263,25 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
             </small>
           </div>
           <div class="form-group">
-            <label>Your Role in the Course</label>
-            <div class="form-control">
-              <input type="radio" id="role-instructor" name="cr-role" value="instructor" />
-              <label for="role-instructor">Official Course Instructor</label>
-            </div>
-            <div class="form-control">
-              <input type="radio" id="role-ta" name="cr-role" value="ta" />
-              <label for="role-ta">Teaching Assistant or other course staff</label>
-            </div>
-            <div class="form-control">
-              <input type="radio" id="role-admin" name="cr-role" value="admin" />
-              <label for="role-admin">Institution Administrative Staff</label>
-            </div>
-            <div class="form-control">
-              <input type="radio" id="role-student" name="cr-role" value="student" />
-              <label for="role-student">Student</label>
-            </div>
+            <label for="role-instructor">Your Role in the Course</label>
+            <ul class="list-group">
+              <li class="list-group-item">
+                <input type="radio" id="role-instructor" name="cr-role" value="instructor" />
+                <label for="role-instructor" class="mb-0">Official Course Instructor</label>
+              </li>
+              <li class="list-group-item">
+                <input type="radio" id="role-ta" name="cr-role" value="ta" />
+                <label for="role-ta" class="mb-0">Teaching Assistant or other course staff</label>
+              </li>
+              <li class="list-group-item">
+                <input type="radio" id="role-admin" name="cr-role" value="admin" />
+                <label for="role-admin" class="mb-0">Institution Administrative Staff</label>
+              </li>
+              <li class="list-group-item">
+                <input type="radio" id="role-student" name="cr-role" value="student" />
+                <label for="role-student" class="mb-0">Student</label>
+              </li>
+            </ul>
             <div
               style="display: none;"
               class="role-comment role-comment-ta role-comment-admin form-text card"

@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { WorkspaceHostSchema, IdSchema } from '../../lib/db-types.js';
 
 const WorkspaceWithContextSchema = z.object({
@@ -35,12 +36,11 @@ export function AdministratorWorkspaces({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals, pageTitle: 'Workspaces' })}
       </head>
       <body>
         <script>
           $(() => {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
             const toggleButton = document.querySelector('#toggle-all-workspaces');
             toggleButton.addEventListener('click', () => {
               const state = toggleButton.dataset.state;
@@ -50,16 +50,16 @@ export function AdministratorWorkspaces({
             });
           });
         </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'workspaces',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'workspaces' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <span class="mr-auto">Workspace hosts</span>
-              <button class="btn btn-light" id="toggle-all-workspaces" data-state="collapsed">
+              <h1>Workspace hosts</h1>
+              <button
+                class="btn btn-light ml-auto"
+                id="toggle-all-workspaces"
+                data-state="collapsed"
+              >
                 Expand all
               </button>
             </div>

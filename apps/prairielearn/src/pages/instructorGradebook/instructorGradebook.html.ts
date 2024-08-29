@@ -1,8 +1,10 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import {
   compiledScriptTag,
   compiledStylesheetTag,
@@ -28,7 +30,7 @@ export function InstructorGradebook({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
         <!-- Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
         from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way. -->
         <script src="${nodeModulesAssetPath(
@@ -61,13 +63,14 @@ export function InstructorGradebook({
         )}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${CourseInstanceSyncErrorsAndWarnings({
+            authz_data,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix,
+          })}
           ${!authz_data.has_course_instance_permission_view
             ? StudentDataViewMissing({
                 courseOwners,
@@ -76,8 +79,10 @@ export function InstructorGradebook({
               })
             : html`
                 <div class="card mb-4">
-                  <div class="card-header bg-primary text-white">Gradebook</div>
-                  <table id="gradebook-table"></table>
+                  <div class="card-header bg-primary text-white">
+                    <h1>Gradebook</h1>
+                  </div>
+                  <table id="gradebook-table" aria-label="Gradebook"></table>
 
                   <div class="spinning-wheel card-body spinner-border">
                     <span class="sr-only">Loading...</span>
@@ -102,7 +107,9 @@ function StudentDataViewMissing({
 }) {
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-danger text-white">Gradebook</div>
+      <div class="card-header bg-danger text-white">
+        <h1>Gradebook</h1>
+      </div>
       <div class="card-body">
         <h2>Insufficient permissions</h2>
         <p>You must have permission to view student data in order to access the gradebook.</p>

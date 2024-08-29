@@ -1,4 +1,6 @@
 import { readFileSync } from 'node:fs';
+import http from 'node:http';
+import nodeUrl from 'node:url';
 import * as path from 'path';
 
 import { assert } from 'chai';
@@ -6,7 +8,6 @@ import * as cheerio from 'cheerio';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch, { FormData } from 'node-fetch';
-import request from 'request';
 import * as tmp from 'tmp';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -323,19 +324,48 @@ describe('test file editor', function () {
 
 function badGet(url, expected_status, should_parse) {
   describe('GET to edit url with bad path', function () {
-    it(`should load with status ${expected_status}`, function (callback) {
-      locals.preStartTime = Date.now();
-      request(url, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        locals.postStartTime = Date.now();
-        if (response.statusCode !== expected_status) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      });
+    it(`should load with status ${expected_status}`, async () => {
+      // `fetch()` pre-normalizes the URL, which means we can't use it to test
+      // path traversal attacks. In this specific case, we'll use `http.request()`
+      // directly to avoid this normalization.
+      const res = await new Promise<{ status: number; text: () => Promise<string> }>(
+        (resolve, reject) => {
+          // We deliberately use the deprecated `node:url#parse()` instead of
+          // `new URL()` to avoid path normalization.
+          const parsedUrl = nodeUrl.parse(url);
+          const req = http.request(
+            {
+              hostname: 'localhost',
+              port: config.serverPort,
+              path: parsedUrl.path,
+              method: 'GET',
+            },
+            (res) => {
+              let data = '';
+
+              res.on('data', (chunk) => {
+                data += chunk;
+              });
+
+              res.on('end', () => {
+                resolve({
+                  status: res.statusCode ?? 500,
+                  text: () => Promise.resolve(data),
+                });
+              });
+            },
+          );
+
+          req.on('error', (err) => {
+            reject(err);
+          });
+
+          req.end();
+        },
+      );
+
+      assert.equal(res.status, expected_status);
+      page = await res.text();
     });
     if (should_parse) {
       it('should parse', function () {
@@ -395,27 +425,18 @@ function editPost(
   expectedDiskContents,
 ) {
   describe(`POST to edit url with action ${action}`, function () {
-    it('should load successfully', function (callback) {
-      const form = {
-        __action: action,
-        __csrf_token: locals.__csrf_token,
-        file_edit_contents: b64Util.b64EncodeUnicode(fileEditContents),
-        file_edit_user_id: locals.file_edit_user_id,
-        file_edit_course_id: locals.file_edit_course_id,
-        file_edit_orig_hash: locals.file_edit_orig_hash,
-      };
-      locals.preEndTime = Date.now();
-      request.post({ url, form, followAllRedirects: true }, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        locals.postEndTime = Date.now();
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode + '\n' + body));
-        }
-        page = body;
-        callback(null);
+    it('should load successfully', async () => {
+      const res = await fetch(url, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: action,
+          __csrf_token: locals.__csrf_token,
+          file_edit_contents: b64Util.b64EncodeUnicode(fileEditContents),
+          file_edit_orig_hash: locals.file_edit_orig_hash,
+        }),
       });
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -437,19 +458,10 @@ function jsonToContents(json) {
 
 function findEditUrl(name, selector, url, expectedEditUrl) {
   describe(`GET to ${name}`, function () {
-    it('should load successfully', function (callback) {
-      locals.preStartTime = Date.now();
-      request(url, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        locals.postStartTime = Date.now();
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should load successfully', async () => {
+      const res = await fetch(url);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -477,20 +489,6 @@ function verifyEdit(
     locals.__csrf_token = elemList[0].attribs.value;
     assert.isString(locals.__csrf_token);
   });
-  it('should have a file_edit_user_id', function () {
-    elemList = locals.$('form[name="editor-form"] input[name="file_edit_user_id"]');
-    assert.lengthOf(elemList, 1);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.file_edit_user_id = elemList[0].attribs.value;
-    assert.isString(locals.file_edit_user_id);
-  });
-  it('should have a file_edit_course_id', function () {
-    elemList = locals.$('form[name="editor-form"] input[name="file_edit_course_id"]');
-    assert.lengthOf(elemList, 1);
-    assert.nestedProperty(elemList[0], 'attribs.value');
-    locals.file_edit_course_id = elemList[0].attribs.value;
-    assert.isString(locals.file_edit_course_id);
-  });
   it('should have a file_edit_orig_hash', function () {
     elemList = locals.$('form[name="editor-form"] input[name="file_edit_orig_hash"]');
     assert.lengthOf(elemList, 1);
@@ -498,66 +496,30 @@ function verifyEdit(
     locals.file_edit_orig_hash = elemList[0].attribs.value;
     assert.isString(locals.file_edit_orig_hash);
   });
-  it('should have a script with draft file contents', function (callback) {
-    for (const elem of Array.from((locals.$ as cheerio.CheerioAPI)('script'))) {
-      if (typeof elem !== 'undefined' && Object.prototype.hasOwnProperty.call(elem, 'children')) {
-        if (elem.children.length > 0) {
-          if ('data' in elem.children[0]) {
-            const match = elem.children[0].data.match(
-              /{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-draft"[^{]*}/ms,
-            );
-            if (match != null) {
-              locals.fileContents = b64Util.b64DecodeUnicode(match[1]);
-              return callback(null);
-            }
-          }
-        }
-      }
-    }
-    return callback(new Error('found no script with draft file contents'));
-  });
-  it('should match expected draft file contents', function () {
-    assert.strictEqual(locals.fileContents, expectedDraftContents);
+  it('editor element should match expected draft file contents', function () {
+    const editor = locals.$('#file-editor-draft');
+    assert.lengthOf(editor, 1);
+    const fileContents = b64Util.b64DecodeUnicode(editor.data('contents'));
+    assert.strictEqual(fileContents, expectedDraftContents);
   });
   it(`should have results of save and sync - ${expectedToFindResults}`, function () {
-    elemList = locals.$('form[name="editor-form"] div[id^="results-"]');
+    elemList = locals.$('form[name="editor-form"] #job-sequence-results');
     if (expectedToFindResults) {
       assert.lengthOf(elemList, 1);
     } else {
       assert.lengthOf(elemList, 0);
     }
   });
-  it(`should have a script with disk file contents - ${expectedToFindChoice}`, function (callback) {
-    for (const elem of Array.from((locals.$ as cheerio.CheerioAPI)('script'))) {
-      if (typeof elem !== 'undefined' && Object.prototype.hasOwnProperty.call(elem, 'children')) {
-        if (elem.children.length > 0) {
-          if ('data' in elem.children[0]) {
-            const match = elem.children[0].data.match(
-              /{[^{]*contents: "([^"]*)"[^{]*elementId: "file-editor-([^"]*)-disk"[^{]*}/ms,
-            );
-            if (match != null) {
-              if (expectedToFindChoice) {
-                locals.diskContents = b64Util.b64DecodeUnicode(match[1]);
-                return callback(null);
-              } else {
-                return callback(new Error('found a script with disk file contents'));
-              }
-            }
-          }
-        }
-      }
-    }
+  it(`should ${expectedToFindChoice ? '' : 'not '}have an editor with disk file contents`, function () {
+    const editor = locals.$('#file-editor-disk');
     if (expectedToFindChoice) {
-      return callback(new Error('found no script with disk file contents'));
+      assert.lengthOf(editor, 1);
+      const fileContents = b64Util.b64DecodeUnicode(editor.data('contents'));
+      assert.strictEqual(fileContents, expectedDiskContents);
     } else {
-      return callback(null);
+      assert.lengthOf(editor, 0);
     }
   });
-  if (expectedToFindChoice) {
-    it('should match expected disk file contents', function () {
-      assert.strictEqual(locals.diskContents, expectedDiskContents);
-    });
-  }
 }
 
 function editGet(
@@ -568,19 +530,10 @@ function editGet(
   expectedDiskContents,
 ) {
   describe('GET to edit url', function () {
-    it('should load successfully', function (callback) {
-      locals.preStartTime = Date.now();
-      request(url, function (error, response, body) {
-        if (error) {
-          return callback(error);
-        }
-        locals.postStartTime = Date.now();
-        if (response.statusCode !== 200) {
-          return callback(new Error('bad status: ' + response.statusCode));
-        }
-        page = body;
-        callback(null);
-      });
+    it('should load successfully', async () => {
+      const res = await fetch(url);
+      assert.equal(res.status, 200);
+      page = await res.text();
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -1072,7 +1025,7 @@ function testRenameFile(params: {
     });
     it('should have a CSRF token, old_file_name, working_path', () => {
       const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
-      elemList = row.find('button[id^="instructorFileRenameForm-"]');
+      elemList = row.find('button[data-testid="rename-file-button"]');
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token
@@ -1122,7 +1075,7 @@ function testDeleteFile(params: { url: string; path: string }) {
     });
     it('should have a CSRF token and a file_path', () => {
       const row = locals.$(`tr:has(a:contains("${params.path.split('/').pop()}"))`);
-      elemList = row.find('button[id^="instructorFileDeleteForm-"]');
+      elemList = row.find('button[data-testid="delete-file-button"]');
       assert.lengthOf(elemList, 1);
       const $ = cheerio.load(elemList[0].attribs['data-content']);
       // __csrf_token

@@ -322,7 +322,10 @@ const ConfigSchema = z.object({
    * https://expressjs.com/en/4x/api.html#trust.proxy.options.table
    */
   trustProxy: z.union([z.boolean(), z.number(), z.string()]).default(false),
-  workspaceLogsS3Bucket: z.string().nullable().default(null),
+  workspaceLogsS3Bucket: z
+    .string()
+    .nullable()
+    .default(process.env.NODE_ENV !== 'production' ? 'workspace-logs' : null),
   workspaceLogsFlushIntervalSec: z.number().default(60),
   /**
    * The number of days after which a workspace version's logs should no longer
@@ -434,8 +437,6 @@ const ConfigSchema = z.object({
    */
   sentryDsn: z.string().nullable().default(null),
   sentryEnvironment: z.string().default('development'),
-  sentryTracesSampleRate: z.number().nullable().default(null),
-  sentryProfilesSampleRate: z.number().nullable().default(null),
   /**
    * In some markets, such as China, the title of all pages needs to be a
    * specific string in order to comply with local regulations. If this option
@@ -476,7 +477,6 @@ const ConfigSchema = z.object({
    * create a course if the course request meets certain criteria.
    */
   courseRequestAutoApprovalEnabled: z.boolean().default(false),
-  attachedFilesDialogEnabled: z.boolean().default(true),
   devMode: z.boolean().default((process.env.NODE_ENV ?? 'development') === 'development'),
   /** The client ID of your app in AAD; required. */
   azureClientID: z.string().default('<your_client_id>'),

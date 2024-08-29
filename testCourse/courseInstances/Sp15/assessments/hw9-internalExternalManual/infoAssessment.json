@@ -4,28 +4,23 @@
   "title": "Homework for Internal, External, Manual grading methods",
   "set": "Homework",
   "number": "9",
-  "allowAccess": [
-    {
-      "credit": 100
-    }
-  ],
+  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "comments": "Generic points, use default grading method",
       "questions": [
-        {"id": "internalGrade/addingNumbers", "points": 2, "maxPoints": 6},
-        {"id": "manualGrade/codeUpload",      "points": 2, "maxPoints": 6},
-        {"id": "externalGrade/alpine",        "points": 2, "maxPoints": 6}
+        { "id": "internalGrade/addingNumbers", "points": 2, "maxPoints": 6 },
+        { "id": "manualGrade/codeUpload", "points": 2, "maxPoints": 6 },
+        { "id": "externalGrade/alpine", "points": 2, "maxPoints": 6 }
       ]
     },
     {
       "comments": "Behavior based on separate points for manual and auto",
       "questions": [
-        {"id": "internalGrade/addingNumbers2", "manualPoints": 2},
-        {"id": "manualGrade/addingNumbers2", "autoPoints": 2, "maxAutoPoints": 6},
-        {"id": "addNumbers", "autoPoints": 0, "maxAutoPoints": 0, "manualPoints": 0}
+        { "id": "internalGrade/addingNumbers2", "manualPoints": 2 },
+        { "id": "manualGrade/addingNumbers2", "autoPoints": 2, "maxAutoPoints": 6 },
+        { "id": "addNumbers", "autoPoints": 0, "maxAutoPoints": 0, "manualPoints": 0 }
       ]
     }
   ]
 }
-

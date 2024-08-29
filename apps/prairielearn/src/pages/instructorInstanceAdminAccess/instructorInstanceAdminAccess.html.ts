@@ -1,7 +1,9 @@
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { CourseInstanceAccessRule } from '../../lib/db-types.js';
 
 export function InstructorInstanceAdminAccess({
@@ -17,29 +19,25 @@ export function InstructorInstanceAdminAccess({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          $(() => {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${CourseInstanceSyncErrorsAndWarnings({
+            authz_data,
+            courseInstance: course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${course_instance.long_name} course instance access rules
+              <h1>${course_instance.long_name} course instance access rules</h1>
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="Access rules">
                 <thead>
                   <tr>
                     <th>UIDs</th>

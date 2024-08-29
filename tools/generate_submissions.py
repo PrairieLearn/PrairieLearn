@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/env python3
 
 # Generates blank submissions for all students in an assessment. This
 # can be used in local testing where having several submissions is
@@ -23,9 +23,12 @@
 # Students tab to change the remaining time for all instances, which
 # has the option to re-open all closed assessment instances.
 
-import argparse, json
+import argparse
+import json
+
 import requests
 from lxml import html
+
 
 def get_csrf_token(url):
     pass # parser = etree

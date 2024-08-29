@@ -70,6 +70,7 @@ export async function authzCourseOrInstance(req, res) {
   res.locals.authz_data = {
     authn_user: _.cloneDeep(res.locals.authn_user),
     authn_mode: result.rows[0].mode,
+    authn_mode_reason: result.rows[0].mode_reason,
     authn_is_administrator: res.locals.is_administrator,
     authn_course_role: permissions_course.course_role,
     authn_has_course_permission_preview: permissions_course.has_course_permission_preview,
@@ -78,6 +79,7 @@ export async function authzCourseOrInstance(req, res) {
     authn_has_course_permission_own: permissions_course.has_course_permission_own,
     user: _.cloneDeep(res.locals.authn_user),
     mode: result.rows[0].mode,
+    mode_reason: result.rows[0].mode_reason,
     is_administrator: res.locals.is_administrator,
     course_role: permissions_course.course_role,
     has_course_permission_preview: permissions_course.has_course_permission_preview,
@@ -115,6 +117,8 @@ export async function authzCourseOrInstance(req, res) {
     res.locals,
   );
 
+  res.locals.use_bootstrap_4 = await features.enabledFromLocals('bootstrap-4', res.locals);
+
   // Check if it is necessary to request a user data override - if not, return
   let overrides = [];
   if (req.cookies.pl2_requested_uid) {
@@ -141,13 +145,6 @@ export async function authzCourseOrInstance(req, res) {
       name: 'Course instance role',
       value: req.cookies.pl2_requested_course_instance_role,
       cookie: 'pl2_requested_course_instance_role',
-    });
-  }
-  if (req.cookies.pl2_requested_mode) {
-    overrides.push({
-      name: 'Mode',
-      value: req.cookies.pl2_requested_mode,
-      cookie: 'pl2_requested_mode',
     });
   }
   if (req.cookies.pl2_requested_date) {
@@ -302,7 +299,7 @@ export async function authzCourseOrInstance(req, res) {
     allow_example_course_override: false,
     ip: req.ip,
     req_date,
-    req_mode: req.cookies.pl2_requested_mode || res.locals.authz_data.mode,
+    req_mode: res.locals.authz_data.mode,
     req_course_role: req.cookies.pl2_requested_course_role || null,
     req_course_instance_role: req.cookies.pl2_requested_course_instance_role || null,
   };
@@ -574,6 +571,7 @@ export async function authzCourseOrInstance(req, res) {
   res.locals.is_administrator = res.locals.authz_data.is_administrator;
 
   res.locals.authz_data.mode = effectiveResult.rows[0].mode;
+  res.locals.authz_data.mode_reason = effectiveResult.rows[0].mode_reason;
   res.locals.req_date = req_date;
 }
 

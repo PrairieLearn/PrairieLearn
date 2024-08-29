@@ -1,8 +1,8 @@
 import * as path from 'path';
 
 import { assert } from 'chai';
+import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
-import stringify from 'json-stable-stringify';
 import * as tmp from 'tmp-promise';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -367,11 +367,10 @@ const questions: Record<string, Question> = {
     tags: ['workspace'],
     type: 'v3',
     workspaceOptions: {
-      image: 'prairielearn/workspace-vscode',
+      image: 'prairielearn/workspace-vscode-python',
       port: 8080,
-      home: '/home/coder',
-      args: '--auth none',
-      gradedFiles: ['animal.h', 'animal.c'],
+      home: '/home/coder/workspace',
+      gradedFiles: ['fibonacci.py'],
     },
   },
 };

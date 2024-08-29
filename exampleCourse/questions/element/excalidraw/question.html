@@ -1,0 +1,27 @@
+<pl-question-panel>
+<p>You can use the element <code>pl-excalidraw</code> to draw a vector diagram. You may also insert a raster image
+  (such as jpg, png) into the diagram by uploading it using the <i>Insert Image</i> button.</p>
+<hr>
+</pl-question-panel>
+
+<p><b>Draw something</b></p>
+<pl-excalidraw answers-name="vector" width="100%" height="900px"></pl-excalidraw>
+<pl-answer-panel>Answer 1</pl-answer-panel>
+
+<hr>
+<p><b>Draw something else, with a starter diagram</b></p>
+<pl-excalidraw answers-name="vector-2" source-file-name="starter.excalidraw"
+               directory="clientFilesQuestion"></pl-excalidraw>
+<pl-answer-panel>Answer 2</pl-answer-panel>
+
+<pl-question-panel>
+<hr>
+<p><b>A read-only view of the starter above</b></p>
+<pl-excalidraw gradable="false" source-file-name="starter.excalidraw" directory="clientFilesQuestion"></pl-excalidraw>
+</pl-question-panel>
+
+<pl-answer-panel>
+  <hr>
+  <p><b>The answer we're looking for</b></p>
+  <pl-excalidraw gradable="false" source-file-name="vector.excalidraw" directory="clientFilesQuestion"></pl-excalidraw>
+</pl-answer-panel>

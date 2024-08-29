@@ -3,10 +3,13 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { html, joinHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { Pager } from '../../components/Pager.html.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import {
@@ -72,28 +75,18 @@ export function InstructorIssues({
   closedCount: number;
   chosenPage: number;
 }) {
-  const { authz_data, __csrf_token, urlPrefix } = resLocals;
+  const { authz_data, __csrf_token, urlPrefix, course } = resLocals;
   const issueCount = issues[0]?.issue_count ?? 0;
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledStylesheetTag('instructorIssues.css')}
-        <script>
-          $(() => {
-            $('[data-toggle=tooltip]').tooltip();
-          });
-        </script>
+        ${HeadContents({ resLocals })} ${compiledStylesheetTag('instructorIssues.css')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/courseSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })}
           ${authz_data.has_course_permission_edit
             ? CloseMatchingIssuesModal({
                 openFilteredIssuesCount,
@@ -107,7 +100,7 @@ export function InstructorIssues({
             <div class="card-header bg-primary text-white">
               <div class="d-flex flex-row align-items-center mb-2">
                 <div class="d-flex flex-column">
-                  Issues
+                  <h1 class="h6 font-weight-normal mb-0">Issues</h1>
                   <small>
                     <a href="${formattedCommonQueries.allOpenQuery}" class="mr-3 text-white">
                       <i class="fa fa-exclamation-circle"></i> ${openCount} open
@@ -200,13 +193,7 @@ export function InstructorIssues({
               : html`
                   <div class="list-group list-group-flush">
                     ${issues.map((row) =>
-                      IssueRow({
-                        issue: row,
-                        urlPrefix,
-                        authz_data,
-                        csrfToken: __csrf_token,
-                        resLocals,
-                      }),
+                      IssueRow({ issue: row, urlPrefix, authz_data, csrfToken: __csrf_token }),
                     )}
                   </div>
                 `}
@@ -234,13 +221,11 @@ function IssueRow({
   urlPrefix,
   authz_data,
   csrfToken,
-  resLocals,
 }: {
   issue: IssueComputedRow;
   urlPrefix: string;
   authz_data: Record<string, any>;
   csrfToken: string;
-  resLocals: Record<string, any>;
 }) {
   const plainUrlPrefix = config.urlPrefix;
   const mailtoLink = `mailto:${
@@ -309,18 +294,13 @@ function IssueRow({
         ${issue.manually_reported
           ? html`<span class="badge badge-info">Manually reported</span>`
           : html`<span class="badge badge-warning">Automatically reported</span>`}
-        ${issue.assessment
-          ? html`
-              ${renderEjs(import.meta.url, "<%- include('../partials/assessment') %>", {
-                ...resLocals,
-                assessment: {
-                  ...issue.assessment,
-                  hide_link: issue.hideAssessmentLink,
-                  // Construct the URL prefix with the appropriate course instance
-                  urlPrefix: `${plainUrlPrefix}/course_instance/${issue.course_instance_id}/instructor`,
-                },
-              })}
-            `
+        ${issue.assessment && issue.course_instance_id
+          ? AssessmentBadge({
+              plainUrlPrefix,
+              course_instance_id: issue.course_instance_id,
+              hideLink: issue.hideAssessmentLink,
+              assessment: issue.assessment,
+            })
           : ''}
         ${issue.course_instance_short_name
           ? html`<span class="badge badge-dark">${issue.course_instance_short_name}</span>`
@@ -360,17 +340,15 @@ function CloseMatchingIssuesModal({
       </p>
     `,
     footer: html`
-      <div class="modal-footer">
-        <input type="hidden" name="__action" value="close_matching" />
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <input
-          type="hidden"
-          name="unsafe_issue_ids"
-          value="${issues.map((issue) => issue.id).join(',')}"
-        />
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-danger">Close issues</button>
-      </div>
+      <input type="hidden" name="__action" value="close_matching" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input
+        type="hidden"
+        name="unsafe_issue_ids"
+        value="${issues.map((issue) => issue.id).join(',')}"
+      />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-danger">Close issues</button>
     `,
   });
 }
@@ -384,7 +362,7 @@ function FilterHelpModal() {
         Issues can be filtered and searched in a variety of ways. Filtering is done with the
         following set of qualifiers.
       </p>
-      <table class="table table-bordered">
+      <table class="table table-bordered" aria-label="Filtering qualifiers">
         <thead>
           <th>Qualifier</th>
           <th>Explanation</th>
@@ -430,20 +408,20 @@ function FilterHelpModal() {
           </tr>
         </tbody>
       </table>
-      <h4>Full-text search</h4>
+      <h3 class="h4">Full-text search</h3>
       <p>
         You can also search the issue message by simply entering text. For example,
         <code>no picture</code> would return any issues that contain text like "no picture".
       </p>
 
-      <h4>Qualifier negation</h4>
+      <h3 class="h4">Qualifier negation</h3>
       <p>
         Any qualifier can be negated with the a hyphen (<code>-</code>). For example,
         <code>-is:manually-reported</code> would return all issues that were
         <strong>not</strong> manually reported.
       </p>
 
-      <h4>Combining qualifiers</h4>
+      <h3 class="h4">Combining qualifiers</h3>
       <p>These can be combined to form complex searches. An example:</p>
       <code><pre>is:open qid:vector answer is wrong</pre></code>
       <p>
