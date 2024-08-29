@@ -3,11 +3,11 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { html, joinHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { Pager } from '../../components/Pager.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
@@ -84,7 +84,7 @@ export function InstructorIssues({
         ${HeadContents({ resLocals })} ${compiledStylesheetTag('instructorIssues.css')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })}
           ${authz_data.has_course_permission_edit
@@ -362,7 +362,7 @@ function FilterHelpModal() {
         Issues can be filtered and searched in a variety of ways. Filtering is done with the
         following set of qualifiers.
       </p>
-      <table class="table table-bordered">
+      <table class="table table-bordered" aria-label="Filtering qualifiers">
         <thead>
           <th>Qualifier</th>
           <th>Explanation</th>

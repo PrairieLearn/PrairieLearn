@@ -9,7 +9,7 @@ import { clearCookie } from '../lib/cookie.js';
 export default function (req, res, next) {
   // We use the pl_requested_data_changed cookie to detect when we
   // have attempted to change the effective user (or other emulation
-  // data). This cookie is set in pages/partials/navbar.ejs and
+  // data). This cookie is set in components/Navbar.html.ts and
   // pages/instructorEffectiveUser.
   //
   // We use this cookie in

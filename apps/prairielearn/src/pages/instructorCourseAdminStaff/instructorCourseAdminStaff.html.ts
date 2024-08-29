@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import {
   CourseInstance,
@@ -68,7 +68,7 @@ export function InstructorCourseAdminStaff({
         </style>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -360,7 +360,7 @@ function StaffTable({
   isAdministrator: boolean;
 }) {
   return html`
-    <table class="table table-sm table-hover table-striped">
+    <table class="table table-sm table-hover table-striped" aria-label="Course staff members">
       <thead>
         <th>UID</th>
         <th>Name</th>
@@ -596,7 +596,11 @@ function StaffTable({
                                 </button>
                               </div>
                             </div>
-                            <button type="submit" class="btn btn-sm btn-outline-primary">
+                            <button
+                              type="submit"
+                              class="btn btn-sm btn-outline-primary"
+                              aria-label="Remove access"
+                            >
                               <i class="fa fa-times"></i>
                             </button>
                           </div>
@@ -678,7 +682,11 @@ function StaffTable({
 
 function AccessLevelsTable() {
   return html`
-    <table class="table table-striped table-sm border" style="max-width: 45em">
+    <table
+      class="table table-striped table-sm border"
+      style="max-width: 45em"
+      aria-label="Recommended access levels"
+    >
       <tr>
         <th scope="col">Role</th>
         <th class="text-center" scope="col">Course content access</th>

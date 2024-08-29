@@ -98,17 +98,6 @@ export const AssessmentsFormatForQuestionSchema = z.array(
   }),
 );
 
-// Result of grading_job_status sproc
-export const GradingJobStatusSchema = z.enum([
-  'none',
-  'canceled',
-  'queued',
-  'grading',
-  'graded',
-  'requested',
-]);
-export type GradingJobStatus = z.infer<typeof GradingJobStatusSchema>;
-
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -698,6 +687,16 @@ export const JobSequenceSchema = z.object({
 });
 export type JobSequence = z.infer<typeof JobSequenceSchema>;
 
+export const Lti13AssessmentsSchema = z.object({
+  assessment_id: IdSchema,
+  id: IdSchema,
+  last_activity: DateFromISOString,
+  lineitem_id_url: z.string(),
+  lineitem: z.record(z.string(), z.any()),
+  lti13_course_instance_id: IdSchema,
+});
+export type Lti13Assessments = z.infer<typeof Lti13AssessmentsSchema>;
+
 export const Lti13CourseInstanceSchema = z.object({
   context_id: z.string(),
   context_label: z.string().nullable(),
@@ -707,6 +706,7 @@ export const Lti13CourseInstanceSchema = z.object({
   deployment_id: z.string(),
   id: IdSchema,
   lti13_instance_id: IdSchema,
+  lineitems_url: z.string().nullable(),
 });
 export type Lti13CourseInstance = z.infer<typeof Lti13CourseInstanceSchema>;
 
@@ -770,6 +770,18 @@ export const PlanGrantSchema = z.object({
   user_id: IdSchema.nullable(),
 });
 export type PlanGrant = z.infer<typeof PlanGrantSchema>;
+
+export const QueryRunSchema = z.object({
+  authn_user_id: IdSchema,
+  date: DateFromISOString,
+  error: z.string().nullable(),
+  id: IdSchema,
+  name: z.string(),
+  params: z.record(z.string(), z.any()).nullable(),
+  result: z.record(z.string(), z.any()).nullable(),
+  // The sql column is deprecated and slated for removal in a near-future PR, so it is not included.
+});
+export type QueryRun = z.infer<typeof QueryRunSchema>;
 
 export const QuestionGenerationContextEmbeddingSchema = z.object({
   id: IdSchema,

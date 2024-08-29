@@ -1,3 +1,4 @@
+import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
@@ -33,6 +34,19 @@ export function Workspace({
         ${HeadContents({ resLocals, pageNote, pageTitle })}
         <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />
         ${compiledScriptTag('workspaceClient.ts')}
+        ${resLocals.assessment?.type === 'Exam' && resLocals.assessment_instance_remaining_ms
+          ? html`${compiledScriptTag('examTimeLimitCountdown.ts')}
+            ${EncodedData(
+              {
+                serverRemainingMS: resLocals.assessment_instance_remaining_ms,
+                serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
+                serverUpdateURL: `${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance_id}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
+                canTriggerFinish: false,
+                csrfToken: resLocals.__csrf_token,
+              },
+              'time-limit-data',
+            )}`
+          : ''}
       </head>
 
       <body
@@ -44,49 +58,46 @@ export function Workspace({
       >
         ${RebootModal({ __csrf_token })} ${ResetModal({ __csrf_token })}
 
-        <nav
-          class="navbar navbar-expand-md navbar-dark bg-info align-items-center"
-          style="height:55px"
-        >
+        <nav class="navbar navbar-light navbar-expand-lg bg-info align-items-center">
           <div class="container-fluid">
-            <div class="d-flex flex-column mr-3 text-white">
-              <span>
-                <h1 class="h6 font-weight-normal mb-0">
-                  <a href="${navTitleHref}" target="_blank" class="text-white">${navTitle}</a>
-                </h1>
-              </span>
-              <span class="small">
+            <div class="d-flex flex-column mr-3">
+              <h1 class="h6 font-weight-normal mb-0">
+                <a href="${navTitleHref}" target="_blank" style="color: #000;">${navTitle}</a>
+              </h1>
+              <span class="small" style="color: #000;">
                 <i class="fa fa-laptop-code" aria-hidden="true"></i>
                 PrairieLearn Workspace
               </span>
             </div>
 
-            <div class="d-flex flex-row ml-auto align-items-center">
-              <ul class="navbar-nav flex-row">
-                <li class="mr-2">
-                  <span id="state" class="badge badge-dark badge-workspace text-uppercase"
-                    ><i class="fas fa-spinner fa-pulse"></i></span
-                  ><span
-                    id="message"
-                    class="badge badge-dark badge-workspace badge-append font-weight-normal"
-                  ></span>
-                </li>
-              </ul>
-              <button
-                class="navbar-toggler"
-                type="button"
-                data-toggle="collapse"
-                data-target="#workspace-nav"
-              >
-                <span class="navbar-toggler-icon"></span>
-              </button>
+            <div class="d-flex flex-row mr-auto align-items-center">
+              <span id="state" class="badge badge-dark badge-workspace text-uppercase">
+                <i class="fas fa-spinner fa-pulse"></i>
+              </span>
+              <span
+                id="message"
+                class="badge badge-dark badge-workspace badge-append font-weight-normal"
+              ></span>
             </div>
-
+            <button
+              class="navbar-toggler ml-2"
+              type="button"
+              data-toggle="collapse"
+              data-target="#workspace-nav"
+            >
+              <span class="navbar-toggler-icon"></span>
+            </button>
             <div class="collapse navbar-collapse" id="workspace-nav">
               <ul class="navbar-nav ml-auto">
-                <li class="d-sm-none nav-item ml-2 my-1">
-                  <span class="nav-item badge badge-light">${navTitle}</span>
-                </li>
+                ${resLocals.assessment?.type === 'Exam' &&
+                resLocals.assessment_instance_remaining_ms
+                  ? html` <li class="nav-item ml-2 my-1">
+                      <div id="countdownProgress"></div>
+                      <div class="text-white small">
+                        Time remaining: <span id="countdownDisplay"></span>
+                      </div>
+                    </li>`
+                  : ''}
                 <li class="nav-item ml-2 my-1">
                   <button
                     id="reboot"

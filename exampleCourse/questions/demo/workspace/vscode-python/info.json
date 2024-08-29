@@ -1,0 +1,21 @@
+{
+  "uuid": "499d4c47-74a6-4e3e-ad65-1d38d9d97e8e",
+  "title": "Workspace demo: VS Code (Python)",
+  "topic": "Workspace",
+  "tags": ["su20", "tyang15"],
+  "type": "v3",
+  "singleVariant": true,
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-vscode-python",
+    "port": 8080,
+    "home": "/home/coder/workspace",
+    "gradedFiles": ["fibonacci.py"]
+  },
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 20
+  }
+}

@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { Topic } from '../../lib/db-types.js';
@@ -20,7 +20,7 @@ export function InstructorCourseAdminTopics({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -32,7 +32,7 @@ export function InstructorCourseAdminTopics({
               <h1>Topics</h1>
             </div>
             <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
+              <table class="table table-sm table-hover table-striped" aria-label="Topics">
                 <thead>
                   <tr>
                     <th>Number</th>
