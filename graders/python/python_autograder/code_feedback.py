@@ -31,7 +31,17 @@ from pandas import DataFrame
 
 
 class GradingComplete(Exception):  # noqa: N818
-    pass
+    """
+    A general exception to mark that grading has completed early.
+    All future test cases are skipped.
+    """
+
+
+class GradingTestFailedError(Exception):
+    """
+    A general exception to mark that some failure of the current
+    test case has occurred.  Future test cases will still be executed.
+    """
 
 
 class Feedback:
@@ -113,6 +123,17 @@ class Feedback:
         """
         cls.add_feedback(fb_text)
         raise GradingComplete("Your answer is correct.")
+
+    @classmethod
+    def finish_test(cls, fb_text):
+        """
+        Feedback.finish(fb_text)
+
+        Complete grading the current test case immediately, additionally
+        outputting the message in fb_text.
+        """
+        cls.add_feedback(fb_text)
+        raise GradingTestFailedError
 
     @staticmethod
     def not_allowed(*_args, **_kwargs) -> NoReturn:
@@ -467,7 +488,7 @@ class Feedback:
         return True
 
     @classmethod
-    def call_user(cls, f: Callable, *args, **kwargs) -> Any:
+    def call_user(cls, f: Callable, stop_on_exception=False, *args, **kwargs) -> Any:
         """
         Attempts to call a student defined function, with any arbitrary arguments specified in `*args` and `**kwargs`. If the student code raises an exception, this will be caught and user feedback will be given.
 
@@ -500,7 +521,9 @@ class Feedback:
                     "callable."
                 )
 
-            raise GradingComplete from exc
+            if stop_on_exception:
+                raise GradingComplete from exc
+            raise GradingTestFailedError from exc
 
     @classmethod
     def check_plot(
