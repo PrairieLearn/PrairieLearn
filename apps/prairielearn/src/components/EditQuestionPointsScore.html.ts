@@ -2,6 +2,15 @@ import { escapeHtml, html } from '@prairielearn/html';
 
 import { AssessmentQuestion, InstanceQuestion } from '../lib/db-types.js';
 
+function findLabel(field) {
+  return {
+    points: 'points',
+    auto_points: 'auto points',
+    manual_points: 'manual points',
+    score_perc: 'score percentage',
+  }[field];
+}
+
 export function EditQuestionPointsScoreButton({
   field,
   instance_question,
@@ -22,12 +31,6 @@ export function EditQuestionPointsScoreButton({
     urlPrefix,
     csrfToken,
   });
-  const label = {
-    points: 'points',
-    auto_points: 'auto points',
-    manual_points: 'manual points',
-    score_perc: 'score percentage',
-  }[field];
 
   return html`<button
     type="button"
@@ -36,8 +39,8 @@ export function EditQuestionPointsScoreButton({
     data-container="body"
     data-html="true"
     data-placement="auto"
-    title="Change question ${label}"
-    aria-label="Change question ${label}"
+    title="Change question ${findLabel(field)}"
+    aria-label="Change question ${findLabel(field)}"
     data-content="${escapeHtml(editForm)}"
     data-testid="edit-question-points-score-button-${field}"
   >
@@ -94,7 +97,7 @@ function EditQuestionPointsScoreForm({
             class="form-control"
             name="${field}"
             value="${pointsOrScore}"
-            aria-label="${field}"
+            aria-label="${findLabel(field)}"
           />
           <div class="input-group-append">
             <span class="input-group-text">

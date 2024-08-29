@@ -325,6 +325,7 @@ function CourseUpdateColumn({
             course,
             column_name,
             csrfToken,
+            label,
           }),
         )}"
       >
@@ -338,10 +339,12 @@ function CourseUpdateColumnForm({
   course,
   column_name,
   csrfToken,
+  label,
 }: {
   course: CourseWithInstitution;
   column_name: keyof CourseWithInstitution;
   csrfToken: string;
+  label: string;
 }) {
   return html`
     <form name="edit-course-column-form" method="POST">
@@ -355,7 +358,7 @@ function CourseUpdateColumnForm({
           class="form-control"
           name="value"
           value="${course[column_name]}"
-          aria-label="${column_name}"
+          aria-label="${label}"
         />
       </div>
       <div class="text-right">
