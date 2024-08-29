@@ -2,7 +2,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 
 import { AssessmentQuestion, InstanceQuestion } from '../lib/db-types.js';
 
-function findLabel(field) {
+function findLabel(field: string) {
   return {
     points: 'points',
     auto_points: 'auto points',
