@@ -94,3 +94,20 @@ DELETE FROM lti13_assessments
 WHERE
   lti13_course_instance_id = $lti13_course_instance_id
   AND assessment_id = $assessment_id;
+
+-- BLOCK select_assessment_instances_for_scores
+SELECT
+  ai.*,
+  lu.sub AS lti13_user_sub,
+  la.lineitem_id_url AS lti13_lineitem_id_url,
+  lti13_course_instances.lti13_instance_id
+FROM
+  assessment_instances AS ai
+  JOIN assessments AS a ON (a.id = ai.assessment_id)
+  JOIN lti13_assessments AS la ON (la.assessment_id = a.id)
+  JOIN lti13_course_instances ON (
+    lti13_course_instances.id = la.lti13_course_instance_id
+  )
+  LEFT JOIN lti13_users AS lu ON (lu.user_id = ai.user_id)
+WHERE
+  ai.assessment_id = $assessment_id;

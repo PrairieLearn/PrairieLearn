@@ -146,3 +146,19 @@ WHERE
   )
 RETURNING
   *;
+
+-- BLOCK update_lti13_assessment_last_activity
+WITH
+  updating AS (
+    UPDATE lti13_assessments
+    SET
+      last_activity = NOW()
+    WHERE
+      assessment_id = $assessment_id
+  )
+SELECT
+  *
+FROM
+  assessments
+WHERE
+  id = $assessment_id;

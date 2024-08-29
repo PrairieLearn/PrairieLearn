@@ -8,9 +8,16 @@ import { Issuer, TokenSet } from 'openid-client';
 import { z } from 'zod';
 
 import { HttpStatusError, makeWithData } from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryAsync, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryRow,
+  queryRows,
+  queryAsync,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import {
+  AssessmentInstanceSchema,
   DateFromISOString,
   Lti13InstanceSchema,
   Lti13CourseInstanceSchema,
@@ -456,6 +463,11 @@ export async function linkAssessment(
 // X-Request-Cost
 // X-Rate-Limit-Remaining
 */
+
+const RESPONSES_TO_NOT_RETRY = [
+  422, // Unprocesssable Content, like POSTing a grade to a non-student
+];
+
 export async function fetchRetry(
   input: RequestInfo | URL,
   opts?: RequestInit | undefined,
@@ -472,7 +484,7 @@ export async function fetchRetry(
   try {
     const response = await fetch(input, opts);
 
-    if (!response.ok) {
+    if (!response.ok && !RESPONSES_TO_NOT_RETRY.includes(response.status)) {
       throw makeWithData('LTI 1.3 fetch error, please try again', {
         status: response.status,
         statusText: response.statusText,
@@ -497,5 +509,63 @@ export async function fetchRetry(
     }
     await sleep(fetchRetryOpts.sleepMs);
     return await fetchRetry(input, opts, fetchRetryOpts);
+  }
+}
+
+export const Lti13ScoreSchema = z.object({
+  scoreGiven: z.number(),
+  scoreMaximum: z.number(),
+  userId: z.string(),
+  scoringUserId: z.string().optional(),
+  activityProgress: z.enum(['Initialized', 'Started', 'InProgress', 'Submitted', 'Completed']),
+  gradingProgress: z.enum(['FullyGraded', 'Pending', 'PendingManual', 'Failed', 'NotReady']),
+  timestamp: DateFromISOString,
+  submission: z.any().optional(),
+  startedAt: DateFromISOString.optional(),
+  submittedAt: DateFromISOString.optional(),
+  comment: z.string().optional(),
+});
+export type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
+
+export async function updateLti13Scores(assessment_id: string | number) {
+  const assessment_instances = await queryRows(
+    sql.select_assessment_instances_for_scores,
+    {
+      assessment_id,
+    },
+    AssessmentInstanceSchema.extend({
+      lti13_user_sub: z.string().nullable(),
+      lti13_lineitem_id_url: z.string(),
+      lti13_instance_id: z.string(),
+    }),
+  );
+
+  for (const assessment_instance of assessment_instances) {
+    console.log(assessment_instance);
+
+    // https://canvas.instructure.com/doc/api/score.html#method.lti/ims/scores.create
+    const score: Lti13Score = {
+      timestamp: assessment_instance.modified_at,
+      scoreGiven: assessment_instance.score_perc, // handle null case?
+      scoreMaximum: 100,
+      activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
+      // Seems to only accept the score for FullyGraded or PendingManual
+
+      gradingProgress: 'FullyGraded',
+      userId: assessment_instance.lti13_user_sub, // handle null case?
+    };
+
+    console.log(score);
+    //continue;
+
+    const token = await getAccessToken(assessment_instance.lti13_instance_id);
+    await fetchRetry(assessment_instance.lti13_lineitem_id_url + '/scores', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-type': 'application/vnd.ims.lis.v1.score+json',
+      },
+      body: JSON.stringify(score),
+    });
   }
 }

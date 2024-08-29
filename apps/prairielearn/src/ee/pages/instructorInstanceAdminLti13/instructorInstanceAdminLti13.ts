@@ -4,12 +4,19 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import {
   AssessmentSchema,
   Lti13CourseInstanceSchema,
   Lti13AssessmentsSchema,
+  AssessmentInstanceSchema,
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
@@ -22,6 +29,7 @@ import {
   createAndLinkLineitem,
   validateLti13CourseInstance,
   Lti13CombinedInstanceSchema,
+  updateLti13Scores,
 } from '../../lib/lti13.js';
 
 import {
@@ -253,6 +261,21 @@ router.post(
         }
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
+    } else if (req.body.__action === 'send_grades') {
+      // Validate assessment_id against page auth
+
+      const assessment = await queryRow(
+        sql.update_lti13_assessment_last_activity,
+        {
+          assessment_id: req.body.assessment_id,
+        },
+        AssessmentSchema,
+      );
+
+      await updateLti13Scores(req.body.assessment_id);
+
+      flash('notice', `Sending grades in the background for ${assessment.title}`);
+      return res.redirect(req.originalUrl);
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
     }

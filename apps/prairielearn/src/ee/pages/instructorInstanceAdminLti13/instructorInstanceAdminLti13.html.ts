@@ -280,7 +280,6 @@ export function InstructorInstanceAdminLti13({
                                           class="btn btn-info"
                                           name="__action"
                                           value="send_grades"
-                                          onClick="event.preventDefault();alert('Coming soon &#128512;');"
                                         >
                                           Send grades
                                         </button>
