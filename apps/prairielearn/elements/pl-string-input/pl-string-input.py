@@ -105,6 +105,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         DisplayType,
         DisplayType.BLOCK if multiline else DISPLAY_DEFAULT,
     )
+
+    if display is DisplayType.INLINE and multiline:
+        raise ValueError('Display must be set to "block" for multiline input.')
+
     remove_leading_trailing = pl.get_boolean_attrib(
         element, "remove-leading-trailing", multiline or REMOVE_LEADING_TRAILING_DEFAULT
     )

@@ -990,7 +990,7 @@ def generate(data):
 
 Note that, in multiline inputs, it can be hard to distinguish between inputs with or without a terminating line break (i.e., an additional "Enter" at the end of the input). Because of that, you are strongly encouraged to leave the default setting of `remove-leading-trailing="true"` unchanged when using multiline inputs.
 
-Additionally, multiline inputs will have their line breaks simplified to a single LF (a single `"\n"` in Python) from CR LF (`"\r\n"` in Python). Note that this is different from the behavior of a standard `textarea` HTML element.
+Additionally, multiline inputs will have any CR LF (`"\r\n"` in Python) line breaks normalized to a single LF (a single `"\n"` in Python). Note that this is different from the behavior of a standard `textarea` HTML element.
 
 #### Example implementations
 
