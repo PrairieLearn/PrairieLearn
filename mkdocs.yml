@@ -90,6 +90,7 @@ not_in_nav: |
   workshop/lesson4.md
   workshop/lesson5.md
   python-grader/sphinx-docs.md
+  client-security.md
 
 validation:
   omitted_files: warn
