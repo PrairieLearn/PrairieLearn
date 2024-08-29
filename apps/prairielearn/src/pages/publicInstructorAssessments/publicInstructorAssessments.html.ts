@@ -33,12 +33,11 @@ export function InstructorAssessments({
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
-        ${compiledScriptTag('instructorAssessmentsClient.ts')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('instructorAssessmentsClient.ts')}
       </head>
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
-          <main id="content" class="container-fluid">
+        <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary">
               <div class="row align-items-center justify-content-between">
@@ -60,7 +59,6 @@ export function InstructorAssessments({
                 <tbody>
                   ${rows.map(
                     (row) => html`
-
                       <tr id="row-${row.id}">
                         <td class="align-middle" style="width: 1%">
                           <a
@@ -71,24 +69,22 @@ export function InstructorAssessments({
                           </a>
                         </td>
                         <td class="align-middle">
-                          <a href="${urlPrefix}/public/course_instance/${resLocals.course_instance_id}/instructor/assessment/${row.id}/questions"
+                          <a
+                            href="${urlPrefix}/public/course_instance/${resLocals.course_instance_id}/instructor/assessment/${row.id}/questions"
                             >${row.title}
                             ${row.group_work
                               ? html` <i class="fas fa-users" aria-hidden="true"></i> `
                               : ''}</a
                           >
-
                         </td>
 
                         <td class="align-middle">${row.tid}</td>
-
                       </tr>
                     `,
                   )}
                 </tbody>
               </table>
             </div>
-
           </div>
         </main>
       </body>

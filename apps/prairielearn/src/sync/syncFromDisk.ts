@@ -55,20 +55,21 @@ export async function syncDiskToSqlWithLock(
 
     courseInstance.sharedPublicly = true; // TEST
     if (courseInstance.sharedPublicly) {
-      console.log(`Checking course instance ${courseInstanceKey} since it's public`); // TEST
-
       for (const assessmentKey in courseInstance.assessments) {
         const assessment = courseInstance.assessments[assessmentKey];
         if (assessment.data && assessment.data.zones) {
           for (const zone of assessment.data.zones) {
             if (zone.questions) {
               for (const question of zone.questions) {
-
                 // Construct the path to the info.json file
-                const infoJsonPath = path.join(courseDir, 'questions', question.id || '', 'info.json');
-                console.log(infoJsonPath); // TEST
+                const infoJsonPath = path.join(
+                  courseDir,
+                  'questions',
+                  question.id || '',
+                  'info.json',
+                );
 
-                let questionInfo;     
+                let questionInfo;
                 try {
                   // Read and parse the info.json file
                   const infoJsonData = await fs.promises.readFile(infoJsonPath, 'utf-8');

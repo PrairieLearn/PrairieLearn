@@ -10,41 +10,39 @@ import * as sqldb from '@prairielearn/postgres';
 import { selectCourseById, selectCourseIdByInstanceId } from '../../models/course.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 
-import {
-  AssessmentRowSchema,
-  InstructorAssessments,
-} from './publicInstructorAssessments.html.js';
-
+import { AssessmentRowSchema, InstructorAssessments } from './publicInstructorAssessments.html.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id)
-    res.locals.course = await selectCourseById(courseId)
-    res.locals.course_instance = await selectCourseInstanceById(res.locals.course_instance_id)
+    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id);
+    res.locals.course = await selectCourseById(courseId);
+    res.locals.course_instance = await selectCourseInstanceById(res.locals.course_instance_id);
 
     try {
       const isPublic = await new Promise((resolve, reject) => {
-        sqldb.queryOneRow(sql.check_is_public, {
-          course_instance_id: res.locals.course_instance_id.toString(),
-        }, (err, result) => {
-          if (err) {
-            console.error('Error checking if course instance is public', err);
-            reject(err);
-          } else {
-            resolve(result);
-          }
-        });
+        sqldb.queryOneRow(
+          sql.check_is_public,
+          {
+            course_instance_id: res.locals.course_instance_id.toString(),
+          },
+          (err, result) => {
+            if (err) {
+              console.error('Error checking if course instance is public', err);
+              reject(err);
+            } else {
+              resolve(result);
+            }
+          },
+        );
       });
-    
+
       if (!isPublic) {
         throw new error.HttpStatusError(404, `Course instance not public.`);
       }
-    
     } catch (err) {
       console.error('Error checking if course instance is public', err); // TEST
       throw err;
@@ -59,8 +57,7 @@ router.get(
       AssessmentRowSchema,
     );
 
-    const assessmentIdsNeedingStatsUpdate = rows
-      .map((row) => row.id);
+    const assessmentIdsNeedingStatsUpdate = rows.map((row) => row.id);
 
     res.send(
       InstructorAssessments({

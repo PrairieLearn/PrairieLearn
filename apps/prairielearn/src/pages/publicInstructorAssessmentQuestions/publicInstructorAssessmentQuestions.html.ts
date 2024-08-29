@@ -64,11 +64,9 @@ export function InstructorAssessmentQuestions({
       <body>
         ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
         <main id="content" class="container-fluid">
-
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment.title}
-              ${resLocals.assessment.number}: Questions 
+              ${resLocals.assessment.title} ${resLocals.assessment.number}: Questions
             </div>
             ${AssessmentQuestionsTable({
               questions,
@@ -93,7 +91,6 @@ function AssessmentQuestionsTable({
   course_id: string;
   course_instance_id: string;
 }) {
-
   const nTableCols = 4;
 
   return html`
@@ -147,7 +144,9 @@ function AssessmentQuestionsTable({
                 : ''}
               <tr>
                 <td>
-                  <a href="${urlPrefix}/public/course/${course_id}/question/${question.question_id}/preview">
+                  <a
+                    href="${urlPrefix}/public/course/${course_id}/question/${question.question_id}/preview"
+                  >
                     ${question.alternative_group_size === 1
                       ? `${question.alternative_group_number}.`
                       : html`

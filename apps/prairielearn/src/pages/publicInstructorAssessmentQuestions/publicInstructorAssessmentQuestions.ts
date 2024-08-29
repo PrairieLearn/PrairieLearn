@@ -44,10 +44,12 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-
     const isCourseInstancePublic = await checkCourseInstancePublic(res.locals.course_instance_id); // TEST, req.params
     if (!isCourseInstancePublic) {
-      throw new error.HttpStatusError(404, `The course instance that owns this assessment is not public.`);
+      throw new error.HttpStatusError(
+        404,
+        'The course instance that owns this assessment is not public.',
+      );
     }
 
     const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString()); // TEST, req.params
