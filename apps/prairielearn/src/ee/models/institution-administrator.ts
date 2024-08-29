@@ -16,7 +16,7 @@ export async function ensureInstitutionAdministrator({
 }) {
   await runInTransactionAsync(async () => {
     const institution_admin = await queryOptionalRow(
-      sql.insert_institution_admin,
+      sql.ensure_institution_admin,
       { user_id, institution_id },
       InstitutionAdministratorSchema,
     );
