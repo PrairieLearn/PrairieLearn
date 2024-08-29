@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { AssessmentSet } from '../../lib/db-types.js';
 
@@ -19,7 +19,7 @@ export function InstructorCourseAdminSets({
         ${HeadContents({ resLocals, pageTitle: 'Assessment Sets' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -27,9 +27,11 @@ export function InstructorCourseAdminSets({
             urlPrefix: resLocals.urlPrefix,
           })}
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Assessment sets</div>
+            <div class="card-header bg-primary text-white">
+              <h1>Assessment sets</h1>
+            </div>
             <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
+              <table class="table table-sm table-hover table-striped" aria-label="Assessment sets">
                 <thead>
                   <tr>
                     <th>Number</th>

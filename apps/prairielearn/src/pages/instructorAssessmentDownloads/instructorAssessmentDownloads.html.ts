@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 
 export interface Filenames {
@@ -46,7 +46,7 @@ export function InstructorAssessmentDownloads({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -58,7 +58,7 @@ export function InstructorAssessmentDownloads({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Downloads
+              <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Downloads</h1>
             </div>
             ${resLocals.assessment.multiple_instance
               ? html`
@@ -79,7 +79,7 @@ export function InstructorAssessmentDownloads({
               : ''}
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="File downloads">
                 <thead>
                   <tr>
                     <th>Data file</th>

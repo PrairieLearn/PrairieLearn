@@ -1,7 +1,7 @@
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { config } from '../../lib/config.js';
 import type { LtiCredentials, User } from '../../lib/db-types.js';
@@ -28,9 +28,6 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
       </head>
       <body>
         <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
           function copyToClipboard(element) {
             var $temp = $('<input>');
             $('body').append($temp);
@@ -39,13 +36,15 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
             $temp.remove();
           }
         </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseInstanceSyncErrorsAndWarnings({ authz_data, courseInstance, course, urlPrefix })}
           ${!authz_data.has_course_permission_edit
             ? html`
                 <div class="card mb-4">
-                  <div class="card-header bg-danger text-white">LTI configuration</div>
+                  <div class="card-header bg-danger text-white">
+                    <h1>LTI configuration</h1>
+                  </div>
                   <div class="card-body">
                     <h2>Insufficient permissions</h2>
                     <p>You must have at least &quot;Editor&quot; permissions for this course.</p>
@@ -66,7 +65,9 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
               `
             : html`
                 <div class="card mb-4">
-                  <div class="card-header bg-primary text-white">LTI configuration</div>
+                  <div class="card-header bg-primary text-white">
+                    <h1>LTI configuration</h1>
+                  </div>
                   <div class="card-body">
                     <p>
                       The LTI (Learning Tools Interoperability) standard allows other online
@@ -120,7 +121,7 @@ function LtiCredentialsCard({
         </p>
       </div>
 
-      <table class="table table-sm table-hover">
+      <table class="table table-sm table-hover" aria-label="LTI credentials">
         <thead>
           <tr>
             <th>Launch URL</th>
@@ -243,7 +244,7 @@ function LtiLinkTargetsCard({
         </p>
       </div>
 
-      <table class="table table-sm table-hover">
+      <table class="table table-sm table-hover" aria-label="LTI link targets">
         <thead>
           <tr>
             <th>Link info</th>

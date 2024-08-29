@@ -7,7 +7,9 @@ import { formatStripePrice } from '../stripe.js';
 export function UserSettingsPurchasesCard({ purchases }: { purchases: Purchase[] }) {
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex">Purchases</div>
+      <div class="card-header bg-primary text-white d-flex">
+        <h2>Purchases</h2>
+      </div>
 
       ${purchases.length === 0
         ? html` <div class="card-body text-muted">You don't currently have any purchases.</div> `
@@ -19,7 +21,7 @@ export function UserSettingsPurchasesCard({ purchases }: { purchases: Purchase[]
 function PurchaseTable({ purchases }: { purchases: Purchase[] }) {
   return html`
     <div class="table-responsive">
-      <table class="table">
+      <table class="table" aria-label="Purchases">
         <thead>
           <tr>
             <th>ID</th>

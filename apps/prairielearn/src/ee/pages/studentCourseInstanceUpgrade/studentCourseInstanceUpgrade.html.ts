@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { Course, CourseInstance } from '../../../lib/db-types.js';
 import { PlanName } from '../../lib/billing/plans-types.js';
@@ -31,11 +31,7 @@ export function StudentCourseInstanceUpgrade({
         ${HeadContents({ resLocals })} ${compiledScriptTag('studentCourseInstanceUpgradeClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
-          ...resLocals,
-          // This won't actually render anything on the page; it just has to be non-null.
-          navPage: 'upgrade',
-        })}
+        ${Navbar({ resLocals })}
         <main id="content" class="container mb-4">
           <h1>
             <i class="fa-solid fa-lock"></i>
@@ -109,11 +105,7 @@ export function CourseInstanceStudentUpdateSuccess({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
-          ...resLocals,
-          // This won't actually render anything on the page; it just has to be non-null.
-          navPage: 'upgrade',
-        })}
+        ${Navbar({ resLocals })}
         <main id="content" class="container mb-4">
           <h1>Thanks!</h1>
 

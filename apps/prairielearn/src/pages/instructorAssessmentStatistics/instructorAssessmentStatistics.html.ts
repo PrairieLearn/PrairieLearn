@@ -2,9 +2,9 @@ import _ from 'lodash';
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentInstanceSchema, AssessmentSchema, Assessment } from '../../lib/db-types.js';
@@ -68,7 +68,7 @@ export function InstructorAssessmentStatistics({
         ${compiledScriptTag('instructorAssessmentStatisticsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -77,10 +77,10 @@ export function InstructorAssessmentStatistics({
             course: resLocals.course,
             urlPrefix: resLocals.urlPrefix,
           })}
-
+          <h1 class="sr-only">${resLocals.assessment_set.name} ${assessment.number} Statistics</h1>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_set.name} ${assessment.number}: Score statistics
+              <h2>${resLocals.assessment_set.name} ${assessment.number}: Score statistics</h2>
             </div>
             ${assessment.score_stat_number > 0
               ? html`
@@ -98,7 +98,10 @@ export function InstructorAssessmentStatistics({
                   </div>
 
                   <div class="table-responsive">
-                    <table class="table table-sm table-hover">
+                    <table
+                      class="table table-sm table-hover"
+                      aria-label="Assessment score statistics"
+                    >
                       <tbody>
                         <tr>
                           <td>Number of students</td>
@@ -156,7 +159,7 @@ export function InstructorAssessmentStatistics({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_set.name} ${assessment.number}: Duration statistics
+              <h2>${resLocals.assessment_set.name} ${assessment.number}: Duration statistics</h2>
             </div>
 
             ${assessment.score_stat_number > 0
@@ -176,7 +179,10 @@ export function InstructorAssessmentStatistics({
                   </div>
 
                   <div class="table-responsive">
-                    <table class="table table-sm table-hover">
+                    <table
+                      class="table table-sm table-hover"
+                      aria-label="Assessment duration statistics"
+                    >
                       <tbody>
                         <tr>
                           <td>Mean duration</td>
@@ -212,7 +218,7 @@ export function InstructorAssessmentStatistics({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_set.name} ${assessment.number}: Duration versus score
+              <h2>${resLocals.assessment_set.name} ${assessment.number}: Duration versus score</h2>
             </div>
 
             ${assessment.score_stat_number > 0
@@ -244,7 +250,9 @@ export function InstructorAssessmentStatistics({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_set.name} ${assessment.number}: Score statistics by date
+              <h2>
+                ${resLocals.assessment_set.name} ${assessment.number}: Score statistics by date
+              </h2>
             </div>
 
             ${assessment.score_stat_number > 0

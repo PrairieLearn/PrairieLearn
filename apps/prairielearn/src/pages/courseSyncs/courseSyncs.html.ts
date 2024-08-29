@@ -3,10 +3,10 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobStatus } from '../../components/JobStatus.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
 import {
   Course,
@@ -50,17 +50,15 @@ export function CourseSyncs({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">Course Sync</h1>
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Repository status</div>
+            <div class="card-header bg-primary text-white">
+              <h2>Repository status</h2>
+            </div>
             <div class="table-responsive">
-              <table class="table table-sm">
+              <table class="table table-sm" aria-label="Repository status">
                 <tbody>
                   <tr>
                     <th class="align-middle">Current commit hash</th>
@@ -101,14 +99,18 @@ export function CourseSyncs({
           </div>
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Docker images</div>
+            <div class="card-header bg-primary text-white">
+              <h2>Docker images</h2>
+            </div>
             ${ImageTable({ images, course, urlPrefix, __csrf_token })}
           </div>
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Sync job history</div>
+            <div class="card-header bg-primary text-white">
+              <h2>Sync job history</h2>
+            </div>
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="Sync job history">
                 <thead>
                   <tr>
                     <th>Number</th>
@@ -170,7 +172,7 @@ function ImageTable({
 
   return html`
     <div class="table-responsive">
-      <table class="table table-sm">
+      <table class="table table-sm" aria-label="Docker images">
         <thead>
           <tr>
             <th>Image name</th>
@@ -232,6 +234,7 @@ function ImageTable({
                         <button
                           class="btn btn-xs btn-secondary"
                           data-toggle="popover"
+                          data-container="body"
                           data-html="true"
                           title="Questions using ${image.image}"
                           data-content="${escapeHtml(ListQuestionsPopover({ image, urlPrefix }))}"

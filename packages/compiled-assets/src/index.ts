@@ -62,7 +62,7 @@ export async function init(newOptions: Partial<CompiledAssetsOptions>): Promise<
 
     esbuildContext = await esbuild.context({
       entryPoints: sourcePaths,
-      target: 'es6',
+      target: 'es2017',
       format: 'iife',
       sourcemap: 'inline',
       bundle: true,
@@ -171,7 +171,7 @@ function compiledPath(type: 'scripts' | 'stylesheets', sourceFile: string): stri
     throw new Error(`Unknown ${type} asset: ${sourceFile}`);
   }
 
-  return `${options.publicPath}/${assetPath}`;
+  return options.publicPath + assetPath;
 }
 
 export function compiledScriptPath(sourceFile: string): string {

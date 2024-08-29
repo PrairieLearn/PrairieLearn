@@ -66,7 +66,6 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
       user: UserSchema,
       institution: InstitutionSchema,
       is_administrator: z.boolean(),
-      is_instructor: z.boolean(),
       news_item_notification_count: z.number(),
     }),
   );
@@ -109,7 +108,6 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
   res.locals.authn_institution = selectedUser.institution;
   res.locals.authn_provider_name = authnParams.provider;
   res.locals.authn_is_administrator = selectedUser.is_administrator;
-  res.locals.authn_is_instructor = selectedUser.is_instructor;
 
   const defaultAccessType = res.locals.devMode ? 'active' : 'inactive';
   const accessType = req.cookies.pl2_access_as_administrator || defaultAccessType;

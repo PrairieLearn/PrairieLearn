@@ -2,9 +2,9 @@ import { format, toZonedTime } from 'date-fns-tz';
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import {
   CourseInstancePermissionSchema,
   CoursePermissionSchema,
@@ -58,13 +58,13 @@ export function InstructorEffectiveUser({
         ${HeadContents({ resLocals, pageTitle: 'Change Effective User' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'effective',
-        })}
+        ${Navbar({ resLocals, navPage: 'effective' })}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">Effective User</h1>
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Authenticated user</div>
+            <div class="card-header bg-primary text-white">
+              <h2>Authenticated user</h2>
+            </div>
 
             <div class="card-body">
               <p><strong>Authenticated UID:</strong> ${authz_data.authn_user.uid}</p>
@@ -106,7 +106,9 @@ export function InstructorEffectiveUser({
           </div>
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Effective user</div>
+            <div class="card-header bg-primary text-white">
+              <h2>Effective user</h2>
+            </div>
 
             <div class="card-body">
               <p><strong>Effective UID:</strong> ${user.uid}</p>
@@ -150,7 +152,9 @@ export function InstructorEffectiveUser({
           </div>
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Effective course role</div>
+            <div class="card-header bg-primary text-white">
+              <h2>Effective course role</h2>
+            </div>
 
             <div class="card-body">
               <p><strong>Effective course role:</strong> ${authz_data.course_role}</p>
@@ -203,7 +207,7 @@ export function InstructorEffectiveUser({
             ? html`
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white">
-                    Effective course instance role
+                    <h2>Effective course instance role</h2>
                   </div>
 
                   <div class="card-body">
@@ -262,7 +266,9 @@ export function InstructorEffectiveUser({
             : ''}
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Effective date</div>
+            <div class="card-header bg-primary text-white">
+              <h2>Effective date</h2>
+            </div>
 
             <div class="card-body">
               <p><strong>Effective date:</strong> ${formattedReqDate}</p>

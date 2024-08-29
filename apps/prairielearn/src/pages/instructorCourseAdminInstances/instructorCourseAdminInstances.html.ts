@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { CourseInstanceAuthz } from '../../models/course-instances.js';
 
@@ -21,17 +21,7 @@ export function InstructorCourseAdminInstances({
         ${HeadContents({ resLocals, pageTitle: 'Course Instances' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('#earliest-access-date [data-toggle="popover"]').popover({
-              sanitize: false,
-            });
-            $('#latest-access-date [data-toggle="popover"]').popover({
-              sanitize: false,
-            });
-          });
-        </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -39,39 +29,29 @@ export function InstructorCourseAdminInstances({
             urlPrefix: resLocals.urlPrefix,
           })}
           <div class="card mb-4">
-            <div class="card-header bg-primary">
-              <div class="row align-items-center justify-content-between">
-                <div class="col-auto">
-                  <span class="text-white">Course instances</span>
-                </div>
-                ${resLocals.authz_data.has_course_permission_edit &&
-                !resLocals.course.example_course &&
-                !resLocals.needToSync
-                  ? html`
-                      <div class="col-auto">
-                        <form name="add-course-instance-form" method="POST">
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <button
-                            name="__action"
-                            value="add_course_instance"
-                            class="btn btn-sm btn-light"
-                          >
-                            <i class="fa fa-plus" aria-hidden="true"></i>
-                            <span class="d-none d-sm-inline">Add course instance</span>
-                          </button>
-                        </form>
-                      </div>
-                    `
-                  : ''}
-              </div>
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+              <h1>Course instances</h1>
+              ${resLocals.authz_data.has_course_permission_edit &&
+              !resLocals.course.example_course &&
+              !resLocals.needToSync
+                ? html`
+                    <form class="ml-auto" name="add-course-instance-form" method="POST">
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <button
+                        name="__action"
+                        value="add_course_instance"
+                        class="btn btn-sm btn-light"
+                      >
+                        <i class="fa fa-plus" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline">Add course instance</span>
+                      </button>
+                    </form>
+                  `
+                : ''}
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
+              <table class="table table-sm table-hover table-striped" aria-label="Course instances">
                 <thead>
                   <tr>
                     <th>Long Name</th>
@@ -80,9 +60,10 @@ export function InstructorCourseAdminInstances({
                       Earliest Access Date
                       <button
                         class="btn btn-xs btn-light"
-                        data-placement="auto"
-                        data-trigger="focus"
                         data-toggle="popover"
+                        data-trigger="focus"
+                        data-container="body"
+                        data-placement="bottom"
                         data-html="true"
                         title="Earliest Access Date"
                         data-content="${PopoverStartDate()}"
@@ -95,9 +76,10 @@ export function InstructorCourseAdminInstances({
                       Latest Access Date
                       <button
                         class="btn btn-xs btn-light"
-                        data-placement="auto"
-                        data-trigger="focus"
                         data-toggle="popover"
+                        data-trigger="focus"
+                        data-container="body"
+                        data-placement="bottom"
                         data-html="true"
                         title="Latest Access Date"
                         data-content="${PopoverEndDate()}"

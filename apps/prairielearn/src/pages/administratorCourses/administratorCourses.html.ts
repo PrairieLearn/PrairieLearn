@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
 import { CourseRequestRow } from '../../lib/course-request.js';
 import { CourseSchema, Institution, InstitutionSchema } from '../../lib/db-types.js';
@@ -34,17 +34,9 @@ export function AdministratorCourses({
         ${HeadContents({ resLocals, pageTitle: 'Courses' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'courses',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'courses' })}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">Courses</h1>
           ${CourseRequestsTable({
             rows: course_requests,
             institutions,
@@ -56,11 +48,10 @@ export function AdministratorCourses({
 
           <div id="courses" class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              Courses
+              <h2>Courses</h2>
               <button
                 type="button"
                 class="btn btn-sm btn-light ml-auto"
-                id="courseInsertButton"
                 data-toggle="popover"
                 data-container="body"
                 data-html="true"
@@ -68,7 +59,6 @@ export function AdministratorCourses({
                 title="Add new course"
                 data-content="${escapeHtml(
                   CourseInsertForm({
-                    id: 'courseInsertButton',
                     institutions,
                     csrfToken: resLocals.__csrf_token,
                   }),
@@ -79,7 +69,7 @@ export function AdministratorCourses({
               </button>
             </div>
             <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
+              <table class="table table-sm table-hover table-striped" aria-label="Courses">
                 <thead>
                   <tr>
                     <th>Institution</th>
@@ -200,9 +190,7 @@ function CourseDeleteForm({
         <input type="text" class="form-control" id="inputConfirm${id}" name="confirm_short_name" />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-danger">Delete course</button>
       </div>
     </form>
@@ -210,11 +198,9 @@ function CourseDeleteForm({
 }
 
 function CourseInsertForm({
-  id,
   institutions,
   csrfToken,
 }: {
-  id: string;
   institutions: Institution[];
   csrfToken: string;
 }) {
@@ -297,9 +283,7 @@ function CourseInsertForm({
         />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Add course</button>
       </div>
     </form>
@@ -327,7 +311,6 @@ function CourseUpdateColumn({
       <button
         type="button"
         class="btn btn-xs btn-secondary"
-        id="courseButton${course.id}-${column_name}"
         data-toggle="popover"
         data-container="body"
         data-html="true"
@@ -335,7 +318,6 @@ function CourseUpdateColumn({
         title="Change ${label}"
         data-content="${escapeHtml(
           CourseUpdateColumnForm({
-            id: `courseButton${course.id}-${column_name}`,
             course,
             column_name,
             csrfToken,
@@ -349,12 +331,10 @@ function CourseUpdateColumn({
 }
 
 function CourseUpdateColumnForm({
-  id,
   course,
   column_name,
   csrfToken,
 }: {
-  id: string;
   course: CourseWithInstitution;
   column_name: keyof CourseWithInstitution;
   csrfToken: string;
@@ -366,18 +346,10 @@ function CourseUpdateColumnForm({
       <input type="hidden" name="course_id" value="${course.id}" />
       <input type="hidden" name="column_name" value="${column_name}" />
       <div class="form-group">
-        <input
-          type="text"
-          class="form-control"
-          id="input${id}"
-          name="value"
-          value="${course[column_name]}"
-        />
+        <input type="text" class="form-control" name="value" value="${course[column_name]}" />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>

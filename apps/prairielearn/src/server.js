@@ -5,10 +5,6 @@
 // dependencies like `pg` and `express`.
 import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as Sentry from '@prairielearn/sentry';
-
-// `@sentry/tracing` must be imported before `@sentry/profiling-node`.
-import '@sentry/tracing';
-import { ProfilingIntegration } from '@sentry/profiling-node';
 /* eslint-enable import-x/order */
 
 import * as fs from 'node:fs';
@@ -116,16 +112,11 @@ function enterpriseOnlyMiddleware(load) {
 export async function initExpress() {
   const app = express();
   app.set('views', path.join(import.meta.dirname, 'pages'));
-  app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
 
   // These should come first so that we get instrumentation on all our requests.
   if (config.sentryDsn) {
-    app.use(Sentry.Handlers.requestHandler());
-
-    if (config.sentryTracesSampleRate) {
-      app.use(Sentry.Handlers.tracingHandler());
-    }
+    app.use(Sentry.requestHandler());
 
     app.use((await import('./lib/sentry.js')).enrichSentryEventMiddleware);
   }
@@ -1298,6 +1289,13 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_jobs', [
+    (await import('./ee/pages/instructorAiGenerateJobs/instructorAiGenerateJobs.js')).default,
+  ]);
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_job/:job_sequence_id(\\d+)',
+    [(await import('./ee/pages/instructorAiGenerateJob/instructorAiGenerateJob.js')).default],
+  );
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question', [
     function (req, res, next) {
       res.locals.navSubPage = 'questions';
@@ -1551,8 +1549,6 @@ export async function initExpress() {
     (await import('./middlewares/logPageView.js')).default('studentAssessments'),
     (await import('./pages/studentAssessments/studentAssessments.js')).default,
   ]);
-  // Exam/Homeworks student routes are polymorphic - they have multiple handlers, each of
-  // which checks the assessment type and calls next() if it's not the right type
   app.use('/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)', [
     (await import('./middlewares/selectAndAuthzAssessment.js')).default,
     (await import('./middlewares/studentAssessmentAccess.js')).default,
@@ -1841,6 +1837,12 @@ export async function initExpress() {
       next();
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
+  ]);
+  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_jobs', [
+    (await import('./ee/pages/instructorAiGenerateJobs/instructorAiGenerateJobs.js')).default,
+  ]);
+  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_job/:job_sequence_id(\\d+)', [
+    (await import('./ee/pages/instructorAiGenerateJob/instructorAiGenerateJob.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/ai_generate_question', [
     function (req, res, next) {
@@ -2153,7 +2155,7 @@ export async function initExpress() {
   });
 
   // The Sentry error handler must come before our own.
-  app.use(Sentry.Handlers.errorHandler());
+  app.use(Sentry.expressErrorHandler());
 
   app.use((await import('./pages/error/error.js')).default);
 
@@ -2300,22 +2302,38 @@ if (esMain(import.meta) && config.startServer) {
         await opentelemetry.init({
           ...config,
           serviceName: 'prairielearn',
+          // For Sentry to work correctly, it needs to hook into our OpenTelemetry setup.
+          // https://docs.sentry.io/platforms/javascript/guides/node/tracing/instrumentation/opentelemetry/
+          //
+          // However, despite what their documentation claims, only the `SentryContextManager`
+          // is necessary if one isn't using Sentry for tracing. In fact, if `SentrySpanProcessor`
+          // is used, 100% of traces will be sent to Sentry, despite us never having set
+          // `tracesSampleRate` in the Sentry configuration.
+          contextManager: config.sentryDsn ? new Sentry.SentryContextManager() : undefined,
         });
 
         // Same with Sentry configuration.
         if (config.sentryDsn) {
-          const integrations = [];
-          if (config.sentryTracesSampleRate && config.sentryProfilesSampleRate) {
-            integrations.push(new ProfilingIntegration());
-          }
-
           await Sentry.init({
             dsn: config.sentryDsn,
             environment: config.sentryEnvironment,
-            integrations,
-            tracesSampleRate: config.sentryTracesSampleRate ?? undefined,
-            // This is relative to `tracesSampleRate`.
-            profilesSampleRate: config.sentryProfilesSampleRate ?? undefined,
+
+            // Sentry (specifically `import-in-the-middle`, which Sentry uses)
+            // is known to cause issues with loading `openai` as ESM. Their
+            // recommended workaround it to exclude the module from their hooks.
+            // See related issues:
+            // https://github.com/openai/openai-node/issues/903
+            // https://github.com/getsentry/sentry-javascript/issues/12414
+            registerEsmLoaderHooks: {
+              exclude: [/openai/],
+            },
+
+            // We have our own OpenTelemetry setup, so ensure Sentry doesn't
+            // try to set that up for itself, but only if OpenTelemetry is
+            // enabled. Otherwise, allow Sentry to install its own stuff so
+            // that request isolation works correctly.
+            skipOpenTelemetrySetup: config.openTelemetryEnabled,
+
             beforeSend: (event) => {
               // This will be necessary until we can consume the following change:
               // https://github.com/chimurai/http-proxy-middleware/pull/823
@@ -2473,44 +2491,62 @@ if (esMain(import.meta) && config.startServer) {
           opentelemetry.createObservableValueGauges(
             meter,
             `postgres.pool.${name}.total`,
-            {
-              valueType: opentelemetry.ValueType.INT,
-              interval: 1000,
-            },
+            { valueType: opentelemetry.ValueType.INT, interval: 1000 },
             () => pool.totalCount,
           );
 
           opentelemetry.createObservableValueGauges(
             meter,
             `postgres.pool.${name}.idle`,
-            {
-              valueType: opentelemetry.ValueType.INT,
-              interval: 1000,
-            },
+            { valueType: opentelemetry.ValueType.INT, interval: 1000 },
             () => pool.idleCount,
           );
 
           opentelemetry.createObservableValueGauges(
             meter,
             `postgres.pool.${name}.waiting`,
-            {
-              valueType: opentelemetry.ValueType.INT,
-              interval: 1000,
-            },
+            { valueType: opentelemetry.ValueType.INT, interval: 1000 },
             () => pool.waitingCount,
           );
 
           const queryCounter = opentelemetry.getObservableCounter(
             meter,
             `postgres.pool.${name}.query.count`,
-            {
-              valueType: opentelemetry.ValueType.INT,
-            },
+            { valueType: opentelemetry.ValueType.INT },
           );
           queryCounter.addCallback((observableResult) => {
             observableResult.observe(pool.queryCount);
           });
         });
+      },
+      async () => {
+        // Collect metrics on our code callers.
+        const meter = opentelemetry.metrics.getMeter('prairielearn');
+
+        opentelemetry.createObservableValueGauges(
+          meter,
+          'code-caller.pool.size',
+          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+          () => codeCaller.getMetrics().size,
+        );
+        opentelemetry.createObservableValueGauges(
+          meter,
+          'code-caller.pool.available',
+          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+          () => codeCaller.getMetrics().available,
+        );
+        opentelemetry.createObservableValueGauges(
+          meter,
+          'code-caller.pool.borrowed',
+          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+          () => codeCaller.getMetrics().borrowed,
+        );
+        opentelemetry.createObservableValueGauges(
+          meter,
+          'code-caller.pool.pending',
+          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+          () => codeCaller.getMetrics().pending,
+        );
       },
       async () => {
         // We create and activate a random DB schema name
