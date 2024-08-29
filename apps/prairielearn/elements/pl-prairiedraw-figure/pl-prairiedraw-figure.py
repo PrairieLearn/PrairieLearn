@@ -14,7 +14,6 @@ def prepare(element_html, data):
     required_attribs = ["script-name"]
     optional_attribs = ["param-names", "width", "height"]
     pl.check_attribs(element, required_attribs, optional_attribs)
-    return data
 
 
 def render(element_html, data):

@@ -214,11 +214,11 @@ a.badge {
   transform: translate(0px, -3px);
 }
 
-.navbar-brand:hover .navbar-brand-label {
+.navbar-brand:is(:hover, :focus) .navbar-brand-label {
   transform: translate(0px, -7px);
 }
 
-.navbar-brand:hover .navbar-brand-hover-label {
+.navbar-brand:is(:hover, :focus) .navbar-brand-hover-label {
   opacity: 1;
   transform: translate(0px, 0px);
 }
