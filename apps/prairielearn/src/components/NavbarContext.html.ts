@@ -320,6 +320,12 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       tabLabel: 'General',
     },
     {
+      activeSubPage: 'admins',
+      urlSuffix: '/admins',
+      iconClasses: 'fa fa-user-shield',
+      tabLabel: 'Admins',
+    },
+    {
       activeSubPage: 'courses',
       urlSuffix: '/courses',
       iconClasses: 'fa fa-chalkboard',
