@@ -75,7 +75,10 @@ export function AssessmentQuestion({
         )}
       </head>
       <body>
-        ${Navbar({ resLocals })} ${GradingConflictModal()}
+        ${[
+          Navbar({ resLocals }),
+          GradingConflictModal(),
+        ]}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
             authz_data,
