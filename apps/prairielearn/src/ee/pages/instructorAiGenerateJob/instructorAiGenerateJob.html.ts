@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { Job } from '../../../lib/db-types.js';
 
 export function InstructorAiGenerateJob({
@@ -18,11 +18,7 @@ export function InstructorAiGenerateJob({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
-          navPage: 'course_admin',
-          navSubPage: 'questions',
-          ...resLocals,
-        })}
+        ${Navbar({ navPage: 'course_admin', navSubPage: 'questions', resLocals })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Generation Job Results</div>

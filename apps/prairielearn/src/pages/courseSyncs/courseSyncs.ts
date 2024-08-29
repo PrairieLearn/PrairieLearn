@@ -68,7 +68,7 @@ router.get(
 
         const ecrInfo = data.imageDetails?.[0];
 
-        // Put info from ECR into image for EJS
+        // Put info from ECR into image for rendering
         image.digest = ecrInfo?.imageDigest ?? '';
         image.pushed_at = ecrInfo?.imagePushedAt;
         image.imageSyncNeeded = image.pushed_at == null;

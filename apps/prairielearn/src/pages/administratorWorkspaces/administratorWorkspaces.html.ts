@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { WorkspaceHostSchema, IdSchema } from '../../lib/db-types.js';
 
 const WorkspaceWithContextSchema = z.object({
@@ -50,11 +50,7 @@ export function AdministratorWorkspaces({
             });
           });
         </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'workspaces',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'workspaces' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
