@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 import { EncodedData } from '@prairielearn/browser-utils';
 import { HtmlValue, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { CourseRequest, CourseRequestSchema, UserSchema } from '../../lib/db-types.js';
 
@@ -44,10 +44,7 @@ export function RequestCourse({
         ${compiledScriptTag('instructorRequestCourseClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar')%>", {
-          ...resLocals,
-          navPage: 'request_course',
-        })}
+        ${Navbar({ resLocals, navPage: 'request_course' })}
         <main id="content" class="container">
           <h1 class="sr-only">Request a Course</h1>
           ${CourseRequestsCard({ rows })} ${EncodedData(lti13Info, 'course-request-lti13-info')}

@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Institution,
@@ -37,9 +37,8 @@ export function InstitutionAdminAdmins({
         ${compiledScriptTag('institutionAdminAdminsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
-          ...resLocals,
-          institution,
+        ${Navbar({
+          resLocals: { ...resLocals, institution },
           navbarType: 'institution',
           navPage: 'institution_admin',
           navSubPage: 'admins',
