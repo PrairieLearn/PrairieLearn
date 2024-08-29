@@ -176,7 +176,10 @@ export function RubricSettingsModal({ resLocals }: { resLocals: Record<string, a
               </div>
               <div>
                 <div class="table-responsive">
-                  <table class="table table-sm table-striped js-rubric-items-table mt-2">
+                  <table
+                    class="table table-sm table-striped js-rubric-items-table mt-2"
+                    aria-label="Rubric items"
+                  >
                     <thead>
                       <tr class="text-nowrap">
                         <th style="width: 1px"><!-- Order --></th>

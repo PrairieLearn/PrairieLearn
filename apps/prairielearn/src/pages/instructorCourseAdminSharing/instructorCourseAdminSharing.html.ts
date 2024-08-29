@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 import { HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 
 export const SharingSetRowSchema = z.object({
@@ -162,7 +162,7 @@ export function InstructorCourseAdminSharing({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -171,9 +171,12 @@ export function InstructorCourseAdminSharing({
           })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
-              <h1>Course Sharing Info</h1>
+              <h1>Course sharing details</h1>
             </div>
-            <table class="table table-sm table-hover two-column-description">
+            <table
+              class="table table-sm table-hover two-column-description"
+              aria-label="Course sharing details"
+            >
               <tbody>
                 <tr>
                   <th>Sharing name</th>
@@ -263,7 +266,7 @@ export function InstructorCourseAdminSharing({
                   `
                 : ''}
             </div>
-            <table class="table table-sm table-hover table-striped">
+            <table class="table table-sm table-hover table-striped" aria-label="Sharing sets">
               <thead>
                 <th>Sharing Set Name</th>
                 <th>Shared With</th>

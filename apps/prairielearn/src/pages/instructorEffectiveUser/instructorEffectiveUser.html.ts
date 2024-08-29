@@ -2,9 +2,9 @@ import { format, toZonedTime } from 'date-fns-tz';
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import {
   CourseInstancePermissionSchema,
   CoursePermissionSchema,
@@ -58,10 +58,7 @@ export function InstructorEffectiveUser({
         ${HeadContents({ resLocals, pageTitle: 'Change Effective User' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'effective',
-        })}
+        ${Navbar({ resLocals, navPage: 'effective' })}
         <main id="content" class="container-fluid">
           <h1 class="sr-only">Effective User</h1>
           <div class="card mb-4">

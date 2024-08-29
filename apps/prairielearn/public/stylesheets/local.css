@@ -214,11 +214,11 @@ a.badge {
   transform: translate(0px, -3px);
 }
 
-.navbar-brand:hover .navbar-brand-label {
+.navbar-brand:is(:hover, :focus) .navbar-brand-label {
   transform: translate(0px, -7px);
 }
 
-.navbar-brand:hover .navbar-brand-hover-label {
+.navbar-brand:is(:hover, :focus) .navbar-brand-hover-label {
   opacity: 1;
   transform: translate(0px, 0px);
 }
@@ -443,4 +443,30 @@ small .user-output-invalid {
   outline-color: var(--bs-btn-hover-color, #343a40) !important;
   outline-width: 2px !important;
   outline-offset: -2px !important;
+}
+
+/* The sticky-column class is used to make the first column of a bootstrap-table sticky. */
+.table > :not(caption) > * > .sticky-column {
+  position: sticky;
+  left: 0;
+  background-color: var(--bs-body-bg, white);
+  background-clip: padding-box;
+  box-shadow: inset -1px 0 #dee2e6;
+}
+
+.table.table-hover > tbody > tr:hover > td.sticky-column {
+  color: var(--bs-table-hover-color, #212529);
+  /* This must be opaque, to ensure the cell shows on top of others.
+     TODO: compute this value by combining --bs-body-bg (opaque) with --bs-table-hover-bg (semi-transparent). */
+  background-color: #efefef;
+}
+
+/* This class is used in pages with bootstrap-table. Since these pages include the navigation in the toolbar, some padding is necessary. */
+.fixed-table-toolbar {
+  padding: 0 1em 0 1em;
+}
+
+.fixed-table-toolbar div.pagination,
+.fixed-table-toolbar div.pagination-detail {
+  margin: 0 1em 0 0 !important;
 }

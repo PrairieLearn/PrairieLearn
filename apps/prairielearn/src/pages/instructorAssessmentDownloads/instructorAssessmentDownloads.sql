@@ -172,8 +172,8 @@ SELECT DISTINCT
   aq.max_manual_points,
   s.feedback AS old_feedback,
   s.id AS submission_id,
-  v.params,
-  v.true_answer,
+  s.params,
+  s.true_answer,
   (s.submitted_answer - '_files') AS submitted_answer,
   s.partial_scores AS old_partial_scores,
   ai.group_name,
@@ -212,8 +212,8 @@ WITH
       aq.max_manual_points,
       v.number AS variant_number,
       v.variant_seed,
-      v.params,
-      v.true_answer,
+      s.params,
+      s.true_answer,
       v.options,
       s.date,
       s.id AS submission_id,
@@ -390,7 +390,7 @@ SELECT
       END
     ) || '_' || qid || '_' || submission_id || '_' || filename
   ) AS filename,
-  base64_safe_decode (contents) AS contents
+  contents
 FROM
   all_files
 WHERE
@@ -536,7 +536,7 @@ SELECT
       END
     ) || '_' || assessment_instance_number || '_' || qid || '_' || variant_number || '_' || submission_number || '_' || submission_id || '_' || filename
   ) AS filename,
-  base64_safe_decode (contents) AS contents
+  contents
 FROM
   all_files
 WHERE

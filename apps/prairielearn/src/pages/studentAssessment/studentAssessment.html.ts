@@ -1,9 +1,9 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { Assessment, GroupConfig, User } from '../../lib/db-types.js';
 import { GroupInfo } from '../../lib/groups.js';
 
@@ -27,10 +27,7 @@ export function StudentAssessment({
         ${HeadContents({ resLocals })} ${compiledScriptTag('studentAssessmentClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: '',
-        })}
+        ${Navbar({ resLocals })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">

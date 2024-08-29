@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
@@ -94,10 +94,7 @@ export function InstructorAssessmentInstance({
           )}"></script>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: '',
-        })}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           <h1 class="sr-only">
             ${resLocals.assessment_instance_label} instance for
@@ -126,7 +123,10 @@ export function InstructorAssessmentInstance({
               </h2>
             </div>
 
-            <table class="table table-sm table-hover two-column-description">
+            <table
+              class="table table-sm table-hover two-column-description"
+              aria-label="Assessment instance summary"
+            >
               <tbody>
                 ${resLocals.instance_group
                   ? html`
@@ -308,7 +308,11 @@ export function InstructorAssessmentInstance({
               </h2>
             </div>
 
-            <table id="instanceQuestionList" class="table table-sm table-hover">
+            <table
+              id="instanceQuestionList"
+              class="table table-sm table-hover"
+              aria-label="Assessment instance questions"
+            >
               <thead>
                 <tr>
                   <th>Student question</th>
@@ -475,7 +479,11 @@ export function InstructorAssessmentInstance({
                   : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
               </h2>
             </div>
-            <table id="instanceQuestionStatsTable" class="table table-sm table-hover tablesorter">
+            <table
+              id="instanceQuestionStatsTable"
+              class="table table-sm table-hover tablesorter"
+              aria-label="Assessment instance statistics"
+            >
               <thead>
                 <tr>
                   <th>Instructor question</th>
@@ -546,7 +554,11 @@ export function InstructorAssessmentInstance({
               </small>
             </div>
 
-            <table id="logTable" class="table table-sm table-hover tablesorter">
+            <table
+              id="logTable"
+              class="table table-sm table-hover tablesorter"
+              aria-label="Assessment instance log"
+            >
               <thead>
                 <tr>
                   <th>Time</th>

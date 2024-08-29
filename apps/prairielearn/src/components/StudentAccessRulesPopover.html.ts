@@ -35,7 +35,7 @@ export function StudentAccessRulesPopover({ accessRules }: { accessRules: AuthzA
 
 function StudentAccessRulesPopoverContent({ accessRules }: { accessRules: AuthzAccessRule[] }) {
   return html`
-    <table class="table">
+    <table class="table" aria-label="Access details">
       <tr>
         <th>Credit</th>
         <th>Start</th>

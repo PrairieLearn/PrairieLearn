@@ -1,10 +1,10 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import {
   compiledStylesheetTag,
@@ -75,8 +75,7 @@ export function AssessmentQuestion({
         )}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
-        ${GradingConflictModal()}
+        ${Navbar({ resLocals })} ${GradingConflictModal()}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
             authz_data,
@@ -115,7 +114,7 @@ export function AssessmentQuestion({
             <form name="grading-form" method="POST">
               <input type="hidden" name="__action" value="batch_action" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-              <table id="grading-table"></table>
+              <table id="grading-table" aria-label="Instance questions for manual grading"></table>
             </form>
           </div>
         </main>

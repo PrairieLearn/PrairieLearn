@@ -3,5 +3,13 @@
   "dependencies": {
     "elementScripts": ["pl-file-preview.js"],
     "elementStyles": ["pl-file-preview.css"]
+  },
+  "dynamicDependencies": {
+    "nodeModulesScripts": {
+      "dompurify": "dompurify/dist/purify.min.js",
+      "notebookjs": "notebookjs/notebook.js",
+      "marked": "marked/lib/marked.esm.js",
+      "showdown": "showdown/dist/showdown.min.js"
+    }
   }
 }

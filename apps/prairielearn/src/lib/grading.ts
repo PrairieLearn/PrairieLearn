@@ -81,13 +81,18 @@ export async function insertSubmission({
   variant_id: string;
   auth_user_id: string | null;
   client_fingerprint_id?: string | null;
-}): Promise<string> {
+}): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
     await sqldb.callAsync('variants_lock', [variant_id]);
 
     // Select the variant, while updating the variant's `correct_answer`, which
     // is permitted to change during the `parse` phase (which occurs before this
     // submission is inserted).
+    //
+    // Note that we do this mutation as part of the selection process to avoid another
+    // database round trip. This mutation is safe to do before the access checks below
+    // because if they fail, the transaction will be rolled back and the variant will
+    // not be updated.
     const variant = await sqldb.queryRow(
       sql.update_variant_true_answer,
       { variant_id, true_answer },
@@ -152,7 +157,7 @@ export async function insertSubmission({
       await sqldb.callAsync('instance_questions_calculate_stats', [variant.instance_question_id]);
     }
 
-    return submission_id;
+    return { submission_id, variant };
   });
 }
 
@@ -170,7 +175,7 @@ export async function saveSubmission(
   variant: Variant,
   question: Question,
   variant_course: Course,
-): Promise<string> {
+): Promise<{ submission_id: string; variant: Variant }> {
   const submission: Partial<Submission> & SubmissionDataForSaving = {
     ...submissionData,
     raw_submitted_answer: submissionData.submitted_answer,
@@ -422,9 +427,19 @@ export async function saveAndGradeSubmission(
   course: Course,
   overrideGradeRateCheck: boolean,
 ) {
-  const submission_id = await saveSubmission(submissionData, variant, question, course);
-  await gradeVariant(
+  const { submission_id, variant: updated_variant } = await saveSubmission(
+    submissionData,
     variant,
+    question,
+    course,
+  );
+
+  await gradeVariant(
+    // Note that parsing a submission may modify the `true_answer` of the variant
+    // (for v3 questions, this is `data["correct_answers"])`. This is why we need
+    // to use the variant returned from `saveSubmission` rather than the one passed
+    // to this function.
+    updated_variant,
     submission_id,
     question,
     course,
