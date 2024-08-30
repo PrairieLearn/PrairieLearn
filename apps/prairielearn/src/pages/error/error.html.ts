@@ -3,10 +3,10 @@ import _ from 'lodash';
 
 import { formatErrorStack } from '@prairielearn/error';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import { formatQueryWithErrorPosition } from '@prairielearn/postgres';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
 
 function formatJson(value: any): string {
@@ -49,10 +49,7 @@ export function ErrorPage({
         ${HeadContents({ resLocals, pageTitle: `Error ${error.status}` })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
-          ...resLocals,
-          navPage: 'error',
-        })}
+        ${Navbar({ resLocals, navPage: 'error' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-danger text-white">

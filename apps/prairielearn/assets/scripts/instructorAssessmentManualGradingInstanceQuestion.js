@@ -25,12 +25,12 @@ $(() => {
   const modal = document.querySelector('#conflictGradingJobModal');
   if (modal) {
     $(modal)
-      .modal({})
       .on('shown.bs.modal', function () {
         modal
           .querySelectorAll('.js-submission-feedback')
           .forEach((item) => item.dispatchEvent(new Event('input')));
-      });
+      })
+      .modal('show');
   }
 });
 

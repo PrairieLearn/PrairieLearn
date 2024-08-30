@@ -1,8 +1,8 @@
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
@@ -35,7 +35,7 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
         ${unsafeHtml(resLocals.extraHeadersHtml)}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <div class="container-fluid">
           ${QuestionSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
