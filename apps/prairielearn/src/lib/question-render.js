@@ -19,6 +19,7 @@ import {
 import { selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
+import * as assets from './assets.js';
 import { config, setLocalsFromConfig } from './config.js';
 import {
   AssessmentInstanceSchema,
@@ -147,13 +148,14 @@ async function render(
  * Internal helper function to generate URLs that are used to render
  * question panels.
  *
- * @param  {String} urlPrefix The prefix of the generated URLs.
- * @param  {import('./db-types.js').Variant} variant The variant object for this question.
- * @param  {import('./db-types.js').Question} question The question.
- * @param  {import('./db-types.js').InstanceQuestion?} instance_question The instance question.
+ * @param {String} urlPrefix The prefix of the generated URLs.
+ * @param {import('./db-types.js').Course} course The course object for this question
+ * @param {import('./db-types.js').Variant} variant The variant object for this question.
+ * @param {import('./db-types.js').Question} question The question.
+ * @param {import('./db-types.js').InstanceQuestion?} instance_question The instance question.
  * @return {Record<string, any>} An object containing the named URLs.
  */
-export function buildQuestionUrls(urlPrefix, variant, question, instance_question) {
+export function buildQuestionUrls(urlPrefix, course, variant, question, instance_question) {
   const urls = {};
 
   if (!instance_question) {
@@ -163,18 +165,6 @@ export function buildQuestionUrls(urlPrefix, variant, question, instance_questio
     urls.newVariantUrl = questionUrl + 'preview/';
     urls.tryAgainUrl = questionUrl + 'preview/';
     urls.reloadUrl = questionUrl + 'preview/' + '?variant_id=' + variant.id;
-    urls.clientFilesQuestionUrl = questionUrl + 'clientFilesQuestion';
-
-    // necessary for backward compatibility
-    urls.calculationQuestionFileUrl = questionUrl + 'file';
-
-    urls.calculationQuestionGeneratedFileUrl =
-      questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
-
-    urls.clientFilesCourseUrl = questionUrl + 'clientFilesCourse';
-    urls.clientFilesQuestionGeneratedFileUrl =
-      questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
-    urls.baseUrl = urlPrefix;
   } else {
     // student question pages
     const iqUrl = urlPrefix + '/instance_question/' + instance_question.id + '/';
@@ -182,19 +172,25 @@ export function buildQuestionUrls(urlPrefix, variant, question, instance_questio
     urls.newVariantUrl = iqUrl;
     urls.tryAgainUrl = iqUrl;
     urls.reloadUrl = iqUrl + '?variant_id=' + variant.id;
-    urls.clientFilesQuestionUrl = iqUrl + 'clientFilesQuestion';
-
-    // necessary for backward compatibility
-    urls.calculationQuestionFileUrl = iqUrl + 'file';
-
-    urls.calculationQuestionGeneratedFileUrl =
-      iqUrl + 'generatedFilesQuestion/variant/' + variant.id;
-
-    urls.clientFilesCourseUrl = iqUrl + 'clientFilesCourse';
-    urls.clientFilesQuestionGeneratedFileUrl =
-      iqUrl + 'generatedFilesQuestion/variant/' + variant.id;
-    urls.baseUrl = urlPrefix;
   }
+
+  // necessary for backward compatibility
+  urls.calculationQuestionFileUrl = urls.questionUrl + 'file';
+
+  urls.calculationQuestionGeneratedFileUrl =
+    urls.questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
+  urls.clientFilesQuestionGeneratedFileUrl =
+    urls.questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
+  urls.baseUrl = urlPrefix;
+
+  urls.clientFilesQuestionUrl = assets.clientFilesQuestionAssetBasePath(
+    course.commit_hash,
+    urls.questionUrl,
+  );
+  urls.clientFilesCourseUrl = assets.clientFilesCourseAssetBasePath(
+    course.commit_hash,
+    urls.questionUrl,
+  );
 
   if (variant.workspace_id) {
     urls.workspaceUrl = `/pl/workspace/${variant.workspace_id}`;
@@ -381,6 +377,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
 
   const {
     urlPrefix,
+    question_course,
     variant,
     question,
     instance_question,
@@ -390,7 +387,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
     authz_result,
   } = locals;
 
-  const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
+  const urls = buildQuestionUrls(urlPrefix, question_course, variant, question, instance_question);
   Object.assign(locals, urls);
 
   const newLocals = buildLocals(
@@ -597,7 +594,7 @@ export async function renderPanelsForSubmission({
   setLocalsFromConfig(locals);
   Object.assign(
     locals,
-    buildQuestionUrls(urlPrefix, variant, question, instance_question),
+    buildQuestionUrls(urlPrefix, question_course, variant, question, instance_question),
     buildLocals(
       variant,
       question,

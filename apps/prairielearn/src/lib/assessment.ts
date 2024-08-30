@@ -6,6 +6,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import * as assets from './assets.js';
 import {
   CourseSchema,
   IdSchema,
@@ -13,6 +14,8 @@ import {
   VariantSchema,
   ClientFingerprintSchema,
   AssessmentInstanceSchema,
+  Course,
+  Assessment,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
@@ -72,7 +75,8 @@ export async function checkBelongs(
  * @returns The rendered text.
  */
 export function renderText(
-  assessment: { id: string; text: string | null },
+  course: Pick<Course, 'commit_hash'>,
+  assessment: Pick<Assessment, 'id' | 'text'>,
   urlPrefix: string,
 ): string | null {
   if (!assessment.text) return null;
@@ -80,7 +84,10 @@ export function renderText(
   const assessmentUrlPrefix = urlPrefix + '/assessment/' + assessment.id;
 
   const context = {
-    clientFilesCourse: assessmentUrlPrefix + '/clientFilesCourse',
+    clientFilesCourse: assets.clientFilesCourseAssetBasePath(
+      course.commit_hash,
+      assessmentUrlPrefix,
+    ),
     clientFilesCourseInstance: assessmentUrlPrefix + '/clientFilesCourseInstance',
     clientFilesAssessment: assessmentUrlPrefix + '/clientFilesAssessment',
   };

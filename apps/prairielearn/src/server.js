@@ -1069,7 +1069,18 @@ export async function initExpress() {
     (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/cacheableClientFilesCourse/:cachebuster',
+    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/clientFilesQuestion',
+    [
+      (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
+      (await import('./pages/clientFilesQuestion/clientFilesQuestion.js')).default(),
+    ],
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/cacheableClientFilesQuestion/:cachebuster',
     [
       (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
       (await import('./pages/clientFilesQuestion/clientFilesQuestion.js')).default(),
@@ -1455,6 +1466,10 @@ export async function initExpress() {
     (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/cacheableClientFilesCourse/:cachebuster',
+    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/clientFilesCourseInstance',
     (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
   );
@@ -1472,7 +1487,18 @@ export async function initExpress() {
     (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/cacheableClientFilesCourse/:cachebuster',
+    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/clientFilesQuestion',
+    [
+      (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
+      (await import('./pages/clientFilesQuestion/clientFilesQuestion.js')).default(),
+    ],
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/cacheableClientFilesQuestion/:cachebuster',
     [
       (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
       (await import('./pages/clientFilesQuestion/clientFilesQuestion.js')).default(),
@@ -1619,6 +1645,10 @@ export async function initExpress() {
     (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/cacheableClientFilesCourse/:cachebuster',
+    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
     (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
   );
@@ -1626,6 +1656,14 @@ export async function initExpress() {
   // Client files for assessments
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourse',
+    [
+      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+      (await import('./middlewares/studentAssessmentAccess.js')).default,
+      (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
+    ],
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/cacheableClientFilesCourse/:cachebuster',
     [
       (await import('./middlewares/selectAndAuthzAssessment.js')).default,
       (await import('./middlewares/studentAssessmentAccess.js')).default,
@@ -1655,7 +1693,15 @@ export async function initExpress() {
     (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/cacheableClientFilesCourse/:cachebuster',
+    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/clientFilesQuestion',
+    (await import('./pages/clientFilesQuestion/clientFilesQuestion.js')).default(),
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/cacheableClientFilesQuestion/:cachebuster',
     (await import('./pages/clientFilesQuestion/clientFilesQuestion.js')).default(),
   );
 
@@ -1922,6 +1968,10 @@ export async function initExpress() {
     '/pl/course/:course_id(\\d+)/clientFilesCourse',
     (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
   );
+  app.use(
+    '/pl/course/:course_id(\\d+)/cacheableClientFilesCourse/:cachebuster',
+    (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
+  );
 
   // Client files for questions
   app.use(
@@ -1932,6 +1982,13 @@ export async function initExpress() {
     (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
     (await import('./pages/clientFilesQuestion/clientFilesQuestion.js')).default(),
   ]);
+  app.use(
+    '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/cacheableClientFilesQuestion/:cachebuster',
+    [
+      (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
+      (await import('./pages/clientFilesQuestion/clientFilesQuestion.js')).default(),
+    ],
+  );
 
   // generatedFiles
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/generatedFilesQuestion', [
@@ -2013,6 +2070,12 @@ export async function initExpress() {
   // Client files for questions
   app.use(
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/clientFilesQuestion',
+    (await import('./pages/clientFilesQuestion/clientFilesQuestion.js')).default({
+      publicEndpoint: true,
+    }),
+  );
+  app.use(
+    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/cacheableClientFilesQuestion/:cachebuster',
     (await import('./pages/clientFilesQuestion/clientFilesQuestion.js')).default({
       publicEndpoint: true,
     }),

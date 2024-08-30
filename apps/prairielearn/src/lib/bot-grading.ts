@@ -90,7 +90,13 @@ export async function botGrade({
         SubmissionVariantSchema,
       );
 
-      const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
+      const urls = buildQuestionUrls(
+        urlPrefix,
+        question_course,
+        variant,
+        question,
+        instance_question,
+      );
 
       // get question html
       const questionModule = questionServers.getModule(question.type);

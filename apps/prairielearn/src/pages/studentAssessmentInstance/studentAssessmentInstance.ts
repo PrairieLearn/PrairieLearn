@@ -275,6 +275,7 @@ router.get(
       (q) => q.max_auto_points || q.auto_points || !q.max_points,
     );
     const assessment_text_templated = assessment.renderText(
+      res.locals.course,
       res.locals.assessment,
       res.locals.urlPrefix,
     );

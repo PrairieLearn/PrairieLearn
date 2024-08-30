@@ -1532,10 +1532,10 @@ export async function render(
         coreScriptUrls.push(assets.nodeModulesAssetPath(file)),
       );
       dependencies.clientFilesCourseStyles.forEach((file) =>
-        styleUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`),
+        styleUrls.push(`${locals.clientFilesCourseUrl}/${file}`),
       );
       dependencies.clientFilesCourseScripts.forEach((file) =>
-        scriptUrls.push(`${locals.urlPrefix}/clientFilesCourse/${file}`),
+        scriptUrls.push(`${locals.clientFilesCourseUrl}/${file}`),
       );
       dependencies.clientFilesQuestionStyles.forEach((file) =>
         styleUrls.push(`${locals.clientFilesQuestionUrl}/${file}`),

@@ -285,6 +285,56 @@ export function courseElementExtensionAssetPath(
   return `${courseElementExtensionAssetBasePath(courseHash, urlPrefix)}/${assetPath}`;
 }
 
+/**
+ * Returns the path that client files for a given course should be loaded from.
+ * Takes into account the URL prefix and course hash to allow for clients to
+ * immutably cache assets.
+ *
+ * Note that the `urlPrefix` is whatever path either `/clientFilesQuestion/...`
+ * or `/cacheableClientFilesQuestion/...` will be appended to. This is not necessarily
+ * `res.locals.urlPrefix` verbatim.
+ */
+export function clientFilesCourseAssetBasePath(
+  courseHash: string | null,
+  urlPrefix: string,
+): string {
+  urlPrefix = urlPrefix.endsWith('/') ? urlPrefix.slice(0, -1) : urlPrefix;
+
+  if (!courseHash && false) {
+    // If for some reason we don't have a course hash, fall back to the
+    // non-cached path so that we don't accidentally instruct the client
+    // to indefinitely cache a file without a proper cachebuster.
+    return `${urlPrefix}/clientFilesCourse`;
+  }
+
+  return `${urlPrefix}/cacheableClientFilesCourse/${courseHash}`;
+}
+
+/**
+ * Returns the path that client files for a given question should be loaded from.
+ * Takes into account the URL prefix and course hash to allow for clients to
+ * immutably cache assets.
+ *
+ * Note that the `urlPrefix` is whatever path either `clientFilesQuestion/...`
+ * or `cacheableClientFilesQuestion/...` will be appended to. This is not necessarily
+ * `res.locals.urlPrefix` verbatim.
+ */
+export function clientFilesQuestionAssetBasePath(
+  courseHash: string | null,
+  urlPrefix: string,
+): string {
+  urlPrefix = urlPrefix.endsWith('/') ? urlPrefix.slice(0, -1) : urlPrefix;
+
+  if (!courseHash) {
+    // If for some reason we don't have a course hash, fall back to the
+    // non-cached path so that we don't accidentally instruct the client
+    // to indefinitely cache a file without a proper cachebuster.
+    return `${urlPrefix}/clientFilesQuestion`;
+  }
+
+  return `${urlPrefix}/cacheableClientFilesQuestion/${courseHash}`;
+}
+
 export function compiledScriptTag(sourceFile: string): HtmlSafeString {
   return compiledAssets.compiledScriptTag(sourceFile);
 }
