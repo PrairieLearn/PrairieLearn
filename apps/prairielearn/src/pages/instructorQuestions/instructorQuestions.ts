@@ -19,7 +19,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async function (req, res) {
-    if (!res.locals.authz_data.has_course_permission_view) {
+    if (!res.locals.authz_data.has_course_permission_preview) {
       // Access denied, but instead of sending them to an error page, we'll show
       // them an explanatory message and prompt them to get view permissions.
       const courseOwners = await getCourseOwners(res.locals.course.id);

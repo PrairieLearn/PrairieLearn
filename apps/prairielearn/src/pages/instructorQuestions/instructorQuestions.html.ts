@@ -30,7 +30,7 @@ export function InstructorQuestionsNoPermission({
             </div>
             <div class="card-body">
               <h2>Insufficient permissions</h2>
-              <p>You must have at least &quot;Viewer&quot; permissions for this course.</p>
+              <p>You must have at least &quot;Previewer&quot; permissions for this course.</p>
               ${courseOwners.length > 0
                 ? html`
                     <p>Contact one of the below course owners to request access.</p>
