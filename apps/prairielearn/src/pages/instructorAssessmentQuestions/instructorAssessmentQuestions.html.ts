@@ -106,6 +106,7 @@ export function InstructorAssessmentQuestions({
               questions,
               assessmentType: resLocals.assessment.type,
               urlPrefix: resLocals.urlPrefix,
+              hasCoursePermissionPreview: resLocals.authz_data.has_course_permission_preview,
               hasCourseInstancePermissionEdit:
                 resLocals.authz_data.has_course_instance_permission_edit,
             })}
@@ -120,11 +121,13 @@ function AssessmentQuestionsTable({
   questions,
   urlPrefix,
   assessmentType,
+  hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
 }: {
   questions: AssessmentQuestionRow[];
   assessmentType: string;
   urlPrefix: string;
+  hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
 }) {
   // If at least one question has a nonzero unlock score, display the Advance Score column
@@ -203,21 +206,23 @@ function AssessmentQuestionsTable({
                 : ''}
               <tr>
                 <td>
-                  <a href="${urlPrefix}/question/${question.question_id}/">
-                    ${question.alternative_group_size === 1
-                      ? `${question.alternative_group_number}.`
-                      : html`
-                          <span class="ml-3">
-                            ${question.alternative_group_number}.${question.number_in_alternative_group}.
-                          </span>
-                        `}
-                    ${question.title}
-                    ${IssueBadge({
-                      urlPrefix,
-                      count: question.open_issue_count ?? 0,
-                      issueQid: question.qid,
-                    })}
-                  </a>
+                  ${hasCoursePermissionPreview
+                    ? html`<a href="${urlPrefix}/question/${question.question_id}/">`
+                    : ''}
+                  ${question.alternative_group_size === 1
+                    ? `${question.alternative_group_number}.`
+                    : html`
+                        <span class="ml-3">
+                          ${question.alternative_group_number}.${question.number_in_alternative_group}.
+                        </span>
+                      `}
+                  ${question.title}
+                  ${IssueBadge({
+                    urlPrefix,
+                    count: question.open_issue_count ?? 0,
+                    issueQid: question.qid,
+                  })}
+                  ${hasCoursePermissionPreview ? html`</a>` : ''}
                 </td>
                 <td>
                   ${question.sync_errors
