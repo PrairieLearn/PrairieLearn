@@ -5,12 +5,13 @@ import fs from 'fs-extra';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { getCourseOwners } from '../../lib/course.js';
 import { QuestionAddEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions.js';
 
-import { QuestionsPage } from './instructorQuestions.html.js';
+import { InstructorQuestionsNoPermission, QuestionsPage } from './instructorQuestions.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -18,6 +19,16 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async function (req, res) {
+    if (!res.locals.authz_data.has_course_permission_view) {
+      // Access denied, but instead of sending them to an error page, we'll show
+      // them an explanatory message and prompt them to get view permissions.
+      const courseOwners = await getCourseOwners(res.locals.course.id);
+      res
+        .status(403)
+        .send(InstructorQuestionsNoPermission({ resLocals: res.locals, courseOwners }));
+      return;
+    }
+
     const courseInstances = await selectCourseInstancesWithStaffAccess({
       course_id: res.locals.course.id,
       user_id: res.locals.user.user_id,

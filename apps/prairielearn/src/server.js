@@ -1171,6 +1171,7 @@ export async function initExpress() {
         res.locals.navSubPage = 'preview';
         next();
       },
+      (await import('./middlewares/authzHasCoursePreview.js')).default,
       (await import('./pages/instructorQuestionPreview/instructorQuestionPreview.js')).default,
     ],
   );
