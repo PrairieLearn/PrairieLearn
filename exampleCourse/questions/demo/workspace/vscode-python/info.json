@@ -1,15 +1,14 @@
 {
   "uuid": "499d4c47-74a6-4e3e-ad65-1d38d9d97e8e",
-  "title": "Workspace demo: VS Code",
+  "title": "Workspace demo: VS Code (Python)",
   "topic": "Workspace",
   "tags": ["su20", "tyang15"],
   "type": "v3",
   "singleVariant": true,
   "workspaceOptions": {
-    "image": "codercom/code-server:3.4.1",
+    "image": "prairielearn/workspace-vscode-python",
     "port": 8080,
-    "args": "--auth none",
-    "home": "/home/coder",
+    "home": "/home/coder/workspace",
     "gradedFiles": ["fibonacci.py"]
   },
   "gradingMethod": "External",

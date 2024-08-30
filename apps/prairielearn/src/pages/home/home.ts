@@ -5,6 +5,7 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { config } from '../../lib/config.js';
+import { InstitutionSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 
 import { Home, InstructorCourseSchema, StudentCourseSchema } from './home.html.js';
@@ -51,7 +52,15 @@ router.get(
       StudentCourseSchema,
     );
 
-    res.send(Home({ resLocals: res.locals, instructorCourses, studentCourses }));
+    const adminInstitutions = await queryRows(
+      sql.select_admin_institutions,
+      {
+        user_id: res.locals.authn_user.user_id,
+      },
+      InstitutionSchema,
+    );
+
+    res.send(Home({ resLocals: res.locals, instructorCourses, studentCourses, adminInstitutions }));
   }),
 );
 
