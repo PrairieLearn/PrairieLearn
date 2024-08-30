@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { run } from './index';
+import { run } from './index.js';
 
 describe('run', () => {
   it('runs a function', () => {
