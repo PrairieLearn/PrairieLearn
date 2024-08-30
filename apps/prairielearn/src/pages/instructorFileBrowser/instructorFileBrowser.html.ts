@@ -396,13 +396,12 @@ function FileContentPreview({
   if (fileInfo.isPDF) {
     return html`
       <div class="embed-responsive embed-responsive-4by3">
-        <object
-          data="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH"
-          type="application/pdf"
+        <iframe
+          src="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH"
           class="embed-responsive-item"
         >
           This PDF cannot be displayed.
-        </object>
+        </iframe>
       </div>
     `;
   }

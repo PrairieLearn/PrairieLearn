@@ -280,11 +280,10 @@
             if (this.isPdf(fileData)) {
               const $objectPreview = $(
                 `<div class="mt-2 embed-responsive embed-responsive-4by3">
-                   <object type="application/pdf" 
-                           class="embed-responsive-item" 
-                           data="data:application/pdf;base64,${fileData}">
+                   <iframe class="embed-responsive-item" 
+                           src="data:application/pdf;base64,${fileData}">
                      PDF file cannot be displayed.
-                   </object>
+                   </iframe>
                  </div>`,
               );
               $preview.append($objectPreview);
