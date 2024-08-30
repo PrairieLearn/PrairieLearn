@@ -298,7 +298,7 @@ async function pointsFormEventListener(this: HTMLFormElement, event: SubmitEvent
     $('#grading-conflict-modal')
       .find('a.conflict-details-link')
       .attr('href', data.conflict_details_url);
-    $('#grading-conflict-modal').modal({});
+    $('#grading-conflict-modal').modal('show');
   }
 }
 
