@@ -207,7 +207,7 @@ function AssessmentQuestionsTable({
               <tr>
                 <td>
                   ${hasCoursePermissionPreview
-                    ? html`<a href="${urlPrefix}/question/${question.question_id}/">`
+                    ? `<a href="${urlPrefix}/question/${question.question_id}/">`
                     : ''}
                   ${question.alternative_group_size === 1
                     ? `${question.alternative_group_number}.`
