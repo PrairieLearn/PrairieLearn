@@ -4,8 +4,7 @@
 {{#inline}}
 <span>
 {{/inline}}
-    <fieldset>
-    <legend class="sr-only">Multiple choice options</legend>
+    <span role="group" aria-label="Multiple choice options">
     {{#answers}}
         <div class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1 gap-2">
             <input
@@ -42,7 +41,7 @@
             {{/display_score_badge}}
         </div>
     {{/answers}}
-    </fieldset>
+    </span>
 
 {{#display_score_badge}}
     {{#correct}}
@@ -62,11 +61,11 @@
 {{/radio}}
 {{^radio}}
 <!-- Weirdly enough putting this in a div causes it to display without the inline -->
-<fieldset
+<span
     class="py-1 d-inline align-items-center pl-multiple-choice-dropdown"
     {{#size}}style="--pl-multiple-choice-dropdown-width: {{size}}px"{{/size}}
+    aria-label="Multiple choice options"
 >
-    <legend>Multiple choice options</legend>
     <script>
         $(() => new window.PLMultipleChoice("{{uuid}}"));
     </script>
@@ -104,7 +103,7 @@
             <span class="ml-1 badge badge-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>
         {{/partial}}
     {{/display_score_badge}}
-</fieldset>
+</span>
 {{/radio}}
 
 {{/question}}
@@ -158,7 +157,7 @@
 {{/submission}}
 {{#answer}}
     {{#radio}}
-        {{#inline}}<fieldset class="d-inline-block"><legend>Multiple choice options</legend><ul class="list-inline mb-0">{{/inline}}
+        {{#inline}}<span class="d-inline-block"><ul class="list-inline mb-0">{{/inline}}
         {{^inline}}<div class="d-block"><ul class="list-unstyled mb-0">{{/inline}}
         {{#answers}}
             <li {{#inline}}class="list-inline-item"{{/inline}}>

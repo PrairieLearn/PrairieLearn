@@ -249,7 +249,6 @@ function GroupCreationJoinForm({
                     id="joinCodeInput"
                     name="join_code"
                     placeholder="abcd-1234"
-                    aria-label="Join code"
                   />
                   <div class="mt-4 d-flex justify-content-center">
                     <div class="form-group mb-0">

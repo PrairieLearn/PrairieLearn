@@ -193,7 +193,7 @@ onDocumentReady(() => {
       searchInputs.forEach((searchInput) => {
         searchInput.setAttribute(
           'aria-label',
-          `Filter by ${searchInput.closest('th').dataset.field.replace(/_/g, ' ')}`,
+          `Filter by ${searchInput.closest('th').firstElementChild.textContent.trim()}`,
         );
       });
     },
