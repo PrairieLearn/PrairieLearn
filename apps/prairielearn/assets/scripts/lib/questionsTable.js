@@ -80,8 +80,8 @@ onDocumentReady(() => {
       text += html`<a
         class="badge badge-pill badge-danger ml-1"
         href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
-          question.qid,
-        )}"
+        question.qid,
+      )}"
         >${question.open_issue_count}</a
       >`;
     }
@@ -193,7 +193,7 @@ onDocumentReady(() => {
       searchInputs.forEach((searchInput) => {
         searchInput.setAttribute(
           'aria-label',
-          `Filter by ${searchInput.closest('th').firstElementChild.textContent.trim()}`,
+          `Filter by ${searchInput.closest('th').querySelector('div.th-inner').textContent.trim()}`,
         );
       });
     },
