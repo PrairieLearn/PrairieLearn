@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 
 export const AssessmentStatsRowSchema = AssessmentSchema.extend({
   needs_statistics_update: z.boolean().optional(),
@@ -36,7 +36,8 @@ export function InstructorAssessments({
         ${HeadContents({ resLocals })} ${compiledScriptTag('instructorAssessmentsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
+        
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary">

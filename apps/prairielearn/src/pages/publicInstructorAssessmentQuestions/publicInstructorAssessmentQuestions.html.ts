@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -25,7 +25,6 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   assessment_question_advance_score_perc: AlternativeGroupSchema.shape.advance_score_perc,
   display_name: z.string().nullable(),
   number: z.string().nullable(),
-  open_issue_count: z.string().nullable(),
   other_assessments: AssessmentsFormatForQuestionSchema.nullable(),
   sync_errors_ansified: z.string().optional(),
   sync_errors: QuestionSchema.shape.sync_errors,
@@ -62,7 +61,7 @@ export function InstructorAssessmentQuestions({
         ${compiledScriptTag('publicInstructorAssessmentQuestionsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -155,11 +154,6 @@ function AssessmentQuestionsTable({
                           </span>
                         `}
                     ${question.title}
-                    ${renderEjs(import.meta.url, "<%- include('../partials/issueBadge') %>", {
-                      urlPrefix,
-                      count: question.open_issue_count,
-                      issueQid: question.qid,
-                    })}
                   </a>
                 </td>
                 <td>
