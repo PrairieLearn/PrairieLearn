@@ -43,9 +43,14 @@ FROM
 WHERE
   q.id = $question_id
   AND (
-    q.course_id = $course_id
+    (
+      $user_permission_preview
+      AND (
+        q.course_id = $course_id
+        OR sharing_info.shared_with_course
+      )
+    )
     OR q.shared_publicly
-    OR sharing_info.shared_with_course
   )
   AND q.deleted_at IS NULL;
 
@@ -97,8 +102,13 @@ WHERE
   q.id = $question_id
   AND ci.id = $course_instance_id
   AND (
-    q.course_id = ci.course_id
+    (
+      $user_permission_preview
+      AND (
+        q.course_id = ci.course_id
+        OR sharing_info.shared_with_course
+      )
+    )
     OR q.shared_publicly
-    OR sharing_info.shared_with_course
   )
   AND q.deleted_at IS NULL;

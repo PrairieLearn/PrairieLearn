@@ -8,10 +8,12 @@ import * as sqldb from '@prairielearn/postgres';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function selectAndAuthzInstructorQuestion(req, res) {
+  const userPermissionPreview = res.locals.authz_data.has_course_permission_preview;
   if (res.locals.course_instance) {
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_and_auth_with_course_instance, {
       question_id: req.params.question_id,
       course_instance_id: res.locals.course_instance.id,
+      user_permission_preview: userPermissionPreview,
     });
     if (result.rowCount === 0) throw new error.HttpStatusError(403, 'Access denied');
     _.assign(res.locals, result.rows[0]);
@@ -19,6 +21,7 @@ export async function selectAndAuthzInstructorQuestion(req, res) {
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_and_auth, {
       question_id: req.params.question_id,
       course_id: res.locals.course.id,
+      user_permission_preview: userPermissionPreview,
     });
     if (result.rowCount === 0) throw new error.HttpStatusError(403, 'Access denied');
     _.assign(res.locals, result.rows[0]);
