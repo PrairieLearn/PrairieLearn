@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { html } from '@prairielearn/html';
+import { html, unsafeHtml } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
@@ -207,7 +207,7 @@ function AssessmentQuestionsTable({
               <tr>
                 <td>
                   ${hasCoursePermissionPreview
-                    ? `<a href="${urlPrefix}/question/${question.question_id}/">`
+                    ? unsafeHtml(`<a href="${urlPrefix}/question/${question.question_id}/">`)
                     : ''}
                   ${question.alternative_group_size === 1
                     ? `${question.alternative_group_number}.`
