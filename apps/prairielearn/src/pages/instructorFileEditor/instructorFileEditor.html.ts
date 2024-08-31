@@ -7,7 +7,7 @@ import { JobSequenceResults } from '../../components/JobSequenceResults.html.js'
 import { Navbar } from '../../components/Navbar.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
-import type { FileEdit, User } from '../../lib/db-types.js';
+import type { FileEdit } from '../../lib/db-types.js';
 import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 import { encodePath } from '../../lib/uri-util.js';

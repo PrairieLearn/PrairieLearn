@@ -216,7 +216,12 @@ function AssessmentQuestionsTable({
                               ${question.alternative_group_number}.${question.number_in_alternative_group}.
                             </span>
                           `;
-                    const title = html`${number} ${question.title}`;
+                    const issueBadge = IssueBadge({
+                      urlPrefix,
+                      count: question.open_issue_count ?? 0,
+                      issueQid: question.qid,
+                    });
+                    const title = html`${number} ${question.title} ${issueBadge}`;
 
                     if (hasCoursePermissionPreview) {
                       return html`<a href="${urlPrefix}/question/${question.question_id}/"
