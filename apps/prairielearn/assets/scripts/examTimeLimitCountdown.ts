@@ -7,34 +7,33 @@ import { saveQuestionFormData } from './lib/confirmOnUnload.js';
 import { setupCountdown } from './lib/countdown.js';
 
 function showWarningPopup(message: string) {
-  let popup = document.querySelector('#warning-toast');
+  let popup = document.querySelector('#warning-popup');
   if (!popup) {
     popup = parseHTMLElement<HTMLDivElement>(
       document,
-      html`<div id="warning-toast" class="fixed-bottom d-flex flex-column align-items-center mb-5">
-        <div
-          class="toast align-items-center text-bg-warning border-0 pulse"
-          role="alert"
-          aria-live="assertive"
-          aria-atomic="true"
-        >
-          <div class="d-flex">
-            <div class="toast-body">${message}</div>
-            <button
-              type="button"
-              class="btn-close me-2 m-auto"
-              data-bs-dismiss="toast"
-              aria-label="Close"
-            ></button>
-          </div>
-        </div>
-      </div>`,
+      html`<div
+        id="warning-popup"
+        class="fixed-bottom d-flex flex-column align-items-center mb-5"
+      ></div>`,
     );
     document.body.append(popup);
   }
-  popup.querySelectorAll('.toast').forEach((e) => {
-    new Toast(e, { autohide: false }).show();
-  });
+  popup.appendChild(
+    parseHTMLElement<HTMLDivElement>(
+      document,
+      html`<div
+        class="show align-items-center alert alert-warning alert-dismissible pulse"
+        role="alert"
+        aria-live="assertive"
+        aria-atomic="true"
+      >
+        <div>${message}</div>
+        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+          <span aria-hidden="true">×</span>
+        </button>
+      </div>`,
+    ),
+  );
 }
 
 onDocumentReady(() => {
