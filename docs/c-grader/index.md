@@ -96,6 +96,13 @@ self.compile_file("square.c", "square")      # Compile the file, but do not crea
 self.test_compile_file("square.c", "square") # Compile the file and give one point to student if compilation is successful
 ```
 
+By default, these methods use `gcc` and `g++` (for C and C++, respectively) to compile the code. To use a different compiler (e.g., `clang`), set the `compiler` argument:
+
+```python
+self.compile_file("square.c", "square", compiler="clang")
+self.test_compile_file("square.c", "square", compiler="clang")
+```
+
 By default, if the compilation fails, it will stop all tests and return the submission as ungradable. This means that the submission will not count towards the student's submission limit, and the student will not receive a grade. The student will, however, see the result of the compilation. If you would like the tests to proceed in case of failure, you can call the function with:
 
 ```python
