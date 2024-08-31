@@ -100,7 +100,16 @@ SELECT
   ai.*,
   lu.sub AS lti13_user_sub,
   la.lineitem_id_url AS lti13_lineitem_id_url,
-  lti13_course_instances.lti13_instance_id
+  lti13_course_instances.lti13_instance_id,
+  (
+    SELECT
+      COALESCE(array_agg(sub), '{}')
+    FROM
+      group_users
+      JOIN lti13_users ON (lti13_users.user_id = group_users.user_id)
+    WHERE
+      group_users.group_id = ai.group_id
+  ) AS group_user_subs
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
@@ -109,5 +118,25 @@ FROM
     lti13_course_instances.id = la.lti13_course_instance_id
   )
   LEFT JOIN lti13_users AS lu ON (lu.user_id = ai.user_id)
+  LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
 WHERE
-  ai.assessment_id = $assessment_id;
+  ai.assessment_id = $assessment_id
+  AND ai.score_perc IS NOT NULL
+  AND date IS NOT NULL;
+
+-- BLOCK upsert_lti13_users
+INSERT INTO
+  lti13_users (user_id, lti13_instance_id, sub)
+SELECT
+  user_id,
+  $lti13_instance_id,
+  $sub
+FROM
+  users
+WHERE
+  uid = $uid
+  AND institution_id = $institution_id
+ON CONFLICT (user_id, lti13_instance_id) DO
+UPDATE
+SET
+  sub = $sub;

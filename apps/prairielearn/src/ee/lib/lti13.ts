@@ -35,6 +35,7 @@ const sql = loadSqlEquiv(import.meta.url);
 const TOKEN_SCOPES = [
   'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
   'https://purl.imsglobal.org/spec/lti-ags/scope/score',
+  'https://purl.imsglobal.org/spec/lti-nrps/scope/contextmembership.readonly',
 ];
 
 export const Lti13CombinedInstanceSchema = z.object({
@@ -185,6 +186,12 @@ export class Lti13Claim {
     return this.claims['https://purl.imsglobal.org/spec/lti-ags/claim/endpoint']?.lineitems;
   }
 
+  get context_memberships_url() {
+    this.assertValid();
+    return this.claims['https://purl.imsglobal.org/spec/lti-nrps/claim/namesroleservice']
+      ?.context_memberships_url;
+  }
+
   // Functions
 
   private assertValid() {
@@ -280,15 +287,24 @@ export async function validateLti13CourseInstance(
   return instAuthProviders.some((a) => a.name === 'LTI 1.3');
 }
 
+export async function deleteAccessToken(lti13_instance_id: string) {
+  await queryAsync(sql.update_token, {
+    lti13_instance_id,
+    access_tokenset: null,
+    access_token_expires_at: null,
+  });
+}
+
 export async function getAccessToken(lti13_instance_id: string) {
   const lti13_instance = await selectLti13Instance(lti13_instance_id);
 
   let tokenSet: TokenSet = lti13_instance.access_tokenset;
 
-  // -5 minute buffer to refresh tokens before they expire
+  const fiveMinutesInTheFuture = new Date(Date.now() + 5 * 60 * 1000);
+
   if (
     lti13_instance.access_token_expires_at &&
-    lti13_instance.access_token_expires_at > new Date(Date.now() - 5 * 60 * 1000)
+    lti13_instance.access_token_expires_at > fiveMinutesInTheFuture
   ) {
     return tokenSet.access_token;
   }
@@ -373,6 +389,39 @@ export async function syncLineitems(instance: Lti13CombinedInstance, job: Server
     );
   });
   job.info('Done.');
+  await syncContextMemberships(instance);
+}
+
+export async function syncContextMemberships(instance: Lti13CombinedInstance) {
+  if (instance.lti13_course_instance.context_memberships_url === null) {
+    throw Error('LTI 1.3 missing context_memberships_url');
+  }
+
+  const token = await getAccessToken(instance.lti13_instance.id);
+  const memberships = await fetchRetry(instance.lti13_course_instance.context_memberships_url, {
+    method: 'GET',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-type': 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+    },
+  });
+
+  for (const member of memberships.members) {
+    //console.log(member);
+
+    if (member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser')) {
+      continue;
+    }
+
+    // Add the user here?
+
+    await queryAsync(sql.upsert_lti13_users, {
+      institution_id: instance.lti13_instance.institution_id,
+      lti13_instance_id: instance.lti13_instance.id,
+      uid: member.email, // translate from the LTI property 'email' to our users.uid
+      sub: member.user_id, // translate from the LTI property 'user_id' to our lti13_users.sub
+    });
+  }
 }
 
 export async function createAndLinkLineitem(
@@ -464,7 +513,7 @@ export async function linkAssessment(
 // X-Rate-Limit-Remaining
 */
 
-const RESPONSES_TO_NOT_RETRY = [
+const STATUS_CODES_TO_IGNORE = [
   422, // Unprocesssable Content, like POSTing a grade to a non-student
 ];
 
@@ -483,8 +532,13 @@ export async function fetchRetry(
   };
   try {
     const response = await fetch(input, opts);
+    console.log(response.status, response.statusText);
 
-    if (!response.ok && !RESPONSES_TO_NOT_RETRY.includes(response.status)) {
+    if (STATUS_CODES_TO_IGNORE.includes(response.status)) {
+      return null;
+    }
+
+    if (!response.ok) {
       throw makeWithData('LTI 1.3 fetch error, please try again', {
         status: response.status,
         statusText: response.statusText,
@@ -503,6 +557,7 @@ export async function fetchRetry(
 
     return await response.json();
   } catch (err) {
+    // On 401 delete the key and regenerate?
     fetchRetryOpts.retryLeft -= 1;
     if (fetchRetryOpts.retryLeft === 0) {
       throw err;
@@ -534,38 +589,50 @@ export async function updateLti13Scores(assessment_id: string | number) {
       assessment_id,
     },
     AssessmentInstanceSchema.extend({
+      score_perc: z.number(), // not .nullable() from SQL query
+      date: DateFromISOString, // not .nullable() from SQL query
       lti13_user_sub: z.string().nullable(),
+      group_user_subs: z.array(z.string()),
       lti13_lineitem_id_url: z.string(),
       lti13_instance_id: z.string(),
     }),
   );
 
   for (const assessment_instance of assessment_instances) {
+    const token = await getAccessToken(assessment_instance.lti13_instance_id);
+
     console.log(assessment_instance);
 
-    // https://canvas.instructure.com/doc/api/score.html#method.lti/ims/scores.create
-    const score: Lti13Score = {
-      timestamp: assessment_instance.modified_at,
-      scoreGiven: assessment_instance.score_perc, // handle null case?
-      scoreMaximum: 100,
-      activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
-      // Seems to only accept the score for FullyGraded or PendingManual
+    let userList: string[];
+    if (assessment_instance.group_id === null && assessment_instance.lti13_user_sub !== null) {
+      userList = [assessment_instance.lti13_user_sub];
+    } else {
+      userList = assessment_instance.group_user_subs;
+    }
 
-      gradingProgress: 'FullyGraded',
-      userId: assessment_instance.lti13_user_sub, // handle null case?
-    };
+    for (const sub of userList) {
+      // https://canvas.instructure.com/doc/api/score.html#method.lti/ims/scores.create
+      const score: Lti13Score = {
+        timestamp: assessment_instance.modified_at,
+        startedAt: assessment_instance.date,
+        scoreGiven: assessment_instance.score_perc,
+        scoreMaximum: 100,
+        activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
+        gradingProgress: 'FullyGraded',
+        userId: sub,
+      };
 
-    console.log(score);
-    //continue;
+      //console.log(score);
+      //continue;
 
-    const token = await getAccessToken(assessment_instance.lti13_instance_id);
-    await fetchRetry(assessment_instance.lti13_lineitem_id_url + '/scores', {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-type': 'application/vnd.ims.lis.v1.score+json',
-      },
-      body: JSON.stringify(score),
-    });
+      await fetchRetry(assessment_instance.lti13_lineitem_id_url + '/scores', {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-type': 'application/vnd.ims.lis.v1.score+json',
+        },
+        body: JSON.stringify(score),
+      });
+    }
   }
 }
