@@ -5,51 +5,7 @@ import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type CourseInstance } from '../../lib/db-types.js';
-import { User } from '../../lib/db-types.js';
 import { QuestionsPageDataAnsified } from '../../models/questions.js';
-
-export function InstructorQuestionsNoPermission({
-  resLocals,
-  courseOwners,
-}: {
-  resLocals: Record<string, any>;
-  courseOwners: User[];
-}) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Questions' })}
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container-fluid">
-          <div class="card mb-4">
-            <div class="card-header bg-danger text-white">
-              <h1>Questions</h1>
-            </div>
-            <div class="card-body">
-              <h2>Insufficient permissions</h2>
-              <p>You must have at least &quot;Previewer&quot; permissions for this course.</p>
-              ${courseOwners.length > 0
-                ? html`
-                    <p>Contact one of the below course owners to request access.</p>
-                    <ul>
-                      ${courseOwners.map(
-                        (owner) => html`
-                          <li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li>
-                        `,
-                      )}
-                    </ul>
-                  `
-                : ''}
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
-}
 
 export const QuestionsPage = ({
   questions,

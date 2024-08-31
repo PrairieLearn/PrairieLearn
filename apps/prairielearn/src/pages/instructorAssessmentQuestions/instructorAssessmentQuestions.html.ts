@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { html, unsafeHtml } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
@@ -206,23 +207,25 @@ function AssessmentQuestionsTable({
                 : ''}
               <tr>
                 <td>
-                  ${hasCoursePermissionPreview
-                    ? unsafeHtml(`<a href="${urlPrefix}/question/${question.question_id}/">`)
-                    : ''}
-                  ${question.alternative_group_size === 1
-                    ? `${question.alternative_group_number}.`
-                    : html`
-                        <span class="ml-3">
-                          ${question.alternative_group_number}.${question.number_in_alternative_group}.
-                        </span>
-                      `}
-                  ${question.title}
-                  ${IssueBadge({
-                    urlPrefix,
-                    count: question.open_issue_count ?? 0,
-                    issueQid: question.qid,
+                  ${run(() => {
+                    const number =
+                      question.alternative_group_size === 1
+                        ? `${question.alternative_group_number}.`
+                        : html`
+                            <span class="ml-3">
+                              ${question.alternative_group_number}.${question.number_in_alternative_group}.
+                            </span>
+                          `;
+                    const title = html`${number} ${question.title}`;
+
+                    if (hasCoursePermissionPreview) {
+                      return html`<a href="${urlPrefix}/question/${question.question_id}/"
+                        >${title}</a
+                      >`;
+                    }
+
+                    return title;
                   })}
-                  ${hasCoursePermissionPreview ? html`</a>` : ''}
                 </td>
                 <td>
                   ${question.sync_errors

@@ -5,13 +5,14 @@ import fs from 'fs-extra';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { InsufficientCoursePermissionsCard } from '../../components/InsufficientCoursePermissionsCard.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { QuestionAddEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions.js';
 
-import { InstructorQuestionsNoPermission, QuestionsPage } from './instructorQuestions.html.js';
+import { QuestionsPage } from './instructorQuestions.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -25,7 +26,14 @@ router.get(
       const courseOwners = await getCourseOwners(res.locals.course.id);
       res
         .status(403)
-        .send(InstructorQuestionsNoPermission({ resLocals: res.locals, courseOwners }));
+        .send(
+          InsufficientCoursePermissionsCard({
+            resLocals: res.locals,
+            courseOwners,
+            pageTitle: 'Questions',
+            requiredPermissions: 'Previewer',
+          }),
+        );
       return;
     }
 
