@@ -1,5 +1,3 @@
-import { Toast } from 'bootstrap';
-
 import { onDocumentReady, decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
