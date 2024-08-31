@@ -13,6 +13,11 @@ c.ServerApp.password = ""
 c.ServerApp.token = ""
 c.ServerApp.allow_origin = "*"
 
+# Environmental variable to set the file that opens at launch of workspace
+# File is assumed to be in the workspace folder of the relevant question
+if "LAUNCH_FILE_NAME" in os.environ:
+    c.LabApp.default_url= f"/lab/tree/{os.environ['LAUNCH_FILE_NAME']}"
+
 # RTC appears to be broken in the current version of `jupyter-collaboration`:
 # https://github.com/jupyterlab/jupyter-collaboration/issues/162
 # This opt-in will only be useful once the underlying issue is resolved.
