@@ -1,8 +1,8 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.html.js';
 import { PlanName } from '../../lib/billing/plans-types.js';
 
@@ -39,9 +39,7 @@ export function InstructorCourseInstanceBilling({
         ${compiledScriptTag('instructorInstanceAdminBillingClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
-          ...resLocals,
-        })}
+        ${Navbar({ resLocals })}
         <main id="content" class="container mb-4">
           ${!editable
             ? html`

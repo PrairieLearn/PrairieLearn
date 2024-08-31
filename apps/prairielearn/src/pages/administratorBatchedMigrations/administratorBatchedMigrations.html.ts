@@ -1,5 +1,4 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import type {
   BatchedMigrationJobRow,
   BatchedMigrationRow,
@@ -7,6 +6,7 @@ import type {
 } from '@prairielearn/migrations';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 
 export function AdministratorBatchedMigrations({
   batchedMigrations,
@@ -23,11 +23,7 @@ export function AdministratorBatchedMigrations({
         ${HeadContents({ resLocals, pageTitle: 'Batched migrations' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'batchedMigrations',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'batchedMigrations' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -75,11 +71,7 @@ export function AdministratorBatchedMigration({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'batchedMigrations',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'batchedMigrations' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">

@@ -1,7 +1,7 @@
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { config } from '../../lib/config.js';
 import type { LtiCredentials, User } from '../../lib/db-types.js';
@@ -36,7 +36,7 @@ export function InstructorInstanceAdminLti({ resLocals }: { resLocals: Record<st
             $temp.remove();
           }
         </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseInstanceSyncErrorsAndWarnings({ authz_data, courseInstance, course, urlPrefix })}
           ${!authz_data.has_course_permission_edit
