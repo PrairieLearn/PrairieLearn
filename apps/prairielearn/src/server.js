@@ -1132,6 +1132,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)',
     (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
+    (await import('./middlewares/authzHasCoursePreview.js')).default,
   );
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/question\/[0-9]+)\/?$/,
