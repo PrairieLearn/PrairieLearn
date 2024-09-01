@@ -3389,7 +3389,7 @@ __metadata:
     "@types/bootstrap": "npm:^5.2.10"
     "@types/byline": "npm:^4.2.36"
     "@types/chai": "npm:^4.3.18"
-    "@types/chai-as-promised": "npm:^7.1.8"
+    "@types/chai-as-promised": "npm:^8.0.0"
     "@types/cookie-parser": "npm:^1.4.7"
     "@types/crypto-js": "npm:^4.2.2"
     "@types/d3": "npm:^7.4.3"
@@ -4720,12 +4720,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/chai-as-promised@npm:^7.1.8":
-  version: 7.1.8
-  resolution: "@types/chai-as-promised@npm:7.1.8"
+"@types/chai-as-promised@npm:^8.0.0":
+  version: 8.0.0
+  resolution: "@types/chai-as-promised@npm:8.0.0"
   dependencies:
     "@types/chai": "npm:*"
-  checksum: 10c0/c0a19cffe8d3f406b2cb9ba17f5f0efe318b14f27896d807b3199cc2231c16a4b5b6c464fdf2a939214de481de58cffd46c240539d3d4ece18659277d71ccc23
+  checksum: 10c0/85c91bad8a5f1665a51a3fbb8cdd80b8eca663cf42816ccdfaddff1a9b8705060235220c26e32d361f2568386216c7ee484ab4e1735c971dbdcacced7acc857d
   languageName: node
   linkType: hard
 

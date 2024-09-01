@@ -195,7 +195,7 @@
     "@types/bootstrap": "^5.2.10",
     "@types/byline": "^4.2.36",
     "@types/chai": "^4.3.18",
-    "@types/chai-as-promised": "^7.1.8",
+    "@types/chai-as-promised": "^8.0.0",
     "@types/cookie-parser": "^1.4.7",
     "@types/crypto-js": "^4.2.2",
     "@types/dockerode": "^3.3.31",
