@@ -186,7 +186,7 @@ We will add randomization to the previous question, using the file [server.py](q
 
 ### Start a new question from an existing one _outside_ your own course
 
-#### Copying questions from example course XC 101
+#### Copying questions from the example course (XC 101)
 
 You should also have access to the example course `XC 101`. From the top menu, next to the PrairieLearn homepage button, you can select other courses that you were allowed access to. Select `XC 101`. If you cannot see the example course, contact us on Slack (`#pl-help`) and we will make sure you gain access.
 
