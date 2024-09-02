@@ -42,7 +42,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - click `Save and sync`.
 
-- You will be able to see the new course instance from the course home page. You can always return to the course home page by clicking your course number from the top menu, next to the PrairieLearn button. 
+- You will be able to see the new course instance from the course home page. You can always return to the course home page by clicking your course number from the top menu, next to the PrairieLearn button.
 
 ### Creating questions from scratch
 
@@ -212,7 +212,7 @@ Once you find a question that you want to use as template, you can follow these 
 
 ### Creating a new assessment
 
-Before you create an assessment, make sure you are in the desired course instance. 
+Before you create an assessment, make sure you are in the desired course instance.
 
 - click the button `Add assessment`.
 
@@ -269,7 +269,7 @@ Follow these steps to preview an assessment as a student:
 
 - Browse through the questions included in the assessment. Submit answers and observe how the points are updated in the assessment overview page.
 
-When using "Student view without access restrictions", you have access to all assessments, regardless of their start and end dates. If you want to have a preview of only the assessments available to the students at the current time, you should select "Student view" from the dropdown menu. 
+When using "Student view without access restrictions", you have access to all assessments, regardless of their start and end dates. If you want to have a preview of only the assessments available to the students at the current time, you should select "Student view" from the dropdown menu.
 
 Learn more:
 
