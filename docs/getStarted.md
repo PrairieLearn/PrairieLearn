@@ -202,7 +202,7 @@ Once you find a question that you want to use as template, you can follow these 
 
 #### Copying questions from www.prairielearn.com
 
-- Go to [https://www.prairielearn.com/catalog/questions](https://www.prairielearn.com/catalog/questions)
+- Go to <https://www.prairielearn.com/catalog/questions>
 
 - Browse through the questions until you find one that can be used as template for your course. Then click the button "Copy question".
 
