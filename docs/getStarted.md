@@ -184,7 +184,7 @@ We will add randomization to the previous question, using the file [server.py](q
 
 - go to the `Preview` tab to see your question. Try it out! Check a different variant and see how the variables change.
 
-### Start a new question from an existing one outside your own course
+### Start a new question from an existing one _outside_ your own course
 
 #### Copying questions from example course XC 101
 
