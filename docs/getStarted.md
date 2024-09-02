@@ -116,7 +116,7 @@ To provide a simple example, here we first create a question without any randomi
 
 Note that this question does not use any server side code, and for that reason, the file `server.py` is not needed. Indeed, you could just delete `server.py` for this question. (we will not remove the file for the purpose of the following steps of this tutorial).
 
-### Start a new question from an existing one inside your own course
+### Start a new question from an existing one _inside_ your own course
 
 - from the `Questions` tab, select the question you want to copy. As an example, we will use the question with QID `find_rectangle_area`.
 
