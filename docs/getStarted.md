@@ -10,7 +10,8 @@ This tutorial will show you how to create:
 
 - [a course instance](#creating-a-course-instance)
 - [simple questions from scratch](#creating-questions-from-scratch)
-- [questions starting from provided examples](#creating-questions-from-the-example-course)
+- [questions using templates from inside your course](#start-a-new-question-from-an-existing-one-inside-your-own-course)
+- [questions using templates from outside courses](#start-a-new-question-from-an-existing-one-outside-your-own-course)
 - [assessments](#creating-a-new-assessment)
 
 ### Creating a course instance
