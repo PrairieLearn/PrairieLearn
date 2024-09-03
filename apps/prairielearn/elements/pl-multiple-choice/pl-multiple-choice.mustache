@@ -64,7 +64,6 @@
 <span
     class="py-1 d-inline align-items-center pl-multiple-choice-dropdown"
     {{#size}}style="--pl-multiple-choice-dropdown-width: {{size}}px"{{/size}}
-    aria-label="Multiple choice options"
 >
     <script>
         $(() => new window.PLMultipleChoice("{{uuid}}"));
@@ -74,6 +73,7 @@
         id="pl-multiple-choice-select-{{uuid}}"
         class="d-inline-flex"
         {{^editable}}disabled{{/editable}}
+        aria-label="Multiple choice options"
     >
         <option value="" disabled selected data-content="Select an option"></option>
         {{#answers}}

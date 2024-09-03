@@ -2,7 +2,9 @@ import { escapeHtml, html } from '@prairielearn/html';
 
 import { AssessmentQuestion, InstanceQuestion } from '../lib/db-types.js';
 
-function findLabel(field: string) {
+type EditableField = 'points' | 'auto_points' | 'manual_points' | 'score_perc';
+
+function findLabel(field: EditableField) {
   return {
     points: 'points',
     auto_points: 'auto points',
