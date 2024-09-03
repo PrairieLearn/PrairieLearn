@@ -241,7 +241,7 @@ export abstract class Editor {
               env: gitEnv,
             });
             job.data.saveSucceeded = true;
-          } catch (err) {
+          } catch {
             job.info('Failed to push changes to remote git repository');
             job.info('Pulling changes from remote git repository and trying again');
 
