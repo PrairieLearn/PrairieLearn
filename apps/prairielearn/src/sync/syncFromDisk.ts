@@ -53,6 +53,7 @@ export async function syncDiskToSqlWithLock(
   for (const courseInstanceKey in courseData.courseInstances) {
     const courseInstance = courseData.courseInstances[courseInstanceKey];
   
+    console.log(`Checking course instance ${courseInstanceKey}`); // TEST
     courseInstance.sharedPublicly = true; // TEST
     if (courseInstance.sharedPublicly) {
       for (const assessmentKey in courseInstance.assessments) {
@@ -61,35 +62,16 @@ export async function syncDiskToSqlWithLock(
           for (const zone of assessment.data.zones) {
             if (zone.questions) {
               for (const question of zone.questions) {
-                // Construct the path to the info.json file
-                const infoJsonPath = path.join(
-                  courseDir,
-                  'questions',
-                  question.id || '',
-                  'info.json',
-                );
-  
-                let questionInfo;
-                try {
-                  // Check if the file exists
-                  if (fs.existsSync(infoJsonPath)) {
-                    // Read and parse the info.json file
-                    const fileContent = fs.readFileSync(infoJsonPath, 'utf8');
-                    questionInfo = JSON.parse(fileContent);
-                  } else {
-                    console.error(`Missing JSON file: ${infoJsonPath}`);
-                    continue;
-                  }
-                } catch (error) {
-                  console.error(`Error reading or parsing JSON file: ${infoJsonPath}`, error);
-                  continue;
+                if (question.id) {
+                  const infoJsonPath = path.join(
+                    courseDir,
+                    'questions',
+                    question.id || '',
+                    'info.json',
+                  );
+
+                  readQuestionInfoJson(infoJsonPath, question.id, courseInstanceKey);
                 }
-  
-                /* TEST, uncomment later. Unable to test other stuff since I can't make questions public yet (at least easily)    
-                if (!questionInfo.sharedPublicly || questionInfo.sharedPublicly === undefined) {
-                  throw new Error(`Question ${question.id} is not shared publicly in public course instance ${courseInstanceKey}. All questions in a public course instance must be shared publicly.`);
-                }
-                */
               }
             }
           }
@@ -186,4 +168,30 @@ export async function syncOrCreateDiskToSql(
 ): Promise<SyncResults> {
   const course = await selectOrInsertCourseByPath(courseDir);
   return await syncDiskToSql(course.id, courseDir, logger);
+}
+
+
+async function readQuestionInfoJson(infoJsonPath: string, questionId: string, courseInstanceKey: string) {
+  try {
+    // Check if the file exists
+    if (fs.existsSync(infoJsonPath)) {
+      // Read and parse the info.json file
+      const fileContent = fs.readFileSync(infoJsonPath, 'utf8');
+      const questionInfo = JSON.parse(fileContent);  
+      
+      // TEST, uncomment later. Unable to test other stuff since I can't make questions public yet (at least easily)    
+      if (!questionInfo.sharedPublicly || questionInfo.sharedPublicly === undefined) {
+        throw new Error(`Question ${questionId} is not shared publicly in public course instance ${courseInstanceKey}. All questions in a public course instance must be shared publicly.`);
+      } else {
+        console.log(`Question ${questionId} is shared publicly in public course instance ${courseInstanceKey}. CONGRATS! TEST!`); // TEST
+       }
+    } else {
+      console.error(`Missing JSON file: ${infoJsonPath}`);
+    }
+  } catch (error) {
+    console.error(`Error reading or parsing JSON file: ${infoJsonPath}`, error);
+  }
+
+
+  
 }
