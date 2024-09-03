@@ -123,6 +123,7 @@ const ConfigSchema = z.object({
    * `https://us.prairielearn.com`.
    */
   serverCanonicalHost: z.string().nullable().default(null),
+  serveUntrustedContentFromSubdomains: z.boolean().default(false),
   runMigrations: z.boolean().default(true),
   runBatchedMigrations: z.boolean().default(true),
   /**
@@ -578,6 +579,10 @@ export async function loadConfig(paths: string[]) {
     if (!config.cookieDomain.startsWith('.')) {
       throw new Error('cookieDomain must start with a dot, e.g. ".example.com"');
     }
+  }
+
+  if (config.serveUntrustedContentFromSubdomains && !config.cookieDomain) {
+    throw new Error('cookieDomain must be set when serveUntrustedContentFromSubdomains is true');
   }
 }
 

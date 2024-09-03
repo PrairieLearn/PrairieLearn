@@ -31,6 +31,7 @@ export function HeadContents(titleOptions: TitleOptions) {
     ${config.cookieDomain
       ? html`<meta name="cookie-domain" content="${config.cookieDomain}" />`
       : ''}
+    ${config.serverCanonicalHost ? html`<base href="${config.serverCanonicalHost}" />` : ''}
     <title>${getTitle(titleOptions)}</title>
     <link
       href="${nodeModulesAssetPath(`${bootstrapModule}/dist/css/bootstrap.min.css`)}"

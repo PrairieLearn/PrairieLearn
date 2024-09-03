@@ -406,6 +406,7 @@ export async function initExpress() {
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
+    (await import('./middlewares/subdomain.js')).assertWorkspaceSubdomainOrRedirect,
     workspaceAuthRouter,
     (req, res, next) => {
       workspaceProxySocketActivityMetrics.addSocket(req.socket);
@@ -427,6 +428,24 @@ export async function initExpress() {
   app.use(passport.initialize());
   if (config.devMode) app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon-dev.ico')));
   else app.use(favicon(path.join(APP_ROOT_PATH, 'public', 'favicon.ico')));
+
+  // Note that this comes before routes that serve static files that might be
+  // subject to CORS restrictions.
+  app.use((await import('./middlewares/cors.js')).default);
+
+  app.use((req, res, next) => {
+    console.log('processing request...', req.originalUrl);
+    next();
+  });
+
+  // Redirect as early as possible for the best performance.
+  app.use((await import('./middlewares/subdomain.js')).autoAssertSubdomainOrRedirect);
+
+  // Together, these two middlewares help to implement our client-side security
+  // feature that ensures that code executing on question pages can't interact
+  // with other parts of the site.
+  app.use((await import('./middlewares/subdomain.js')).subdomainRedirect);
+  app.use((await import('./middlewares/subdomain.js')).validateSubdomainRequest);
 
   assets.applyMiddleware(app);
 
@@ -485,7 +504,7 @@ export async function initExpress() {
     next();
   });
   app.use((await import('./middlewares/logResponse.js')).default); // defers to end of response
-  app.use((await import('./middlewares/cors.js')).default);
+  app.use((await import('./middlewares/disableCaching.js')).default);
   app.use((await import('./middlewares/content-security-policy.js')).default);
   app.use((await import('./middlewares/date.js')).default);
   app.use((await import('./middlewares/effectiveRequestChanged.js')).default);
@@ -633,6 +652,7 @@ export async function initExpress() {
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
+    (await import('./middlewares/subdomain.js')).assertWorkspaceSubdomainOrRedirect,
     (await import('./middlewares/authzWorkspace.js')).default,
   ]);
   app.use(
@@ -1072,6 +1092,7 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/clientFilesQuestion',
     [
       (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
+      (await import('./middlewares/subdomain.js')).assertInstanceQuestionSubdomainOrRedirect,
       (await import('./pages/clientFilesQuestion/clientFilesQuestion.js')).default(),
     ],
   );
@@ -1080,6 +1101,7 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_question/:instance_question_id(\\d+)/generatedFilesQuestion',
     [
       (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
+      (await import('./middlewares/subdomain.js')).assertInstanceQuestionSubdomainOrRedirect,
       (await import('./pages/generatedFilesQuestion/generatedFilesQuestion.js')).default(),
     ],
   );
@@ -1442,16 +1464,19 @@ export async function initExpress() {
   // Global client files
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/clientFilesCourse',
+    (await import('./middlewares/subdomain.js')).assertCourseInstanceSubdomainOrRedirect,
     (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/clientFilesCourseInstance',
+    (await import('./middlewares/subdomain.js')).assertCourseInstanceSubdomainOrRedirect,
     (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
   );
 
   // Client files for assessments
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/clientFilesCourse',
+    (await import('./middlewares/subdomain.js')).assertAssessmentSubdomainOrRedirect,
     (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
   );
   app.use(
@@ -1462,6 +1487,7 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/clientFilesAssessment',
     [
       (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+      (await import('./middlewares/subdomain.js')).assertAssessmentSubdomainOrRedirect,
       (await import('./pages/clientFilesAssessment/clientFilesAssessment.js')).default,
     ],
   );
@@ -1475,6 +1501,7 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/clientFilesQuestion',
     [
       (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
+      (await import('./middlewares/subdomain.js')).assertQuestionSubdomainOrRedirect,
       (await import('./pages/clientFilesQuestion/clientFilesQuestion.js')).default(),
     ],
   );
@@ -1484,6 +1511,7 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/generatedFilesQuestion',
     [
       (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
+      (await import('./middlewares/subdomain.js')).assertQuestionSubdomainOrRedirect,
       (await import('./pages/generatedFilesQuestion/generatedFilesQuestion.js')).default(),
     ],
   );
@@ -1582,6 +1610,7 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)',
     [
       (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
+      (await import('./middlewares/subdomain.js')).assertAssessmentInstanceSubdomainOrRedirect,
       (await import('./middlewares/studentAssessmentAccess.js')).default,
       (await import('./middlewares/clientFingerprint.js')).default,
       (await import('./middlewares/logPageView.js')).default('studentAssessmentInstance'),
@@ -1593,6 +1622,7 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
     [
       (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
+      (await import('./middlewares/subdomain.js')).assertInstanceQuestionSubdomainOrRedirect,
       (await import('./middlewares/studentAssessmentAccess.js')).default,
       (await import('./middlewares/clientFingerprint.js')).default,
       // don't use logPageView here, we load it inside the page so it can get the variant_id
@@ -1602,6 +1632,7 @@ export async function initExpress() {
       (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
     ],
   );
+
   if (config.devMode) {
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/loadFromDisk',
@@ -1614,20 +1645,21 @@ export async function initExpress() {
   }
 
   // Global client files
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourse',
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourse', [
+    (await import('./middlewares/subdomain.js')).assertCourseInstanceSubdomainOrRedirect,
     (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
+  ]);
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance', [
+    (await import('./middlewares/subdomain.js')).assertCourseInstanceSubdomainOrRedirect,
     (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
-  );
+  ]);
 
   // Client files for assessments
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourse',
     [
       (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+      (await import('./middlewares/subdomain.js')).assertAssessmentSubdomainOrRedirect,
       (await import('./middlewares/studentAssessmentAccess.js')).default,
       (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
     ],
@@ -1636,6 +1668,7 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourseInstance',
     [
       (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+      (await import('./middlewares/subdomain.js')).assertAssessmentSubdomainOrRedirect,
       (await import('./middlewares/studentAssessmentAccess.js')).default,
       (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
     ],
@@ -1644,6 +1677,7 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesAssessment',
     [
       (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+      (await import('./middlewares/subdomain.js')).assertAssessmentSubdomainOrRedirect,
       (await import('./middlewares/studentAssessmentAccess.js')).default,
       (await import('./pages/clientFilesAssessment/clientFilesAssessment.js')).default,
     ],
@@ -1652,16 +1686,19 @@ export async function initExpress() {
   // Client files for questions
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/clientFilesCourse',
+    (await import('./middlewares/subdomain.js')).assertInstanceQuestionSubdomainOrRedirect,
     (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/clientFilesQuestion',
+    (await import('./middlewares/subdomain.js')).assertInstanceQuestionSubdomainOrRedirect,
     (await import('./pages/clientFilesQuestion/clientFilesQuestion.js')).default(),
   );
 
   // generatedFiles
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)/generatedFilesQuestion',
+    (await import('./middlewares/subdomain.js')).assertInstanceQuestionSubdomainOrRedirect,
     (await import('./pages/generatedFilesQuestion/generatedFilesQuestion.js')).default(),
   );
 
@@ -1739,6 +1776,7 @@ export async function initExpress() {
     (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/preview', [
+    (await import('./middlewares/subdomain.js')).assertQuestionSubdomainOrRedirect,
     function (req, res, next) {
       res.locals.navSubPage = 'preview';
       next();
@@ -1920,22 +1958,26 @@ export async function initExpress() {
   // Global client files
   app.use(
     '/pl/course/:course_id(\\d+)/clientFilesCourse',
+    (await import('./middlewares/subdomain.js')).assertCourseSubdomainOrRedirect,
     (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
   );
 
   // Client files for questions
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/clientFilesCourse',
+    (await import('./middlewares/subdomain.js')).assertQuestionSubdomainOrRedirect,
     (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
   );
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/clientFilesQuestion', [
     (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
+    (await import('./middlewares/subdomain.js')).assertQuestionSubdomainOrRedirect,
     (await import('./pages/clientFilesQuestion/clientFilesQuestion.js')).default(),
   ]);
 
   // generatedFiles
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/generatedFilesQuestion', [
     (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
+    (await import('./middlewares/subdomain.js')).assertQuestionSubdomainOrRedirect,
     (await import('./pages/generatedFilesQuestion/generatedFilesQuestion.js')).default(),
   ]);
 
