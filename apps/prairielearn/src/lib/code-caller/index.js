@@ -1,6 +1,5 @@
 // @ts-check
 import * as os from 'node:os';
-import { setTimeout as sleep } from 'node:timers/promises';
 
 import debugfn from 'debug';
 import { createPool } from 'generic-pool';
@@ -33,41 +32,6 @@ const debug = debugfn('prairielearn:code-caller');
 
 /** @type {import('generic-pool').Pool<CodeCaller> | null} */
 let pool = null;
-
-/** @type {Set<CodeCaller>} */
-let unhealthyCodeCallers = new Set();
-
-async function getHealthyCodeCaller() {
-  if (!pool) {
-    throw new Error('CodeCaller pool not initialized');
-  }
-
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const codeCaller = await pool.acquire();
-    if (!unhealthyCodeCallers.has(codeCaller)) {
-      return codeCaller;
-    }
-    await pool.release(codeCaller);
-    await sleep(0);
-  }
-}
-
-function destroyUnhealthyCodeCallers() {
-  unhealthyCodeCallers.forEach((codeCaller) => {
-    // Delete from the set first. That way, if `pool.destroy()` is still running
-    // on the next tick of this `destroyUnhealthyCodeCallers()` function, we
-    // won't try to destroy it again.
-    unhealthyCodeCallers.delete(codeCaller);
-    pool?.destroy(codeCaller).catch((err) => {
-      logger.error('Error destroying unhealthy Python worker', err);
-      Sentry.captureException(err);
-    });
-  });
-
-  // Unref the timeout so that it doesn't keep the process alive.
-  setTimeout(destroyUnhealthyCodeCallers, 100).unref();
-}
 
 export async function init() {
   debug('init()');
@@ -127,24 +91,6 @@ export async function init() {
     Sentry.captureException(err);
   });
 
-  // This is part of a huge kludge we use to work around the fact that Sentry
-  // uses domains. We need to ensure that new code callers are only created
-  // outside the context of the domain of a request. Otherwise, if a request
-  // has very large objects associated with it (e.g. `res.locals` for a large
-  // submission), those objects will be kept alive forever by the domain, which
-  // ends up being associated with the Docker HTTP client that survives for
-  // the lifetime of the container.
-  //
-  // To work around this, instead of calling `pool.destroy(codeCaller)`
-  // immediately after an error, we'll add the code caller to a set of
-  // unhealthy ones. This `destroyUnhealthyCodeCallers()` function will then
-  // execute at a regular interval and destroy any unhealthy code callers.
-  //
-  // See https://github.com/getsentry/sentry-javascript/issues/7031 for more
-  // details. If they ever switch to using AsyncLocalStorage, we can remove
-  // this and destroy code callers as soon as they become unhealthy.
-  destroyUnhealthyCodeCallers();
-
   // Ensure that the workers are ready; this will ensure that we're ready to
   // execute code as soon as we start processing requests.
   //
@@ -167,6 +113,15 @@ export async function finish() {
   await pool?.clear();
   pool = null;
   debug('finish(): pool finished draining');
+}
+
+export function getMetrics() {
+  return {
+    size: pool?.size ?? 0,
+    available: pool?.available ?? 0,
+    borrowed: pool?.borrowed ?? 0,
+    pending: pool?.pending ?? 0,
+  };
 }
 
 /**
@@ -199,7 +154,7 @@ export async function withCodeCaller(course, fn) {
   const jobUuid = uuidv4();
   load.startJob('python_callback_waiting', jobUuid);
 
-  const codeCaller = await getHealthyCodeCaller();
+  const codeCaller = await pool.acquire();
 
   try {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
@@ -210,7 +165,7 @@ export async function withCodeCaller(course, fn) {
   } catch (err) {
     // If we fail to prepare for a course, assume that the code caller is
     // broken and dispose of it.
-    unhealthyCodeCallers.add(codeCaller);
+    await pool.destroy(codeCaller);
     throw err;
   } finally {
     load.endJob('python_callback_waiting', jobUuid);
@@ -249,7 +204,7 @@ export async function withCodeCaller(course, fn) {
   load.startJob('python_worker_idle', codeCaller.uuid);
 
   if (needsFullRestart) {
-    unhealthyCodeCallers.add(codeCaller);
+    await pool.destroy(codeCaller);
   } else {
     await pool.release(codeCaller);
   }

@@ -531,14 +531,13 @@ onDocumentReady(() => {
     rowA: AssessmentInstanceRow,
     rowB: AssessmentInstanceRow,
   ) {
-    let nameA: string | null, nameB: string | null, idA, idB;
-    if (assessmentGroupWork) {
-      (nameA = rowA.group_name), (nameB = rowB.group_name);
-      (idA = rowA.group_id ?? ''), (idB = rowB.group_id ?? '');
-    } else {
-      (nameA = rowA.uid), (nameB = rowB.uid);
-      (idA = rowA.user_id ?? ''), (idB = rowB.user_id ?? '');
-    }
+    const nameKey = assessmentGroupWork ? 'group_name' : 'uid';
+    const idKey = assessmentGroupWork ? 'group_id' : 'user_id';
+
+    const nameA = rowA[nameKey];
+    const nameB = rowB[nameKey];
+    const idA = rowA[idKey] ?? '';
+    const idB = rowB[idKey] ?? '';
 
     // Compare first by UID/group name, then user/group ID, then
     // instance number, then by instance ID.

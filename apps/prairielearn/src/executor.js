@@ -71,7 +71,7 @@ async function handleInput(line, codeCaller) {
       coursePath: '/course',
       forbiddenModules: request.forbidden_modules,
     });
-  } catch (err) {
+  } catch {
     // We should never actually hit this case - but if we do, handle it so
     // that all our bases are covered.
     return { needsFullRestart: true };
