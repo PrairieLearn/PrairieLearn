@@ -12,7 +12,7 @@ export async function init(options: Sentry.NodeOptions) {
   if (!release) {
     try {
       release = (await execa('git', ['rev-parse', 'HEAD'])).stdout.trim();
-    } catch (e) {
+    } catch {
       // This most likely isn't running in an initialized git repository.
       // Default to not setting a release.
     }

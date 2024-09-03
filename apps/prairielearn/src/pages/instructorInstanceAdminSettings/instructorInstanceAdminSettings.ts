@@ -66,7 +66,7 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-      } catch (err) {
+      } catch {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         return;
       }
@@ -96,7 +96,7 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
         res.redirect(`${res.locals.plainUrlPrefix}/course/${res.locals.course.id}/course_admin`);
-      } catch (err) {
+      } catch {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else if (req.body.__action === 'change_id') {
@@ -112,7 +112,7 @@ router.post(
       let ciid_new;
       try {
         ciid_new = path.normalize(req.body.id);
-      } catch (err) {
+      } catch {
         throw new error.HttpStatusError(
           400,
           `Invalid CIID (could not be normalized): ${req.body.id}`,
@@ -130,7 +130,7 @@ router.post(
         try {
           await editor.executeWithServerJob(serverJob);
           res.redirect(req.originalUrl);
-        } catch (err) {
+        } catch {
           res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         }
       }
