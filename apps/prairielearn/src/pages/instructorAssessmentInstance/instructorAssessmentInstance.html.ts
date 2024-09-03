@@ -706,6 +706,7 @@ function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) 
             class="form-control"
             name="points"
             value="${resLocals.assessment_instance.points}"
+            aria-label="Total points"
           />
           <span class="input-group-addon">/${resLocals.assessment_instance.max_points}</span>
         </div>
@@ -740,6 +741,7 @@ function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> 
             class="form-control"
             name="score_perc"
             value="${resLocals.assessment_instance.score_perc}"
+            aria-label="Total score percentage"
           />
           <span class="input-group-addon">%</span>
         </div>
