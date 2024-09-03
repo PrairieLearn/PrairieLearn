@@ -6,6 +6,7 @@ import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js'
 import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
+import { validateHTML } from './validateHTML.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -148,6 +149,24 @@ Keep in mind you are not just generating an example; you are generating an actua
     });
 
     extractFromCompletion(completion, job);
+    const html = String(job?.data?.html);
+
+    if (html) {
+      const errors = validateHTML(html);
+      if (errors.length > 0) {
+        await regenInternal(
+          job,
+          client,
+          authnUserId,
+          prompt,
+          `Please fix the following issues: \n${errors.join('\n')}`,
+          html,
+          String(job.data.python),
+          0,
+        );
+      }
+    }
+
     job.data['prompt'] = prompt;
     job.data['generation'] = completion.choices[0].message.content;
     job.data['context'] = context;
@@ -159,6 +178,99 @@ Keep in mind you are not just generating an example; you are generating an actua
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
   };
+}
+
+/**
+ * Regenerates HTML and Python code for a question based on a prompt.
+ * @param job The server job to do regeneration in.
+ * @param client The OpenAI client to use.
+ * @param courseId The ID of the current course.
+ * @param authnUserId The authenticated user's ID.
+ * @param originalPrompt The prompt creating the original generation.
+ * @param revisionPrompt A prompt with user instructions on how to revise the question.
+ * @param originalHTML The question.html file to revise.
+ * @param originalPython The server.py file to revise.
+ * @param numRegens Number of times that regen could be called.
+ */
+async function regenInternal(
+  job: ServerJob,
+  client: OpenAI,
+  authnUserId: string,
+  originalPrompt: string,
+  revisionPrompt: string,
+  originalHTML: string,
+  originalPython: string,
+  numRegens: number,
+) {
+  job.info(`prompt is ${revisionPrompt}`);
+
+  const context = await makeContext(client, originalPrompt, authnUserId);
+  const sysPrompt = `
+${promptPreamble(context)}
+# Previous Generations
+
+A user previously used the assistant to generate a question with following prompt:
+
+${originalPrompt}
+
+You generated the following:
+
+${
+  originalHTML === undefined
+    ? ''
+    : `\`\`\`html
+${originalHTML}
+\`\`\``
+}
+
+${
+  originalPython === undefined
+    ? ''
+    : `\`\`\`python
+${originalPython}
+\`\`\``
+}
+
+# Prompt
+
+A user will now request your help in in revising the question that you generated. Respond in a friendly but concise way. Include \`question.html\` and \`server.py\` in Markdown code fences in your response, and tag each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization).
+
+Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.
+`;
+
+  job.info(`system prompt is: ${sysPrompt}`);
+
+  // TODO [very important]: normalize to prevent prompt injection attacks
+
+  const completion = await client.chat.completions.create({
+    model: 'gpt-3.5-turbo',
+    messages: [
+      { role: 'system', content: sysPrompt },
+      { role: 'user', content: revisionPrompt },
+    ],
+    user: openAiUserFromAuthn(authnUserId),
+  });
+
+  extractFromCompletion(completion, job);
+  job.data['generation'] = completion.choices[0].message.content;
+
+  const html = String(job?.data?.html);
+
+  if (html) {
+    const errors = validateHTML(html);
+    if (errors.length > 0 && numRegens > 0) {
+      await regenInternal(
+        job,
+        client,
+        authnUserId,
+        originalPrompt,
+        `Please fix the following issues: \n${errors.join('\n')}`,
+        html,
+        String(job.data.python),
+        numRegens - 1,
+      );
+    }
+  }
 }
 
 /**
@@ -194,59 +306,18 @@ export async function regenerateQuestion(
   });
 
   const jobData = await serverJob.execute(async (job) => {
-    job.info(`prompt is ${revisionPrompt}`);
-
-    const context = await makeContext(client, originalPrompt, authnUserId);
-    const sysPrompt = `
-${promptPreamble(context)}
-# Previous Generations
-
-A user previously used the assistant to generate a question with following prompt:
-
-${originalPrompt}
-
-You generated the following:
-
-${
-  originalHTML === undefined
-    ? ''
-    : `\`\`\`html
-${originalHTML}
-\`\`\``
-}
-
-${
-  originalPython === undefined
-    ? ''
-    : `\`\`\`python
-${originalPython}
-\`\`\``
-}
-
-# Prompt
-
-A user will now request your help in in revising the question that you generated. Respond in a friendly but concise way. Include \`question.html\` and \`server.py\` in Markdown code fences in your response, and tag each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization).
-
-Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.
-`;
-
-    job.info(`system prompt is: ${sysPrompt}`);
-
-    // TODO [very important]: normalize to prevent prompt injection attacks
-
-    const completion = await client.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        { role: 'system', content: sysPrompt },
-        { role: 'user', content: revisionPrompt },
-      ],
-      user: openAiUserFromAuthn(authnUserId),
-    });
-
-    extractFromCompletion(completion, job);
+    await regenInternal(
+      job,
+      client,
+      authnUserId,
+      originalPrompt,
+      revisionPrompt,
+      originalHTML,
+      originalPython,
+      1,
+    );
     job.data['prompt'] = revisionPrompt;
     job.data['originalPrompt'] = originalPrompt;
-    job.data['generation'] = completion.choices[0].message.content;
     job.data['context'] = context;
   });
 
