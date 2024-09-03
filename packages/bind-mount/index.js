@@ -1,5 +1,5 @@
 try {
-  // eslint-disable-next-line @typescript-eslint/no-var-requires
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const addon = require('bindings')('addon');
 
   module.exports.mount = (source, target) => {
@@ -25,7 +25,7 @@ try {
       });
     });
   };
-} catch (err) {
+} catch {
   module.exports.mount = () => {
     throw new Error('Failed to load native bindings');
   };

@@ -23,7 +23,7 @@ export async function processSubmission(
     let postData;
     try {
       postData = JSON.parse(req.body.postData);
-    } catch (e) {
+    } catch {
       throw new HttpStatusError(400, 'JSON parse failed on body.postData');
     }
     variant_id = postData.variant ? postData.variant.id : null;

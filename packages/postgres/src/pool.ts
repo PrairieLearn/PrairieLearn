@@ -61,7 +61,7 @@ function debugParams(params: QueryParams): string {
   let s;
   try {
     s = JSON.stringify(params);
-  } catch (err) {
+  } catch {
     s = 'CANNOT JSON STRINGIFY';
   }
   return debugString(s);

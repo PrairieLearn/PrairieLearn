@@ -373,7 +373,7 @@ async function execPythonServer(codeCaller, phase, data, html, context) {
 
   try {
     await fs.access(fullFilename, fs.constants.R_OK);
-  } catch (err) {
+  } catch {
     // server.py does not exist
     return { result: defaultServerRet(phase, data, html, context), output: '' };
   }
@@ -787,7 +787,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
         }
       });
     });
-  } catch (err) {
+  } catch {
     // Black-hole any errors, they were (should have been) handled by course issues
   }
 
@@ -1871,7 +1871,7 @@ async function getCacheKey(course, data, context) {
     const commitHash = await getOrUpdateCourseCommitHash(course);
     const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
     return `question:${commitHash}-${dataHash}`;
-  } catch (err) {
+  } catch {
     return null;
   }
 }

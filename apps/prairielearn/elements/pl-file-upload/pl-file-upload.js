@@ -296,7 +296,7 @@
               }
               $codePreview.removeClass('d-none');
             }
-          } catch (e) {
+          } catch {
             $imgPreview
               .on('load', () => {
                 $imgPreview.removeClass('d-none');

@@ -48,7 +48,7 @@ export async function saveGeneratedQuestion(
 
   try {
     await editor.executeWithServerJob(serverJob);
-  } catch (err) {
+  } catch {
     throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
   }
 

@@ -14,7 +14,7 @@ export function b64EncodeUnicode(str) {
         return String.fromCharCode(parseInt('0x' + p1, 16));
       }),
     );
-  } catch (e) {
+  } catch {
     logger.error(`b64EncodeUnicode: returning empty string because failed to encode ${str}`);
     return '';
   }
@@ -31,7 +31,7 @@ export function b64DecodeUnicode(str) {
         })
         .join(''),
     );
-  } catch (e) {
+  } catch {
     logger.error(`b64DecodeUnicode: returning empty string because failed to decode ${str}`);
     return '';
   }

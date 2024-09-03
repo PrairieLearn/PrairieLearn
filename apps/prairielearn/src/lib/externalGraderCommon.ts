@@ -124,7 +124,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
   try {
     // replace NULL with unicode replacement character
     data = JSON.parse(dataStr.replace(/\0/g, '\ufffd'));
-  } catch (e) {
+  } catch {
     return makeGradingFailureWithMessage(jobId, dataStr, 'Could not parse the grading results.');
   }
 
