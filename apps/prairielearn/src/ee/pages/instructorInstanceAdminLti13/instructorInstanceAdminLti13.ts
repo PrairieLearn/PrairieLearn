@@ -4,24 +4,18 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import {
-  loadSqlEquiv,
-  queryAsync,
-  queryRow,
-  queryRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import {
   AssessmentSchema,
   Lti13CourseInstanceSchema,
   Lti13AssessmentsSchema,
-  AssessmentInstanceSchema,
 } from '../../../lib/db-types.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
+  enrollUsersFromLti13,
   syncLineitems,
   getLineitems,
   unlinkAssessment,
@@ -264,6 +258,10 @@ router.post(
     } else if (req.body.__action === 'send_grades') {
       // Validate assessment_id against page auth
 
+      await enrollUsersFromLti13(instance);
+
+      await updateLti13Scores(req.body.assessment_id);
+
       const assessment = await queryRow(
         sql.update_lti13_assessment_last_activity,
         {
@@ -271,8 +269,6 @@ router.post(
         },
         AssessmentSchema,
       );
-
-      await updateLti13Scores(req.body.assessment_id);
 
       flash('notice', `Sending grades in the background for ${assessment.title}`);
       return res.redirect(req.originalUrl);

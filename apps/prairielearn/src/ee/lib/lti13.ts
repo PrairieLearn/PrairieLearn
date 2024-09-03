@@ -9,6 +9,7 @@ import { z } from 'zod';
 
 import { HttpStatusError, makeWithData } from '@prairielearn/error';
 import {
+  callAsync,
   loadSqlEquiv,
   queryRow,
   queryRows,
@@ -24,6 +25,7 @@ import {
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { ServerJob } from '../../lib/server-jobs.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
 import { getInstitutionAuthenticationProviders } from './institution.js';
@@ -287,14 +289,6 @@ export async function validateLti13CourseInstance(
   return instAuthProviders.some((a) => a.name === 'LTI 1.3');
 }
 
-export async function deleteAccessToken(lti13_instance_id: string) {
-  await queryAsync(sql.update_token, {
-    lti13_instance_id,
-    access_tokenset: null,
-    access_token_expires_at: null,
-  });
-}
-
 export async function getAccessToken(lti13_instance_id: string) {
   const lti13_instance = await selectLti13Instance(lti13_instance_id);
 
@@ -388,11 +382,11 @@ export async function syncLineitems(instance: Lti13CombinedInstance, job: Server
       `\nSummary of PrairieLearn changes: ${output.updated} updated, ${output.deleted} deleted.`,
     );
   });
+  await enrollUsersFromLti13(instance);
   job.info('Done.');
-  await syncContextMemberships(instance);
 }
 
-export async function syncContextMemberships(instance: Lti13CombinedInstance) {
+export async function enrollUsersFromLti13(instance: Lti13CombinedInstance) {
   if (instance.lti13_course_instance.context_memberships_url === null) {
     throw Error('LTI 1.3 missing context_memberships_url');
   }
@@ -407,13 +401,34 @@ export async function syncContextMemberships(instance: Lti13CombinedInstance) {
   });
 
   for (const member of memberships.members) {
-    //console.log(member);
+    console.log(member);
 
-    if (member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser')) {
+    // Skip invalid cases
+    if (
+      member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser') ||
+      !('email' in member)
+    ) {
       continue;
     }
 
-    // Add the user here?
+    // Skip non-student cases
+    if (!member.roles.includes('http://purl.imsglobal.org/vocab/lis/v2/membership#Learner')) {
+      continue;
+    }
+
+    const newUser = await callAsync('users_select_or_insert', [
+      member.email,
+      member.name,
+      null, // uin
+      member.email,
+      'LTI 1.3',
+      instance.lti13_instance.institution_id,
+    ]);
+
+    await ensureEnrollment({
+      course_instance_id: instance.lti13_course_instance.course_instance_id,
+      user_id: newUser.rows[0].user_id,
+    });
 
     await queryAsync(sql.upsert_lti13_users, {
       institution_id: instance.lti13_instance.institution_id,
@@ -557,7 +572,6 @@ export async function fetchRetry(
 
     return await response.json();
   } catch (err) {
-    // On 401 delete the key and regenerate?
     fetchRetryOpts.retryLeft -= 1;
     if (fetchRetryOpts.retryLeft === 0) {
       throw err;
@@ -567,6 +581,7 @@ export async function fetchRetry(
   }
 }
 
+// https://www.imsglobal.org/spec/lti-ags/v2p0#score-publish-service
 export const Lti13ScoreSchema = z.object({
   scoreGiven: z.number(),
   scoreMaximum: z.number(),
@@ -601,7 +616,7 @@ export async function updateLti13Scores(assessment_id: string | number) {
   for (const assessment_instance of assessment_instances) {
     const token = await getAccessToken(assessment_instance.lti13_instance_id);
 
-    console.log(assessment_instance);
+    //console.log(assessment_instance);
 
     let userList: string[];
     if (assessment_instance.group_id === null && assessment_instance.lti13_user_sub !== null) {
@@ -622,7 +637,7 @@ export async function updateLti13Scores(assessment_id: string | number) {
         userId: sub,
       };
 
-      //console.log(score);
+      console.log(score);
       //continue;
 
       await fetchRetry(assessment_instance.lti13_lineitem_id_url + '/scores', {
