@@ -10,23 +10,24 @@ This tutorial will show you how to create:
 
 - [a course instance](#creating-a-course-instance)
 - [simple questions from scratch](#creating-questions-from-scratch)
-- [questions starting from provided examples](#creating-questions-from-the-example-course)
+- [questions using templates from inside your course](#start-a-new-question-from-an-existing-one-inside-your-own-course)
+- [questions using templates from outside courses](#start-a-new-question-from-an-existing-one-outside-your-own-course)
 - [assessments](#creating-a-new-assessment)
 
 ### Creating a course instance
 
-A course instance corresponds to a single offering of a course, such as "Fall 2020", or possibly "Fall 2020, Section M". Follow the steps below to create a new course instance:
+A course instance corresponds to a single offering of a course, such as "Fall 2024", or possibly "Fall 2024, Section M". Follow the steps below to create a new course instance:
 
 - click the button `Add course instance`.
 
-- click the button `Change CIID` to change the course instance ID name. Typically we recommend using a short version of the course instance name, for example, `Fa20`.
+- click the button `Change CIID` to change the course instance ID name. Typically we recommend using a short version of the course instance name, for example, `Fa24`.
 
 - click the `Edit` button next to `infoCourseInstance.json`.
 
 - in `longName`, add your course instance name. For example:
 
   ```json
-  "longName": "Fall 2020, Section M"
+  "longName": "Fall 2024, Section M"
   ```
 
 - in `allowAccess`, you should set the dates in which you want your course to be available (other [access options](courseInstance.md#course-instance-allowaccess)). For example:
@@ -34,21 +35,19 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
   ```json
   "allowAccess": [
       {
-          "startDate": "2020-08-17T00:00:01",
-          "endDate": "2020-12-18T23:59:59"
+          "startDate": "2024-08-17T00:00:01",
+          "endDate": "2024-12-18T23:59:59"
       }
   ]
   ```
 
 - click `Save and sync`.
 
-- You will be able to see the new course instance from the course home page.
-
-![](start-guide/homepage_new_instance.png)
+- You will be able to see the new course instance from the course home page. You can always return to the course home page by clicking your course number from the top menu, next to the PrairieLearn button.
 
 ### Creating questions from scratch
 
-##### Add a new question
+#### Add a new question
 
 - go to the `Questions` tab. Your questions page should be similar to the example below:
 
@@ -58,7 +57,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - click the button `Change QID` to change the question ID name. Typically, question authors choose QID that provide some big-picture idea of the question topic. For example, `find_rectangle_area`.
 
-- click the `Edit` button next to `info.json`.
+- click the `Edit question configuration` link to modify the `info.json` file.
 
 - change the question `title`. For example:
 
@@ -72,14 +71,13 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
   "topic": "Geometric properties"
   ```
 
-- change the question `tags`. Use [tags](course.md/#tags) to add more levels to your filter. We recommend adding the netid of the question author and the semester when the question was created. For our example, we use:
+- you can use [tags](course.md/#tags) to add more levels to your filter. For example, you can add the email of the question author, the semester when the question was created, and the type of question. Tags are optional.
 
   ```json
   "tags": [
-      "mfsilva",
-      "fa20",
-      "MC",
-      "calculate"
+      "author@email.com",
+      "fa24",
+      "MC"
   ],
   ```
 
@@ -117,21 +115,19 @@ To provide a simple example, here we first create a question without any randomi
 
 - if you go back to the question tab, you should see your new question.
 
-![](start-guide/question_add_new_1.png)
-
 Note that this question does not use any server side code, and for that reason, the file `server.py` is not needed. Indeed, you could just delete `server.py` for this question. (we will not remove the file for the purpose of the following steps of this tutorial).
 
-##### Start a new question from an existing one
+### Start a new question from an existing one _inside_ your own course
 
 - from the `Questions` tab, select the question you want to copy. As an example, we will use the question with QID `find_rectangle_area`.
 
 - go to the `Settings` tab.
 
-- click the button `Make a copy of this question`. Click `Submit` to make a copy of the question inside your own course.
+- click the button `Make a copy of this question`. Click `Submit` to make a copy of the question inside your own course. You are now viewing the copy of the question.
 
 - click the button `Change QID` to change the question ID name. In this example, we will use `find_rectangle_area_rand`.
 
-- click the `Edit` button next to `info.json`.
+- click the `Edit question configuration` link to modify the `info.json` file.
 
 - change the question `title`. In this case, you can just remove `(copy 1)` from the title, come up with another one, or leave it as is.
 
@@ -145,7 +141,7 @@ We will add randomization to the previous question, using the file [server.py](q
 
 - go to the `Files` tab.
 
-- click the `Edit` button next to `server.py`. Here is where you can define the question variables, and add randomization. We will talk about some other examples in later sections. Here is a how we can modify the original area example:
+- click the `Edit` button next to `server.py`. Here is where you can define the question variables, and add randomization. Here is a how we can modify the original area example:
 
   ```python
   import random
@@ -189,27 +185,35 @@ We will add randomization to the previous question, using the file [server.py](q
 
 - go to the `Preview` tab to see your question. Try it out! Check a different variant and see how the variables change.
 
-### Creating questions from the example course
+### Start a new question from an existing one _outside_ your own course
 
-You should also have access to the example course `XC 101`. From the top menu, next to the PrairieLearn homepage button, you can select other courses that you were allowed access to (depicted in red in the figure below). Select `XC 101`. If you cannot see the example course, contact us on Slack (`#pl-help`) and we will make sure you gain access.
+#### Copying questions from the example course (XC 101)
 
-![](start-guide/change-example-course.png)
+You should also have access to the example course `XC 101`. From the top menu, next to the PrairieLearn homepage button, you can select other courses that you were allowed access to. Select `XC 101`. If you cannot see the example course, contact us on Slack (`#pl-help`) and we will make sure you gain access.
 
-You will find a variety of questions in the example course. This is probably your best starting point when creating questions for the first time. Let's see how you can copy one of the example questions to your own course:
+You can look over all questions by going to the `Questions` tab. Or you can select course instance `SectionA` where some of the questions are organized by assessment. For example, `Question gallery for PL elements` will have a collection of examples for each PrairieLearn element. If you are interested in coding autograders, you can check `Questions using external auto-graders`.
 
-- from the `Questions` tab, click on the question `Template pl-integer-input: randomized input parameters` (QID: `template/integerInput`).
+Once you find a question that you want to use as template, you can follow these steps:
 
 - click on the `Settings` tab.
 
 - click the button `Make a copy of this question`. Select your course and click `Submit`.
 
-- That is it! Go to the `Questions` tab and you will see the question was added to your course. You can modify the question following the steps from the section above.
+- That is it! You are now viewing a copy of the question inside your course. You can modify the question following the steps from the section above.
+
+#### Copying questions from www.prairielearn.com
+
+- Go to <https://www.prairielearn.com/catalog/questions>
+
+- Browse through the questions until you find one that can be used as template for your course. Then click the button "Copy question".
+
+- Select your course from the dropdown menu and click "Copy question".
+
+- That is it! You are now viewing a copy of the question inside your course. You can modify the question following the steps from the section above.
 
 ### Creating a new assessment
 
-Before you create an assessment, make sure you are in the desired course instance. For example, we want to create a homework assessment in the "Fall 2020" course instance, as indicated below.
-
-![](start-guide/create_assessment.png)
+Before you create an assessment, make sure you are in the desired course instance.
 
 - click the button `Add assessment`.
 
@@ -248,13 +252,25 @@ Before you create an assessment, make sure you are in the desired course instanc
       {
           "questions": [
               {"id": "find_rectangle_area_rand", "points": 1, "maxPoints": 5},
-              {"id": "integerInput", "points": 1, "maxPoints": 5}
+              {"id": "find_rectangle_area", "points": 1, "maxPoints": 1}
           ]
       }
   ]
   ```
 
 - click `Save and sync`.
+
+### Check how a student will see the assessment
+
+Follow these steps to preview an assessment as a student:
+
+- From the main assessment page (click `Assessments` on the top menu bar), switch to student view by using the dropdown menu next to your name on the top menu and select "Student view without access restrictions". This action will take you to the Student Assessment page.
+
+- Select the desired assessment (in our example `Geometric properties and applications`).
+
+- Browse through the questions included in the assessment. Submit answers and observe how the points are updated in the assessment overview page.
+
+When using "Student view without access restrictions", you have access to all assessments, regardless of their start and end dates. If you want to have a preview of only the assessments available to the students at the current time, you should select "Student view" from the dropdown menu.
 
 Learn more:
 
