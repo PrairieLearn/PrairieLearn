@@ -58,7 +58,7 @@ export function InstructorAssessmentQuestions({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })}
-        ${compiledScriptTag('publicInstructorAssessmentQuestionsClient.ts')}
+
       </head>
       <body>
         ${Navbar({ resLocals })}
