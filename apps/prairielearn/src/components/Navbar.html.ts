@@ -56,10 +56,64 @@ export function Navbar({
       <div class="container-fluid">
         <a class="navbar-brand" href="${homeUrl}" aria-label="Homepage">
           <span class="navbar-brand-label">PrairieLearn</span>
-          <span class="navbar-brand-hover-label">
-            Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
-          </span>
         </a>
+
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="#">Home</a>
+          </li>
+
+          <li class="nav-item d-none d-lg-block" aria-hidden="true">
+            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
+              &rarr;
+            </span>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">Global Admin</a>
+          </li>
+
+          <li class="nav-item d-none d-lg-block" aria-hidden="true">
+            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
+              &rarr;
+            </span>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">Institutions</a>
+          </li>
+
+          <li class="nav-item d-none d-lg-block" aria-hidden="true">
+            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
+              &rarr;
+            </span>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">UIUC</a>
+          </li>
+
+          <li class="nav-item d-none d-lg-block" aria-hidden="true">
+            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
+              &rarr;
+            </span>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">Courses</a>
+          </li>
+
+          <li class="nav-item d-none d-lg-block" aria-hidden="true">
+            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
+              &rarr;
+            </span>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link active" href="#">TAM 212 <i class="bi bi-caret-down-fill"></i></a>
+          </li>
+        </ul>
+
         <button
           class="navbar-toggler"
           type="button"
@@ -71,21 +125,8 @@ export function Navbar({
           <span class="navbar-toggler-icon"></span>
         </button>
         <div id="course-nav" class="collapse navbar-collapse">
-          <ul class="nav navbar-nav mr-auto" id="main-nav">
-            ${NavbarByType({ resLocals, navPage, navSubPage, navbarType })}
-          </ul>
+          <ul class="nav navbar-nav mr-auto" id="main-nav"></ul>
 
-          ${config.devMode
-            ? html`
-                <a
-                  id="navbar-load-from-disk"
-                  class="btn btn-success btn-sm"
-                  href="${urlPrefix}/loadFromDisk"
-                >
-                  Load from disk
-                </a>
-              `
-            : ''}
           ${UserDropdownMenu({ resLocals, navPage, navbarType })}
         </div>
       </div>
@@ -98,7 +139,6 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
   `;
 }
 
