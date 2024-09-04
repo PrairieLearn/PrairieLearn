@@ -4,7 +4,7 @@ import { html } from '@prairielearn/html';
 import { saveQuestionFormData } from './lib/confirmOnUnload.js';
 import { setupCountdown } from './lib/countdown.js';
 
-function showWarningPopup(message: string) {
+function showWarningPopup(id: string, message: string) {
   let popup = document.querySelector('#warning-popup');
   if (!popup) {
     popup = parseHTMLElement<HTMLDivElement>(
@@ -16,22 +16,26 @@ function showWarningPopup(message: string) {
     );
     document.body.append(popup);
   }
-  popup.appendChild(
-    parseHTMLElement<HTMLDivElement>(
-      document,
-      html`<div
-        class="show align-items-center alert alert-warning alert-dismissible pulse"
-        role="alert"
-        aria-live="assertive"
-        aria-atomic="true"
-      >
-        <div>${message}</div>
-        <button type="button" class="close" data-dismiss="alert" aria-label="Close">
-          <span aria-hidden="true">×</span>
-        </button>
-      </div>`,
-    ),
-  );
+  // Only show one popup with the same ID at the same time
+  if (!document.querySelector('#popup-' + id)) {
+    popup.appendChild(
+      parseHTMLElement<HTMLDivElement>(
+        document,
+        html`<div
+          id="popup-${id}"
+          class="show align-items-center alert alert-warning alert-dismissible pulse"
+          role="alert"
+          aria-live="assertive"
+          aria-atomic="true"
+        >
+          <div>${message}</div>
+          <button type="button" class="close" data-dismiss="alert" aria-label="Close">
+            <span aria-hidden="true">×</span>
+          </button>
+        </div>`,
+      ),
+    );
+  }
 }
 
 onDocumentReady(() => {
@@ -71,7 +75,10 @@ onDocumentReady(() => {
     onRemainingTime: {
       60000: () => {
         if (timeLimitData.showsTimeoutWarning) {
-          showWarningPopup('Your exam is ending soon. Please finish and submit your work.');
+          showWarningPopup(
+            'examTimeout',
+            'Your exam is ending soon. Please finish and submit your work.',
+          );
         }
       },
     },
@@ -82,6 +89,7 @@ onDocumentReady(() => {
       } else {
         if (lastRemainingMS > 0) {
           showWarningPopup(
+            'updateFail',
             'Failed to refresh exam timer. The displayed remaining time might be inaccurate.',
           );
         }
