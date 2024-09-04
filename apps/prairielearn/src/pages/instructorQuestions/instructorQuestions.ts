@@ -5,6 +5,8 @@ import fs from 'fs-extra';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { getCourseOwners } from '../../lib/course.js';
 import { QuestionAddEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
@@ -18,6 +20,21 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async function (req, res) {
+    if (!res.locals.authz_data.has_course_permission_preview) {
+      // Access denied, but instead of sending them to an error page, we'll show
+      // them an explanatory message and prompt them to get view permissions.
+      const courseOwners = await getCourseOwners(res.locals.course.id);
+      res.status(403).send(
+        InsufficientCoursePermissionsCardPage({
+          resLocals: res.locals,
+          courseOwners,
+          pageTitle: 'Questions',
+          requiredPermissions: 'Previewer',
+        }),
+      );
+      return;
+    }
+
     const courseInstances = await selectCourseInstancesWithStaffAccess({
       course_id: res.locals.course.id,
       user_id: res.locals.user.user_id,
@@ -60,7 +77,7 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-      } catch (err) {
+      } catch {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         return;
       }

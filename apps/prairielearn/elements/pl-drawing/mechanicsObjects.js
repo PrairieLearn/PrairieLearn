@@ -3261,9 +3261,9 @@ mechanicsObjects.byType['pl-distributed-load'] = class extends PLDrawingBaseElem
       var initObjTop = obj.top;
 
       var modify = function (subObj) {
-        (subObj.left = initSubObjLeft + obj.left - initObjLeft),
-          (subObj.top = initSubObjTop + obj.top - initObjTop),
-          (subObj.range = obj.range);
+        subObj.left = initSubObjLeft + obj.left - initObjLeft;
+        subObj.top = initSubObjTop + obj.top - initObjTop;
+        subObj.range = obj.range;
         subObj.angle = obj.angle;
         subObj.flipped = obj.flipped;
       };
