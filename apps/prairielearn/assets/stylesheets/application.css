@@ -1,0 +1,41 @@
+body:has(div.app-container) {
+}
+
+.app-container {
+  display: grid;
+  position: relative;
+  height: 100%;
+  width: 100vw;
+  grid-template:
+    'top-nav top-nav' auto
+    'side-nav content' 1fr / 300px 1fr;
+}
+
+.app-top-nav {
+  grid-area: top-nav;
+}
+
+.app-side-nav {
+  grid-area: side-nav;
+  padding-inline: 1rem;
+
+  /* --bs-primary-bg-subtle from Bootstrap 5.3 */
+  background-color: #cfe2ff;
+}
+
+.app-main {
+  grid-area: content;
+  overflow: hidden;
+
+  /* TODO: should be customizable on per-page basis? */
+  padding: 1rem;
+}
+
+.side-nav {
+  display: flex;
+  flex-direction: column;
+}
+
+.side-nav-section-header {
+  text-transform: uppercase;
+}

@@ -12,11 +12,13 @@ export function Navbar({
   navPage,
   navSubPage,
   navbarType,
+  showContextNavigation = true,
 }: {
   resLocals: Record<string, any>;
   navPage?: NavPage;
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
+  showContextNavigation?: boolean;
 }) {
   const { __csrf_token, course, urlPrefix, homeUrl } = resLocals;
   navPage ??= resLocals.navPage;
@@ -98,7 +100,10 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
+    ${[
+      showContextNavigation ? ContextNavigation({ resLocals, navPage, navSubPage }) : '',
+      FlashMessages(),
+    ]}
   `;
 }
 
@@ -263,7 +268,7 @@ function FlashMessages() {
   } as const;
 
   return html`
-    <div class="mb-3">
+    <div>
       ${flash(Object.keys(globalFlashColors) as FlashMessageType[]).map(
         ({ type, message }) => html`
           <div
