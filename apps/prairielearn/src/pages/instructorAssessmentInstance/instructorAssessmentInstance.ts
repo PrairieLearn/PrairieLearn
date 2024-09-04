@@ -194,22 +194,8 @@ router.post(
           points: req.body.points,
           manual_points: req.body.manual_points,
           auto_points: req.body.auto_points,
+          score_perc: req.body.score_perc,
         },
-        res.locals.authn_user.user_id,
-      );
-      if (modified_at_conflict) {
-        return res.redirect(
-          `${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}/manual_grading/instance_question/${req.body.instance_question_id}?conflict_grading_job_id=${grading_job_id}`,
-        );
-      }
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'edit_question_score_perc') {
-      const { modified_at_conflict, grading_job_id } = await updateInstanceQuestionScore(
-        res.locals.assessment.id,
-        req.body.instance_question_id,
-        null, // submission_id
-        req.body.modified_at,
-        { score_perc: req.body.score_perc },
         res.locals.authn_user.user_id,
       );
       if (modified_at_conflict) {

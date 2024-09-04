@@ -12,13 +12,5 @@ onDocumentReady(() => {
     });
   });
 
-  $('[data-toggle="popover"]').popover({ sanitize: false });
-
-  $('.js-sync-popover[data-toggle="popover"]')
-    .popover({ sanitize: false })
-    .on('show.bs.popover', function () {
-      $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
-    });
-
   document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => histmini(element));
 });

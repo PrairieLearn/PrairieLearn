@@ -1,6 +1,6 @@
 # PrairieDraw
 
-**WARNING**: This page describes the old PrairieDraw library. This library will be supported indefinitely, but it is strongly recommended that all new questions use the [`pl-drawing`](elements/#pl-drawing-element) element instead.
+**WARNING**: This page describes the old PrairieDraw library. This library will be supported indefinitely, but it is strongly recommended that all new questions use the [`pl-drawing`](elements.md#pl-drawing-element) element instead.
 
 ---
 

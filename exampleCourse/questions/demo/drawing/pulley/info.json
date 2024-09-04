@@ -1,9 +1,7 @@
 {
-    "uuid": "C88F9893-F238-44BE-AF2D-5D5639ACCB40",
-    "title": "Demo: Drawing a pulley",
-    "topic": "Drawing",
-    "type": "v3",
-    "tags": [
-	       "mfsilva"
-    ]
+  "uuid": "C88F9893-F238-44BE-AF2D-5D5639ACCB40",
+  "title": "Demo: Drawing a pulley",
+  "topic": "Drawing",
+  "type": "v3",
+  "tags": ["mfsilva"]
 }

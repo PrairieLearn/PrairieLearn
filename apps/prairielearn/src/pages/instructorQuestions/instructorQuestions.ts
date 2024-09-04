@@ -6,6 +6,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { QuestionAddEditor } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions.js';
 
@@ -39,6 +40,10 @@ router.get(
           res.locals.authz_data.has_course_permission_edit &&
           !res.locals.course.example_course &&
           courseDirExists,
+        showAiGenerateQuestionButton:
+          res.locals.authz_data.has_course_permission_edit &&
+          !res.locals.course.example_course &&
+          (await features.enabledFromLocals('ai-question-generation', res.locals)),
         resLocals: res.locals,
       }),
     );
@@ -55,7 +60,7 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-      } catch (err) {
+      } catch {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         return;
       }

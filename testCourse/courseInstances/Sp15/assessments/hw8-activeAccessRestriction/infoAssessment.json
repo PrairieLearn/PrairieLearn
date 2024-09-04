@@ -1,40 +1,28 @@
 {
-    "uuid": "1f7b004e-1431-48ba-8bac-ca5c14a80cfb",
-    "type": "Homework",
-    "title": "Homework to test Active Rule",
-    "set": "Homework",
-    "number": "8",
-    "allowAccess": [
-        {
-            "startDate": "2020-01-01T00:00:01Z",
-            "endDate": "2020-12-31T23:59:59Z",
-            "credit": 100
-        },
-        {
-            "startDate": "2030-01-01T00:00:01Z",
-            "endDate": "2030-12-31T23:59:59Z",
-            "credit": 75
-        },
-        {
-            "startDate": "2000-01-01T00:00:01Z",
-            "endDate": "2024-12-31T23:59:59Z",
-            "active": false
-        },
-        {
-            "startDate": "2025-01-01T00:00:01Z",
-            "endDate": "2039-12-31T23:59:59Z",
-            "active": false,
-            "showClosedAssessment": false
-        }
-    ],
-    "zones": [
-        {
-            "title": "Zone 1",
-            "questions": [
-                {"id": "partialCredit1",    "points": 10},
-                {"id": "fossilFuelsRadio",  "points": 2, "maxPoints": 10},
-                {"id": "positionTimeGraph", "points": 2, "maxPoints": 10}
-            ]
-        }
-    ]
+  "uuid": "1f7b004e-1431-48ba-8bac-ca5c14a80cfb",
+  "type": "Homework",
+  "title": "Homework to test Active Rule",
+  "set": "Homework",
+  "number": "8",
+  "allowAccess": [
+    { "startDate": "2020-01-01T00:00:01", "endDate": "2020-12-31T23:59:59", "credit": 100 },
+    { "startDate": "2030-01-01T00:00:01", "endDate": "2030-12-31T23:59:59", "credit": 75 },
+    { "startDate": "2000-01-01T00:00:01", "endDate": "2024-12-31T23:59:59", "active": false },
+    {
+      "startDate": "2025-01-01T00:00:01",
+      "endDate": "2039-12-31T23:59:59",
+      "active": false,
+      "showClosedAssessment": false
+    }
+  ],
+  "zones": [
+    {
+      "title": "Zone 1",
+      "questions": [
+        { "id": "partialCredit1", "points": 10 },
+        { "id": "fossilFuelsRadio", "points": 2, "maxPoints": 10 },
+        { "id": "positionTimeGraph", "points": 2, "maxPoints": 10 }
+      ]
+    }
+  ]
 }

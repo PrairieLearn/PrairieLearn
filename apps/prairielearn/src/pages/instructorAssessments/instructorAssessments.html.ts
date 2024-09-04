@@ -4,8 +4,12 @@ import { z } from 'zod';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
 import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { IssueBadge } from '../../components/IssueBadge.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { Scorebar } from '../../components/Scorebar.html.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
 
@@ -45,49 +49,39 @@ export function InstructorAssessments({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('instructorAssessmentsClient.ts')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('instructorAssessmentsClient.ts')}
         ${EncodedData<StatsUpdateData>(
           { assessmentIdsNeedingStatsUpdate, urlPrefix },
           'stats-update-data',
         )}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${CourseInstanceSyncErrorsAndWarnings({
+            authz_data,
+            courseInstance: resLocals.course_instance,
+            course,
+            urlPrefix,
+          })}
           <div class="card mb-4">
-            <div class="card-header bg-primary">
-              <div class="row align-items-center justify-content-between">
-                <div class="col-auto">
-                  <span class="text-white">Assessments</span>
-                </div>
-                ${authz_data.has_course_permission_edit && !course.example_course
-                  ? html`
-                      <div class="col-auto">
-                        <form name="add-assessment-form" method="POST">
-                          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                          <button
-                            name="__action"
-                            value="add_assessment"
-                            class="btn btn-sm btn-light"
-                          >
-                            <i class="fa fa-plus" aria-hidden="true"></i>
-                            <span class="d-none d-sm-inline">Add assessment</span>
-                          </button>
-                        </form>
-                      </div>
-                    `
-                  : ''}
-              </div>
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+              <h1>Assessments</h1>
+              ${authz_data.has_course_permission_edit && !course.example_course
+                ? html`
+                    <form class="ml-auto" name="add-assessment-form" method="POST">
+                      <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                      <button name="__action" value="add_assessment" class="btn btn-sm btn-light">
+                        <i class="fa fa-plus" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline">Add assessment</span>
+                      </button>
+                    </form>
+                  `
+                : ''}
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="Assessments">
                 <thead>
                   <tr>
                     <th style="width: 1%"><span class="sr-only">Label</span></th>
@@ -105,18 +99,13 @@ export function InstructorAssessments({
                       ${row.start_new_assessment_group
                         ? html`
                             <tr>
-                              <th colspan="7">${row.assessment_group_heading}</th>
+                              <th colspan="7" scope="row">${row.assessment_group_heading}</th>
                             </tr>
                           `
                         : ''}
                       <tr id="row-${row.id}">
                         <td class="align-middle" style="width: 1%">
-                          <a
-                            href="${urlPrefix}/assessment/${row.id}/"
-                            class="badge color-${row.color} color-hover"
-                          >
-                            ${row.label}
-                          </a>
+                          <span class="badge color-${row.color}">${row.label}</span>
                         </td>
                         <td class="align-middle">
                           ${row.sync_errors
@@ -132,17 +121,13 @@ export function InstructorAssessments({
                                   classes: 'fa-exclamation-triangle text-warning',
                                 })
                               : ''}
-                          <a href="${urlPrefix}/assessment/${row.id}/"
-                            >${row.title}
+                          <a href="${urlPrefix}/assessment/${row.id}/">
+                            ${row.title}
                             ${row.group_work
                               ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                              : ''}</a
-                          >
-                          ${renderEjs(
-                            import.meta.url,
-                            "<%- include('../partials/issueBadge'); %>",
-                            { ...resLocals, count: row.open_issue_count },
-                          )}
+                              : ''}
+                          </a>
+                          ${IssueBadge({ count: row.open_issue_count, urlPrefix })}
                         </td>
 
                         <td class="align-middle">${row.tid}</td>
@@ -194,6 +179,7 @@ ${unsafeHtml(ansiUp.ansi_to_html(output))}</pre
       data-html="true"
       data-title="${title}"
       data-content="${escapeHtml(popoverContent)}"
+      data-custom-class="popover-wide"
     >
       <i class="fa ${classes}" aria-hidden="true"></i>
     </button>
@@ -231,9 +217,7 @@ export function AssessmentStats({ row }: { row: AssessmentStatsRow }) {
         : row.score_stat_number > 0
           ? html`
               <div class="d-inline-block align-middle" style="min-width: 8em; max-width: 20em;">
-                ${renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
-                  score: Math.round(row.score_stat_mean),
-                })}
+                ${Scorebar(Math.round(row.score_stat_mean))}
               </div>
             `
           : html`&mdash;`}

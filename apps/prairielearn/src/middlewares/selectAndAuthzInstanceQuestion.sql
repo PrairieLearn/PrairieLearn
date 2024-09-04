@@ -80,9 +80,7 @@ SELECT
     'assigned_grader_name',
     COALESCE(uag.name, uag.uid),
     'last_grader_name',
-    COALESCE(ulg.name, ulg.uid),
-    'modified_at_formatted',
-    format_date_short (iq.modified_at, ci.display_timezone)
+    COALESCE(ulg.name, ulg.uid)
   ) AS instance_question,
   jsonb_build_object(
     'id',

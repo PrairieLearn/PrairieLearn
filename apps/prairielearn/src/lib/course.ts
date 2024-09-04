@@ -16,7 +16,7 @@ import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 import * as chunks from './chunks.js';
 import { config } from './config.js';
 import { IdSchema, User, UserSchema } from './db-types.js';
-import { createServerJob } from './server-jobs.js';
+import { createServerJob, ServerJobResult } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -66,7 +66,7 @@ export async function pullAndUpdateCourse({
   branch?: string | null;
   repository?: string | null;
   commit_hash?: string | null;
-}): Promise<{ jobSequenceId: string; jobPromise: Promise<void> }> {
+}): Promise<{ jobSequenceId: string; jobPromise: Promise<ServerJobResult> }> {
   const serverJob = await createServerJob({
     courseId,
     userId: userId ?? undefined,

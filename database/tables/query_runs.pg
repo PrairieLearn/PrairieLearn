@@ -6,7 +6,7 @@ columns
     name: text not null
     params: jsonb
     result: jsonb
-    sql: text not null
+    sql: text
 
 indexes
     query_runs_pkey: PRIMARY KEY (id) USING btree (id)

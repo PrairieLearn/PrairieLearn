@@ -1,8 +1,10 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 
 export function InstructorInstanceAdminSettings({
@@ -20,7 +22,7 @@ export function InstructorInstanceAdminSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
         ${compiledScriptTag('instructorInstanceAdminSettingsClient.ts')}
         <style>
           .popover {
@@ -29,18 +31,22 @@ export function InstructorInstanceAdminSettings({
         </style>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${CourseInstanceSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
-              Course instance ${resLocals.course_instance.short_name}
+              <h1>Course instance ${resLocals.course_instance.short_name}</h1>
             </div>
-            <table class="table table-sm table-hover two-column-description">
+            <table
+              class="table table-sm table-hover two-column-description"
+              aria-label="Course instance settings"
+            >
               <tbody>
                 <tr>
                   <th>Long Name</th>
@@ -107,16 +113,10 @@ export function InstructorInstanceAdminSettings({
               </tbody>
             </table>
             ${resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course
-              ? html`
-                  <div class="card-footer">
-                    <div class="row">
-                      ${CopyCourseInstanceForm({
-                        csrfToken: resLocals.__csrf_token,
-                        shortName: resLocals.course_instance.short_name,
-                      })}
-                    </div>
-                  </div>
-                `
+              ? CopyCourseInstanceForm({
+                  csrfToken: resLocals.__csrf_token,
+                  shortName: resLocals.course_instance.short_name,
+                })
               : ''}
           </div>
         </main>
@@ -175,15 +175,13 @@ function CopyCourseInstanceForm({
   shortName: string;
 }) {
   return html`
-    <div class="col-auto">
-      <form name="copy-course-instance-form" class="form-inline" method="POST">
+    <div class="card-footer d-flex flex-wrap align-items-center">
+      <form name="copy-course-instance-form" class="form-inline mr-2" method="POST">
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
         <button name="__action" value="copy_course_instance" class="btn btn-sm btn-primary">
           <i class="fa fa-clone"></i> Make a copy of this course instance
         </button>
       </form>
-    </div>
-    <div class="col-auto">
       <button
         class="btn btn-sm btn-primary"
         href="#"
@@ -192,19 +190,19 @@ function CopyCourseInstanceForm({
       >
         <i class="fa fa-times" aria-hidden="true"></i> Delete this course instance
       </button>
+      ${Modal({
+        id: 'deleteCourseInstanceModal',
+        title: 'Delete course instance',
+        body: html`
+          <p>Are you sure you want to delete the course instance <strong>${shortName}</strong>?</p>
+        `,
+        footer: html`
+          <input type="hidden" name="__action" value="delete_course_instance" />
+          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Delete</button>
+        `,
+      })}
     </div>
-    ${Modal({
-      id: 'deleteCourseInstanceModal',
-      title: 'Delete course instance',
-      body: html`
-        <p>Are you sure you want to delete the course instance <strong>${shortName}</strong>?</p>
-      `,
-      footer: html`
-        <input type="hidden" name="__action" value="delete_course_instance" />
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-danger">Delete</button>
-      `,
-    })}
   `;
 }

@@ -3,10 +3,10 @@
   {{^grading_succeeded}}
     <h3>Grading failed!</h3>
     {{#message}}
-      <pre class="bg-dark text-white rounded p-3 mb-0"><code>{{{message}}}</code></pre>
+      <pre class="bg-dark text-white rounded p-3 my-3"><code>{{{message}}}</code></pre>
     {{/message}}
     {{^message}}
-      <pre class="bg-dark text-white rounded p-3 mb-0"><code>Unknown error; please contact course staff.</code></pre>
+      <pre class="bg-dark text-white rounded p-3 my-3"><code>Unknown error; please contact course staff.</code></pre>
     {{/message}}
   {{/grading_succeeded}}
   {{#grading_succeeded}}
@@ -27,7 +27,7 @@
       {{/gradable}}
     </h3>
     {{#has_format_errors}}
-        <div class="mt-3 mb-2">
+        <div class="my-3">
         {{#format_errors}}
             <div class="alert alert-danger"><strong>Error:</strong> {{.}}</div>
         {{/format_errors}}
@@ -35,13 +35,13 @@
     {{/has_format_errors}}
     {{#has_message_or_output_or_image}}
       {{#has_message}}
-        <div class="card">
+        <div class="card my-3">
           <div class="card-header">Message</div>
           <pre class="bg-dark text-white p-3 mb-0"><code>{{{message}}}</code></pre>
         </div>
       {{/has_message}}
       {{#has_output}}
-        <div class="card mt-4">
+        <div class="card my-3">
           <div class="card-header">Output</div>
           <pre class="bg-dark text-white p-3 mb-0"><code>{{{output}}}</code></pre>
         </div>
@@ -61,13 +61,13 @@
     {{/has_message_or_output_or_image}}
     {{#has_tests}}
       <h3>Test Results</h3>
-      <div class="mt-3">
+      <div class="my-3">
       {{#tests_missing_points}}
-        <div class="alert alert-warning mt-4">One or more tests were missing <code>points</code> or <code>max_points</code> values, so some detailed feedback and score information has been omitted.</div>
+        <div class="alert alert-warning mb-3">One or more tests were missing <code>points</code> or <code>max_points</code> values, so some detailed feedback and score information has been omitted.</div>
       {{/tests_missing_points}}
       {{#tests}}
         <div class="card mb-1 mt-1">
-          <div class="card-header d-flex collapsed" data-toggle="collapse" data-target="#card-{{uuid}}-{{index}}" style="cursor: pointer;">
+          <button class="card-header d-flex collapsed border-top-0 border-left-0 border-right-0" data-toggle="collapse" data-target="#card-{{uuid}}-{{index}}" aria-expanded="false" aria-controls="card-{{uuid}}-{{index}}">
             <div class="mr-auto">
               <span class="card-title">
                 {{#show_points}}
@@ -80,7 +80,7 @@
             <div>
               <span class="fa fa-angle-down"></span>
             </div>
-          </div>
+          </button>
           <div id="card-{{uuid}}-{{index}}" class="collapse">
             <ul class="list-group list-group-flush">
               {{#has_description}}
@@ -92,13 +92,13 @@
               {{/show_points}}
               {{#has_message}}
                   <li class="list-group-item">
-                      <div class="mt-1 mb-3"><strong>Message</strong></div>
+                      <div class="mb-2"><strong>Message</strong></div>
                       <pre class="bg-dark text-white rounded p-3 mb-2">{{{message}}}</pre>
                   </li>
               {{/has_message}}
               {{#has_output}}
                   <li class="list-group-item">
-                      <div class="mt-1 mb-3"><strong>Output</strong></div>
+                      <div class="mb-2"><strong>Output</strong></div>
                       <pre class="bg-dark text-white rounded p-3 mb-2">{{{output}}}</pre>
                   </li>
               {{/has_output}}

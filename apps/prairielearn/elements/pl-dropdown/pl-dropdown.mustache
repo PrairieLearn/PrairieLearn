@@ -1,7 +1,7 @@
 
 {{#question}}
     <span class="d-inline-block form-group form-inline">
-        <select name="{{answers-name}}" class="custom-select" {{^editable}}disabled{{/editable}}>
+        <select name="{{answers-name}}" class="custom-select w-auto" {{^editable}}disabled{{/editable}}>
             {{#options}}
                 <option value="{{value}}" {{#selected}}selected{{/selected}}>{{{value}}}</option>
             {{/options}}
@@ -34,15 +34,10 @@
         {{/parse-error}}
 
         {{#parse-error}}
-            <script>
-              $(function(){
-                  $('#pl-dropdown-popover-button-{{uuid}}').popover({ sanitize: false });
-              });
-            </script>
             <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-            <button id="pl-dropdown-popover-button-{{uuid}}" class="btn btn-sm btn-secondary small border ml-1"
+            <button class="btn btn-sm btn-secondary small border ml-1"
                     data-placement="auto" data-trigger="focus" data-toggle="popover"
-                    data-html="true" title="Format Error" data-container="body"
+                    data-html="true" title="Format Error" tabindex="0" data-container="body"
                     data-content="{{parse-error}}">
               Why <i class="fa fa-question-circle" aria-hidden="true"></i>
             </button>

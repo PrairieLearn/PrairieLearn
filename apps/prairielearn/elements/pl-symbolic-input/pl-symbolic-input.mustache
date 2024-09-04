@@ -1,16 +1,6 @@
 {{#question}}
-<script>
-    $(function(){
-        $('#pl-symbolic-input-{{uuid}} [data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            template: '<div class="popover pl-symbolic-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-        });
-    });
-</script>
-
 {{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
-    <span id="pl-symbolic-input-{{uuid}}" class="input-group pl-symbolic-input">
+    <span class="input-group pl-symbolic-input">
         {{#label}}
         <span class="input-group-prepend">
             <span class="input-group-text"  id="pl-symbolic-input-{{uuid}}-label">{{{label}}}</span>
@@ -26,7 +16,8 @@
             {{^editable}}disabled{{/editable}}
             {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
             placeholder="{{placeholder}}"
-            aria-describedby="pl-symbolic-input-{{uuid}}-label pl-symbolic-input-{{uuid}}-suffix"
+            aria-describedby="pl-symbolic-input-{{uuid}}-suffix"
+            aria-labelledby="pl-symbolic-input-{{uuid}}-label"
         />
         <span class="input-group-append">
             {{#suffix}}
@@ -77,20 +68,7 @@
 {{#inline}}<span class="d-inline-block">{{/inline}}
 {{#error}}
 
-<script>
-    $(function(){
-        $('#pl-symbolic-input-submission-{{uuid}} [data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            template: '<div class="popover pl-symbolic-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-        });
-
-        $('#pl-symbolic-input-submission-{{uuid}} [data-toggle="popover"]').on('shown.bs.popover', function () {
-            MathJax.typesetPromise();
-        });
-    });
-</script>
-<span id="pl-symbolic-input-submission-{{uuid}}">
+<span>
 
 {{#parse_error}}
     {{#label}}<span>{{{label}}}</span>{{/label}}

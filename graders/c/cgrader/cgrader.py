@@ -361,8 +361,9 @@ class CGrader:
         file = os.path.abspath(file)
         self.run_command(["chmod", mode, file], sandboxed=False)
         parent = os.path.dirname(file)
+        # Ensure that all users can resolve the path name
         if change_parent and parent and not os.path.samefile(file, parent):
-            self.change_mode(parent, "711")
+            self.change_mode(parent, "a+x")
 
     def test_send_in_check_out(self, *args, **kwargs):
         """Old deprecated function name,

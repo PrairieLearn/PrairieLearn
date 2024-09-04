@@ -53,10 +53,17 @@ INSERT INTO
     institution_id,
     name_attribute,
     uid_attribute,
-    uin_attribute
+    uin_attribute,
+    email_attribute
   )
 VALUES
-  ($institution_id, $name_attr, $uid_attr, $uin_attr)
+  (
+    $institution_id,
+    $name_attr,
+    $uid_attr,
+    $uin_attr,
+    $email_attr
+  )
 RETURNING
   id;
 

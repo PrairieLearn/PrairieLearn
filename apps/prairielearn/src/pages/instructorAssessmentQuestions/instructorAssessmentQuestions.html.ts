@@ -1,9 +1,13 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -24,7 +28,7 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   assessment_question_advance_score_perc: AlternativeGroupSchema.shape.advance_score_perc,
   display_name: z.string().nullable(),
   number: z.string().nullable(),
-  open_issue_count: z.string().nullable(),
+  open_issue_count: z.coerce.number().nullable(),
   other_assessments: AssessmentsFormatForQuestionSchema.nullable(),
   sync_errors_ansified: z.string().optional(),
   sync_errors: QuestionSchema.shape.sync_errors,
@@ -57,11 +61,11 @@ export function InstructorAssessmentQuestions({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
         ${compiledScriptTag('instructorAssessmentQuestionsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${Modal({
             id: 'resetQuestionVariantsModal',
@@ -86,15 +90,17 @@ export function InstructorAssessmentQuestions({
               <button type="submit" class="btn btn-danger">Reset question variants</button>
             `,
           })}
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            assessment: resLocals.assessment,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions
+              <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions</h1>
             </div>
             ${AssessmentQuestionsTable({
               questions,
@@ -142,7 +148,7 @@ function AssessmentQuestionsTable({
 
   return html`
     <div class="table-responsive">
-      <table class="table table-sm table-hover">
+      <table class="table table-sm table-hover" aria-label="Assessment questions">
         <thead>
           <tr>
             <th><span class="sr-only">Name</span></th>
@@ -206,9 +212,9 @@ function AssessmentQuestionsTable({
                           </span>
                         `}
                     ${question.title}
-                    ${renderEjs(import.meta.url, "<%- include('../partials/issueBadge') %>", {
+                    ${IssueBadge({
                       urlPrefix,
-                      count: question.open_issue_count,
+                      count: question.open_issue_count ?? 0,
                       issueQid: question.qid,
                     })}
                   </a>
@@ -224,6 +230,7 @@ function AssessmentQuestionsTable({
                           data-html="true"
                           data-title="Sync Errors"
                           data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_errors_ansified}</pre>'
+                          data-custom-class="popover-wide"
                         >
                           <i class="fa fa-times text-danger" aria-hidden="true"></i>
                         </button>
@@ -238,6 +245,7 @@ function AssessmentQuestionsTable({
                             data-html="true"
                             data-title="Sync Warnings"
                             data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_warnings_ansified}</pre>'
+                            data-custom-class="popover-wide"
                           >
                             <i
                               class="fa fa-exclamation-triangle text-warning"
@@ -288,18 +296,9 @@ function AssessmentQuestionsTable({
                     : ''}
                 </td>
                 <td>
-                  ${question.other_assessments
-                    ? question.other_assessments.map((assessment) => {
-                        return html`${renderEjs(
-                          import.meta.url,
-                          "<%- include('../partials/assessment'); %>",
-                          {
-                            urlPrefix,
-                            assessment,
-                          },
-                        )}`;
-                      })
-                    : ''}
+                  ${question.other_assessments?.map((assessment) =>
+                    AssessmentBadge({ urlPrefix, assessment }),
+                  )}
                 </td>
                 <td class="text-right">
                   <div class="dropdown js-question-actions">

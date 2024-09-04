@@ -577,7 +577,7 @@ export class CodeCallerNative {
     try {
       const data = JSON.parse(this.outputRestart);
       return data.exited === true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }

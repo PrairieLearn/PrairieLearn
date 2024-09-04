@@ -1,12 +1,16 @@
 import { z } from 'zod';
 
+import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
+import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.html.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
+import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
-import { GradingJobSchema, User } from '../../../lib/db-types.js';
+import { DateFromISOString, GradingJobSchema, User } from '../../../lib/db-types.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
@@ -14,7 +18,6 @@ import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 export const GradingJobDataSchema = GradingJobSchema.extend({
   score_perc: z.number().nullable(),
   grader_name: z.string().nullable(),
-  grading_date_formatted: z.string().nullable(),
 });
 export type GradingJobData = z.infer<typeof GradingJobDataSchema>;
 
@@ -31,11 +34,13 @@ export function InstanceQuestion({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../partials/head') %>", {
-          ...resLocals,
+        ${HeadContents({
+          resLocals: {
+            ...resLocals,
+            // instance_question_info is reset to keep the default title from showing the student question number
+            instance_question_info: undefined,
+          },
           pageNote: `Instance - question ${resLocals.instance_question_info.instructor_question_number}`,
-          // instance_question_info is reset to keep the default title from showing the student question number
-          instance_question_info: undefined,
         })}
         ${compiledScriptTag('question.ts')}
         <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
@@ -56,16 +61,18 @@ export function InstanceQuestion({
         ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <div class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../../partials/questionSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${QuestionSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            question: resLocals.question,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
         </div>
         ${RubricSettingsModal({ resLocals })}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">Instance Question Manual Grading</h1>
           ${resLocals.assessment_instance.open
             ? html`
                 <div class="alert alert-danger" role="alert">
@@ -91,9 +98,15 @@ export function InstanceQuestion({
               </div>
 
               ${resLocals.file_list.length > 0
-                ? renderEjs(import.meta.url, "<%- include('../../partials/attachFilePanel') %>", {
-                    ...resLocals,
-                    question_context: 'manual_grading',
+                ? PersonalNotesPanel({
+                    fileList: resLocals.file_list,
+                    context: 'question',
+                    courseInstanceId: resLocals.course_instance.id,
+                    assessment_instance: resLocals.assessment_instance,
+                    authz_result: resLocals.authz_result,
+                    variantId: resLocals.variant.id,
+                    csrfToken: resLocals.__csrf_token,
+                    allowNewUploads: false,
                   })
                 : ''}
               ${InstructorInfoPanel({
@@ -147,23 +160,16 @@ function ConflictGradingJobModal({
               applied. Please review the feedback below and select how you would like to proceed.
             </div>
             <div class="row mb-2">
-              <div class="col-6">
+              <div class="col-lg-6 col-12">
                 <div><strong>Existing score and feedback</strong></div>
-                <div>
-                  ${resLocals.instance_question.modified_at_formatted}, by
-                  ${resLocals.instance_question.last_grader_name}
+                <div class="mb-2">
+                  ${formatDateYMDHM(
+                    // The modified_at value may have come from a non-validated query
+                    DateFromISOString.parse(resLocals.instance_question.modified_at),
+                    resLocals.course_instance.display_timezone,
+                  )},
+                  by ${resLocals.instance_question.last_grader_name}
                 </div>
-              </div>
-              <div class="col-6">
-                <div><strong>Conflicting score and feedback</strong></div>
-                <div>
-                  ${conflict_grading_job.grading_date_formatted}, by
-                  ${conflict_grading_job.grader_name}
-                </div>
-              </div>
-            </div>
-            <div class="row">
-              <div class="col-6">
                 <div class="card">
                   ${GradingPanel({
                     resLocals,
@@ -174,7 +180,17 @@ function ConflictGradingJobModal({
                   })}
                 </div>
               </div>
-              <div class="col-6">
+              <div class="col-lg-6 col-12">
+                <div><strong>Conflicting score and feedback</strong></div>
+                <div class="mb-2">
+                  ${conflict_grading_job.date
+                    ? `${formatDateYMDHM(
+                        conflict_grading_job.date,
+                        resLocals.course_instance.display_timezone,
+                      )},`
+                    : ''}
+                  by ${conflict_grading_job.grader_name}
+                </div>
                 <div class="card">
                   ${GradingPanel({
                     resLocals,

@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.html.js';
 import { type Purchase } from '../../ee/lib/billing/purchases.js';
 import { IdSchema, Institution, User } from '../../lib/db-types.js';
@@ -41,25 +42,20 @@ export function UserSettings({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals, pageTitle: 'User Settings' })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
-        ${renderEjs(import.meta.url, "<%- include('../../pages/partials/navbar') %>", {
-          ...resLocals,
-          navPage: 'user_settings',
-        })}
+        ${Navbar({ resLocals, navPage: 'user_settings' })}
         <main id="content" class="container">
           <h1 class="mb-4">Settings</h1>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              User profile
+              <h2>User profile</h2>
             </div>
-            <table class="table table-sm two-column-description">
+            <table
+              class="table table-sm two-column-description"
+              aria-label="User profile information"
+            >
               <tbody>
                 <tr>
                   <th>UID</th>
@@ -92,7 +88,9 @@ export function UserSettings({
           ${isEnterprise() ? UserSettingsPurchasesCard({ purchases }) : ''}
 
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">Browser configuration</div>
+            <div class="card-header bg-primary text-white d-flex">
+              <h2>Browser configuration</h2>
+            </div>
             <div class="card-body">
               <p>
                 This section will let you reset browser settings related to technology inside
@@ -114,11 +112,10 @@ export function UserSettings({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              Personal access tokens
+              <h2>Personal access tokens</h2>
               ${!isExamMode
                 ? html`
                     <button
-                      id="generateTokenButton"
                       type="button"
                       class="btn btn-light btn-sm ml-auto"
                       data-toggle="popover"
@@ -127,11 +124,9 @@ export function UserSettings({
                       data-placement="auto"
                       title="Generate new token"
                       data-content="${TokenGenerateForm({
-                        id: 'generateTokenButton',
                         csrfToken: resLocals.__csrf_token,
                       }).toString()}"
-                      data-trigger="manual"
-                      onclick="$(this).popover('show')"
+                      data-testid="generate-token-button"
                     >
                       <i class="fa fa-plus" aria-hidden="true"></i>
                       <span class="d-none d-sm-inline">Generate new token</span>
@@ -210,7 +205,6 @@ function TokenList({
           </span>
         </div>
         <button
-          id="deleteTokenButton${token.id}"
           type="button"
           class="btn btn-outline-danger btn-sm ml-auto"
           data-toggle="popover"
@@ -219,12 +213,9 @@ function TokenList({
           data-placement="auto"
           title="Delete this token"
           data-content="${TokenDeleteForm({
-            id: `deleteTokenButton${token.id}`,
             token_id: token.id,
             csrfToken: resLocals.__csrf_token,
           }).toString()}"
-          data-trigger="manual"
-          onclick="$(this).popover('show')"
         >
           Delete
         </button>
@@ -233,7 +224,7 @@ function TokenList({
   );
 }
 
-function TokenGenerateForm({ id, csrfToken }: { id: string; csrfToken: string }) {
+function TokenGenerateForm({ csrfToken }: { csrfToken: string }) {
   return html`
     <form name="generate-token-form" method="post">
       <input type="hidden" name="__action" value="token_generate" />
@@ -250,24 +241,14 @@ function TokenGenerateForm({ id, csrfToken }: { id: string; csrfToken: string })
         />
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Generate token</button>
       </div>
     </form>
   `;
 }
 
-function TokenDeleteForm({
-  token_id,
-  id,
-  csrfToken,
-}: {
-  token_id: string;
-  id: string;
-  csrfToken: string;
-}) {
+function TokenDeleteForm({ token_id, csrfToken }: { token_id: string; csrfToken: string }) {
   return html`
     <form name="token-delete-form" method="POST">
       <input type="hidden" name="__action" value="token_delete" />
@@ -278,9 +259,7 @@ function TokenDeleteForm({
         API. You cannot undo this action.
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-danger">Delete token</button>
       </div>
     </form>

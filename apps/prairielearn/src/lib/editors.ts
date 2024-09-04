@@ -255,7 +255,7 @@ export abstract class Editor {
               env: gitEnv,
             });
             job.data.saveSucceeded = true;
-          } catch (err) {
+          } catch {
             job.info('Failed to push changes to remote git repository');
             job.info('Pulling changes from remote git repository and trying again');
 
@@ -866,12 +866,15 @@ export class CourseInstanceAddEditor extends Editor {
 export class QuestionAddEditor extends Editor {
   public readonly uuid: string;
 
-  constructor(params: BaseEditorOptions) {
+  files?: Record<string, string>;
+
+  constructor(params: BaseEditorOptions & { files?: Record<string, string> }) {
     super(params);
 
     this.description = 'Add question';
 
     this.uuid = uuidv4();
+    this.files = params.files;
   }
 
   async write() {
@@ -894,8 +897,42 @@ export class QuestionAddEditor extends Editor {
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
     const toPath = questionPath;
+
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+
+    if (this.files != null) {
+      debug('Remove template files when file texts provided');
+      await fs.remove(path.join(toPath, 'question.html'));
+      await fs.remove(path.join(toPath, 'server.py'));
+
+      if ('info.json' in this.files) {
+        await fs.remove(path.join(toPath, 'info.json'));
+      }
+
+      debug('Load files from text');
+      for (const file of Object.keys(this.files)) {
+        const newPath = path.join(toPath, file);
+
+        // Ensure that files are fully contained in the question directory.
+        if (contains(toPath, newPath)) {
+          await fs.writeFile(newPath, this.files[file]);
+        } else {
+          throw new AugmentedError('Invalid file path', {
+            info: html`
+              <p>The path of the file to add</p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
+              </div>
+              <p>must be inside the root directory</p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">${toPath}</pre>
+              </div>
+            `,
+          });
+        }
+      }
+    }
 
     debug('Read info.json');
     const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
@@ -903,6 +940,8 @@ export class QuestionAddEditor extends Editor {
     debug('Write info.json with new title and uuid');
     infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
+    // The template question contains tags that shouldn't be copied to the new question.
+    delete infoJson.tags;
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1146,6 +1185,12 @@ export class QuestionTransferEditor extends Editor {
     debug('Write info.json with new title and uuid');
     infoJson.title = questionTitle;
     infoJson.uuid = this.uuid;
+
+    // When transferring a question from an example/template course, drop the tags. They
+    // are likely undesirable in the template course.
+    if (this.course.example_course || this.course.template_course) {
+      delete infoJson.tags;
+    }
 
     // We do not want to preserve sharing settings when copying a question to another course
     delete infoJson['sharingSets'];

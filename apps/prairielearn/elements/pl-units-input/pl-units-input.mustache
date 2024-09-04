@@ -1,16 +1,6 @@
 {{#question}}
-<script>
-    $(function(){
-        $('#pl-units-input-{{uuid}} [data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            template: '<div class="popover pl-units-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-        });
-    });
-</script>
-
 {{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
-    <span id="pl-units-input-{{uuid}}" class="input-group pl-units-input">
+    <span class="input-group pl-units-input">
         {{#label}}
         <span class="input-group-prepend">
             <span class="input-group-text" id="pl-units-input-{{uuid}}-label">{{{label}}}</span>
@@ -26,7 +16,8 @@
             size="{{size}}"
             {{^editable}}disabled{{/editable}}
             {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-            aria-describedby="pl-units-input-{{uuid}}-label pl-units-input-{{uuid}}-suffix"
+            aria-describedby="pl-units-input-{{uuid}}-suffix"
+            aria-labelledby="pl-units-input-{{uuid}}-label"
             placeholder="{{placeholder}}"
         />
 
@@ -82,17 +73,7 @@
 {{#inline}}<span class="d-inline-block">{{/inline}}
 
 {{#error}}
-<script>
-    $(function(){
-        $('#pl-units-input-submission-{{uuid}} [data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            template: '<div class="popover pl-units-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-        });
-    });
-</script>
-
-<span id="pl-units-input-submission-{{uuid}}">
+<span>
     {{#parse_error}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}

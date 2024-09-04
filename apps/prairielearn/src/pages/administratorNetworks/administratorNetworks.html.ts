@@ -1,24 +1,27 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
+
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 
 export function AdministratorNetworks({ resLocals }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals, pageTitle: 'Exam-mode networks' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'networks',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'networks' })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Exam-mode networks</div>
+            <div class="card-header bg-primary text-white">
+              <h1>Exam-mode networks</h1>
+            </div>
             <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
+              <table
+                class="table table-sm table-hover table-striped"
+                aria-label="Exam-mode networks"
+              >
                 <thead>
                   <tr>
                     <th>CIDR</th>

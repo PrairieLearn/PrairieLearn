@@ -8,6 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../lib/config.js';
 import { IdSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert, fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -113,11 +114,11 @@ describe('Group based homework assess control on student side', function () {
 
   describe('6. get 5 student user', function () {
     it('should insert/get 5 users into/from the DB', async () => {
-      const result = await sqldb.queryAsync(sql.generate_and_enroll_5_users, []);
-      assert.lengthOf(result.rows, 5);
-      locals.studentUsers = result.rows.slice(0, 3);
-      locals.studentUserNotGrouped = result.rows[3];
-      locals.studentUserInDiffGroup = result.rows[4];
+      const result = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
+      assert.lengthOf(result, 5);
+      locals.studentUsers = result.slice(0, 3);
+      locals.studentUserNotGrouped = result[3];
+      locals.studentUserInDiffGroup = result[4];
       locals.groupCreator = locals.studentUsers[0];
       assert.lengthOf(locals.studentUsers, 3);
     });

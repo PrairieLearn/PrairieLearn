@@ -27,7 +27,7 @@ router.get(
     if (uid === '(null)') throw new Error(authError);
 
     const authnParams = { uid, name, uin, provider: 'Shibboleth' };
-    await authnLib.loadUser(req, res, authnParams, { pl_authn_cookie: true, redirect: true });
+    await authnLib.loadUser(req, res, authnParams, { redirect: true });
   }),
 );
 

@@ -2,9 +2,12 @@ import _ from 'lodash';
 import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { Scorebar } from '../../components/Scorebar.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   AlternativeGroupSchema,
@@ -53,17 +56,22 @@ export function InstructorAssessmentQuestionStatistics({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
         ${compiledScriptTag('instructorAssessmentQuestionStatisticsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          <h1 class="sr-only">
+            ${resLocals.assessment_set.name} ${resLocals.assessment.number} Question Statistics
+          </h1>
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            assessment: resLocals.assessment,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           ${resLocals.authz_data.has_course_permission_edit
             ? Modal({
                 title: 'Refresh statistics',
@@ -86,8 +94,10 @@ export function InstructorAssessmentQuestionStatistics({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question difficulty
-              vs discrimination
+              <h2>
+                ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question difficulty
+                vs discrimination
+              </h2>
               <div class="ml-auto">
                 <small>
                   <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
@@ -148,7 +158,9 @@ export function InstructorAssessmentQuestionStatistics({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question statistics
+              <h2>
+                ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question statistics
+              </h2>
               <div class="ml-auto">
                 <small>
                   <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
@@ -165,7 +177,10 @@ export function InstructorAssessmentQuestionStatistics({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover tablesorter">
+              <table
+                class="table table-sm table-hover tablesorter"
+                aria-label="Question statistics"
+              >
                 <thead>
                   <tr>
                     <th class="text-center">Question</th>
@@ -186,16 +201,12 @@ export function InstructorAssessmentQuestionStatistics({
                           </a>
                         </td>
                         <td class="text-center align-middle">
-                          ${renderEjs(import.meta.url, "<%- include('../partials/scorebar') %>", {
-                            score: row.mean_question_score
-                              ? Math.round(row.mean_question_score)
-                              : null,
-                          })}
+                          ${Scorebar(
+                            row.mean_question_score ? Math.round(row.mean_question_score) : null,
+                          )}
                         </td>
                         <td class="text-center align-middle">
-                          ${renderEjs(import.meta.url, "<%- include('../partials/scorebar') %>", {
-                            score: row.discrimination ? Math.round(row.discrimination) : null,
-                          })}
+                          ${Scorebar(row.discrimination ? Math.round(row.discrimination) : null)}
                         </td>
                         <td class="text-center">
                           ${(row.max_auto_points ?? 0) > 0 ||
@@ -282,8 +293,10 @@ export function InstructorAssessmentQuestionStatistics({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Detailed question
-              statistics
+              <h2>
+                ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Detailed question
+                statistics
+              </h2>
               <div class="ml-auto">
                 <small>
                   <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
@@ -300,7 +313,10 @@ export function InstructorAssessmentQuestionStatistics({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover tablesorter table-bordered">
+              <table
+                class="table table-sm table-hover tablesorter table-bordered"
+                aria-label="Detailed question statistics"
+              >
                 <thead>
                   <tr>
                     <th class="text-center">Question</th>

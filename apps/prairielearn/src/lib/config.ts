@@ -1,4 +1,3 @@
-import { filesize } from 'filesize';
 import { z } from 'zod';
 
 import {
@@ -140,7 +139,6 @@ const ConfigSchema = z.object({
   sslKeyFile: z.string().default('/etc/pki/tls/private/localhost.key'),
   sslCAFile: z.string().default('/etc/pki/tls/certs/server-chain.crt'),
   fileUploadMaxBytes: z.number().default(1e7),
-  fileUploadMaxBytesFormatted: z.string().default('10MB'),
   fileUploadMaxParts: z.number().default(1000),
   fileStoreS3Bucket: z.string().default('file-store'),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
@@ -324,7 +322,10 @@ const ConfigSchema = z.object({
    * https://expressjs.com/en/4x/api.html#trust.proxy.options.table
    */
   trustProxy: z.union([z.boolean(), z.number(), z.string()]).default(false),
-  workspaceLogsS3Bucket: z.string().nullable().default(null),
+  workspaceLogsS3Bucket: z
+    .string()
+    .nullable()
+    .default(process.env.NODE_ENV !== 'production' ? 'workspace-logs' : null),
   workspaceLogsFlushIntervalSec: z.number().default(60),
   /**
    * The number of days after which a workspace version's logs should no longer
@@ -436,8 +437,6 @@ const ConfigSchema = z.object({
    */
   sentryDsn: z.string().nullable().default(null),
   sentryEnvironment: z.string().default('development'),
-  sentryTracesSampleRate: z.number().nullable().default(null),
-  sentryProfilesSampleRate: z.number().nullable().default(null),
   /**
    * In some markets, such as China, the title of all pages needs to be a
    * specific string in order to comply with local regulations. If this option
@@ -478,7 +477,6 @@ const ConfigSchema = z.object({
    * create a course if the course request meets certain criteria.
    */
   courseRequestAutoApprovalEnabled: z.boolean().default(false),
-  attachedFilesDialogEnabled: z.boolean().default(true),
   devMode: z.boolean().default((process.env.NODE_ENV ?? 'development') === 'development'),
   /** The client ID of your app in AAD; required. */
   azureClientID: z.string().default('<your_client_id>'),
@@ -542,6 +540,7 @@ const ConfigSchema = z.object({
   stripeProductIds: z.record(z.string(), z.string()).default({}),
   openAiApiKey: z.string().nullable().default(null),
   openAiOrganization: z.string().nullable().default(null),
+  requireTermsAcceptance: z.boolean().default(false),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -568,10 +567,6 @@ export async function loadConfig(paths: string[]) {
     );
     config.cacheType = config.questionRenderCacheType;
   }
-
-  // TODO: once the usages of this are no longer EJS, we should format the
-  // size on the fly instead of setting it on the global config.
-  config.fileUploadMaxBytesFormatted = filesize(config.fileUploadMaxBytes, { base: 10, round: 0 });
 
   // `cookieDomain` defaults to null, so we can't do these checks via `refine()`
   // since we parse the schema to get defaults. Instead, we do the checks here

@@ -55,6 +55,7 @@ function getParamsForAssessment(
   const allowIssueReporting = !!_.get(assessment, 'allowIssueReporting', true);
   const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
   const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
+  const allowPersonalNotes = !!_.get(assessment, 'allowPersonalNotes', true);
 
   // It used to be the case that assessment access rules could be associated with a
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
@@ -260,6 +261,7 @@ function getParamsForAssessment(
         : false,
     allow_issue_reporting: allowIssueReporting,
     allow_real_time_grading: allowRealTimeGrading,
+    allow_personal_notes: allowPersonalNotes,
     require_honor_code: requireHonorCode,
     auto_close: !!_.get(assessment, 'autoClose', true),
     max_points: assessment.maxPoints,

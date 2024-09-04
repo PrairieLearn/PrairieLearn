@@ -1,7 +1,7 @@
 // @ts-check
-import fetch from 'node-fetch';
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 import fs from 'fs-extra';
+import fetch from 'node-fetch';
 
 const COURSE_URL = 'http://localhost:3000/pl/course/4';
 const QUESTIONS_URL = `${COURSE_URL}/course_admin/questions`;

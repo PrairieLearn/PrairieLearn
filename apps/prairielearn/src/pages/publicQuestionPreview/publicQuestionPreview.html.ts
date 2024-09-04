@@ -1,8 +1,9 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 
@@ -11,9 +12,9 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", {
-          ...resLocals,
-          pageNote: 'Preview',
+        ${HeadContents({
+          resLocals,
+          pageNote: 'Public Preview',
           pageTitle: resLocals.question.qid,
         })}
         ${compiledScriptTag('question.ts')}
@@ -34,7 +35,7 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
         ${unsafeHtml(resLocals.extraHeadersHtml)}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container">
           <div class="row">
             <div class="col-lg-9 col-sm-12">
@@ -43,7 +44,9 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
 
             <div class="col-lg-3 col-sm-12">
               <div class="card mb-4">
-                <div class="card-header bg-secondary text-white">Student view placeholder</div>
+                <div class="card-header bg-secondary text-white">
+                  <h2>Student view placeholder</h2>
+                </div>
                 <div class="card-body">
                   <div class="d-flex justify-content-center">
                     In student views this area is used for assessment and score info.
