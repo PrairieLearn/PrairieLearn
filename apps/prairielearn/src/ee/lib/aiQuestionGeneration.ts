@@ -151,8 +151,16 @@ Keep in mind you are not just generating an example; you are generating an actua
     extractFromCompletion(completion, job);
     const html = String(job?.data?.html);
 
+    job.data['errorsInit'] = [];
+    job.data['prompt'] = prompt;
+    job.data['generation'] = completion.choices[0].message.content;
+    job.data['context'] = context;
+    job.data['completion'] = completion;
+
     if (html) {
       const errors = validateHTML(html);
+      job.data['errorsInit'] = errors;
+      job.data['errors'] = errors;
       if (errors.length > 0) {
         await regenInternal(
           job,
@@ -163,14 +171,10 @@ Keep in mind you are not just generating an example; you are generating an actua
           html,
           String(job.data.python),
           0,
+          false,
         );
       }
     }
-
-    job.data['prompt'] = prompt;
-    job.data['generation'] = completion.choices[0].message.content;
-    job.data['context'] = context;
-    job.data['completion'] = completion;
   });
 
   return {
@@ -191,6 +195,7 @@ Keep in mind you are not just generating an example; you are generating an actua
  * @param originalHTML The question.html file to revise.
  * @param originalPython The server.py file to revise.
  * @param numRegens Number of times that regen could be called.
+ * @param saveInitialErrors Whether to save initial error checking results in the job data.
  */
 async function regenInternal(
   job: ServerJob,
@@ -201,6 +206,7 @@ async function regenInternal(
   originalHTML: string,
   originalPython: string,
   numRegens: number,
+  saveInitialErrors: boolean,
 ) {
   job.info(`prompt is ${revisionPrompt}`);
 
@@ -256,18 +262,30 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   const html = String(job?.data?.html);
 
+  if (saveInitialErrors) {
+    job.data['errorsInit'] = [];
+  }
+  job.data['errors'] = [];
+
   if (html) {
     const errors = validateHTML(html);
+    if (saveInitialErrors) {
+      job.data['errorsInit'] = errors;
+    }
+    job.data['errors'] = errors;
     if (errors.length > 0 && numRegens > 0) {
+      const autoRevisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
+      job.data['autoRevisionPrompt'] = autoRevisionPrompt;
       await regenInternal(
         job,
         client,
         authnUserId,
         originalPrompt,
-        `Please fix the following issues: \n${errors.join('\n')}`,
+        autoRevisionPrompt,
         html,
         String(job.data.python),
         numRegens - 1,
+        false,
       );
     }
   }
@@ -306,6 +324,10 @@ export async function regenerateQuestion(
   });
 
   const jobData = await serverJob.execute(async (job) => {
+    job.data['prompt'] = revisionPrompt;
+    job.data['originalPrompt'] = originalPrompt;
+    job.data['context'] = context;
+
     await regenInternal(
       job,
       client,
@@ -315,10 +337,8 @@ export async function regenerateQuestion(
       originalHTML,
       originalPython,
       1,
+      true,
     );
-    job.data['prompt'] = revisionPrompt;
-    job.data['originalPrompt'] = originalPrompt;
-    job.data['context'] = context;
   });
 
   return {
