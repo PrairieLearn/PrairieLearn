@@ -13,12 +13,20 @@ export function SideNav() {
           </select>
         </div>
 
-        <a href="/" class="side-nav-link side-nav-link-active">
-          <i class="fa fa-question" aria-hidden="true"></i> Questions
+        <a href="/" class="side-nav-link">
+          <i class="fa fa-fw fa-chalkboard-user"></i> Course instances
         </a>
-        <a href="/" class="side-nav-link"><i class="fa fa-bug"></i> Issues</a>
-        <a href="/" class="side-nav-link"><i class="fa fa-edit" aria-hidden="true"></i>Files</a>
-        <a href="/" class="side-nav-link"><i class="fa fa-gear"></i> Settings</a>
+        <a href="/" class="side-nav-link side-nav-link-active">
+          <i class="fa fa-fw fa-question" aria-hidden="true"></i> Questions
+        </a>
+        <a href="/" class="side-nav-link"><i class="fa fa-fw fa-bug"></i> Issues</a>
+        <a href="/" class="side-nav-link">
+          <i class="fa fa-fw fa-sync" aria-hidden="true"></i> Sync
+        </a>
+        <a href="/" class="side-nav-link">
+          <i class="fa fa-fw fa-edit" aria-hidden="true"></i> Files
+        </a>
+        <a href="/" class="side-nav-link"><i class="fa fa-fw fa-gear"></i> Settings</a>
       </div>
 
       <div class="side-nav-section-header">Course instance</div>
@@ -32,13 +40,15 @@ export function SideNav() {
         </div>
 
         <a href="/" class="side-nav-link">
-          <i class="fa fa-list" aria-hidden="true"></i> Assessments
+          <i class="fa fa-fw fa-list" aria-hidden="true"></i> Assessments
         </a>
         <a href="/" class="side-nav-link">
-          <i class="fa fa-scale-balanced" aria-hidden="true"></i> Gradebook
+          <i class="fa fa-fw fa-scale-balanced" aria-hidden="true"></i> Gradebook
         </a>
-        <a href="/" class="side-nav-link"><i class="fa fa-edit" aria-hidden="true"></i>Files</a>
-        <a href="/" class="side-nav-link"><i class="fa fa-gear"></i> Settings</a>
+        <a href="/" class="side-nav-link">
+          <i class="fa fa-fw fa-edit" aria-hidden="true"></i>Files
+        </a>
+        <a href="/" class="side-nav-link"><i class="fa fa-fw fa-gear"></i> Settings</a>
       </div>
     </div>
   `;
