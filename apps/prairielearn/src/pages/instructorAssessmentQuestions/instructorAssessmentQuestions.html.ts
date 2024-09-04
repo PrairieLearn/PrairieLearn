@@ -115,10 +115,10 @@ export function InstructorAssessmentQuestions({
                   <a class="nav-link disabled" href="#">Sync</a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link disabled" href="#">Files</a>
+                  <a class="nav-link disabled" href="#">Course files</a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link disabled" href="#">Settings</a>
+                  <a class="nav-link disabled" href="#">Course settings</a>
                 </li>
                 <li class="nav-item">
                   <a class="nav-link disabled" href="#">Course instances</a>
@@ -140,10 +140,12 @@ export function InstructorAssessmentQuestions({
                   <a class="nav-link disabled" style="padding-left: 2em" href="#">Access</a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link disabled" style="padding-left: 2em" href="#">Files</a>
+                  <a class="nav-link disabled" style="padding-left: 2em" href="#">Instance files</a>
                 </li>
                 <li class="nav-item">
-                  <a class="nav-link disabled" style="padding-left: 2em" href="#">Settings</a>
+                  <a class="nav-link disabled" style="padding-left: 2em" href="#"
+                    >Instance settings</a
+                  >
                 </li>
               </ul>
             </div>
