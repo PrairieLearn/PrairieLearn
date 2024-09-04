@@ -13,7 +13,9 @@ export function Application({
     <div class="app-container">
       <div class="app-top-nav">${topNav}</div>
       <div class="app-side-nav">${sideNav}</div>
-      <div class="app-main">${main}</div>
+      <div class="app-main">
+        <div class="app-main-container">${main}</div>
+      </div>
     </div>
   `;
 }

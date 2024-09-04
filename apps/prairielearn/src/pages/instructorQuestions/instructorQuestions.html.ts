@@ -36,7 +36,7 @@ export const QuestionsPage = ({
 
       <body>
         ${Application({
-          topNav: Navbar({ resLocals, showContextNavigation: false }),
+          topNav: Navbar({ resLocals, showContextNavigation: false, navbarType: 'plain' }),
           sideNav: SideNav(),
           main: html`
             <main id="content" class="container-fluid">

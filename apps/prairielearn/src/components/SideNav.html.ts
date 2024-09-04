@@ -3,17 +3,43 @@ import { html } from '@prairielearn/html';
 export function SideNav() {
   return html`
     <div class="side-nav">
-      <label for="course-picker" class="form-label">Course</label>
-      <select id="course-picker" class="form-select">
-        <option selected>XC 101</option>
-        <option>Other course</option>
-      </select>
+      <div class="side-nav-section-header">Course</div>
 
-      <a href="/"><i class="fa fa-question" aria-hidden="true"></i> Questions</a>
-      <a href="/"><i class="fa fa-edit" aria-hidden="true"></i>Files</a>
-      <a href="/"><i class="fa fa-bug"></i> Issues</a>
+      <div class="side-nav-group mb-3">
+        <div>
+          <select id="course-picker" class="form-select" aria-label="Course">
+            <option selected>XC 101</option>
+            <option>Other course</option>
+          </select>
+        </div>
+
+        <a href="/" class="side-nav-link side-nav-link-active">
+          <i class="fa fa-question" aria-hidden="true"></i> Questions
+        </a>
+        <a href="/" class="side-nav-link"><i class="fa fa-bug"></i> Issues</a>
+        <a href="/" class="side-nav-link"><i class="fa fa-edit" aria-hidden="true"></i>Files</a>
+        <a href="/" class="side-nav-link"><i class="fa fa-gear"></i> Settings</a>
+      </div>
 
       <div class="side-nav-section-header">Course instance</div>
+
+      <div class="side-nav-group mb-3">
+        <div>
+          <select id="course-instance-picker" class="form-select" aria-label="Course instance">
+            <option selected>Fall 2024</option>
+            <option>Spring 2024</option>
+          </select>
+        </div>
+
+        <a href="/" class="side-nav-link">
+          <i class="fa fa-list" aria-hidden="true"></i> Assessments
+        </a>
+        <a href="/" class="side-nav-link">
+          <i class="fa fa-scale-balanced" aria-hidden="true"></i> Gradebook
+        </a>
+        <a href="/" class="side-nav-link"><i class="fa fa-edit" aria-hidden="true"></i>Files</a>
+        <a href="/" class="side-nav-link"><i class="fa fa-gear"></i> Settings</a>
+      </div>
     </div>
   `;
 }
