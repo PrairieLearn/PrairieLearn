@@ -58,16 +58,10 @@ export function setupCountdown(options: {
 
   let serverRemainingMS: number;
   let serverTimeLimitMS: number;
+  let lastRemainingMS: number = options.initialServerRemainingMS;
   let clientStart: number;
   let updateServerIfExpired = true;
   let nextCountdownDisplay: ReturnType<typeof setTimeout> | null = null;
-  // Do not repeat outdated timer value events
-  const remainingTimeEvents = options.onRemainingTime
-    ? Object.keys(options.onRemainingTime)
-        .map((v) => Number(v))
-        .filter((v) => Number(v) < options.initialServerRemainingMS)
-        .sort()
-    : [];
 
   countdownProgress.classList.add('progress');
   countdownProgress.innerHTML = '<div class="progress-bar progress-bar-primary"></div>';
@@ -96,7 +90,7 @@ export function setupCountdown(options: {
     }
   }
 
-  function updateServerRemainingMS(lastRemainingMS: number) {
+  function updateServerRemainingMS() {
     if (options.serverUpdateURL) {
       fetch(options.serverUpdateURL)
         .then(async (response) => {
@@ -104,7 +98,11 @@ export function setupCountdown(options: {
         })
         .catch((err) => {
           console.log('Error retrieving remaining time', err);
-          options.onServerUpdateFail?.(lastRemainingMS);
+          const remainingMS = Math.max(0, serverRemainingMS - (Date.now() - clientStart));
+          options.onServerUpdateFail?.(remainingMS);
+          if (remainingMS <= 0) {
+            updateServerIfExpired = false;
+          }
           displayCountdown();
         });
     }
@@ -124,22 +122,22 @@ export function setupCountdown(options: {
     countdownDisplay.innerText = remainingSec >= 60 ? remainingMin + ' min' : remainingSec + ' sec';
 
     if (remainingMS > 0) {
-      if (
-        options.onRemainingTime &&
-        remainingTimeEvents.length > 0 &&
-        remainingMS < remainingTimeEvents[remainingTimeEvents.length - 1]
-      ) {
-        // need to provide fallback here although remainingTimeEvents.pop() will never fail
-        const event = remainingTimeEvents.pop() ?? 0;
-        options.onRemainingTime[event]();
+      // Perform any timer-based callbacks falling between last and current tick
+      if (options.onRemainingTime) {
+        for (const time in options.onRemainingTime) {
+          if (remainingMS <= +time && +time < lastRemainingMS) {
+            options.onRemainingTime[time]();
+          }
+        }
       }
+      lastRemainingMS = remainingMS;
       // cancel any existing scheduled call to displayCountdown
       if (nextCountdownDisplay != null) clearTimeout(nextCountdownDisplay);
       // reschedule for the next half-second time
       nextCountdownDisplay = setTimeout(displayCountdown, (remainingMS - 500) % 1000);
     } else if (options.serverUpdateURL && updateServerIfExpired) {
       // If the timer runs out, trigger a new server update to confirm before closing
-      updateServerRemainingMS(remainingMS);
+      updateServerRemainingMS();
     } else {
       options.onTimerOut?.();
     }
