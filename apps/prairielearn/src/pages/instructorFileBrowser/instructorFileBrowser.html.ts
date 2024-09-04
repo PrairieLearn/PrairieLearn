@@ -1,9 +1,9 @@
 import { filesize } from 'filesize';
 
 import { escapeHtml, html, type HtmlValue, joinHtml, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import {
   AssessmentSyncErrorsAndWarnings,
   CourseInstanceSyncErrorsAndWarnings,
@@ -104,7 +104,7 @@ export function InstructorFileBrowserNoPermission({
         ${HeadContents({ resLocals, pageTitle: 'Files' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-danger text-white">
@@ -195,7 +195,7 @@ export function InstructorFileBrowser({
         </style>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${syncErrorsAndWarnings}
           <h1 class="sr-only">Files</h1>
@@ -396,13 +396,12 @@ function FileContentPreview({
   if (fileInfo.isPDF) {
     return html`
       <div class="embed-responsive embed-responsive-4by3">
-        <object
-          data="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH"
-          type="application/pdf"
+        <iframe
+          src="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH"
           class="embed-responsive-item"
         >
           This PDF cannot be displayed.
-        </object>
+        </iframe>
       </div>
     `;
   }

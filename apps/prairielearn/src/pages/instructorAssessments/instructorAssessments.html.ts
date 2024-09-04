@@ -4,9 +4,10 @@ import { z } from 'zod';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
 import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { IssueBadge } from '../../components/IssueBadge.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -55,7 +56,7 @@ export function InstructorAssessments({
         )}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseInstanceSyncErrorsAndWarnings({
             authz_data,
@@ -120,17 +121,13 @@ export function InstructorAssessments({
                                   classes: 'fa-exclamation-triangle text-warning',
                                 })
                               : ''}
-                          <a href="${urlPrefix}/assessment/${row.id}/"
-                            >${row.title}
+                          <a href="${urlPrefix}/assessment/${row.id}/">
+                            ${row.title}
                             ${row.group_work
                               ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                              : ''}</a
-                          >
-                          ${renderEjs(
-                            import.meta.url,
-                            "<%- include('../partials/issueBadge'); %>",
-                            { ...resLocals, count: row.open_issue_count },
-                          )}
+                              : ''}
+                          </a>
+                          ${IssueBadge({ count: row.open_issue_count, urlPrefix })}
                         </td>
 
                         <td class="align-middle">${row.tid}</td>

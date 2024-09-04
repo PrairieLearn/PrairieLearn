@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AdministratorQueryResultSchema } from '../../admin_queries/util.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { QueryRun, QueryRunSchema } from '../../lib/db-types.js';
@@ -78,11 +78,7 @@ export function AdministratorQuery({
           )}"></script>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'queries',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'queries' })}
 
         <main id="content" class="container-fluid">
           <div class="card mb-4">

@@ -1,10 +1,10 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import {
   compiledStylesheetTag,
@@ -75,8 +75,7 @@ export function AssessmentQuestion({
         )}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
-        ${GradingConflictModal()}
+        ${Navbar({ resLocals })} ${GradingConflictModal()}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
             authz_data,

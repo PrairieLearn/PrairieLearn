@@ -112,7 +112,6 @@ function enterpriseOnlyMiddleware(load) {
 export async function initExpress() {
   const app = express();
   app.set('views', path.join(import.meta.dirname, 'pages'));
-  app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
 
   // These should come first so that we get instrumentation on all our requests.
@@ -2492,44 +2491,62 @@ if (esMain(import.meta) && config.startServer) {
           opentelemetry.createObservableValueGauges(
             meter,
             `postgres.pool.${name}.total`,
-            {
-              valueType: opentelemetry.ValueType.INT,
-              interval: 1000,
-            },
+            { valueType: opentelemetry.ValueType.INT, interval: 1000 },
             () => pool.totalCount,
           );
 
           opentelemetry.createObservableValueGauges(
             meter,
             `postgres.pool.${name}.idle`,
-            {
-              valueType: opentelemetry.ValueType.INT,
-              interval: 1000,
-            },
+            { valueType: opentelemetry.ValueType.INT, interval: 1000 },
             () => pool.idleCount,
           );
 
           opentelemetry.createObservableValueGauges(
             meter,
             `postgres.pool.${name}.waiting`,
-            {
-              valueType: opentelemetry.ValueType.INT,
-              interval: 1000,
-            },
+            { valueType: opentelemetry.ValueType.INT, interval: 1000 },
             () => pool.waitingCount,
           );
 
           const queryCounter = opentelemetry.getObservableCounter(
             meter,
             `postgres.pool.${name}.query.count`,
-            {
-              valueType: opentelemetry.ValueType.INT,
-            },
+            { valueType: opentelemetry.ValueType.INT },
           );
           queryCounter.addCallback((observableResult) => {
             observableResult.observe(pool.queryCount);
           });
         });
+      },
+      async () => {
+        // Collect metrics on our code callers.
+        const meter = opentelemetry.metrics.getMeter('prairielearn');
+
+        opentelemetry.createObservableValueGauges(
+          meter,
+          'code-caller.pool.size',
+          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+          () => codeCaller.getMetrics().size,
+        );
+        opentelemetry.createObservableValueGauges(
+          meter,
+          'code-caller.pool.available',
+          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+          () => codeCaller.getMetrics().available,
+        );
+        opentelemetry.createObservableValueGauges(
+          meter,
+          'code-caller.pool.borrowed',
+          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+          () => codeCaller.getMetrics().borrowed,
+        );
+        opentelemetry.createObservableValueGauges(
+          meter,
+          'code-caller.pool.pending',
+          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+          () => codeCaller.getMetrics().pending,
+        );
       },
       async () => {
         // We create and activate a random DB schema name

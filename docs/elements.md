@@ -16,6 +16,8 @@ PrairieLearn presently provides the following templated **input field** elements
   representing asymptotic input.
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
+- [`pl-excalidraw`](#pl-excalidraw-element): Draw a **vector diagram** using
+  [excalidraw](https://github.com/excalidraw/excalidraw).
 - [`pl-file-editor`](#pl-file-editor-element): Provide an in-browser code editor
   for writing and submitting code.
 - [`pl-file-upload`](#pl-file-upload-element): Provide a submission area
@@ -240,6 +242,46 @@ To compute `max-select`, we use a similar algorithm (note the different default 
 #### See also
 
 - [`pl-multiple-choice` for allowing only **one** correct choice](#pl-multiple-choice-element)
+
+---
+
+### `pl-excalidraw` element
+
+Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidraw). Only manual grading is supported.
+
+![](elements/pl-excalidraw.png)
+
+**question.html**
+
+```html
+<p>Draw something else, with a starter diagram</p>
+
+<pl-excalidraw
+  gradable="true"
+  answers-name="vector"
+  source-file-name="starter.excalidraw"
+  directory="clientFilesQuestion"
+  width="100%"
+  height="600px"
+></pl-excalidraw>
+```
+
+#### Customizations
+
+| Attribute          | Type                                                                                             | Default | Description                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `gradable`         | boolean                                                                                          | "true"  | Whether a diagram accepts input from the user.                                                                          |
+| `answers-name`     | string                                                                                           | -       | Unique name to identify the widget with. Drawing submissions are saved with this name. Required when `gradable` is set. |
+| `source-file-name` | string                                                                                           | -       | Optional file to load as the starter diagram.                                                                           |
+| `directory`        | `serverFilesCourse` or `clientFilesCourse` or `clientFilesQuestion` or `courseExtensions` or `.` | "."     | Directory where the `source-file-name` is loaded from. By default, it refers to the question directory `"."`.           |
+| `width`            | string                                                                                           | `100%`  | Width of the widget, compatible with the [CSS width][css-width-mdn] specification.                                      |
+| `height`           | string                                                                                           | `800px` | Height of the widget, compatible with the [CSS width][css-width-mdn] specification.                                     |
+
+[css-width-mdn]: https://developer.mozilla.org/en-US/docs/Web/CSS/width
+
+#### Example implementation
+
+[element/excalidraw]
 
 ---
 
@@ -1433,10 +1475,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 ### `pl-file-preview` element
 
-Provides an in-browser preview of pure-text or image files submitted by a student as part of an external grading system.
-Does not support other file types (e.g., PDF). Shows the submitted file in the corresponding submission panel.
-Used in conjunction with submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`.
-Commonly appears in the submission panel with companion `pl-external-grader-results` element.
+Provides an in-browser list of all files submitted by a student through submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`, or through [workspaces](workspaces/index.md). A preview of each file's content is also displayed for text-only files (including source code), images, PDF files and Jupyter Notebooks. It is commonly used in the submission panel in conjunction with the `pl-external-grader-results` element, though it can also be used when manual or internal grading is used to grade files.
 
 #### Sample element
 
@@ -1455,6 +1494,7 @@ Commonly appears in the submission panel with companion `pl-external-grader-resu
 - [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
 - [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results-element)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
+- [`pl-xss-safe` to display HTML or Markdown code provided by students](#pl-xss-safe-element)
 
 ---
 
@@ -2332,8 +2372,6 @@ def generate(data):
         {"tag": "false", "ans": "part"},
         {"tag": "false", "ans": "inverse"}
     ]
-
-    return data
 ```
 
 #### Customizations
@@ -2515,6 +2553,7 @@ that if there are many submitted answers, the page will load slowly.
 [element/drawinggallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [element/codedocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/codeDocumentation
 [element/dropdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dropdown
+[element/excalidraw]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/excalidraw
 [element/figure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/figure
 [element/filedownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileDownload
 [element/fileeditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileEditor

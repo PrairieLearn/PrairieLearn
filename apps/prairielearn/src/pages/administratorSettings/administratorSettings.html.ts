@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 
@@ -13,11 +13,7 @@ export function AdministratorSettings({ resLocals }) {
         ${HeadContents({ resLocals, pageTitle: 'Administrator Settings' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'settings',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'settings' })}
         <main id="content" class="container-fluid">
           <h1 class="sr-only">Administrator Settings</h1>
           <!-- Chunk generation -->
