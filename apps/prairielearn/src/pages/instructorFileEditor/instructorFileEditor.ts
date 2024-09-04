@@ -16,7 +16,7 @@ import {
   queryRow,
 } from '@prairielearn/postgres';
 
-import { InsufficientCoursePermissionsCard } from '../../components/InsufficientCoursePermissionsCard.js';
+import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { b64EncodeUnicode, b64DecodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileEditSchema, IdSchema } from '../../lib/db-types.js';
@@ -42,7 +42,7 @@ router.get(
     // Do not allow users to edit the exampleCourse
     if (res.locals.course.example_course) {
       res.status(403).send(
-        InsufficientCoursePermissionsCard({
+        InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
           courseOwners: [],
           pageTitle: 'File editor',
@@ -57,7 +57,7 @@ router.get(
       // them an explanatory message and prompt them to get edit permissions.
       const courseOwners = await getCourseOwners(res.locals.course.id);
       res.status(403).send(
-        InsufficientCoursePermissionsCard({
+        InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
           courseOwners,
           pageTitle: 'File editor',

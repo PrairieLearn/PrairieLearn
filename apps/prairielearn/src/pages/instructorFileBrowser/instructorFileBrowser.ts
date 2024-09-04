@@ -12,7 +12,7 @@ import { isBinaryFile } from 'isbinaryfile';
 import * as error from '@prairielearn/error';
 import { contains } from '@prairielearn/path-utils';
 
-import { InsufficientCoursePermissionsCard } from '../../components/InsufficientCoursePermissionsCard.js';
+import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { getCourseOwners } from '../../lib/course.js';
 import * as editorUtil from '../../lib/editorUtil.js';
 import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors.js';
@@ -176,7 +176,7 @@ router.get(
       // them an explanatory message and prompt them to get view permissions.
       const courseOwners = await getCourseOwners(res.locals.course.id);
       res.status(403).send(
-        InsufficientCoursePermissionsCard({
+        InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
           courseOwners,
           pageTitle: 'Files',

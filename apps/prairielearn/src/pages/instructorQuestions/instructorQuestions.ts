@@ -5,7 +5,7 @@ import fs from 'fs-extra';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { InsufficientCoursePermissionsCard } from '../../components/InsufficientCoursePermissionsCard.js';
+import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { QuestionAddEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
@@ -25,7 +25,7 @@ router.get(
       // them an explanatory message and prompt them to get view permissions.
       const courseOwners = await getCourseOwners(res.locals.course.id);
       res.status(403).send(
-        InsufficientCoursePermissionsCard({
+        InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
           courseOwners,
           pageTitle: 'Questions',
