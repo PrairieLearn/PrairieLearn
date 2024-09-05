@@ -19,7 +19,7 @@ onDocumentReady(() => {
     instancesUrl,
     groupWork,
     maxAutoPoints,
-    botGradingEnabled,
+    AIGradingEnabled,
     courseStaff,
     csrfToken,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
@@ -55,22 +55,22 @@ onDocumentReady(() => {
     autoRefresh: true,
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
-    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'botGrade'],
+    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'AIGrade'],
     theadClasses: 'thead-light',
     stickyHeader: true,
     filterControl: true,
     rowStyle: (row) => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
     buttons: {
-      botGrade: {
-        text: 'Bot Grade All',
+      AIGrade: {
+        text: 'AI Grade All',
         icon: 'fa-pen',
-        render: botGradingEnabled,
+        render: AIGradingEnabled,
         attributes: {
-          id: 'js-bot-grade-button',
-          title: 'Bot grade all instances',
+          id: 'js-ai-grade-button',
+          title: 'AI grade all instances',
         },
         event: () => {
-          const form = document.getElementById('bot-grading') as HTMLFormElement;
+          const form = document.getElementById('ai-grading') as HTMLFormElement;
           form?.submit();
         },
       },

@@ -5,7 +5,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { config } from '../lib/config.js';
+import { config } from '../../lib/config.js';
 import {
   InstanceQuestionSchema,
   SubmissionSchema,
@@ -13,12 +13,12 @@ import {
   Question,
   Course,
   AssessmentQuestion,
-} from '../lib/db-types.js';
-import * as manualGrading from '../lib/manualGrading.js';
-import { buildQuestionUrls } from '../lib/question-render.js';
-import { getQuestionCourse } from '../lib/question-variant.js';
-import { createServerJob } from '../lib/server-jobs.js';
-import * as questionServers from '../question-servers/index.js';
+} from '../../lib/db-types.js';
+import * as manualGrading from '../../lib/manualGrading.js';
+import { buildQuestionUrls } from '../../lib/question-render.js';
+import { getQuestionCourse } from '../../lib/question-variant.js';
+import { createServerJob } from '../../lib/server-jobs.js';
+import * as questionServers from '../../question-servers/index.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -28,7 +28,7 @@ const SubmissionVariantSchema = z.object({
 });
 const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
 
-export async function botGrade({
+export async function AIGrade({
   course,
   course_instance_id,
   question,
@@ -62,7 +62,7 @@ export async function botGrade({
     assessmentId: assessment_question.assessment_id,
     authnUserId: authn_user_id,
     userId: user_id,
-    type: 'bot_grading',
+    type: 'ai_grading',
     description: 'Use LLM to grade assessment question',
   });
 
@@ -106,7 +106,7 @@ export async function botGrade({
       if (render_question_results.courseIssues.length) {
         job.info(render_question_results.courseIssues.toString());
         job.error('Error occurred');
-        job.fail('Errors occurred while bot grading, see output for details');
+        job.fail('Errors occurred while AI grading, see output for details');
       }
       let $ = cheerio.load(render_question_results.data.questionHtml, null, false);
       $('script').remove();
@@ -162,9 +162,9 @@ export async function botGrade({
           },
           '1',
         );
-        msg += `\nBot grades: ${gpt_answer.grade}`;
+        msg += `\nAI grades: ${gpt_answer.grade}`;
       } catch (err) {
-        job.error(`ERROR bot grading for ${instance_question.id}`);
+        job.error(`ERROR AI grading for ${instance_question.id}`);
         job.error(err);
         error_count++;
       }
@@ -182,7 +182,7 @@ export async function botGrade({
     }
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);
-      job.fail('Errors occurred while bot grading, see output for details');
+      job.fail('Errors occurred while AI grading, see output for details');
     }
   });
 
