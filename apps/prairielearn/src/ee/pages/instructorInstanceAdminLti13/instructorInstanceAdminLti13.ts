@@ -4,7 +4,13 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
 import {
   AssessmentSchema,
@@ -167,8 +173,7 @@ router.post(
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else if (req.body.__action === 'unlink_assessment') {
-      // validate assessment_id off of course_instance here?
-      await unlinkAssessment(instance.lti13_course_instance.id, req.body.assessment_id);
+      await unlinkAssessment(instance.lti13_course_instance.id, req.body.unsafe_assessment_id);
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'create_link_assessment') {
       serverJobOptions.description = 'create lineitem from PL assessment';
@@ -178,7 +183,7 @@ router.post(
         const assessment = await queryRow(
           sql.select_assessment_to_create,
           {
-            assessment_id: req.body.assessment_id,
+            assessment_id: req.body.unsafe_assessment_id,
             course_instance_id: instance.lti13_course_instance.course_instance_id,
           },
           AssessmentSchema.extend({
@@ -196,7 +201,7 @@ router.post(
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else if (req.body.__action === 'link_assessment') {
-      await queryAndLinkLineitem(instance, req.body.lineitem_id, req.body.assessment_id);
+      await queryAndLinkLineitem(instance, req.body.lineitem_id, req.body.unsafe_assessment_id);
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'bulk_unlink_assessments') {
       const group_id =
@@ -259,19 +264,25 @@ router.post(
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else if (req.body.__action === 'send_grades') {
-      // Validate assessment_id against page auth
-
-      await enrollUsersFromLti13(instance);
-
-      await updateLti13Scores(req.body.assessment_id);
-
+      // Should something like this be in a model?
       const assessment = await queryRow(
-        sql.update_lti13_assessment_last_activity,
+        sql.select_assessment_with_course_instance,
         {
-          assessment_id: req.body.assessment_id,
+          assessment_id: req.body.unsafe_assessment_id,
+          course_instance_id: res.locals.course_instance.id,
         },
         AssessmentSchema,
       );
+      if (assessment === null) {
+        throw new Error('Invalid assessment.id');
+      }
+
+      await enrollUsersFromLti13(instance);
+      await updateLti13Scores(assessment.id);
+
+      await queryAsync(sql.update_lti13_assessment_last_activity, {
+        assessment_id: assessment.id,
+      });
 
       flash('notice', `Sending grades in the background for ${assessment.title}`);
       return res.redirect(req.originalUrl);

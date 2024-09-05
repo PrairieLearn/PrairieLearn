@@ -140,3 +140,15 @@ ON CONFLICT (user_id, lti13_instance_id) DO
 UPDATE
 SET
   sub = $sub;
+
+-- BLOCK select_assessment_with_lti13_course_instance_id
+SELECT
+  a.*
+FROM
+  assessments AS a
+  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+  JOIN lti13_course_instances AS lti13ci ON (lti13ci.course_instance_id = ci.id)
+WHERE
+  a.id = $assessment_id
+  AND a.deleted_at IS NULL
+  AND lti13ci.id = $lti13_course_instance_id;

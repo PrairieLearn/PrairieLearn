@@ -148,17 +148,18 @@ RETURNING
   *;
 
 -- BLOCK update_lti13_assessment_last_activity
-WITH
-  updating AS (
-    UPDATE lti13_assessments
-    SET
-      last_activity = NOW()
-    WHERE
-      assessment_id = $assessment_id
-  )
+UPDATE lti13_assessments
+SET
+  last_activity = NOW()
+WHERE
+  assessment_id = $assessment_id;
+
+-- BLOCK select_assessment_with_course_instance
 SELECT
   *
 FROM
   assessments
 WHERE
-  id = $assessment_id;
+  id = $assessment_id
+  AND course_instance_id = $course_instance_id
+  AND deleted_at IS NULL;

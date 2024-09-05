@@ -22,6 +22,7 @@ import {
   DateFromISOString,
   Lti13InstanceSchema,
   Lti13CourseInstanceSchema,
+  AssessmentSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { ServerJob } from '../../lib/server-jobs.js';
@@ -522,14 +523,27 @@ export async function unlinkAssessment(
 
 export async function linkAssessment(
   lti13_course_instance_id: string,
-  assessment_id: string | number,
+  unsafe_assessment_id: string | number,
   lineitem: Lineitem,
 ) {
+  const assessment = await queryRow(
+    sql.select_assessment_with_lti13_course_instance_id,
+    {
+      assessment_id: unsafe_assessment_id,
+      lti13_course_instance_id,
+    },
+    AssessmentSchema,
+  );
+
+  if (assessment === null) {
+    throw Error('Invalid assessment.id');
+  }
+
   await queryAsync(sql.upsert_lti13_assessment, {
     lti13_course_instance_id,
     lineitem_id_url: lineitem.id,
     lineitem: JSON.stringify(lineitem),
-    assessment_id,
+    assessment_id: assessment.id,
   });
 }
 

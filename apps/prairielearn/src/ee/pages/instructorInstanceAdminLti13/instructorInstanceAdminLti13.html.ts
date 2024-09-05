@@ -218,7 +218,11 @@ export function InstructorInstanceAdminLti13({
                                         name="__csrf_token"
                                         value="${resLocals.__csrf_token}"
                                       />
-                                      <input type="hidden" name="assessment_id" value="${row.id}" />
+                                      <input
+                                        type="hidden"
+                                        name="unsafe_assessment_id"
+                                        value="${row.id}"
+                                      />
                                       <button
                                         class="btn btn-success"
                                         name="__action"
@@ -233,7 +237,11 @@ export function InstructorInstanceAdminLti13({
                                         name="__csrf_token"
                                         value="${resLocals.__csrf_token}"
                                       />
-                                      <input type="hidden" name="assessment_id" value="${row.id}" />
+                                      <input
+                                        type="hidden"
+                                        name="unsafe_assessment_id"
+                                        value="${row.id}"
+                                      />
                                       <button
                                         class="btn btn-info"
                                         hx-get="?lineitems"
@@ -260,7 +268,11 @@ export function InstructorInstanceAdminLti13({
                                     name="__csrf_token"
                                     value="${resLocals.__csrf_token}"
                                   />
-                                  <input type="hidden" name="assessment_id" value="${row.id}" />
+                                  <input
+                                    type="hidden"
+                                    name="unsafe_assessment_id"
+                                    value="${row.id}"
+                                  />
                                   ${lineitems_linked.length === 0
                                     ? html`
                                         <button
