@@ -137,7 +137,7 @@ export async function AIGrade({
             content: `Question: \n${question_prompt} \nAnswer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
           },
         ],
-        model: 'gpt-4o-2024-08-06',
+        model: 'gpt-3.5-turbo',
         user: `course_${course.id}`,
       });
 
