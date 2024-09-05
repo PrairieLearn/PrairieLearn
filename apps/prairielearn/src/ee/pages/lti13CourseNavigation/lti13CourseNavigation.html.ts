@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { config } from '../../../lib/config.js';
 import { Course, CourseInstance } from '../../../lib/db-types.js';
 
@@ -24,11 +24,7 @@ export function Lti13CourseNavigationInstructor({
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'lti13_course_navigation',
-        })}
-        ${TerminologyModal()}
+        ${Navbar({ resLocals, navPage: 'lti13_course_navigation' })} ${TerminologyModal()}
         <script>
           $(() => {
             $('#onepicker').one('change', () => {
@@ -137,10 +133,7 @@ export function Lti13CourseNavigationNotReady({
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'lti13_course_navigation',
-        })}
+        ${Navbar({ resLocals, navPage: 'lti13_course_navigation' })}
         <main id="content" class="container mb-4">
           <h1 class="h1">Welcome to PrairieLearn</h1>
           <h2 class="h2">... but your course isn't ready yet!</h2>
@@ -171,10 +164,7 @@ export function Lti13CourseNavigationDone({
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'lti13_course_navigation',
-        })}
+        ${Navbar({ resLocals, navPage: 'lti13_course_navigation' })}
         <main id="content" class="container mb-4">
           <h1 class="h1">Welcome to PrairieLearn</h1>
 

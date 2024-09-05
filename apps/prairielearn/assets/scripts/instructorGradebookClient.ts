@@ -190,7 +190,13 @@ function setupEditScorePopovers(csrfToken: string) {
               <input type="hidden" name="assessment_instance_id" value="${assessmentInstanceId}" />
               <div class="form-group">
                 <div class="input-group">
-                  <input type="text" class="form-control" name="score_perc" value="${score}" />
+                  <input
+                    type="text"
+                    class="form-control"
+                    name="score_perc"
+                    value="${score}"
+                    aria-label="Score percentage"
+                  />
                   <div class="input-group-append"><span class="input-group-text">%</span></div>
                 </div>
               </div>

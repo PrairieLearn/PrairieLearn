@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 
 const examplePrompts = [
   {
@@ -34,10 +34,7 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
         ${HeadContents({ resLocals })}
       </head>
       <body hx-ext="loading-states">
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
-          navPage: 'course_admin',
-          ...resLocals,
-        })}
+        ${Navbar({ navPage: 'course_admin', resLocals })}
         <main id="content" class="container-fluid">
           <div class="card  mb-4">
             <div class="card-header bg-primary text-white d-flex">Generate Question using AI</div>

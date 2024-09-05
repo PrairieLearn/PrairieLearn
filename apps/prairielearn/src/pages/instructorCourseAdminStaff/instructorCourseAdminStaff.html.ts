@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import {
   CourseInstance,
@@ -68,7 +68,7 @@ export function InstructorCourseAdminStaff({
         </style>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -574,7 +574,7 @@ function StaffTable({
                                     <p class="small">
                                       Can see but not edit scores of individual students for the
                                       course instance
-                                      <code><%= cir.short_name %></code>.
+                                      <code>${cir.short_name}</code>.
                                     </p>
                                   </div>
                                 </button>
@@ -590,7 +590,7 @@ function StaffTable({
                                     <p class="small">
                                       Can see and edit scores of individual students for the course
                                       instance
-                                      <code><%= cir.short_name %></code>.
+                                      <code>${cir.short_name}</code>.
                                     </p>
                                   </div>
                                 </button>

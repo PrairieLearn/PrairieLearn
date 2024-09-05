@@ -16,8 +16,9 @@
             size="{{size}}"
             {{^editable}}disabled{{/editable}}
             {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-            aria-describedby="pl-integer-input-{{uuid}}-label pl-integer-input-{{uuid}}-suffix"
+            aria-describedby="pl-integer-input-{{uuid}}-suffix"
             placeholder="{{placeholder}}"
+            aria-labelledby="pl-integer-input-{{uuid}}-label"
         />
         <span class="input-group-append">
             {{#suffix}}

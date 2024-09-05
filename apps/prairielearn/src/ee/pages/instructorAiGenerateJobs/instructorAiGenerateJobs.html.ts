@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { JobStatus } from '../../../components/JobStatus.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { JobSequenceSchema, UserSchema } from '../../../lib/db-types.js';
 
 export const JobRowSchema = z.object({
@@ -29,11 +29,7 @@ export function InstructorAIGenerateJobs({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
-          navPage: 'course_admin',
-          navSubPage: 'questions',
-          ...resLocals,
-        })}
+        ${Navbar({ navPage: 'course_admin', navSubPage: 'questions', resLocals })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Generation job history</div>

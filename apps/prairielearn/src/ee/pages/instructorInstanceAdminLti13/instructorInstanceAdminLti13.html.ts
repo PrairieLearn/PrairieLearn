@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import {
   Lti13CourseInstance,
   Lti13Instance,
@@ -63,10 +63,7 @@ export function InstructorInstanceAdminLti13({
             });
           });
         </script>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
-          ...resLocals,
-          navSubPage: 'lti13',
-        })}
+        ${Navbar({ resLocals, navSubPage: 'lti13' })}
         <main id="content" class="container-fluid mb-4">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">

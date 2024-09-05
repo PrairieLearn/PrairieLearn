@@ -1,11 +1,13 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
+import { run } from '@prairielearn/run';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
@@ -27,7 +29,7 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   assessment_question_advance_score_perc: AlternativeGroupSchema.shape.advance_score_perc,
   display_name: z.string().nullable(),
   number: z.string().nullable(),
-  open_issue_count: z.string().nullable(),
+  open_issue_count: z.coerce.number().nullable(),
   other_assessments: AssessmentsFormatForQuestionSchema.nullable(),
   sync_errors_ansified: z.string().optional(),
   sync_errors: QuestionSchema.shape.sync_errors,
@@ -64,7 +66,7 @@ export function InstructorAssessmentQuestions({
         ${compiledScriptTag('instructorAssessmentQuestionsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${Modal({
             id: 'resetQuestionVariantsModal',
@@ -105,6 +107,7 @@ export function InstructorAssessmentQuestions({
               questions,
               assessmentType: resLocals.assessment.type,
               urlPrefix: resLocals.urlPrefix,
+              hasCoursePermissionPreview: resLocals.authz_data.has_course_permission_preview,
               hasCourseInstancePermissionEdit:
                 resLocals.authz_data.has_course_instance_permission_edit,
             })}
@@ -119,11 +122,13 @@ function AssessmentQuestionsTable({
   questions,
   urlPrefix,
   assessmentType,
+  hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
 }: {
   questions: AssessmentQuestionRow[];
   assessmentType: string;
   urlPrefix: string;
+  hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
 }) {
   // If at least one question has a nonzero unlock score, display the Advance Score column
@@ -202,21 +207,30 @@ function AssessmentQuestionsTable({
                 : ''}
               <tr>
                 <td>
-                  <a href="${urlPrefix}/question/${question.question_id}/">
-                    ${question.alternative_group_size === 1
-                      ? `${question.alternative_group_number}.`
-                      : html`
-                          <span class="ml-3">
-                            ${question.alternative_group_number}.${question.number_in_alternative_group}.
-                          </span>
-                        `}
-                    ${question.title}
-                    ${renderEjs(import.meta.url, "<%- include('../partials/issueBadge') %>", {
+                  ${run(() => {
+                    const number =
+                      question.alternative_group_size === 1
+                        ? `${question.alternative_group_number}.`
+                        : html`
+                            <span class="ml-3">
+                              ${question.alternative_group_number}.${question.number_in_alternative_group}.
+                            </span>
+                          `;
+                    const issueBadge = IssueBadge({
                       urlPrefix,
-                      count: question.open_issue_count,
+                      count: question.open_issue_count ?? 0,
                       issueQid: question.qid,
-                    })}
-                  </a>
+                    });
+                    const title = html`${number} ${question.title} ${issueBadge}`;
+
+                    if (hasCoursePermissionPreview) {
+                      return html`<a href="${urlPrefix}/question/${question.question_id}/"
+                        >${title}</a
+                      >`;
+                    }
+
+                    return title;
+                  })}
                 </td>
                 <td>
                   ${question.sync_errors

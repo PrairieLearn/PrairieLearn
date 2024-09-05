@@ -608,7 +608,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     } catch (err) {
       return infofile.makeError(err.message);
     }
-  } catch (err) {
+  } catch {
     // Invalid JSON; let's reparse with jju to get a better error message
     // for the user.
     let result: InfoFile<T> = { errors: [], warnings: [] };

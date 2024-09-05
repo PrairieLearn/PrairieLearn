@@ -1,6 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import {
   RegenerateInstanceAlert,
@@ -10,6 +9,7 @@ import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import {
   ExamQuestionAvailablePoints,
@@ -65,10 +65,7 @@ export function StudentAssessmentInstance({
           : ''}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'assessment_instance',
-        })}
+        ${Navbar({ resLocals, navPage: 'assessment_instance' })}
         ${resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
           ? ConfirmFinishModal({
               instance_questions: resLocals.instance_questions,
