@@ -134,8 +134,7 @@ function cleanElementSections(elementSections: ElementSection[]) {
             const defaultVal = stringify([row.children[2]]).trimEnd();
             const description = stringify([row.children[3]]).trimEnd();
             statements.push(
-              (
-                attribute +
+              attribute +
                 ': of type ' +
                 type +
                 ', ' +
@@ -143,8 +142,7 @@ function cleanElementSections(elementSections: ElementSection[]) {
                   ? 'default val: ' + defaultVal + ', '
                   : '') +
                 'description: ' +
-                description
-              ).replace('\\`', '`'),
+                description,
             );
           }
           node.type = 'paragraph';
@@ -172,8 +170,9 @@ export async function buildContextForElementDocs(rawMarkdown: string): Promise<D
       children: [{ type: 'text', value: section.elementName }],
     });
 
-    const markdown = stringify(section.content);
+    const markdown = stringify(section.content).replace(/\\`/g, '`');
 
+    console.log(markdown);
     return {
       chunkId: section.elementName,
       text: markdown,
