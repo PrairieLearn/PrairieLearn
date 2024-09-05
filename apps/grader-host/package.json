@@ -36,10 +36,10 @@
   },
   "devDependencies": {
     "@types/async": "^3.2.24",
-    "@types/chai": "^4.3.18",
+    "@types/chai": "^4.3.19",
     "@types/dockerode": "^3.3.31",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^20.16.1",
+    "@types/node": "^20.16.2",
     "@types/sinon": "^17.0.3",
     "@types/tmp": "^0.2.6",
     "c8": "^10.1.2",
@@ -48,7 +48,7 @@
     "mocha": "^10.7.3",
     "nodemon": "^3.1.4",
     "sinon": "^18.0.0",
-    "tsx": "^4.18.0",
+    "tsx": "^4.19.0",
     "typescript": "^5.5.4",
     "typescript-cp": "^0.1.9"
   },
