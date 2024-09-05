@@ -156,11 +156,14 @@ router.post(
         `/pl/course_instance/${res.locals.course_instance.id}/instructor/instance_admin/assessments`,
       );
     } else if (req.body.__action === 'poll_lti13_assessments') {
-      serverJobOptions.description = 'Synchronize external assignment metadata from LMS';
+      serverJobOptions.description = 'Synchronize assignment and user metadata from LMS';
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
         await syncLineitems(instance, job);
+        job.info('Adding students to PrairieLearn');
+        await enrollUsersFromLti13(instance);
+        job.info('Done.');
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else if (req.body.__action === 'unlink_assessment') {

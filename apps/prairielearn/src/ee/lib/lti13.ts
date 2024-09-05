@@ -382,7 +382,6 @@ export async function syncLineitems(instance: Lti13CombinedInstance, job: Server
       `\nSummary of PrairieLearn changes: ${output.updated} updated, ${output.deleted} deleted.`,
     );
   });
-  await enrollUsersFromLti13(instance);
   job.info('Done.');
 }
 
@@ -401,7 +400,20 @@ export async function enrollUsersFromLti13(instance: Lti13CombinedInstance) {
   });
 
   for (const member of memberships.members) {
-    console.log(member);
+    /*
+    {
+      status: 'Active',
+      name: 'Harry Potter',
+      picture: 'http://canvas.instructure.com/images/messages/avatar-50.png',
+      given_name: 'Harry',
+      family_name: 'Potter',
+      email: 'potter@example.com',
+      lis_person_sourcedid: '2000',
+      user_id: '8da76658-3726-4c03-b117-503697e2bd0f',
+      lti11_legacy_user_id: '3855b23dac0e1d4aaa0d23ea532bce3abfd7cec2',
+      roles: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'],
+    }
+    */
 
     // Skip invalid cases
     if (
@@ -547,7 +559,6 @@ export async function fetchRetry(
   };
   try {
     const response = await fetch(input, opts);
-    console.log(response.status, response.statusText);
 
     if (STATUS_CODES_TO_IGNORE.includes(response.status)) {
       return null;
@@ -616,8 +627,6 @@ export async function updateLti13Scores(assessment_id: string | number) {
   for (const assessment_instance of assessment_instances) {
     const token = await getAccessToken(assessment_instance.lti13_instance_id);
 
-    //console.log(assessment_instance);
-
     let userList: string[];
     if (assessment_instance.group_id === null && assessment_instance.lti13_user_sub !== null) {
       userList = [assessment_instance.lti13_user_sub];
@@ -625,7 +634,7 @@ export async function updateLti13Scores(assessment_id: string | number) {
       userList = assessment_instance.group_user_subs;
     }
 
-    for (const sub of userList) {
+    for (const userId of userList) {
       // https://canvas.instructure.com/doc/api/score.html#method.lti/ims/scores.create
       const score: Lti13Score = {
         timestamp: assessment_instance.modified_at,
@@ -634,11 +643,8 @@ export async function updateLti13Scores(assessment_id: string | number) {
         scoreMaximum: 100,
         activityProgress: assessment_instance.open ? 'Submitted' : 'Completed',
         gradingProgress: 'FullyGraded',
-        userId: sub,
+        userId,
       };
-
-      console.log(score);
-      //continue;
 
       await fetchRetry(assessment_instance.lti13_lineitem_id_url + '/scores', {
         method: 'POST',
