@@ -19,7 +19,7 @@ onDocumentReady(() => {
     instancesUrl,
     groupWork,
     maxAutoPoints,
-    AIGradingEnabled,
+    aiGradingEnabled,
     courseStaff,
     csrfToken,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
@@ -55,16 +55,16 @@ onDocumentReady(() => {
     autoRefresh: true,
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
-    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'AIGrade'],
+    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'aiGrade'],
     theadClasses: 'thead-light',
     stickyHeader: true,
     filterControl: true,
     rowStyle: (row) => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
     buttons: {
-      AIGrade: {
+      aiGrade: {
         text: 'AI Grade All',
         icon: 'fa-pen',
-        render: AIGradingEnabled,
+        render: aiGradingEnabled,
         attributes: {
           id: 'js-ai-grade-button',
           title: 'AI grade all instances',

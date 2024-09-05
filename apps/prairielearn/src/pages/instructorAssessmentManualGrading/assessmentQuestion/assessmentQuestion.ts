@@ -4,7 +4,7 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
-import { AIGrade } from '../../../ee/lib/ai-grading.js';
+import { aiGrade } from '../../../ee/lib/ai-grading.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -25,8 +25,8 @@ router.get(
     const courseStaff = await selectCourseInstanceGraderStaff({
       course_instance_id: res.locals.course_instance.id,
     });
-    const AIGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    res.send(AssessmentQuestion({ resLocals: res.locals, courseStaff, AIGradingEnabled }));
+    const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
+    res.send(AssessmentQuestion({ resLocals: res.locals, courseStaff, aiGradingEnabled }));
   }),
 );
 
@@ -133,7 +133,7 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const jobSequenceId = await AIGrade({
+      const jobSequenceId = await aiGrade({
         question: res.locals.question,
         course: res.locals.course,
         course_instance_id: res.locals.course_instance.id,

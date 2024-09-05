@@ -28,7 +28,7 @@ const SubmissionVariantSchema = z.object({
 });
 const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
 
-export async function AIGrade({
+export async function aiGrade({
   course,
   course_instance_id,
   question,

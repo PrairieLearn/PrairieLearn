@@ -18,11 +18,11 @@ import { InstanceQuestionTableData } from './assessmentQuestion.types.js';
 export function AssessmentQuestion({
   resLocals,
   courseStaff,
-  AIGradingEnabled,
+  aiGradingEnabled,
 }: {
   resLocals: Record<string, any>;
   courseStaff: User[];
-  AIGradingEnabled: boolean;
+  aiGradingEnabled: boolean;
 }) {
   const {
     number_in_alternative_group,
@@ -67,7 +67,7 @@ export function AssessmentQuestion({
             maxPoints: assessment_question.max_points,
             groupWork: assessment.group_work,
             maxAutoPoints: assessment_question.max_auto_points,
-            AIGradingEnabled,
+            aiGradingEnabled,
             courseStaff,
             csrfToken: __csrf_token,
           },
@@ -97,7 +97,7 @@ export function AssessmentQuestion({
             <i class="fas fa-arrow-left"></i>
             Back to ${assessment_set.name} ${assessment.number} Overview
           </a>
-          ${AIGradingEnabled
+          ${aiGradingEnabled
             ? html`
                 <form name="start-ai-grading" method="POST" id="ai-grading">
                   <input type="hidden" name="__action" value="ai_grade_assessment" />
