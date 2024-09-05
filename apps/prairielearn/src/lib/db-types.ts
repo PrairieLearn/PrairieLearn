@@ -617,6 +617,13 @@ export const InstitutionSchema = z.object({
 });
 export type Institution = z.infer<typeof InstitutionSchema>;
 
+export const InstitutionAdministratorSchema = z.object({
+  id: IdSchema,
+  institution_id: IdSchema,
+  user_id: IdSchema,
+});
+export type InstitutionAdministrator = z.infer<typeof InstitutionAdministratorSchema>;
+
 export const IssueSchema = z.object({
   assessment_id: IdSchema.nullable(),
   authn_user_id: IdSchema.nullable(),

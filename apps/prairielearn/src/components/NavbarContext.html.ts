@@ -38,12 +38,14 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       urlSuffix: '/instance_admin/gradebook',
       iconClasses: 'fas fa-balance-scale',
       tabLabel: 'Gradebook',
+      renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
     },
     {
       activeSubPage: 'lti',
       urlSuffix: '/instance_admin/lti',
       iconClasses: 'fas fa-graduation-cap',
       tabLabel: 'LTI',
+      renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
     },
     {
       activeSubPage: 'lti13',
@@ -84,6 +86,7 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       urlSuffix: '/course_admin/file_view',
       iconClasses: 'fa fa-edit',
       tabLabel: 'Files',
+      renderCondition: ({ authz_data }) => authz_data.has_course_permission_view,
     },
     {
       activeSubPage: 'issues',
@@ -96,6 +99,7 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       urlSuffix: '/course_admin/questions',
       iconClasses: 'fa fa-question',
       tabLabel: 'Questions',
+      renderCondition: ({ authz_data }) => authz_data.has_course_permission_preview,
     },
     {
       activeSubPage: 'settings',
@@ -115,12 +119,14 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       urlSuffix: '/course_admin/staff',
       iconClasses: 'fas fa-users',
       tabLabel: 'Staff',
+      renderCondition: ({ authz_data }) => authz_data.has_course_permission_own,
     },
     {
       activeSubPage: 'syncs',
       urlSuffix: '/course_admin/syncs',
       iconClasses: 'fas fa-sync-alt',
       tabLabel: 'Sync',
+      renderCondition: ({ authz_data }) => authz_data.has_course_permission_edit,
     },
     {
       activeSubPage: 'tags',
@@ -318,6 +324,12 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       urlSuffix: '',
       iconClasses: 'fa fa-gear',
       tabLabel: 'General',
+    },
+    {
+      activeSubPage: 'admins',
+      urlSuffix: '/admins',
+      iconClasses: 'fa fa-user-shield',
+      tabLabel: 'Admins',
     },
     {
       activeSubPage: 'courses',

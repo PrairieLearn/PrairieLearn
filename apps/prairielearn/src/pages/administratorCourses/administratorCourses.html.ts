@@ -321,6 +321,7 @@ function CourseUpdateColumn({
             course,
             column_name,
             csrfToken,
+            label,
           }),
         )}"
       >
@@ -334,10 +335,12 @@ function CourseUpdateColumnForm({
   course,
   column_name,
   csrfToken,
+  label,
 }: {
   course: CourseWithInstitution;
   column_name: keyof CourseWithInstitution;
   csrfToken: string;
+  label: string;
 }) {
   return html`
     <form name="edit-course-column-form" method="POST">
@@ -346,7 +349,13 @@ function CourseUpdateColumnForm({
       <input type="hidden" name="course_id" value="${course.id}" />
       <input type="hidden" name="column_name" value="${column_name}" />
       <div class="form-group">
-        <input type="text" class="form-control" name="value" value="${course[column_name]}" />
+        <input
+          type="text"
+          class="form-control"
+          name="value"
+          value="${course[column_name]}"
+          aria-label="${label}"
+        />
       </div>
       <div class="text-right">
         <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
