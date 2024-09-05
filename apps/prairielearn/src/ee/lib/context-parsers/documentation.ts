@@ -172,7 +172,6 @@ export async function buildContextForElementDocs(rawMarkdown: string): Promise<D
 
     const markdown = stringify(section.content).replace(/\\`/g, '`');
 
-    console.log(markdown);
     return {
       chunkId: section.elementName,
       text: markdown,
