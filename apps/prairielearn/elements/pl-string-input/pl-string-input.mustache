@@ -18,7 +18,8 @@
                     autocomplete="off"
                     autocorrect="off"
                     {{^editable}}disabled{{/editable}}
-                    aria-describedby="pl-string-input-{{uuid}}-label pl-string-input-{{uuid}}-suffix"
+                    aria-describedby="pl-string-input-{{uuid}}-suffix"
+                    aria-labelledby="pl-string-input-{{uuid}}-label"
                     placeholder="{{placeholder}}"
                 >{{raw_submitted_answer}}</textarea>
         {{/multiline}}
@@ -40,7 +41,8 @@
                     autocomplete="off"
                     autocorrect="off"
                     {{^editable}}disabled{{/editable}}
-                    aria-describedby="pl-string-input-{{uuid}}-label pl-string-input-{{uuid}}-suffix"
+                    aria-describedby="pl-string-input-{{uuid}}-suffix"
+                    aria-labelledby="pl-string-input-{{uuid}}-label"
                     placeholder="{{placeholder}}"
                 >
         {{/multiline}}

@@ -212,7 +212,7 @@ function GroupCreationJoinForm({
           ? html`
               <div class="col-sm bg-light py-4 px-4 border">
                 <form id="create-form" name="create-form" method="POST">
-                  <h6>Group name</h6>
+                  <label for="groupNameInput">Group name</label>
                   <input
                     type="text"
                     class="form-control"
@@ -220,6 +220,7 @@ function GroupCreationJoinForm({
                     name="groupName"
                     maxlength="30"
                     placeholder="e.g. teamOne"
+                    aria-label="Group name"
                     aria-describedby="groupNameHelp"
                   />
                   <small id="groupNameHelp" class="form-text text-muted">
@@ -241,7 +242,7 @@ function GroupCreationJoinForm({
           ? html`
               <div class="col-sm bg-light py-4 px-4 border">
                 <form id="joingroup-form" name="joingroup-form" method="POST">
-                  <h6>Join code</h6>
+                  <label for="joinCodeInput">Join code</label>
                   <input
                     type="text"
                     class="form-control"
