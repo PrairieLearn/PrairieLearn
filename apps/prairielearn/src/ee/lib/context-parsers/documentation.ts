@@ -126,32 +126,33 @@ function cleanElementSections(elementSections: ElementSection[]) {
           firstRow.children[2].children[0].value === 'Default' &&
           firstRow.children[3].children[0].value === 'Description'
         ) {
-          const optionalStatements: string[] = [];
-          const mandatoryStatements: string[] = [];
+          const statements: string[] = [];
           for (let row_idx = 1; row_idx < node.children.length; row_idx++) {
             const row = node.children[row_idx];
             const attribute = stringify([row.children[0]]).trimEnd();
             const type = stringify([row.children[1]]).trimEnd();
             const defaultVal = stringify([row.children[2]]).trimEnd();
             const description = stringify([row.children[3]]).trimEnd();
-
-            if (defaultVal === '-') {
-              const statement = `You must provide ${attribute}, a ${type} which indicates ${description}`;
-              mandatoryStatements.push(statement);
-            } else {
-              const statement = `You may provide ${attribute}, a ${type} which indicates ${description}. Otherwise, it defaults to ${defaultVal}.`;
-              optionalStatements.push(statement);
-            }
+            statements.push(
+              (
+                attribute +
+                ': of type ' +
+                type +
+                ', ' +
+                (defaultVal !== '-' && defaultVal !== '—'
+                  ? 'default val: ' + defaultVal + ', '
+                  : '') +
+                'description: ' +
+                description
+              ).replace('\\`', '`'),
+            );
           }
-          node.type = 'text';
-          node.value =
-            '\n\n' + mandatoryStatements.join('\n') + '\n\n' + optionalStatements.join('\n');
-          node.children = [];
+          node.type = 'paragraph';
+          node.children = [{ type: 'text', value: statements.join('\n') }];
         }
       }
       return node;
     });
-
     return section;
   });
 
