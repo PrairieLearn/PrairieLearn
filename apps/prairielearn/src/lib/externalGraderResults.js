@@ -134,7 +134,7 @@ async function processMessage(data) {
   let jobId;
   try {
     jobId = IdSchema.parse(data.jobId);
-  } catch (err) {
+  } catch {
     throw new error.AugmentedError('Message does not contain a valid grading job id.', { data });
   }
 

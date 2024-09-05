@@ -752,7 +752,7 @@ async function cleanupMountDirectories() {
         try {
           debug(`removing bind mount at ${absolutePath}`);
           await bindMount.umount(absolutePath);
-        } catch (e) {
+        } catch {
           // Ignore this, it was hopefully unmounted successfully before
         }
 
