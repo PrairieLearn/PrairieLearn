@@ -540,9 +540,10 @@ export async function linkAssessment(
 // X-Rate-Limit-Remaining
 */
 
-const STATUS_CODES_TO_IGNORE = [
-  422, // Unprocesssable Content, like POSTing a grade to a non-student
-];
+const STATUS_CODE_RESPONSE = {
+  // 422 Unprocessable Content, like POSTING a grade to a non-student
+  422: null,
+};
 
 export async function fetchRetry(
   input: RequestInfo | URL,
@@ -560,8 +561,8 @@ export async function fetchRetry(
   try {
     const response = await fetch(input, opts);
 
-    if (STATUS_CODES_TO_IGNORE.includes(response.status)) {
-      return null;
+    if (response.status in STATUS_CODE_RESPONSE) {
+      return STATUS_CODE_RESPONSE[response.status];
     }
 
     if (!response.ok) {
