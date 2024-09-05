@@ -2,11 +2,6 @@
 {{#multiline}}
 <script>
     $(function(){
-        $('#pl-string-input-{{uuid}} [data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            template: '<div class="popover pl-string-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-        });
         document.querySelectorAll('.multiline-input').forEach((input) => {
             input.addEventListener('input', function () {
             // Adjusts the height based on the feedback content. If the feedback changes, the height
