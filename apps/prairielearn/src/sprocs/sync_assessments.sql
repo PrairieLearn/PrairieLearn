@@ -452,43 +452,27 @@ BEGIN
 
                     IF (valid_assessment.data->>'group_work')::boolean THEN
                         -- Iterate over all group roles in assessment
-                        FOR valid_group_role IN (
+                        WITH valid_group_roles AS (
                             SELECT gr.id, gr.role_name
                             FROM group_roles as gr
                             WHERE gr.assessment_id = new_assessment_id
-                        ) LOOP
-                            -- Insert roles that can view
-                            INSERT INTO assessment_question_role_permissions (
-                                assessment_question_id,
-                                group_role_id,
-                                can_view
-                            ) VALUES (
-                                new_assessment_question_id,
-                                valid_group_role.id,
-                                (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view')))
-                            ) ON CONFLICT (assessment_question_id, group_role_id)
-                            DO UPDATE
-                            SET
-                                assessment_question_id = EXCLUDED.assessment_question_id,
-                                group_role_id = EXCLUDED.group_role_id,
-                                can_view = EXCLUDED.can_view;
-
-                            -- Insert roles that can submit
-                            INSERT INTO assessment_question_role_permissions (
-                                assessment_question_id,
-                                group_role_id,
-                                can_submit
-                            ) VALUES (
-                                new_assessment_question_id,
-                                valid_group_role.id,
-                                (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
-                            ) ON CONFLICT (assessment_question_id, group_role_id)
-                            DO UPDATE
-                            SET
-                                assessment_question_id = EXCLUDED.assessment_question_id,
-                                group_role_id = EXCLUDED.group_role_id,
-                                can_submit = EXCLUDED.can_submit;
-                        END LOOP;
+                        )
+                        INSERT INTO assessment_question_role_permissions (
+                            assessment_question_id,
+                            group_role_id,
+                            can_view,
+                            can_submit
+                        ) SELECT
+                            new_assessment_question_id AS assessment_question_id,
+                            valid_group_roles.id AS group_role_id,
+                            (valid_group_roles.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view'))) AS can_view,
+                            (valid_group_roles.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit'))) AS can_submit
+                        FROM valid_group_roles
+                        ON CONFLICT (assessment_question_id, group_role_id)
+                        DO UPDATE
+                        SET
+                            can_view = EXCLUDED.can_view,
+                            can_submit = EXCLUDED.can_submit;
                     END IF;
                 END LOOP;
             END LOOP;
