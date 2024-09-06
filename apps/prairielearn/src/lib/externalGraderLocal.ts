@@ -9,6 +9,7 @@ import fs from 'fs-extra';
 import * as shlex from 'shlex';
 
 import { logger } from '@prairielearn/logger';
+import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from './config.js';
@@ -72,24 +73,23 @@ export class ExternalGraderLocal {
 
       await buildDirectory(dir, submission, variant, question, course);
 
-      if (question.external_grading_entrypoint?.includes('serverFilesCourse')) {
-        // Mark the entrypoint as executable if it lives in serverFilesCourse.
-        // If it is living in the docker container then we don't have access to
-        // it before we actually run it.
-        //
-        // TODO: This code differs from grader-host, in that it only runs for
-        // serverFilesCourse, while grader-host runs for all entrypoints. There
-        // should be consistency in this case to address cases where the
-        // entrypoint is, e.g., in /grade/tests instead. It also assumes that
-        // `serverFilesCourse` is prefixed by `/grade/`, which is a reasonable
-        // assumption, but should probably be checked.
-        try {
-          await execa('chmod', [
-            '+x',
-            path.join(dir, shlex.split(question.external_grading_entrypoint)[0].slice(6)),
-          ]);
-        } catch {
-          logger.error('Could not make file executable; continuing execution anyways');
+      if (question.external_grading_entrypoint) {
+        const entrypointFirstToken = shlex.split(question.external_grading_entrypoint)[0];
+        if (
+          path.isAbsolute(entrypointFirstToken) &&
+          contains('/grade', entrypointFirstToken, false)
+        ) {
+          // Mark the entrypoint as executable if it lives in the mounted volume.
+          // If it is living in the docker container then we don't have access to
+          // it before we actually run it.
+          try {
+            await execa('chmod', [
+              '+x',
+              path.resolve(dir, path.relative('/grade', entrypointFirstToken)),
+            ]);
+          } catch {
+            logger.error('Could not make file executable; continuing execution anyways');
+          }
         }
       }
 
