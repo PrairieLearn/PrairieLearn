@@ -33,11 +33,7 @@ const debug = debugfn('prairielearn:code-caller');
 
 let pool: Pool<CodeCaller> | null = null;
 
-/**
- *
- * @returns {import('generic-pool').Pool<CodeCaller>}
- */
-function getPool() {
+function getPool(): Pool<CodeCaller> {
   if (!pool) {
     throw new Error('CodeCaller pool not initialized');
   }
