@@ -127,7 +127,7 @@ router.post(
         res.send({});
       }
     } else if (req.body.__action === 'ai_grade_assessment') {
-      // check if ai grading is enabled
+      // check if AI grading is enabled
       const ai_grading_enabled = await features.enabledFromLocals('ai-grading', res.locals);
       if (!ai_grading_enabled) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
