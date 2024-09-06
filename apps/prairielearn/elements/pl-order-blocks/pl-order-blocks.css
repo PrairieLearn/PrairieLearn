@@ -129,6 +129,9 @@ div.pl-order-blocks-header {
   margin: 4px;
   width: 19px;
   height: 19px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .pl-order-blocks-pairing-indicator {
