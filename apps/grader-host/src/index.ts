@@ -11,6 +11,7 @@ import byline from 'byline';
 import Docker from 'dockerode';
 import { execa } from 'execa';
 import fs from 'fs-extra';
+import * as shlex from 'shlex';
 import * as tmp from 'tmp-promise';
 
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
@@ -324,8 +325,15 @@ async function initFiles(context: Context) {
     logger.info('Unzipping files');
     await execa('tar', ['-xf', jobArchiveFile.path, '-C', jobDirectory.path]);
 
+    // TODO: AFAICT this is to handle entrypoints that start with /grade/ or
+    // equivalent (e.g., in /grade/serverFilesCourse or /grade/tests). If that
+    // is the case, this code should only run if the entrypoint is indeed in
+    // that directory.
     logger.info('Making entrypoint executable');
-    await execa('chmod', ['+x', path.join(jobDirectory.path, entrypoint.slice(6))]).catch(() => {
+    await execa('chmod', [
+      '+x',
+      path.join(jobDirectory.path, shlex.split(entrypoint)[0]?.slice(6)),
+    ]).catch(() => {
       logger.error('Could not make file executable; continuing execution anyways');
     });
 
@@ -397,7 +405,7 @@ async function runJob(context: Context, receivedTime: Date, tempDir: string) {
           },
         ],
       },
-      Entrypoint: entrypoint.split(' '),
+      Entrypoint: shlex.split(entrypoint),
     });
 
     const stream = await container.attach({

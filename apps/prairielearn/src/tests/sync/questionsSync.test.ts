@@ -150,6 +150,8 @@ describe('Question syncing', () => {
     );
   });
 
+  // TODO Add test for entrypoint being an array
+
   it('allows the same UUID to be used in different courses', async () => {
     // We'll just sync the same course from two different directories.
     // Since courses are identified by directory, this will create two
