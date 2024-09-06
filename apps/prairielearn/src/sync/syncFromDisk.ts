@@ -1,3 +1,5 @@
+import async from 'async';
+
 import * as namedLocks from '@prairielearn/named-locks';
 
 import { chalk, chalkDim } from '../lib/chalk.js';
@@ -66,16 +68,20 @@ export async function syncDiskToSqlWithLock(
     await timed('Synced assessment modules', () =>
       syncAssessmentModules.sync(courseId, courseData),
     );
-    await timed('Synced all assessments', () =>
-      Promise.all(
-        Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
+    await timed('Synced all assessments', async () => {
+      // Ensure that a single course with a ton of course instances can't
+      // monopolize the database connection pool.
+      await async.eachLimit(
+        Object.entries(courseData.courseInstances),
+        3,
+        async ([ciid, courseInstanceData]) => {
           const courseInstanceId = courseInstanceIds[ciid];
           await timed(`Synced assessments for ${ciid}`, () =>
             syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
           );
-        }),
-      ),
-    );
+        },
+      );
+    });
   });
 
   if (config.devMode) {

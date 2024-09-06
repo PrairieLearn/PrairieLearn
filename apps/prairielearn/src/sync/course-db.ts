@@ -841,7 +841,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
   // disabled, we'll still utilize the same recursive function, but the
   // recursive function won't actually recurse.
   const infoFilesRootDir = path.join(coursePath, directory);
-  const walk = async (relativeDir) => {
+  const walk = async (relativeDir: string) => {
     const infoFiles: Record<string, InfoFile<T>> = {};
     const files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
 
