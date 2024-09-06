@@ -107,7 +107,7 @@ FROM
   assessments AS a
   LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
 WHERE
-  a.id = $assessment_id
+  a.id = $unsafe_assessment_id
   AND a.course_instance_id = $course_instance_id
   AND a.deleted_at IS NULL;
 
@@ -154,12 +154,12 @@ SET
 WHERE
   assessment_id = $assessment_id;
 
--- BLOCK select_assessment_with_course_instance
+-- BLOCK select_assessment_in_course_instance
 SELECT
   *
 FROM
   assessments
 WHERE
-  id = $assessment_id
+  id = $unsafe_assessment_id
   AND course_instance_id = $course_instance_id
   AND deleted_at IS NULL;

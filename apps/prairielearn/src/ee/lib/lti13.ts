@@ -388,7 +388,7 @@ export async function syncLineitems(instance: Lti13CombinedInstance, job: Server
 
 export async function enrollUsersFromLti13(instance: Lti13CombinedInstance) {
   if (instance.lti13_course_instance.context_memberships_url === null) {
-    throw Error('LTI 1.3 missing context_memberships_url');
+    throw new Error('LTI 1.3 missing context_memberships_url');
   }
 
   const token = await getAccessToken(instance.lti13_instance.id);
@@ -529,14 +529,14 @@ export async function linkAssessment(
   const assessment = await queryRow(
     sql.select_assessment_with_lti13_course_instance_id,
     {
-      assessment_id: unsafe_assessment_id,
+      unsafe_assessment_id,
       lti13_course_instance_id,
     },
     AssessmentSchema,
   );
 
   if (assessment === null) {
-    throw Error('Invalid assessment.id');
+    throw new Error('Invalid assessment.id');
   }
 
   await queryAsync(sql.upsert_lti13_assessment, {

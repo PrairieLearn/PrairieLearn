@@ -79,8 +79,6 @@ router.get(
           context_memberships_url: ltiClaim.context_memberships_url,
         });
 
-        console.log(req.session.lti13_claims);
-
         // TODO: Set course/instance staff permissions for LMS course staff here?
       }
 

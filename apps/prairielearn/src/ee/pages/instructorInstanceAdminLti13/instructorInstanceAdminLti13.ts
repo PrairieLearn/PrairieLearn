@@ -21,7 +21,6 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import {
-  enrollUsersFromLti13,
   syncLineitems,
   getLineitems,
   unlinkAssessment,
@@ -162,14 +161,12 @@ router.post(
         `/pl/course_instance/${res.locals.course_instance.id}/instructor/instance_admin/assessments`,
       );
     } else if (req.body.__action === 'poll_lti13_assessments') {
-      serverJobOptions.description = 'Synchronize assignment and user metadata from LMS';
+      serverJobOptions.description = 'Synchronize assignment metadata from LMS';
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
         await syncLineitems(instance, job);
         job.info('Adding students to PrairieLearn');
-        await enrollUsersFromLti13(instance);
-        job.info('Done.');
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else if (req.body.__action === 'unlink_assessment') {
@@ -183,7 +180,7 @@ router.post(
         const assessment = await queryRow(
           sql.select_assessment_to_create,
           {
-            assessment_id: req.body.unsafe_assessment_id,
+            unsafe_assessment_id: req.body.unsafe_assessment_id,
             course_instance_id: instance.lti13_course_instance.course_instance_id,
           },
           AssessmentSchema.extend({
@@ -266,9 +263,9 @@ router.post(
     } else if (req.body.__action === 'send_grades') {
       // Should something like this be in a model?
       const assessment = await queryRow(
-        sql.select_assessment_with_course_instance,
+        sql.select_assessment_in_course_instance,
         {
-          assessment_id: req.body.unsafe_assessment_id,
+          unsafe_assessment_id: req.body.unsafe_assessment_id,
           course_instance_id: res.locals.course_instance.id,
         },
         AssessmentSchema,
@@ -277,7 +274,6 @@ router.post(
         throw new Error('Invalid assessment.id');
       }
 
-      await enrollUsersFromLti13(instance);
       await updateLti13Scores(assessment.id);
 
       await queryAsync(sql.update_lti13_assessment_last_activity, {
