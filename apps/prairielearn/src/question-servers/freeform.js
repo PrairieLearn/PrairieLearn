@@ -1821,7 +1821,10 @@ async function getContext(question, course) {
     { type: 'elements' },
     { type: 'elementExtensions' },
   ];
-  await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
+
+  await instrumented('freeform.ensureChunksForCourse', async () => {
+    await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
+  });
 
   // Select which rendering strategy we'll use. This is computed here so that
   // in can factor into the cache key.
@@ -1846,11 +1849,15 @@ async function getContext(question, course) {
   const questionDirectoryHost = path.join(coursePath, 'questions', question.directory);
 
   // Load elements and any extensions
-  const elements = await loadElementsForCourse(course);
-  const extensions = await loadExtensionsForCourse({
-    course,
-    course_dir: courseDirectory,
-    course_dir_host: courseDirectoryHost,
+  const elements = await instrumented('freeform.loadElementsForCourse', async () => {
+    return await loadElementsForCourse(course);
+  });
+  const extensions = await instrumented('freeform.loadExtensionsForCourse', async () => {
+    return await loadExtensionsForCourse({
+      course,
+      course_dir: courseDirectory,
+      course_dir_host: courseDirectoryHost,
+    });
   });
 
   return {

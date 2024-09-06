@@ -6,6 +6,7 @@ import { createPool, type Pool } from 'generic-pool';
 import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
+import { instrumented } from '@prairielearn/opentelemetry';
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
@@ -31,6 +32,18 @@ const debug = debugfn('prairielearn:code-caller');
  */
 
 let pool: Pool<CodeCaller> | null = null;
+
+/**
+ *
+ * @returns {import('generic-pool').Pool<CodeCaller>}
+ */
+function getPool() {
+  if (!pool) {
+    throw new Error('CodeCaller pool not initialized');
+  }
+
+  return pool;
+}
 
 export async function init() {
   debug('init()');
@@ -141,86 +154,92 @@ export async function withCodeCaller<T>(
     throw new Error('Code execution is disabled');
   }
 
-  if (!pool) {
-    throw new Error('CodeCaller pool not initialized');
-  }
+  return await instrumented('code-caller.withCodeCaller', async () => {
+    const pool = getPool();
 
-  if (pool.available === 0 && !config.workerUseQueue) {
-    debug('getPythonCaller(): no workers available, waiting to error');
-    return new Promise((resolve, reject) => {
-      setTimeout(() => {
-        reject(new Error('Server is overloaded. Please try again.'));
-      }, config.workerOverloadDelayMS);
+    if (pool.available === 0 && !config.workerUseQueue) {
+      debug('getPythonCaller(): no workers available, waiting to error');
+      return new Promise((resolve, reject) => {
+        setTimeout(() => {
+          reject(new Error('Server is overloaded. Please try again.'));
+        }, config.workerOverloadDelayMS);
+      });
+    }
+
+    const jobUuid = uuidv4();
+    load.startJob('python_callback_waiting', jobUuid);
+
+    const codeCaller = await instrumented('code-caller.acquire', async () => {
+      return await pool.acquire();
     });
-  }
 
-  const jobUuid = uuidv4();
-  load.startJob('python_callback_waiting', jobUuid);
+    try {
+      const coursePath = chunks.getRuntimeDirectoryForCourse(course);
+      await instrumented('code-caller.prepareForCourse', async () => {
+        await codeCaller.prepareForCourse({
+          coursePath,
+          forbiddenModules: [],
+        });
+      });
+    } catch (err) {
+      // If we fail to prepare for a course, assume that the code caller is
+      // broken and dispose of it.
+      await pool.destroy(codeCaller);
+      throw err;
+    } finally {
+      load.endJob('python_callback_waiting', jobUuid);
+    }
 
-  const codeCaller = await pool.acquire();
+    debug(`getPythonCaller(): got ${codeCaller.uuid}`);
+    load.endJob('python_worker_idle', codeCaller.uuid);
+    load.startJob('python_worker_active', codeCaller.uuid);
 
-  try {
-    const coursePath = chunks.getRuntimeDirectoryForCourse(course);
-    await codeCaller.prepareForCourse({
-      coursePath,
-      forbiddenModules: [],
-    });
-  } catch (err) {
-    // If we fail to prepare for a course, assume that the code caller is
-    // broken and dispose of it.
-    await pool.destroy(codeCaller);
-    throw err;
-  } finally {
-    load.endJob('python_callback_waiting', jobUuid);
-  }
+    let fnResult, fnErr;
+    try {
+      fnResult = await instrumented('code-caller.fn', () => fn(codeCaller));
+    } catch (err) {
+      fnErr = err;
+    }
 
-  debug(`getPythonCaller(): got ${codeCaller.uuid}`);
-  load.endJob('python_worker_idle', codeCaller.uuid);
-  load.startJob('python_worker_active', codeCaller.uuid);
+    debug('returnPythonCaller()');
+    load.endJob('python_worker_active', codeCaller.uuid);
 
-  let fnResult, fnErr;
-  try {
-    fnResult = await fn(codeCaller);
-  } catch (err) {
-    fnErr = err;
-  }
-
-  debug('returnPythonCaller()');
-  load.endJob('python_worker_active', codeCaller.uuid);
-
-  let needsFullRestart = false;
-  let restartErr;
-  try {
-    const restartSuccess = await codeCaller.restart();
-    if (!restartSuccess) {
-      debug('returnPythonCaller(): restart requested a full restart');
-      // no error logged here, everything is still ok
+    let needsFullRestart = false;
+    let restartErr;
+    try {
+      const restartSuccess = await instrumented('code-caller.restart', async () => {
+        return await codeCaller.restart();
+      });
+      if (!restartSuccess) {
+        debug('returnPythonCaller(): restart requested a full restart');
+        // no error logged here, everything is still ok
+        needsFullRestart = true;
+      }
+    } catch (err) {
+      restartErr = err;
+      debug(`returnPythonCaller(): restart errored: ${err}`);
+      logger.error('Error restarting pythonCaller', err);
       needsFullRestart = true;
     }
-  } catch (err) {
-    restartErr = err;
-    debug(`returnPythonCaller(): restart errored: ${err}`);
-    logger.error('Error restarting pythonCaller', err);
-    needsFullRestart = true;
-  }
 
-  load.startJob('python_worker_idle', codeCaller.uuid);
+    load.startJob('python_worker_idle', codeCaller.uuid);
 
-  if (needsFullRestart) {
-    await pool.destroy(codeCaller);
-  } else {
-    await pool.release(codeCaller);
-  }
+    if (needsFullRestart) {
+      await pool.destroy(codeCaller);
+    } else {
+      await pool.release(codeCaller);
+    }
 
-  const overallErr = fnErr ?? restartErr;
-  if (overallErr) {
-    throw overallErr;
-  } else {
-    // TypeScript doesn't understand our error-handling logic above. If
-    // `overallErr` is falsy, `fnResult` will indeed have type `T`. We'll
-    // cast it to `T` to appease TypeScript.
-    return fnResult as T;
-  }
+    const overallErr = fnErr ?? restartErr;
+    if (overallErr) {
+      throw overallErr;
+    } else {
+      // TypeScript doesn't understand our error-handling logic above. If
+      // `overallErr` is falsy, `fnResult` will indeed have type `T`. We'll
+      // cast it to `T` to appease TypeScript.
+      return fnResult as T;
+    }
+  });
 }
 
 export { FunctionMissingError, CodeCaller };
