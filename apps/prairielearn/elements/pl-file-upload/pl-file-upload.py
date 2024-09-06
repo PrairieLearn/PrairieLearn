@@ -268,7 +268,12 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         parsed_files = []
 
     if parsed_files is not None:
-        parsed_file_names = [f.get("name", "") for f in parsed_files]
+        # Files with HTML characters "<" or ">" should have been rejected client-side already, so we silently filter them here
+        parsed_file_names = [
+            f.get("name", "")
+            for f in parsed_files
+            if "<" not in f.get("name", "") and ">" not in f.get("name", "")
+        ]
 
         # Split optional names into two separate lists: wildcard patterns and plain names
         files_regex = [glob_to_regex(f) for f in file_patterns]

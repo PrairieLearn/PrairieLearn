@@ -136,6 +136,14 @@
             );
             return;
           }
+
+          if (file.name.includes('<') || file.name.includes('>')) {
+            this.addWarningMessage(
+              `File names cannot contain the special characters "&lt;" or "&gt;"`,
+            );
+            return;
+          }
+
           // fuzzy case match
           const fileNameLowerCase = file.name.toLowerCase();
           const acceptedFileName = this.findAcceptedFileName(fileNameLowerCase);
