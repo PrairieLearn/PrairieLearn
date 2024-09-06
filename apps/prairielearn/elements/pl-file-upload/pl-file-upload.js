@@ -1,6 +1,15 @@
 /* eslint-env browser,jquery */
 
 (() => {
+  function escapeFileName(name) {
+    return name
+      .replace('&', '&amp;')
+      .replace('<', '&lt;')
+      .replace('>', '&gt;')
+      .replace('"', '&quot;')
+      .replace("'", '&#39;');
+  }
+
   function escapePath(path) {
     return path
       .replace(/^\//, '')
@@ -137,20 +146,13 @@
             return;
           }
 
-          if (file.name.includes('<') || file.name.includes('>')) {
-            this.addWarningMessage(
-              'File names cannot contain the special characters "&lt;" or "&gt;"',
-            );
-            return;
-          }
-
           // fuzzy case match
           const fileNameLowerCase = file.name.toLowerCase();
           const acceptedFileName = this.findAcceptedFileName(fileNameLowerCase);
 
           if (acceptedFileName === null) {
             this.addWarningMessage(
-              `<strong>${file.name}</strong> did not match any accepted file for this question.`,
+              `<strong>${escapeFileName(file.name)}</strong> did not match any accepted file for this question.`,
             );
             return;
           }
@@ -190,7 +192,9 @@
 
         var commaSplitIdx = dataUrl.indexOf(',');
         if (commaSplitIdx === -1) {
-          this.addWarningMessage(`<strong>${name}</strong> is empty, ignoring file.`);
+          this.addWarningMessage(
+            `<strong>${escapeFileName(name)}</strong> is empty, ignoring file.`,
+          );
           return;
         }
 
@@ -201,7 +205,7 @@
 
         if (!isFromDownload) {
           // Show the preview for the newly-uploaded file
-          const container = this.element.find(`li[data-file="${name}"]`);
+          const container = this.element.find(`li[data-file="${escapeFileName(name)}"]`);
           container.find('.file-preview').addClass('show');
           container.find('.file-preview-button').removeClass('collapsed');
 
@@ -301,7 +305,7 @@
         var isExpanded = expandedFiles.includes(fileName);
         var fileData = this.getSubmittedFileContents(fileName);
 
-        var $file = $(`<li class="list-group-item" data-file="${fileName}"></li>`);
+        var $file = $(`<li class="list-group-item" data-file="${escapeFileName(fileName)}"></li>`);
         var $fileStatusContainer = $('<div class="file-status-container d-flex flex-row"></div>');
         if (isExpanded) {
           $fileStatusContainer.removeClass('collapsed');
@@ -333,16 +337,18 @@
         if (isOptional) {
           if (isWildcard) {
             $fileStatusContainerLeft.append(
-              `Any files with pattern: <em>${fileName}</em> (optional)`,
+              `Any files with pattern: <em>${escapeFileName(fileName)}</em> (optional)`,
             );
           } else {
-            $fileStatusContainerLeft.append(`${fileName} (optional)`);
+            $fileStatusContainerLeft.append(`${escapeFileName(fileName)} (optional)`);
           }
         } else {
           if (isWildcard) {
-            $fileStatusContainerLeft.append(`One file with pattern: <em>${fileName}</em>`);
+            $fileStatusContainerLeft.append(
+              `One file with pattern: <em>${escapeFileName(fileName)}</em>`,
+            );
           } else {
-            $fileStatusContainerLeft.append(fileName);
+            $fileStatusContainerLeft.append(escapeFileName(fileName));
           }
         }
         if (this.pendingFileDownloads.has(fileName)) {
