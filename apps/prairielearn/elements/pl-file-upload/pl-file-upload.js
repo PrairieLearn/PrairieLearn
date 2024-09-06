@@ -139,7 +139,7 @@
 
           if (file.name.includes('<') || file.name.includes('>')) {
             this.addWarningMessage(
-              `File names cannot contain the special characters "&lt;" or "&gt;"`,
+              'File names cannot contain the special characters "&lt;" or "&gt;"',
             );
             return;
           }
