@@ -153,6 +153,10 @@ export class CodeCallerContainer {
     this.debug(`exit constructor(), state: ${String(this.state)}, uuid: ${this.uuid}`);
   }
 
+  getCoursePath() {
+    return this.coursePath;
+  }
+
   /**
    * Wrapper around `debug` that automatically includes UUID and the caller state.
    *
