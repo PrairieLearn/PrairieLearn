@@ -278,7 +278,7 @@
 
           try {
             if (this.isPdf(fileData)) {
-              const url = this.b64ToBlobUrl(fileData);
+              const url = this.b64ToBlobUrl(fileData, { type: 'application/pdf' });
               const $objectPreview = $(
                 `<div class="mt-2 embed-responsive embed-responsive-4by3">
                    <iframe class="embed-responsive-item" src="${url}">
@@ -386,7 +386,7 @@
       );
     }
 
-    b64ToBlobUrl(str) {
+    b64ToBlobUrl(str, options = undefined) {
       const blob = new Blob(
         [
           new Uint8Array(
@@ -395,7 +395,7 @@
               .map((c) => c.charCodeAt(0)),
           ),
         ],
-        { type: 'application/pdf' },
+        options,
       );
       return URL.createObjectURL(blob);
     }
