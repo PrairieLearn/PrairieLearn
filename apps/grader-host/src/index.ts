@@ -15,6 +15,7 @@ import * as tmp from 'tmp-promise';
 
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { sanitizeObject } from '@prairielearn/sanitize';
 import * as Sentry from '@prairielearn/sentry';
 
@@ -141,10 +142,17 @@ async.series(
 
             await handleJob(job).then(
               () => globalLogger.info(`handleJob(${job.jobId}) succeeded`),
-              (err) => globalLogger.info(`handleJob(${job.jobId}) errored`, err),
+              (err) => {
+                globalLogger.info(`handleJob(${job.jobId}) errored`, err);
+
+                // Throwing the error will ensure that the job isn't deleted
+                // from SQS and thus will be retried.
+                throw err;
+              },
             );
           }).catch((err) => {
-            globalLogger.error('receive error:', err);
+            globalLogger.error('receiveFromQueue error', err);
+            Sentry.captureException(err);
           });
         }
       }
@@ -178,10 +186,6 @@ async function isJobCanceled(job: GradingJobMessage) {
   });
 
   return result.rows[0].canceled;
-}
-
-function run<T>(fn: () => T): T {
-  return fn();
 }
 
 async function handleJob(job: GradingJobMessage) {
