@@ -137,6 +137,10 @@ export class CodeCallerNative {
     this.debug('exit constructor()');
   }
 
+  getCoursePath() {
+    return this.coursePath;
+  }
+
   /**
    * Wrapper around `debug` that automatically includes UUID and the caller state.
    *
@@ -577,7 +581,7 @@ export class CodeCallerNative {
     try {
       const data = JSON.parse(this.outputRestart);
       return data.exited === true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }

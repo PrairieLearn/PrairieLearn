@@ -88,6 +88,11 @@ export async function insertSubmission({
     // Select the variant, while updating the variant's `correct_answer`, which
     // is permitted to change during the `parse` phase (which occurs before this
     // submission is inserted).
+    //
+    // Note that we do this mutation as part of the selection process to avoid another
+    // database round trip. This mutation is safe to do before the access checks below
+    // because if they fail, the transaction will be rolled back and the variant will
+    // not be updated.
     const variant = await sqldb.queryRow(
       sql.update_variant_true_answer,
       { variant_id, true_answer },

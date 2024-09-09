@@ -117,7 +117,7 @@ export function getPaths(
   if (requestedPath) {
     try {
       workingPath = path.join(coursePath, requestedPath);
-    } catch (err) {
+    } catch {
       throw new Error(`Invalid path: ${requestedPath}`);
     }
   }

@@ -171,7 +171,7 @@ function compiledPath(type: 'scripts' | 'stylesheets', sourceFile: string): stri
     throw new Error(`Unknown ${type} asset: ${sourceFile}`);
   }
 
-  return `${options.publicPath}/${assetPath}`;
+  return options.publicPath + assetPath;
 }
 
 export function compiledScriptPath(sourceFile: string): string {
