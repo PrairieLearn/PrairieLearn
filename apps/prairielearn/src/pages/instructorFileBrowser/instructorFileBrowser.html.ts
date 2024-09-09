@@ -1,9 +1,9 @@
 import { filesize } from 'filesize';
 
 import { escapeHtml, html, type HtmlValue, joinHtml, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import {
   AssessmentSyncErrorsAndWarnings,
   CourseInstanceSyncErrorsAndWarnings,
@@ -12,7 +12,6 @@ import {
 } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
-import { User } from '../../lib/db-types.js';
 import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
 import { encodePath } from '../../lib/uri-util.js';
 
@@ -90,49 +89,6 @@ export interface FileRenameInfo {
   dir: string;
 }
 
-export function InstructorFileBrowserNoPermission({
-  resLocals,
-  courseOwners,
-}: {
-  resLocals: Record<string, any>;
-  courseOwners: User[];
-}) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Files' })}
-      </head>
-      <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
-        <main id="content" class="container-fluid">
-          <div class="card mb-4">
-            <div class="card-header bg-danger text-white">
-              <h1>Files</h1>
-            </div>
-            <div class="card-body">
-              <h2>Insufficient permissions</h2>
-              <p>You must have at least &quot;Viewer&quot; permissions for this course.</p>
-              ${courseOwners.length > 0
-                ? html`
-                    <p>Contact one of the below course owners to request access.</p>
-                    <ul>
-                      ${courseOwners.map(
-                        (owner) => html`
-                          <li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li>
-                        `,
-                      )}
-                    </ul>
-                  `
-                : ''}
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
-}
-
 export function InstructorFileBrowser({
   resLocals,
   paths,
@@ -195,7 +151,7 @@ export function InstructorFileBrowser({
         </style>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${syncErrorsAndWarnings}
           <h1 class="sr-only">Files</h1>
@@ -396,13 +352,12 @@ function FileContentPreview({
   if (fileInfo.isPDF) {
     return html`
       <div class="embed-responsive embed-responsive-4by3">
-        <object
-          data="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH"
-          type="application/pdf"
+        <iframe
+          src="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH"
           class="embed-responsive-item"
         >
           This PDF cannot be displayed.
-        </object>
+        </iframe>
       </div>
     `;
   }

@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 
 export const AdministratorQueryJsonParamsSchema = z.object({
   name: z.string(),
@@ -39,11 +39,7 @@ export function AdministratorQueries({
         ${HeadContents({ resLocals, pageTitle: 'Administrator Queries' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'queries',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'queries' })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">

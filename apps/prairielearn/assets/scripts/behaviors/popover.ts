@@ -12,6 +12,36 @@ function closeOpenPopovers() {
   openPopoverTriggers.clear();
 }
 
+/**
+ * Returns the trigger modes for a popover trigger as configured by `data-bs-trigger`,
+ * `data-trigger`, or `trigger: ...` in the popover's options.
+ *
+ * If the trigger mode cannot be determined, an empty array is returned.
+ */
+function getPopoverTriggerModes(trigger: HTMLElement): string[] {
+  // Bootstrap 4 uses jQuery data to store popover configuration.
+  const config = $(trigger).data('bs.popover');
+  if (config) {
+    return config.config?.trigger?.split?.(' ') ?? [];
+  }
+
+  // Bootstrap 5 allows us to access the popover instance more directly.
+  const instance = window.bootstrap?.Popover?.getInstance?.(trigger);
+  if (instance) {
+    return (instance as any)._config?.trigger?.split?.(' ') ?? [];
+  }
+
+  return [];
+}
+
+/**
+ * Returns whether a popover trigger is focus-triggered.
+ */
+function isFocusTrigger(trigger: HTMLElement) {
+  const triggerModes = getPopoverTriggerModes(trigger);
+  return triggerModes.includes('focus');
+}
+
 // We need to wrap this in `onDocumentReady` because Bootstrap doesn't
 // add its jQuery API to the jQuery object until after this event.
 // `selector-observer` will start running its callbacks immediately, so they'd
@@ -97,7 +127,11 @@ onDocumentReady(() => {
     openPopoverTriggers.add(event.target);
 
     const container = getPopoverContainerForTrigger(event.target);
-    if (container) {
+
+    // If the popover is focus-triggered, we'll skip the focus trap and
+    // autofocus logic. If we move the focus off the trigger, the popover
+    // will immediately close, which we don't want.
+    if (container && !isFocusTrigger(target)) {
       // Trap focus inside this new popover.
       const trap = trapFocus(container);
 

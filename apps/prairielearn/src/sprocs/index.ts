@@ -68,7 +68,6 @@ export async function init() {
       'users_is_instructor_in_course.sql',
       'users_is_instructor_in_course_instance.sql',
       'users_get_displayed_role.sql',
-      'users_randomly_generate.sql',
       'grading_jobs_stats_day.sql',
       'issues_insert_for_variant.sql',
       'variants_lock.sql',

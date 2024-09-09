@@ -17,17 +17,6 @@ WHERE
   assessment_id = $assessment_id
   AND deleted_at IS NULL;
 
--- BLOCK generate_and_enroll_3_users
-SELECT
-  user_id,
-  uid,
-  name,
-  uin
-FROM
-  users_randomly_generate (3, 1)
-ORDER BY
-  user_id;
-
 -- BLOCK select_all_assessment_instance
 SELECT
   ai.*

@@ -6,9 +6,6 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '../../lib/db-types.js';
 import { CourseData, CourseInstance } from '../course-db.js';
 import * as infofile from '../infofile.js';
-import { makePerformance } from '../performance.js';
-
-const perf = makePerformance('courseInstances');
 
 function getParamsForCourseInstance(courseInstance: CourseInstance | null | undefined) {
   if (!courseInstance) return null;
@@ -54,13 +51,11 @@ export async function sync(
     },
   );
 
-  perf.start('sproc:sync_course_instances');
   const result = await sqldb.callRow(
     'sync_course_instances',
     [courseInstanceParams, courseId],
     z.record(z.string(), IdSchema),
   );
-  perf.end('sproc:sync_course_instances');
 
   return result;
 }

@@ -42,10 +42,10 @@ console.log(html`
 
 ## Why not EJS?
 
-PrairieLearn used (and still uses) EJS to render most views. However, using a tagged template literal and pure JavaScript to render views has a number of advantages:
+In the past, PrairieLearn used EJS to render most views. However, using a tagged template literal and pure JavaScript to render views has a number of advantages:
 
 - Prettier will automatically format the content of any `html` tagged template literal; EJS does not have any automatic formatters.
 - Authoring views in pure JavaScript allows for easier and more explicit composition of components.
 - It's possible to use ESLint and TypeScript to type-check JavaScript views; EJS does not offer support for either.
 
-If you want to use existing EJS partials inside of an `html` tagged template literal, check out the `@prairielearn/html-ejs` package. EJS-related functionality is deliberately located in a separate package so that `@prairielearn/html` can be used in the browser, since the `ejs` package makes use of Node-only features.
+If you want to use existing EJS partials inside of an `html` tagged template literal, check out the `@prairielearn/html-ejs` package. EJS-related functionality is deliberately located in a separate package so that `@prairielearn/html` can be used in the browser, since the `ejs` package makes use of Node-only features. Note, though, that this package is no longer used in PrairieLearn itself, and as such will no longer be actively maintained.

@@ -1,9 +1,9 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 
@@ -35,7 +35,7 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
         ${unsafeHtml(resLocals.extraHeadersHtml)}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container">
           <div class="row">
             <div class="col-lg-9 col-sm-12">

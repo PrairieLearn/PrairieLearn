@@ -1,3 +1,4 @@
+import { EncodedData } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
@@ -33,6 +34,19 @@ export function Workspace({
         ${HeadContents({ resLocals, pageNote, pageTitle })}
         <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />
         ${compiledScriptTag('workspaceClient.ts')}
+        ${resLocals.assessment?.type === 'Exam' && resLocals.assessment_instance_remaining_ms
+          ? html`${compiledScriptTag('examTimeLimitCountdown.ts')}
+            ${EncodedData(
+              {
+                serverRemainingMS: resLocals.assessment_instance_remaining_ms,
+                serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
+                serverUpdateURL: `${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance_id}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
+                canTriggerFinish: false,
+                csrfToken: resLocals.__csrf_token,
+              },
+              'time-limit-data',
+            )}`
+          : ''}
       </head>
 
       <body
@@ -65,7 +79,6 @@ export function Workspace({
                 class="badge badge-dark badge-workspace badge-append font-weight-normal"
               ></span>
             </div>
-
             <button
               class="navbar-toggler ml-2"
               type="button"
@@ -74,9 +87,17 @@ export function Workspace({
             >
               <span class="navbar-toggler-icon"></span>
             </button>
-
             <div class="collapse navbar-collapse" id="workspace-nav">
               <ul class="navbar-nav ml-auto">
+                ${resLocals.assessment?.type === 'Exam' &&
+                resLocals.assessment_instance_remaining_ms
+                  ? html` <li class="nav-item ml-2 my-1">
+                      <div id="countdownProgress"></div>
+                      <div class="text-white small">
+                        Time remaining: <span id="countdownDisplay"></span>
+                      </div>
+                    </li>`
+                  : ''}
                 <li class="nav-item ml-2 my-1">
                   <button
                     id="reboot"
@@ -180,7 +201,7 @@ function ResetModal({ __csrf_token }: { __csrf_token: string }) {
       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <button name="__action" value="reset" class="btn btn-danger">
-        <i class="fas fa-trash text-white" aria-hidden="true"></i>
+        <i class="fas fa-trash" aria-hidden="true"></i>
         Reset
       </button>
     `,
@@ -208,7 +229,7 @@ function RebootModal({ __csrf_token }: { __csrf_token: string }) {
       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <button name="__action" value="reboot" class="btn btn-info">
-        <i class="fas fa-sync text-white" aria-hidden="true"></i>
+        <i class="fas fa-sync" aria-hidden="true"></i>
         Reboot
       </button>
     `,

@@ -16,7 +16,8 @@
             size="{{size}}"
             {{^editable}}disabled{{/editable}}
             {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-            aria-describedby="pl-units-input-{{uuid}}-label pl-units-input-{{uuid}}-suffix"
+            aria-describedby="pl-units-input-{{uuid}}-suffix"
+            aria-labelledby="pl-units-input-{{uuid}}-label"
             placeholder="{{placeholder}}"
         />
 
