@@ -1,6 +1,6 @@
 <script>
     $(function(){
-        document.querySelectorAll('.multiline-input#pl-string-input-{{uuid}}-input').forEach((input) => {
+        document.querySelectorAll('.multiline-input').forEach((input) => {
             input.addEventListener('input', function () {
             // Adjusts the height based on the feedback content. If the feedback changes, the height
             // changes as well. This is done by resetting the height (so the scrollHeight is computed
@@ -166,7 +166,8 @@
             class="form-control multiline-input"
             style="resize:none;"
             disabled
-            aria-describedby="pl-string-input-submission-{{uuid}}-label pl-string-input-submission-{{uuid}}-suffix"
+            aria-describedby="pl-string-input-submission-{{uuid}}-suffix"
+            aria-labelledby="pl-string-input-submission-{{uuid}}-label"
         >{{a_sub}}</textarea>
     </span>
     {{#suffix}}
@@ -217,11 +218,12 @@
             class="form-control multiline-input"
             style="resize:none;"
             disabled
-            aria-describedby="pl-string-input-answer-{{uuid}}-label pl-string-input-submission-{{uuid}}-suffix"
+            aria-describedby="pl-string-input-answer-{{uuid}}-suffix"
+            aria-labelledby="pl-string-input-answer-{{uuid}}-label"
         >{{a_tru}}</textarea>
     </span>
     {{#suffix}}
-    <div class="form-text" id="pl-string-input-submission-{{uuid}}-suffix">{{{suffix}}}</div>
+    <div class="form-text" id="pl-string-input-answer-{{uuid}}-suffix">{{{suffix}}}</div>
     {{/suffix}}
 {{/multiline}}
 
