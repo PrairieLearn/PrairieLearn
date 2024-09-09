@@ -155,7 +155,7 @@ export function EditAssessmentQuestionsTable({
                           </td>
                           <td class="deleteButtonCell align-content-center">
                             <button
-                              class="btn btn-sm btn-danger deleteQuestionButton"
+                              class="btn btn-sm btn-danger js-confirm-delete-button"
                               type="button"
                               data-zone-number="${zoneIndex}"
                               data-question-number="${questionIndex}"

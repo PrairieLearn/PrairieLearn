@@ -43,7 +43,11 @@ onDocumentReady(() => {
   const zones: AssessmentQuestionZone[] = [];
   let showAdvanceScorePercCol = false;
 
-  // The data is sent to the client as an array of questions. However, this can be difficult to work with as there are many attributes for each question that would need to be updated for each change. Here we are manipulating the data into a tree structure that is easier to work with when rearranging questions. This is also more similar to the underlying JSON that we will want to be updating.
+  // The data is sent to the client as an array of questions. However, this can be
+  // difficult to work with as there are many attributes for each question that would
+  // need to be updated for each change. Here we are manipulating the data into a
+  // tree structure that is easier to work with when rearranging questions. This
+  // is also more similar to the underlying JSON that we will want to be updating.
   questions.forEach((question: AssessmentQuestionRow) => {
     if (question.assessment_question_advance_score_perc !== 0) showAdvanceScorePercCol = true;
     if (question.start_new_zone) {
@@ -73,7 +77,9 @@ onDocumentReady(() => {
     }
   });
 
-  // This refreshes the DOM after any updates to the table.
+  /**
+   * Refresh the DOM to reflect the underlying data.
+   */
   function refreshTable() {
     morphdom(
       assessmentQuestionsTable as Node,
@@ -91,7 +97,9 @@ onDocumentReady(() => {
     refreshTable();
   });
 
-  // This is to be called anytime the order of the questions is changed. This will renumber the questions in order and determine which questions are in alternative groups.
+  /**
+   * Refresh question numbers and alternative groups to account for reordering.
+   */
   function renumberQuestions() {
     let questionNumber = 1;
     zones.forEach((zone: AssessmentQuestionZone) => {
@@ -111,7 +119,9 @@ onDocumentReady(() => {
     });
   }
 
-  // This swaps questions when the up or down arrow is clicked and the question that it is being swapped with is in the same zone.
+  /**
+   * Swap two questions in the same zone.
+   */
   function swapQuestions({
     zoneIndex,
     questionIndex,
@@ -148,7 +158,9 @@ onDocumentReady(() => {
     refreshTable();
   });
 
-  // This is called when the up arrow is clicked. Here we need to determine the position of the question and if we need to move it in or out of an alternative group or if we need to move it between zones.
+  // This is called when the up arrow is clicked. Here we need to determine the position
+  // of the question and if we need to move it in or out of an alternative group or if we need
+  // to move it between zones.
   on('click', '.js-question-up-arrow-button', (e) => {
     const zoneIndex = parseInt((e.currentTarget as HTMLElement)?.dataset.zoneIndex ?? '0');
     const questionIndex = parseInt((e.currentTarget as HTMLElement)?.dataset.questionIndex ?? '0');
@@ -158,7 +170,8 @@ onDocumentReady(() => {
         ? 'group'
         : parseInt((e.currentTarget as HTMLElement)?.dataset.alternativeIndex ?? '0')
       : null;
-    // If the question is the first question in the first zone, we return early as there is nowhere for it to go.
+    // If the question is the first question in the first zone, we return early as there is nowhere
+    // for it to go.
     if (zoneIndex === 0 && questionIndex === 0 && alternativeIndex === null) {
       return;
     }
@@ -166,7 +179,8 @@ onDocumentReady(() => {
     if (typeof alternativeIndex === 'number') {
       const alternatives = question.alternatives;
       if (!alternatives) return;
-      // If the question is in an alternative group and the alternative is the first alternative in the group, we need to move the question out of the group.
+      // If the question is in an alternative group and the alternative is the first alternative
+      // in the group, we need to move the question out of the group.
       if (alternativeIndex === 0) {
         zones[zoneIndex].questions.splice(
           questionIndex,
@@ -187,7 +201,8 @@ onDocumentReady(() => {
         return;
       }
     }
-    // If the question is the first question in the zone, we need to shift it out of the current zone and push it to the end of the previous zone.
+    // If the question is the first question in the zone, we need to shift it out of the current
+    // zone and push it to the end of the previous zone.
     if (questionIndex === 0) {
       zones[zoneIndex - 1].questions.push(
         zones[zoneIndex].questions.shift() ?? zones[zoneIndex].questions[0],
@@ -196,7 +211,8 @@ onDocumentReady(() => {
       return;
     }
 
-    // If the question above is in an alternative group, we need to move the question into the group.
+    // If the question above is in an alternative group, we need to move the question into the
+    // group.
     if (
       zones[zoneIndex].questions[questionIndex - 1].is_alternative_group &&
       alternativeIndex !== 'group'
@@ -209,7 +225,8 @@ onDocumentReady(() => {
       return;
     }
 
-    // If a question is not the first in its zone and the question above is not in an alternative group, we can simply swap it with the one above it.
+    // If a question is not the first in its zone and the question above is not in an
+    // alternative group, we can simply swap it with the one above it.
     swapQuestions({
       zoneIndex,
       questionIndex,
@@ -229,7 +246,8 @@ onDocumentReady(() => {
         : parseInt((e.currentTarget as HTMLElement).dataset.alternativeIndex ?? '0')
       : null;
 
-    // If the question is the last question in the last zone, we return early as there is nowhere for it to go.
+    // If the question is the last question in the last zone, we return early as there is
+    // snowhere for it to go.
     if (
       zoneIndex === zones.length - 1 &&
       questionIndex === zones[zoneIndex].questions.length - 1 &&
@@ -242,7 +260,8 @@ onDocumentReady(() => {
     if (typeof alternativeIndex === 'number') {
       const alternatives = zones[zoneIndex].questions[questionIndex].alternatives;
       if (!alternatives) return;
-      // If the question is in an alternative group and the alternative is the last alternative in the group, we need to move the question out of the group.
+      // If the question is in an alternative group and the alternative is the last
+      // alternative in the group, we need to move the question out of the group.
       if (alternativeIndex === alternatives.length - 1) {
         alternatives[alternativeIndex].is_alternative_group = false;
         zones[zoneIndex].questions.splice(
@@ -253,7 +272,8 @@ onDocumentReady(() => {
         renumberQuestions();
         refreshTable();
         return;
-        // else we need to swap the question with the question below it in the alternative group.
+        // else we need to swap the question with the question below it in the
+        // alternative group.
       } else {
         const question = alternatives[alternativeIndex];
         alternatives[alternativeIndex] = alternatives[alternativeIndex + 1];
@@ -264,14 +284,16 @@ onDocumentReady(() => {
       }
     }
 
-    // If the question is the last question in the zone, we need to move it to the beginning of the next zone.
+    // If the question is the last question in the zone, we need to move it to the
+    // beginning of the next zone.
     if (questionIndex === zones[zoneIndex].questions.length - 1) {
       zones[zoneIndex + 1].questions.unshift(zones[zoneIndex].questions.pop() ?? question);
       refreshTable();
       return;
     }
 
-    // If the question below is in an alternative group, we need to move the question into the group.
+    // If the question below is in an alternative group, we need to move the question
+    // into the group.
     if (
       zones[zoneIndex].questions[questionIndex + 1].is_alternative_group &&
       alternativeIndex !== 'group'
@@ -286,7 +308,8 @@ onDocumentReady(() => {
       return;
     }
 
-    // If a question is not the last in its zone and the question below is not in an alternative group, we can simply swap it with the one below it.
+    // If a question is not the last in its zone and the question below is not in an
+    // alternative group, we can simply swap it with the one below it.
     swapQuestions({
       zoneIndex,
       questionIndex,
@@ -295,7 +318,8 @@ onDocumentReady(() => {
     return;
   });
 
-  // When the delete button is clicked, we need to populate the delete question modal with the data from the question that is being deleted and then display that modal.
+  // When the delete button is clicked, we need to populate the delete question modal
+  // with the data from the question that is being deleted and then display that modal.
   on('click', '.js-delete-question-button', (e) => {
     const deleteButton = e.currentTarget as HTMLElement;
     const zoneIndex = parseInt(deleteButton?.dataset.zoneIndex ?? '0');
@@ -312,9 +336,9 @@ onDocumentReady(() => {
   });
 
   // Delete the question when the confirm delete button in the modal is clicked.
-  on('click', '.js-confirm-delete-button', () => {
-    const confirmDeleteButton = document.getElementById('confirmDeleteButton');
-    const zoneIndex = parseInt((confirmDeleteButton as HTMLElement).dataset.zoneIndex ?? '0');
+  on('click', '.js-confirm-delete-button', (e) => {
+    const confirmDeleteButton = e.currentTarget as HTMLElement;
+    const zoneIndex = parseInt(confirmDeleteButton.dataset.zoneIndex ?? '0');
     const questionIndex = parseInt(
       (confirmDeleteButton as HTMLElement).dataset.questionIndex ?? '0',
     );
@@ -331,7 +355,8 @@ onDocumentReady(() => {
     refreshTable();
   });
 
-  // When the edit button is clicked, we need to open the edit question modal and populate it with the data from the question that is being edited.
+  // When the edit button is clicked, we need to open the edit question modal and populate
+  // it with the data from the question that is being edited.
   on('click', '.js-edit-question-button', (e) => {
     const editButton = (e.target as HTMLElement).closest('button');
     const zoneIndex = parseInt(editButton?.dataset.zoneIndex ?? '0');
@@ -362,7 +387,9 @@ onDocumentReady(() => {
     $('#editQuestionModal').modal('show');
   });
 
-  // For a new question the update button is disabled until a qid is entered. Here we are listening for input in the qid input field and enabling the button when there is a value. This helps ensure that we do not have a blank question in our question list.
+  // For a new question the update button is disabled until a qid is entered. Here we
+  // are listening for input in the qid input field and enabling the button when there
+  // is a value. This helps ensure that we do not have a blank question in our question list.
   on('input', '.js-qid-input', (e) => {
     const qidInput = e.target as HTMLInputElement;
     const updateQuestionButton = document.getElementById('updateQuestionButton');
@@ -392,11 +419,14 @@ onDocumentReady(() => {
     enableGradingOptions('auto');
   });
 
-  // Open the find qid modal when the find qid button is clicked. This new modal allows the user to search for a question in the questions table and then return the qid to the edit question modal.
+  // Open the find qid modal when the find qid button is clicked. This new modal allows
+  // the user to search for a question in the questions table and then return the qid to
+  // the edit question modal.
   on('click', '.js-find-qid', async () => {
     $('#editQuestionModal').modal('hide');
+    const currentQid = (document.querySelector('#qidInput') as HTMLInputElement).value;
     const response = await fetch(
-      `${urlPrefix}/assessment/${assessmentInstanceId}/questions/findqid`,
+      `${urlPrefix}/assessment/${assessmentInstanceId}/questions/findqid/?currentqid=${currentQid}`,
     );
     const findQidHtml = await response.text();
     $('#findQIDModal').replaceWith(
@@ -405,7 +435,9 @@ onDocumentReady(() => {
     $('#findQIDModal').modal('show');
   });
 
-  // Homework can be either auto graded or manually graded but not both so we do not want to display all options at once. This function enables the correct grading options in the modal based on the grading method selected.
+  // Homework can be either auto graded or manually graded but not both so we do not want to
+  // display all options at once. This function enables the correct grading options in the modal
+  // based on the grading method selected.
   function enableGradingOptions(method: string) {
     if (method === 'auto') {
       document.querySelectorAll('.js-hw-auto-points').forEach((el) => {
@@ -429,7 +461,9 @@ onDocumentReady(() => {
     enableGradingOptions(method);
   });
 
-  // This is called when the update question button in the edit modal is clicked. It updates the question in the zones array with the new data from the modal. Where and how we update the data depends on if the question is new or not and if the question is in an alternative group or not.
+  // This is called when the update question button in the edit modal is clicked. It updates the
+  // question in the zones array with the new data from the modal. Where and how we update the data
+  // depends on if the question is new or not and if the question is in an alternative group or not.
   on('click', '#updateQuestionButton', async (e) => {
     const form = (e.target as HTMLFormElement).form;
     const formData = new FormData(form as HTMLFormElement);
@@ -571,7 +605,8 @@ onDocumentReady(() => {
     refreshTable();
   });
 
-  // This is called when the find qid modal is closed. It will return the user to the edit question modal and pass the qid to the qid input field.
+  // This is called when the find qid modal is closed. It will return the user to the edit
+  // question modal and pass the qid to the qid input field.
   on('click', '#confirmFindQIDButton', () => {
     const foundQuestion = $('#questionsTable').bootstrapTable('getSelections')[0];
     const qidInput = document.getElementById('qidInput') as HTMLInputElement;
@@ -603,7 +638,8 @@ onDocumentReady(() => {
     $('#editZoneModal').modal('show');
   });
 
-  // Opens the edit zone modal when the add zone button is clicked. Default values for the new modal are blank.
+  // Opens the edit zone modal when the add zone button is clicked. Default values
+  // for the new modal are blank.
   on('click', '.js-add-zone', () => {
     $('#editZoneModal').replaceWith(
       (document.createElement('div').innerHTML = EditZoneModal({
@@ -615,7 +651,8 @@ onDocumentReady(() => {
     $('#editZoneModal').modal('show');
   });
 
-  // This is called when the update zone button in the edit modal is clicked. It updates the zone in the zones array with the new data from the modal.
+  // This is called when the update zone button in the edit modal is clicked. It updates
+  // the zone in the zones array with the new data from the modal.
   on('click', '.js-confirm-edit-zone-button', (e) => {
     const form = (e.target as HTMLElement).closest('form');
     const formData = new FormData(form as HTMLFormElement);
@@ -640,7 +677,10 @@ onDocumentReady(() => {
     refreshTable();
   });
 
-  // When the save and sync button at the top of the table is clicked, we need to update the form with the new zones data and submit the form. We want to map the zones array to a new array that has the editable fields in it, the way the JSON would look if we were editing it manually.
+  // When the save and sync button at the top of the table is clicked, we need to update
+  // the form with the new zones data and submit the form. We want to map the zones array
+  // to a new array that has the editable fields in it, the way the JSON would look if we
+  // were editing it manually.
   on('click', '.js-save-and-sync-button', () => {
     const form = document.getElementById('zonesForm') as HTMLFormElement;
     const zonesInput = form.querySelector('input[name="zones"]') as HTMLInputElement;
@@ -674,7 +714,8 @@ onDocumentReady(() => {
                   ? null
                   : question.tries_per_variant,
             };
-            // We want to filter out any question attributes that do not have any values and then add them to the zone questions array.
+            // We want to filter out any question attributes that do not have any values
+            // and then add them to the zone questions array.
             return Object.fromEntries(
               Object.entries(questionData).filter(([_, value]) => value && value !== 0),
             );
@@ -684,7 +725,8 @@ onDocumentReady(() => {
           bestQuestions: zone.bestQuestions,
           title: zone.title,
         };
-        // We want to filter out any zone attributes that do not have any values and then add the zone to the map.
+        // We want to filter out any zone attributes that do not have any values and
+        // then add the zone to the map.
         return Object.fromEntries(
           Object.entries(resolvedZone).filter(([_, value]) => value !== null),
         );

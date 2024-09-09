@@ -177,7 +177,7 @@ export function EditQuestionModal({
         data-dismiss="modal"
         ${newQuestion ? 'disabled' : ''}
       >
-        ${newQuestion ? 'Add Question' : 'Update Question'}
+        ${newQuestion ? 'Add question' : 'Update question'}
       </button>
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
     `,

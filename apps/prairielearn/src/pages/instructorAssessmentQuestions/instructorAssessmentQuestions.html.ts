@@ -86,13 +86,12 @@ export function InstructorAssessmentQuestions({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions</h1>
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions
               ${resLocals.authz_data.has_course_instance_permission_edit &&
               assessmentQuestionEditorEnabled
                 ? html`
                     <div class="ml-auto">
                       <button class="btn btn-sm btn-light js-enable-edit-button">
-                        <i class="fa fa-edit" aria-hidden="true"></i> Edit Assessment Questions
+                        <i class="fa fa-edit" aria-hidden="true"></i> Edit assessment questions
                       </button>
                       <span class="js-edit-mode-buttons" style="display: none">
                         <button class="btn btn-sm btn-light js-save-and-sync-button" type="button">
@@ -116,12 +115,10 @@ export function InstructorAssessmentQuestions({
                 resLocals.authz_data.has_course_instance_permission_edit,
             })}
             <div class="card-footer">
-              <p>
-                For more information on question settings, see the
-                <a href="https://prairielearn.readthedocs.io/en/latest/assessment/" target="_blank"
-                  >documentation</a
-                >.
-              </p>
+              For more information on question settings, see the
+              <a href="https://prairielearn.readthedocs.io/en/latest/assessment/" target="_blank"
+                >documentation</a
+              >.
             </div>
           </div>
         </main>

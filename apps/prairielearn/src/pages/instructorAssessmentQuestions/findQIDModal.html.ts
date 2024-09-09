@@ -11,6 +11,7 @@ export function FindQIDModal({
   urlPrefix,
   plainUrlPrefix,
   csrfToken,
+  currentQid,
 }) {
   return Modal({
     id: 'findQIDModal',
@@ -27,6 +28,7 @@ export function FindQIDModal({
         plainUrlPrefix,
         __csrf_token: csrfToken,
         showCheckboxes: true,
+        currentQid,
       })}
     </div>`,
     footer: html` <button
@@ -35,8 +37,15 @@ export function FindQIDModal({
         id="confirmFindQIDButton"
         data-dismiss="modal"
       >
-        Add Selected Question
+        Add selected question
       </button>
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>`,
+      <button
+        type="button"
+        class="btn btn-secondary"
+        data-target="#editQuestionModal"
+        data-toggle="modal"
+      >
+        Cancel
+      </button>`,
   });
 }

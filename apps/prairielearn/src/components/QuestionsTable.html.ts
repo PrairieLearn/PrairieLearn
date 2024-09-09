@@ -35,6 +35,7 @@ export function QuestionsTable({
   plainUrlPrefix,
   __csrf_token,
   showCheckboxes,
+  currentQid,
 }: {
   questions: QuestionsPageDataAnsified[];
   showAddQuestionButton?: boolean;
@@ -47,6 +48,7 @@ export function QuestionsTable({
   plainUrlPrefix: string;
   __csrf_token: string;
   showCheckboxes?: boolean;
+  currentQid?: string;
 }): HtmlSafeString {
   const has_legacy_questions = questions.some((row) => row.display_type !== 'v3');
   const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);
@@ -59,6 +61,7 @@ export function QuestionsTable({
         qidPrefix,
         urlPrefix,
         plainUrlPrefix,
+        currentQid,
       },
       'questions-table-data',
     )}
@@ -103,6 +106,7 @@ export function QuestionsTable({
                   data-switchable="true"
                   data-radio="true"
                   data-value="qid"
+                  data-formatter="radioFormatter"
                 >
                   Select
                 </th>`

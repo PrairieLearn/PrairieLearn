@@ -10,13 +10,14 @@ import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
 
 onDocumentReady(() => {
-  const {
+  let {
     course_instance_ids,
     showAddQuestionButton,
     showAiGenerateQuestionButton,
     qidPrefix,
     urlPrefix,
     plainUrlPrefix,
+    currentQid,
   } = decodeData('questions-table-data');
   window.topicList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
@@ -41,6 +42,10 @@ onDocumentReady(() => {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.display_type));
   };
+
+  window.radioFormatter = function (radio, question) {
+    return question.qid === currentQid;
+  }
 
   window.qidFormatter = function (qid, question) {
     var text = '';
@@ -80,8 +85,8 @@ onDocumentReady(() => {
       text += html`<a
         class="badge badge-pill badge-danger ml-1"
         href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
-          question.qid,
-        )}"
+        question.qid,
+      )}"
         >${question.open_issue_count}</a
       >`;
     }
@@ -185,6 +190,10 @@ onDocumentReady(() => {
         },
       },
     },
+
+    onCheck(row) {
+      currentQid = row.qid;
+    }
   };
 
   if (showAddQuestionButton) {

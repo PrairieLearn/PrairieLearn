@@ -14,6 +14,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
@@ -98,6 +99,7 @@ router.get(
         urlPrefix: res.locals.urlPrefix,
         plainUrlPrefix: res.locals.plainUrlPrefix,
         csrfToken: res.locals.csrfToken,
+        currentQid: req.query.currentqid,
       }).toString(),
     );
   }),
@@ -124,8 +126,9 @@ router.post(
       );
       const paths = getPaths(undefined, res.locals);
       const assessmentInfo = JSON.parse(await fs.readFile(assessmentPath, 'utf8'));
-      const origHash = req.body.__orig_hash;
       assessmentInfo.zones = JSON.parse(req.body.zones);
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
+
       const editor = new FileModifyEditor({
         locals: res.locals,
         container: {
@@ -133,14 +136,14 @@ router.post(
           invalidRootPaths: paths.invalidRootPaths,
         },
         filePath: assessmentPath,
-        editContents: b64EncodeUnicode(JSON.stringify(assessmentInfo, null, 2)),
-        origHash,
+        editContents: b64EncodeUnicode(formattedJson),
+        origHash: req.body.__orig_hash,
       });
 
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-        flash('success', 'Assessment access rules updated successfully');
+        flash('success', 'Assessment questions updated successfully');
         return res.redirect(req.originalUrl);
       } catch (err) {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
