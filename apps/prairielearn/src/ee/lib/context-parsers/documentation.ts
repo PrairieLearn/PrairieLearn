@@ -116,7 +116,18 @@ function cleanElementSections(elementSections: ElementSection[]) {
         }
         node.depth -= 1;
       }
+      return node;
+    });
+    return section;
+  });
 
+  // Remove deprecated elements.
+  return elementSections.filter((section) => !DEPRECATED_ELEMENTS.has(section.elementName));
+}
+
+function writeOutTables(elementSections: ElementSection[]) {
+  elementSections.forEach((section) => {
+    section.content.forEach((node) => {
       if (node.type === 'table') {
         const firstRow = node.children[0];
         if (
@@ -153,15 +164,13 @@ function cleanElementSections(elementSections: ElementSection[]) {
     });
     return section;
   });
-
-  // Remove deprecated elements.
-  return elementSections.filter((section) => !DEPRECATED_ELEMENTS.has(section.elementName));
+  return elementSections;
 }
 
 export async function buildContextForElementDocs(rawMarkdown: string): Promise<DocumentChunk[]> {
   const file = unified().use(remarkParse).use(remarkGfm).parse(rawMarkdown);
 
-  const elementSections = cleanElementSections(extractElementSections(file));
+  const elementSections = writeOutTables(cleanElementSections(extractElementSections(file)));
 
   const contexts = elementSections.map((section) => {
     section.content.unshift({
