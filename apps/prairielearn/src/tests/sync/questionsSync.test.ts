@@ -108,7 +108,7 @@ describe('Question syncing', () => {
     let syncedTopic = syncedTopics.find((topic) => topic.name === missingTopicName);
     assert.isOk(syncedTopic);
     assert.isTrue(syncedTopic.implicit);
-    assert.isNotEmpty(syncedTopic?.description, 'tag should not have empty description');
+    assert.isNotEmpty(syncedTopic?.description, 'topic should not have empty description');
 
     // Subsequent syncs with the same data should succeed as well
     await util.overwriteAndSyncCourseData(courseData, courseDir);
