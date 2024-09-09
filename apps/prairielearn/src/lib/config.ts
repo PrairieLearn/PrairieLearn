@@ -545,6 +545,7 @@ const ConfigSchema = z.object({
   pyroscopeServerAddress: z.string().nullable().default(null),
   pyroscopeBasicAuthUser: z.string().nullable().default(null),
   pyroscopeBasicAuthPassword: z.string().nullable().default(null),
+  pyroscopeTags: z.record(z.string(), z.string()).default({}),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

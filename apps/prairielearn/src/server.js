@@ -2378,6 +2378,7 @@ if (esMain(import.meta) && config.startServer) {
             basicAuthPassword: config.pyroscopeBasicAuthPassword,
             tags: {
               instanceId: config.instanceId,
+              ...config.pyroscopeTags,
             },
           });
           Pyroscope.start();
