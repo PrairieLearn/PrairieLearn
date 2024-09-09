@@ -14,6 +14,7 @@ import * as path from 'node:path';
 import * as util from 'node:util';
 import * as url from 'url';
 
+import Pyroscope from '@pyroscope/nodejs';
 import * as async from 'async';
 import blocked from 'blocked';
 import blockedAt from 'blocked-at';
@@ -2352,6 +2353,22 @@ if (esMain(import.meta) && config.startServer) {
               return event;
             },
           });
+        }
+
+        // Start capturing profiling information as soon as possible.
+        if (config.pyroscopeEnabled) {
+          const Pyroscope = await import('@pyroscope/nodejs');
+          Pyroscope.init({
+            appName: 'prairielearn',
+            serverAddress: config.pyroscopeServerAddress,
+            basicAuthUser: config.pyroscopeBasicAuthUser,
+            basicAuthPassword: config.pyroscopeBasicAuthPassword,
+            tags: {
+              instanceId: config.instanceId,
+            },
+          });
+          Pyroscope.start();
+          console.log('starting pyroscope');
         }
 
         if (config.logFilename) {

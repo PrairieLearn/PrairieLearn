@@ -541,6 +541,10 @@ const ConfigSchema = z.object({
   openAiApiKey: z.string().nullable().default(null),
   openAiOrganization: z.string().nullable().default(null),
   requireTermsAcceptance: z.boolean().default(false),
+  pyroscopeEnabled: z.boolean().default(false),
+  pyroscopeServerAddress: z.string().nullable().default(null),
+  pyroscopeBasicAuthUser: z.string().nullable().default(null),
+  pyroscopeBasicAuthPassword: z.string().nullable().default(null),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
