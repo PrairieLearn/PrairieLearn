@@ -1,3 +1,5 @@
+import async from 'async';
+
 import * as namedLocks from '@prairielearn/named-locks';
 
 import { chalk, chalkDim } from '../lib/chalk.js';
@@ -14,11 +16,6 @@ import * as syncCourseInstances from './fromDisk/courseInstances.js';
 import * as syncQuestions from './fromDisk/questions.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
-import { makePerformance } from './performance.js';
-
-const perf = makePerformance('sync');
-
-// Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
 export interface SyncResults {
   hadJsonErrors: boolean;
@@ -37,35 +34,56 @@ export async function syncDiskToSqlWithLock(
   courseDir: string,
   logger: Logger,
 ): Promise<SyncResults> {
-  logger.info('Loading info.json files from course repository');
-  perf.start('sync');
+  async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
+    const start = performance.now();
 
-  const courseData = await perf.timed('loadCourseData', () =>
+    const result = await fn();
+
+    const duration = performance.now() - start;
+    logger.verbose(`${label} in ${duration.toFixed(2)}ms`);
+
+    return result;
+  }
+
+  logger.info('Loading info.json files from course repository');
+
+  const courseData = await timed('Loaded course data from disk', () =>
     courseDB.loadFullCourse(courseId, courseDir),
   );
-  logger.info('Syncing info to database');
-  await perf.timed('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
-  const courseInstanceIds = await perf.timed('syncCourseInstances', () =>
-    syncCourseInstances.sync(courseId, courseData),
-  );
-  await perf.timed('syncTopics', () => syncTopics.sync(courseId, courseData));
-  const questionIds = await perf.timed('syncQuestions', () =>
-    syncQuestions.sync(courseId, courseData),
-  );
 
-  await perf.timed('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
-  await perf.timed('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
-  await perf.timed('syncAssessmentModules', () => syncAssessmentModules.sync(courseId, courseData));
-  perf.start('syncAssessments');
-  await Promise.all(
-    Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
-      const courseInstanceId = courseInstanceIds[ciid];
-      await perf.timed(`syncAssessments${ciid}`, () =>
-        syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
+  logger.info('Syncing info to database');
+
+  await timed('Synced all course data', async () => {
+    await timed('Synced course info', () => syncCourseInfo.sync(courseData, courseId));
+    const courseInstanceIds = await timed('Synced course instances', () =>
+      syncCourseInstances.sync(courseId, courseData),
+    );
+    await timed('Synced topics', () => syncTopics.sync(courseId, courseData));
+    const questionIds = await timed('Synced questions', () =>
+      syncQuestions.sync(courseId, courseData),
+    );
+
+    await timed('Synced tags', () => syncTags.sync(courseId, courseData, questionIds));
+    await timed('Synced assessment sets', () => syncAssessmentSets.sync(courseId, courseData));
+    await timed('Synced assessment modules', () =>
+      syncAssessmentModules.sync(courseId, courseData),
+    );
+    await timed('Synced all assessments', async () => {
+      // Ensure that a single course with a ton of course instances can't
+      // monopolize the database connection pool.
+      await async.eachLimit(
+        Object.entries(courseData.courseInstances),
+        3,
+        async ([ciid, courseInstanceData]) => {
+          const courseInstanceId = courseInstanceIds[ciid];
+          await timed(`Synced assessments for ${ciid}`, () =>
+            syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
+          );
+        },
       );
-    }),
-  );
-  perf.end('syncAssessments');
+    });
+  });
+
   if (config.devMode) {
     logger.info('Flushing course element and extensions cache...');
     flushElementCache();
@@ -90,7 +108,6 @@ export async function syncDiskToSqlWithLock(
     logger.info(line || ''),
   );
 
-  perf.end('sync');
   return {
     hadJsonErrors: courseDataHasErrors,
     hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
