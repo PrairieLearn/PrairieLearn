@@ -166,7 +166,6 @@ router.post(
 
       serverJob.executeInBackground(async (job) => {
         await syncLineitems(instance, job);
-        job.info('Adding students to PrairieLearn');
       });
       return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else if (req.body.__action === 'unlink_assessment') {
@@ -274,14 +273,17 @@ router.post(
         throw new Error('Invalid assessment.id');
       }
 
-      await updateLti13Scores(assessment.id);
+      serverJobOptions.description = 'LTI 1.3 send assessment grades to LMS';
+      const serverJob = await createServerJob(serverJobOptions);
 
-      await queryAsync(sql.update_lti13_assessment_last_activity, {
-        assessment_id: assessment.id,
+      serverJob.executeInBackground(async (job) => {
+        await updateLti13Scores(assessment.id, instance, job);
+
+        await queryAsync(sql.update_lti13_assessment_last_activity, {
+          assessment_id: assessment.id,
+        });
       });
-
-      flash('notice', `Sending grades in the background for ${assessment.title}`);
-      return res.redirect(req.originalUrl);
+      return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
     }

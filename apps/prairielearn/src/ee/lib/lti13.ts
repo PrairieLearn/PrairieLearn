@@ -23,6 +23,7 @@ import {
   Lti13InstanceSchema,
   Lti13CourseInstanceSchema,
   AssessmentSchema,
+  UserSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { ServerJob } from '../../lib/server-jobs.js';
@@ -623,7 +624,63 @@ export const Lti13ScoreSchema = z.object({
 });
 export type Lti13Score = z.infer<typeof Lti13ScoreSchema>;
 
-export async function updateLti13Scores(assessment_id: string | number) {
+const UsersWithLti13SubSchema = UserSchema.extend({
+  lti13_sub: z.string().nullable(),
+});
+type UsersWithLti13Sub = z.infer<typeof UsersWithLti13SubSchema>;
+
+/*
+    {
+      status: 'Active',
+      name: 'Harry Potter',
+      picture: 'http://canvas.instructure.com/images/messages/avatar-50.png',
+      given_name: 'Harry',
+      family_name: 'Potter',
+      email: 'potter@example.com',
+      lis_person_sourcedid: '2000',
+      user_id: '8da76658-3726-4c03-b117-503697e2bd0f',
+      lti11_legacy_user_id: '3855b23dac0e1d4aaa0d23ea532bce3abfd7cec2',
+      roles: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'],
+    }
+    */
+
+const ContextMembership = z.object({
+  user_id: z.string(),
+  roles: z.string().array(), // https://www.imsglobal.org/spec/lti/v1p3#role-vocabularies
+  status: z.enum(['Active', 'Inactive']).optional(),
+});
+
+export async function updateLti13Scores(
+  assessment_id: string | number,
+  instance: Lti13CombinedInstance,
+  job: ServerJob,
+) {
+  const memberships = null;
+  const userSubCache = {};
+
+  // Get the assessment metadata
+  const assessment = await queryRow(
+    sql.select_assessment_with_lti13_course_instance_id,
+    {
+      assessment_id,
+      lti13_instance_id: instance.lti13_instance.id,
+    },
+    AssessmentSchema.extend({
+      lti13_lineitem_id_url: z.string(),
+      lti13_instance_id: z.string(),
+      context_memberships_url: z.string(),
+    }),
+  );
+
+  if (assessment === null) {
+    throw new Error('Invalid assessment.id');
+  }
+
+  console.log(assessment);
+  job.info(`Sending grade data for ${assessment.tid} ${assessment.title}`);
+
+  const token = await getAccessToken(instance.lti13_instance.id);
+
   const assessment_instances = await queryRows(
     sql.select_assessment_instances_for_scores,
     {
@@ -632,24 +689,16 @@ export async function updateLti13Scores(assessment_id: string | number) {
     AssessmentInstanceSchema.extend({
       score_perc: z.number(), // not .nullable() from SQL query
       date: DateFromISOString, // not .nullable() from SQL query
-      lti13_user_sub: z.string().nullable(),
-      group_user_subs: z.array(z.string()),
-      lti13_lineitem_id_url: z.string(),
-      lti13_instance_id: z.string(),
+      users: UsersWithLti13SubSchema.array(),
     }),
   );
 
   for (const assessment_instance of assessment_instances) {
-    const token = await getAccessToken(assessment_instance.lti13_instance_id);
+    for (const user of assessment_instance.users) {
+      job.info(`ai=${assessment_instance.id}, ${assessment_instance.score_perc}% for ${user.name}`);
 
-    let userList: string[];
-    if (assessment_instance.group_id === null && assessment_instance.lti13_user_sub !== null) {
-      userList = [assessment_instance.lti13_user_sub];
-    } else {
-      userList = assessment_instance.group_user_subs;
-    }
+      const userId = await lookupSub(user, memberships, instance, userSubCache);
 
-    for (const userId of userList) {
       // https://canvas.instructure.com/doc/api/score.html#method.lti/ims/scores.create
       const score: Lti13Score = {
         timestamp: assessment_instance.modified_at,
@@ -661,7 +710,10 @@ export async function updateLti13Scores(assessment_id: string | number) {
         userId,
       };
 
-      await fetchRetry(assessment_instance.lti13_lineitem_id_url + '/scores', {
+      job.info(JSON.stringify(score, null, 2));
+      continue;
+
+      await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -671,4 +723,51 @@ export async function updateLti13Scores(assessment_id: string | number) {
       });
     }
   }
+}
+
+async function lookupSub(
+  user: UsersWithLti13Sub,
+  memberships: Record<string, any>[] | null,
+  instance: Lti13CombinedInstance,
+  cache: Record<string, string>,
+) {
+  if (user.lti13_sub !== null) {
+    return user.lti13_sub;
+  }
+  if (user.user_id in cache) {
+    return cache[user.user_id];
+  }
+  if (memberships === null) {
+    // Fetch the instances if you need them
+    if (instance.lti13_course_instance.context_memberships_url === null) {
+      return null;
+    }
+
+    const token = await getAccessToken(instance.lti13_instance.id);
+    const ltiMemberships = await fetchRetry(
+      instance.lti13_course_instance.context_memberships_url,
+      {
+        method: 'GET',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-type': 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+        },
+      },
+    );
+
+    memberships = ltiMemberships.members;
+  }
+
+  for (const match of ['uid', 'email']) {
+    console.log(`Checking against ${match}`);
+
+    const member = memberships?.find((m) => m.email === user[match]);
+    if (member?.user_id) {
+      cache[user.user_id] = member.user_id; // cache[user.user_id] = lti13_sub
+      return member.user_id;
+    }
+  }
+
+  // Failthrough case
+  return null;
 }

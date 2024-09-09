@@ -98,31 +98,33 @@ WHERE
 -- BLOCK select_assessment_instances_for_scores
 SELECT
   ai.*,
-  lu.sub AS lti13_user_sub,
-  la.lineitem_id_url AS lti13_lineitem_id_url,
-  lti13_course_instances.lti13_instance_id,
-  (
-    SELECT
-      COALESCE(array_agg(sub), '{}')
-    FROM
-      group_users
-      JOIN lti13_users ON (lti13_users.user_id = group_users.user_id)
-    WHERE
-      group_users.group_id = ai.group_id
-  ) AS group_user_subs
+  CASE
+    WHEN a.group_work
+    AND ai.group_id IS NOT NULL THEN (
+      SELECT
+        jsonb_agg(
+          to_jsonb(users) || jsonb_build_object('lti13_sub', lti13_users.sub)
+        )
+      FROM
+        group_users
+        JOIN users ON (group_users.user_id = users.user_id)
+        LEFT JOIN lti13_users ON (lti13_users.user_id = group_users.user_id)
+      WHERE
+        group_users.group_id = ai.group_id
+    )
+    ELSE jsonb_build_array(
+      to_jsonb(u) || jsonb_build_object('lti13_sub', lu.sub)
+    )
+  END AS users
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
-  JOIN lti13_assessments AS la ON (la.assessment_id = a.id)
-  JOIN lti13_course_instances ON (
-    lti13_course_instances.id = la.lti13_course_instance_id
-  )
+  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
   LEFT JOIN lti13_users AS lu ON (lu.user_id = ai.user_id)
-  LEFT JOIN group_users AS gu ON (gu.group_id = ai.group_id)
 WHERE
   ai.assessment_id = $assessment_id
   AND ai.score_perc IS NOT NULL
-  AND date IS NOT NULL;
+  AND ai.date IS NOT NULL;
 
 -- BLOCK upsert_lti13_users
 INSERT INTO
@@ -143,12 +145,17 @@ SET
 
 -- BLOCK select_assessment_with_lti13_course_instance_id
 SELECT
-  a.*
+  a.*,
+  la.lineitem_id_url AS lti13_lineitem_id_url,
+  lti13_course_instances.lti13_instance_id,
+  lti13_course_instances.context_memberships_url
 FROM
   assessments AS a
-  JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN lti13_course_instances AS lti13ci ON (lti13ci.course_instance_id = ci.id)
+  JOIN lti13_assessments AS la ON (la.assessment_id = a.id)
+  JOIN lti13_course_instances ON (
+    lti13_course_instances.id = la.lti13_course_instance_id
+  )
 WHERE
   a.id = $assessment_id
-  AND a.deleted_at IS NULL
-  AND lti13ci.id = $lti13_course_instance_id;
+  AND lti13_course_instances.lti13_instance_id = $lti13_instance_id
+  AND a.deleted_at IS NULL;
