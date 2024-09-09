@@ -10,11 +10,11 @@ import * as Sentry from '@prairielearn/sentry';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import * as util from 'node:util';
 import * as url from 'url';
 
-import Pyroscope from '@pyroscope/nodejs';
 import * as async from 'async';
 import blocked from 'blocked';
 import blockedAt from 'blocked-at';
@@ -2357,7 +2357,20 @@ if (esMain(import.meta) && config.startServer) {
 
         // Start capturing profiling information as soon as possible.
         if (config.pyroscopeEnabled) {
-          const Pyroscope = await import('@pyroscope/nodejs');
+          // Despite the fact that Pyroscope publishes itself as a dual CJS/ESM module,
+          // the ESM distribution is currently broken:
+          // https://github.com/grafana/pyroscope-nodejs/issues/32
+          //
+          // There are a few WIP PRs to fix this:
+          // https://github.com/grafana/pyroscope-nodejs/pull/89
+          // https://github.com/grafana/pyroscope-nodejs/pull/94
+          //
+          // Until this is fixed, we'll use `createRequire` to load the module as CJS.
+          //
+          // Pyroscope relies on global state. If you intend to use the Pyroscope API
+          // in other files, you MUST load it as a CJS module.
+          const require = createRequire(import.meta.url);
+          const Pyroscope = require('@pyroscope/nodejs');
           Pyroscope.init({
             appName: 'prairielearn',
             serverAddress: config.pyroscopeServerAddress,
@@ -2368,7 +2381,6 @@ if (esMain(import.meta) && config.startServer) {
             },
           });
           Pyroscope.start();
-          console.log('starting pyroscope');
         }
 
         if (config.logFilename) {
