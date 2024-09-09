@@ -36,8 +36,7 @@ export function InstructorAssessmentQuestions({
         ${compiledScriptTag('instructorAssessmentQuestionsClient.ts')}
       </head>
       <body>
-        ${EncodedData(questions, 'assessment-questions-data')}
-        ${Navbar({ resLocals })}
+        ${EncodedData(questions, 'assessment-questions-data')} ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${Modal({
             id: 'resetQuestionVariantsModal',

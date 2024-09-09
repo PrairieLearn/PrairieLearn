@@ -193,7 +193,7 @@ onDocumentReady(() => {
 
     onCheck(row) {
       currentQid = row.qid;
-    }
+    },
 
     onResetView() {
       const searchInputs = document.querySelectorAll(
