@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
@@ -66,7 +67,6 @@ export function InstructorAssessmentQuestions({
       </head>
       <body>
         ${Navbar({ resLocals })}
-
         <main id="content" class="container-fluid">
           ${Modal({
             id: 'resetQuestionVariantsModal',
@@ -99,168 +99,18 @@ export function InstructorAssessmentQuestions({
             urlPrefix: resLocals.urlPrefix,
           })}
 
-          <div class="row">
-            <div class="col-2">
-              <ul class="nav flex-column">
-                <li class="nav-item">
-                  <a class="nav-link disabled" href="#">Questions</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link disabled" href="#">Staff</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link disabled" href="#">Issues</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link disabled" href="#">Sync</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link disabled" href="#">Course files</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link disabled" href="#">Course settings</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link disabled" href="#">Course instances</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link disabled" href="#"
-                    >Fall 2024 <i class="bi bi-caret-down-fill"></i
-                  ></a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" style="padding-left: 2em" href="#"
-                    ><strong>Assessments</strong></a
-                  >
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link disabled" style="padding-left: 2em" href="#">Gradebook</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link disabled" style="padding-left: 2em" href="#">Access</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link disabled" style="padding-left: 2em" href="#">Instance files</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link disabled" style="padding-left: 2em" href="#"
-                    >Instance settings</a
-                  >
-                </li>
-              </ul>
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+              <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions</h1>
             </div>
-            <div class="col-10">
-              <h4 class="my-3">
-                Fall 2024 &rarr; Assessments &rarr; Homework 1A
-                <i class="bi bi-caret-down-fill"></i>
-              </h4>
-              <nav>
-                <ul class="nav nav-tabs pl-nav-tabs-bar">
-                  <li class="nav-item">
-                    <a
-                      class="nav-link d-flex align-items-center text-secondary"
-                      href="/pl/course_instance/15/instructor/assessment/421/access"
-                    >
-                      <i class="mr-1 far fa-calendar-alt"></i>Access
-                    </a>
-                  </li>
-
-                  <li class="nav-item">
-                    <a
-                      class="nav-link d-flex align-items-center text-secondary"
-                      href="/pl/course_instance/15/instructor/assessment/421/downloads"
-                    >
-                      <i class="mr-1 fas fa-download"></i>Downloads
-                    </a>
-                  </li>
-
-                  <li class="nav-item">
-                    <a
-                      class="nav-link d-flex align-items-center text-secondary"
-                      href="/pl/course_instance/15/instructor/assessment/421/file_view"
-                    >
-                      <i class="mr-1 fa fa-edit"></i>Files
-                    </a>
-                  </li>
-
-                  <li class="nav-item">
-                    <a
-                      class="nav-link d-flex align-items-center text-secondary"
-                      href="/pl/course_instance/15/instructor/assessment/421/groups"
-                    >
-                      <i class="mr-1 fas fa-users"></i>Groups
-                    </a>
-                  </li>
-
-                  <li class="nav-item">
-                    <a
-                      class="nav-link d-flex align-items-center active text-dark"
-                      href="/pl/course_instance/15/instructor/assessment/421/questions"
-                    >
-                      <i class="mr-1 far fa-file-alt"></i>Questions
-                    </a>
-                  </li>
-
-                  <li class="nav-item">
-                    <a
-                      class="nav-link d-flex align-items-center text-secondary"
-                      href="/pl/course_instance/15/instructor/assessment/421/manual_grading"
-                    >
-                      <i class="mr-1 fas fa-marker"></i>Grading
-                    </a>
-                  </li>
-
-                  <li class="nav-item">
-                    <a
-                      class="nav-link d-flex align-items-center text-secondary"
-                      href="/pl/course_instance/15/instructor/assessment/421/settings"
-                    >
-                      <i class="mr-1 fas fa-cog"></i>Settings
-                    </a>
-                  </li>
-
-                  <li class="nav-item">
-                    <a
-                      class="nav-link d-flex align-items-center text-secondary"
-                      href="/pl/course_instance/15/instructor/assessment/421/assessment_statistics"
-                    >
-                      <i class="mr-1 fas fa-chart-bar"></i>Statistics
-                    </a>
-                  </li>
-
-                  <li class="nav-item">
-                    <a
-                      class="nav-link d-flex align-items-center text-secondary"
-                      href="/pl/course_instance/15/instructor/assessment/421/instances"
-                    >
-                      <i class="mr-1 fas fa-user-graduate"></i>Students
-                    </a>
-                  </li>
-
-                  <li class="nav-item">
-                    <a
-                      class="nav-link d-flex align-items-center text-secondary"
-                      href="/pl/course_instance/15/instructor/assessment/421/uploads"
-                    >
-                      <i class="mr-1 fas fa-upload"></i>Uploads
-                    </a>
-                  </li>
-                </ul>
-              </nav>
-
-              <div class="card mb-4 mt-2">
-                <div class="card-header bg-primary text-white d-flex align-items-center">
-                  <h1>Questions</h1>
-                </div>
-                ${AssessmentQuestionsTable({
-                  questions,
-                  assessmentType: resLocals.assessment.type,
-                  urlPrefix: resLocals.urlPrefix,
-                  hasCourseInstancePermissionEdit:
-                    resLocals.authz_data.has_course_instance_permission_edit,
-                })}
-              </div>
-            </div>
+            ${AssessmentQuestionsTable({
+              questions,
+              assessmentType: resLocals.assessment.type,
+              urlPrefix: resLocals.urlPrefix,
+              hasCoursePermissionPreview: resLocals.authz_data.has_course_permission_preview,
+              hasCourseInstancePermissionEdit:
+                resLocals.authz_data.has_course_instance_permission_edit,
+            })}
           </div>
         </main>
       </body>
@@ -272,11 +122,13 @@ function AssessmentQuestionsTable({
   questions,
   urlPrefix,
   assessmentType,
+  hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
 }: {
   questions: AssessmentQuestionRow[];
   assessmentType: string;
   urlPrefix: string;
+  hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
 }) {
   // If at least one question has a nonzero unlock score, display the Advance Score column
@@ -355,21 +207,30 @@ function AssessmentQuestionsTable({
                 : ''}
               <tr>
                 <td>
-                  <a href="${urlPrefix}/question/${question.question_id}/">
-                    ${question.alternative_group_size === 1
-                      ? `${question.alternative_group_number}.`
-                      : html`
-                          <span class="ml-3">
-                            ${question.alternative_group_number}.${question.number_in_alternative_group}.
-                          </span>
-                        `}
-                    ${question.title}
-                    ${IssueBadge({
+                  ${run(() => {
+                    const number =
+                      question.alternative_group_size === 1
+                        ? `${question.alternative_group_number}.`
+                        : html`
+                            <span class="ml-3">
+                              ${question.alternative_group_number}.${question.number_in_alternative_group}.
+                            </span>
+                          `;
+                    const issueBadge = IssueBadge({
                       urlPrefix,
                       count: question.open_issue_count ?? 0,
                       issueQid: question.qid,
-                    })}
-                  </a>
+                    });
+                    const title = html`${number} ${question.title} ${issueBadge}`;
+
+                    if (hasCoursePermissionPreview) {
+                      return html`<a href="${urlPrefix}/question/${question.question_id}/"
+                        >${title}</a
+                      >`;
+                    }
+
+                    return title;
+                  })}
                 </td>
                 <td>
                   ${question.sync_errors
