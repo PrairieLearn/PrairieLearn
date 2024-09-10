@@ -21,6 +21,7 @@ router.get(
     const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id);
     res.locals.course = await selectCourseById(courseId);
     res.locals.course_instance = await selectCourseInstanceById(res.locals.course_instance_id);
+    res.locals.urlPrefix = `/pl/public/course/${res.locals.course.id}`;
 
     try {
       const isPublic = await new Promise((resolve, reject) => {
@@ -44,7 +45,7 @@ router.get(
         throw new error.HttpStatusError(404, `Course instance not public.`);
       }
     } catch (err) {
-      console.error('Error checking if course instance is public', err); // TEST
+      console.error('Error checking if course instance is public', err);
       throw err;
     }
 
@@ -57,7 +58,7 @@ router.get(
       AssessmentRowSchema,
     );
 
-    const assessmentIdsNeedingStatsUpdate = rows.map((row) => row.id);
+    const assessmentIdsNeedingStatsUpdate = rows.map((row) => row.id); // TEST, remove? Not needed in this context, but InstructorAssessments expects it
 
     res.send(
       InstructorAssessments({

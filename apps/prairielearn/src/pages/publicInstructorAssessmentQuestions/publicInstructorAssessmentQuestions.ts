@@ -32,7 +32,7 @@ async function checkCourseInstancePublic(course_instance_id: string): Promise<bo
   const isPublic = await queryRow(
     sql.check_course_instance_is_public,
     { course_instance_id },
-    BooleanSchema, // Use the BooleanSchema to validate the boolean result
+    BooleanSchema,
   );
   return isPublic;
 }
@@ -44,7 +44,7 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const isCourseInstancePublic = await checkCourseInstancePublic(res.locals.course_instance_id); // TEST, req.params
+    const isCourseInstancePublic = await checkCourseInstancePublic(res.locals.course_instance_id);
     if (!isCourseInstancePublic) {
       throw new error.HttpStatusError(
         404,
@@ -52,11 +52,14 @@ router.get(
       );
     }
 
-    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString()); // TEST, req.params
-    const course = await selectCourseById(courseId); // TEST, req.params
+    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
+    const course = await selectCourseById(courseId);
 
-    res.locals.course = course; // TEST, req.params
-    res.locals.assessment = await selectAssessmentById(res.locals.assessment_id); // TEST, req.params
+
+
+    res.locals.course = course;
+    res.locals.urlPrefix = `/pl/public/course/${res.locals.course.id}`;
+    res.locals.assessment = await selectAssessmentById(res.locals.assessment_id);
     const questionRows = await queryRows(
       sql.questions,
       {

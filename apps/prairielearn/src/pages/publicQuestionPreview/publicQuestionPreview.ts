@@ -26,8 +26,8 @@ async function setLocals(req, res) {
   res.locals.authz_data = { user: res.locals.user };
   res.locals.course = await selectCourseById(req.params.course_id);
   res.locals.question = await selectQuestionById(req.params.question_id);
+  res.locals.urlPrefix = `/pl/public/course/${res.locals.course.id}`;
 
-  res.locals.urlPrefix = '/pl'; // TEST
 
   const disablePublicWorkspaces = await features.enabledFromLocals(
     'disable-public-workspaces',

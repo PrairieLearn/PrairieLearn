@@ -35,6 +35,8 @@ export function PublicQuestionPreview({ resLocals }: { resLocals: Record<string,
         ${unsafeHtml(resLocals.extraHeadersHtml)}
       </head>
       <body>
+        ${console.log(`resLocals.navSubPage = ${resLocals.navSubPage}`)}
+        ${console.log(`resLocals.navPage updated = ${resLocals.navPage}`)}
         ${Navbar({ resLocals })}
         <main id="content" class="container">
           <div class="row">
