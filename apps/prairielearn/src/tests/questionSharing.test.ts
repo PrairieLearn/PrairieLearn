@@ -135,10 +135,6 @@ describe('Question Sharing', function () {
       path.join(sharingCourseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'question.html'),
       '',
     );
-    await fs.writeFile(
-      path.join(sharingCourseOriginDir, 'questions', 'private', 'question.html'),
-      '',
-    );
     await commitAndCloneCourseFiles();
 
     const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir);
