@@ -162,7 +162,9 @@ function AdminInstitutionsCard({ adminInstitutions }: { adminInstitutions: Insti
 
   return html`
     <div class="card mb-4">
-      <div class="card-header bg-primary text-white">Institutions with admin access</div>
+      <div class="card-header bg-primary text-white">
+        <h2>Institutions with admin access</h2>
+      </div>
       <ul class="list-group list-group-flush">
         ${adminInstitutions.map(
           (institution) => html`
