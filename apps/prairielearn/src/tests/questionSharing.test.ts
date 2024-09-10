@@ -84,6 +84,22 @@ async function commitAndCloneCourseFiles() {
   });
 }
 
+async function syncSharingCourse(course_id) {
+  const syncUrl = `${baseUrl}/course/${course_id}/course_admin/syncs`;
+  const response = await fetchCheerio(syncUrl);
+
+  const token = response.$('#test_csrf_token').text();
+  await fetch(syncUrl, {
+    method: 'POST',
+    body: new URLSearchParams({
+      __action: 'pull',
+      __csrf_token: token,
+    }),
+  });
+  const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
+  return result.rows[0].id;
+}
+
 describe('Question Sharing', function () {
   this.timeout(80000);
   before('set up testing server', helperServer.before());
@@ -511,20 +527,7 @@ describe('Question Sharing', function () {
         course_repository: sharingCourseOriginDir,
       });
 
-      const syncUrl = `${baseUrl}/course/${sharingCourse.id}/course_admin/syncs`;
-      const response = await fetchCheerio(syncUrl);
-
-      const token = response.$('#test_csrf_token').text();
-      await fetch(syncUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'pull',
-          __csrf_token: token,
-        }),
-      });
-      const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
-      const job_sequence_id = result.rows[0].id;
-
+      const job_sequence_id = await syncSharingCourse(sharingCourse.id);
       await helperServer.waitForJobSequenceStatus(job_sequence_id, 'Success');
     });
 
@@ -537,19 +540,7 @@ describe('Question Sharing', function () {
 
       sharingCourse = await selectCourseById(sharingCourse.id);
 
-      const syncUrl = `${baseUrl}/course/${sharingCourse.id}/course_admin/syncs`;
-      const response = await fetchCheerio(syncUrl);
-      const token = response.$('#test_csrf_token').text();
-      await fetch(syncUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'pull',
-          __csrf_token: token,
-        }),
-      });
-      const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
-      const job_sequence_id = result.rows[0].id;
-
+      const job_sequence_id = await syncSharingCourse(sharingCourse.id);
       await helperServer.waitForJobSequenceStatus(job_sequence_id, 'Error');
 
       assert(
