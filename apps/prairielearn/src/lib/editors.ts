@@ -246,7 +246,7 @@ export abstract class Editor {
           );
           sharingSyncError = result.sharingSyncError;
           if (sharingSyncError) {
-            throw new Error('Invalid sharing operation, need to rever to last known good state.');
+            throw new Error('Invalid sharing operation, need to revert to last known good state.');
           }
           try {
             job.info('Push changes to remote git repository');
