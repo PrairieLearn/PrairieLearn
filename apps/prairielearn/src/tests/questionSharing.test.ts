@@ -68,20 +68,15 @@ async function accessSharedQuestionAssessment(course_id: string) {
 const baseDir = tmp.dirSync().name;
 const sharingCourseOriginDir = path.join(baseDir, 'courseOrigin');
 const sharingCourseLiveDir = path.join(baseDir, 'courseLive');
+const gitOptions = {
+  cwd: sharingCourseOriginDir,
+  env: process.env,
+};
 
 async function commitAndCloneCourseFiles() {
-  await execa('git', ['-c', 'init.defaultBranch=master', 'init'], {
-    cwd: sharingCourseOriginDir,
-    env: process.env,
-  });
-  await execa('git', ['add', '-A'], {
-    cwd: sharingCourseOriginDir,
-    env: process.env,
-  });
-  await execa('git', ['commit', '-m', 'initial commit'], {
-    cwd: sharingCourseOriginDir,
-    env: process.env,
-  });
+  await execa('git', ['-c', 'init.defaultBranch=master', 'init'], gitOptions);
+  await execa('git', ['add', '-A'], gitOptions);
+  await execa('git', ['commit', '-m', 'initial commit'], gitOptions);
   await execa('mkdir', [sharingCourseLiveDir]);
   await execa('git', ['clone', sharingCourseOriginDir, sharingCourseLiveDir], {
     cwd: '.',
@@ -510,7 +505,7 @@ describe('Question Sharing', function () {
       await fs.rename(questionTempPath, questionPath);
     });
 
-    step('Sync through the sync page to extablish hash.', async () => {
+    step('Sync through the sync page to extablish commit hash.', async () => {
       await sqldb.queryAsync(sql.update_course_repository, {
         course_path: sharingCourseLiveDir,
         course_repository: sharingCourseOriginDir,
@@ -537,14 +532,8 @@ describe('Question Sharing', function () {
       const questionPath = path.join(sharingCourseOriginDir, 'questions', SHARING_QUESTION_QID);
       const questionTempPath = questionPath + '_temp';
       await fs.rename(questionPath, questionTempPath);
-      await execa('git', ['add', '-A'], {
-        cwd: sharingCourseOriginDir,
-        env: process.env,
-      });
-      await execa('git', ['commit', '-m', 'rename shared question'], {
-        cwd: sharingCourseOriginDir,
-        env: process.env,
-      });
+      await execa('git', ['add', '-A'], gitOptions);
+      await execa('git', ['commit', '-m', 'rename shared question'], gitOptions);
 
       sharingCourse = await selectCourseById(sharingCourse.id);
 
@@ -579,10 +568,7 @@ describe('Question Sharing', function () {
       );
 
       // remove breaking change in origin repo
-      await execa('git', ['reset', '--hard', 'HEAD~1'], {
-        cwd: sharingCourseOriginDir,
-        env: process.env,
-      });
+      await execa('git', ['reset', '--hard', 'HEAD~1'], gitOptions);
     });
   });
 });
