@@ -79,7 +79,9 @@ describe('Question Sharing', function () {
   before('construct and sync course', async () => {
     const sharingCourseData = syncUtil.getCourseData();
     sharingCourseData.course.name = 'SHARING 101';
+    const privateQuestion = sharingCourseData.questions.private;
     sharingCourseData.questions = {
+      private: privateQuestion,
       [SHARING_QUESTION_QID]: {
         uuid: '00000000-0000-0000-0000-000000000000',
         type: 'v3',

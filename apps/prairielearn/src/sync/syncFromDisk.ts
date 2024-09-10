@@ -98,7 +98,6 @@ export async function syncDiskToSqlWithLock(
 
   await Promise.all(
     Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
-      console.log('Course instance data: ', courseInstanceData);
       const courseInstanceId = courseInstanceIds[ciid];
       await perf.timed(`syncAssessments${ciid}`, () =>
         syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),

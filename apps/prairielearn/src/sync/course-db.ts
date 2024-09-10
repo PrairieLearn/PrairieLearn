@@ -1435,8 +1435,6 @@ export async function loadAssessments(
     recursive: true,
   });
 
-  // console.log(assessments);
-
   checkDuplicateUUIDs(
     assessments,
     (uuid, ids) =>
