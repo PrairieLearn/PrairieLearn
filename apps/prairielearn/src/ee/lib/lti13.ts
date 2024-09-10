@@ -629,33 +629,21 @@ const UsersWithLti13SubSchema = UserSchema.extend({
 });
 type UsersWithLti13Sub = z.infer<typeof UsersWithLti13SubSchema>;
 
-/*
-    {
-      status: 'Active',
-      name: 'Harry Potter',
-      picture: 'http://canvas.instructure.com/images/messages/avatar-50.png',
-      given_name: 'Harry',
-      family_name: 'Potter',
-      email: 'potter@example.com',
-      lis_person_sourcedid: '2000',
-      user_id: '8da76658-3726-4c03-b117-503697e2bd0f',
-      lti11_legacy_user_id: '3855b23dac0e1d4aaa0d23ea532bce3abfd7cec2',
-      roles: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'],
-    }
-    */
-
-const ContextMembership = z.object({
+// https://www.imsglobal.org/spec/lti-nrps/v2p0/#sharing-of-personal-data
+const ContextMembershipSchema = z.object({
   user_id: z.string(),
   roles: z.string().array(), // https://www.imsglobal.org/spec/lti/v1p3#role-vocabularies
   status: z.enum(['Active', 'Inactive']).optional(),
+  email: z.string(), // optional per spec but required for us
 });
+type ContextMembership = z.infer<typeof ContextMembershipSchema>;
 
 export async function updateLti13Scores(
   assessment_id: string | number,
   instance: Lti13CombinedInstance,
   job: ServerJob,
 ) {
-  const memberships = null;
+  const memberships: ContextMembership[] | null = null;
   const userSubCache = {};
 
   // Get the assessment metadata
@@ -676,7 +664,6 @@ export async function updateLti13Scores(
     throw new Error('Invalid assessment.id');
   }
 
-  console.log(assessment);
   job.info(`Sending grade data for ${assessment.tid} ${assessment.title}`);
 
   const token = await getAccessToken(instance.lti13_instance.id);
@@ -698,6 +685,10 @@ export async function updateLti13Scores(
       job.info(`ai=${assessment_instance.id}, ${assessment_instance.score_perc}% for ${user.name}`);
 
       const userId = await lookupSub(user, memberships, instance, userSubCache);
+      if (userId === null) {
+        job.warn(`* Could not find LTI user information for ${user.name} ${user.uid}, skipping...`);
+        continue;
+      }
 
       // https://canvas.instructure.com/doc/api/score.html#method.lti/ims/scores.create
       const score: Lti13Score = {
@@ -709,9 +700,6 @@ export async function updateLti13Scores(
         gradingProgress: 'FullyGraded',
         userId,
       };
-
-      job.info(JSON.stringify(score, null, 2));
-      continue;
 
       await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
         method: 'POST',
@@ -727,7 +715,7 @@ export async function updateLti13Scores(
 
 async function lookupSub(
   user: UsersWithLti13Sub,
-  memberships: Record<string, any>[] | null,
+  memberships: ContextMembership[] | null,
   instance: Lti13CombinedInstance,
   cache: Record<string, string>,
 ) {
@@ -738,7 +726,6 @@ async function lookupSub(
     return cache[user.user_id];
   }
   if (memberships === null) {
-    // Fetch the instances if you need them
     if (instance.lti13_course_instance.context_memberships_url === null) {
       return null;
     }
@@ -755,15 +742,19 @@ async function lookupSub(
       },
     );
 
-    memberships = ltiMemberships.members;
+    memberships = ContextMembershipSchema.array().parse(ltiMemberships.members);
+  }
+
+  if (memberships === null) {
+    return null;
   }
 
   for (const match of ['uid', 'email']) {
-    console.log(`Checking against ${match}`);
-
-    const member = memberships?.find((m) => m.email === user[match]);
+    // Check for duplicate emails in database?
+    const member = memberships.find((m) => m.email === user[match]);
+    // member.user_id is what we call lti13_sub
     if (member?.user_id) {
-      cache[user.user_id] = member.user_id; // cache[user.user_id] = lti13_sub
+      cache[user.user_id] = member.user_id;
       return member.user_id;
     }
   }
