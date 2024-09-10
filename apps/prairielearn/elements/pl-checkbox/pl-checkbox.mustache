@@ -1,6 +1,6 @@
 {{#question}}
-{{#inline}}<span class="d-inline-block">{{/inline}}
-{{^inline}}<div class="d-block">{{/inline}}
+{{#inline}}<span class="d-inline-block" role="group" aria-label="Checkbox options">{{/inline}}
+{{^inline}}<fieldset class="d-block"><legend class="sr-only">Checkbox options</legend>{{/inline}}
 
 {{#answers}}
     <div class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1 gap-2">
@@ -46,7 +46,7 @@
 {{#incorrect}}&nbsp;<span class="badge badge-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 
 {{#inline}}</span>{{/inline}}
-{{^inline}}</div>{{/inline}}
+{{^inline}}</fieldset>{{/inline}}
 {{/question}}
 
 {{#format}}
