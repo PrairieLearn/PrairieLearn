@@ -39,7 +39,6 @@ async function update(locals: Record<string, any>) {
         return;
       }
       if (index !== config.courseDirs.length - 1) job.info('');
-      if (!syncResult) throw new Error('syncOrCreateDiskToSql() returned null');
       if (syncResult.hadJsonErrors) anyCourseHadJsonErrors = true;
       if (config.chunksGenerator) {
         const chunkChanges = await updateChunksForCourse({

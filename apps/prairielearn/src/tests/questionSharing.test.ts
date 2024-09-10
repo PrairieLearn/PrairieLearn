@@ -12,13 +12,14 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../lib/config.js';
 import { Course, IdSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
-import { selectCourseById } from '../models/course.js';
+import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import { makeMockLogger } from './mockLogger.js';
 import * as syncUtil from './sync/util.js';
+import { getCsrfToken } from './utils/csrf.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const { logger } = makeMockLogger();
@@ -40,9 +41,8 @@ function sharingPageUrl(courseId) {
 
 async function setSharingName(courseId: string, name: string) {
   const sharingUrl = sharingPageUrl(courseId);
-  const response = await fetchCheerio(sharingUrl);
+  const token = await getCsrfToken(sharingUrl);
 
-  const token = response.$('#test_csrf_token').text();
   return await fetch(sharingUrl, {
     method: 'POST',
     body: new URLSearchParams({
@@ -73,22 +73,10 @@ const gitOptions = {
   env: process.env,
 };
 
-async function commitAndCloneCourseFiles() {
-  await execa('git', ['-c', 'init.defaultBranch=master', 'init'], gitOptions);
-  await execa('git', ['add', '-A'], gitOptions);
-  await execa('git', ['commit', '-m', 'initial commit'], gitOptions);
-  await execa('mkdir', [sharingCourseLiveDir]);
-  await execa('git', ['clone', sharingCourseOriginDir, sharingCourseLiveDir], {
-    cwd: '.',
-    env: process.env,
-  });
-}
-
 async function syncSharingCourse(course_id) {
   const syncUrl = `${baseUrl}/course/${course_id}/course_admin/syncs`;
-  const response = await fetchCheerio(syncUrl);
+  const token = await getCsrfToken(syncUrl);
 
-  const token = response.$('#test_csrf_token').text();
   await fetch(syncUrl, {
     method: 'POST',
     body: new URLSearchParams({
@@ -146,8 +134,14 @@ describe('Question Sharing', function () {
       path.join(sharingCourseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'question.html'),
       '',
     );
-    await commitAndCloneCourseFiles();
-
+    await execa('git', ['-c', 'init.defaultBranch=master', 'init'], gitOptions);
+    await execa('git', ['add', '-A'], gitOptions);
+    await execa('git', ['commit', '-m', 'initial commit'], gitOptions);
+    await execa('mkdir', [sharingCourseLiveDir]);
+    await execa('git', ['clone', sharingCourseOriginDir, sharingCourseLiveDir], {
+      cwd: '.',
+      env: process.env,
+    });
     const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir);
     sharingCourse = await selectCourseById(syncResults.courseId);
 
@@ -505,7 +499,12 @@ describe('Question Sharing', function () {
       const questionPath = path.join(sharingCourse.path, 'questions', SHARING_QUESTION_QID);
       const questionTempPath = questionPath + '_temp';
       await fs.rename(questionPath, questionTempPath);
-      await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
+      const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
+      assert(
+        syncResult.sharingSyncError,
+        'sharingSyncError should be set when attempting sync after moving shared question',
+      );
+
       const question_id = await sqldb.queryOptionalRow(
         sql.get_question_id,
         {
@@ -521,7 +520,7 @@ describe('Question Sharing', function () {
       await fs.rename(questionTempPath, questionPath);
     });
 
-    step('Sync through the sync page to extablish commit hash.', async () => {
+    step('Ensure sync through sync page succeeds before renaming shared question', async () => {
       await sqldb.queryAsync(sql.update_course_repository, {
         course_path: sharingCourseLiveDir,
         course_repository: sharingCourseOriginDir,
@@ -538,13 +537,13 @@ describe('Question Sharing', function () {
       await execa('git', ['add', '-A'], gitOptions);
       await execa('git', ['commit', '-m', 'rename shared question'], gitOptions);
 
-      sharingCourse = await selectCourseById(sharingCourse.id);
+      const commitHash = await getCourseCommitHash(sharingCourseLiveDir);
 
       const job_sequence_id = await syncSharingCourse(sharingCourse.id);
       await helperServer.waitForJobSequenceStatus(job_sequence_id, 'Error');
 
       assert(
-        sharingCourse.commit_hash === (await selectCourseById(sharingCourse.id)).commit_hash,
+        commitHash === (await getCourseCommitHash(sharingCourseLiveDir)),
         'Commit hash of sharing course should not change when attempting to sync breaking change.',
       );
 
