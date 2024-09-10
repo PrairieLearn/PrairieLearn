@@ -1,3 +1,5 @@
+import async from 'async';
+
 import * as namedLocks from '@prairielearn/named-locks';
 
 import { chalk, chalkDim } from '../lib/chalk.js';
@@ -14,12 +16,7 @@ import * as syncCourseInstances from './fromDisk/courseInstances.js';
 import * as syncQuestions from './fromDisk/questions.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
-import { makePerformance } from './performance.js';
 import { getInvalidRenames } from './sharing.js';
-
-const perf = makePerformance('sync');
-
-// Performance data can be logged by setting the `PROFILE_SYNC` environment variable
 
 export interface SyncResults {
   sharingSyncError: boolean;
@@ -39,9 +36,7 @@ export async function validateCourseData(
   courseDir: string,
   logger: Logger,
 ): Promise<{ courseData: courseDB.CourseData; sharingSyncError: boolean }> {
-  const courseData = await perf.timed('loadCourseData', () =>
-    courseDB.loadFullCourse(courseId, courseDir),
-  );
+  const courseData = await courseDB.loadFullCourse(courseId, courseDir);
 
   if (config.checkSharingOnSync) {
     // TODO: also check if questions were un-shared in the JSON or if any
@@ -53,7 +48,6 @@ export async function validateCourseData(
           `✖ Course sync completely failed. The following questions are shared and cannot be renamed/deleted: ${invalidRenames.join(', ')}`,
         ),
       );
-      perf.end('sync');
       return {
         courseData,
         sharingSyncError: true,
@@ -69,12 +63,23 @@ export async function syncDiskToSqlWithLock(
   courseDir: string,
   logger: Logger,
 ): Promise<SyncResults> {
-  logger.info('Loading info.json files from course repository');
-  perf.start('sync');
+  async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
+    const start = performance.now();
 
-  const { courseData, sharingSyncError } = await validateCourseData(courseId, courseDir, logger);
+    const result = await fn();
+
+    const duration = performance.now() - start;
+    logger.verbose(`${label} in ${duration.toFixed(2)}ms`);
+
+    return result;
+  }
+
+  logger.info('Loading info.json files from course repository');
+
+  const { courseData, sharingSyncError } = await timed('Loaded course data from disk', () =>
+    validateCourseData(courseId, courseDir, logger),
+  );
   if (sharingSyncError) {
-    perf.end('sync');
     const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
     const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
     return {
@@ -87,28 +92,38 @@ export async function syncDiskToSqlWithLock(
   }
 
   logger.info('Syncing info to database');
-  await perf.timed('syncCourseInfo', () => syncCourseInfo.sync(courseData, courseId));
-  const courseInstanceIds = await perf.timed('syncCourseInstances', () =>
-    syncCourseInstances.sync(courseId, courseData),
-  );
-  await perf.timed('syncTopics', () => syncTopics.sync(courseId, courseData));
-  const questionIds = await perf.timed('syncQuestions', () =>
-    syncQuestions.sync(courseId, courseData),
-  );
 
-  await perf.timed('syncTags', () => syncTags.sync(courseId, courseData, questionIds));
-  await perf.timed('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
-  await perf.timed('syncAssessmentModules', () => syncAssessmentModules.sync(courseId, courseData));
-  perf.start('syncAssessments');
-  await Promise.all(
-    Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
-      const courseInstanceId = courseInstanceIds[ciid];
-      await perf.timed(`syncAssessments${ciid}`, () =>
-        syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
+  await timed('Synced all course data', async () => {
+    await timed('Synced course info', () => syncCourseInfo.sync(courseData, courseId));
+    const courseInstanceIds = await timed('Synced course instances', () =>
+      syncCourseInstances.sync(courseId, courseData),
+    );
+    await timed('Synced topics', () => syncTopics.sync(courseId, courseData));
+    const questionIds = await timed('Synced questions', () =>
+      syncQuestions.sync(courseId, courseData),
+    );
+
+    await timed('Synced tags', () => syncTags.sync(courseId, courseData, questionIds));
+    await timed('Synced assessment sets', () => syncAssessmentSets.sync(courseId, courseData));
+    await timed('Synced assessment modules', () =>
+      syncAssessmentModules.sync(courseId, courseData),
+    );
+    await timed('Synced all assessments', async () => {
+      // Ensure that a single course with a ton of course instances can't
+      // monopolize the database connection pool.
+      await async.eachLimit(
+        Object.entries(courseData.courseInstances),
+        3,
+        async ([ciid, courseInstanceData]) => {
+          const courseInstanceId = courseInstanceIds[ciid];
+          await timed(`Synced assessments for ${ciid}`, () =>
+            syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
+          );
+        },
       );
-    }),
-  );
-  perf.end('syncAssessments');
+    });
+  });
+
   if (config.devMode) {
     logger.info('Flushing course element and extensions cache...');
     flushElementCache();
@@ -133,7 +148,6 @@ export async function syncDiskToSqlWithLock(
     logger.info(line || ''),
   );
 
-  perf.end('sync');
   return {
     sharingSyncError: false,
     hadJsonErrors: courseDataHasErrors,
