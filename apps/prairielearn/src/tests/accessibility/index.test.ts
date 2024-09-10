@@ -1,22 +1,18 @@
-// The OpenTelemetry instrumentation for Express breaks our ability to inspect
-// the Express routes. We need to disable it before loading the server.
-import { disableInstrumentations } from '@prairielearn/opentelemetry';
-disableInstrumentations();
-
-import { test } from 'mocha';
-import axe = require('axe-core');
-import { JSDOM } from 'jsdom';
-import fetch from 'node-fetch';
 import { A11yError } from '@sa11y/format';
-import expressListEndpoints = require('express-list-endpoints');
+import axe from 'axe-core';
+import expressListEndpoints from 'express-list-endpoints';
+import { JSDOM } from 'jsdom';
+import { test } from 'mocha';
+import fetch from 'node-fetch';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import * as server from '../../server';
-import * as news_items from '../../news_items';
-import { config } from '../../lib/config';
-import * as helperServer from '../helperServer';
-import { features } from '../../lib/features/index';
-import { EXAMPLE_COURSE_PATH } from '../../lib/paths';
+import { config } from '../../lib/config.js';
+import { features } from '../../lib/features/index.js';
+import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
+import * as news_items from '../../news_items/index.js';
+import * as server from '../../server.js';
+import * as helperServer from '../helperServer.js';
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
 
@@ -149,6 +145,10 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/submission/:submission_id/file/*',
   '/pl/course_instance/:course_instance_id/instructor/question/:question_id/text/:filename',
   '/pl/course_instance/:course_instance_id/news_item/:news_item_id/*',
+  '/pl/course_instance/:course_instance_id/sharedElements/course/:producing_course_id/cacheableElements/:cachebuster/*',
+  '/pl/course_instance/:course_instance_id/sharedElements/course/:producing_course_id/elements/*',
+  '/pl/course_instance/:course_instance_id/instructor/sharedElements/course/:producing_course_id/cacheableElements/:cachebuster/*',
+  '/pl/course_instance/:course_instance_id/instructor/sharedElements/course/:producing_course_id/elements/*',
   '/pl/course/:course_id/cacheableElementExtensions/:cachebuster/*',
   '/pl/course/:course_id/cacheableElements/:cachebuster/*',
   '/pl/course/:course_id/clientFilesCourse/*',
@@ -167,7 +167,11 @@ const SKIP_ROUTES = [
   '/pl/course/:course_id/question/:question_id/submission/:submission_id/file/*',
   '/pl/course/:course_id/question/:question_id/text/:filename',
   '/pl/course/:course_id/grading_job/:job_id/file/:file',
+  '/pl/course/:course_id/sharedElements/course/:producing_course_id/cacheableElements/:cachebuster/*',
+  '/pl/course/:course_id/sharedElements/course/:producing_course_id/elements/*',
   '/pl/news_item/:news_item_id/*',
+  '/pl/public/course/:course_id/cacheableElements/:cachebuster/*',
+  '/pl/public/course/:course_id/elements/*',
   '/pl/public/course/:course_id/question/:question_id/clientFilesQuestion/*',
   '/pl/public/course/:course_id/question/:question_id/generatedFilesQuestion/variant/:variant_id/*',
   '/pl/public/course/:course_id/question/:question_id/submission/:submission_id/file/*',
@@ -228,6 +232,12 @@ const SKIP_ROUTES = [
   // TODO: submit an answer to a question so we can test this page.
   '/pl/course_instance/:course_instance_id/instructor/grading_job/:job_id',
   '/pl/course/:course_id/grading_job/:job_id',
+
+  // TODO: create a test course with AI generation feature flag enabled to test page
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question',
+  '/pl/course/:course_id/ai_generate_question',
+  '/pl/course_instance/:course_instance_id/instructor/ai_generate_question_jobs/:job_id',
+  '/pl/course/:course_id/ai_generate_question_job/:job_id',
 ];
 
 function shouldSkipPath(path) {
@@ -256,7 +266,7 @@ describe('accessibility', () => {
       errorIfLockNotAcquired: true,
     });
 
-    const app = server.initExpress();
+    const app = await server.initExpress();
     endpoints = expressListEndpoints(app);
     endpoints.sort((a, b) => a.path.localeCompare(b.path));
 

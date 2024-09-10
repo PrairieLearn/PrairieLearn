@@ -1,5 +1,5 @@
-import awsClientMandatoryConfig from './rules/aws-client-mandatory-config';
-import awsClientSharedConfig from './rules/aws-client-shared-config';
+import awsClientMandatoryConfig from './rules/aws-client-mandatory-config.js';
+import awsClientSharedConfig from './rules/aws-client-shared-config.js';
 
 export const rules = {
   'aws-client-mandatory-config': awsClientMandatoryConfig,

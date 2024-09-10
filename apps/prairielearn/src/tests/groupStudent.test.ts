@@ -1,18 +1,19 @@
-import ERR = require('async-stacktrace');
-import fetch from 'node-fetch';
-import fetchCookie from 'fetch-cookie';
-import * as sqldb from '@prairielearn/postgres';
-
-import { config } from '../lib/config';
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
+import fetchCookie from 'fetch-cookie';
+import fetch from 'node-fetch';
 
-import * as helperServer from './helperServer';
-import { idsEqual } from '../lib/id';
-import { TEST_COURSE_PATH } from '../lib/paths';
-import { fetchCheerio } from './helperClient';
+import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { config } from '../lib/config.js';
+import { IdSchema } from '../lib/db-types.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
+
+import { assertAlert, fetchCheerio } from './helperClient.js';
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const locals: Record<string, any> = {};
 locals.siteUrl = 'http://localhost:' + config.serverPort;
@@ -24,37 +25,33 @@ const storedConfig: Record<string, any> = {};
 
 describe('Group based homework assess control on student side', function () {
   this.timeout(20000);
-  before('set authenticated user', function (callback) {
+  before('set authenticated user', async () => {
     storedConfig.authUid = config.authUid;
     storedConfig.authName = config.authName;
     storedConfig.authUin = config.authUin;
-    callback(null);
   });
   before('set up testing server', helperServer.before(TEST_COURSE_PATH));
   after('shut down testing server', helperServer.after);
-  after('unset authenticated user', function (callback) {
+  after('unset authenticated user', async () => {
     Object.assign(config, storedConfig);
-    callback(null);
   });
 
   describe('1. the database', function () {
-    it('should contain a group-based homework assessment', function (callback) {
-      sqldb.query(sql.select_group_work_assessment, [], function (err, result) {
-        if (ERR(err, callback)) return;
-        assert.lengthOf(result.rows, 2);
-        assert.notEqual(result.rows[0].id, undefined);
-        locals.assessment_id = result.rows[0].id;
-        locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
-        locals.instructorAssessmentsUrlGroupTab =
-          locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id + '/groups';
-        locals.assessment_id_2 = idsEqual(result.rows[1].id, locals.assessment_id)
-          ? result.rows[0].id
-          : result.rows[1].id;
-        locals.assessmentUrl_2 = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_2;
-        locals.instructorAssessmentsUrlGroupTab_2 =
-          locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id_2 + '/groups';
-        callback(null);
-      });
+    it('should contain a group-based homework assessment', async () => {
+      const assessment_ids = await sqldb.queryRows(sql.select_group_work_assessment, IdSchema);
+      assert.lengthOf(assessment_ids, 2);
+      assert.isDefined(assessment_ids[0]);
+      assert.isDefined(assessment_ids[1]);
+
+      locals.assessment_id = assessment_ids[0];
+      locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
+      locals.instructorAssessmentsUrlGroupTab =
+        locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id + '/groups';
+
+      locals.assessment_id_2 = assessment_ids[1];
+      locals.assessmentUrl_2 = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_2;
+      locals.instructorAssessmentsUrlGroupTab_2 =
+        locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id_2 + '/groups';
     });
   });
 
@@ -76,18 +73,14 @@ describe('Group based homework assess control on student side', function () {
   });
 
   describe('3. Check if the config is correct', function () {
-    it('should create the correct group configuration', function (callback) {
-      const params = {
+    it('should create the correct group configuration', async () => {
+      const result = await sqldb.queryOneRowAsync(sql.select_group_config, {
         assessment_id: locals.assessment_id,
-      };
-      sqldb.queryOneRow(sql.select_group_config, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        const min = result.rows[0]['minimum'];
-        const max = result.rows[0]['maximum'];
-        assert.equal(min, 3);
-        assert.equal(max, 3);
-        callback(null);
       });
+      const min = result.rows[0]['minimum'];
+      const max = result.rows[0]['maximum'];
+      assert.equal(min, 3);
+      assert.equal(max, 3);
     });
   });
 
@@ -108,33 +101,26 @@ describe('Group based homework assess control on student side', function () {
   });
 
   describe('5. Check if the config is correct', function () {
-    it('should create the correct group configuration', function (callback) {
-      const params = {
+    it('should create the correct group configuration', async () => {
+      const result = await sqldb.queryOneRowAsync(sql.select_group_config, {
         assessment_id: locals.assessment_id_2,
-      };
-      sqldb.queryOneRow(sql.select_group_config, params, function (err, result) {
-        if (ERR(err, callback)) return;
-        const min = result.rows[0]['minimum'];
-        const max = result.rows[0]['maximum'];
-        assert.equal(min, 2);
-        assert.equal(max, 5);
-        callback(null);
       });
+      const min = result.rows[0]['minimum'];
+      const max = result.rows[0]['maximum'];
+      assert.equal(min, 2);
+      assert.equal(max, 5);
     });
   });
 
   describe('6. get 5 student user', function () {
-    it('should insert/get 5 users into/from the DB', function (callback) {
-      sqldb.query(sql.generate_and_enroll_5_users, [], function (err, result) {
-        if (ERR(err, callback)) return;
-        assert.lengthOf(result.rows, 5);
-        locals.studentUsers = result.rows.slice(0, 3);
-        locals.studentUserNotGrouped = result.rows[3];
-        locals.studentUserInDiffGroup = result.rows[4];
-        locals.groupCreator = locals.studentUsers[0];
-        assert.lengthOf(locals.studentUsers, 3);
-        callback(null);
-      });
+    it('should insert/get 5 users into/from the DB', async () => {
+      const result = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
+      assert.lengthOf(result, 5);
+      locals.studentUsers = result.slice(0, 3);
+      locals.studentUserNotGrouped = result[3];
+      locals.studentUserInDiffGroup = result[4];
+      locals.groupCreator = locals.studentUsers[0];
+      assert.lengthOf(locals.studentUsers, 3);
     });
     it('should be able to switch user', function () {
       config.authUid = locals.groupCreator.uid;
@@ -181,7 +167,7 @@ describe('Group based homework assess control on student side', function () {
         }),
       });
       assert.equal(response.status, 200);
-      assert.lengthOf(response.$('.alert:contains(already in another group)'), 1);
+      assertAlert(response.$, 'already in another group');
     });
   });
 
@@ -292,12 +278,9 @@ describe('Group based homework assess control on student side', function () {
       const page = await response.text();
       locals.$ = cheerio.load(page);
     });
-    it('should have 3 students in group 1 in db', function (callback) {
-      sqldb.query(sql.select_all_user_in_group, [], function (err, result) {
-        if (ERR(err, callback)) return;
-        assert.lengthOf(result.rows, 3);
-        callback(null);
-      });
+    it('should have 3 students in group 1 in db', async () => {
+      const result = await sqldb.queryAsync(sql.select_all_user_in_group, []);
+      assert.lengthOf(result.rows, 3);
     });
   });
 
@@ -345,8 +328,7 @@ describe('Group based homework assess control on student side', function () {
       locals.$ = cheerio.load(page);
     });
     it('should contain a prompt to inform the user that the group is full', function () {
-      const elemList = locals.$('.alert:contains(is already full)');
-      assert.lengthOf(elemList, 1);
+      assertAlert(locals.$, 'is already full');
     });
   });
 
@@ -423,7 +405,7 @@ describe('Group based homework assess control on student side', function () {
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
-      assert.lengthOf(locals.$('.alert:contains(You are already in another group)'), 1);
+      assertAlert(locals.$, 'You are already in another group');
     });
   });
 
@@ -455,12 +437,9 @@ describe('Group based homework assess control on student side', function () {
       const elemList = locals.$('.col-sm li');
       assert.lengthOf(elemList, 3);
     });
-    it('should have 0 assessment instance in db', function (callback) {
-      sqldb.query(sql.select_all_assessment_instance, [], function (err, result) {
-        if (ERR(err, callback)) return;
-        assert.lengthOf(result.rows, 0);
-        callback(null);
-      });
+    it('should have 0 assessment instance in db', async () => {
+      const result = await sqldb.queryAsync(sql.select_all_assessment_instance, []);
+      assert.lengthOf(result.rows, 0);
     });
     it('should be able to start the assessment', async () => {
       const response = await fetch(locals.assessmentUrl, {
@@ -472,16 +451,13 @@ describe('Group based homework assess control on student side', function () {
       });
       assert.equal(response.status, 200);
     });
-    it('should have 1 assessment instance in db', function (callback) {
-      sqldb.query(sql.select_all_assessment_instance, [], function (err, result) {
-        if (ERR(err, callback)) return;
-        assert.lengthOf(result.rows, 1);
-        locals.assessment_instance_id = result.rows[0].id;
-        locals.assessmentInstanceURL =
-          locals.courseInstanceUrl + '/assessment_instance/' + locals.assessment_instance_id;
-        assert.equal(result.rows[0].group_id, 1);
-        callback(null);
-      });
+    it('should have 1 assessment instance in db', async () => {
+      const result = await sqldb.queryAsync(sql.select_all_assessment_instance, []);
+      assert.lengthOf(result.rows, 1);
+      locals.assessment_instance_id = result.rows[0].id;
+      locals.assessmentInstanceURL =
+        locals.courseInstanceUrl + '/assessment_instance/' + locals.assessment_instance_id;
+      assert.equal(result.rows[0].group_id, 1);
     });
   });
 
@@ -621,13 +597,10 @@ describe('Group based homework assess control on student side', function () {
   });
 
   describe('20. cross assessment grouping', function () {
-    it('should contain a second group-based homework assessment', function (callback) {
-      sqldb.query(sql.select_group_work_assessment, [], function (err, result) {
-        if (ERR(err, callback)) return;
-        assert.lengthOf(result.rows, 2);
-        assert.notEqual(result.rows[1].id, undefined);
-        callback(null);
-      });
+    it('should contain a second group-based homework assessment', async () => {
+      const result = await sqldb.queryAsync(sql.select_group_work_assessment, []);
+      assert.lengthOf(result.rows, 2);
+      assert.notEqual(result.rows[1].id, undefined);
     });
     it('should load the second assessment page successfully', async () => {
       const response = await fetch(locals.assessmentUrl_2);
@@ -656,8 +629,7 @@ describe('Group based homework assess control on student side', function () {
       locals.$ = cheerio.load(page);
     });
     it('should contain a prompt to inform the user that the group is invalid', function () {
-      const elemList = locals.$('.alert:contains(does not exist)');
-      assert.lengthOf(elemList, 1);
+      assertAlert(locals.$, 'does not exist');
     });
   });
 });

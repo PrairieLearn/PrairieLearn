@@ -1,7 +1,7 @@
 import { assert } from 'chai';
 
-import { MemoryStore } from './memory-store';
-import { loadSession, makeSession } from './session';
+import { MemoryStore } from './memory-store.js';
+import { loadSession, makeSession } from './session.js';
 
 const SESSION_MAX_AGE = 10000;
 const SESSION_EXPIRATION_DATE = new Date(Date.now() + SESSION_MAX_AGE);

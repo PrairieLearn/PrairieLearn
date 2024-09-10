@@ -1,10 +1,11 @@
 import { assert } from 'chai';
-import stripAnsi = require('strip-ansi');
+import stripAnsi from 'strip-ansi';
+
 import { logger } from '@prairielearn/logger';
 
-import * as serverJobs from '../lib/server-jobs-legacy';
-import { createServerJob } from '../lib/server-jobs';
-import * as helperServer from './helperServer';
+import { createServerJob, getJobSequence } from '../lib/server-jobs.js';
+
+import * as helperServer from './helperServer.js';
 
 function disableLoggingForTests() {
   let originalSilent;
@@ -36,7 +37,7 @@ describe('server-jobs', () => {
         job.data.foo = 'bar';
       });
 
-      const finishedJobSequence = await serverJobs.getJobSequence(serverJob.jobSequenceId, null);
+      const finishedJobSequence = await getJobSequence(serverJob.jobSequenceId, null);
 
       assert.equal(finishedJobSequence.type, 'test');
       assert.equal(finishedJobSequence.description, 'test server job');
@@ -47,7 +48,7 @@ describe('server-jobs', () => {
       assert.equal(job.type, 'test');
       assert.equal(job.description, 'test server job');
       assert.equal(job.status, 'Success');
-      assert.equal(stripAnsi(job.output), 'testing info\ntesting error\n');
+      assert.equal(stripAnsi(job.output ?? ''), 'testing info\ntesting error\n');
       assert.deepEqual(job.data.foo, 'bar');
     });
 
@@ -65,14 +66,14 @@ describe('server-jobs', () => {
         'failing job',
       );
 
-      const finishedJobSequence = await serverJobs.getJobSequence(serverJob.jobSequenceId, null);
+      const finishedJobSequence = await getJobSequence(serverJob.jobSequenceId, null);
 
       assert.equal(finishedJobSequence.status, 'Error');
       assert.lengthOf(finishedJobSequence.jobs, 1);
 
       const job = finishedJobSequence.jobs[0];
       assert.equal(job.status, 'Error');
-      assert.match(stripAnsi(job.output), /^testing info\nError: failing job\n\s+at/);
+      assert.match(stripAnsi(job.output ?? ''), /^testing info\nError: failing job\n\s+at/);
     });
 
     it('fails the job when fail() is called', async () => {
@@ -88,7 +89,7 @@ describe('server-jobs', () => {
         'failing job',
       );
 
-      const finishedJobSequence = await serverJobs.getJobSequence(serverJob.jobSequenceId, null);
+      const finishedJobSequence = await getJobSequence(serverJob.jobSequenceId, null);
 
       assert.equal(finishedJobSequence.status, 'Error');
       assert.lengthOf(finishedJobSequence.jobs, 1);
@@ -98,7 +99,7 @@ describe('server-jobs', () => {
       // don't expect there to be a stack trace.
       const job = finishedJobSequence.jobs[0];
       assert.equal(job.status, 'Error');
-      assert.equal(stripAnsi(job.output), 'failing job\n');
+      assert.equal(stripAnsi(job.output || ''), 'failing job\n');
     });
   });
 
@@ -118,14 +119,14 @@ describe('server-jobs', () => {
 
       await helperServer.waitForJobSequence(serverJob.jobSequenceId);
 
-      const finishedJobSequence = await serverJobs.getJobSequence(serverJob.jobSequenceId, null);
+      const finishedJobSequence = await getJobSequence(serverJob.jobSequenceId, null);
 
       assert.equal(finishedJobSequence.status, 'Error');
       assert.lengthOf(finishedJobSequence.jobs, 1);
 
       const job = finishedJobSequence.jobs[0];
       assert.equal(job.status, 'Error');
-      assert.match(stripAnsi(job.output), /^testing info\nError: failing job\n\s+at/);
+      assert.match(stripAnsi(job.output ?? ''), /^testing info\nError: failing job\n\s+at/);
     });
   });
 });

@@ -1,12 +1,13 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
-import * as fg from 'fast-glob';
 
-import { config } from '../lib/config';
-import { EXAMPLE_COURSE_PATH } from '../lib/paths';
+import fg from 'fast-glob';
 
-import * as helperServer from './helperServer';
-import * as helperQuestion from './helperQuestion';
+import { config } from '../lib/config.js';
+import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+
+import * as helperQuestion from './helperQuestion.js';
+import * as helperServer from './helperServer.js';
 
 const locals: Record<string, any> = {};
 

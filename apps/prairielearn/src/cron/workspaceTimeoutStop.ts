@@ -3,9 +3,9 @@ import { metrics, getCounter, ValueType } from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
-import { config } from '../lib/config';
+import { config } from '../lib/config.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function stopLaunchedTimeoutWorkspaces() {
   const meter = metrics.getMeter('prairielearn');

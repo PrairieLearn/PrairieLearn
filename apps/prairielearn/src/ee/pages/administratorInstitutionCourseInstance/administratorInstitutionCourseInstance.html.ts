@@ -1,13 +1,15 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
+
+import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
+import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Course,
   type CourseInstance,
   type Institution,
   type PlanGrant,
-} from '../../../lib/db-types';
-import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html';
-import { compiledScriptTag } from '../../../lib/assets';
+} from '../../../lib/db-types.js';
+import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
 
 export function AdministratorInstitutionCourseInstance({
   institution,
@@ -26,17 +28,15 @@ export function AdministratorInstitutionCourseInstance({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          navPage: 'administrator_institution',
-          pageTitle: 'Courses',
+        ${HeadContents({
+          resLocals,
+          pageTitle: `${course.short_name}, ${course_instance.short_name} - Institution Admin`,
         })}
         ${compiledScriptTag('administratorInstitutionCourseInstanceClient.ts')}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
-          ...resLocals,
-          institution,
+        ${Navbar({
+          resLocals: { ...resLocals, institution },
           navbarType: 'administrator_institution',
           navPage: 'administrator_institution',
           navSubPage: 'courses',
@@ -56,7 +56,7 @@ export function AdministratorInstitutionCourseInstance({
             </li>
           </ol>
         </nav>
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h2 class="h4">Limits</h2>
           <form method="POST" class="mb-3">
             <div class="form-group">

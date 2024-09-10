@@ -1,16 +1,22 @@
-import AnsiUp from 'ansi_up';
-import execa = require('execa');
+import { setTimeout as sleep } from 'node:timers/promises';
+
+import { AnsiUp } from 'ansi_up';
+import { execa } from 'execa';
+import _ from 'lodash';
 import { z } from 'zod';
-import * as Sentry from '@prairielearn/sentry';
+
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryAsync, queryRow, queryRows } from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
+import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
-import { chalk, chalkDim } from './chalk';
-import * as serverJobs from './server-jobs-legacy';
-import * as socketServer from './socket-server';
-import { Job, JobSchema } from './db-types';
+import { chalk, chalkDim } from './chalk.js';
+import { config } from './config.js';
+import { IdSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
+import { type JobSequenceWithTokens, JobSequenceWithJobsSchema } from './server-jobs.types.js';
+import * as socketServer from './socket-server.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 interface CreateServerJobOptions {
   courseId?: string;
@@ -28,24 +34,39 @@ interface ServerJobExecOptions {
   env?: NodeJS.ProcessEnv;
 }
 
+export interface ServerJobResult {
+  data: Record<string, any>;
+}
+
 export interface ServerJob {
   fail(msg: string): never;
   error(msg: string): void;
   warn(msg: string): void;
   info(msg: string): void;
   verbose(msg: string): void;
-  exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<void>;
+  exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<ServerJobResult>;
   data: Record<string, unknown>;
 }
 
 export interface ServerJobExecutor {
   jobSequenceId: string;
-  execute(fn: ServerJobExecutionFunction): Promise<void>;
-  executeUnsafe(fn: ServerJobExecutionFunction): Promise<void>;
+  execute(fn: ServerJobExecutionFunction): Promise<ServerJobResult>;
+  executeUnsafe(fn: ServerJobExecutionFunction): Promise<ServerJobResult>;
   executeInBackground(fn: ServerJobExecutionFunction): void;
 }
 
 export type ServerJobExecutionFunction = (job: ServerJob) => Promise<void>;
+
+/**
+ * Store currently active job information in memory. This is used
+ * to accumulate stderr/stdout, which are only written to the DB
+ * once the job is finished.
+ */
+export const liveJobs: Record<string, ServerJobImpl> = {};
+
+/********************************************************************/
+
+let heartbeatIntervalId: ReturnType<typeof setInterval> | null = null;
 
 /**
  * Internal error subclass so we can identify when `fail()` is called.
@@ -91,7 +112,11 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     this.addToOutput(chalkDim(msg) + '\n');
   }
 
-  async exec(file: string, args: string[] = [], options: ServerJobExecOptions): Promise<void> {
+  async exec(
+    file: string,
+    args: string[] = [],
+    options: ServerJobExecOptions,
+  ): Promise<ServerJobResult> {
     this.addToOutput(chalk.blueBright(`Command: ${file} ${args.join(' ')}\n`));
     this.addToOutput(chalk.blueBright(`Working directory: ${options.cwd}\n`));
 
@@ -120,15 +145,18 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       const duration = (performance.now() - start).toFixed(2);
       this.addToOutput(chalkDim(`Command completed in ${duration}ms`) + '\n\n');
     }
+
+    return { data: this.data };
   }
 
   /**
    * Runs the job sequence and returns a Promise that resolves when the job
    * sequence has completed, even if an error is encountered.
    */
-  async execute(fn: ServerJobExecutionFunction): Promise<void> {
+  async execute(fn: ServerJobExecutionFunction): Promise<ServerJobResult> {
     this.checkAndMarkStarted();
     await this.executeInternal(fn, false);
+    return { data: this.data };
   }
 
   /**
@@ -136,9 +164,10 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
    * sequence has completed. The returned promise will reject if the job
    * sequence fails.
    */
-  async executeUnsafe(fn: ServerJobExecutionFunction): Promise<void> {
+  async executeUnsafe(fn: ServerJobExecutionFunction): Promise<ServerJobResult> {
     this.checkAndMarkStarted();
     await this.executeInternal(fn, true);
+    return { data: this.data };
   }
 
   /**
@@ -213,7 +242,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
       }
     }
 
-    delete serverJobs.liveJobs[this.jobId];
+    delete liveJobs[this.jobId];
 
     await queryAsync(sql.update_job_on_finish, {
       job_sequence_id: this.jobSequenceId,
@@ -252,10 +281,196 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
   );
 
   const serverJob = new ServerJobImpl(job_sequence_id, job_id);
-  serverJobs.liveJobs[job_id] = serverJob;
+  liveJobs[job_id] = serverJob;
   return serverJob;
 }
 
 export async function selectJobsByJobSequenceId(jobSequenceId: string): Promise<Job[]> {
   return await queryRows(sql.select_job_output, { job_sequence_id: jobSequenceId }, JobSchema);
+}
+
+/*
+  SocketIO configuration
+
+  ##########################################
+  Room 'job-231' for job_id = 231 in DB.
+
+  Receives messages:
+  'joinJob', arguments: job_id, returns: status, output
+
+  Sends messages:
+  'change:output', arguments: job_id, output
+  'update', arguments: job_id
+
+  ##########################################
+  Room 'jobSequence-593' for job_sequence_id = 593 in DB.
+
+  Receives messages:
+  'joinJobSequence', arguments: job_sequence_id, returns: job_count
+
+  Sends messages:
+  'update', arguments: job_sequence_id
+
+  ##########################################
+
+  'update' events are sent for bulk changes to the object when
+  there is no specific 'change' event available.
+
+  For example, an 'update' will not be sent when output changes
+  because the more specific 'change:output' event will be sent
+  instead.
+*/
+
+export function init() {
+  socketServer.io.on('connection', connection);
+
+  // Start a periodic task to heartbeat all live jobs. We don't use a cronjob
+  // for this because we want this to run for every host.
+  heartbeatIntervalId = setInterval(() => {
+    const jobIds = Object.keys(liveJobs);
+    if (jobIds.length === 0) return;
+
+    queryAsync(sql.update_heartbeats, { job_ids: jobIds }).catch((err) => {
+      Sentry.captureException(err);
+      logger.error('Error updating heartbeats for live server jobs', err);
+    });
+  }, config.serverJobHeartbeatIntervalSec * 1000);
+}
+
+export async function stop() {
+  // Wait until all jobs have finished.
+  while (Object.keys(liveJobs).length > 0) {
+    await sleep(100);
+  }
+
+  // Only once all jobs are finished should we stop sending heartbeats.
+  if (heartbeatIntervalId) {
+    clearInterval(heartbeatIntervalId);
+    heartbeatIntervalId = null;
+  }
+}
+
+export function connection(socket) {
+  socket.on('joinJob', function (msg, callback) {
+    if (!_.has(msg, 'job_id')) {
+      logger.error('socket.io joinJob called without job_id');
+      return;
+    }
+
+    // Check authorization of the requester.
+    if (!checkSignedToken(msg.token, { jobId: msg.job_id.toString() }, config.secretKey)) {
+      logger.error(`joinJob called with invalid token for job_id ${msg.job_id}`);
+      return;
+    }
+
+    socket.join('job-' + msg.job_id);
+    queryRow(sql.select_job, { job_id: msg.job_id }, JobSchema).then(
+      (job) => {
+        const status = job.status;
+
+        const ansiUp = new AnsiUp();
+        const output = ansiUp.ansi_to_html(liveJobs[msg.job_id]?.output ?? job.output ?? '');
+
+        callback({ status, output });
+      },
+      (err) => {
+        Sentry.captureException(err);
+        logger.error('socket.io joinJob error selecting job_id ' + msg.job_id, err);
+      },
+    );
+  });
+
+  socket.on('joinJobSequence', function (msg, callback) {
+    if (!_.has(msg, 'job_sequence_id')) {
+      logger.error('socket.io joinJobSequence called without job_sequence_id');
+      return;
+    }
+
+    // Check authorization of the requester.
+    if (
+      !checkSignedToken(
+        msg.token,
+        { jobSequenceId: msg.job_sequence_id.toString() },
+        config.secretKey,
+      )
+    ) {
+      logger.error(
+        `joinJobSequence called with invalid token for job_sequence_id ${msg.job_sequence_id}`,
+      );
+      return;
+    }
+
+    socket.join('jobSequence-' + msg.job_id);
+    queryRow(
+      sql.select_job_sequence,
+      { job_sequence_id: msg.job_sequence_id },
+      JobSequenceSchema.extend({ job_count: z.coerce.number() }),
+    ).then(
+      ({ job_count }) => {
+        callback({ job_count });
+      },
+      (err) => {
+        Sentry.captureException(err);
+        logger.error(
+          'socket.io joinJobSequence error selecting job_sequence_id ' + msg.job_sequence_id,
+          err,
+        );
+      },
+    );
+  });
+}
+
+export async function errorAbandonedJobs() {
+  const abandonedJobs = await queryRows(
+    sql.select_abandoned_jobs,
+    { timeout_secs: config.serverJobsAbandonedTimeoutSec },
+    z.object({ id: IdSchema, job_sequence_id: IdSchema.nullable() }),
+  );
+
+  for (const row of abandonedJobs) {
+    logger.debug('Job abandoned by server, id: ' + row.id);
+    try {
+      await queryAsync(sql.update_job_on_error, {
+        job_id: row.id,
+        output: null,
+        error_message: 'Job abandoned by server',
+      });
+    } catch (err) {
+      Sentry.captureException(err);
+      logger.error('errorAbandonedJobs: error updating job on error', err);
+    } finally {
+      socketServer.io.to('job-' + row.id).emit('update');
+      if (row.job_sequence_id != null) {
+        socketServer.io.to('jobSequence-' + row.job_sequence_id).emit('update');
+      }
+    }
+  }
+
+  const abandonedJobSequences = await queryRows(sql.error_abandoned_job_sequences, IdSchema);
+  abandonedJobSequences.forEach(function (job_sequence_id) {
+    socketServer.io.to('jobSequence-' + job_sequence_id).emit('update');
+  });
+}
+
+export async function getJobSequence(
+  job_sequence_id: string,
+  course_id: string | null,
+): Promise<JobSequenceWithTokens> {
+  const jobSequence = await queryRow(
+    sql.select_job_sequence_with_course_id_as_json,
+    { job_sequence_id, course_id },
+    JobSequenceWithJobsSchema,
+  );
+
+  // Generate a token to authorize websocket requests for this job sequence.
+  const jobSequenceTokenData = { jobSequenceId: job_sequence_id.toString() };
+  return {
+    ...jobSequence,
+    token: generateSignedToken(jobSequenceTokenData, config.secretKey),
+    jobs: jobSequence.jobs.map((job) => {
+      // Also generate a token for each job.
+      const jobTokenData = { jobId: job.id.toString() };
+      return { ...job, token: generateSignedToken(jobTokenData, config.secretKey) };
+    }),
+  };
 }

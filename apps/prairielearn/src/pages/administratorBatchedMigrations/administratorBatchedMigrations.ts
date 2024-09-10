@@ -1,17 +1,18 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
+
 import * as error from '@prairielearn/error';
 import {
   selectAllBatchedMigrations,
   selectBatchedMigration,
   selectRecentJobsWithStatus,
+  retryFailedBatchedMigrationJobs,
 } from '@prairielearn/migrations';
 
 import {
   AdministratorBatchedMigrations,
   AdministratorBatchedMigration,
-} from './administratorBatchedMigrations.html';
-import { retryFailedBatchedMigrationJobs } from '@prairielearn/migrations/dist/batched-migrations';
+} from './administratorBatchedMigrations.html.js';
 
 const router = Router({ mergeParams: true });
 

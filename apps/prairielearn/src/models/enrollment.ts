@@ -1,16 +1,29 @@
-import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 import * as error from '@prairielearn/error';
+import {
+  loadSqlEquiv,
+  queryAsync,
+  queryOptionalRow,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 
-import { Course, CourseInstance, Enrollment, EnrollmentSchema, Institution } from '../lib/db-types';
-import { isEnterprise } from '../lib/license';
 import {
   PotentialEnterpriseEnrollmentStatus,
   checkPotentialEnterpriseEnrollment,
-} from '../ee/models/enrollment';
-import { assertNever } from '../lib/types';
-import { HttpRedirect } from '../lib/redirect';
+} from '../ee/models/enrollment.js';
+import {
+  Course,
+  CourseInstance,
+  Enrollment,
+  EnrollmentSchema,
+  Institution,
+} from '../lib/db-types.js';
+import { isEnterprise } from '../lib/license.js';
+import { HttpRedirect } from '../lib/redirect.js';
+import { assertNever } from '../lib/types.js';
 
-const sql = loadSqlEquiv(__filename);
+import { generateUsers } from './user.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function ensureEnrollment({
   course_instance_id,
@@ -88,4 +101,20 @@ export async function getEnrollmentForUserInCourseInstance({
     { user_id, course_instance_id },
     EnrollmentSchema,
   );
+}
+
+export async function generateAndEnrollUsers({
+  count,
+  course_instance_id,
+}: {
+  count: number;
+  course_instance_id: string;
+}) {
+  return await runInTransactionAsync(async () => {
+    const users = await generateUsers(count);
+    for (const user of users) {
+      await ensureEnrollment({ course_instance_id, user_id: user.user_id });
+    }
+    return users;
+  });
 }

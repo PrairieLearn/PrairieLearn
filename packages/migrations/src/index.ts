@@ -1,12 +1,12 @@
 import path from 'path';
 
-export { init } from './migrations';
+export { init } from './migrations/index.js';
 
 export {
-  BatchedMigrationRow,
-  BatchedMigrationStatus,
-  BatchedMigrationJobRow,
-  BatchedMigrationJobStatus,
+  type BatchedMigrationRow,
+  type BatchedMigrationStatus,
+  type BatchedMigrationJobRow,
+  type BatchedMigrationJobStatus,
   makeBatchedMigration,
   initBatchedMigrations,
   startBatchedMigrations,
@@ -17,6 +17,7 @@ export {
   selectBatchedMigration,
   selectBatchedMigrationForTimestamp,
   selectRecentJobsWithStatus,
-} from './batched-migrations';
+  retryFailedBatchedMigrationJobs,
+} from './batched-migrations/index.js';
 
-export const SCHEMA_MIGRATIONS_PATH = path.resolve(__dirname, '..', 'schema-migrations');
+export const SCHEMA_MIGRATIONS_PATH = path.resolve(import.meta.dirname, '..', 'schema-migrations');

@@ -1,6 +1,9 @@
 import { MultiSamlStrategy, type SamlConfig } from '@node-saml/passport-saml';
 
-import { getInstitutionSamlProvider } from '../../lib/institution';
+import {
+  getInstitutionAuthenticationProviders,
+  getInstitutionSamlProvider,
+} from '../../lib/institution.js';
 
 export async function getSamlOptions({
   institution_id,
@@ -12,7 +15,10 @@ export async function getSamlOptions({
   strictMode: boolean;
 }): Promise<SamlConfig> {
   const samlProvider = await getInstitutionSamlProvider(institution_id);
-  if (!samlProvider) throw new Error('No SAML provider found for given institution');
+  const authenticationProviders = await getInstitutionAuthenticationProviders(institution_id);
+  if (!samlProvider || !authenticationProviders.some((p) => p.name === 'SAML')) {
+    throw new Error('No SAML provider found for given institution');
+  }
 
   // It's most convenient if folks can pass in `req.headers.host` directly,
   // but that's typed as `string | undefined`. So, we'll accept that type
@@ -23,9 +29,7 @@ export async function getSamlOptions({
   const issuer = `https://${host}/saml/institution/${institution_id}`;
 
   return {
-    host,
-    protocol: 'https://',
-    path: `/pl/auth/institution/${institution_id}/saml/callback`,
+    callbackUrl: `https://${host}/pl/auth/institution/${institution_id}/saml/callback`,
     entryPoint: samlProvider.sso_login_url,
     issuer,
     idpIssuer: samlProvider.issuer,
@@ -41,7 +45,10 @@ export async function getSamlOptions({
     digestAlgorithm: 'sha256',
 
     // Identity Provider's public key.
-    cert: samlProvider.certificate,
+    idpCert: samlProvider.certificate,
+
+    // Service Provider's public key.
+    publicCert: samlProvider.public_key,
 
     // Service Provider's private key.
     privateKey: samlProvider.private_key,

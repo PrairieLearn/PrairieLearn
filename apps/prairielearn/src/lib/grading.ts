@@ -1,16 +1,13 @@
 import * as fs from 'fs';
+
 import * as unzipper from 'unzipper';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-
-import * as externalGrader from './externalGrader';
-import * as ltiOutcomes from './ltiOutcomes';
-import { writeCourseIssues } from './issues';
-import { getQuestionCourse } from './question-variant';
 import * as sqldb from '@prairielearn/postgres';
-import * as questionServers from '../question-servers';
-import * as workspaceHelper from './workspace';
+
+import * as questionServers from '../question-servers/index.js';
+
 import {
   Course,
   DateFromISOString,
@@ -23,10 +20,15 @@ import {
   SubmissionSchema,
   Variant,
   VariantSchema,
-} from './db-types';
-import { idsEqual } from './id';
+} from './db-types.js';
+import * as externalGrader from './externalGrader.js';
+import { idsEqual } from './id.js';
+import { writeCourseIssues } from './issues.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
+import { getQuestionCourse } from './question-variant.js';
+import * as workspaceHelper from './workspace.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const NextAllowedGradeSchema = z.object({
   allow_grade_date: DateFromISOString.nullable(),
@@ -79,13 +81,18 @@ export async function insertSubmission({
   variant_id: string;
   auth_user_id: string | null;
   client_fingerprint_id?: string | null;
-}): Promise<string> {
+}): Promise<{ submission_id: string; variant: Variant }> {
   return await sqldb.runInTransactionAsync(async () => {
     await sqldb.callAsync('variants_lock', [variant_id]);
 
     // Select the variant, while updating the variant's `correct_answer`, which
     // is permitted to change during the `parse` phase (which occurs before this
     // submission is inserted).
+    //
+    // Note that we do this mutation as part of the selection process to avoid another
+    // database round trip. This mutation is safe to do before the access checks below
+    // because if they fail, the transaction will be rolled back and the variant will
+    // not be updated.
     const variant = await sqldb.queryRow(
       sql.update_variant_true_answer,
       { variant_id, true_answer },
@@ -150,7 +157,7 @@ export async function insertSubmission({
       await sqldb.callAsync('instance_questions_calculate_stats', [variant.instance_question_id]);
     }
 
-    return submission_id;
+    return { submission_id, variant };
   });
 }
 
@@ -168,7 +175,7 @@ export async function saveSubmission(
   variant: Variant,
   question: Question,
   variant_course: Course,
-): Promise<string> {
+): Promise<{ submission_id: string; variant: Variant }> {
   const submission: Partial<Submission> & SubmissionDataForSaving = {
     ...submissionData,
     raw_submitted_answer: submissionData.submitted_answer,
@@ -420,9 +427,19 @@ export async function saveAndGradeSubmission(
   course: Course,
   overrideGradeRateCheck: boolean,
 ) {
-  const submission_id = await saveSubmission(submissionData, variant, question, course);
-  await gradeVariant(
+  const { submission_id, variant: updated_variant } = await saveSubmission(
+    submissionData,
     variant,
+    question,
+    course,
+  );
+
+  await gradeVariant(
+    // Note that parsing a submission may modify the `true_answer` of the variant
+    // (for v3 questions, this is `data["correct_answers"])`. This is why we need
+    // to use the variant returned from `saveSubmission` rather than the one passed
+    // to this function.
+    updated_variant,
     submission_id,
     question,
     course,

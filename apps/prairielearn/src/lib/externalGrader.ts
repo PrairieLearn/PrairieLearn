@@ -1,17 +1,15 @@
+import assert from 'node:assert';
+import type { EventEmitter } from 'node:events';
+
+import _ from 'lodash';
 import { z } from 'zod';
+
+import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
-import * as error from '@prairielearn/error';
-import assert = require('node:assert');
-import * as _ from 'lodash';
-import type { EventEmitter } from 'node:events';
 
-import * as ltiOutcomes from './ltiOutcomes';
-import { config } from './config';
-import * as externalGradingSocket from './externalGradingSocket';
-import { ExternalGraderSqs } from './externalGraderSqs';
-import { ExternalGraderLocal } from './externalGraderLocal';
+import { config } from './config.js';
 import {
   IdSchema,
   CourseSchema,
@@ -24,9 +22,13 @@ import {
   type Variant,
   type Question,
   type Course,
-} from './db-types';
+} from './db-types.js';
+import { ExternalGraderLocal } from './externalGraderLocal.js';
+import { ExternalGraderSqs } from './externalGraderSqs.js';
+import * as externalGradingSocket from './externalGradingSocket.js';
+import * as ltiOutcomes from './ltiOutcomes.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const GradingJobInfoSchema = z.object({
   grading_job: GradingJobSchema,
@@ -152,7 +154,7 @@ async function updateJobSubmissionTime(grading_job_id: string): Promise<void> {
     grading_job_id,
     grading_submitted_at: new Date().toISOString(),
   });
-  externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
+  await externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
 }
 
 async function updateJobReceivedTime(grading_job_id: string, receivedTime: string): Promise<void> {
@@ -160,7 +162,7 @@ async function updateJobReceivedTime(grading_job_id: string, receivedTime: strin
     grading_job_id,
     grading_received_at: receivedTime,
   });
-  externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
+  await externalGradingSocket.gradingJobStatusUpdated(grading_job_id);
 }
 
 /**
@@ -254,6 +256,6 @@ export async function processGradingResult(content: any): Promise<void> {
       await ltiOutcomes.updateScore(assessment_instance_id);
     }
   } finally {
-    externalGradingSocket.gradingJobStatusUpdated(content.gradingId);
+    await externalGradingSocket.gradingJobStatusUpdated(content.gradingId);
   }
 }

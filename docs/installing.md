@@ -60,11 +60,11 @@ Once that message shows up, open a web browser and connect to [http://localhost:
 
 When you are finished with PrairieLearn, type Control-C on the terminal where you ran the server to stop it.
 
-### Running on ARM64 hardware
+### Running on Apple silicon and other ARM64 hardware
 
-If you're using an Apple Silicon Mac or another ARM-based machine, you may see an error like the following when you try to run the PrairieLearn Docker image:
+If you're using an Apple silicon Mac (M-series chips, etc.) or another ARM-based machine, you may see an error like the following when you try to run the PrairieLearn Docker image:
 
-```
+```console
 no matching manifest for linux/arm64/v8 in the manifest list entries
 ```
 
@@ -74,7 +74,9 @@ To fix this, add `--platform linux/amd64` before the image in any `docker run` c
 docker run -it --rm -p 3000:3000 --platform linux/amd64 prairielearn/prairielearn
 ```
 
-When running the image, you may get an error like `pg_ctl: could not start server`. To fix this, open Docker Desktop settings, click on "General", check "Use Rosetta for x86/amd64 emulation on Apple Silicon", and click "Apply & Restart". After Docker Desktop restarts, try the above `docker run ...` command again.
+When running the image, you may get an error like `pg_ctl: could not start server`. To fix this, open Docker Desktop settings, click on "General", check the option to use the virtualization framework, and check "Use Rosetta for x86/amd64 emulation on Apple Silicon". Then, click "Apply & Restart". After Docker Desktop restarts, try the above `docker run ...` command again.
+
+If Docker's Rosetta option isn't enabled, first check Apple's instructions to [install Rosetta](https://support.apple.com/en-us/102527).
 
 _Note that the use of R in `server.py` is not currently supported on ARM64 hardware._
 
@@ -85,6 +87,8 @@ In production, PrairieLearn runs external grading jobs and workspaces on a distr
 - Instead of running jobs on an EC2 instance, they will be run locally and directly with Docker on the host machine.
 - Instead of sending jobs to the grading containers with S3, we write them to a directory on the host machine and then mount that directory directly into the grading container as `/grade`.
 - Instead of receiving an SQS message to indicate that results are available, PrairieLearn will simply wait for the grading container to die, and then attempt to read `results/results.json` from the folder that was mounted in as `/grade`.
+
+#### Preparation
 
 In order to run external grading jobs when PrairieLearn is running locally inside Docker, there are a few additional preparation steps that are necessary:
 
@@ -97,7 +101,9 @@ To run PrairieLearn locally with external grader and workspace support, create a
 mkdir "$HOME/pl_ag_jobs"
 ```
 
-Now, run PrairieLearn as usual, but with additional options. For example, if your course directory is in `$HOME/pl-tam212` and the jobs directory created above is in `$HOME/pl_ag_jobs`, and you are using Linux or Mac OS X, the new command is as follows:
+#### Running Docker with the extended features
+
+Now, we can run PrairieLearn with additional options to allow the external grading or workspaces features. For example, if your course directory is in `$HOME/pl-tam212` and the jobs directory created above is in `$HOME/pl_ag_jobs`, the new command is as follows:
 
 ```sh
 docker run -it --rm -p 3000:3000 \
@@ -105,20 +111,16 @@ docker run -it --rm -p 3000:3000 \
     -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
     -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
     -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
+    --platform linux/amd64 `# Ensure the emulated amd64 version is used on ARM chips` \
+    --add-host=host.docker.internal:172.17.0.1 `# Ensure network connectivity` \
     prairielearn/prairielearn
 ```
 
-If you are on Windows, you can use the following command on the WSL 2 shell:
+###### Troubleshooting the --add-host option and network timeouts
 
-```sh
-docker run -it --rm -p 3000:3000 \
-    -v "$HOME/pl-tam212:/course" `# Replace the path with your course directory` \
-    -v "$HOME/pl_ag_jobs:/jobs" `# Map jobs directory into /jobs` \
-    -e HOST_JOBS_DIR="$HOME/pl_ag_jobs" \
-    -v /var/run/docker.sock:/var/run/docker.sock `# Mount docker into itself so container can spawn others` \
-    --add-host=host.docker.internal:172.17.0.1 \
-    prairielearn/prairielearn
-```
+If you are an advanced Docker user, or if your organization's network policies require it, then you might have previously adjusted the address pool used by Docker. If this conflicts with the Docker defaults, you might get a network timeout error when attempting to launch a workspace locally. In that case, you might need to adjust the IP address for the `--add-host=` option. You can find more technical details here: [PL issue #9805](https://github.com/PrairieLearn/PrairieLearn/issues/9805#issuecomment-2093299949), [moby/moby PR 29376](https://github.com/moby/moby/pull/29376), [docker/docs issue 8663](https://github.com/docker/docs/issues/8663).
+
+If you are using macOS, then you may be able to remove the `--add-host` option entirely without any problems.
 
 ## Upgrading your Docker's version of PrairieLearn
 

@@ -39,9 +39,7 @@ docker-compose.override.yml
 
 ## Config
 /config.json
-/apps/prairielearn/config.json
-/apps/workspace-host/config.json
-/apps/grader-host/config.json
+/apps/*/config.json
 
 ## Generated HTML
 
@@ -97,6 +95,11 @@ __pycache__/
 apps/*/dist
 apps/prairielearn/public/build
 packages/*/dist
+
+## Coverage reports
+coverage/
+apps/*/coverage
+packages/*/coverage
 
 ## TypeScript cache
 *.tsbuildinfo

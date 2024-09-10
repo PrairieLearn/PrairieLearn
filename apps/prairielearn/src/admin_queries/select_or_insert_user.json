@@ -12,6 +12,10 @@
     {
       "name": "uin",
       "description": "The user's UIN (leave blank to not insert a UIN)."
+    },
+    {
+      "name": "email",
+      "description": "The user's email (leave blank to not insert an email)."
     }
   ]
 }

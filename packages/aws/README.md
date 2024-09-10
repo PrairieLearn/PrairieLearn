@@ -14,12 +14,10 @@ Create a config provider with `makeAwsConfigProvider`:
 import { makeAwsConfigProvider } from '@prairielearn/aws';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 
-import { config } from './config';
-
 const awsConfigProvider = makeAwsConfigProvider({
   credentials: fromNodeProviderChain(),
   getClientConfig: () => ({
-    region: config.awsRegion,
+    region: 'us-east-2',
   }),
 });
 
@@ -59,7 +57,7 @@ For instance, to use [`s3rver`](https://github.com/jamhall/s3rver) when running 
 const awsConfigProvider = makeAwsConfigProvider({
   credentials: fromNodeProviderChain(),
   getClientConfig: () => ({
-    region: config.awsRegion,
+    region: 'us-east-2',
   }),
   makeS3ClientConfig: () => {
     if (process.env.NODE_ENV !== 'production') {
@@ -69,7 +67,7 @@ const awsConfigProvider = makeAwsConfigProvider({
           accessKeyId: 'S3RVER',
           secretAccessKey: 'S3RVER',
         },
-        endpoint: 'http://localhost:5000',
+        endpoint: 'http://127.0.0.1:5000',
       };
     }
 

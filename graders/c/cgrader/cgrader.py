@@ -222,9 +222,9 @@ class CGrader:
         if ungradable_if_failed and not all(
             os.path.isfile(f) for f in objs + std_obj_files
         ):
-            self.result[
-                "message"
-            ] += f"Compilation errors, please fix and try again.\n\n{out}\n"
+            self.result["message"] += (
+                f"Compilation errors, please fix and try again.\n\n{out}\n"
+            )
             raise UngradableException()
         if out and add_warning_result_msg:
             self.result["message"] += f"Compilation warnings:\n\n{out}\n"
@@ -296,9 +296,9 @@ class CGrader:
         if os.path.isfile(exec_file):
             self.change_mode(exec_file, "755")
         elif ungradable_if_failed:
-            self.result[
-                "message"
-            ] += f"Linker errors, please fix and try again.\n\n{out}\n"
+            self.result["message"] += (
+                f"Linker errors, please fix and try again.\n\n{out}\n"
+            )
             raise UngradableException()
         if out and add_warning_result_msg:
             self.result["message"] += f"Linker warnings:\n\n{out}\n"
@@ -361,8 +361,9 @@ class CGrader:
         file = os.path.abspath(file)
         self.run_command(["chmod", mode, file], sandboxed=False)
         parent = os.path.dirname(file)
+        # Ensure that all users can resolve the path name
         if change_parent and parent and not os.path.samefile(file, parent):
-            self.change_mode(parent, "711")
+            self.change_mode(parent, "a+x")
 
     def test_send_in_check_out(self, *args, **kwargs):
         """Old deprecated function name,
@@ -456,13 +457,11 @@ class CGrader:
             out += "\n(NO ENDING LINE BREAK)"
 
         if msg is None and exp_output:
-            comment = (
-                ""
-                if len(exp_output) == 1
-                else " one of" if must_match_all_outputs == "any" else " all of"
-            )
+            quantifier = ""
+            if len(exp_output) > 1:
+                quantifier = " one of" if must_match_all_outputs == "any" else " all of"
             join_str = "\n\n" if any("\n" in t for t, _ in exp_output) else "\n\t"
-            msg = f"Expected{comment}:{join_str}" + join_str.join(
+            msg = f"Expected{quantifier}:{join_str}" + join_str.join(
                 (
                     f"\033[32m{t}\033[0m"
                     if highlight_matches and r.search(outcmp) is not None
@@ -633,9 +632,9 @@ class CGrader:
                         output=test.findtext("{*}message"),
                     )
         except FileNotFoundError:
-            self.result[
-                "message"
-            ] += "Test suite log file not found. Consult the instructor.\n"
+            self.result["message"] += (
+                "Test suite log file not found. Consult the instructor.\n"
+            )
             raise UngradableException()
         except ET.ParseError as e:
             self.result["message"] += f"Error parsing test suite log.\n\n{e}\n"

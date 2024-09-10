@@ -1,10 +1,10 @@
-import { SessionStore } from '@prairielearn/session';
-import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 import * as opentelemetry from '@prairielearn/opentelemetry';
+import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
+import { SessionStore } from '@prairielearn/session';
 
-import { UserSessionSchema } from './db-types';
+import { UserSessionSchema } from './db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export class PostgresSessionStore implements SessionStore {
   private setCounter: opentelemetry.Counter;

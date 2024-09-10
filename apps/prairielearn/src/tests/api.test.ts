@@ -1,11 +1,11 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
-import fetch from 'node-fetch';
 import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
 
-import * as helperServer from './helperServer';
-import * as helperQuestion from './helperQuestion';
-import * as helperExam from './helperExam';
+import * as helperExam from './helperExam.js';
+import * as helperQuestion from './helperQuestion.js';
+import * as helperServer from './helperServer.js';
 
 const locals: Record<string, any> = {};
 
@@ -53,7 +53,7 @@ describe('API', function () {
       assert.isTrue(res.ok);
       const page$ = cheerio.load(await res.text());
 
-      const button = page$('#generateTokenButton').get(0);
+      const button = page$('[data-testid="generate-token-button"]').get(0);
       assert(button);
 
       // Load the popover content
@@ -143,7 +143,7 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
 
       const assessment = json.find((o) => o.assessment_name === 'exam1-automaticTestSuite');
       assert.exists(assessment);
@@ -164,7 +164,7 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
 
       assert.equal(json.assessment_id, locals.assessment_id);
       assert.equal(json.assessment_label, 'E1');
@@ -181,7 +181,7 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
       const assessmentInstance = json[0];
       assert.equal(assessmentInstance.user_uid, 'dev@example.com');
       assert.equal(assessmentInstance.points, assessmentPoints);
@@ -203,7 +203,7 @@ describe('API', function () {
 
       assert.equal(res.status, 200);
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
       assert.equal(json.assessment_instance_id, locals.assessment_instance_id);
       assert.equal(json.assessment_id, locals.assessment_id);
       assert.equal(json.user_uid, 'dev@example.com');
@@ -223,7 +223,7 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
       assert.lengthOf(json, 1);
       assert.equal(json[0].instance_question_points, assessmentPoints);
 
@@ -242,7 +242,7 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
       assert.equal(json.submission_id, locals.submission_id);
       assert.equal(json.assessment_instance_id, locals.assessment_instance_id);
       assert.equal(json.assessment_id, locals.assessment_id);
@@ -250,7 +250,7 @@ describe('API', function () {
     });
 
     step('GET to API for gradebook', async function () {
-      locals.apiGradebookUrl = locals.apiCourseInstanceUrl + `/gradebook`;
+      locals.apiGradebookUrl = locals.apiCourseInstanceUrl + '/gradebook';
       const res = await fetch(locals.apiGradebookUrl, {
         headers: {
           'Private-Token': locals.api_token,
@@ -258,7 +258,7 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
       const user = json.find((o) => o.user_uid === 'dev@example.com');
       assert.exists(user);
       const assessment = user.assessments.find((o) => o.assessment_label === 'E1');
@@ -278,7 +278,7 @@ describe('API', function () {
         },
       });
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
       assert.lengthOf(json, 7);
     });
 
@@ -294,13 +294,13 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
       assert.lengthOf(json, 1);
     });
 
     step('GET to API for course instance access rules succeeds', async function () {
       locals.apiCourseInstanceAccessRulesUrl =
-        locals.apiCourseInstanceUrl + `/course_instance_access_rules`;
+        locals.apiCourseInstanceUrl + '/course_instance_access_rules';
       const res = await fetch(locals.apiCourseInstanceAccessRulesUrl, {
         headers: {
           'Private-Token': locals.api_token,
@@ -308,7 +308,7 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
       assert.lengthOf(json, 1);
     });
 
@@ -320,7 +320,7 @@ describe('API', function () {
       });
       assert.equal(res.status, 200);
 
-      const json = await res.json();
+      const json = (await res.json()) as any;
       assert.exists(json.course_instance_id);
       assert.exists(json.course_title);
     });

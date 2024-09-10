@@ -1,6 +1,6 @@
 # Old v1/v2 Question Format
 
-**WARNING**: This page describes the old PrairieLearn question format, as used in v1 and v2. This question format will be supported indefinitely, but it is strongly recommended that all new questions be written in the [v3 format](questionFormat).
+**WARNING**: This page describes the old PrairieLearn question format, as used in v1 and v2. This question format will be supported indefinitely, but it is strongly recommended that all new questions be written in the [v3 format](question.md).
 
 ## Partial credit
 

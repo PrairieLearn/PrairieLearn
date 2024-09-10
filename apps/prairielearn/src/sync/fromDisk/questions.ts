@@ -1,12 +1,10 @@
 import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import * as infofile from '../infofile';
-import { makePerformance } from '../performance';
-import { CourseData, Question } from '../course-db';
-import { IdSchema } from '../../lib/db-types';
-
-const perf = makePerformance('questions');
+import { IdSchema } from '../../lib/db-types.js';
+import { CourseData, Question } from '../course-db.js';
+import * as infofile from '../infofile.js';
 
 function getParamsForQuestion(q: Question | null | undefined) {
   if (!q) return null;
@@ -66,13 +64,11 @@ export async function sync(
     ]);
   });
 
-  perf.start('sproc:sync_questions');
   const result = await sqldb.callRow(
     'sync_questions',
     [questionParams, courseId],
     z.record(z.string(), IdSchema),
   );
-  perf.end('sproc:sync_questions');
 
   return result;
 }

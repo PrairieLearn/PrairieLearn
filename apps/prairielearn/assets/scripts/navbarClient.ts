@@ -1,8 +1,9 @@
 import './lib/htmx';
 import 'htmx.org/dist/ext/loading-states.js';
 
-import { onDocumentReady } from '@prairielearn/browser-utils';
 import CookiesModule from 'js-cookie';
+
+import { onDocumentReady } from '@prairielearn/browser-utils';
 
 const COOKIE_EXPIRATION_DAYS = 30;
 
@@ -70,7 +71,6 @@ onDocumentReady(() => {
     removeCookie(['pl_requested_uid', 'pl2_requested_uid']);
     removeCookie(['pl_requested_course_role', 'pl2_requested_course_role']);
     removeCookie(['pl_requested_course_instance_role', 'pl2_requested_course_instance_role']);
-    removeCookie(['pl_requested_mode', 'pl2_requested_mode']);
     removeCookie(['pl_requested_date', 'pl2_requested_date']);
     setCookie(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
   });
@@ -90,7 +90,6 @@ onDocumentReady(() => {
     removeCookie(['pl_requested_uid', 'pl2_requested_uid']);
     removeCookie(['pl_requested_course_role', 'pl2_requested_course_role']);
     removeCookie(['pl_requested_course_instance_role', 'pl2_requested_course_instance_role']);
-    removeCookie(['pl_requested_mode', 'pl2_requested_mode']);
     removeCookie(['pl_requested_date', 'pl2_requested_date']);
     setCookie(['pl_requested_data_changed', 'pl2_requested_data_changed'], 'true');
 

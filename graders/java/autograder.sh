@@ -65,7 +65,7 @@ chmod 777 /grade/params/params.json
 DISABLE_JAVA_MANAGEMENT="-XX:+DisableAttachMechanism -Djavax.management.builder.initial=DISABLED"
 
 su - sbuser <<EOF
-java -cp "$CLASSPATH" $DISABLE_JAVA_MANAGEMENT JUnitAutograder
+java $JDK_JAVA_OPTIONS -cp "$CLASSPATH" $DISABLE_JAVA_MANAGEMENT JUnitAutograder
 EOF
 
 if [ -f $RESULTS_TEMP_FILE ] ; then

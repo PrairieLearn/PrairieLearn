@@ -1,6 +1,6 @@
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
-import { checkPlanGrantsForLocals } from '../lib/billing/plan-grants';
+import { checkPlanGrantsForLocals } from '../lib/billing/plan-grants.js';
 
 export default asyncHandler(async (req, res, next) => {
   const hasPlanGrants = await checkPlanGrantsForLocals(res.locals);

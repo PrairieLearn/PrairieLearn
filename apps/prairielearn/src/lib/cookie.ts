@@ -1,6 +1,6 @@
 import type { Request, Response, CookieOptions } from 'express';
 
-import { config } from './config';
+import { config } from './config.js';
 
 export function shouldSecureCookie(req: Request): boolean {
   // In production, always set secure: true. Otherwise, only set it to true if

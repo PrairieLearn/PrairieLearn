@@ -1,19 +1,20 @@
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
+
 import { queryAsync } from '@prairielearn/postgres';
 
-import { enableEnterpriseEdition, withoutEnterpriseEdition } from '../../tests/ee-helpers';
-import * as helperServer from '../../../tests/helperServer';
+import { config } from '../../../lib/config.js';
+import { features } from '../../../lib/features/index.js';
+import * as helperServer from '../../../tests/helperServer.js';
+import { getCsrfToken } from '../../../tests/utils/csrf.js';
+import { enrollRandomUsers } from '../../../tests/utils/enrollments.js';
 import {
   reconcilePlanGrantsForCourseInstance,
   reconcilePlanGrantsForInstitution,
   updateRequiredPlansForCourseInstance,
-} from '../../lib/billing/plans';
-import { config } from '../../../lib/config';
-import { features } from '../../../lib/features';
-import { enrollRandomUsers } from '../../../tests/utils/enrollments';
-import { getCsrfToken } from '../../../tests/utils/csrf';
+} from '../../lib/billing/plans.js';
+import { enableEnterpriseEdition, withoutEnterpriseEdition } from '../../tests/ee-helpers.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const pageUrl = siteUrl + '/pl/course_instance/1/instructor/instance_admin/billing';

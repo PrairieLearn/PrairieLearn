@@ -92,7 +92,7 @@ export async function instrumentedWithMetrics<T>(
   }
 }
 
-export interface createObservableValueGaugesOptions extends MetricOptions {
+export interface CreateObservableValueGaugesOptions extends MetricOptions {
   interval: number;
 }
 
@@ -110,7 +110,7 @@ export interface createObservableValueGaugesOptions extends MetricOptions {
 export function createObservableValueGauges(
   meter: Meter,
   name: string,
-  options: createObservableValueGaugesOptions,
+  options: CreateObservableValueGaugesOptions,
   observe: () => number,
 ) {
   const { interval, ...metricOptions } = options;

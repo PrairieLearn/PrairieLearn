@@ -1,21 +1,19 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
-import authzIsAdministrator from '../../middlewares/authzIsAdministrator';
-import generalRouter from '../pages/administratorInstitutionGeneral/administratorInstitutionGeneral';
-import coursesRouter from '../pages/administratorInstitutionCourses/administratorInstitutionCourses';
-import courseRouter from '../pages/administratorInstitutionCourse/administratorInstitutionCourse';
-import courseInstanceRouter from '../pages/administratorInstitutionCourseInstance/administratorInstitutionCourseInstance';
-import ssoRouter from '../pages/administratorInstitutionSso/administratorInstitutionSso';
-import samlRouter from '../pages/administratorInstitutionSaml/administratorInstitutionSaml';
-import lti13Router from '../pages/administratorInstitutionLti13/administratorInstitutionLti13';
-import { features } from '../../lib/features';
+import { features } from '../../lib/features/index.js';
+import authzIsAdministrator from '../../middlewares/authzIsAdministrator.js';
+import adminRouter from '../pages/administratorInstitutionAdmins/administratorInstitutionAdmins.js';
+import courseRouter from '../pages/administratorInstitutionCourse/administratorInstitutionCourse.js';
+import courseInstanceRouter from '../pages/administratorInstitutionCourseInstance/administratorInstitutionCourseInstance.js';
+import coursesRouter from '../pages/administratorInstitutionCourses/administratorInstitutionCourses.js';
+import generalRouter from '../pages/administratorInstitutionGeneral/administratorInstitutionGeneral.js';
+import lti13Router from '../pages/administratorInstitutionLti13/administratorInstitutionLti13.js';
+import samlRouter from '../pages/administratorInstitutionSaml/administratorInstitutionSaml.js';
+import ssoRouter from '../pages/administratorInstitutionSso/administratorInstitutionSso.js';
 
 const router = Router({ mergeParams: true });
 
-// Currently, we don't have any notion of institution-level administrators, so
-// we only allow global admins to do institution-level administration things.
-// We should change this in the future.
 router.use(authzIsAdministrator);
 
 router.use(
@@ -30,6 +28,7 @@ router.use(
 );
 
 router.use('/', generalRouter);
+router.use('/admins', adminRouter);
 router.use('/courses', coursesRouter);
 router.use('/course/:course_id', courseRouter);
 router.use('/course_instance/:course_instance_id', courseInstanceRouter);

@@ -1,7 +1,8 @@
 {
   "name": "@prairielearn/workspace-utils",
-  "version": "1.0.20",
+  "version": "1.0.23",
   "private": true,
+  "type": "module",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
@@ -14,8 +15,8 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.12.2",
-    "typescript": "^5.4.3",
+    "@types/node": "^20.16.2",
+    "typescript": "^5.5.4",
     "typescript-cp": "^0.1.9"
   },
   "dependencies": {
@@ -23,7 +24,7 @@
     "@prairielearn/postgres": "workspace:^",
     "@socket.io/redis-emitter": "^5.1.0",
     "fast-glob": "^3.3.2",
-    "filesize": "^10.1.1",
+    "filesize": "^10.1.4",
     "socket.io": "^4.7.5"
   }
 }

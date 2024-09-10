@@ -327,9 +327,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         # Finally, store the result
         data["submitted_answers"][name] = a_sub_json
     except Exception:
-        data["format_errors"][
-            name
-        ] = f"Your answer was simplified to this, which contains an invalid expression: $${sympy.latex(a_sub_parsed):s}$$"
+        data["format_errors"][name] = (
+            f"Your answer was simplified to this, which contains an invalid expression: $${sympy.latex(a_sub_parsed):s}$$"
+        )
         data["submitted_answers"][name] = None
 
 
@@ -446,9 +446,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["partial_scores"][name] = {"score": 1, "weight": weight}
 
     elif result == "incorrect":
-        data["raw_submitted_answers"][
-            name
-        ] = f"{a_tru_str} + {random.randint(1, 100):d}"
+        data["raw_submitted_answers"][name] = (
+            f"{a_tru_str} + {random.randint(1, 100):d}"
+        )
         data["partial_scores"][name] = {"score": 0, "weight": weight}
 
     elif result == "invalid":

@@ -1,22 +1,24 @@
-import * as fs from 'fs-extra';
+import fs from 'fs-extra';
+
+import { HttpStatusError } from '@prairielearn/error';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
-import { HttpStatusError } from '@prairielearn/error';
 
-import { createServerJob } from './server-jobs';
-import { config } from './config';
-import * as chunks from './chunks';
-import { syncDiskToSqlWithLock } from '../sync/syncFromDisk';
-import { IdSchema, User, UserSchema } from './db-types';
 import {
   getCourseCommitHash,
   getLockNameForCoursePath,
   getOrUpdateCourseCommitHash,
   selectCourseById,
   updateCourseCommitHash,
-} from '../models/course';
+} from '../models/course.js';
+import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as chunks from './chunks.js';
+import { config } from './config.js';
+import { IdSchema, User, UserSchema } from './db-types.js';
+import { createServerJob, ServerJobResult } from './server-jobs.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * Check that an assessment_instance_id really belongs to the given course_instance_id
@@ -64,7 +66,7 @@ export async function pullAndUpdateCourse({
   branch?: string | null;
   repository?: string | null;
   commit_hash?: string | null;
-}): Promise<{ jobSequenceId: string; jobPromise: Promise<void> }> {
+}): Promise<{ jobSequenceId: string; jobPromise: Promise<ServerJobResult> }> {
   const serverJob = await createServerJob({
     courseId,
     userId: userId ?? undefined,

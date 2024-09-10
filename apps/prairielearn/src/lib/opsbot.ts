@@ -1,7 +1,9 @@
-import * as error from '@prairielearn/error';
-import { config } from './config';
-import { logger } from '@prairielearn/logger';
 import fetch, { Response } from 'node-fetch';
+
+import * as error from '@prairielearn/error';
+import { logger } from '@prairielearn/logger';
+
+import { config } from './config.js';
 
 export function canSendMessages(): boolean {
   return !!config.secretSlackOpsBotEndpoint;

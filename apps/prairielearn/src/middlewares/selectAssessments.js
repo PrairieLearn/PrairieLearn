@@ -1,8 +1,9 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
+
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export default asyncHandler(async (req, res, next) => {
   const result = await sqldb.queryAsync(sql.select_assessments, {

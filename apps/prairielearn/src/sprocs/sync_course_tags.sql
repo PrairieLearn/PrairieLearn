@@ -9,78 +9,86 @@ CREATE FUNCTION
     )
 AS $$
 DECLARE
-    question_tags_item JSONB;
-    keep_tag_ids bigint[];
-    existing_tag_ids bigint[];
-    inserted_tag_ids bigint[];
-    num_existing_tags bigint;
+    used_tag_names text[];
+    inserted_tag_names text[];
 BEGIN
+    -- We will use the used_tag_names variable to track all the valid tags
+    -- (either existing or new).
+
+    -- First insert all the explicit tags, if we can. Keep a list of tag names
+    -- that we've used.
     IF valid_course_info THEN
         WITH new_tags AS (
             INSERT INTO tags (
+                course_id,
                 name,
                 number,
                 description,
                 color,
-                course_id
+                implicit
             ) SELECT
+                syncing_course_id,
                 tag->>0,
                 number,
                 tag->>1,
                 tag->>2,
-                syncing_course_id
+                FALSE
             FROM UNNEST(course_info_tags) WITH ORDINALITY AS t(tag, number)
-            ON CONFLICT (name, course_id) DO UPDATE
+            ON CONFLICT (course_id, name) DO UPDATE
             SET
                 number = EXCLUDED.number,
                 color = EXCLUDED.color,
-                description = EXCLUDED.description
-            RETURNING id
+                description = EXCLUDED.description,
+                implicit = EXCLUDED.implicit
+            RETURNING name
         )
-        SELECT array_agg(id) INTO keep_tag_ids FROM (SELECT id FROM new_tags) AS ids;
-
-        num_existing_tags := array_length(keep_tag_ids, 1);
+        SELECT array_agg(name) INTO used_tag_names FROM new_tags;
     ELSE
-        SELECT COUNT(*) INTO num_existing_tags
+        -- If we don't have valid course info, we aren't going to delete anything
+        -- so we need to account for existing tags.
+        SELECT array_agg(name) INTO used_tag_names
         FROM tags
         WHERE course_id = syncing_course_id;
     END IF;
 
-    -- We need to handle potentially-unknown question tags in two phases.
-    -- First, we'll determine the IDs of all tags that we definitely need
-    -- to keep. Then, we'll attempt to insert any missing tags and record the
-    -- IDs of new rows. After this, any ID not captured above in those two
-    -- categories (or handled  in new_tags above) can be deleted.
-    SELECT array_agg(id) INTO existing_tag_ids FROM (
-        SELECT id FROM tags WHERE name IN (SELECT UNNEST(question_tag_names))
-    ) AS ids;
-    keep_tag_ids := array_cat(keep_tag_ids, existing_tag_ids);
-
+    -- Make sure we have a tag for every question tag, even those that don't
+    -- appear in `infoCourse.json`.
     WITH new_tags AS (
         INSERT INTO tags (
+            course_id,
             name,
             number,
             description,
             color,
-            course_id
+            implicit
         ) SELECT
+            syncing_course_id,
             name,
-            (num_existing_tags + number),
+            (array_length(used_tag_names, 1) + (row_number() OVER ())),
             'Auto-generated from use in a question; add this tag to your infoCourse.json file to customize',
             'gray1',
-            syncing_course_id
-        FROM UNNEST(question_tag_names) WITH ORDINALITY AS t(name, number)
-        ON CONFLICT (name, course_id) DO NOTHING
-        RETURNING id
+            TRUE
+        FROM
+            (SELECT UNNEST(question_tag_names) EXCEPT SELECT UNNEST(used_tag_names))
+            AS t(name)
+        ORDER BY name
+        ON CONFLICT (course_id, name) DO UPDATE
+        SET
+            number = EXCLUDED.number,
+            color = EXCLUDED.color,
+            description = EXCLUDED.description,
+            implicit = EXCLUDED.implicit
+        RETURNING name
     )
-    SELECT array_agg(id) INTO inserted_tag_ids FROM (SELECT id FROM new_tags) AS ids;
-    keep_tag_ids := array_cat(keep_tag_ids, inserted_tag_ids);
+    SELECT array_agg(name) INTO inserted_tag_names FROM new_tags;
+
+    used_tag_names := array_cat(used_tag_names, inserted_tag_names);
 
     IF delete_unused THEN
         DELETE FROM tags AS t
         WHERE
             t.course_id = syncing_course_id
-            AND t.id NOT IN (SELECT UNNEST(keep_tag_ids));
+            AND t.name NOT IN (SELECT UNNEST(used_tag_names));
     END IF;
 
     -- Make a map from tag name to ID to return to the caller

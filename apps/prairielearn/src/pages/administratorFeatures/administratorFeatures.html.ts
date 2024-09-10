@@ -1,9 +1,12 @@
 import { z } from 'zod';
-import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
-import { Modal } from '../../components/Modal.html';
-import { Course, CourseInstance, Institution } from '../../lib/db-types';
+
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
+import { html } from '@prairielearn/html';
+
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { Course, CourseInstance, Institution } from '../../lib/db-types.js';
 
 export const FeatureGrantRowSchema = z.object({
   id: z.string(),
@@ -34,17 +37,15 @@ export function AdministratorFeatures({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals, pageTitle: 'Features' })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'features',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'features' })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Features</div>
+            <div class="card-header bg-primary text-white">
+              <h1>Features</h1>
+            </div>
             ${features.length > 0
               ? html`<div class="list-group list-group-flush">
                   ${features.map((feature) => {
@@ -85,7 +86,7 @@ export function AdministratorFeature({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals, pageTitle: 'Features' })}
         ${compiledScriptTag('administratorFeaturesClient.ts')}
         <style>
           .list-inline-item:not(:first-child):before {
@@ -98,11 +99,7 @@ export function AdministratorFeature({
         </style>
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'features',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'features' })}
         ${AddFeatureGrantModal({ feature, institutions, csrfToken: resLocals.__csrf_token })}
         <main id="content" class="container">
           <div class="card mb-4">
@@ -269,11 +266,7 @@ export function AddFeatureGrantModalBody({
           Institution
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
-        <select
-          class="form-control custom-select"
-          id="feature-grant-institution"
-          name="institution_id"
-        >
+        <select class="custom-select" id="feature-grant-institution" name="institution_id">
           <option value="">All institutions</option>
           ${institutions.map((institution) => {
             return html`
@@ -294,7 +287,7 @@ export function AddFeatureGrantModalBody({
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
         <select
-          class="form-control custom-select"
+          class="custom-select"
           id="feature-grant-course"
           name="course_id"
           ${!institution_id ? 'disabled' : ''}
@@ -316,7 +309,7 @@ export function AddFeatureGrantModalBody({
           <div class="spinner-border spinner-border-sm" role="status" data-loading></div>
         </label>
         <select
-          class="form-control custom-select"
+          class="custom-select"
           id="feature-grant-course-instance"
           name="course_instance_id"
           ${!course_id ? 'disabled' : ''}

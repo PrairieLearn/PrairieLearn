@@ -1,21 +1,21 @@
 import { assert } from 'chai';
 import fetch from 'node-fetch';
 
-import { config } from '../../../lib/config';
-import * as helperServer from '../../../tests/helperServer';
-import { enableEnterpriseEdition } from '../../tests/ee-helpers';
-import {
-  reconcilePlanGrantsForCourseInstance,
-  reconcilePlanGrantsForCourseInstanceUser,
-  updateRequiredPlansForCourseInstance,
-} from '../../lib/billing/plans';
+import { config } from '../../../lib/config.js';
+import { ensureEnrollment } from '../../../models/enrollment.js';
+import * as helperServer from '../../../tests/helperServer.js';
 import {
   withUser,
   type AuthUser,
   getConfiguredUser,
   getOrCreateUser,
-} from '../../../tests/utils/auth';
-import { ensureEnrollment } from '../../../models/enrollment';
+} from '../../../tests/utils/auth.js';
+import {
+  reconcilePlanGrantsForCourseInstance,
+  reconcilePlanGrantsForCourseInstanceUser,
+  updateRequiredPlansForCourseInstance,
+} from '../../lib/billing/plans.js';
+import { enableEnterpriseEdition } from '../../tests/ee-helpers.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const assessmentsUrl = `${siteUrl}/pl/course_instance/1/assessments`;
@@ -24,6 +24,7 @@ const studentUser: AuthUser = {
   uid: 'student@example.com',
   name: 'Example Student',
   uin: 'student',
+  email: 'student@example.com',
 };
 
 describe('studentCourseInstanceUpgrade', () => {
@@ -83,7 +84,8 @@ describe('studentCourseInstanceUpgrade', () => {
 
     const res = await fetch(assessmentsUrl, {
       headers: {
-        cookie: `pl_requested_uid=student@example.com; pl_requested_course_role=None; pl_requested_course_instance_role=None`,
+        cookie:
+          'pl2_requested_uid=student@example.com; pl2_requested_course_role=None; pl2_requested_course_instance_role=None',
       },
     });
     assert.isOk(res.ok);
@@ -98,7 +100,8 @@ describe('studentCourseInstanceUpgrade', () => {
 
     const res = await fetch(assessmentsUrl, {
       headers: {
-        cookie: `pl_requested_uid=student@example.com; pl_requested_course_role=Owner; pl_requested_course_instance_role=Student Data Editor`,
+        cookie:
+          'pl2_requested_uid=student@example.com; pl2_requested_course_role=Owner; pl2_requested_course_instance_role=Student Data Editor',
       },
     });
     assert.isOk(res.ok);

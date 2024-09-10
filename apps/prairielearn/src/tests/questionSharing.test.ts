@@ -1,21 +1,24 @@
-import { assert } from 'chai';
-import { step } from 'mocha-steps';
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+
+import { assert } from 'chai';
+import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import { Course } from '../lib/db-types';
-import { features } from '../lib/features/index';
-import { selectCourseById } from '../models/course';
-import * as syncFromDisk from '../sync/syncFromDisk';
-import { fetchCheerio } from './helperClient';
-import * as helperServer from './helperServer';
-import { makeMockLogger } from './mockLogger';
-import * as syncUtil from './sync/util';
+import { config } from '../lib/config.js';
+import { Course } from '../lib/db-types.js';
+import { features } from '../lib/features/index.js';
+import { selectCourseById } from '../models/course.js';
+import * as syncFromDisk from '../sync/syncFromDisk.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { fetchCheerio } from './helperClient.js';
+import * as helperServer from './helperServer.js';
+import { makeMockLogger } from './mockLogger.js';
+import * as syncUtil from './sync/util.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const { logger } = makeMockLogger();
 
 const siteUrl = 'http://localhost:' + config.serverPort;
@@ -51,7 +54,7 @@ async function setSharingName(courseId: string, name: string) {
 async function accessSharedQuestionAssessment(course_id: string) {
   const assessmentsUrl = `${baseUrl}/course_instance/${course_id}/instructor/instance_admin/assessments`;
   const assessmentsPage = await fetchCheerio(assessmentsUrl);
-  const assessmentLink = assessmentsPage.$(`a:contains("Test assessment")`);
+  const assessmentLink = assessmentsPage.$('a:contains("Test assessment")');
   assert.lengthOf(assessmentLink, 1);
   const sharedQuestionAssessmentUrl = siteUrl + assessmentLink.attr('href');
   const res = await fetchCheerio(sharedQuestionAssessmentUrl);
@@ -139,7 +142,7 @@ describe('Question Sharing', function () {
       const result = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
       if (!result?.hadJsonErrorsOrWarnings) {
         throw new Error(
-          `Sync of consuming course succeeded when it should have failed due to unresolved shared question path.`,
+          'Sync of consuming course succeeded when it should have failed due to unresolved shared question path.',
         );
       }
     });
@@ -154,7 +157,7 @@ describe('Question Sharing', function () {
       async () => {
         const result = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
         if (result?.hadJsonErrorsOrWarnings) {
-          throw new Error(`Errors or warnings found during sync of consuming course`);
+          throw new Error('Errors or warnings found during sync of consuming course');
         }
       },
     );
@@ -205,12 +208,6 @@ describe('Question Sharing', function () {
       );
     });
 
-    // TODO: fix this test?
-    step('Fail if trying to set sharing name again.', async () => {
-      const result = await setSharingName(consumingCourse.id, CONSUMING_COURSE_SHARING_NAME);
-      assert.equal(result.status, 200);
-    });
-
     step('Set sharing course sharing name', async () => {
       await setSharingName(sharingCourse.id, SHARING_COURSE_SHARING_NAME);
       const sharingPage = await fetchCheerio(sharingPageUrl(sharingCourse.id));
@@ -219,6 +216,14 @@ describe('Question Sharing', function () {
         sharingPage.$('[data-testid="sharing-name"]').text(),
         SHARING_COURSE_SHARING_NAME,
       );
+    });
+
+    step('Successfully change the sharing name when no questions have been shared', async () => {
+      let res = await setSharingName(sharingCourse.id, 'Nothing shared yet');
+      assert(res.status === 200);
+
+      res = await setSharingName(sharingCourse.id, SHARING_COURSE_SHARING_NAME);
+      assert(res.status === 200);
     });
 
     step('Generate and get sharing token for sharing course', async () => {
@@ -370,6 +375,11 @@ describe('Question Sharing', function () {
         SHARING_SET_NAME,
       );
     });
+
+    step('Fail to change the sharing name when a question has been shared', async () => {
+      const res = await setSharingName(sharingCourse.id, 'Question shared');
+      assert(res.status === 400);
+    });
   });
 
   describe('Test Sharing a Question Publicly', function () {
@@ -430,18 +440,18 @@ describe('Question Sharing', function () {
       const result = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
       if (result === undefined || result.hadJsonErrorsOrWarnings) {
         console.log(result);
-        throw new Error(`Errors or warnings found during sync of consuming course`);
+        throw new Error('Errors or warnings found during sync of consuming course');
       }
     });
 
     step('Successfully access shared question', async () => {
       const res = await accessSharedQuestionAssessment(consumingCourse.id);
-      const sharedQuestionLink = res.$(`a:contains("Shared via sharing set")`);
+      const sharedQuestionLink = res.$('a:contains("Shared via sharing set")');
       assert.lengthOf(sharedQuestionLink, 1);
       const sharedQuestionRes = await fetchCheerio(siteUrl + sharedQuestionLink.attr('href'));
       assert(sharedQuestionRes.ok);
 
-      const publiclySharedQuestionLink = res.$(`a:contains("Shared publicly")`);
+      const publiclySharedQuestionLink = res.$('a:contains("Shared publicly")');
       assert.lengthOf(publiclySharedQuestionLink, 1);
       const publiclySharedQuestionRes = await fetchCheerio(
         siteUrl + publiclySharedQuestionLink.attr('href'),

@@ -34,7 +34,7 @@ def union_drawing_items(e1, e2):
 
     newobj = []
     for item in obj1:
-        if not item["id"] in new_ids:
+        if item["id"] not in new_ids:
             newobj.append(item)
     for item in obj2:
         newobj.append(item)
@@ -294,9 +294,10 @@ def render(element_html, data):
             element, "snap-to-grid", defaults.element_defaults["snap-to-grid"]
         ),
         "grid_size": grid_size,
-        "editable": (data["panel"] == "question" and not preview_mode),
+        "editable": (
+            data["panel"] == "question" and data["editable"] and not preview_mode
+        ),
         "base_url": data["options"]["base_url"],
-        "client_files": "/pl/static/elements/pl-drawing/clientFilesElement/",
         "element_client_files": data["options"]["client_files_extensions_url"],
         "render_scale": pl.get_float_attrib(
             element, "render-scale", defaults.element_defaults["render-scale"]
@@ -427,7 +428,7 @@ def grade(element_html, data):
 
     if not isinstance(student, list) or len(student) == 0:
         data["format_errors"][name] = "No submitted answer."
-        return data
+        return
 
     matches = {}  # If a reference object is matched to a student object
     num_correct = 0  # number correct
@@ -508,5 +509,3 @@ def grade(element_html, data):
         "weight": 1,
         "feedback": {"correct": (score == 1), "missing": {}, "matches": matches},
     }
-
-    return data

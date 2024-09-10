@@ -13,7 +13,6 @@ WITH
       i.open
   )
 SELECT
-  open,
   coalesce(count, 0) AS count
 FROM
   (
@@ -23,6 +22,7 @@ FROM
   ) AS tmp (open)
   LEFT JOIN counts USING (open)
 ORDER BY
+  -- Returns two rows, the first is false (closed), the second is true (open)
   open;
 
 -- BLOCK select_issues
@@ -70,41 +70,25 @@ WITH
       )
       AND (
         $filter_query_text::text IS NULL
-        OR to_tsvector(
-          concat_ws(' ', q.directory, u.uid, i.student_message)
-        ) @@ plainto_tsquery($filter_query_text::text)
+        OR to_tsvector(concat_ws(' ', q.qid, u.uid, i.student_message)) @@ plainto_tsquery($filter_query_text::text)
       )
   )
 SELECT
-  i.id AS issue_id,
-  format_date_iso8601 (
-    now(),
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS now_date,
-  format_date_iso8601 (
-    i.date,
-    coalesce(ci.display_timezone, c.display_timezone)
-  ) AS formatted_date,
+  i.* AS issue_id,
   ci.short_name AS course_instance_short_name,
   ci.id AS course_instance_id,
+  COALESCE(ci.display_timezone, c.display_timezone) AS display_timezone,
   a.id AS assessment_id,
   CASE
     WHEN i.assessment_id IS NOT NULL THEN assessments_format (i.assessment_id)
-    ELSE NULL
   END AS assessment,
-  i.question_id,
-  i.instance_question_id,
   iq.assessment_instance_id,
-  i.course_instance_id,
-  q.directory AS question_qid,
+  q.qid AS question_qid,
   u.uid AS user_uid,
   u.name AS user_name,
-  i.student_message,
-  i.variant_id,
+  u.email AS user_email,
   v.variant_seed,
-  i.open,
-  i.manually_reported,
-  COUNT(*) OVER () AS issue_count
+  COUNT(*) OVER ()::INTEGER AS issue_count
 FROM
   selected_issues
   JOIN issues AS i ON (i.id = selected_issues.issue_id)

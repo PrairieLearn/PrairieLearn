@@ -1,16 +1,17 @@
-FROM ubuntu:22.04
+FROM ubuntu:24.04
 
 LABEL maintainer="jonatan@yorku.ca"
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update
-RUN apt-get install -y python3.10 gcc make python3-pip valgrind check pkg-config && apt clean
+RUN apt-get update && \
+    apt-get install -y python3.12 gcc make python3-pip valgrind check pkg-config clang && \
+    apt-get clean
 
-RUN ln -sf /usr/bin/python3.10 /usr/bin/python3
+RUN ln -sf /usr/bin/python3.12 /usr/bin/python3
 
 COPY requirements.txt /requirements.txt
-RUN pip3 install --no-cache-dir -r /requirements.txt
+RUN pip3 install --no-cache-dir --break-system-packages -r /requirements.txt
 
 ENV LANG=en_US.UTF-8
 ENV LC_LANG=en_US.UTF-8

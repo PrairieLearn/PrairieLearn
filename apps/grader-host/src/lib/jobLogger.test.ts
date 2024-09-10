@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { BufferedWritableStream } from './jobLogger';
+import { BufferedWritableStream } from './jobLogger.js';
 
 describe('BufferedWritableStream', () => {
   it('buffers bytes', () => {

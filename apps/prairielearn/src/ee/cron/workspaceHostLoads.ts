@@ -1,12 +1,13 @@
 import { CloudWatch } from '@aws-sdk/client-cloudwatch';
 import { EC2 } from '@aws-sdk/client-ec2';
+
 import { loadSqlEquiv, queryAsync, callOneRowAsync } from '@prairielearn/postgres';
 
-import { makeAwsClientConfig } from '../../lib/aws';
-import { config } from '../../lib/config';
-import * as workspaceHostUtils from '../../lib/workspaceHost';
+import { makeAwsClientConfig } from '../../lib/aws.js';
+import { config } from '../../lib/config.js';
+import * as workspaceHostUtils from '../../lib/workspaceHost.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 type WorkspaceLoadStats = Record<string, any>;
 

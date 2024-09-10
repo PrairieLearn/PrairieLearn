@@ -1,6 +1,7 @@
-import ejs from 'ejs';
 import path from 'path';
 import { fileURLToPath } from 'url';
+
+import ejs from 'ejs';
 
 import { unsafeHtml, type HtmlSafeString } from '@prairielearn/html';
 /**

@@ -55,7 +55,7 @@ jobs:
         run: tools/check_path_modified.sh workspaces/desktop workspaces_desktop_modified
       - name: Build and push prairielearn/workspace-desktop
         if: ${{ env.workspaces_desktop_modified }}
-        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/desktop
           platforms: linux/amd64,linux/arm64
@@ -69,7 +69,7 @@ jobs:
         run: tools/check_path_modified.sh workspaces/jupyterlab workspaces_jupyterlab_modified
       - name: Build and push prairielearn/workspace-jupyterlab
         if: ${{ env.workspaces_jupyterlab_modified }}
-        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/jupyterlab
           platforms: linux/amd64,linux/arm64
@@ -83,7 +83,7 @@ jobs:
         run: tools/check_path_modified.sh workspaces/jupyterlab-python workspaces_jupyterlab_python_modified
       - name: Build and push prairielearn/workspace-jupyterlab-python
         if: ${{ env.workspaces_jupyterlab_python_modified }}
-        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/jupyterlab-python
           platforms: linux/amd64,linux/arm64
@@ -97,7 +97,7 @@ jobs:
         run: tools/check_path_modified.sh workspaces/rstudio workspaces_rstudio_modified
       - name: Build and push prairielearn/workspace-rstudio
         if: ${{ env.workspaces_rstudio_modified }}
-        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/rstudio
           platforms: linux/amd64,linux/arm64
@@ -111,13 +111,27 @@ jobs:
         run: tools/check_path_modified.sh workspaces/xtermjs workspaces_xtermjs_modified
       - name: Build and push prairielearn/workspace-xtermjs
         if: ${{ env.workspaces_xtermjs_modified }}
-        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/xtermjs
           platforms: linux/amd64,linux/arm64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           tags: prairielearn/workspace-xtermjs:${{ env.COMMIT_SHA }}
+
+      ######################################################################################################
+      # prairielearn/workspace-vscode-python
+      - name: Check whether workspaces/vscode-python was modified
+        run: tools/check_path_modified.sh workspaces/vscode-python workspaces_vscode_python_modified
+      - name: Build and push prairielearn/workspace-vscode-python
+        if: ${{ env.workspaces_vscode_python_modified }}
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: workspaces/vscode-python
+          platforms: linux/amd64,linux/arm64
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          no-cache: true
+          tags: prairielearn/workspace-vscode-python:${{ env.COMMIT_SHA }}
 
   build-grader-images:
     runs-on: ubuntu-latest
@@ -152,7 +166,7 @@ jobs:
         run: tools/check_path_modified.sh graders/c graders_c_modified
       - name: Build and push prairielearn/grader-c
         if: ${{ env.graders_c_modified }}
-        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: graders/c
           platforms: linux/amd64,linux/arm64
@@ -166,7 +180,7 @@ jobs:
         run: tools/check_path_modified.sh graders/java graders_java_modified
       - name: Build and push prairielearn/grader-java
         if: ${{ env.graders_java_modified }}
-        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: graders/java
           platforms: linux/amd64,linux/arm64
@@ -180,7 +194,7 @@ jobs:
         run: tools/check_path_modified.sh graders/python graders_python_modified
       - name: Build and push prairielearn/grader-python
         if: ${{ env.graders_python_modified }}
-        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: graders/python
           platforms: linux/amd64,linux/arm64
@@ -194,7 +208,7 @@ jobs:
         run: tools/check_path_modified.sh graders/r graders_r_modified
       - name: Build and push prairielearn/grader-r
         if: ${{ env.graders_r_modified }}
-        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: graders/r
           platforms: linux/amd64,linux/arm64
@@ -229,7 +243,7 @@ jobs:
         run: tools/check_path_modified.sh images/plbase images_plbase_modified
       - name: Build and push prairielearn/plbase
         if: ${{ env.images_plbase_modified }}
-        uses: docker/build-push-action@v5 # https://github.com/marketplace/actions/build-and-push-docker-images
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: images/plbase
           platforms: linux/amd64
@@ -290,6 +304,15 @@ jobs:
         # ensure that the tests fail more quickly so that people can fix them.
         timeout-minutes: 30
 
+      # Since tests run in the context of the container, we need to copy all
+      # the coverage reports out of the container and into the host filesystem.
+      - name: Copy coverage reports to the host
+        run: ./tools/copy_docker_coverage_reports.sh test_container
+      - name: Upload coverage reports to Codecov
+        uses: codecov/codecov-action@v4.5.0
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+
   native-checks:
     runs-on: ubuntu-latest
 
@@ -313,8 +336,10 @@ jobs:
         with:
           node-version: '20'
           cache: 'yarn'
+      - name: Preinstall node-gyp headers
+        run: yarn dlx node-gyp install
       - name: Install Node dependencies
-        run: yarn install --immutable
+        run: yarn install --immutable --inline-builds
 
       - name: Set up Turborepo cache
         uses: actions/cache@v4
@@ -339,6 +364,8 @@ jobs:
       - name: Run the Python tests
         run: make test-python
         timeout-minutes: 5
+      - name: Check for warnings in documentation
+        run: make build-docs
       - name: Check dependency structure
         run: make check-dependencies
 
@@ -352,9 +379,6 @@ jobs:
       # in those cases.
       - name: Check for duplicate Node dependencies
         run: yarn dedupe --check
-
-      - name: Check for CJS requires which could be ESM imports
-        run: node ./tools/cjs-to-esm-candidates.mjs --check
 
   report-image-sizes:
     runs-on: ubuntu-latest
@@ -371,6 +395,9 @@ jobs:
         uses: actions/setup-node@v4
         with:
           node-version: '20'
+
+      - name: Preinstall node-gyp headers
+        run: yarn dlx node-gyp install
 
       - name: Install Node dependencies
         run: yarn workspaces focus @prairielearn/actions-report-image-sizes
@@ -391,6 +418,7 @@ jobs:
             prairielearn/workspace-jupyterlab-python
             prairielearn/workspace-rstudio
             prairielearn/workspace-xtermjs
+            prairielearn/workspace-vscode-python
             prairielearn/grader-c
             prairielearn/grader-java
             prairielearn/grader-python

@@ -1,9 +1,9 @@
 // @ts-check
 import { Router } from 'express';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 
-import * as chunks from '../../lib/chunks';
-import * as filePaths from '../../lib/file-paths';
+import * as chunks from '../../lib/chunks.js';
+import * as filePaths from '../../lib/file-paths.js';
 
 const router = Router();
 

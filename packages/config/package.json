@@ -1,30 +1,43 @@
 {
   "name": "@prairielearn/config",
-  "version": "2.0.17",
+  "version": "3.0.5",
+  "type": "module",
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --no-config --require tsx src/**/*.test.ts"
+    "test": "c8 mocha src/**/*.test.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.544.0",
-    "@aws-sdk/client-secrets-manager": "^3.543.0",
+    "@aws-sdk/client-ec2": "^3.641.0",
+    "@aws-sdk/client-secrets-manager": "^3.637.0",
     "@prairielearn/aws-imds": "workspace:^",
     "fs-extra": "^11.2.0",
     "lodash": "^4.17.21",
-    "zod": "^3.22.4"
+    "zod": "^3.23.8"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "*",
+    "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
-    "@types/lodash": "^4.17.0",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^20.12.2",
-    "chai": "^4.4.1",
-    "mocha": "^10.4.0",
+    "@types/lodash": "^4.17.7",
+    "@types/mocha": "^10.0.7",
+    "@types/node": "^20.16.2",
+    "c8": "^10.1.2",
+    "chai": "^5.1.1",
+    "mocha": "^10.7.3",
     "tmp-promise": "^3.0.3",
-    "tsx": "^4.7.2",
-    "typescript": "^5.4.3"
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  },
+  "c8": {
+    "reporter": [
+      "html",
+      "text-summary",
+      "cobertura"
+    ],
+    "all": true,
+    "include": [
+      "src/**"
+    ]
   }
 }

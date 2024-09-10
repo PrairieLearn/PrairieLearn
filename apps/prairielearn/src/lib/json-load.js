@@ -1,9 +1,11 @@
 // @ts-check
 import * as fs from 'fs/promises';
-import * as jju from 'jju';
-import Ajv from 'ajv';
+
+import { Ajv } from 'ajv';
+import jju from 'jju';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
+// https://github.com/ajv-validator/ajv/issues/2132
 const ajv = new Ajv();
 
 /**

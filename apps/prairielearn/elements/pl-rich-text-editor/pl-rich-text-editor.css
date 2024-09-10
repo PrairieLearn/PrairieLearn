@@ -6,8 +6,17 @@
 
 .pl-rich-text-editor-container:focus-within {
   outline: 0.2rem solid rgb(0 123 255 / 25%);
+  box-shadow: unset;
 }
 
 .pl-rich-text-editor-container {
   box-shadow: 3px 3px 3px grey;
+}
+
+.pl-rich-text-editor-counter-container {
+  border-style: solid;
+  border-color: #ccc;
+  border-width: 0 1px 1px;
+  padding: 5px 15px;
+  text-align: right;
 }

@@ -1,27 +1,29 @@
+import * as child_process from 'child_process';
+import * as path from 'path';
+import { PassThrough as PassThroughStream } from 'stream';
+import * as util from 'util';
+
 import { S3 } from '@aws-sdk/client-s3';
 import { Upload } from '@aws-sdk/lib-storage';
 import * as async from 'async';
-import * as child_process from 'child_process';
-import * as fs from 'fs-extra';
-import * as path from 'path';
-import { PassThrough as PassThroughStream } from 'stream';
+import fs from 'fs-extra';
 import * as tar from 'tar';
-import * as util from 'util';
 import { v4 as uuidv4 } from 'uuid';
 
 import * as namedLocks from '@prairielearn/named-locks';
+import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 
-import { downloadFromS3, makeS3ClientConfig } from './aws';
-import { chalk, chalkDim } from './chalk';
-import { createServerJob, ServerJob } from './server-jobs';
-import * as courseDB from '../sync/course-db';
-import type { CourseData } from '../sync/course-db';
-import { config } from './config';
-import { contains } from '@prairielearn/path-utils';
-import { getLockNameForCoursePath } from '../models/course';
+import { getLockNameForCoursePath } from '../models/course.js';
+import * as courseDB from '../sync/course-db.js';
+import { CourseData } from '../sync/course-db.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { downloadFromS3, makeS3ClientConfig } from './aws.js';
+import { chalk, chalkDim } from './chalk.js';
+import { config } from './config.js';
+import { createServerJob, ServerJob } from './server-jobs.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type ChunkType =
   | 'elements'
@@ -268,7 +270,7 @@ export async function identifyChangedFiles(
   // repository. To do this, we query git itself for the root of the repository,
   // construct an absolute path for each file, and then trim off the course path.
   const { stdout: topLevelStdout } = await util.promisify(child_process.exec)(
-    `git rev-parse --show-toplevel`,
+    'git rev-parse --show-toplevel',
     { cwd: coursePath },
   );
   const topLevel = topLevelStdout.trim();
@@ -814,7 +816,7 @@ export async function generateAllChunksForCourseList(course_ids: string[], authn
  * Helper function to generate all chunks for a single course.
  */
 async function _generateAllChunksForCourseWithJob(course_id: string, job: ServerJob) {
-  job.info(chalk.bold(`Looking up course directory`));
+  job.info(chalk.bold('Looking up course directory'));
   const result = await sqldb.queryOneRowAsync(sql.select_course_dir, { course_id });
   let courseDir = result.rows[0].path;
   job.info(chalkDim(`Found course directory: ${courseDir}`));
@@ -825,13 +827,13 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
   job.info(chalk.bold(`Acquiring lock ${lockName}`));
 
   await namedLocks.doWithLock(lockName, {}, async () => {
-    job.info(chalkDim(`Acquired lock`));
+    job.info(chalkDim('Acquired lock'));
 
     job.info(chalk.bold(`Loading course data from ${courseDir}`));
     const courseData = await courseDB.loadFullCourse(course_id, courseDir);
-    job.info(chalkDim(`Loaded course data`));
+    job.info(chalkDim('Loaded course data'));
 
-    job.info(chalk.bold(`Generating all chunks`));
+    job.info(chalk.bold('Generating all chunks'));
     const chunkOptions = {
       coursePath: courseDir,
       courseId: String(course_id),
@@ -839,10 +841,10 @@ async function _generateAllChunksForCourseWithJob(course_id: string, job: Server
     };
     const chunkChanges = await updateChunksForCourse(chunkOptions);
     logChunkChangesToJob(chunkChanges, job);
-    job.info(chalkDim(`Generated all chunks`));
+    job.info(chalkDim('Generated all chunks'));
   });
 
-  job.info(chalkDim(`Released lock`));
+  job.info(chalkDim('Released lock'));
 
   job.info(chalk.green(`Successfully generated chunks for course ID = ${course_id}`));
 }

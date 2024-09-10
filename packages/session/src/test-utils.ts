@@ -1,5 +1,6 @@
-import express from 'express';
 import { Server } from 'node:http';
+
+import express from 'express';
 
 interface WithServerContext {
   server: Server;

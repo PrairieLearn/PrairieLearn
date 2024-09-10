@@ -1,5 +1,5 @@
-import * as serverJobs from '../lib/server-jobs-legacy';
+import { errorAbandonedJobs } from '../lib/server-jobs.js';
 
 export async function run() {
-  await serverJobs.errorAbandonedJobs();
+  await errorAbandonedJobs();
 }

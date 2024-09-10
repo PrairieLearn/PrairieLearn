@@ -336,9 +336,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 element, "blank-value"
             )
         else:
-            data["format_errors"][
-                name
-            ] = "Invalid format. The submitted answer was left blank."
+            data["format_errors"][name] = (
+                "Invalid format. The submitted answer was left blank."
+            )
             data["submitted_answers"][name] = None
 
         return
@@ -357,9 +357,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     # Checks for no unit in submitted answer, all answers require units
     if a_sub_parsed.dimensionless:
-        data["format_errors"][
-            name
-        ] = "Invalid format. The submitted answer has no unit."
+        data["format_errors"][name] = (
+            "Invalid format. The submitted answer has no unit."
+        )
         data["submitted_answers"][name] = None
         return
 
@@ -367,16 +367,16 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     numberless = uu.is_numberless(a_sub, a_sub_parsed)
 
     if numberless and not only_units:
-        data["format_errors"][
-            name
-        ] = "Invalid format. The submitted answer should include a magnitude."
+        data["format_errors"][name] = (
+            "Invalid format. The submitted answer should include a magnitude."
+        )
         data["submitted_answers"][name] = None
         return
 
     if only_units and not numberless:
-        data["format_errors"][
-            name
-        ] = "Invalid format. The submitted answer should not include a magnitude."
+        data["format_errors"][name] = (
+            "Invalid format. The submitted answer should not include a magnitude."
+        )
         data["submitted_answers"][name] = None
         return
 

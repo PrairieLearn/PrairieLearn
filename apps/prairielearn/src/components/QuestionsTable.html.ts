@@ -1,9 +1,10 @@
-import { html, HtmlSafeString } from '@prairielearn/html';
 import { EncodedData } from '@prairielearn/browser-utils';
-import { type CourseInstance } from '../lib/db-types';
-import { QuestionsPageDataAnsified } from '../models/questions';
-import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets';
-import { idsEqual } from '../lib/id';
+import { html, HtmlSafeString } from '@prairielearn/html';
+
+import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets.js';
+import { type CourseInstance } from '../lib/db-types.js';
+import { idsEqual } from '../lib/id.js';
+import { QuestionsPageDataAnsified } from '../models/questions.js';
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
@@ -25,6 +26,7 @@ export function QuestionsTableHead() {
 export function QuestionsTable({
   questions,
   showAddQuestionButton = false,
+  showAiGenerateQuestionButton = false,
   showSharingSets = false,
   current_course_instance,
   course_instances = [],
@@ -35,6 +37,7 @@ export function QuestionsTable({
 }: {
   questions: QuestionsPageDataAnsified[];
   showAddQuestionButton?: boolean;
+  showAiGenerateQuestionButton?: boolean;
   showSharingSets?: boolean;
   current_course_instance?: CourseInstance;
   course_instances?: CourseInstance[];
@@ -47,17 +50,20 @@ export function QuestionsTable({
   const course_instance_ids = (course_instances || []).map((course_instance) => course_instance.id);
   return html`
     ${EncodedData(
-      { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix },
+      {
+        course_instance_ids,
+        showAddQuestionButton,
+        showAiGenerateQuestionButton,
+        qidPrefix,
+        urlPrefix,
+        plainUrlPrefix,
+      },
       'questions-table-data',
     )}
 
     <div class="card mb-4">
-      <div class="card-header bg-primary">
-        <div class="row align-items-center justify-content-between">
-          <div class="col-auto">
-            <span class="text-white">Questions</span>
-          </div>
-        </div>
+      <div class="card-header bg-primary text-white">
+        <h1>Questions</h1>
       </div>
 
       <form class="ml-1 btn-group" name="add-question-form" method="POST">
@@ -67,6 +73,7 @@ export function QuestionsTable({
 
       <table
         id="questionsTable"
+        aria-label="Questions"
         data-data="${JSON.stringify(questions)}"
         data-classes="table table-sm table-hover table-bordered"
         data-thead-classes="thead-light"

@@ -4,10 +4,11 @@
 {{#inline}}
 <span>
 {{/inline}}
+    <span role="group" aria-label="Multiple choice options">
     {{#answers}}
-        <div class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1">
+        <div class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1 gap-2">
             <input
-                class="form-check-input mt-0"
+                class="form-check-input mt-0 flex-shrink-0"
                 type="radio"
                 name="{{name}}"
                 value="{{key}}"
@@ -40,6 +41,7 @@
             {{/display_score_badge}}
         </div>
     {{/answers}}
+    </span>
 
 {{#display_score_badge}}
     {{#correct}}
@@ -59,31 +61,26 @@
 {{/radio}}
 {{^radio}}
 <!-- Weirdly enough putting this in a div causes it to display without the inline -->
-<span class="py-1 d-inline align-items-center">
+<span
+    class="py-1 d-inline align-items-center pl-multiple-choice-dropdown"
+    {{#size}}style="--pl-multiple-choice-dropdown-width: {{size}}px"{{/size}}
+>
     <script>
-        $(() => {
-            $('#pl-multiple-choice-select-{{uuid}}').selectpicker({})
-                .on('rendered.bs.select loaded.bs.select shown.bs.select', (e) => {
-                    // If any of the options has math, render the math as needed
-                    // Events: loaded (when the page opens), rendered (when the value changes),
-                    // shown (when the dropdown extends)
-                    MathJax.typesetPromise();
-                });
-        });
+        $(() => new window.PLMultipleChoice("{{uuid}}"));
     </script>
     <select
         name="{{name}}"
-        data-style="btn-light border border-secondary"
         id="pl-multiple-choice-select-{{uuid}}"
-        title="Nothing selected"
         class="d-inline-flex"
         {{^editable}}disabled{{/editable}}
+        aria-label="Multiple choice options"
     >
+        <option value="" disabled selected data-content="Select an option"></option>
         {{#answers}}
             <option
                 value="{{key}}"
                 style="white-space:normal;"
-                data-content="{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{{html}}}"
+                data-content="{{^hide_letter_keys}}({{key}}){{/hide_letter_keys}} {{html}}"
                 {{#selected}}selected{{/selected}}
             ></option>
         {{/answers}}
@@ -112,17 +109,7 @@
 {{/question}}
 {{#submission}}
 {{#parse_error}}
-<script>
-    $(function(){
-        $('#pl-multiple-choice-submission-{{uuid}} [data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            template: '<div class="popover pl-checkbox-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-        });
-    });
-</script>
-
-<span id="pl-multiple-choice-submission-{{uuid}}">
+<span>
     <a
         href="javascript:void(0);"
         role="button"

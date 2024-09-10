@@ -1,10 +1,13 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
+
 import * as error from '@prairielearn/error';
-import { QuestionsPage } from './publicQuestions.html';
-import { selectPublicQuestionsForCourse } from '../../models/questions';
-import { selectCourseById } from '../../models/course';
-import { features } from '../../lib/features/index';
+
+import { features } from '../../lib/features/index.js';
+import { selectCourseById } from '../../models/course.js';
+import { selectPublicQuestionsForCourse } from '../../models/questions.js';
+
+import { QuestionsPage } from './publicQuestions.html.js';
 
 const router = Router({ mergeParams: true });
 

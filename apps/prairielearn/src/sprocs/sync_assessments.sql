@@ -164,6 +164,7 @@ BEGIN
             allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
             allow_real_time_grading = (valid_assessment.data->>'allow_real_time_grading')::boolean,
             require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
+            allow_personal_notes = (valid_assessment.data->>'allow_personal_notes')::boolean,
             group_work = (valid_assessment.data->>'group_work')::boolean,
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
             sync_errors = NULL,
@@ -525,12 +526,26 @@ BEGIN
     FROM (
         SELECT
             tid,
-            row_number() OVER (ORDER BY (
-                SELECT string_agg(convert_to(coalesce(r[2],
-                    length(length(r[1])::text) || length(r[1])::text || r[1]),
-                    'SQL_ASCII'),'\x00')
-                FROM regexp_matches(number, '0*([0-9]+)|([^0-9]+)', 'g') r
-            ) ASC) AS order_by
+            row_number() OVER (
+                ORDER BY (
+                    SELECT
+                        string_agg(
+                            convert_to(
+                                coalesce(
+                                    r[2],
+                                    length(length(r[1])::text) || length(r[1])::text || r[1]
+                                ),
+                                'SQL_ASCII'
+                            ),
+                            '\x00'
+                        )
+                    FROM
+                        regexp_matches(number, '0*([0-9]+)|([^0-9]+)', 'g') r
+                ) ASC,
+                -- In case two assessments have the same number, fall back to
+                -- ordering by the ID to ensure a stable sort.
+                id ASC
+            ) AS order_by
         FROM assessments
         WHERE
             course_instance_id = syncing_course_instance_id

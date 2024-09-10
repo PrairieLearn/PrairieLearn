@@ -1,77 +1,52 @@
-import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
+import { html } from '@prairielearn/html';
 
-import { nodeModulesAssetPath } from '../../lib/assets';
-import { Modal } from '../../components/Modal.html';
+import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 
 export function InstructorInstanceAdminSettings({
   resLocals,
   shortNames,
   studentLink,
-  studentLinkQRCode,
   infoCourseInstancePath,
 }: {
   resLocals: Record<string, any>;
   shortNames: string[];
   studentLink: string;
-  studentLinkQRCode: string;
   infoCourseInstancePath: string;
 }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
-        <script src="${nodeModulesAssetPath('clipboard/dist/clipboard.min.js')}"></script>
-        <script>
-          $(() => {
-            let clipboard = new ClipboardJS('.btn-copy');
-            clipboard.on('success', (e) => {
-              $(e.trigger)
-                .popover({
-                  content: 'Copied!',
-                  placement: 'bottom',
-                })
-                .popover('show');
-              window.setTimeout(function () {
-                $(e.trigger).popover('hide');
-              }, 1000);
-            });
-            $('.js-student-link-qrcode-button').popover({
-              content: $('#js-student-link-qrcode'),
-              html: true,
-              trigger: 'click',
-              container: 'body',
-            });
-          });
-        </script>
+        ${HeadContents({ resLocals })}
+        ${compiledScriptTag('instructorInstanceAdminSettingsClient.ts')}
         <style>
           .popover {
             max-width: 50%;
           }
         </style>
       </head>
-
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({
-              sanitize: false,
-            });
-          });
-        </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container">
-          ${renderEjs(
-            __filename,
-            "<%- include('../partials/courseInstanceSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${CourseInstanceSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
-              Course instance ${resLocals.course_instance.short_name}
+              <h1>Course instance ${resLocals.course_instance.short_name}</h1>
             </div>
-            <table class="table table-sm table-hover two-column-description">
+            <table
+              class="table table-sm table-hover two-column-description"
+              aria-label="Course instance settings"
+            >
               <tbody>
                 <tr>
                   <th>Long Name</th>
@@ -83,36 +58,15 @@ export function InstructorInstanceAdminSettings({
                     <span class="pr-2">${resLocals.course_instance.short_name}</span>
                     ${resLocals.authz_data.has_course_permission_edit &&
                     !resLocals.course.example_course
-                      ? html`
-                          <button
-                            id="changeCiidButton"
-                            class="btn btn-xs btn-secondary"
-                            type="button"
-                            data-toggle="popover"
-                            data-container="body"
-                            data-html="true"
-                            data-placement="auto"
-                            title="Change CIID"
-                            data-content="${renderEjs(
-                              __filename,
-                              "<%= include('../partials/changeIdForm') %>",
-                              {
-                                ...resLocals,
-                                id_label: 'CIID',
-                                buttonID: 'changeCiidButton',
-                                id_old: resLocals.course_instance.short_name,
-                                ids: shortNames,
-                                changeIdFormHelpText:
-                                  'The recommended format is <code>Fa19</code> or <code>Fall2019</code>. Add suffixes if there are multiple versions, like <code>Fa19honors</code>.',
-                              },
-                            )}"
-                            data-trigger="manual"
-                            onclick="$(this).popover('show')"
-                          >
-                            <i class="fa fa-i-cursor"></i>
-                            <span>Change CIID</span>
-                          </button>
-                        `
+                      ? ChangeIdButton({
+                          label: 'CIID',
+                          currentValue: resLocals.course_instance.short_name,
+                          otherValues: shortNames,
+                          extraHelpText: html`The recommended format is <code>Fa19</code> or
+                            <code>Fall2019</code>. Add suffixes if there are multiple versions, like
+                            <code>Fa19honors</code>.`,
+                          csrfToken: resLocals.__csrf_token,
+                        })
                       : ''}
                   </td>
                 </tr>
@@ -147,32 +101,22 @@ export function InstructorInstanceAdminSettings({
                           type="button"
                           title="Student Link QR Code"
                           aria-label="Student Link QR Code"
-                          class="btn btn-sm btn-outline-secondary js-student-link-qrcode-button"
+                          class="btn btn-sm btn-outline-secondary js-qrcode-button"
+                          data-qr-code-content="${studentLink}"
                         >
                           <i class="fas fa-qrcode"></i>
                         </button>
                       </div>
                     </span>
-                    <div class="d-none">
-                      <div id="js-student-link-qrcode">
-                        <center>${unsafeHtml(studentLinkQRCode)}</center>
-                      </div>
-                    </div>
                   </td>
                 </tr>
               </tbody>
             </table>
             ${resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course
-              ? html`
-                  <div class="card-footer">
-                    <div class="row">
-                      ${CopyCourseInstanceForm({
-                        csrfToken: resLocals.__csrf_token,
-                        shortName: resLocals.course_instance.short_name,
-                      })}
-                    </div>
-                  </div>
-                `
+              ? CopyCourseInstanceForm({
+                  csrfToken: resLocals.__csrf_token,
+                  shortName: resLocals.course_instance.short_name,
+                })
               : ''}
           </div>
         </main>
@@ -231,15 +175,13 @@ function CopyCourseInstanceForm({
   shortName: string;
 }) {
   return html`
-    <div class="col-auto">
-      <form name="copy-course-instance-form" class="form-inline" method="POST">
+    <div class="card-footer d-flex flex-wrap align-items-center">
+      <form name="copy-course-instance-form" class="form-inline mr-2" method="POST">
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
         <button name="__action" value="copy_course_instance" class="btn btn-sm btn-primary">
           <i class="fa fa-clone"></i> Make a copy of this course instance
         </button>
       </form>
-    </div>
-    <div class="col-auto">
       <button
         class="btn btn-sm btn-primary"
         href="#"
@@ -248,19 +190,19 @@ function CopyCourseInstanceForm({
       >
         <i class="fa fa-times" aria-hidden="true"></i> Delete this course instance
       </button>
+      ${Modal({
+        id: 'deleteCourseInstanceModal',
+        title: 'Delete course instance',
+        body: html`
+          <p>Are you sure you want to delete the course instance <strong>${shortName}</strong>?</p>
+        `,
+        footer: html`
+          <input type="hidden" name="__action" value="delete_course_instance" />
+          <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+          <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+          <button type="submit" class="btn btn-danger">Delete</button>
+        `,
+      })}
     </div>
-    ${Modal({
-      id: 'deleteCourseInstanceModal',
-      title: 'Delete course instance',
-      body: html`
-        <p>Are you sure you want to delete the course instance <strong>${shortName}</strong>?</p>
-      `,
-      footer: html`
-        <input type="hidden" name="__action" value="delete_course_instance" />
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-        <button type="submit" class="btn btn-danger">Delete</button>
-      `,
-    })}
   `;
 }

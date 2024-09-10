@@ -1,23 +1,25 @@
 import { Router, type Response } from 'express';
-import asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
-import * as error from '@prairielearn/error';
 
-import {
-  EnrollmentLimitSource,
-  InstructorCourseInstanceBilling,
-} from './instructorInstanceAdminBilling.html';
-import { PlanName } from '../../lib/billing/plans-types';
+import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+
+import { instructorInstanceAdminBillingState } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.html.js';
+import { PlanName } from '../../lib/billing/plans-types.js';
 import {
   getPlanGrantsForContext,
   getRequiredPlansForCourseInstance,
   updateRequiredPlansForCourseInstance,
-} from '../../lib/billing/plans';
-import { instructorInstanceAdminBillingState } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.html';
+} from '../../lib/billing/plans.js';
+
+import {
+  EnrollmentLimitSource,
+  InstructorCourseInstanceBilling,
+} from './instructorInstanceAdminBilling.html.js';
 
 const router = Router({ mergeParams: true });
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 async function loadPageData(res: Response) {
   const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);

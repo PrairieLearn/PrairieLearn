@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/prettier-plugin-sql",
-  "version": "1.0.15",
+  "version": "2.0.6",
+  "type": "module",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
@@ -13,11 +14,11 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.12.2",
-    "prettier": "3.2.5",
-    "typescript": "^5.4.3"
+    "@types/node": "^20.16.2",
+    "prettier": "3.3.3",
+    "typescript": "^5.5.4"
   },
   "dependencies": {
-    "sql-formatter": "^15.3.0"
+    "sql-formatter": "^15.4.1"
   }
 }

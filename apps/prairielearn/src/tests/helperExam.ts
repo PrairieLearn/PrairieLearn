@@ -1,12 +1,13 @@
-import * as _ from 'lodash';
 import { assert } from 'chai';
 import * as cheerio from 'cheerio';
+import _ from 'lodash';
 import fetch from 'node-fetch';
 
-import { config } from '../lib/config';
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { config } from '../lib/config.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 // sorted alphabetically by qid
 export const questionsArray: {

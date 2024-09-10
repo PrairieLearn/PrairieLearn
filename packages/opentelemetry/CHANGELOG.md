@@ -1,5 +1,58 @@
 # @prairielearn/opentelemetry
 
+## 2.1.3
+
+### Patch Changes
+
+- c621dd8: Upgrade all JavaScript dependencies
+
+## 2.1.2
+
+### Patch Changes
+
+- 852c2e2: Upgrade all JavaScript dependencies
+
+## 2.1.1
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+
+## 2.1.0
+
+### Minor Changes
+
+- ee7b9af: Only enable AWS resource detector in production-like environments
+
+## 2.0.3
+
+### Patch Changes
+
+- 24a93b8: Upgrade all JavaScript dependencies
+
+## 2.0.2
+
+### Patch Changes
+
+- 0f7c90f: Upgrade all JavaScript dependencies
+
+## 2.0.1
+
+### Patch Changes
+
+- 901fce8: Upgrade all JavaScript dependencies
+- b697912: Fix CommonJS preloads of packages
+
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
+### Minor Changes
+
+- c51f3aa: Upgrade all JavaScript dependencies; ensure packages loaded with ESM are instrumented
+
 ## 1.11.3
 
 ### Patch Changes

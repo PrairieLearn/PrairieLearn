@@ -1,5 +1,6 @@
 columns
     deleted_at: timestamp with time zone
+    email: character varying(255)
     institution_id: bigint not null default 1
     lti_context_id: text
     lti_course_instance_id: bigint
@@ -49,6 +50,7 @@ referenced by
     instance_questions: FOREIGN KEY (assigned_grader) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
     instance_questions: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     instance_questions: FOREIGN KEY (last_grader) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
+    institution_administrators: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     issues: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
     issues: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
     job_sequences: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE

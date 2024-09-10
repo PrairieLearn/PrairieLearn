@@ -5,6 +5,7 @@ columns
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     custom_fields: jsonb default '{}'::jsonb
     deleted_at: timestamp with time zone
+    email_attribute: text
     id: bigint not null default nextval('lti13_instances_id_seq'::regclass)
     institution_id: bigint not null
     issuer_params: jsonb default '{}'::jsonb
@@ -24,4 +25,5 @@ foreign-key constraints
     lti13_instances_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
+    lti13_course_instances: FOREIGN KEY (lti13_instance_id) REFERENCES lti13_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     lti13_users: FOREIGN KEY (lti13_instance_id) REFERENCES lti13_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

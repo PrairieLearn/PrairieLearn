@@ -52,6 +52,23 @@ class PLDrawingBaseElement {
 window.PLDrawingApi = {
   _idCounter: 0,
 
+  // This will be used to load `.svg` files from the `clientFilesElement` directory.
+  clientFilesBase: (() => {
+    const url = new URL(window.document.currentScript.src);
+
+    // Strip any search or hash parameters from the URL.
+    url.search = '';
+    url.hash = '';
+
+    // Strip off the last component of the URL (the script filename).
+    url.pathname = url.pathname.split('/').slice(0, -1).join('/');
+
+    // Add the clientFilesElement directory.
+    url.pathname += '/clientFilesElement/';
+
+    return url.toString();
+  })(),
+
   /**
    * Generates a new numeric ID for a submission object.
    * Each submitted object is uniquely identified by its ID.
@@ -153,8 +170,8 @@ window.PLDrawingApi = {
 
     // Set all button icons
     let drawing_btns = $(root_elem).find('button');
-    const image_base_url = elem_options['client_files'];
     const element_base_url = elem_options['element_client_files'];
+    const clientFilesBase = this.clientFilesBase;
     drawing_btns.each(function (i, btn) {
       let img = btn.children[0];
       const opts = parseElemOptions(img.parentNode);
@@ -166,7 +183,7 @@ window.PLDrawingApi = {
           if (!image_filename.endsWith('.svg')) {
             image_filename += '.svg';
           }
-          let base = image_base_url;
+          let base = clientFilesBase;
           if (window.PLDrawingApi.elementModule[elem_name] !== '_base') {
             base = element_base_url[window.PLDrawingApi.elementModule[elem_name]] + '/';
           }
@@ -175,6 +192,9 @@ window.PLDrawingApi = {
         let image_tooltip = elem.get_button_tooltip(opts);
         if (image_tooltip !== null) {
           btn.setAttribute('title', image_tooltip);
+        }
+        if (!elem_options.editable) {
+          btn.disabled = true;
         }
         let cloned_opts = _.clone(opts || {});
         $(btn).click(() => elem.button_press(canvas, cloned_opts, submittedAnswer));

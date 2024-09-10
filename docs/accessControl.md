@@ -22,7 +22,7 @@ The general format of `allowAccess` is:
 ],
 ```
 
-Each `accessRule` is an object that specifies a set of circumstances under which the assessment is accessible to students. If any of the access rules gives access, then the assessment is accessible. Each access rule can have one or more restrictions as follows. The "courseInstance" and "assessment" columns indicate whether the restiction is available for the respective objects.
+Each `accessRule` is an object that specifies a set of circumstances under which the assessment is accessible to students. If any of the access rules gives access, then the assessment is accessible. Each access rule can have one or more restrictions as follows. The "courseInstance" and "assessment" columns indicate whether the restriction is available for the respective objects.
 
 | Access restriction                                                  | courseInstance | assessment | Meaning                                                                                                    | Example                                                    |
 | ------------------------------------------------------------------- | -------------- | ---------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
@@ -66,13 +66,13 @@ Every course belongs to an **institution** and by default access is only allowed
 
 Each user accesses the PrairieLearn server in a `mode`, as listed below. This can be used to restrict access to assessments based on the current mode. The `mode` setting of an access rule has the following effect:
 
-| Mode        | When is access allowed?                                                                                                                                                                                                          |
-| ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Public`    | Access is normally allowed, but is blocked when the student is signed in for an exam in the Computer-Based Testing Facility (CBTF).                                                                                              |
-| `Exam`      | Access is normally blocked, and is only allowed when the student is signed in to the Computer-Based Testing Facility (CBTF). The `examUuid` should also be specified in the same access rule to limit access to a specific exam. |
-| no mode set | Access is allowed anytime, both during CBTF exams and outside of exams.                                                                                                                                                          |
+| Mode        | When is access allowed?                                                                                                                                                                                                                                       |
+| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Public`    | Access is normally allowed, but is blocked when the student is checked in on PrairieTest, either in a testing center or in a course-managed session.                                                                                                          |
+| `Exam`      | Access is normally blocked, and is only allowed when the student is checked in on PrairieTest, either in a testing center or in a course-managed session. The `examUuid` should also be specified in the same access rule to limit access to a specific exam. |
+| no mode set | This is equivalent to setting the `mode` to `Public`.                                                                                                                                                                                                         |
 
-In general usage it is best to set `"mode": "Public"` for any homework (assessments that students should do at home or without special access control), and to set both `"mode": "Exam"` and `"examUuid"` for exams in the Computer-Based Testing Facility (CBTF). This will make it so that exams are only accessible in the CBTF, and homework is _not_ accessible during exams.
+In general usage it is best to set `"mode": "Public"` for any homework (assessments that students should do at home or without special access control), and to set both `"mode": "Exam"` and `"examUuid"` for exams with access controlled by PrairieTest. This will make it so that exams are only accessible in a testing center or a controlled course session, and homework is _not_ accessible during exams.
 
 ## Credit
 
@@ -99,7 +99,7 @@ The above example will give students 90 minutes for this exam, and they must sta
 
 ![Time limit illustrations](exam_timer.svg)
 
-**Note that time limits should not be set for exams in the CBTF (Computer-Based Testing Facility). Instead, such exams should set `"mode": "Exam"`, in which case `timeLimitMin` will have no effect and the time limits will be enforced by PrairieTest.**
+**Note that time limits should not be set for exams in a testing center or course session managed by PrairieTest. Instead, such exams should set `"mode": "Exam"`, in which case `timeLimitMin` will have no effect and the time limits will be enforced by PrairieTest.**
 
 ### Time limit adjustments for open assessments
 
@@ -136,7 +136,7 @@ Before a student can do the exam, a proctor will need to type the phrase `mysecr
 
 ## Exam UUIDs
 
-To require that students are taking a particular exam in the Computer-Based Testing Facility (CBTF), the `examUuid` should be set to the UUID value from PrairieTest. For example:
+To require that students take a particular exam in a testing center or a course-managed PrairieTest session, the `examUuid` should be set to the UUID value from PrairieTest. For example:
 
 ```
 "allowAccess": [
@@ -294,7 +294,7 @@ The above `allowAccess` directive is appropriate for an `Exam` assessment, and m
 ],
 ```
 
-The above `allowAccess` directive is appropriate for an `Exam` being taken by on-campus students in the CBTF and by remote students. First, anyone (i.e., on-campus students) can access the assessment in the CBTF (`"mode": "Exam"`) for full credit. Second, a defined set of students (remote students) can take the exam for full credit on Sept 10th. For the off-campus students we set a time limit (50 minutes). For on-campus students no time limit should be given because the time limit is enforced by the CBTF proctors.
+The above `allowAccess` directive is appropriate for an `Exam` being taken by on-campus students in a testing center (or a course-managed PrairieTest session) and by remote students. First, anyone (i.e., on-campus students) can access the assessment in a testing center (`"mode": "Exam"`) for full credit. Second, a defined set of students (remote students) can take the exam for full credit on Sept 10th. For the off-campus students we set a time limit (50 minutes). For on-campus students no time limit should be given because the time limit is enforced by PrairieTest.
 
 The student's access will expire if they exceed the `timeLimitMin` minute duration of the exam or go past the configured `endDate` - whichever comes first. Time limits are visible to the student during the exam; endDate configurations are not. If the student tries to load an assessment page when the access rules no longer apply, they will receive an "Access denied" message.
 

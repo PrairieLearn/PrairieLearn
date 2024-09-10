@@ -1,57 +1,51 @@
 // @ts-check
-const ERR = require('async-stacktrace');
-import * as _ from 'lodash';
-import * as util from 'node:util';
-const express = require('express');
+import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
-import fetch from 'node-fetch';
-import * as path from 'node:path';
-import { S3 } from '@aws-sdk/client-s3';
-import { ECRClient } from '@aws-sdk/client-ecr';
-import { Upload } from '@aws-sdk/lib-storage';
-const Docker = require('dockerode');
-import * as fs from 'node:fs';
-import * as async from 'async';
-import * as fsPromises from 'node:fs/promises';
-import { v4 as uuidv4 } from 'uuid';
-const yargsParser = require('yargs-parser');
-import debugfn from 'debug';
-const archiver = require('archiver');
 import * as net from 'node:net';
-const asyncHandler = require('express-async-handler');
-const bodyParser = require('body-parser');
+import * as path from 'node:path';
+
+import { ECRClient } from '@aws-sdk/client-ecr';
+import { S3 } from '@aws-sdk/client-s3';
+import { Upload } from '@aws-sdk/lib-storage';
+import archiver from 'archiver';
+import * as async from 'async';
 import { Mutex } from 'async-mutex';
+import bodyParser from 'body-parser';
+import debugfn from 'debug';
+import Docker from 'dockerode';
+import express from 'express';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
+import fetch from 'node-fetch';
+import { v4 as uuidv4 } from 'uuid';
+import yargsParser from 'yargs-parser';
+
+import { cache } from '@prairielearn/cache';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
-import { cache } from '@prairielearn/cache';
 
-import { config, loadConfig } from './lib/config';
-import { parseDockerLogs } from './lib/docker';
-import * as socketServer from './lib/socket-server';
-import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws';
-import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths';
+import { makeS3ClientConfig, makeAwsClientConfig } from './lib/aws.js';
+import { config, loadConfig } from './lib/config.js';
+import { parseDockerLogs } from './lib/docker.js';
+import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths.js';
+import * as socketServer from './lib/socket-server.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:interface');
 const docker = new Docker();
 
 const app = express();
-app.use(Sentry.Handlers.requestHandler());
+app.use(Sentry.requestHandler());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
 app.get(
   '/status',
   asyncHandler(async (req, res) => {
-    let containers;
-    try {
-      containers = await docker.listContainers({ all: true });
-    } catch (_err) {
-      containers = null;
-    }
+    const containers = await docker.listContainers({ all: true }).catch(() => null);
 
     let db_status;
     try {
@@ -59,7 +53,7 @@ app.get(
         instance_id: workspace_server_settings.instance_id,
       });
       db_status = 'ok';
-    } catch (_err) {
+    } catch {
       db_status = null;
     }
 
@@ -89,7 +83,7 @@ app.post(
       res.status(500).send('Missing action');
     } else if (action === 'init') {
       const useInitialZip = _.get(req.body.options, 'useInitialZip', false);
-      await initSequenceAsync(workspace_id, useInitialZip, res);
+      await initSequence(workspace_id, useInitialZip, res);
     } else if (action === 'getGradedFiles') {
       await sendGradedFilesArchive(workspace_id, res);
     } else if (action === 'getLogs') {
@@ -100,7 +94,7 @@ app.post(
   }),
 );
 
-app.use(Sentry.Handlers.errorHandler());
+app.use(Sentry.expressErrorHandler());
 
 let server;
 let workspace_server_settings = {};
@@ -153,7 +147,7 @@ async
       // Always grab the port from the config
       workspace_server_settings.port = config.workspaceHostPort;
     },
-    (callback) => {
+    async () => {
       const pgConfig = {
         user: config.postgresqlUser,
         database: config.postgresqlDatabase,
@@ -170,17 +164,13 @@ async
         // https://github.com/PrairieLearn/PrairieLearn/issues/2396
         process.exit(1);
       };
-      sqldb.init(pgConfig, idleErrorHandler, function (err) {
-        if (ERR(err, callback)) return;
-        logger.verbose('Successfully connected to database');
-        callback(null);
-      });
+      await sqldb.initAsync(pgConfig, idleErrorHandler);
+      logger.verbose('Successfully connected to database');
     },
-    (callback) => {
+    async () => {
       server = http.createServer(app);
       server.listen(workspace_server_settings.port);
       logger.info(`Workspace server listening on port ${workspace_server_settings.port}`);
-      callback(null);
     },
     async () => socketServer.init(),
     async () => workspaceUtils.init(socketServer.io),
@@ -207,17 +197,13 @@ async
       }
       setTimeout(pruneContainersTimeout, config.workspaceHostPruneContainersSec * 1000);
     },
-    (callback) => {
+    async () => {
       // Add ourselves to the workspace hosts directory. After we
       // do this we will start receiving requests so everything else
       // must be initialized before this.
-      const params = {
+      await sqldb.queryAsync(sql.insert_workspace_hosts, {
         hostname: workspace_server_settings.hostname + ':' + workspace_server_settings.port,
         instance_id: workspace_server_settings.instance_id,
-      };
-      sqldb.query(sql.insert_workspace_hosts, params, function (err, _result) {
-        if (ERR(err, callback)) return;
-        callback(null);
       });
     },
     async () => {
@@ -292,7 +278,7 @@ async function pruneStoppedContainers() {
     try {
       // Try to grab the container, but don't care if it doesn't exist
       container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
-    } catch (_err) {
+    } catch {
       // No container
       await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
         workspace_id: ws.id,
@@ -322,7 +308,7 @@ async function pruneRunawayContainers() {
   let running_workspaces;
   try {
     running_workspaces = await docker.listContainers({ all: true });
-  } catch (err) {
+  } catch {
     // Nothing to do
     return;
   }
@@ -436,7 +422,7 @@ async function markSelfUnhealthy(reason) {
  * @param {string | number} workspace_id Workspace ID to search by.
  * @return {Promise<Object>} Workspace object, as described above.
  */
-async function _getWorkspaceAsync(workspace_id) {
+async function _getWorkspace(workspace_id) {
   const result = await sqldb.queryOneRowAsync(sql.get_workspace, {
     workspace_id,
     instance_id: workspace_server_settings.instance_id,
@@ -515,50 +501,51 @@ async function _allocateContainerPort(workspace) {
 
 /**
  * @param {object} workspace
- * @param {function} callback
+ * @returns {Promise<void>}
  */
-function _checkServer(workspace, callback) {
+function _checkServer(workspace) {
   const startTimeout = config.workspaceStartTimeoutSec * 1000;
   const healthCheckInterval = config.workspaceHealthCheckIntervalSec * 1000;
   const healthCheckTimeout = config.workspaceHealthCheckTimeoutSec * 1000;
 
   const startTime = new Date().getTime();
-  function checkWorkspace() {
-    fetch(
-      `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
-      { signal: AbortSignal.timeout(healthCheckTimeout) },
-    )
-      .then(() => {
-        // We might get all sorts of strange status codes from the server.
-        // This is okay since it still means the server is running and we're
-        // getting responses. So we don't need to check the response status.
-        callback(null, workspace);
-      })
-      .catch(() => {
-        // Do nothing, because errors are expected while the container is launching.
-        const endTime = new Date().getTime();
-        if (endTime - startTime > startTimeout) {
-          const { id, version, launch_uuid } = workspace;
-          callback(
-            new Error(
-              `Max startup time exceeded for workspace ${id} (version ${version}, launch uuid ${launch_uuid})`,
-            ),
-          );
-        } else {
-          setTimeout(checkWorkspace, healthCheckInterval);
-        }
-      });
-  }
-  checkWorkspace();
+  return new Promise((resolve, reject) => {
+    function checkWorkspace() {
+      fetch(
+        `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
+        { signal: AbortSignal.timeout(healthCheckTimeout) },
+      )
+        .then(() => {
+          // We might get all sorts of strange status codes from the server.
+          // This is okay since it still means the server is running and we're
+          // getting responses. So we don't need to check the response status.
+          resolve();
+        })
+        .catch(() => {
+          // Do nothing, because errors are expected while the container is launching.
+          const endTime = new Date().getTime();
+          if (endTime - startTime > startTimeout) {
+            const { id, version, launch_uuid } = workspace;
+            reject(
+              new Error(
+                `Max startup time exceeded for workspace ${id} (version ${version}, launch uuid ${launch_uuid})`,
+              ),
+            );
+          } else {
+            setTimeout(checkWorkspace, healthCheckInterval);
+          }
+        });
+    }
+    checkWorkspace();
+  });
 }
-const _checkServerAsync = util.promisify(_checkServer);
 
 /**
  * Looks up all the question-specific workspace launch settings associated with a workspace id.
  * @param {string | number} workspace_id Workspace ID to search by.
  * @return {Promise<Object>} Workspace launch settings.
  */
-async function _getWorkspaceSettingsAsync(workspace_id) {
+async function _getWorkspaceSettings(workspace_id) {
   const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, {
     workspace_id,
   });
@@ -666,7 +653,7 @@ async function _pullImage(workspace) {
           1000 * 60 * 60 * 24 * 30, // 30 days
         );
         workspaceUtils
-          .updateWorkspaceMessage(workspace.id, `Pulling image (100%)`, toDatabase)
+          .updateWorkspaceMessage(workspace.id, 'Pulling image (100%)', toDatabase)
           .catch((err) => {
             logger.error('Error updating workspace message', err);
             Sentry.captureException(err);
@@ -728,9 +715,8 @@ async function _pullImage(workspace) {
 
 /**
  * @param {object} workspace
- * @param {function} callback
  */
-function _createContainer(workspace, callback) {
+async function _createContainer(workspace) {
   const localName = workspace.local_name;
   const remoteName = workspace.remote_name;
 
@@ -761,8 +747,6 @@ function _createContainer(workspace, callback) {
     }
   }
 
-  let container;
-
   debug(`Creating docker container for image=${workspace.settings.workspace_image}`);
   debug(`Exposed port: ${workspace.settings.workspace_port}`);
   debug(`Networking enabled: ${workspace.settings.workspace_enable_networking}`);
@@ -774,106 +758,73 @@ function _createContainer(workspace, callback) {
   debug(`Port binding: ${workspace.settings.workspace_port}:${workspace.launch_port}`);
   debug(`Volume mount: ${workspacePath}:${containerPath}`);
   debug(`Container name: ${localName}`);
-  async.series(
-    [
-      async () => {
-        try {
-          await fsPromises.access(workspaceJobPath);
-        } catch (err) {
-          throw Error('Could not access workspace files.', { cause: err });
-        }
-      },
-      (callback) => {
-        debug(`Creating directory ${workspaceJobPath}`);
-        fs.mkdir(workspaceJobPath, { recursive: true }, (err) => {
-          if (err && err.code !== 'EEXIST') {
-            // Ignore the directory if it already exists.
-            ERR(err, callback);
-            return;
-          }
-          callback(null);
-        });
-      },
-      (callback) => {
-        fs.chown(
-          workspaceJobPath,
-          config.workspaceJobsDirectoryOwnerUid,
-          config.workspaceJobsDirectoryOwnerGid,
-          (err) => {
-            if (ERR(err, callback)) return;
-            callback(null);
-          },
-        );
-      },
-      (callback) => {
-        docker.createContainer(
-          {
-            Image: workspace.settings.workspace_image,
-            ExposedPorts: {
-              [`${workspace.settings.workspace_port}/tcp`]: {},
-            },
-            Env: workspace.settings.workspace_environment,
-            User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
-            HostConfig: {
-              PortBindings: {
-                [`${workspace.settings.workspace_port}/tcp`]: [
-                  { HostPort: `${workspace.launch_port}` },
-                ],
-              },
-              Binds: [`${workspacePath}:${containerPath}`],
-              Memory: config.workspaceDockerMemory,
-              MemorySwap: config.workspaceDockerMemorySwap,
-              KernelMemory: config.workspaceDockerKernelMemory,
-              DiskQuota: config.workspaceDockerDiskQuota,
-              CpuPeriod: config.workspaceDockerCpuPeriod,
-              CpuQuota: config.workspaceDockerCpuQuota,
-              PidsLimit: config.workspaceDockerPidsLimit,
-              IpcMode: 'private',
-              NetworkMode: networkMode,
-              Ulimits: [
-                {
-                  // Disable core dumps, which can get very large and bloat our storage.
-                  Name: 'core',
-                  Soft: 0,
-                  Hard: 0,
-                },
-              ],
-            },
-            Labels: {
-              'prairielearn.workspace-id': String(workspace.id),
-              'prairielearn.workspace-version': String(workspace.version),
-              'prairielearn.course-id': String(workspace.course_id),
-              'prairielearn.institution-id': String(workspace.institution_id),
-            },
-            Cmd: args, // FIXME: proper arg parsing
-            name: localName,
-            Volumes: {
-              [containerPath]: {},
-            },
-          },
-          (err, newContainer) => {
-            if (ERR(err, callback)) return;
-            container = newContainer;
 
-            sqldb.query(
-              sql.update_load_count,
-              { instance_id: workspace_server_settings.instance_id },
-              function (err, _result) {
-                if (ERR(err, callback)) return;
-                callback(null, container);
-              },
-            );
-          },
-        );
-      },
-    ],
-    (err) => {
-      if (ERR(err, callback)) return;
-      callback(null, container);
-    },
+  try {
+    await fs.access(workspaceJobPath);
+  } catch (err) {
+    throw Error('Could not access workspace files.', { cause: err });
+  }
+
+  debug(`Creating directory ${workspaceJobPath}`);
+  await fs.mkdir(workspaceJobPath, { recursive: true }).catch((err) => {
+    // Ignore the directory if it already exists. Otherwise, rethrow the error.
+    if (err && err.code !== 'EEXIST') throw err;
+  });
+
+  await fs.chown(
+    workspaceJobPath,
+    config.workspaceJobsDirectoryOwnerUid,
+    config.workspaceJobsDirectoryOwnerGid,
   );
+  const container = await docker.createContainer({
+    Image: workspace.settings.workspace_image,
+    ExposedPorts: {
+      [`${workspace.settings.workspace_port}/tcp`]: {},
+    },
+    Env: workspace.settings.workspace_environment,
+    User: `${config.workspaceJobsDirectoryOwnerUid}:${config.workspaceJobsDirectoryOwnerGid}`,
+    HostConfig: {
+      PortBindings: {
+        [`${workspace.settings.workspace_port}/tcp`]: [{ HostPort: `${workspace.launch_port}` }],
+      },
+      Binds: [`${workspacePath}:${containerPath}`],
+      Memory: config.workspaceDockerMemory,
+      MemorySwap: config.workspaceDockerMemorySwap,
+      KernelMemory: config.workspaceDockerKernelMemory,
+      DiskQuota: config.workspaceDockerDiskQuota,
+      CpuPeriod: config.workspaceDockerCpuPeriod,
+      CpuQuota: config.workspaceDockerCpuQuota,
+      PidsLimit: config.workspaceDockerPidsLimit,
+      IpcMode: 'private',
+      NetworkMode: networkMode,
+      Ulimits: [
+        {
+          // Disable core dumps, which can get very large and bloat our storage.
+          Name: 'core',
+          Soft: 0,
+          Hard: 0,
+        },
+      ],
+    },
+    Labels: {
+      'prairielearn.workspace-id': String(workspace.id),
+      'prairielearn.workspace-version': String(workspace.version),
+      'prairielearn.course-id': String(workspace.course_id),
+      'prairielearn.institution-id': String(workspace.institution_id),
+    },
+    Cmd: args, // FIXME: proper arg parsing
+    name: localName,
+    Volumes: {
+      [containerPath]: {},
+    },
+  });
+
+  await sqldb.queryAsync(sql.update_load_count, {
+    instance_id: workspace_server_settings.instance_id,
+  });
+
+  return container;
 }
-const _createContainerAsync = util.promisify(_createContainer);
 
 async function _startContainer(workspace) {
   await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Starting container');
@@ -896,7 +847,7 @@ function safeUpdateWorkspaceState(workspaceId, state, message) {
 }
 
 // Called by the main server the first time a workspace is used by a user
-async function initSequenceAsync(workspace_id, useInitialZip, res) {
+async function initSequence(workspace_id, useInitialZip, res) {
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);
 
@@ -927,15 +878,15 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
     // Only errors at this level will set host to unhealthy.
 
     try {
-      debug(`init: configuring workspace`);
+      debug('init: configuring workspace');
       workspace.launch_port = await _allocateContainerPort(workspace);
-      workspace.settings = await _getWorkspaceSettingsAsync(workspace.id);
+      workspace.settings = await _getWorkspaceSettings(workspace.id);
     } catch (err) {
       logger.error(`Error configuring workspace ${workspace_id}`, err);
       safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
-        `Error configuring workspace. Click "Reboot" to try again.`,
+        'Error configuring workspace. Click "Reboot" to try again.',
       );
       return; // don't set host to unhealthy
     }
@@ -948,27 +899,27 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
-        `Error pulling image. Click "Reboot" to try again.`,
+        'Error pulling image. Click "Reboot" to try again.',
       );
       return; // don't set host to unhealthy
     }
 
     try {
       await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
-      workspace.container = await _createContainerAsync(workspace);
+      workspace.container = await _createContainer(workspace);
     } catch (err) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
-        `Error creating container. Click "Reboot" to try again.`,
+        'Error creating container. Click "Reboot" to try again.',
       );
       return; // don't set host to unhealthy
     }
 
     try {
       await _startContainer(workspace);
-      await _checkServerAsync(workspace);
+      await _checkServer(workspace);
       debug(`init: container initialized for workspace_id=${workspace_id}`);
 
       // Before we transition this workspace to running, check that the container
@@ -1015,7 +966,7 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
       safeUpdateWorkspaceState(
         workspace_id,
         'stopped',
-        `Error starting container. Click "Reboot" to try again.`,
+        'Error starting container. Click "Reboot" to try again.',
       );
 
       // Immediately kill and remove the container, which will flush any
@@ -1036,8 +987,8 @@ async function initSequenceAsync(workspace_id, useInitialZip, res) {
  * @param {import('express').Response} res
  */
 async function sendGradedFilesArchive(workspace_id, res) {
-  const workspace = await _getWorkspaceAsync(workspace_id);
-  const workspaceSettings = await _getWorkspaceSettingsAsync(workspace_id);
+  const workspace = await _getWorkspace(workspace_id);
+  const workspaceSettings = await _getWorkspaceSettings(workspace_id);
   const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
@@ -1078,7 +1029,7 @@ async function sendGradedFilesArchive(workspace_id, res) {
       const filePath = path.join(workspaceDir, file.path);
       archive.file(filePath, { name: file.path });
       debug(`Sending ${file.path}`);
-    } catch (err) {
+    } catch {
       logger.warn(`Graded file ${file.path} does not exist.`);
       continue;
     }
@@ -1093,7 +1044,7 @@ async function sendGradedFilesArchive(workspace_id, res) {
  */
 async function sendLogs(workspaceId, res) {
   try {
-    const workspace = await _getWorkspaceAsync(workspaceId);
+    const workspace = await _getWorkspace(workspaceId);
     const container = await _getDockerContainerByLaunchUuid(workspace.launch_uuid);
     const logs = await container.logs({
       stdout: true,

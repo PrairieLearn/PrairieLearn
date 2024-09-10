@@ -28,12 +28,6 @@ def get_answer_name(file_name: str) -> str:
     )
 
 
-def add_format_error(data: pl.QuestionData, error_string: str) -> None:
-    if "_files" not in data["format_errors"]:
-        data["format_errors"]["_files"] = []
-    data["format_errors"]["_files"].append(error_string)
-
-
 def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["file-name"]
@@ -167,7 +161,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Get submitted answer or return parse_error if it does not exist
     file_contents = data["submitted_answers"].get(answer_name, "")
     if not file_contents and not allow_blank:
-        add_format_error(data, "No submitted answer for {0}".format(file_name))
+        pl.add_files_format_error(data, f"No submitted answer for {file_name}")
         return
 
     # We will store the files in the submitted_answer["_files"] key,
@@ -182,18 +176,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             file_contents = base64.b64encode(
                 normalized.encode("UTF-8").strip()
             ).decode()
-            data["submitted_answers"][answer_name] = file_contents
         except UnicodeError:
-            add_format_error(data, "Submitted answer is not a valid UTF-8 string.")
+            pl.add_files_format_error(
+                data, "Submitted answer is not a valid UTF-8 string."
+            )
 
-    if data["submitted_answers"].get("_files", None) is None:
-        data["submitted_answers"]["_files"] = []
-        data["submitted_answers"]["_files"].append(
-            {"name": file_name, "contents": file_contents}
-        )
-    elif isinstance(data["submitted_answers"].get("_files", None), list):
-        data["submitted_answers"]["_files"].append(
-            {"name": file_name, "contents": file_contents}
-        )
-    else:
-        add_format_error(data, "_files was present but was not an array.")
+    pl.add_submitted_file(data, file_name, file_contents)

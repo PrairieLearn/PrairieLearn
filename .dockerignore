@@ -1,7 +1,7 @@
-# denylist all
+# Forbid everything by default.
 *
 
-# allowlist things to copy
+# Allow specific patterns.
 !.editorconfig
 !.eslintignore
 !.eslintrc.js
@@ -13,11 +13,8 @@
 !tsconfig.json
 !turbo.json
 !.yarn/
-.yarn/cache
-.yarn/install-state.gz
 !pyproject.toml
 !apps/
-apps/prairielearn/server.log
 !database/
 !docs/
 !docker/
@@ -28,3 +25,16 @@ apps/prairielearn/server.log
 !packages/
 !testCourse/
 !tools/
+
+# Forbid specific patterns.
+.DS_Store
+.yarn/cache
+.yarn/install-state.gz
+/config.json
+apps/*/dist/
+apps/*/config.json
+apps/*/coverage/
+apps/prairielearn/public/build
+apps/prairielearn/server.log
+packages/*/coverage/
+packages/*/dist/

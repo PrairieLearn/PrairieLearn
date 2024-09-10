@@ -1,9 +1,12 @@
-import * as _ from 'lodash';
 import * as path from 'node:path';
+
+import _ from 'lodash';
+
 import { describeDatabase, diffDirectoryAndDatabase } from '@prairielearn/postgres-tools';
 
-import { REPOSITORY_ROOT_PATH } from '../lib/paths';
-import * as helperDb from './helperDb';
+import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
+
+import * as helperDb from './helperDb.js';
 
 // Custom error type so we can display our own message and omit a stacktrace
 class DatabaseError extends Error {

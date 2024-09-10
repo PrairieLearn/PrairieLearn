@@ -1,17 +1,20 @@
-import * as express from 'express';
 import * as path from 'path';
-import asyncHandler = require('express-async-handler');
-import * as fs from 'fs-extra';
-import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors';
-import * as error from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
-import sha256 = require('crypto-js/sha256');
+
+import sha256 from 'crypto-js/sha256.js';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 
-import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html';
-import { getAvailableTimezones } from '../../lib/timezones';
-import { getPaths } from '../../lib/instructorFiles';
-import { b64EncodeUnicode } from '../../lib/base64-util';
+import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
+
+import { b64EncodeUnicode } from '../../lib/base64-util.js';
+import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
+import { getPaths } from '../../lib/instructorFiles.js';
+import { getAvailableTimezones } from '../../lib/timezones.js';
+
+import { InstructorCourseAdminSettings } from './instructorCourseAdminSettings.html.js';
 
 const router = express.Router();
 
@@ -60,7 +63,7 @@ router.post(
       if (!(await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
         throw new error.HttpStatusError(400, 'infoCourse.json does not exist');
       }
-      const paths = getPaths(req, res);
+      const paths = getPaths(undefined, res.locals);
 
       const courseInfo = JSON.parse(
         await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
@@ -84,17 +87,12 @@ router.post(
         origHash,
       });
 
-      if (!editor.shouldEdit()) {
-        res.redirect(req.originalUrl);
-        return;
-      }
-
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
         flash('success', 'Course configuration updated successfully');
         return res.redirect(req.originalUrl);
-      } catch (err) {
+      } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     }
@@ -119,7 +117,7 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
         return res.redirect(req.originalUrl);
-      } catch (err) {
+      } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else {

@@ -1,20 +1,22 @@
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
-import asyncHandler = require('express-async-handler');
-import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
-import { flash } from '@prairielearn/flash';
 
-import { getInstitution } from '../../lib/institution';
-import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types';
-import { AdministratorInstitutionCourseInstance } from './administratorInstitutionCourseInstance.html';
+import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
+import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
+
+import { CourseInstanceSchema, CourseSchema } from '../../../lib/db-types.js';
+import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.html.js';
 import {
   getPlanGrantsForCourseInstance,
   reconcilePlanGrantsForCourseInstance,
-} from '../../lib/billing/plans';
-import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.html';
+} from '../../lib/billing/plans.js';
+import { getInstitution } from '../../lib/institution.js';
 
-const sql = loadSqlEquiv(__filename);
+import { AdministratorInstitutionCourseInstance } from './administratorInstitutionCourseInstance.html.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 async function selectCourseInstanceAndCourseInInstitution({

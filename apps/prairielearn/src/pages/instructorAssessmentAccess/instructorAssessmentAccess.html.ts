@@ -1,6 +1,10 @@
-import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 import { z } from 'zod';
+
+import { html } from '@prairielearn/html';
+
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),
@@ -30,29 +34,26 @@ export function InstructorAssessmentAccess({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            __filename,
-            "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            assessment: resLocals.assessment,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access
+              <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access</h1>
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="Access rules">
                 <thead>
                   <tr>
                     <th>Mode</th>

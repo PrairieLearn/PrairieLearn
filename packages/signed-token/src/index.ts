@@ -1,7 +1,8 @@
+import crypto from 'node:crypto';
+
 import base64url from 'base64url';
 import debugfn from 'debug';
 import _ from 'lodash';
-import crypto from 'node:crypto';
 
 const debug = debugfn('prairielearn:csrf');
 const sep = '.';
@@ -14,11 +15,11 @@ export function generateSignedToken(data: any, secretKey: string) {
   debug(`generateSignedToken(): data = ${JSON.stringify(data)}`);
   debug(`generateSignedToken(): secretKey = ${secretKey}`);
   const dataJSON = JSON.stringify(data);
-  const dataString = base64url.encode(dataJSON);
+  const dataString = base64url.default.encode(dataJSON);
   const dateString = new Date().getTime().toString(36);
   const checkString = dateString + sep + dataString;
   const signature = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
-  const encodedSignature = base64url.encode(signature);
+  const encodedSignature = base64url.default.encode(signature);
   debug(
     `generateSignedToken(): ${JSON.stringify({
       dataString,
@@ -41,14 +42,14 @@ export function getCheckedSignedTokenData(
   debug(`getCheckedSignedTokenData(): secretKey = ${secretKey}`);
   debug(`getCheckedSignedTokenData(): options = ${JSON.stringify(options)}`);
   if (!_.isString(token)) {
-    debug(`getCheckedSignedTokenData(): FAIL - token is not string`);
+    debug('getCheckedSignedTokenData(): FAIL - token is not string');
     return null;
   }
 
   // break token apart into the three components
   const match = token.split(sep);
   if (match == null) {
-    debug(`getCheckedSignedTokenData(): FAIL - could not split token`);
+    debug('getCheckedSignedTokenData(): FAIL - could not split token');
     return null;
   }
   const tokenSignature = match[0];
@@ -58,7 +59,7 @@ export function getCheckedSignedTokenData(
   // check the signature
   const checkString = tokenDateString + sep + tokenDataString;
   const checkSignature = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
-  const encodedCheckSignature = base64url.encode(checkSignature);
+  const encodedCheckSignature = base64url.default.encode(checkSignature);
   if (encodedCheckSignature !== tokenSignature) {
     debug(
       `getCheckedSignedTokenData(): FAIL - signature mismatch: checkSig=${encodedCheckSignature} != tokenSig=${tokenSignature}`,
@@ -71,7 +72,7 @@ export function getCheckedSignedTokenData(
     let tokenDate;
     try {
       tokenDate = new Date(parseInt(tokenDateString, 36));
-    } catch (e) {
+    } catch {
       debug(`getCheckedSignedTokenData(): FAIL - could not parse date: ${tokenDateString}`);
       return null;
     }
@@ -88,14 +89,14 @@ export function getCheckedSignedTokenData(
   // get the data
   let tokenDataJSON, tokenData;
   try {
-    tokenDataJSON = base64url.decode(tokenDataString);
-  } catch (e) {
+    tokenDataJSON = base64url.default.decode(tokenDataString);
+  } catch {
     debug(`getCheckedSignedTokenData(): FAIL - could not base64 decode: ${tokenDateString}`);
     return null;
   }
   try {
     tokenData = JSON.parse(tokenDataJSON);
-  } catch (e) {
+  } catch {
     debug(`getCheckedSignedTokenData(): FAIL - could not parse JSON: ${tokenDataJSON}`);
     return null;
   }

@@ -1,9 +1,11 @@
 import { assert } from 'chai';
+
 import { queryAsync } from '@prairielearn/postgres';
 
-import * as helperCourse from './helperCourse';
-import * as helperDb from './helperDb';
-import { FeatureManager } from '../lib/features/manager';
+import { FeatureManager } from '../lib/features/manager.js';
+
+import * as helperCourse from './helperCourse.js';
+import * as helperDb from './helperDb.js';
 
 describe('features', () => {
   before(async function () {

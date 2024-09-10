@@ -1,8 +1,8 @@
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { IdSchema, Workspace, WorkspaceSchema } from '../lib/db-types';
+import { IdSchema, Workspace, WorkspaceSchema } from '../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 export function selectWorkspace(workspace_id: string): Promise<Workspace> {
   return queryRow(sql.select_workspace, { workspace_id }, WorkspaceSchema);

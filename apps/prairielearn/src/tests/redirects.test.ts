@@ -1,8 +1,9 @@
 import { assert } from 'chai';
 import fetch from 'node-fetch';
 
-import { config } from '../lib/config';
-import * as helperServer from './helperServer';
+import { config } from '../lib/config.js';
+
+import * as helperServer from './helperServer.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 

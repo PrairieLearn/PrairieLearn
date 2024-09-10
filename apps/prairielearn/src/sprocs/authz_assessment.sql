@@ -13,7 +13,7 @@ CREATE FUNCTION
         OUT mode enum_mode,          -- The mode for this assessment.
         OUT show_closed_assessment boolean, -- If students can view the assessment after it is closed.
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
-        OUT active boolean,         -- If the assessment is visible but not active
+        OUT active boolean,         -- If the assessment is active
         OUT next_active_time text,  -- The next time the assessment becomes active. This is non-null only if the assessment is not currently active but will be later.
         OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
@@ -28,6 +28,7 @@ BEGIN
         check_assessment_access(
             assessment_id,
             (authz_data->>'mode')::enum_mode,
+            (authz_data->>'mode_reason')::enum_mode_reason,
             (authz_data->>'course_role')::enum_course_role,
             (authz_data->>'course_instance_role')::enum_course_instance_role,
             (authz_data->'user'->>'user_id')::bigint,

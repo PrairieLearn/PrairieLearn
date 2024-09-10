@@ -80,7 +80,10 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
             if t != 1:
                 yield t, value
             if i + 1 in self.hl_lines:  # i + 1 because Python indexes start at 0
-                yield 1, f'<span class="pl-code-highlighted-line" style="background-color: {self.style.highlight_color}">{value}</span>'
+                yield (
+                    1,
+                    f'<span class="pl-code-highlighted-line" style="background-color: {self.style.highlight_color}">{value}</span>',
+                )
             else:
                 yield 1, value
 

@@ -1,18 +1,20 @@
-import * as _ from 'lodash';
-import debugfn from 'debug';
-import { v4 as uuidv4 } from 'uuid';
 import { setTimeout as sleep } from 'node:timers/promises';
-import { trace, context, suppressTracing, SpanStatusCode } from '@prairielearn/opentelemetry';
-import * as Sentry from '@prairielearn/sentry';
+
+import debugfn from 'debug';
+import _ from 'lodash';
+import { v4 as uuidv4 } from 'uuid';
+
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
+import { trace, context, suppressTracing, SpanStatusCode } from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 
-import { config } from '../lib/config';
-import { isEnterprise } from '../lib/license';
+import { config } from '../lib/config.js';
+import { isEnterprise } from '../lib/license.js';
 
 const debug = debugfn('prairielearn:cron');
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * jobTimeouts meaning (used by stop()):
@@ -41,8 +43,8 @@ export let jobs: CronJob[] = [];
 // This means that we can have multiple servers running cron jobs and
 // the jobs will still only run at the required frequency.
 
-export function init() {
-  debug(`init()`);
+export async function init() {
+  debug('init()');
   if (!config.cronActive) {
     logger.verbose('cronActive is false, skipping cron initialization');
     return;
@@ -51,84 +53,85 @@ export function init() {
   jobs = [
     {
       name: 'sendUnfinishedCronWarnings',
-      module: require('./sendUnfinishedCronWarnings'),
+      module: await import('./sendUnfinishedCronWarnings.js'),
       intervalSec: 'daily',
     },
     {
       name: 'autoFinishExams',
-      module: require('./autoFinishExams'),
+      module: await import('./autoFinishExams.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalAutoFinishExamsSec,
     },
     {
       name: 'errorAbandonedJobs',
-      module: require('./errorAbandonedJobs'),
+      module: await import('./errorAbandonedJobs.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalErrorAbandonedJobsSec,
     },
     {
       name: 'sendExternalGraderStats',
-      module: require('./sendExternalGraderStats'),
+      module: await import('./sendExternalGraderStats.js'),
       intervalSec: 'daily',
     },
     {
       name: 'sendExternalGraderDeadLetters',
-      module: require('./sendExternalGraderDeadLetters'),
+      module: await import('./sendExternalGraderDeadLetters.js'),
       intervalSec: 'daily',
     },
     {
-      name: 'externalGraderLoad',
-      module: require('./externalGraderLoad'),
-      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
-    },
-    {
       name: 'serverLoad',
-      module: require('./serverLoad'),
+      module: await import('./serverLoad.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerLoadSec,
     },
     {
       name: 'serverUsage',
-      module: require('./serverUsage'),
+      module: await import('./serverUsage.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalServerUsageSec,
     },
     {
       name: 'calculateAssessmentQuestionStats',
-      module: require('./calculateAssessmentQuestionStats'),
+      module: await import('./calculateAssessmentQuestionStats.js'),
       intervalSec:
         config.cronOverrideAllIntervalsSec ||
         config.cronIntervalCalculateAssessmentQuestionStatsSec,
     },
     {
       name: 'workspaceTimeoutStop',
-      module: require('./workspaceTimeoutStop'),
+      module: await import('./workspaceTimeoutStop.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceTimeoutStopSec,
     },
     {
       name: 'workspaceTimeoutWarn',
-      module: require('./workspaceTimeoutWarn'),
+      module: await import('./workspaceTimeoutWarn.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceTimeoutWarnSec,
     },
     {
       name: 'workspaceHostTransitions',
-      module: require('./workspaceHostTransitions'),
+      module: await import('./workspaceHostTransitions.js'),
       intervalSec:
         config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostTransitionsSec,
     },
     {
       name: 'cleanTimeSeries',
-      module: require('./cleanTimeSeries'),
+      module: await import('./cleanTimeSeries.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
     },
   ];
 
   if (isEnterprise()) {
     jobs.push({
+      name: 'externalGraderLoad',
+      module: await import('../ee/cron/externalGraderLoad.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
+    });
+
+    jobs.push({
       name: 'workspaceHostLoads',
-      module: require('../ee/cron/workspaceHostLoads'),
+      module: await import('../ee/cron/workspaceHostLoads.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalWorkspaceHostLoadsSec,
     });
 
     jobs.push({
       name: 'chunksHostAutoScaling',
-      module: require('../ee/cron/chunksHostAutoScaling'),
+      module: await import('../ee/cron/chunksHostAutoScaling.js'),
       intervalSec:
         config.cronOverrideAllIntervalsSec || config.cronIntervalChunksHostAutoScalingSec,
     });
@@ -219,7 +222,7 @@ function queueJobs(jobsList: CronJob[], intervalSec: number) {
 }
 
 function queueDailyJobs(jobsList: CronJob[]) {
-  debug(`queueDailyJobs()`);
+  debug('queueDailyJobs()');
   function timeToNextMS() {
     const now = Date.now();
     const midnight = new Date(now).setHours(0, 0, 0, 0);
@@ -241,7 +244,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
     return tMS;
   }
   function queueRun() {
-    debug(`queueDailyJobs(): starting run`);
+    debug('queueDailyJobs(): starting run');
     jobTimeouts['daily'] = 0;
     runJobs(jobsList)
       .catch((err) => {
@@ -249,14 +252,14 @@ function queueDailyJobs(jobsList: CronJob[]) {
         Sentry.captureException(err);
       })
       .finally(() => {
-        debug(`queueDailyJobs(): completed run`);
+        debug('queueDailyJobs(): completed run');
         if (jobTimeouts['daily'] === -1) {
           // someone requested a stop
-          debug(`queueDailyJobs(): stop requested`);
+          debug('queueDailyJobs(): stop requested');
           delete jobTimeouts['daily'];
           return;
         }
-        debug(`queueDailyJobs(): waiting for next run time`);
+        debug('queueDailyJobs(): waiting for next run time');
         jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
       });
   }
@@ -265,7 +268,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
 
 // run a list of jobs
 async function runJobs(jobsList: CronJob[]) {
-  debug(`runJobs()`);
+  debug('runJobs()');
   const cronUuid = uuidv4();
   logger.verbose('cron: jobs starting', { cronUuid });
 
@@ -311,7 +314,7 @@ async function runJobs(jobsList: CronJob[]) {
     });
   }
 
-  debug(`runJobs(): done`);
+  debug('runJobs(): done');
   logger.verbose('cron: jobs finished', { cronUuid });
 }
 

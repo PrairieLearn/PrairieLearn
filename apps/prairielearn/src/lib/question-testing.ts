@@ -1,14 +1,12 @@
-import * as _ from 'lodash';
 import * as async from 'async';
-import jsonStringifySafe = require('json-stringify-safe');
+import jsonStringifySafe from 'json-stringify-safe';
+import _ from 'lodash';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-import * as questionServers from '../question-servers';
-import { type ServerJob, createServerJob } from './server-jobs';
-import { saveSubmission, gradeVariant, insertSubmission } from './grading';
-import { getQuestionCourse, ensureVariant } from './question-variant';
-import { getAndRenderVariant } from './question-render';
-import { writeCourseIssues } from './issues';
+
+import * as questionServers from '../question-servers/index.js';
+
 import {
   GradingJobSchema,
   SubmissionSchema,
@@ -17,10 +15,14 @@ import {
   type Question,
   type Course,
   type CourseInstance,
-} from './db-types';
-import { z } from 'zod';
+} from './db-types.js';
+import { saveSubmission, gradeVariant, insertSubmission } from './grading.js';
+import { writeCourseIssues } from './issues.js';
+import { getAndRenderVariant } from './question-render.js';
+import { getQuestionCourse, ensureVariant } from './question-variant.js';
+import { type ServerJob, createServerJob } from './server-jobs.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface TestResultStats {
   generateDuration: number;
@@ -75,7 +77,10 @@ async function createTestSubmission(
 
   if (hasFatalIssue) data.gradable = false;
 
-  const submission_id = await insertSubmission({
+  // We discard the returned updated variant here. We don't need it later in
+  // this function, and the caller of this function will re-select the variant
+  // before grading the submission.
+  const { submission_id } = await insertSubmission({
     submitted_answer: {},
     raw_submitted_answer: data.raw_submitted_answer,
     format_errors: data.format_errors,
@@ -191,14 +196,19 @@ async function testVariant(
     auth_user_id: authn_user_id,
     submitted_answer: expected_submission.raw_submitted_answer || {},
   };
-  const test_submission_id = await saveSubmission(submission_data, variant, question, course);
-  await gradeVariant(variant, test_submission_id, question, course, authn_user_id, true);
+  const { submission_id: test_submission_id, variant: updated_variant } = await saveSubmission(
+    submission_data,
+    variant,
+    question,
+    course,
+  );
+  await gradeVariant(updated_variant, test_submission_id, question, course, authn_user_id, true);
   const test_submission = await selectSubmission(test_submission_id);
 
   const courseIssues = compareSubmissions(expected_submission, test_submission);
   const studentMessage = 'Question test failure';
   const courseData = {
-    variant,
+    variant: updated_variant,
     question,
     course,
     expected_submission,
@@ -443,7 +453,7 @@ export async function startTestQuestion(
     printStats('Parse/grade:     ', 'gradeDuration');
 
     if (!success) {
-      throw new Error('Some tests failed. See the "Errors" page for details.');
+      throw new Error('Some tests failed. See the "Issues" page for details.');
     }
   });
 

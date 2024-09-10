@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/error",
-  "version": "1.2.0",
+  "version": "2.0.5",
+  "type": "module",
   "main": "./dist/index.js",
   "repository": {
     "type": "git",
@@ -10,19 +11,31 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "mocha --no-config --require tsx src/*.test.ts"
+    "test": "c8 mocha src/**/*.test.ts"
   },
   "devDependencies": {
     "@prairielearn/html": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/mocha": "^10.0.6",
-    "@types/node": "^20.12.2",
-    "chai": "^4.4.1",
-    "mocha": "^10.4.0",
-    "tsx": "^4.7.2",
-    "typescript": "^5.4.3"
+    "@types/mocha": "^10.0.7",
+    "@types/node": "^20.16.2",
+    "c8": "^10.1.2",
+    "chai": "^5.1.1",
+    "mocha": "^10.7.3",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
   },
   "dependencies": {
     "lodash": "^4.17.21"
+  },
+  "c8": {
+    "reporter": [
+      "html",
+      "text-summary",
+      "cobertura"
+    ],
+    "all": true,
+    "include": [
+      "src/**"
+    ]
   }
 }

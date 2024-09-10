@@ -2,9 +2,10 @@ import { assert } from 'chai';
 import { step } from 'mocha-steps';
 
 import * as sqldb from '@prairielearn/postgres';
-import * as helperDb from '../helperDb';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as helperDb from '../helperDb.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function getUserParams(user_id) {
   const query = 'SELECT uid, name, uin, institution_id FROM users WHERE user_id = $1;';
@@ -15,7 +16,7 @@ async function getUserParams(user_id) {
 }
 
 async function usersSelectOrInsert(
-  user: { uid: string; name: string; uin?: string | null },
+  user: { uid: string; name: string; uin?: string | null; email?: string | null },
   authn_provider_name: string | null = null,
   institution_id: string | null = null,
 ) {
@@ -23,6 +24,7 @@ async function usersSelectOrInsert(
     user.uid,
     user.name,
     user.uin,
+    user.email,
     authn_provider_name,
     institution_id,
   ]);

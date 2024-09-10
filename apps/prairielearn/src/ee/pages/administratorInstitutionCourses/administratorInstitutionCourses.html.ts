@@ -1,6 +1,8 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
-import { type Course, type Institution } from '../../../lib/db-types';
+
+import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
+import { type Course, type Institution } from '../../../lib/db-types.js';
 
 export function AdministratorInstitutionCourses({
   institution,
@@ -15,23 +17,21 @@ export function AdministratorInstitutionCourses({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          navPage: 'administrator_institution',
-          pageTitle: 'Courses',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Courses - Institution Admin' })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
-          ...resLocals,
-          institution,
+        ${Navbar({
+          resLocals: { ...resLocals, institution },
           navbarType: 'administrator_institution',
           navPage: 'administrator_institution',
           navSubPage: 'courses',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <div class="table-responsive">
-            <table class="table table-hover table-striped table-bordered table">
+            <table
+              class="table table-hover table-striped table-bordered table"
+              aria-label="Courses"
+            >
               <thead>
                 <tr>
                   <th>Name</th>

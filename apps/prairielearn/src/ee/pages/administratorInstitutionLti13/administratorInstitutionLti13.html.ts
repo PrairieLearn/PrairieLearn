@@ -1,10 +1,12 @@
-import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
-import { type Institution, type Lti13Instance } from '../../../lib/db-types';
-import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types';
-
 import { EncodedData } from '@prairielearn/browser-utils';
-import { compiledScriptTag } from '../../../lib/assets';
+import { html } from '@prairielearn/html';
+
+import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
+import { compiledScriptTag } from '../../../lib/assets.js';
+import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
+
+import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
 export function AdministratorInstitutionLti13({
   institution,
@@ -25,22 +27,17 @@ export function AdministratorInstitutionLti13({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          navPage: 'administrator_institution',
-          pageTitle: 'LTI 1.3',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Institution Admin' })}
         ${compiledScriptTag('administratorInstitutionLti13Client.ts')}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
-          ...resLocals,
-          institution,
+        ${Navbar({
+          resLocals: { ...resLocals, institution },
           navbarType: 'administrator_institution',
           navPage: 'administrator_institution',
           navSubPage: 'lti13',
         })}
-        <main class="container mb-4">
+        <main id="content" class="container mb-4">
           <h2 class="h4">LTI 1.3 / Learning Tools Interoperability</h2>
           <p>
             ${lti13Instances.length} instance${lti13Instances.length === 1 ? '' : 's'} configured.
@@ -185,7 +182,7 @@ function LTI13Instance(
             </label>
           </div>
 
-          <select class="form-control" id="choosePlatform" name="platform">
+          <select class="custom-select" id="choosePlatform" name="platform">
             ${platform_defaults.map((d) => {
               return html`<option ${d.platform === instance.platform ? 'selected' : ''}>
                 ${d.platform}
@@ -235,7 +232,13 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
 ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           >
           <small id="custom_fieldsHelp" class="form-text text-muted">
-            Provide suggestions to the LMS in the config JSON for how to setup LTI 1.3 custom fields
+            Provide suggestions to the LMS in the config JSON for how to setup LTI 1.3 custom
+            fields.
+            <a
+              href="https://canvas.instructure.com/doc/api/file.tools_variable_substitutions.html"
+              target="_blank"
+              >Canvas variable substitution docs</a
+            >
           </small>
         </div>
 
@@ -339,7 +342,25 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           <small id="uinAttributeHelp" class="form-text text-muted">
             The UIN is used as an internal, immutable identifier for the user. It
             <strong>MUST</strong> never change for a given individual, even if they change their
-            name or email.
+            name or UID. Possibly
+            <code>["https://purl.imsglobal.org/spec/lti/claim/lis"]["person_sourcedid"]</code> or
+            <code>["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]</code>
+          </small>
+        </div>
+
+        <div class="form-group">
+          <label for="name_attribute">Email attribute</label>
+          <input
+            type="text"
+            class="form-control"
+            name="email_attribute"
+            id="email_attribute"
+            value="${instance.email_attribute}"
+            aria-describedby="emailAttributeHelp"
+          />
+          <small id="emailAttributeHelp" class="form-text text-muted">
+            This attribute should contain the email address of the user. If present, PrairieLearn
+            will use this to send email to the user.
           </small>
         </div>
 

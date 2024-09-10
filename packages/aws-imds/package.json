@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/aws-imds",
-  "version": "1.0.16",
+  "version": "2.0.4",
+  "type": "module",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
@@ -12,12 +13,12 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "devDependencies": {
-    "@prairielearn/tsconfig": "*",
-    "@types/node": "^20.12.2",
-    "typescript": "^5.4.3"
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^20.16.2",
+    "typescript": "^5.5.4"
   },
   "dependencies": {
-    "node-fetch": "^2.7.0",
-    "zod": "^3.22.4"
+    "node-fetch": "^3.3.2",
+    "zod": "^3.23.8"
   }
 }

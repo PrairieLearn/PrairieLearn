@@ -43,39 +43,6 @@ WITH
     WHERE
       f.instance_question_id = $instance_question_id
       AND f.deleted_at IS NULL
-  ),
-  variant_max_submission_scores AS (
-    SELECT
-      v.id AS variant_id,
-      max(s.score) AS max_submission_score
-    FROM
-      variants AS v
-      JOIN submissions AS s ON (s.variant_id = v.id)
-    WHERE
-      v.instance_question_id = $instance_question_id
-      AND s.score IS NOT NULL
-    GROUP BY
-      v.id
-  ),
-  instance_question_variants AS (
-    SELECT
-      jsonb_agg(
-        jsonb_build_object(
-          'variant_id',
-          v.id,
-          'max_submission_score',
-          COALESCE(vmss.max_submission_score, 0)
-        )
-        ORDER BY
-          v.date
-      ) AS variants
-    FROM
-      variants AS v
-      LEFT JOIN variant_max_submission_scores AS vmss ON (vmss.variant_id = v.id)
-    WHERE
-      v.instance_question_id = $instance_question_id
-      AND NOT v.open
-      AND NOT v.broken
   )
 SELECT
   jsonb_set(
@@ -113,9 +80,7 @@ SELECT
     'assigned_grader_name',
     COALESCE(uag.name, uag.uid),
     'last_grader_name',
-    COALESCE(ulg.name, ulg.uid),
-    'modified_at_formatted',
-    format_date_short (iq.modified_at, ci.display_timezone)
+    COALESCE(ulg.name, ulg.uid)
   ) AS instance_question,
   jsonb_build_object(
     'id',
@@ -131,9 +96,7 @@ SELECT
     'sequence_locked',
     iqi.sequence_locked,
     'instructor_question_number',
-    admin_assessment_question_number (aq.id),
-    'previous_variants',
-    iqv.variants
+    admin_assessment_question_number (aq.id)
   ) AS instance_question_info,
   to_jsonb(aq) AS assessment_question,
   to_jsonb(q) AS question,
@@ -158,7 +121,6 @@ FROM
   LEFT JOIN users AS u ON (u.user_id = ai.user_id)
   LEFT JOIN users AS uag ON (uag.user_id = iq.assigned_grader)
   LEFT JOIN users AS ulg ON (ulg.user_id = iq.last_grader)
-  LEFT JOIN instance_question_variants AS iqv ON (TRUE)
   JOIN LATERAL authz_assessment_instance (
     ai.id,
     $authz_data,

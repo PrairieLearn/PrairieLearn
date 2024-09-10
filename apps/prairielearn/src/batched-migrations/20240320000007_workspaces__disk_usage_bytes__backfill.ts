@@ -2,8 +2,8 @@ import { makeBatchedMigration } from '@prairielearn/migrations';
 import { queryOneRowAsync, queryRows } from '@prairielearn/postgres';
 import { updateWorkspaceDiskUsage } from '@prairielearn/workspace-utils';
 
-import { config } from '../lib/config';
-import { WorkspaceSchema } from '../lib/db-types';
+import { config } from '../lib/config.js';
+import { WorkspaceSchema } from '../lib/db-types.js';
 
 export default makeBatchedMigration({
   async getParameters() {

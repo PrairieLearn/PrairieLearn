@@ -1,36 +1,11 @@
-import * as _ from 'lodash';
 import { type Request, type Response } from 'express';
+import _ from 'lodash';
 
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 
-import { saveAndGradeSubmission, saveSubmission } from './grading';
-import { idsEqual } from './id';
-import { selectVariantById } from '../models/variant';
-import { type Variant } from './db-types';
+import { validateVariantAgainstQuestion } from '../models/variant.js';
 
-export async function validateVariantAgainstQuestion(
-  unsafe_variant_id: string,
-  question_id: string,
-  instance_question_id: string | null = null,
-): Promise<Variant> {
-  const variant = await selectVariantById(unsafe_variant_id);
-  if (variant == null || !idsEqual(variant.question_id, question_id)) {
-    throw new error.HttpStatusError(
-      400,
-      `Client-provided variant ID ${unsafe_variant_id} is not valid for question ID ${question_id}.`,
-    );
-  }
-  if (
-    instance_question_id != null &&
-    (!variant.instance_question_id || !idsEqual(variant.instance_question_id, instance_question_id))
-  ) {
-    throw new error.HttpStatusError(
-      400,
-      `Client-provided variant ID ${unsafe_variant_id} is not valid for instance question ID ${instance_question_id}.`,
-    );
-  }
-  return variant;
-}
+import { saveAndGradeSubmission, saveSubmission } from './grading.js';
 
 export async function processSubmission(
   req: Request,
@@ -43,13 +18,13 @@ export async function processSubmission(
     submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
     if (!req.body.postData) {
-      throw new error.HttpStatusError(400, 'No postData');
+      throw new HttpStatusError(400, 'No postData');
     }
     let postData;
     try {
       postData = JSON.parse(req.body.postData);
-    } catch (e) {
-      throw new error.HttpStatusError(400, 'JSON parse failed on body.postData');
+    } catch {
+      throw new HttpStatusError(400, 'JSON parse failed on body.postData');
     }
     variant_id = postData.variant ? postData.variant.id : null;
     submitted_answer = postData.submittedAnswer;
@@ -81,7 +56,7 @@ export async function processSubmission(
   // force-breaks variants, as we could be in a case where the variant wasn't
   // broken when the user loaded the page but it is broken when they submit.
   if (variant.broken_at) {
-    throw new error.HttpStatusError(403, 'Cannot submit to a broken variant');
+    throw new HttpStatusError(403, 'Cannot submit to a broken variant');
   }
 
   if (req.body.__action === 'grade') {
@@ -98,6 +73,6 @@ export async function processSubmission(
     await saveSubmission(submission, variant, res.locals.question, res.locals.course);
     return submission.variant_id;
   } else {
-    throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+    throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
   }
 }

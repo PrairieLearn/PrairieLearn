@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/session",
-  "version": "2.0.6",
+  "version": "3.0.5",
+  "type": "module",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
@@ -10,36 +11,47 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc --watch --preserveWatchOutput",
-    "test": "nyc --reporter=html --reporter=text mocha --no-config --require tsx --watch-files src/ src/**/*.test.ts"
+    "test": "c8 mocha --watch-files src/ src/**/*.test.ts"
   },
   "dependencies": {
     "@types/express": "^4.17.21",
     "cookie": "^0.6.0",
     "cookie-signature": "^1.2.1",
     "express-async-handler": "^1.2.0",
-    "nyc": "^15.1.0",
     "on-headers": "^1.0.2",
     "uid-safe": "^2.1.5"
   },
   "devDependencies": {
     "@prairielearn/express-test-utils": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/chai": "^4.3.14",
+    "@types/chai": "^4.3.19",
     "@types/cookie": "^0.6.0",
     "@types/cookie-signature": "^1.1.2",
-    "@types/node": "^20.12.2",
+    "@types/node": "^20.16.2",
     "@types/node-fetch": "^2.6.11",
     "@types/on-headers": "^1.0.3",
-    "@types/set-cookie-parser": "^2.4.7",
+    "@types/set-cookie-parser": "^2.4.10",
     "@types/uid-safe": "^2.1.5",
-    "chai": "^4.4.1",
+    "c8": "^10.1.2",
+    "chai": "^5.1.1",
     "express": "^4.19.2",
     "fetch-cookie": "^3.0.1",
-    "mocha": "^10.4.0",
-    "node-fetch": "^2.7.0",
-    "set-cookie-parser": "^2.6.0",
+    "mocha": "^10.7.3",
+    "node-fetch": "^3.3.2",
+    "set-cookie-parser": "^2.7.0",
     "source-map-support": "^0.5.21",
-    "tsx": "^4.7.2",
-    "typescript": "^5.4.3"
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
+  },
+  "c8": {
+    "reporter": [
+      "html",
+      "text-summary",
+      "cobertura"
+    ],
+    "all": true,
+    "include": [
+      "src/**"
+    ]
   }
 }

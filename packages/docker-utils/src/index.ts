@@ -4,6 +4,7 @@ import {
   GetAuthorizationTokenCommand,
 } from '@aws-sdk/client-ecr';
 import { subHours, isFuture } from 'date-fns';
+
 import { logger } from '@prairielearn/logger';
 
 export interface DockerAuth {

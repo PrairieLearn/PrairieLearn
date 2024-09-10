@@ -1,9 +1,10 @@
 // @ts-check
 // const sqldb = require('@prairielearn/postgres')
 import * as path from 'path';
+
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /** @typedef {{ type: 'course' }} CourseInfo */
 /** @typedef {{ type: 'question', qid: string }} QuestionInfo */

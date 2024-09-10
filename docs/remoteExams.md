@@ -4,9 +4,9 @@ This page lists sample assessment configurations for remote exams, where student
 
 _See the [Access control](accessControl.md) page for details on `allowAccess` rules._
 
-## Exams in the Computer-Based Testing Facility (CBTF)
+## Exams in a PrairieTest-managed testing center
 
-If you are using the CBTF for remote proctoring then the access control should look like:
+If you are using PrairieTest for remote proctoring then the access control should look like:
 
 ```json
 "allowAccess": [
@@ -21,11 +21,11 @@ If you are using the CBTF for remote proctoring then the access control should l
 Some notes about this configuration:
 
 - The `examUuid` parameter should be copied from PrairieTest for the specific exam. Each exam has its own unique `examUuid` and it's vital that the correct value is used for each separate exam.
-- Date restrictions and time limits must not be set for the exam. All limits will be automatically enforced by the CBTF on a per-student basis, taking into account conflict exams and disability accommodations.
+- Date restrictions and time limits must not be set for the exam. All limits will be automatically enforced by PrairieTest on a per-student basis, taking into account conflict exams and disability accommodations.
 
-## CBTF exams with a few students outside the CBTF
+## Testing center exams with a few students outside the testing center
 
-Sometimes exams in the CBTF ([see above](#exams-in-the-computer-based-testing-facility-cbtf)) need to have a few students take the exam without CBTF proctoring, for example if they have missed the exam and need to take it later without proctoring. The access control for this should look like:
+Sometimes exams in a testing center ([see above](#exams-in-a-prairietest-managed-testing-center)) need to have a few students take the exam without PrairieTest proctoring, for example if they have missed the exam and need to take it later without proctoring. The access control for this should look like:
 
 ```json
 "allowAccess": [
@@ -48,12 +48,12 @@ Sometimes exams in the CBTF ([see above](#exams-in-the-computer-based-testing-fa
 Some notes about this configuration:
 
 - See the [next section](#synchronous-timed-exams) for more details on the extra rule for the unproctored students.
-- The additional access rules for specific students can be added at any time, including after other students already completed the CBTF exam. This is useful to set up accommodations for students that missed the exam.
+- The additional access rules for specific students can be added at any time, including after other students already completed the exam using PrairieTest. This is useful to set up accommodations for students that missed the exam.
 - The order of the extra access rules is not important.
 
 ## Synchronous, timed exams
 
-**We recommend that non-CBTF exams should be run using a synchronous, timed configuration.** Below is an example of an assessment configured to have students taking the exam at the same time with a time limit.
+**We recommend that exams held outside a controlled testing center should be run using a synchronous, timed configuration.** Below is an example of an assessment configured to have students taking the exam at the same time with a time limit.
 
 This configuration is good when:
 
@@ -146,7 +146,7 @@ This configuration is good when:
 
 Some notes about this configuration:
 
-- All of the the [notes above](#synchronous-timed-exams) still apply
+- All of the [notes above](#synchronous-timed-exams) still apply
 - It's a good idea to run exams early-morning to early-morning. Having an `endDate` at 6am is ideal. This avoids having a pile-up at the end of the testing window, because 4am to 7am is the time period when undergraduates are least likely to be active (based on PrairieLearn usage data). Pile-ups near the end are bad because some students always get confused about exactly when the window will close, and end up with less time than they should. Starting at 6am also allows students to take the exam early in morning if they want.
 
 ## Post-graded exams

@@ -4,9 +4,9 @@ Central to PrairieLearn is the ability to securely execute arbitrary code. There
 
 - **Question and element code**: This is code from a question's `server.py` or any PrairieLearn/course [elements](elements.md). This code must execute as quickly as possible, as it will be executed any time a question is rendered or graded and thus needs to render during a single HTTP request.
 - [**Externally-graded questions**](externalGrading.md): This is code submitted by a student and graded for them by course code. This code can take longer to execute and is queued to be executed on a distributed set of machines.
-- [**Workspaces**](workspaces/): This is an interactive environment in which a student can write and execute code, in contrast to the non-interactive batch execution by external graders. Workspaces can persist for many hours and so they are executed on a distributed set of machines (the _workspace hosts_, a distinct set from the _external grader hosts_).
+- [**Workspaces**](workspaces/index.md): This is an interactive environment in which a student can write and execute code, in contrast to the non-interactive batch execution by external graders. Workspaces can persist for many hours and so they are executed on a distributed set of machines (the _workspace hosts_, a distinct set from the _external grader hosts_).
 
-The [external grading docs](externalGrading.md) and [workspace docs](workspaces/) describe those execution modes in more detail. This document is primarily concerned with describing how question and element code is executed.
+The [external grading docs](externalGrading.md) and [workspace docs](workspaces/index.md) describe those execution modes in more detail. This document is primarily concerned with describing how question and element code is executed.
 
 ## The Python zygote
 
@@ -36,7 +36,7 @@ This is still how PrairieLearn functions by default for local development. The `
 
 Under this mode, PrairieLearn uses Docker to provide a degree of isolation from both PrairieLearn and other courses.
 
-Instead of using a pool of zygotes as described above, it actually maintains a pool of Docker containers, each of which runs a simple Node script (the _executor_), which in turn runs a Python zygote. The Node script listens for requests from PrairieLearn and essentially just forwards them to the Python process. You may ask, "Why not just run the zygote as the primary process in the container?" Well, starting up a Docker container is significantly more expensive than starting up a Python interpreter. Given that we ocasionally want to completely restart the Python worker, such as when it encounters an error, having an additional level of indirection allows us to gracefully restart the Python process inside the Docker container without having to restart the entire Docker container.
+Instead of using a pool of zygotes as described above, it actually maintains a pool of Docker containers, each of which runs a simple Node script (the _executor_), which in turn runs a Python zygote. The Node script listens for requests from PrairieLearn and essentially just forwards them to the Python process. You may ask, "Why not just run the zygote as the primary process in the container?" Well, starting up a Docker container is significantly more expensive than starting up a Python interpreter. Given that we occasionally want to completely restart the Python worker, such as when it encounters an error, having an additional level of indirection allows us to gracefully restart the Python process inside the Docker container without having to restart the entire Docker container.
 
 This mode also allows us to isolate one course from another so that course A cannot see content from course B, and vice versa. To achieve this, we take advantage of bind mounts. When creating a container, PrairieLearn also creates a special directory on the host, and then mounts that directory to `/course` in the container. To execute content for course A, PrairieLearn first bind mounts that course's directory to the container's host directory. This is transitive to the container, which will now see that course's content at `/course`. In the future, when a different course's code needs to be executed in that container, PrairieLearn will simply update the bind mount to point to the other course.
 
@@ -61,7 +61,7 @@ The primary external interface of these callers is the `call()` function, which 
   - For core elements, this is an item in PrairieLearn's `elements` directory.
 - `file`: the name of the file whose code will be executed (e.g. `server.py`)
 - `fcn`: the name of the function in `file` that will be executed (e.g. `grade` or `render`).
-- `args`: an array of JSON-encodeable arguments to the function being called.
+- `args`: an array of JSON-encodable arguments to the function being called.
 
 The piece of code to execute is specified by (`type`, `directory`, `file`) instead of an absolute path because the location of each file on disk may change between each type of code caller; allowing the code caller to construct the path from that information keeps the code that uses a caller agnostic to the underlying caller being used.
 

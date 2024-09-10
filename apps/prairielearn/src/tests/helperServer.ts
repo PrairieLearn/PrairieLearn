@@ -1,38 +1,38 @@
-import * as tmp from 'tmp-promise';
 import { setTimeout as sleep } from 'node:timers/promises';
+
 import { assert } from 'chai';
-import * as opentelemetry from '@prairielearn/opentelemetry';
 import debugfn from 'debug';
+import * as tmp from 'tmp-promise';
+
 import { cache } from '@prairielearn/cache';
-
-import * as assets from '../lib/assets';
-import { config } from '../lib/config';
-import * as load from '../lib/load';
-import * as cron from '../cron';
-import * as socketServer from '../lib/socket-server';
-import * as serverJobs from '../lib/server-jobs-legacy';
-import * as freeformServer from '../question-servers/freeform';
-import * as localCache from '../lib/local-cache';
-import * as codeCaller from '../lib/code-caller';
-import * as externalGrader from '../lib/externalGrader';
-import * as externalGradingSocket from '../lib/externalGradingSocket';
-import { TEST_COURSE_PATH } from '../lib/paths';
-
+import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
 
-import * as server from '../server';
+import * as cron from '../cron/index.js';
+import * as assets from '../lib/assets.js';
+import * as codeCaller from '../lib/code-caller/index.js';
+import { config } from '../lib/config.js';
+import * as externalGrader from '../lib/externalGrader.js';
+import * as externalGradingSocket from '../lib/externalGradingSocket.js';
+import * as load from '../lib/load.js';
+import * as localCache from '../lib/local-cache.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
+import * as serverJobs from '../lib/server-jobs.js';
+import * as socketServer from '../lib/socket-server.js';
+import * as freeformServer from '../question-servers/freeform.js';
+import * as server from '../server.js';
 
-import * as helperDb from './helperDb';
-import * as helperCourse from './helperCourse';
+import * as helperCourse from './helperCourse.js';
+import * as helperDb from './helperDb.js';
 
 const debug = debugfn('prairielearn:helperServer');
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 config.startServer = false;
 // Pick a unique port based on the Mocha worker ID.
 config.serverPort = (3007 + Number.parseInt(process.env.MOCHA_WORKER_ID ?? '0', 10)).toString();
 
-export function before(courseDir: string = TEST_COURSE_PATH): () => Promise<void> {
+export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => Promise<void> {
   return async () => {
     debug('before()');
     try {
@@ -48,13 +48,19 @@ export function before(courseDir: string = TEST_COURSE_PATH): () => Promise<void
       config.filesRoot = tmpDir.path;
 
       debug('before(): initializing cron');
-      cron.init();
+      await cron.init();
 
       debug('before(): inserting dev user');
       await server.insertDevUser();
 
       debug('before(): sync from disk');
-      await helperCourse.syncCourse(courseDir);
+      if (Array.isArray(courseDir)) {
+        for (const dir of courseDir) {
+          await helperCourse.syncCourse(dir);
+        }
+      } else {
+        await helperCourse.syncCourse(courseDir);
+      }
 
       debug('before(): set up load estimators');
       load.initEstimator('request', 1);
@@ -144,15 +150,19 @@ export async function waitForJobSequence(job_sequence_id) {
   return job_sequence;
 }
 
-export async function waitForJobSequenceSuccess(job_sequence_id) {
+export async function waitForJobSequenceStatus(job_sequence_id, status: 'Success' | 'Error') {
   const job_sequence = await waitForJobSequence(job_sequence_id);
 
   // In the case of a failure, print more information to aid debugging.
-  if (job_sequence.status !== 'Success') {
+  if (job_sequence.status !== status) {
     console.log(job_sequence);
     const result = await sqldb.queryAsync(sql.select_jobs, { job_sequence_id });
     console.log(result.rows);
   }
 
-  assert.equal(job_sequence.status, 'Success');
+  assert.equal(job_sequence.status, status);
+}
+
+export async function waitForJobSequenceSuccess(job_sequence_id) {
+  await waitForJobSequenceStatus(job_sequence_id, 'Success');
 }

@@ -1,4 +1,4 @@
-import { makeBatchedMigration } from '../batched-migration';
+import { makeBatchedMigration } from '../batched-migration.js';
 
 export default makeBatchedMigration({
   async getParameters() {

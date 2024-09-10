@@ -161,4 +161,4 @@ UPDATE pt_reservations
 SET
   -- Start 5 minutes in the past to avoid races between PT and JS time.
   access_start = NOW() - interval '5 minutes',
-  access_end = NOW() + interval '1 hour';
+  access_end = NOW() + interval '20 minutes';

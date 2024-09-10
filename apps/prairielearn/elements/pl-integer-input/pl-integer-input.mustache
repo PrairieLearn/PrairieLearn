@@ -1,16 +1,6 @@
 {{#question}}
-<script>
-    $(function(){
-        $('#pl-integer-input-{{uuid}} [data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            template: '<div class="popover pl-integer-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-        });
-    });
-</script>
-
 {{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
-    <span id="pl-integer-input-{{uuid}}" class="input-group pl-integer-input">
+    <span class="input-group pl-integer-input">
         {{#label}}
         <span class="input-group-prepend">
             <span class="input-group-text" id="pl-integer-input-{{uuid}}-label">{{{label}}}</span>
@@ -26,8 +16,9 @@
             size="{{size}}"
             {{^editable}}disabled{{/editable}}
             {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
-            aria-describedby="pl-integer-input-{{uuid}}-label pl-integer-input-{{uuid}}-suffix"
+            aria-describedby="pl-integer-input-{{uuid}}-suffix"
             placeholder="{{placeholder}}"
+            aria-labelledby="pl-integer-input-{{uuid}}-label"
         />
         <span class="input-group-append">
             {{#suffix}}
@@ -76,17 +67,7 @@
 {{#submission}}
 {{#inline}}<span class="d-inline-block">{{/inline}}
 {{#error}}
-
-<script>
-    $(function(){
-        $('#pl-integer-input-submission-{{uuid}} [data-toggle="popover"]').popover({
-            sanitize: false,
-            container: 'body',
-            template: '<div class="popover pl-integer-input-popover" role="tooltip"><div class="arrow"></div><h3 class="popover-header"></h3><div class="popover-body"></div></div>',
-        });
-    });
-</script>
-<span id="pl-integer-input-submission-{{uuid}}">
+<span>
 
 {{#parse_error}}
     {{#label}}<span>{{{label}}}</span>{{/label}}

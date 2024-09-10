@@ -7,9 +7,9 @@ import {
   diffDirectories,
   diffDatabaseAndDirectory,
   diffDirectoryAndDatabase,
-} from '../diff';
+} from '../diff.js';
 
-const args = yargs
+const args = yargs(process.argv.slice(2))
   .usage('Usage: $0 [options]')
   .option('db', {
     description: 'reads a description from the named database',

@@ -1,10 +1,12 @@
-import { Redis } from 'ioredis';
-import { LRUCache } from 'lru-cache';
-import { logger } from '@prairielearn/logger';
-import * as Sentry from '@prairielearn/sentry';
 import assert from 'node:assert';
 
-class Cache {
+import { Redis } from 'ioredis';
+import { LRUCache } from 'lru-cache';
+
+import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
+
+export class Cache {
   enabled = false;
   type = 'none';
   memoryCache?: LRUCache<string, string>;

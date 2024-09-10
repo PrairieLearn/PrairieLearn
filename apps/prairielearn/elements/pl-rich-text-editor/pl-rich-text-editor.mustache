@@ -5,6 +5,7 @@ $(function() {
         placeholder: '{{placeholder}}',
         format: '{{format}}',
         markdownShortcuts: {{markdown_shortcuts}},
+        counter: '{{counter}}',
         {{#quill_theme}}
         theme: '{{.}}',
         {{/quill_theme}}
@@ -14,5 +15,10 @@ $(function() {
 <input type="hidden" id="rte-input-{{editor_uuid}}"
        name="{{name}}" value="{{current_file_contents}}"/>
 <div class="pl-rich-text-editor-container">
-  <div id="rte-{{editor_uuid}}" class="border mathjax_ignore"></div>
+    <div id="rte-{{editor_uuid}}" class="border mathjax_ignore"></div>
+    {{#counter_enabled}}
+        <div class="pl-rich-text-editor-counter-container">
+            <div id="rte-counter-{{editor_uuid}}" class="text-secondary"></div>
+        </div>
+    {{/counter_enabled}}
 </div>

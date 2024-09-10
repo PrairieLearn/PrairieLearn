@@ -1,7 +1,4 @@
-import {
-  getAwsClientNamesFromImportDeclaration,
-  getAwsClientNamesFromVariableDeclarator,
-} from '../utils';
+import { getAwsClientNamesFromImportDeclaration } from '../utils.js';
 
 /**
  * This ESLint rules enforces that we always provide a "shared" config to AWS
@@ -29,11 +26,6 @@ export default {
       // Handle `import ...` statements
       ImportDeclaration(node: any) {
         const clientNames = getAwsClientNamesFromImportDeclaration(node);
-        clientNames.forEach((clientName) => awsClientImports.add(clientName));
-      },
-      // Handle `const ... = require(...)` statements
-      VariableDeclarator(node: any) {
-        const clientNames = getAwsClientNamesFromVariableDeclarator(node);
         clientNames.forEach((clientName) => awsClientImports.add(clientName));
       },
       NewExpression(node: any) {
@@ -88,7 +80,7 @@ export default {
 
           context.report({
             node,
-            message: `Unknown config provided to AWS client.`,
+            message: 'Unknown config provided to AWS client.',
           });
         }
       },

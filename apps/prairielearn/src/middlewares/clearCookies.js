@@ -1,5 +1,5 @@
 // @ts-check
-import { clearCookie } from '../lib/cookie';
+import { clearCookie } from '../lib/cookie.js';
 
 const cookies_to_ignore = [
   'pl_authn',

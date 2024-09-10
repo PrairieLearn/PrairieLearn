@@ -1,12 +1,14 @@
-import fetch from 'node-fetch';
-import oauthSignature = require('oauth-signature');
 import { assert } from 'chai';
+import fetch from 'node-fetch';
+import oauthSignature from 'oauth-signature';
 
-import { config } from '../lib/config';
-import * as helperServer from './helperServer';
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { config } from '../lib/config.js';
+
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const locals: Record<string, any> = {};
 

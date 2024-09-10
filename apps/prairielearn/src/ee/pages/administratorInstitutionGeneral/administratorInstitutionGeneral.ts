@@ -1,24 +1,26 @@
 import { Router } from 'express';
-import asyncHandler = require('express-async-handler');
-import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
+import asyncHandler from 'express-async-handler';
+
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
+
+import { InstitutionSchema } from '../../../lib/db-types.js';
+import { getAvailableTimezones } from '../../../lib/timezones.js';
+import { insertAuditLog } from '../../../models/audit-log.js';
+import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.html.js';
+import {
+  getPlanGrantsForContext,
+  reconcilePlanGrantsForInstitution,
+} from '../../lib/billing/plans.js';
+import { getInstitution } from '../../lib/institution.js';
 
 import {
   AdministratorInstitutionGeneral,
   InstitutionStatisticsSchema,
-} from './administratorInstitutionGeneral.html';
-import { getInstitution } from '../../lib/institution';
-import {
-  getPlanGrantsForContext,
-  reconcilePlanGrantsForInstitution,
-} from '../../lib/billing/plans';
-import { InstitutionSchema } from '../../../lib/db-types';
-import { insertAuditLog } from '../../../models/audit-log';
-import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.html';
-import { getAvailableTimezones } from '../../../lib/timezones';
+} from './administratorInstitutionGeneral.html.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
 router.get(
@@ -58,8 +60,8 @@ router.post(
             long_name: req.body.long_name,
             display_timezone: req.body.display_timezone,
             uid_regexp: req.body.uid_regexp,
-            yearly_enrollment_limit: req.body.yearly_enrollment_limit,
-            course_instance_enrollment_limit: req.body.course_instance_enrollment_limit,
+            yearly_enrollment_limit: req.body.yearly_enrollment_limit || null,
+            course_instance_enrollment_limit: req.body.course_instance_enrollment_limit || null,
           },
           InstitutionSchema,
         );
@@ -73,7 +75,7 @@ router.post(
           row_id: req.params.institution_id,
         });
       });
-      flash('success', 'Successfully updated enrollment limits.');
+      flash('success', 'Successfully updated institution settings.');
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_plans') {
       const desiredPlans = parseDesiredPlanGrants({

@@ -1,5 +1,5 @@
-import { createLogger, transports } from 'winston';
 import { format } from 'logform';
+import { createLogger, transports } from 'winston';
 
 export const logger = createLogger({
   transports: [

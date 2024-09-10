@@ -1,7 +1,8 @@
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
+
 import { makeAwsConfigProvider } from '@prairielearn/aws';
 
-import { config } from './config';
+import { config } from './config.js';
 
 const awsConfigProvider = makeAwsConfigProvider({
   credentials: fromNodeProviderChain(),
@@ -18,7 +19,7 @@ const awsConfigProvider = makeAwsConfigProvider({
           accessKeyId: 'S3RVER',
           secretAccessKey: 'S3RVER',
         },
-        endpoint: 'http://localhost:5000',
+        endpoint: 'http://127.0.0.1:5000',
       };
     }
 

@@ -1,20 +1,21 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
 import { Router } from 'express';
-import * as _ from 'lodash';
-import * as oauthSignature from 'oauth-signature';
-import { cache } from '@prairielearn/cache';
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
+import oauthSignature from 'oauth-signature';
+import { z } from 'zod';
 
-import * as sqldb from '@prairielearn/postgres';
-import { generateSignedToken } from '@prairielearn/signed-token';
-import { config } from '../../lib/config';
-import { shouldSecureCookie, setCookie } from '../../lib/cookie';
+import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
+import { config } from '../../lib/config.js';
+import { IdSchema, LtiCredentialsSchema } from '../../lib/db-types.js';
 
 const TIME_TOLERANCE_SEC = 3000;
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.post(
   '/',
@@ -47,18 +48,19 @@ router.post(
     // FIXME: could warn or throw an error if parameters.roles exists (no longer used)
     // FIXME: could add a parameter that allows setting course role or course instance role
 
-    const result = await sqldb.queryZeroOrOneRowAsync(sql.lookup_credential, {
-      consumer_key: parameters.oauth_consumer_key,
-    });
-    if (result.rowCount === 0) throw new HttpStatusError(403, 'Unknown consumer_key');
-
-    const ltiresult = result.rows[0];
+    const ltiResult = await sqldb.queryOptionalRow(
+      sql.lookup_credential,
+      { consumer_key: parameters.oauth_consumer_key },
+      LtiCredentialsSchema,
+    );
+    if (!ltiResult) throw new HttpStatusError(403, 'Unknown consumer_key');
 
     const genSignature = oauthSignature.generate(
       'POST',
       ltiRedirectUrl,
       parameters,
-      ltiresult.secret,
+      // TODO: column should be `NOT NULL`
+      /** @type {string} */ (ltiResult.secret),
       undefined,
       { encodeSignature: false },
     );
@@ -96,7 +98,7 @@ router.post(
     // Not using an email address (parameters.lis_person_contact_email_primary)
     // so that LTI doesn't conflict with other UIDs.
     const authUid =
-      parameters.user_id + '@' + parameters.context_id + '::ciid=' + ltiresult.course_instance_id;
+      parameters.user_id + '@' + parameters.context_id + '::ciid=' + ltiResult.course_instance_id;
 
     let fallbackName = 'LTI user';
     if (parameters.context_title) {
@@ -105,36 +107,31 @@ router.post(
     }
     const authName = parameters.lis_person_name_full || fallbackName;
 
-    const userResult = await sqldb.callAsync('users_select_or_insert_and_enroll_lti', [
-      authUid,
-      authName,
-      ltiresult.course_instance_id,
-      parameters.user_id,
-      parameters.context_id,
-      res.locals.req_date,
-    ]);
-    if (!userResult.rows[0].has_access) {
+    const userResult = await sqldb.callOptionalRow(
+      'users_select_or_insert_and_enroll_lti',
+      [
+        authUid,
+        authName,
+        ltiResult.course_instance_id,
+        parameters.user_id,
+        parameters.context_id,
+        res.locals.req_date,
+      ],
+      z.object({
+        user_id: IdSchema,
+        has_access: z.boolean(),
+      }),
+    );
+    if (!userResult?.has_access) {
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    const tokenData = {
-      user_id: result.rows[0].user_id,
-      authn_provider_name: 'LTI',
-    };
-    const pl_authn = generateSignedToken(tokenData, config.secretKey);
-    setCookie(res, ['pl_authn', 'pl2_authn'], pl_authn, {
-      maxAge: config.authnCookieMaxAgeMilliseconds,
-      httpOnly: true,
-      secure: shouldSecureCookie(req),
-    });
-
-    // Dual-write information to the session so that we can start reading
-    // it instead of the cookie in the future.
-    req.session.user_id = userResult.rows[0].user_id;
+    // Persist the user's authentication data in the session.
+    req.session.user_id = userResult.user_id;
     req.session.authn_provider_name = 'LTI';
 
     const linkResult = await sqldb.queryOneRowAsync(sql.upsert_current_link, {
-      course_instance_id: ltiresult.course_instance_id,
+      course_instance_id: ltiResult.course_instance_id,
       context_id: parameters.context_id,
       resource_link_id: parameters.resource_link_id,
       resource_link_title: parameters.resource_link_title || '',
@@ -146,23 +143,23 @@ router.post(
       if ('lis_result_sourcedid' in parameters) {
         // Save outcomes here
         await sqldb.queryAsync(sql.upsert_outcome, {
-          user_id: tokenData.user_id,
+          user_id: userResult.user_id,
           assessment_id: linkResult.rows[0].assessment_id,
           lis_result_sourcedid: parameters.lis_result_sourcedid,
           lis_outcome_service_url: parameters.lis_outcome_service_url,
-          lti_credential_id: ltiresult.id,
+          lti_credential_id: ltiResult.id,
         });
       }
 
       res.redirect(
-        `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/assessment/${linkResult.rows[0].assessment_id}/`,
+        `${res.locals.urlPrefix}/course_instance/${ltiResult.course_instance_id}/assessment/${linkResult.rows[0].assessment_id}/`,
       );
     } else {
       // No linked assessment
 
       const instructorResult = await sqldb.callAsync('users_is_instructor_in_course_instance', [
-        tokenData.user_id,
-        ltiresult.course_instance_id,
+        userResult.user_id,
+        ltiResult.course_instance_id,
       ]);
 
       if (instructorResult.rowCount === 0) {
@@ -175,7 +172,7 @@ router.post(
       }
 
       res.redirect(
-        `${res.locals.urlPrefix}/course_instance/${ltiresult.course_instance_id}/instructor/instance_admin/lti`,
+        `${res.locals.urlPrefix}/course_instance/${ltiResult.course_instance_id}/instructor/instance_admin/lti`,
       );
     }
   }),

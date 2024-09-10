@@ -1,29 +1,51 @@
-import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
+import { z } from 'zod';
 
-const addSharingSetPopover = (resLocals) => {
+import { HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
+
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+
+export const SharingSetRowSchema = z.object({
+  name: z.string(),
+  id: z.string(),
+  shared_with: z.string().array(),
+});
+type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
+
+function AddSharingSetPopover({ csrfToken }: { csrfToken: string }) {
   return html`
     <form name="sharing-set-create" method="POST">
-      <input type="hidden" name="__action" value="sharing_set_create">
-      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
+      <input type="hidden" name="__action" value="sharing_set_create" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
 
-      <div class="form-group mb-4">
-        <p class=form-text>
-          Enter the name of the sharing set you would like to create.
-        </p>
+      <div class="form-group">
+        <label for="sharing_set_name">Sharing set name</label>
+        <input
+          class="form-control form-control-sm"
+          type="text"
+          name="sharing_set_name"
+          id="sharing_set_name"
+          required
+        />
       </div>
-      <div class=form-group>
-        <input class="form-control form-control-sm" type="text" name="sharing_set_name" required/>
-      <div>
+
       <div class="text-right mt-4">
-        <button type="button" class="btn btn-secondary" onclick="$('#courseSharingSetAdd').popover('hide')">Cancel</button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Create Sharing Set</button>
       </div>
     </form>
-  `.toString();
-};
+  `;
+}
 
-const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
+function AddCourseToSharingSetPopover({
+  sharing_set,
+  resLocals,
+}: {
+  sharing_set: SharingSetRow;
+  resLocals: Record<string, any>;
+}) {
   return html`
     <form name="sharing-set-access-add-${sharing_set.id}" method="POST">
       <input type="hidden" name="__action" value="course_sharing_set_add" />
@@ -38,119 +60,129 @@ const addCourseToSharingSetPopover = (resLocals, sharing_set) => {
         </div>
       </div>
       <div class="form-group">
+        <label for="course_sharing_token">Course sharing token</label>
         <input
           class="form-control form-control-sm"
           type="text"
+          id="course_sharing_token"
           name="unsafe_course_sharing_token"
           required
         />
       </div>
       <div>
-        <button
-          type="button"
-          class="btn btn-sm btn-secondary"
-          onclick="$('#addCourseToSS-${sharing_set.id}').popover('hide')"
-        >
+        <button type="button" class="btn btn-sm btn-secondary" data-dismiss="popover">
           Cancel
         </button>
         <button class="btn btn-sm btn-primary" type="Submit">Add Course</button>
       </div>
     </form>
-  `.toString();
-};
-
-const chooseSharingNameModal = (resLocals) => {
-  return html`
-  <div
-    class="modal fade"
-    id="chooseSharingNameModal"
-    tabindex="-1"
-    role="dialog"
-    aria-hidden="true"
-  >
-    <div
-      class="modal-dialog modal-dialog-centered"
-      role="document"
-    >
-      <div class="modal-content">
-        <div class="modal-header">
-          <h5 class="modal-title">
-            Choose Sharing Name
-          </h5>
-          <button
-            type="button"
-            class="close"
-            data-dismiss="modal"
-            aria-label="Close"
-          >
-            <span aria-hidden="true">&times;</span>
-          </button>
-        </div>
-        <div class="modal-body">
-          <p class=form-text>
-            Enter the sharing name you would like for your course.
-          </p>
-          <p><strong>Once you choose your course's sharing name, you will not be able to change it</strong>,
-            because doing so would break the assessments of other courses that have imported your questions.
-            It is recommended that you choose something short but descriptive. For example, if you're teaching
-            a calculus course at a university that goes by the abbreviation 'XYZ', then you could choose the sharing
-            name 'xyz-calculus'. Then other courses will import questions from your course with the syntax '@xyz-calculus/qid'.
-          </p>
-        </div>
-        <div class="modal-footer">
-          <form name="choose-sharing-name" method="POST">
-            <input type="hidden" name="__action" value="choose_sharing_name">
-            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}">
-            <div class=form-group>
-              <input class="form-control form-control-sm" type="text" name="course_sharing_name" required/>
-            <div>
-            <div class="text-right mt-4">
-              <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
-            </div>
-          </form>
-        </div>
-      </div>
-    </div>
   `;
-};
+}
 
-export const InstructorSharing = ({
+function ChooseSharingNameModal({
+  canChooseSharingName,
+  csrfToken,
+}: {
+  canChooseSharingName: boolean;
+  csrfToken: string;
+}) {
+  let body: HtmlSafeString;
+  let footer: HtmlSafeString;
+  if (canChooseSharingName) {
+    body = html`
+      <p class="form-text">Enter the sharing name you would like for your course.</p>
+      <div class="form-group">
+        <label for="course_sharing_name">Sharing name</label>
+        <input
+          class="form-control"
+          type="text"
+          id="course_sharing_name"
+          name="course_sharing_name"
+          required
+        />
+      </div>
+      <p>
+        <strong>
+          Once you have shared a question either publicly or with another course, you will no longer
+          be able to change your sharing name.
+        </strong>
+        Doing so would break the assessments of other courses that have imported your questions. It
+        is recommended that you choose something short but descriptive. For example, if you're
+        teaching a calculus course at a university that goes by the abbreviation 'XYZ', then you
+        could choose the sharing name 'xyz-calculus'. Then other courses will import questions from
+        your course with the syntax '@xyz-calculus/qid'.
+      </p>
+    `;
+    footer = html`
+      <input type="hidden" name="__action" value="choose_sharing_name" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="submit" class="btn btn-primary">Choose Sharing Name</button>
+    `;
+  } else {
+    body = html`
+    <strong>Unable to change your course's sharing name.</strong>
+    </p>
+    <p>
+      Your course's sharing name cannot be changed because at least one question has
+      been shared. Doing so would break the assessments of other courses that have
+      imported your questions.
+    </p>`;
+    footer = html`
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+    `;
+  }
+  return Modal({
+    title: 'Choose Sharing Name',
+    id: 'chooseSharingNameModal',
+    body,
+    footer,
+  });
+}
+
+export function InstructorCourseAdminSharing({
   sharingName,
   sharingToken,
   sharingSets,
   publicSharingLink,
+  canChooseSharingName,
   resLocals,
 }: {
   sharingName: string | null;
   sharingToken: string;
-  sharingSets: { name: string; id: string; shared_with: string[] }[];
+  sharingSets: SharingSetRow[];
   publicSharingLink: string;
+  canChooseSharingName: boolean;
   resLocals: Record<string, any>;
-}) => {
+}) {
   const isCourseOwner = resLocals.authz_data.has_course_permission_own;
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../pages/partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
-        ${renderEjs(__filename, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
+          ${CourseSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">Course Sharing Info</div>
-            <table class="table table-sm table-hover two-column-description">
+            <div class="card-header bg-primary text-white d-flex">
+              <h1>Course sharing details</h1>
+            </div>
+            <table
+              class="table table-sm table-hover two-column-description"
+              aria-label="Course sharing details"
+            >
               <tbody>
                 <tr>
-                  <th>Sharing Name</th>
+                  <th>Sharing name</th>
                   <td data-testid="sharing-name">
                     ${sharingName !== null ? sharingName : ''}
-                    ${!sharingName && isCourseOwner
+                    ${isCourseOwner
                       ? html`
                           <button
                             type="button"
@@ -159,12 +191,14 @@ export const InstructorSharing = ({
                             title="Choose Sharing Name"
                             data-toggle="modal"
                             data-target="#chooseSharingNameModal"
-                            data-trigger="manual"
                           >
                             <i class="fas fa-share-nodes" aria-hidden="true"></i>
                             <span class="d-none d-sm-inline">Choose Sharing Name</span>
                           </button>
-                          ${chooseSharingNameModal(resLocals)}
+                          ${ChooseSharingNameModal({
+                            canChooseSharingName,
+                            csrfToken: resLocals.__csrf_token,
+                          })}
                         `
                       : ''}
                   </td>
@@ -208,32 +242,31 @@ export const InstructorSharing = ({
           </div>
 
           <div class="card mb-4">
-            <div class="card-header bg-primary">
-              <div class="row align-items-center justify-content-between">
-                <div class="col-auto">
-                  <span class="text-white">Sharing Sets</span>
-                </div>
-                ${isCourseOwner
-                  ? html`<div class="col-auto">
-                      <button
-                        type="button"
-                        class="btn btn-light btn-sm ml-auto"
-                        id="courseSharingSetAdd"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-html="true"
-                        data-placement="auto"
-                        title="Create Sharing Set"
-                        data-content="${addSharingSetPopover(resLocals)}"
-                      >
-                        <i class="fas fa-plus" aria-hidden="true"></i>
-                        <span class="d-none d-sm-inline">Create Sharing Set</span>
-                      </button>
-                    </div>`
-                  : ''}
-              </div>
+            <div class="card-header bg-primary text-white d-flex align-items-center">
+              <h2>Sharing Sets</h2>
+              ${isCourseOwner
+                ? html`
+                    <button
+                      type="button"
+                      class="btn btn-light btn-sm ml-auto"
+                      data-toggle="popover"
+                      data-container="body"
+                      data-html="true"
+                      data-placement="auto"
+                      title="Create Sharing Set"
+                      data-content="${escapeHtml(
+                        AddSharingSetPopover({
+                          csrfToken: resLocals.__csrf_token,
+                        }),
+                      )}"
+                    >
+                      <i class="fas fa-plus" aria-hidden="true"></i>
+                      <span class="d-none d-sm-inline">Create Sharing Set</span>
+                    </button>
+                  `
+                : ''}
             </div>
-            <table class="table table-sm table-hover table-striped">
+            <table class="table table-sm table-hover table-striped" aria-label="Sharing sets">
               <thead>
                 <th>Sharing Set Name</th>
                 <th>Shared With</th>
@@ -253,15 +286,16 @@ export const InstructorSharing = ({
                               <button
                                 type="button"
                                 class="btn btn-sm btn-outline-dark"
-                                id="addCourseToSS-${sharing_set.id}"
                                 data-toggle="popover"
                                 data-container="body"
                                 data-html="true"
                                 data-placement="auto"
                                 title="Add Course to Sharing Set"
-                                data-content="${addCourseToSharingSetPopover(
-                                  resLocals,
-                                  sharing_set,
+                                data-content="${escapeHtml(
+                                  AddCourseToSharingSetPopover({
+                                    resLocals,
+                                    sharing_set,
+                                  }),
                                 )}"
                               >
                                 Add...
@@ -280,4 +314,4 @@ export const InstructorSharing = ({
       </body>
     </html>
   `.toString();
-};
+}

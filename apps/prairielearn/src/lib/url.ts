@@ -1,6 +1,6 @@
 import { type Request } from 'express';
 
-import { config } from './config';
+import { config } from './config.js';
 
 export function getCanonicalHost(req: Request): string {
   if (config.serverCanonicalHost) return config.serverCanonicalHost;

@@ -1,9 +1,12 @@
-import * as error from '@prairielearn/error';
+import _ from 'lodash';
 import { z } from 'zod';
-import * as _ from 'lodash';
 
+import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { idsEqual } from './id';
+
+import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
+import { selectUserByUid } from '../models/user.js';
+
 import {
   GroupSchema,
   IdSchema,
@@ -13,10 +16,9 @@ import {
   type GroupConfig,
   GroupRoleSchema,
   type GroupUserRole,
-} from './db-types';
-import { getEnrollmentForUserInCourseInstance } from '../models/enrollment';
-import { selectUserByUid } from '../models/user';
-const sql = sqldb.loadSqlEquiv(__filename);
+} from './db-types.js';
+import { idsEqual } from './id.js';
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export class GroupOperationError extends Error {
   constructor(message) {
@@ -47,7 +49,7 @@ interface RolesInfo {
   usersWithoutRoles: User[];
 }
 
-interface GroupInfo {
+export interface GroupInfo {
   groupMembers: User[];
   groupSize: number;
   groupName: string;
@@ -183,6 +185,10 @@ export async function getQuestionGroupPermissions(
   return userPermissions ?? { can_submit: false, can_view: false };
 }
 
+export async function getUserRoles(group_id: string, user_id: string) {
+  return await sqldb.queryRows(sql.select_user_roles, { group_id, user_id }, GroupRoleSchema);
+}
+
 export async function addUserToGroup({
   assessment_id,
   group_id,
@@ -203,7 +209,7 @@ export async function addUserToGroup({
       GroupForUpdateSchema,
     );
     if (group == null) {
-      throw new GroupOperationError(`Group does not exist.`);
+      throw new GroupOperationError('Group does not exist.');
     }
 
     const user = await selectUserByUid(uid);
@@ -239,7 +245,7 @@ export async function addUserToGroup({
     }
 
     if (enforceGroupSize && group.max_size != null && group.cur_size >= group.max_size) {
-      throw new GroupOperationError(`Group is already full.`);
+      throw new GroupOperationError('Group is already full.');
     }
 
     // Find a group role. If none of the roles can be assigned, assign no role.
@@ -255,6 +261,7 @@ export async function addUserToGroup({
       group_id: group.id,
       user_id: user.user_id,
       group_config_id: group.group_config_id,
+      assessment_id,
       authn_user_id,
       group_role_id: groupRoleId,
     });
@@ -497,7 +504,6 @@ export async function leaveGroup(
         await sqldb.queryAsync(sql.update_group_roles, {
           role_assignments: JSON.stringify(groupRoleAssignmentUpdates),
           group_id: groupId,
-          user_id: userId,
           authn_user_id: authnUserId,
         });
 
@@ -516,6 +522,7 @@ export async function leaveGroup(
 
     // Delete user from group and log
     await sqldb.queryAsync(sql.delete_group_users, {
+      assessment_id: assessmentId,
       group_id: groupId,
       user_id: userId,
       authn_user_id: authnUserId,
@@ -543,7 +550,7 @@ export function canUserAssignGroupRoles(groupInfo: GroupInfo, user_id: string): 
 }
 
 /**
- * Updates the role assignments of users in a group, given the output from groupRoleTable.ejs.
+ * Updates the role assignments of users in a group, given the output from the GroupRoleTable component.
  */
 export async function updateGroupRoles(
   requestBody: Record<string, any>,

@@ -160,6 +160,25 @@
           }
         }
       }
+    },
+    "sharingSets": {
+      "description": "Sharing sets",
+      "type": "array",
+      "items": {
+        "description": "A sharing set description.",
+        "type": "object",
+        "required": ["name"],
+        "properties": {
+          "name": {
+            "description": "Name of the sharing set.",
+            "type": "string"
+          },
+          "description": {
+            "description": "Description of the sharing set.",
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "definitions": {

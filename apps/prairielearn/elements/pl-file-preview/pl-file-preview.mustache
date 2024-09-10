@@ -5,10 +5,10 @@
   <div class="card mb-2">
     <div class="card-header">Files</div>
     {{#has_files}}
-    <ul class="list-group list-group-flush">
+    <div class="list-group list-group-flush">
       {{#files}}
-      <li class="list-group-item" data-file="{{name}}">
-        <div class="d-flex flex-row collapsed file-status-container" data-toggle="collapse" data-target="#file-preview-contents-{{uuid}}-{{index}}">
+      <div class="list-group-item js-file-preview-item" data-file="{{name}}">
+        <div class="d-flex flex-row collapsed file-status-container">
           <div class="flex-grow-1 mr-2">
             <i class="fa fa-check-circle" style="color: {{check_icon_color}}" aria-hidden="true"></i>
             {{name}}
@@ -18,7 +18,7 @@
             <button class="btn btn-outline-secondary btn-sm file-preview-download">
               Download
             </button>
-            <button type="button" class="btn btn-outline-secondary btn-sm">
+            <button type="button" class="btn btn-outline-secondary btn-sm collapsed" data-toggle="collapse" data-target="#file-preview-contents-{{uuid}}-{{index}}" aria-expanded="false" aria-controls="file-preview-contents-{{uuid}}-{{index}}">
               <span class="mr-2 js-toggle-show-preview-text">Show preview</span>
               <i class="file-preview-icon fa fa-angle-down"></i>
             </button>
@@ -26,17 +26,25 @@
         </div>
         <div class="alert alert-danger mt-2 d-none error" role="alert"></div>
         <div class="file-preview collapse" id="file-preview-contents-{{uuid}}-{{index}}">
-          <img class="mw-100 mt-2 d-none">
-          <pre class="bg-dark text-white rounded p-3 mt-2 mb-0 d-none"><code></code></pre>
+          <img class="d-none mw-100 mt-2">
+          <div class="d-none embed-responsive embed-responsive-4by3 mt-2"> 
+            <iframe class="embed-responsive-item">
+              This PDF cannot be displayed. 
+            </iframe>
+          </div> 
+          <div class="file-preview-container mt-2">
+            <pre class="d-none bg-dark text-white rounded p-3 mb-0"><code></code></pre>
+            <div class="d-none js-notebook-preview"></div>
+          </div>
           <button type="button" class="btn btn-outline-secondary btn-sm btn-block d-none file-preview-expand">
             <i class="fa-solid fa-expand"></i>
             <i class="fa-solid fa-compress d-none"></i>
             <span class="js-toggle-expand-preview-text">Expand</span>
           </button>
         </div>
-      </li>
+      </div>
       {{/files}}
-    </ul>
+    </div>
     {{/has_files}}
     {{^has_files}}
     <div class="card-body">

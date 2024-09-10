@@ -1,24 +1,27 @@
 // @ts-check
-import * as path from 'node:path';
-import debugfn from 'debug';
-import { v4 as uuidv4 } from 'uuid';
-const Docker = require('dockerode');
-const MemoryStream = require('memorystream');
-import * as tmp from 'tmp-promise';
-import { Mutex } from 'async-mutex';
 import * as os from 'node:os';
-import * as fs from 'fs-extra';
-const execa = require('execa');
+import * as path from 'node:path';
+
 import { ECRClient } from '@aws-sdk/client-ecr';
+import { Mutex } from 'async-mutex';
+import debugfn from 'debug';
+import Docker from 'dockerode';
+import { execa } from 'execa';
+import fs from 'fs-extra';
+import MemoryStream from 'memorystream';
+import * as tmp from 'tmp-promise';
+import { v4 as uuidv4 } from 'uuid';
+
 import * as bindMount from '@prairielearn/bind-mount';
-import { instrumented } from '@prairielearn/opentelemetry';
 import { setupDockerAuth } from '@prairielearn/docker-utils';
 import { logger } from '@prairielearn/logger';
+import { instrumented } from '@prairielearn/opentelemetry';
 
-import { config } from '../config';
-import { FunctionMissingError } from './code-caller-shared';
-import { deferredPromise } from '../deferred';
-import { makeAwsClientConfig } from '../aws';
+import { makeAwsClientConfig } from '../aws.js';
+import { config } from '../config.js';
+import { deferredPromise } from '../deferred.js';
+
+import { FunctionMissingError } from './code-caller-shared.js';
 
 /** @typedef {typeof CREATED | typeof WAITING | typeof IN_CALL | typeof EXITING | typeof EXITED} CallerState */
 const CREATED = Symbol('CREATED');
@@ -108,8 +111,8 @@ async function ensureImage() {
   }
 }
 
-/** @typedef {import('./code-caller-shared').CodeCaller} CodeCaller */
-/** @typedef {import('./code-caller-shared').CallType} CallType */
+/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
+/** @typedef {import('./code-caller-shared.js').CallType} CallType */
 
 /**
  * @implements {CodeCaller}
@@ -148,6 +151,10 @@ export class CodeCallerContainer {
     this._checkState();
 
     this.debug(`exit constructor(), state: ${String(this.state)}, uuid: ${this.uuid}`);
+  }
+
+  getCoursePath() {
+    return this.coursePath;
   }
 
   /**
@@ -196,7 +203,7 @@ export class CodeCallerContainer {
    * Allows this caller to prepare for execution of code from a particular
    * course.
    *
-   * @param {import('./code-caller-shared').PrepareForCourseOptions} options
+   * @param {import('./code-caller-shared.js').PrepareForCourseOptions} options
    */
   async prepareForCourse({ coursePath, forbiddenModules }) {
     this.forbiddenModules = forbiddenModules;
@@ -290,11 +297,11 @@ export class CodeCallerContainer {
       // was restarted, we can slightly optimize things by skipping the
       // restart. This is safe, as no user-provided code will have been
       // loaded into the Python interpreter.
-      this.debug(`exit restart() - skipping since no calls recorded since last restart`);
+      this.debug('exit restart() - skipping since no calls recorded since last restart');
       return true;
     } else if (this.state === CREATED) {
       // no need to restart if we don't have a worker
-      this.debug(`exit restart()`);
+      this.debug('exit restart()');
       return true;
     } else if (this.state === WAITING) {
       const { result } = await this.call('restart', null, null, 'restart', []);
@@ -749,7 +756,7 @@ async function cleanupMountDirectories() {
         try {
           debug(`removing bind mount at ${absolutePath}`);
           await bindMount.umount(absolutePath);
-        } catch (e) {
+        } catch {
           // Ignore this, it was hopefully unmounted successfully before
         }
 

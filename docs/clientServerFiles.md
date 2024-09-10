@@ -2,9 +2,9 @@
 
 There are multiple locations within each course where files can be stored for access from the client or server. These can be used for code libraries used in questions, images embedded within questions, formula sheets available during exams, or online textbooks for reference during exams.
 
-`ClientFiles` directories contain files that are accessible from the client webbrowser. This is appropriate for code libraries used on the client, or for files that a student should have access to, such as an image, reference webpages, or formula sheets.
+`ClientFiles` directories contain files that are accessible from the client web browser. This is appropriate for code libraries used on the client, or for files that a student should have access to, such as an image, reference webpages, or formula sheets.
 
-`ServerFiles` directories are only accessible from code running on the server, so are useful for libraries that can solve questions or generate random question instances. Files in a `serverFiles` directory cannot be directly accessed by the student's webbrowser.
+`ServerFiles` directories are only accessible from code running on the server, so are useful for libraries that can solve questions or generate random question instances. Files in a `serverFiles` directory cannot be directly accessed by the student's web browser.
 
 ## Directory layout
 

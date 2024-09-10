@@ -1,5 +1,41 @@
 # @prairielearn/error
 
+## 2.0.5
+
+### Patch Changes
+
+- 852c2e2: Upgrade all JavaScript dependencies
+
+## 2.0.4
+
+### Patch Changes
+
+- a8438ff: Upgrade all JavaScript dependencies
+
+## 2.0.3
+
+### Patch Changes
+
+- 24a93b8: Upgrade all JavaScript dependencies
+
+## 2.0.2
+
+### Patch Changes
+
+- 0f7c90f: Upgrade all JavaScript dependencies
+
+## 2.0.1
+
+### Patch Changes
+
+- 901fce8: Upgrade all JavaScript dependencies
+
+## 2.0.0
+
+### Major Changes
+
+- 4f30b7e: Publish as native ESM
+
 ## 1.2.0
 
 ### Minor Changes

@@ -1,0 +1,1 @@
+The correct answer is {{correct_answers.b}}.

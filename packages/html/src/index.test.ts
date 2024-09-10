@@ -1,6 +1,6 @@
 import { assert } from 'chai';
 
-import { escapeHtml, html } from './index';
+import { escapeHtml, html } from './index.js';
 
 describe('html', () => {
   it('escapes string value', () => {

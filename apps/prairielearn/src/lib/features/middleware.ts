@@ -1,8 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
 
-import { features } from './index';
-import { FeatureOverrides } from './manager';
+import { FeatureOverrides } from './manager.js';
+
+import { features } from './index.js';
 
 type AuthFunction = (req: Request, res: Response) => boolean;
 

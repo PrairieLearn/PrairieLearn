@@ -1,0 +1,21 @@
+<pl-question-panel>
+  <p>Which of the following cities are located in {{params.country}}?</p>
+</pl-question-panel>
+
+<pl-checkbox
+  answers-name="cities"
+  number-answers="6"
+  partial-credit="true"
+  min-correct="2"
+>
+  {{! Use Mustache sections to iterate over the list of correct_cities. }}
+  {{#params.correct_cities}}
+    {{! Inside the Mustache section, `.` refers to the current entry of the correct_cities list. }}
+    <pl-answer correct="true">{{.}}</pl-answer>
+  {{/params.correct_cities}}
+  {{! Use a Mustache section to iteration over the list of distractor_cities. }}
+  {{#params.distractor_cities}}
+    {{! Inside the Mustache section, variables like `city` and `country` refer to properties of the current entry of the distractor_cities list. }}
+    <pl-answer correct="false" feedback="{{city}} is in {{country}}.">{{city}}</pl-answer>
+  {{/params.distractor_cities}}
+</pl-checkbox>

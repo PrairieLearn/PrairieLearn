@@ -1,13 +1,11 @@
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import * as infofile from '../infofile';
-import { makePerformance } from '../performance';
-import { CourseData, CourseInstance } from '../course-db';
-import { IdSchema } from '../../lib/db-types';
-
-const perf = makePerformance('courseInstances');
+import { IdSchema } from '../../lib/db-types.js';
+import { CourseData, CourseInstance } from '../course-db.js';
+import * as infofile from '../infofile.js';
 
 function getParamsForCourseInstance(courseInstance: CourseInstance | null | undefined) {
   if (!courseInstance) return null;
@@ -53,13 +51,11 @@ export async function sync(
     },
   );
 
-  perf.start('sproc:sync_course_instances');
   const result = await sqldb.callRow(
     'sync_course_instances',
     [courseInstanceParams, courseId],
     z.record(z.string(), IdSchema),
   );
-  perf.end('sproc:sync_course_instances');
 
   return result;
 }

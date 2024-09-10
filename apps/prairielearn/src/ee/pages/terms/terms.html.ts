@@ -1,25 +1,19 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
-import { User } from '../../../lib/db-types';
+import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
+import { User } from '../../../lib/db-types.js';
 
 export function Terms({ user, resLocals }: { user: User; resLocals: Record<string, any> }) {
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/head')%>", {
-          ...resLocals,
-          pageTitle: 'Terms and conditions',
-        })}
+        ${HeadContents({ resLocals, pageTitle: 'Terms and conditions' })}
       </head>
       <body>
-        ${renderEjs(__filename, "<%- include('../../../pages/partials/navbar') %>", {
-          ...resLocals,
-          navPage: 'plain',
-          navbarType: 'plain',
-        })}
-        <main class="container">
+        ${Navbar({ resLocals, navbarType: 'plain' })}
+        <main id="content" class="container">
           <h1>Terms and Conditions</h1>
           ${user.terms_accepted_at
             ? html`

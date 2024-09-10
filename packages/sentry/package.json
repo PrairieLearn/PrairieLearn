@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/sentry",
-  "version": "1.2.4",
+  "version": "2.0.6",
+  "type": "module",
   "main": "dist/index.js",
   "repository": {
     "type": "git",
@@ -13,12 +14,13 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.12.2",
-    "tsx": "^4.7.2",
-    "typescript": "^5.4.3"
+    "@types/node": "^20.16.2",
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@sentry/node": "^7.109.0",
-    "execa": "^5.1.1"
+    "@sentry/node": "^8.27.0",
+    "@sentry/utils": "^8.27.0",
+    "execa": "^9.3.1"
   }
 }

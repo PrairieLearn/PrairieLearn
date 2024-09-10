@@ -1,16 +1,16 @@
 import { assert } from 'chai';
-import fetch from 'node-fetch';
-import FormData = require('form-data');
 import * as cheerio from 'cheerio';
+import fetch, { FormData } from 'node-fetch';
 
 import * as sqldb from '@prairielearn/postgres';
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 let elemList;
 
 export function attachFile(locals, textFile) {
   describe('attachFile-1. GET to assessment_instance URL', () => {
     it('should load successfully', async () => {
+      console.log(locals.attachFilesUrl);
       const res = await fetch(locals.attachFilesUrl);
       assert.isOk(res.ok);
       locals.$ = cheerio.load(await res.text());
@@ -65,10 +65,7 @@ export function attachFile(locals, textFile) {
         formData.append('filename', 'testfile.txt');
         formData.append('contents', 'This is the test text');
       } else {
-        formData.append('file', 'This is the test text', {
-          filename: 'testfile.txt',
-          contentType: 'text/plain',
-        });
+        formData.append('file', new Blob(['This is the test text']), 'testfile.txt');
       }
 
       const res = await fetch(locals.attachFilesUrl, { method: 'POST', body: formData });
@@ -97,7 +94,7 @@ export function downloadAttachedFile(locals) {
       locals.$ = cheerio.load(await res.text());
     });
     it('should have a file URL', () => {
-      elemList = locals.$('#attach-file-panel a.attached-file');
+      elemList = locals.$('#attach-file-panel a[data-testid="attached-file"]');
       assert.lengthOf(elemList, 1);
       assert.nestedProperty(elemList[0], 'attribs.href');
       locals.fileHref = elemList[0].attribs.href;
@@ -126,7 +123,7 @@ export function deleteAttachedFile(locals) {
 
   describe('deleteAttachedFile-2. the delete-file form', () => {
     it('should exist', () => {
-      elemList = locals.$('.attachFileDeleteButton');
+      elemList = locals.$('[data-testid="delete-personal-note-button"]');
       assert.lengthOf(elemList, 1);
     });
     it('should have data-content', () => {
@@ -195,7 +192,7 @@ export function checkNoAttachedFiles(locals) {
       locals.$ = cheerio.load(await res.text());
     });
     it('should not have a file URL', () => {
-      elemList = locals.$('#attach-file-panel a.attached-file');
+      elemList = locals.$('#attach-file-panel a[data-testid="attached-file"]');
       assert.lengthOf(elemList, 0);
     });
   });

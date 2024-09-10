@@ -1,12 +1,14 @@
-import * as _ from 'lodash';
-import * as cron from '../cron';
 import { assert } from 'chai';
+import _ from 'lodash';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../lib/config';
-import * as helperServer from './helperServer';
+import * as cron from '../cron/index.js';
+import { config } from '../lib/config.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import * as helperServer from './helperServer.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Cron', function () {
   this.timeout(60000);

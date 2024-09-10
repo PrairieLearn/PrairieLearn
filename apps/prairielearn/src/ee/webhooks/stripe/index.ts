@@ -1,18 +1,19 @@
-import express = require('express');
-import asyncHandler = require('express-async-handler');
+import express from 'express';
+import asyncHandler from 'express-async-handler';
 import Stripe from 'stripe';
+
 import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
 
-import { config } from '../../../lib/config';
-import { clearStripeProductCache, getStripeClient } from '../../lib/billing/stripe';
+import { config } from '../../../lib/config.js';
+import { selectInstitutionForCourseInstance } from '../../../models/institution.js';
+import { clearStripeProductCache, getStripeClient } from '../../lib/billing/stripe.js';
+import { ensurePlanGrant } from '../../models/plan-grants.js';
 import {
   getStripeCheckoutSessionByStripeObjectId,
   markStripeCheckoutSessionCompleted,
   updateStripeCheckoutSessionData,
-} from '../../models/stripe-checkout-sessions';
-import { ensurePlanGrant } from '../../models/plan-grants';
-import { selectInstitutionForCourseInstance } from '../../../models/institution';
+} from '../../models/stripe-checkout-sessions.js';
 
 const router = express.Router({ mergeParams: true });
 

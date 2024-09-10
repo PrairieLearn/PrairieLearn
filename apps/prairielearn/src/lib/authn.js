@@ -1,20 +1,19 @@
 // @ts-check
 import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
-import { generateSignedToken } from '@prairielearn/signed-token';
 
-import { config } from './config';
-import { clearCookie, setCookie, shouldSecureCookie } from '../lib/cookie';
-import { InstitutionSchema, UserSchema } from './db-types';
-import { HttpRedirect } from './redirect';
-import { isEnterprise } from './license';
-import { redirectToTermsPageIfNeeded } from '../ee/lib/terms';
+import { redirectToTermsPageIfNeeded } from '../ee/lib/terms.js';
+import { clearCookie } from '../lib/cookie.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { InstitutionSchema, UserSchema } from './db-types.js';
+import { isEnterprise } from './license.js';
+import { HttpRedirect } from './redirect.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
  * @typedef {Object} LoadUserOptions
- * @property {boolean} [pl_authn_cookie] - Create the cookie?
  * @property {boolean} [redirect] - Redirect after processing?
  */
 /**
@@ -22,6 +21,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @property {string} [uid]
  * @property {string | null} [uin]
  * @property {string | null} [name]
+ * @property {string | null} [email]
  * @property {string} [provider]
  * @property {number} [user_id] - If present, skip the users_select_or_insert call
  * @property {number | string | null} [institution_id]
@@ -33,7 +33,7 @@ const sql = sqldb.loadSqlEquiv(__filename);
  * @param {LoadUserOptions} [optionsParams]
  */
 export async function loadUser(req, res, authnParams, optionsParams = {}) {
-  let options = { pl_authn_cookie: true, redirect: false, ...optionsParams };
+  let options = { redirect: false, ...optionsParams };
 
   let user_id;
   if ('user_id' in authnParams) {
@@ -43,6 +43,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
       authnParams.uid,
       authnParams.name,
       authnParams.uin,
+      authnParams.email,
       authnParams.provider,
       authnParams.institution_id,
     ];
@@ -65,7 +66,6 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
       user: UserSchema,
       institution: InstitutionSchema,
       is_administrator: z.boolean(),
-      is_instructor: z.boolean(),
       news_item_notification_count: z.number(),
     }),
   );
@@ -80,29 +80,16 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
   // Our authentication middleware will read this value.
   req.session.authn_provider_name = authnParams.provider;
 
-  if (options.pl_authn_cookie) {
-    var tokenData = {
-      user_id,
-      authn_provider_name: authnParams.provider || null,
-    };
-    var pl_authn = generateSignedToken(tokenData, config.secretKey);
-    setCookie(res, ['pl_authn', 'pl2_authn'], pl_authn, {
-      maxAge: config.authnCookieMaxAgeMilliseconds,
-      httpOnly: true,
-      secure: shouldSecureCookie(req),
-    });
-
-    // After explicitly authenticating, clear the cookie that disables
-    // automatic authentication.
-    if (req.cookies.pl_disable_auto_authn || req.cookies.pl2_disable_auto_authn) {
-      clearCookie(res, ['pl_disable_auto_authn', 'pl2_disable_auto_authn']);
-    }
+  // After explicitly authenticating, clear the cookie that disables
+  // automatic authentication.
+  if (req.cookies.pl_disable_auto_authn || req.cookies.pl2_disable_auto_authn) {
+    clearCookie(res, ['pl_disable_auto_authn', 'pl2_disable_auto_authn']);
   }
 
   if (options.redirect) {
     let redirUrl = res.locals.homeUrl;
-    if ('preAuthUrl' in req.cookies) {
-      redirUrl = req.cookies.preAuthUrl;
+    if ('pl2_pre_auth_url' in req.cookies) {
+      redirUrl = req.cookies.pl2_pre_auth_url;
       clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
     }
 
@@ -121,10 +108,9 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
   res.locals.authn_institution = selectedUser.institution;
   res.locals.authn_provider_name = authnParams.provider;
   res.locals.authn_is_administrator = selectedUser.is_administrator;
-  res.locals.authn_is_instructor = selectedUser.is_instructor;
 
   const defaultAccessType = res.locals.devMode ? 'active' : 'inactive';
-  const accessType = req.cookies.pl_access_as_administrator || defaultAccessType;
+  const accessType = req.cookies.pl2_access_as_administrator || defaultAccessType;
   res.locals.access_as_administrator = accessType === 'active';
   res.locals.is_administrator =
     res.locals.authn_is_administrator && res.locals.access_as_administrator;

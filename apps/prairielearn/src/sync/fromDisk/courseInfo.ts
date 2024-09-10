@@ -1,9 +1,9 @@
 import * as sqldb from '@prairielearn/postgres';
 
-import * as infofile from '../infofile';
-import { CourseData } from '../course-db';
+import { CourseData } from '../course-db.js';
+import * as infofile from '../infofile.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function sync(courseData: CourseData, courseId: string) {
   if (infofile.hasErrors(courseData.course)) {

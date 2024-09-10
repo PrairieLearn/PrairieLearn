@@ -1,17 +1,20 @@
-import asyncHandler = require('express-async-handler');
-import * as express from 'express';
-import archiver = require('archiver');
-import { stringifyStream } from '@prairielearn/csv';
 import { pipeline } from 'node:stream/promises';
 
-import { assessmentFilenamePrefix } from '../../lib/sanitize-name';
+import archiver from 'archiver';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+
+import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { getGroupConfig } from '../../lib/groups';
-import { InstructorAssessmentDownloads, Filenames } from './instructorAssessmentDownloads.html';
+
+import { getGroupConfig } from '../../lib/groups.js';
+import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
+
+import { InstructorAssessmentDownloads, Filenames } from './instructorAssessmentDownloads.html.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type Columns = [string, string][];
 
@@ -52,6 +55,28 @@ function getFilenames(locals) {
     filenames.pointsGroupAllCsvFilename = prefix + 'points_by_group_all.csv';
   }
   return filenames;
+}
+
+async function pipeCursorToArchive(res, cursor: sqldb.CursorIterator<any>) {
+  const archive = archiver('zip');
+  const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(' ', '');
+  const prefix = `${dirname}/`;
+  archive.append('', { name: prefix });
+  archive.pipe(res);
+
+  for await (const rows of cursor.iterate(100)) {
+    for (const row of rows) {
+      let contents: string | Buffer;
+      try {
+        contents = Buffer.from(typeof row.contents === 'string' ? row.contents : '', 'base64');
+      } catch {
+        // Ignore any errors in reading the contents and treat as a blank file.
+        contents = '';
+      }
+      archive.append(contents, { name: prefix + row.filename });
+    }
+  }
+  archive.finalize();
 }
 
 router.get(
@@ -172,7 +197,6 @@ router.get(
     } else if (req.params.filename === filenames.instanceQuestionsCsvFilename) {
       const cursor = await sqldb.queryCursor(sql.select_instance_questions, {
         assessment_id: res.locals.assessment.id,
-        group_work: res.locals.assessment.group_work,
       });
 
       const columns = identityColumn.concat([
@@ -201,7 +225,6 @@ router.get(
     } else if (req.params.filename === filenames.submissionsForManualGradingCsvFilename) {
       const cursor = await sqldb.queryCursor(sql.submissions_for_manual_grading, {
         assessment_id: res.locals.assessment.id,
-        group_work: res.locals.assessment.group_work,
       });
 
       // Replace user-friendly column names with upload-friendly names
@@ -249,7 +272,6 @@ router.get(
         include_all,
         include_final,
         include_best,
-        group_work: res.locals.assessment.group_work,
       });
 
       let submissionColumn = identityColumn;
@@ -298,23 +320,7 @@ router.get(
       });
 
       res.attachment(req.params.filename);
-
-      const archive = archiver('zip');
-      const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(
-        ' ',
-        '',
-      );
-      const prefix = `${dirname}/`;
-      archive.append('', { name: prefix });
-      archive.pipe(res);
-
-      for await (const rows of cursor.iterate(100)) {
-        for (const row of rows) {
-          const contents = row.contents != null ? row.contents : '';
-          archive.append(contents, { name: prefix + row.filename });
-        }
-      }
-      archive.finalize();
+      await pipeCursorToArchive(res, cursor);
     } else if (
       req.params.filename === filenames.allFilesZipFilename ||
       req.params.filename === filenames.finalFilesZipFilename ||
@@ -326,7 +332,6 @@ router.get(
 
       const cursor = await sqldb.queryCursor(sql.assessment_instance_files, {
         assessment_id: res.locals.assessment.id,
-        limit: 100,
         include_all,
         include_final,
         include_best,
@@ -334,23 +339,7 @@ router.get(
       });
 
       res.attachment(req.params.filename);
-
-      const archive = archiver('zip');
-      const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(
-        ' ',
-        '',
-      );
-      const prefix = `${dirname}/`;
-      archive.append('', { name: prefix });
-      archive.pipe(res);
-
-      for await (const rows of cursor.iterate(100)) {
-        for (const row of rows) {
-          const contents = row.contents != null ? row.contents : '';
-          archive.append(contents, { name: prefix + row.filename });
-        }
-      }
-      archive.finalize();
+      await pipeCursorToArchive(res, cursor);
     } else if (req.params.filename === filenames.groupsCsvFilename) {
       const groupConfig = await getGroupConfig(res.locals.assessment.id);
       const cursor = await sqldb.queryCursor(sql.group_configs, {

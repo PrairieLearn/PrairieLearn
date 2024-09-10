@@ -1,15 +1,17 @@
 // @ts-check
-import * as _ from 'lodash';
 import * as path from 'node:path';
+
+import _ from 'lodash';
+
 import { contains } from '@prairielearn/path-utils';
 
-import { config } from '../lib/config';
-import * as chunks from '../lib/chunks';
-import * as filePaths from '../lib/file-paths';
-import { REPOSITORY_ROOT_PATH } from '../lib/paths';
-import { withCodeCaller } from '../lib/code-caller';
+import * as chunks from '../lib/chunks.js';
+import { withCodeCaller } from '../lib/code-caller/index.js';
+import { config } from '../lib/config.js';
+import * as filePaths from '../lib/file-paths.js';
+import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 
-/** @typedef {import('../lib/chunks').Chunk} Chunk */
+/** @typedef {import('../lib/chunks.js').Chunk} Chunk */
 
 async function prepareChunksIfNeeded(question, course) {
   const questionIds = await chunks.getTemplateQuestionIds(question);

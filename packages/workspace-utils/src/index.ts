@@ -1,14 +1,16 @@
-import { loadSqlEquiv, queryAsync, queryOneRowAsync } from '@prairielearn/postgres';
-import { contains } from '@prairielearn/path-utils';
-import type { Server as SocketIOServer } from 'socket.io';
-import type { Emitter as SocketIOEmitter } from '@socket.io/redis-emitter';
-import fg, { Entry } from 'fast-glob';
-import { filesize } from 'filesize';
 import { type Dirent } from 'node:fs';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-const sql = loadSqlEquiv(__filename);
+import type { Emitter as SocketIOEmitter } from '@socket.io/redis-emitter';
+import fg, { Entry } from 'fast-glob';
+import { filesize } from 'filesize';
+import type { Server as SocketIOServer } from 'socket.io';
+
+import { contains } from '@prairielearn/path-utils';
+import { loadSqlEquiv, queryAsync, queryOneRowAsync } from '@prairielearn/postgres';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export const WORKSPACE_SOCKET_NAMESPACE = '/workspace';
 

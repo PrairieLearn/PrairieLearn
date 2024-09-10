@@ -1,11 +1,14 @@
 import { assert } from 'chai';
+
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import * as helperDb from '../tests/helperDb';
-import { PostgresSessionStore } from './session-store';
-import { UserSchema, UserSessionSchema } from './db-types';
+import { generateUser } from '../models/user.js';
+import * as helperDb from '../tests/helperDb.js';
 
-const sql = loadSqlEquiv(__filename);
+import { UserSessionSchema } from './db-types.js';
+import { PostgresSessionStore } from './session-store.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 describe('PostgresSessionStore', () => {
   before(helperDb.before);
@@ -60,7 +63,7 @@ describe('PostgresSessionStore', () => {
       const store = new PostgresSessionStore();
       const expiresAt = new Date(Date.now() + 10_000);
 
-      const user = await queryRow(sql.insert_user, { uid: 'test@example.com' }, UserSchema);
+      const user = await generateUser();
 
       await store.set('1', { foo: 'bar', user_id: user.user_id }, expiresAt);
 

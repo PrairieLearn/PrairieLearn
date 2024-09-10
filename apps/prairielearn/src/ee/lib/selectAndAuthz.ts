@@ -1,9 +1,11 @@
 import { z } from 'zod';
-import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
-import { AdministratorSchema, type Institution, InstitutionSchema } from '../../lib/db-types';
-import { HttpStatusError } from '@prairielearn/error';
 
-const sql = loadSqlEquiv(__filename);
+import { HttpStatusError } from '@prairielearn/error';
+import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+
+import { AdministratorSchema, type Institution, InstitutionSchema } from '../../lib/db-types.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectAndAuthzInstitutionAsAdmin({
   institution_id,
@@ -19,12 +21,16 @@ export async function selectAndAuthzInstitutionAsAdmin({
     { institution_id, user_id },
     z.object({
       institution: InstitutionSchema,
-      administrator: AdministratorSchema,
+      administrator: AdministratorSchema.nullable(),
+      institution_administrator: AdministratorSchema.nullable(),
     }),
   );
 
-  // TODO: support institution-level administrators once they exist.
-  if (result == null || !result.administrator || !access_as_administrator) {
+  if (
+    result == null ||
+    (!result.administrator && !result.institution_administrator) ||
+    (result.administrator && !access_as_administrator)
+  ) {
     throw new HttpStatusError(403, 'Not authorized');
   }
 

@@ -1,16 +1,19 @@
 // @ts-check
-const asyncHandler = require('express-async-handler');
-import * as express from 'express';
 import * as path from 'path';
+
 import debugfn from 'debug';
-import * as sqldb from '@prairielearn/postgres';
+import * as express from 'express';
+import asyncHandler from 'express-async-handler';
+
 import { flash } from '@prairielearn/flash';
-import { QuestionTransferEditor } from '../../lib/editors';
-import { config } from '../../lib/config';
-import { idsEqual } from '../../lib/id';
+import * as sqldb from '@prairielearn/postgres';
+
+import { config } from '../../lib/config.js';
+import { QuestionTransferEditor } from '../../lib/editors.js';
+import { idsEqual } from '../../lib/id.js';
 
 const router = express.Router();
-const sql = sqldb.loadSqlEquiv(__filename);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:instructorFileTransfer');
 
 async function getFileTransfer(file_transfer_id, user_id) {
@@ -57,12 +60,12 @@ router.get(
     const serverJob = await editor.prepareServerJob();
     try {
       await editor.executeWithServerJob(serverJob);
-    } catch (err) {
+    } catch {
       res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       return;
     }
 
-    debug(`Soft-delete file transfer`);
+    debug('Soft-delete file transfer');
     await sqldb.queryOneRowAsync(sql.soft_delete_file_transfer, {
       id: req.params.file_transfer_id,
       user_id: res.locals.user.user_id,

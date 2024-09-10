@@ -1,10 +1,7 @@
 import * as sqldb from '@prairielearn/postgres';
 
-import * as infofile from '../infofile';
-import { makePerformance } from '../performance';
-import { CourseData } from '../course-db';
-
-const perf = makePerformance('topics');
+import { CourseData } from '../course-db.js';
+import * as infofile from '../infofile.js';
 
 export async function sync(courseId: string, courseData: CourseData) {
   // We can only safely remove unused topics if both `infoCourse.json` and all
@@ -35,7 +32,6 @@ export async function sync(courseId: string, courseData: CourseData) {
   });
   const questionTopicNames = [...knownQuestionTopicNames];
 
-  perf.start('sproc:sync_topics');
   await sqldb.callAsync('sync_topics', [
     !infofile.hasErrors(courseData.course),
     deleteUnused,
@@ -43,5 +39,4 @@ export async function sync(courseId: string, courseData: CourseData) {
     questionTopicNames,
     courseId,
   ]);
-  perf.end('sproc:sync_topics');
 }

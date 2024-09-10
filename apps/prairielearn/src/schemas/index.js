@@ -7,7 +7,9 @@ import * as path from 'node:path';
  * @param {string} filePath
  */
 function readSchema(filePath) {
-  return JSON.parse(fs.readFileSync(path.resolve(__dirname, 'schemas', filePath), 'utf8'));
+  return JSON.parse(
+    fs.readFileSync(path.resolve(import.meta.dirname, 'schemas', filePath), 'utf8'),
+  );
 }
 
 export const infoNewsItem = readSchema('./infoNewsItem.json');

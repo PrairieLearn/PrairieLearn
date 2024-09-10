@@ -1,14 +1,16 @@
+import { assert } from 'chai';
 import { step } from 'mocha-steps';
+
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import * as helperServer from './helperServer';
-import { IdSchema } from '../lib/db-types';
-import { config } from '../lib/config';
-import { AuthUser, withUser } from './utils/auth';
-import { fetchCheerio, getCSRFToken } from './helperClient';
-import { assert } from 'chai';
+import { config } from '../lib/config.js';
+import { IdSchema } from '../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+import { fetchCheerio, getCSRFToken } from './helperClient.js';
+import * as helperServer from './helperServer.js';
+import { AuthUser, withUser } from './utils/auth.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const courseInstanceUrl = `${siteUrl}/pl/course_instance/1`;
@@ -16,6 +18,7 @@ const studentUser: AuthUser = {
   uid: 'student@example.com',
   name: 'Example Student',
   uin: 'student',
+  email: 'student@example.com',
 };
 
 describe('Instructor force-breaking variants', () => {

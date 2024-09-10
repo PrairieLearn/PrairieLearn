@@ -1,18 +1,20 @@
-import asyncHandler = require('express-async-handler');
+import { AnsiUp } from 'ansi_up';
 import * as express from 'express';
-import AnsiUp from 'ansi_up';
+import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';
-import { resetVariantsForAssessmentQuestion } from '../../models/variant';
+
+import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
+
 import {
   InstructorAssessmentQuestions,
   AssessmentQuestionRowSchema,
-} from './instructorAssessmentQuestions.html';
+} from './instructorAssessmentQuestions.html.js';
 
 const ansiUp = new AnsiUp();
 const router = express.Router();
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',

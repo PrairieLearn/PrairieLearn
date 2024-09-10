@@ -1,4 +1,4 @@
-FROM jupyter/minimal-notebook:2023-10-02
+FROM jupyter/minimal-notebook:2023-10-20
 
 ENV XDG_DATA_HOME=/tmp/local/share
 ENV XDG_CACHE_HOME=/tmp/cache

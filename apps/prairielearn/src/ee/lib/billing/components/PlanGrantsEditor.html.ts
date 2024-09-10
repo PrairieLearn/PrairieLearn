@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
 
-import { PLANS, PLAN_NAMES, PlanName } from '../plans-types';
-import { type PlanGrant } from '../../../../lib/db-types';
-import { type DesiredPlan } from '../plans';
+import { type PlanGrant } from '../../../../lib/db-types.js';
+import { PLANS, PLAN_NAMES, PlanName } from '../plans-types.js';
+import { type DesiredPlan } from '../plans.js';
 
 export function PlanGrantsEditor({
   planGrants,

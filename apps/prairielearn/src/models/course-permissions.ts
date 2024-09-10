@@ -1,3 +1,6 @@
+import { z } from 'zod';
+
+import * as error from '@prairielearn/error';
 import {
   loadSqlEquiv,
   queryAsync,
@@ -5,7 +8,6 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
-import * as error from '@prairielearn/error';
 
 import {
   type User,
@@ -13,10 +15,11 @@ import {
   CoursePermissionSchema,
   type CourseInstancePermission,
   CourseInstancePermissionSchema,
-} from '../lib/db-types';
-import { selectOrInsertUserByUid } from './user';
+} from '../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+import { selectOrInsertUserByUid } from './user.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function insertCoursePermissionsByUserUid({
   course_id,
@@ -201,4 +204,22 @@ export async function deleteAllCourseInstancePermissionsForCourse({
     course_id,
     authn_user_id,
   });
+}
+
+/**
+ * Checks if the user is an instructor in at least one course. Also returns true
+ * if the user is an administrator, which gives them instructor-like access to
+ * all courses.
+ */
+export async function userIsInstructorInAnyCourse({
+  user_id,
+}: {
+  user_id: string;
+}): Promise<boolean> {
+  const result = await queryOptionalRow(
+    sql.user_is_instructor_in_any_course,
+    { user_id },
+    z.boolean(),
+  );
+  return result ?? false;
 }

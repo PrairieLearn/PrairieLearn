@@ -1,0 +1,21 @@
+# This config file can be validated with the following command:
+# curl --data-binary @.codecov.yml https://codecov.io/validate
+
+comment:
+  # Only post a comment if code/coverage changed.
+  require_changes: true
+  # Only post a comment if a base and head commit are both present.
+  require_base: true
+  require_head: true
+coverage:
+  status:
+    project:
+      default:
+        # Don't fail the status check if coverage decreases.
+        informational: true
+    patch:
+      default:
+        # Don't fail the status check if coverage decreases.
+        informational: true
+github_checks:
+  annotations: false

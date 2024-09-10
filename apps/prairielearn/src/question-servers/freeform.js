@@ -1,38 +1,40 @@
 // @ts-check
 
-import * as async from 'async';
-import * as _ from 'lodash';
-import * as fs from 'fs-extra';
 import * as path from 'path';
-import * as mustache from 'mustache';
+
+import * as async from 'async';
 // Use slim export, which relies on htmlparser2 instead of parse5. This provides
 // support for questions with legacy renderer.
-import * as cheerio from 'cheerio/lib/slim';
-import * as parse5 from 'parse5';
+import * as cheerio from 'cheerio/slim';
 import debugfn from 'debug';
-const objectHash = require('object-hash');
+import fs from 'fs-extra';
+import _ from 'lodash';
+import mustache from 'mustache';
+import objectHash from 'object-hash';
+import * as parse5 from 'parse5';
 
-import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
-import { logger } from '@prairielearn/logger';
 import { cache } from '@prairielearn/cache';
+import { logger } from '@prairielearn/logger';
+import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
 
-import * as schemas from '../schemas';
-import { config } from '../lib/config';
-import { withCodeCaller, FunctionMissingError } from '../lib/code-caller';
-import * as jsonLoad from '../lib/json-load';
-import { getOrUpdateCourseCommitHash } from '../models/course';
-import * as markdown from '../lib/markdown';
-import * as chunks from '../lib/chunks';
-import * as assets from '../lib/assets';
-import { APP_ROOT_PATH } from '../lib/paths';
-import { features } from '../lib/features';
+import * as assets from '../lib/assets.js';
+import * as chunks from '../lib/chunks.js';
+import { withCodeCaller, FunctionMissingError } from '../lib/code-caller/index.js';
+import { config } from '../lib/config.js';
+import { features } from '../lib/features/index.js';
+import { idsEqual } from '../lib/id.js';
+import * as jsonLoad from '../lib/json-load.js';
+import * as markdown from '../lib/markdown.js';
+import { APP_ROOT_PATH } from '../lib/paths.js';
+import { getOrUpdateCourseCommitHash } from '../models/course.js';
+import * as schemas from '../schemas/index.js';
 
 const debug = debugfn('prairielearn:freeform');
 
 /**
  * @typedef {Object} QuestionProcessingContext
- * @property {import('../lib/db-types').Course} course
- * @property {import('../lib/db-types').Question} question
+ * @property {import('../lib/db-types.js').Course} course
+ * @property {import('../lib/db-types.js').Question} question
  * @property {string} course_dir
  * @property {string} course_dir_host
  * @property {string} question_dir
@@ -295,24 +297,19 @@ function getElementClientFiles(data, elementName, context) {
   // The options field wont contain URLs unless in the 'render' stage, so
   // check if it is populated before adding the element url
   if ('base_url' in data.options) {
-    // Join the URL using Posix join to avoid generating a path with
-    // backslashes, as would be the case when running on Windows.
-    dataCopy.options.client_files_element_url = path.posix.join(
+    dataCopy.options.client_files_element_url = assets.courseElementAssetPath(
+      context.course.commit_hash,
       data.options.base_url,
-      'elements',
-      elementName,
-      'clientFilesElement',
+      `${elementName}/clientFilesElement`,
     );
     dataCopy.options.client_files_extensions_url = {};
 
     if (_.has(context.course_element_extensions, elementName)) {
       Object.keys(context.course_element_extensions[elementName]).forEach((extension) => {
-        const url = path.posix.join(
+        const url = assets.courseElementExtensionAssetPath(
+          context.course.commit_hash,
           data.options.base_url,
-          'elementExtensions',
-          elementName,
-          extension,
-          'clientFilesExtension',
+          `${elementName}/${extension}/clientFilesExtension`,
         );
         dataCopy.options.client_files_extensions_url[extension] = url;
       });
@@ -376,7 +373,7 @@ async function execPythonServer(codeCaller, phase, data, html, context) {
 
   try {
     await fs.access(fullFilename, fs.constants.R_OK);
-  } catch (err) {
+  } catch {
     // server.py does not exist
     return { result: defaultServerRet(phase, data, html, context), output: '' };
   }
@@ -392,12 +389,12 @@ async function execPythonServer(codeCaller, phase, data, html, context) {
       pythonFunction,
       pythonArgs,
     );
-    debug(`execPythonServer(): completed`);
+    debug('execPythonServer(): completed');
     return { result, output };
   } catch (err) {
     if (err instanceof FunctionMissingError) {
       // function wasn't present in server
-      debug(`execPythonServer(): function not present`);
+      debug('execPythonServer(): function not present');
       return {
         result: defaultServerRet(phase, data, html, context),
         output: '',
@@ -412,7 +409,11 @@ async function execTemplate(htmlFilename, data) {
   let html = mustache.render(rawFile, data);
   html = markdown.processQuestion(html);
   const $ = cheerio.load(html, {
-    recognizeSelfClosing: true,
+    xml: {
+      // This is necessary for Cheerio to use `htmlparser2` instead of `parse5`.
+      xmlMode: false,
+      recognizeSelfClosing: true,
+    },
   });
   return { html, $ };
 }
@@ -497,7 +498,7 @@ function checkData(data, origData, phase) {
 /**
  *
  * @param {string} phase
- * @param {import('../lib/code-caller').CodeCaller} codeCaller
+ * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
  * @param {any} data
  * @param {any} context
  * @param {string} html
@@ -574,6 +575,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
       // We need to wrap it in another node, since only child nodes
       // are serialized
       const serializedNode = parse5.serialize({
+        nodeName: '#document-fragment',
         childNodes: [node],
       });
       let ret_val, consoleLog;
@@ -785,7 +787,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
         }
       });
     });
-  } catch (err) {
+  } catch {
     // Black-hole any errors, they were (should have been) handled by course issues
   }
 
@@ -800,7 +802,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
 
 /**
  * @param {string} phase
- * @param {import('../lib/code-caller').CodeCaller} codeCaller
+ * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
  * @param {any} data
  * @param {QuestionProcessingContext} context
  */
@@ -835,7 +837,7 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
   }
 
   let processFunction;
-  /** @type {[string, import('../lib/code-caller/index').CodeCaller, any, any, any]} */
+  /** @type {[string, import('../lib/code-caller/index.js').CodeCaller, any, any, any]} */
   let args;
   if (context.renderer === 'experimental') {
     processFunction = experimentalProcess;
@@ -971,7 +973,7 @@ async function processQuestionServer(phase, codeCaller, data, html, fileData, co
 /**
  *
  * @param {string} phase
- * @param {import('../lib/code-caller').CodeCaller} codeCaller
+ * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
  * @param {any} data
  * @param {QuestionProcessingContext} context
  */
@@ -1103,10 +1105,10 @@ export async function prepare(question, course, variant) {
 
 /**
  * @param {'question' | 'answer' | 'submission'} panel
- * @param {import('../lib/code-caller').CodeCaller} codeCaller
- * @param {import('../lib/db-types').Variant} variant
- * @param {import('../lib/db-types').Submission?} submission
- * @param {import('../lib/db-types').Course} course
+ * @param {import('../lib/code-caller/index.js').CodeCaller} codeCaller
+ * @param {import('../lib/db-types.js').Variant} variant
+ * @param {import('../lib/db-types.js').Submission?} submission
+ * @param {import('../lib/db-types.js').Course} course
  * @param {Record<string, any>} locals
  * @param {QuestionProcessingContext} context
  * @returns {Promise<RenderPanelResult>}
@@ -1136,20 +1138,22 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
   }
 
   const data = {
-    params: _.get(variant, 'params', {}),
-    correct_answers: _.get(variant, 'true_answer', {}),
-    submitted_answers: submission ? _.get(submission, 'submitted_answer', {}) : {},
+    // `params` and `true_answer` are allowed to change during `parse()`/`grade()`,
+    // so we'll use the submission's values if they exist.
+    params: submission?.params ?? variant.params ?? {},
+    correct_answers: submission?.true_answer ?? variant.true_answer ?? {},
+    submitted_answers: submission?.submitted_answer ?? {},
     format_errors: submission?.format_errors ?? {},
     partial_scores: submission?.partial_scores ?? {},
     score: submission?.score ?? 0,
     feedback: submission?.feedback ?? {},
     variant_seed: parseInt(variant.variant_seed ?? '0', 36),
-    options: _.get(variant, 'options') ?? {},
-    raw_submitted_answers: submission ? _.get(submission, 'raw_submitted_answer', {}) : {},
+    options: variant.options ?? {},
+    raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(locals.allowAnswerEditing && !locals.manualGradingInterface),
     manual_grading: !!locals.manualGradingInterface,
     panel,
-    num_valid_submissions: _.get(variant, 'num_tries', null),
+    num_valid_submissions: variant.num_tries ?? null,
   };
 
   // This URL is submission-specific, so we have to compute it here (that is,
@@ -1163,6 +1167,14 @@ async function renderPanel(panel, codeCaller, variant, submission, course, local
   data.options.client_files_question_url = locals.clientFilesQuestionUrl;
   data.options.client_files_course_url = locals.clientFilesCourseUrl;
   data.options.client_files_question_dynamic_url = locals.clientFilesQuestionGeneratedFileUrl;
+  data.options.course_element_files_url = assets.courseElementAssetBasePath(
+    course.commit_hash,
+    locals.urlPrefix,
+  );
+  data.options.course_element_extension_files_url = assets.courseElementExtensionAssetBasePath(
+    course.commit_hash,
+    locals.urlPrefix,
+  );
   data.options.submission_files_url = submission ? submissionFilesUrl : null;
   data.options.base_url = locals.baseUrl;
   data.options.workspace_url = locals.workspaceUrl || null;
@@ -1345,7 +1357,7 @@ export async function render(
       };
 
       for (let type in question.dependencies) {
-        if (!_.has(dependencies, type)) continue;
+        if (!(type in dependencies)) continue;
 
         for (let dep of question.dependencies[type]) {
           if (!_.includes(dependencies[type], dep)) {
@@ -1412,7 +1424,7 @@ export async function render(
         }
 
         for (const type in elementDependencies) {
-          if (!_.has(dependencies, type)) continue;
+          if (!(type in dependencies)) continue;
 
           for (const dep of elementDependencies[type]) {
             if (!_.includes(dependencies[type], dep)) {
@@ -1423,7 +1435,7 @@ export async function render(
 
         for (const type in elementDynamicDependencies) {
           for (const key in elementDynamicDependencies[type]) {
-            if (!_.has(dynamicDependencies[type], key)) {
+            if (!Object.hasOwn(dynamicDependencies[type], key)) {
               dynamicDependencies[type][key] = elementDynamicDependencies[type][key];
             } else if (dynamicDependencies[type][key] !== elementDynamicDependencies[type][key]) {
               courseIssues.push(
@@ -1471,7 +1483,7 @@ export async function render(
             }
 
             for (const type in extension) {
-              if (!_.has(dependencies, type)) continue;
+              if (!(type in dependencies)) continue;
 
               for (const dep of extension[type]) {
                 if (!_.includes(dependencies[type], dep)) {
@@ -1481,7 +1493,7 @@ export async function render(
             }
             for (const type in extensionDynamic) {
               for (const key in extensionDynamic[type]) {
-                if (!_.has(dynamicDependencies[type], key)) {
+                if (!Object.hasOwn(dynamicDependencies[type], key)) {
                   dynamicDependencies[type][key] = extensionDynamic[type][key];
                 } else if (dynamicDependencies[type][key] !== extensionDynamic[type][key]) {
                   courseIssues.push(
@@ -1537,11 +1549,20 @@ export async function render(
       dependencies.coreElementScripts.forEach((file) =>
         scriptUrls.push(assets.coreElementAssetPath(file)),
       );
+      const courseElementUrlPrefix =
+        locals.urlPrefix +
+        (!idsEqual(question.course_id, variant.course_id)
+          ? `/sharedElements/course/${course.id}`
+          : '');
       dependencies.courseElementStyles.forEach((file) =>
-        styleUrls.push(assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)),
+        styleUrls.push(
+          assets.courseElementAssetPath(course.commit_hash, courseElementUrlPrefix, file),
+        ),
       );
       dependencies.courseElementScripts.forEach((file) =>
-        scriptUrls.push(assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file)),
+        scriptUrls.push(
+          assets.courseElementAssetPath(course.commit_hash, courseElementUrlPrefix, file),
+        ),
       );
       dependencies.extensionStyles.forEach((file) =>
         styleUrls.push(
@@ -1567,7 +1588,7 @@ export async function render(
             assets.coreElementAssetPath(file),
           ),
           ..._.mapValues(dynamicDependencies.courseElementScripts, (file) =>
-            assets.courseElementAssetPath(course.commit_hash, locals.urlPrefix, file),
+            assets.courseElementAssetPath(course.commit_hash, courseElementUrlPrefix, file),
           ),
           ..._.mapValues(dynamicDependencies.extensionScripts, (file) =>
             assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),
@@ -1595,7 +1616,7 @@ export async function render(
         // The import map must come before any scripts that use imports
         !_.isEmpty(importMap.imports)
           ? `<script type="importmap">${JSON.stringify(importMap)}</script>`
-          : ``,
+          : '',
         // It's important that any library-style scripts come first
         ...coreScriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
         ...scriptUrls.map((url) => `<script type="text/javascript" src="${url}"></script>`),
@@ -1700,8 +1721,10 @@ export async function grade(submission, variant, question, question_course) {
 
     const context = await getContext(question, question_course);
     let data = {
-      params: variant.params,
-      correct_answers: variant.true_answer,
+      // Note that `params` and `true_answer` can change during `parse()`, so we
+      // use the submission's values when grading.
+      params: submission.params,
+      correct_answers: submission.true_answer,
       submitted_answers: submission.submitted_answer,
       format_errors: submission.format_errors,
       partial_scores: submission.partial_scores == null ? {} : submission.partial_scores,
@@ -1848,7 +1871,7 @@ async function getCacheKey(course, data, context) {
     const commitHash = await getOrUpdateCourseCommitHash(course);
     const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
     return `question:${commitHash}-${dataHash}`;
-  } catch (err) {
+  } catch {
     return null;
   }
 }

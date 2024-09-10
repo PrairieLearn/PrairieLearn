@@ -9,8 +9,8 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "command-line-args": "^5.2.1",
-    "command-line-usage": "^7.0.1",
+    "command-line-args": "^6.0.0",
+    "command-line-usage": "^7.0.3",
     "express": "^4.19.2",
     "express-ws": "^5.0.2",
     "node-pty": "^1.0.0",

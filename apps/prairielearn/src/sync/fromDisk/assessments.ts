@@ -1,17 +1,16 @@
 import { isFuture, isValid, parseISO } from 'date-fns';
-import * as _ from 'lodash';
+import _ from 'lodash';
 import { z } from 'zod';
+
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from '../../lib/config';
-import * as infofile from '../infofile';
-import { features } from '../../lib/features/index';
-import { makePerformance } from '../performance';
-import { Assessment, CourseInstanceData } from '../course-db';
-import { IdSchema } from '../../lib/db-types';
+import { config } from '../../lib/config.js';
+import { IdSchema } from '../../lib/db-types.js';
+import { features } from '../../lib/features/index.js';
+import { Assessment, CourseInstanceData } from '../course-db.js';
+import * as infofile from '../infofile.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
-const perf = makePerformance('assessments');
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type AssessmentInfoFile = infofile.InfoFile<Assessment>;
 
@@ -54,6 +53,7 @@ function getParamsForAssessment(
   const allowIssueReporting = !!_.get(assessment, 'allowIssueReporting', true);
   const allowRealTimeGrading = !!_.get(assessment, 'allowRealTimeGrading', true);
   const requireHonorCode = !!_.get(assessment, 'requireHonorCode', true);
+  const allowPersonalNotes = !!_.get(assessment, 'allowPersonalNotes', true);
 
   // It used to be the case that assessment access rules could be associated with a
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
@@ -259,6 +259,7 @@ function getParamsForAssessment(
         : false,
     allow_issue_reporting: allowIssueReporting,
     allow_real_time_grading: allowRealTimeGrading,
+    allow_personal_notes: allowPersonalNotes,
     require_honor_code: requireHonorCode,
     auto_close: !!_.get(assessment, 'autoClose', true),
     max_points: assessment.maxPoints,
@@ -434,7 +435,7 @@ export async function sync(
         if (qids.length > 0) {
           infofile.addError(
             assessments[tid],
-            `You have attempted to import a question with '@', but question sharing is not enabled for your course.`,
+            "You have attempted to import a question with '@', but question sharing is not enabled for your course.",
           );
         }
       }
@@ -479,12 +480,10 @@ export async function sync(
     ]);
   });
 
-  perf.start('sproc:sync_assessments');
   await sqldb.callOneRowAsync('sync_assessments', [
     assessmentParams,
     courseId,
     courseInstanceId,
     config.checkSharingOnSync,
   ]);
-  perf.end('sproc:sync_assessments');
 }

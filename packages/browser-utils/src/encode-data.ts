@@ -1,4 +1,5 @@
 import { encode, decode } from 'js-base64';
+
 import { html, unsafeHtml, HtmlSafeString } from '@prairielearn/html';
 
 /**

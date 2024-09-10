@@ -1,10 +1,11 @@
-import tmp from 'tmp-promise';
-import fs from 'fs-extra';
 import path from 'path';
-import getPort from 'get-port';
+
 import { assert } from 'chai';
 import express from 'express';
+import fs from 'fs-extra';
+import getPort from 'get-port';
 import fetch from 'node-fetch';
+import tmp from 'tmp-promise';
 
 import {
   init,
@@ -14,7 +15,7 @@ import {
   compiledScriptPath,
   compiledStylesheetPath,
   type CompiledAssetsOptions,
-} from './index';
+} from './index.js';
 
 async function testProject(options: CompiledAssetsOptions) {
   await tmp.withDir(
@@ -64,6 +65,15 @@ async function testProject(options: CompiledAssetsOptions) {
         const cssText = await cssRes.text();
         assert.match(cssText, /body\s*\{/);
         assert.match(cssText, /color:\s*red/);
+
+        assert.throws(
+          () => compiledScriptPath('nonexistent.js'),
+          'Unknown scripts asset: nonexistent.js',
+        );
+        assert.throws(
+          () => compiledStylesheetPath('nonexistent.css'),
+          'Unknown stylesheets asset: nonexistent.css',
+        );
       } finally {
         server.close();
       }

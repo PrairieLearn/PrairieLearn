@@ -1,8 +1,14 @@
 import * as async from 'async';
+import { type Request, type Response } from 'express';
+import _ from 'lodash';
 
+import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { recursivelyTruncateStrings } from '@prairielearn/sanitize';
-import { Variant } from './db-types';
+
+import { validateVariantAgainstQuestion } from '../models/variant.js';
+
+import { Variant } from './db-types.js';
 
 interface IssueForErrorData {
   variantId: string;
@@ -97,4 +103,40 @@ export async function writeCourseIssues(
       authnUserId: authn_user_id,
     });
   });
+}
+export async function reportIssueFromForm(
+  req: Request,
+  res: Response,
+  studentSubmission = false,
+): Promise<string> {
+  if (studentSubmission && !res.locals.assessment.allow_issue_reporting) {
+    throw new HttpStatusError(403, 'Issue reporting not permitted for this assessment');
+  }
+  const description = req.body.description;
+  if (typeof description !== 'string' || description.length === 0) {
+    throw new HttpStatusError(400, 'A description of the issue must be provided');
+  }
+
+  const variant = await validateVariantAgainstQuestion(
+    req.body.__variant_id,
+    res.locals.question.id,
+    studentSubmission ? res.locals.instance_question?.id : null,
+  );
+  await insertIssue({
+    variantId: variant.id,
+    studentMessage: description,
+    instructorMessage: `${studentSubmission ? 'student' : 'instructor'}-reported issue`,
+    manuallyReported: true,
+    courseCaused: true,
+    courseData: _.pick(res.locals, [
+      'variant',
+      'question',
+      'course_instance',
+      'course',
+      ...(studentSubmission ? ['instance_question', 'assessment_instance', 'assessment'] : []),
+    ]),
+    systemData: {},
+    authnUserId: res.locals.authn_user.user_id,
+  });
+  return variant.id;
 }

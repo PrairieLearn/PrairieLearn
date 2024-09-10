@@ -1,8 +1,8 @@
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { AuditLog, AuditLogSchema } from '../lib/db-types';
+import { AuditLog, AuditLogSchema } from '../lib/db-types.js';
 
-const sql = loadSqlEquiv(__filename);
+const sql = loadSqlEquiv(import.meta.url);
 
 type BaseNewAuditLog = Omit<AuditLog, 'id' | 'date'>;
 type RequiredNewAuditLog = Required<Pick<BaseNewAuditLog, 'action' | 'table_name'>>;

@@ -1,9 +1,10 @@
+import { assert } from 'chai';
 import express, { type Request, type Response, type NextFunction } from 'express';
 import fetch from 'node-fetch';
-import { assert } from 'chai';
+
 import { withServer } from '@prairielearn/express-test-utils';
 
-import { beforeEnd } from './before-end';
+import { beforeEnd } from './before-end.js';
 
 describe('beforeEnd', () => {
   it('handles errors correctly', async () => {

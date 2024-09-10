@@ -8,7 +8,6 @@ CREATE OR REPLACE FUNCTION
     ) RETURNS VOID
 AS $$
 DECLARE
-    assessment_module_item JSONB;
     used_assessment_module_names text[];
     inserted_assessment_module_names text[];
     missing_assessment_module_names text;
@@ -17,24 +16,27 @@ BEGIN
     -- the valid assessment modules (either existing or new).
 
     -- First insert all the explicit assessment modules, if we can. Keep
-    -- a list of assessment IDs that we've used.
+    -- a list of assessment module names that we've used.
     IF valid_course_info THEN
         WITH new_assessment_modules AS (
             INSERT INTO assessment_modules (
+                course_id,
                 name,
                 heading,
                 number,
-                course_id
+                implicit
             ) SELECT
+                syncing_course_id,
                 am->>0,
                 am->>1,
                 number,
-                syncing_course_id
+                FALSE
             FROM UNNEST(course_info_assessment_modules) WITH ORDINALITY AS t(am, number)
-            ON CONFLICT (name, course_id) DO UPDATE
+            ON CONFLICT (course_id, name) DO UPDATE
             SET
                 heading = EXCLUDED.heading,
-                number = EXCLUDED.number
+                number = EXCLUDED.number,
+                implicit = EXCLUDED.implicit
             RETURNING name
         )
         SELECT array_agg(name) INTO used_assessment_module_names FROM new_assessment_modules;
@@ -67,24 +69,27 @@ BEGIN
     -- we have data for. We auto-create assessment modules where needed.
     WITH new_assessment_modules AS (
         INSERT INTO assessment_modules (
+            course_id,
             name,
             heading,
             number,
-            course_id
+            implicit
         ) SELECT
+            syncing_course_id,
             name,
             concat(name, ' (Auto-generated from use in an assessment; add this assessment module to your infoCourse.json file to customize)'),
             (array_length(used_assessment_module_names, 1) + (row_number() OVER ())),
-            syncing_course_id
+            TRUE
         FROM
             (SELECT UNNEST(assessment_module_names) EXCEPT SELECT UNNEST(used_assessment_module_names))
             AS t(name)
         ORDER BY name
-        ON CONFLICT (name, course_id) DO UPDATE
+        ON CONFLICT (course_id, name) DO UPDATE
         SET
             name = EXCLUDED.name,
             heading = EXCLUDED.heading,
-            number = EXCLUDED.number
+            number = EXCLUDED.number,
+            implicit = EXCLUDED.implicit
         RETURNING name
     )
     SELECT array_agg(name) INTO inserted_assessment_module_names FROM new_assessment_modules;

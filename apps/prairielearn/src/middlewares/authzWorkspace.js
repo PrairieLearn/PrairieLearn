@@ -1,18 +1,19 @@
 // @ts-check
-import * as _ from 'lodash';
-const asyncHandler = require('express-async-handler');
+import asyncHandler from 'express-async-handler';
+import _ from 'lodash';
 
+import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import { isEnterprise } from '../lib/license';
-import { authzCourseOrInstance } from './authzCourseOrInstance';
-import { selectAndAuthzInstanceQuestion } from './selectAndAuthzInstanceQuestion';
-import { selectAndAuthzAssessmentInstance } from './selectAndAuthzAssessmentInstance';
-import { selectAndAuthzInstructorQuestion } from './selectAndAuthzInstructorQuestion';
-import { authzHasCoursePreviewOrInstanceView } from './authzHasCoursePreviewOrInstanceView';
-import { HttpStatusError } from '@prairielearn/error';
+import { isEnterprise } from '../lib/license.js';
 
-const sql = sqldb.loadSqlEquiv(__filename);
+import { authzCourseOrInstance } from './authzCourseOrInstance.js';
+import { authzHasCoursePreviewOrInstanceView } from './authzHasCoursePreviewOrInstanceView.js';
+import { selectAndAuthzAssessmentInstance } from './selectAndAuthzAssessmentInstance.js';
+import { selectAndAuthzInstanceQuestion } from './selectAndAuthzInstanceQuestion.js';
+import { selectAndAuthzInstructorQuestion } from './selectAndAuthzInstructorQuestion.js';
+
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export default asyncHandler(async (req, res, next) => {
   // We rely on having res.locals.workspace_id already set to the correct value here
@@ -40,7 +41,7 @@ export default asyncHandler(async (req, res, next) => {
     await authzCourseOrInstance(req, res);
 
     if (isEnterprise()) {
-      const { checkPlanGrantsForLocals } = require('../ee/lib/billing/plan-grants');
+      const { checkPlanGrantsForLocals } = await import('../ee/lib/billing/plan-grants.js');
       const hasPlanGrants = await checkPlanGrantsForLocals(res.locals);
       if (!hasPlanGrants) {
         // TODO: Show a fancier error page explaining what happened and prompting

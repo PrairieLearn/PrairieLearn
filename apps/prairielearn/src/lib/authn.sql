@@ -3,7 +3,6 @@ SELECT
   to_jsonb(u.*) AS user,
   to_jsonb(i.*) AS institution,
   (adm.id IS NOT NULL) AS is_administrator,
-  users_is_instructor_in_any_course (u.user_id) AS is_instructor,
   (
     SELECT
       count(*)::integer

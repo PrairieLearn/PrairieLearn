@@ -76,3 +76,36 @@ SELECT
   *
 FROM
   inserted_course;
+
+-- BLOCK delete_course
+UPDATE pl_courses AS c
+SET
+  deleted_at = current_timestamp
+WHERE
+  id = $course_id
+RETURNING
+  *;
+
+-- BLOCK insert_course
+INSERT INTO
+  pl_courses AS c (
+    short_name,
+    title,
+    display_timezone,
+    path,
+    repository,
+    branch,
+    institution_id
+  )
+VALUES
+  (
+    $short_name,
+    $title,
+    $display_timezone,
+    $path,
+    $repository,
+    $branch,
+    $institution_id
+  )
+RETURNING
+  *;
