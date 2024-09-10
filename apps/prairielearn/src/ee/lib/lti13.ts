@@ -751,6 +751,7 @@ async function lookupSub(
 
   for (const match of ['uid', 'email']) {
     // Check for duplicate emails in database?
+    // Check institution?
     const member = memberships.find((m) => m.email === user[match]);
     // member.user_id is what we call lti13_sub
     if (member?.user_id) {
