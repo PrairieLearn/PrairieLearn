@@ -45,7 +45,7 @@ export async function validateCourseData(
     if (invalidRenames.length > 0) {
       logger.info(
         chalk.red(
-          `✖ Course sync completely failed. The following questions are shared and cannot be renamed/deleted: ${invalidRenames.join(', ')}`,
+          `✖ Course sync completely failed. The following questions are shared and cannot be renamed or deleted: ${invalidRenames.join(', ')}`,
         ),
       );
       return {
