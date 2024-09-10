@@ -1,5 +1,0 @@
-CREATE TABLE IF NOT EXISTS question_authors (
-  id BIGSERIAL PRIMARY KEY,
-  question_id BIGINT NOT NULL REFERENCES questions ON UPDATE CASCADE ON DELETE CASCADE,
-  author_name TEXT
-);
