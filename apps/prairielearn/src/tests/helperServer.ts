@@ -158,6 +158,7 @@ export async function waitForJobSequenceStatus(job_sequence_id, status: 'Success
     console.log(job_sequence);
     const result = await sqldb.queryAsync(sql.select_jobs, { job_sequence_id });
     console.log(result.rows);
+    console.log(result.rows[0].output);
   }
 
   assert.equal(job_sequence.status, status);

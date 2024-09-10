@@ -1,9 +1,11 @@
-import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
 import { assert } from 'chai';
+import { execa } from 'execa';
+import fs from 'fs-extra';
 import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
+import * as tmp from 'tmp';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -62,6 +64,31 @@ async function accessSharedQuestionAssessment(course_id: string) {
   return res;
 }
 
+// Set up temporary writeable directories for shared content
+const baseDir = tmp.dirSync().name;
+const sharingCourseOriginDir = path.join(baseDir, 'courseOrigin');
+const sharingCourseLiveDir = path.join(baseDir, 'courseLive');
+
+async function commitAndCloneCourseFiles() {
+  await execa('git', ['-c', 'init.defaultBranch=master', 'init'], {
+    cwd: sharingCourseOriginDir,
+    env: process.env,
+  });
+  await execa('git', ['add', '-A'], {
+    cwd: sharingCourseOriginDir,
+    env: process.env,
+  });
+  await execa('git', ['commit', '-m', 'initial commit'], {
+    cwd: sharingCourseOriginDir,
+    env: process.env,
+  });
+  await execa('mkdir', [sharingCourseLiveDir]);
+  await execa('git', ['clone', sharingCourseOriginDir, sharingCourseLiveDir], {
+    cwd: '.',
+    env: process.env,
+  });
+}
+
 describe('Question Sharing', function () {
   this.timeout(80000);
   before('set up testing server', helperServer.before());
@@ -79,7 +106,9 @@ describe('Question Sharing', function () {
   before('construct and sync course', async () => {
     const sharingCourseData = syncUtil.getCourseData();
     sharingCourseData.course.name = 'SHARING 101';
+    const privateQuestion = sharingCourseData.questions.private;
     sharingCourseData.questions = {
+      private: privateQuestion,
       [SHARING_QUESTION_QID]: {
         uuid: '00000000-0000-0000-0000-000000000000',
         type: 'v3',
@@ -94,19 +123,26 @@ describe('Question Sharing', function () {
       },
     };
 
-    const sharingCourseResults = await syncUtil.writeAndSyncCourseData(sharingCourseData);
-    sharingCourse = await selectCourseById(sharingCourseResults.syncResults.courseId);
+    await syncUtil.writeCourseToDirectory(sharingCourseData, sharingCourseOriginDir);
 
     // Fill in empty `question.html` files for our two questions so that we can
     // view them without errors. We don't actually need any contents.
     await fs.writeFile(
-      path.join(sharingCourse.path, 'questions', SHARING_QUESTION_QID, 'question.html'),
+      path.join(sharingCourseOriginDir, 'questions', SHARING_QUESTION_QID, 'question.html'),
       '',
     );
     await fs.writeFile(
-      path.join(sharingCourse.path, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'question.html'),
+      path.join(sharingCourseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'question.html'),
       '',
     );
+    await fs.writeFile(
+      path.join(sharingCourseOriginDir, 'questions', 'private', 'question.html'),
+      '',
+    );
+    await commitAndCloneCourseFiles();
+
+    const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir);
+    sharingCourse = await selectCourseById(syncResults.courseId);
 
     const consumingCourseData = syncUtil.getCourseData();
     consumingCourseData.course.name = 'CONSUMING 101';
@@ -439,7 +475,6 @@ describe('Question Sharing', function () {
     step('Re-sync test course, validating shared questions', async () => {
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
       if (syncResult === undefined || syncResult.hadJsonErrorsOrWarnings) {
-        console.log(syncResult);
         throw new Error('Errors or warnings found during sync of consuming course');
       }
     });
@@ -478,5 +513,30 @@ describe('Question Sharing', function () {
       );
       await fs.rename(questionTempPath, questionPath);
     });
+
+    step('Sync through the sync page to extablish hash.', async () => {
+      await sqldb.queryAsync(sql.update_course_repository, {
+        course_path: sharingCourseLiveDir,
+        course_repository: sharingCourseOriginDir,
+      });
+
+      const syncUrl = `${baseUrl}/course/${sharingCourse.id}/course_admin/syncs`;
+      const response = await fetchCheerio(syncUrl);
+
+      const token = response.$('#test_csrf_token').text();
+      await fetch(syncUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'pull',
+          __csrf_token: token,
+        }),
+      });
+      const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
+      const job_sequence_id = result.rows[0].id;
+
+      await helperServer.waitForJobSequenceStatus(job_sequence_id, 'Success');
+    });
+
+    step('Rename shared question in origin, ensure live does not sync it', async () => {});
   });
 });
