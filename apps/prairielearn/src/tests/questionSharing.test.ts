@@ -537,6 +537,56 @@ describe('Question Sharing', function () {
       await helperServer.waitForJobSequenceStatus(job_sequence_id, 'Success');
     });
 
-    step('Rename shared question in origin, ensure live does not sync it', async () => {});
+    step('Rename shared question in origin, ensure live does not sync it', async () => {
+      const questionPath = path.join(sharingCourseOriginDir, 'questions', SHARING_QUESTION_QID);
+      const questionTempPath = questionPath + '_temp';
+      await fs.rename(questionPath, questionTempPath);
+      await execa('git', ['add', '-A'], {
+        cwd: sharingCourseOriginDir,
+        env: process.env,
+      });
+      await execa('git', ['commit', '-m', 'rename shared question'], {
+        cwd: sharingCourseOriginDir,
+        env: process.env,
+      });
+
+      sharingCourse = await selectCourseById(sharingCourse.id);
+
+      const syncUrl = `${baseUrl}/course/${sharingCourse.id}/course_admin/syncs`;
+      const response = await fetchCheerio(syncUrl);
+      const token = response.$('#test_csrf_token').text();
+      await fetch(syncUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'pull',
+          __csrf_token: token,
+        }),
+      });
+      const result = await sqldb.queryOneRowAsync(sql.select_last_job_sequence, []);
+      const job_sequence_id = result.rows[0].id;
+
+      await helperServer.waitForJobSequenceStatus(job_sequence_id, 'Error');
+
+      assert(
+        sharingCourse.commit_hash === (await selectCourseById(sharingCourse.id)).commit_hash,
+        'Commit hash of sharing course should not change when attempting to sync breaking change.',
+      );
+
+      const sharedQuestionExists = await fs
+        .stat(path.join(sharingCourseLiveDir, 'questions', SHARING_QUESTION_QID))
+        .then(() => true)
+        .catch(() => false);
+
+      assert(
+        sharedQuestionExists,
+        'When origin repo moves shared question, live should not sync that change.',
+      );
+
+      // remove breaking change in origin repo
+      await execa('git', ['reset', '--hard', 'HEAD~1'], {
+        cwd: sharingCourseOriginDir,
+        env: process.env,
+      });
+    });
   });
 });
