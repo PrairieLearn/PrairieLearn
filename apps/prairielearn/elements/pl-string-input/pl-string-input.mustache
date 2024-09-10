@@ -1,6 +1,6 @@
 <script>
     $(function(){
-        document.querySelectorAll('.multiline-input').forEach((input) => {
+        document.querySelectorAll('.multiline-input#pl-string-input-{{uuid}}-area').forEach((input) => {
             input.addEventListener('input', function () {
             // Adjusts the height based on the feedback content. If the feedback changes, the height
             // changes as well. This is done by resetting the height (so the scrollHeight is computed
@@ -27,7 +27,7 @@
         <span id="pl-string-input-{{uuid}}" class="input-group pl-string-input">
             <textarea
                 wrap="soft"
-                id="pl-string-input-{{uuid}}-input"
+                id="pl-string-input-{{uuid}}-area"
                 name="{{name}}"
                 type="text"
                 inputmode="text"
@@ -160,6 +160,7 @@
     {{/label}}
     <span class="input-group">
         <textarea
+            id="pl-string-input-{{uuid}}-area"
             wrap="soft"
             type="text"
             inputmode="text"
@@ -212,6 +213,7 @@
     {{/label}}
     <span class="input-group">
         <textarea
+            id="pl-string-input-{{uuid}}-area"
             wrap="soft"
             type="text"
             inputmode="text"
