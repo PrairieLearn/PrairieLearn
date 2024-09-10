@@ -8,7 +8,7 @@ export function SideNav() {
       <div class="side-nav-group mb-3">
         <div>
           <select id="course-picker" class="form-select" aria-label="Course">
-            <option selected>XC 101</option>
+            <option selected>TAM 212</option>
             <option>Other course</option>
           </select>
         </div>
@@ -16,7 +16,7 @@ export function SideNav() {
         <a href="/" class="side-nav-link">
           <i class="fa fa-fw fa-chalkboard-user"></i> Course instances
         </a>
-        <a href="/" class="side-nav-link side-nav-link-active">
+        <a href="/" class="side-nav-link">
           <i class="fa fa-fw fa-question" aria-hidden="true"></i> Questions
         </a>
         <a href="/" class="side-nav-link"><i class="fa fa-fw fa-bug"></i> Issues</a>
@@ -39,7 +39,7 @@ export function SideNav() {
           </select>
         </div>
 
-        <a href="/" class="side-nav-link">
+        <a href="/" class="side-nav-link side-nav-link-active">
           <i class="fa fa-fw fa-list" aria-hidden="true"></i> Assessments
         </a>
         <a href="/" class="side-nav-link">

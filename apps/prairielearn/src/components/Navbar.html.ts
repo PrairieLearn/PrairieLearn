@@ -26,17 +26,19 @@ export function Navbar({
   navbarType ??= resLocals.navbarType;
 
   return html`
-    ${config.devMode && __csrf_token
-      ? // Unit tests often need access to the CSRF token even when the page contains
-        // no form - for example, to confirm that a POST with a prohibited
-        // action is denied. For convenience, we include the CSRF token here, on
-        // all pages. We do this only in devMode and only for the purpose of
-        // testing.
-        html`
-          <!-- DO NOT RELY ON OR USE THIS CSRF TOKEN FOR ANYTHING OTHER THAN UNIT TESTS! -->
-          <span id="test_csrf_token" hidden>${__csrf_token}</span>
-        `
-      : ''}
+    ${
+      config.devMode && __csrf_token
+        ? // Unit tests often need access to the CSRF token even when the page contains
+          // no form - for example, to confirm that a POST with a prohibited
+          // action is denied. For convenience, we include the CSRF token here, on
+          // all pages. We do this only in devMode and only for the purpose of
+          // testing.
+          html`
+            <!-- DO NOT RELY ON OR USE THIS CSRF TOKEN FOR ANYTHING OTHER THAN UNIT TESTS! -->
+            <span id="test_csrf_token" hidden>${__csrf_token}</span>
+          `
+        : ''
+    }
 
     <div class="container-fluid bg-primary">
       <a href="#content" class="sr-only sr-only-focusable d-inline-flex p-2 m-2 text-white">
@@ -44,15 +46,18 @@ export function Navbar({
       </a>
     </div>
 
-    ${config.announcementHtml
-      ? html`
-          <div
-            class="alert alert-${config.announcementColor ?? 'primary'} mb-0 rounded-0 text-center"
-          >
-            ${unsafeHtml(config.announcementHtml)}
-          </div>
-        `
-      : ''}
+    ${
+      config.announcementHtml
+        ? html`
+            <div
+              class="alert alert-${config.announcementColor ??
+              'primary'} mb-0 rounded-0 text-center"
+            >
+              ${unsafeHtml(config.announcementHtml)}
+            </div>
+          `
+        : ''
+    }
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
       <div class="container-fluid">
@@ -112,7 +117,7 @@ export function Navbar({
           </li>
 
           <li class="nav-item">
-            <a class="nav-link active" href="#">TAM 212 <i class="bi bi-caret-down-fill"></i></a>
+            <a class="nav-link active" href="#">TAM 212</i></a>
           </li>
         </ul>
 
@@ -134,13 +139,15 @@ export function Navbar({
       </div>
     </nav>
 
-    ${navbarType === 'instructor' && course && course.announcement_html && course.announcement_color
-      ? html`
-          <div class="alert alert-${course.announcement_color} mb-0 rounded-0 text-center">
-            ${unsafeHtml(course.announcement_html)}
-          </div>
-        `
-      : ''}
+    ${
+      navbarType === 'instructor' && course && course.announcement_html && course.announcement_color
+        ? html`
+            <div class="alert alert-${course.announcement_color} mb-0 rounded-0 text-center">
+              ${unsafeHtml(course.announcement_html)}
+            </div>
+          `
+        : ''
+    }
   `;
 }
 
