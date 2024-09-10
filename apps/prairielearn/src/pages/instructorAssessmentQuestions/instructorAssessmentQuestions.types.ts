@@ -72,7 +72,7 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
 });
 export type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
 
-const AssessmentQuestionZoneSchema = z.object({
+export const AssessmentQuestionZoneSchema = z.object({
   bestQuestions: z.number().nullable(),
   maxPoints: z.number().nullable(),
   numberChoose: z.number().nullable(),

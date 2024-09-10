@@ -509,18 +509,14 @@ onDocumentReady(() => {
       // If the question already exists, we need to update it.
       if (zones[zoneIndex].questions[questionIndex]) {
         zones[zoneIndex].questions[questionIndex].qid = questionData.qid as string;
-        (zones[zoneIndex].questions[questionIndex].title = questionData.title as string),
-          (zones[zoneIndex].questions[questionIndex].tags = JSON.parse(
-            questionData.tags.toString(),
-          )),
-          (zones[zoneIndex].questions[questionIndex].topic = JSON.parse(
-            questionData.topic.toString(),
-          )),
-          (zones[zoneIndex].questions[questionIndex].other_assessments = JSON.parse(
-            questionData.otherAssessments.toString(),
-          )),
-          (zones[zoneIndex].questions[questionIndex].is_alternative_group = isAlternativeGroup),
-          (zones[zoneIndex].questions[questionIndex].alternative_group_number = questionIndex + 1);
+        zones[zoneIndex].questions[questionIndex].title = questionData.title as string;
+        zones[zoneIndex].questions[questionIndex].tags = JSON.parse(questionData.tags.toString());
+        zones[zoneIndex].questions[questionIndex].topic = JSON.parse(questionData.topic.toString());
+        zones[zoneIndex].questions[questionIndex].other_assessments = JSON.parse(
+          questionData.otherAssessments.toString(),
+        );
+        zones[zoneIndex].questions[questionIndex].is_alternative_group = isAlternativeGroup;
+        zones[zoneIndex].questions[questionIndex].alternative_group_number = questionIndex + 1;
         if (assessmentType === 'Exam') {
           zones[zoneIndex].questions[questionIndex].points_list = questionData.autoPoints
             .toString()

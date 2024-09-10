@@ -45,7 +45,7 @@ onDocumentReady(() => {
 
   window.radioFormatter = function (radio, question) {
     return question.qid === currentQid;
-  }
+  };
 
   window.qidFormatter = function (qid, question) {
     var text = '';
@@ -85,8 +85,8 @@ onDocumentReady(() => {
       text += html`<a
         class="badge badge-pill badge-danger ml-1"
         href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
-        question.qid,
-      )}"
+          question.qid,
+        )}"
         >${question.open_issue_count}</a
       >`;
     }

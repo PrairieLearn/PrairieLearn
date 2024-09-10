@@ -145,7 +145,7 @@ router.post(
         await editor.executeWithServerJob(serverJob);
         flash('success', 'Assessment questions updated successfully');
         return res.redirect(req.originalUrl);
-      } catch (err) {
+      } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else {
