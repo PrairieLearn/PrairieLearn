@@ -339,6 +339,7 @@ export interface Assessment {
   canSubmit: string[];
   advanceScorePerc: number;
   gradeRateMinutes: number;
+  sharedPublicly: boolean;
 }
 
 interface QuestionExternalGradingOptions {
@@ -1433,6 +1434,9 @@ export async function loadAssessments(
       validateAssessment(assessment, questions, courseInstanceExpired),
     recursive: true,
   });
+
+  // console.log(assessments);
+
   checkDuplicateUUIDs(
     assessments,
     (uuid, ids) =>

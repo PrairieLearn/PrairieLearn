@@ -1,6 +1,8 @@
-import * as namedLocks from '@prairielearn/named-locks';
+import { error } from 'console';
 import * as fs from 'fs'; // TEST
 import * as path from 'path'; // TEST
+
+import * as namedLocks from '@prairielearn/named-locks';
 
 import { chalk, chalkDim } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
@@ -17,7 +19,6 @@ import * as syncQuestions from './fromDisk/questions.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import { makePerformance } from './performance.js';
-import { error } from 'console';
 
 const perf = makePerformance('sync');
 
@@ -46,15 +47,15 @@ export async function syncDiskToSqlWithLock(
   const courseData = await perf.timed('loadCourseData', () =>
     courseDB.loadFullCourse(courseId, courseDir),
   );
-  
+
   /*
    * Check that all questions in publicly shared course instances are also shared publicly
    */
   for (const courseInstanceKey in courseData.courseInstances) {
     const courseInstance = courseData.courseInstances[courseInstanceKey];
-  
+
     console.log(`Checking course instance ${courseInstanceKey}`); // TEST
-    courseInstance.sharedPublicly = true; // TEST
+    // courseInstance.sharedPublicly = true; // TEST
     if (courseInstance.sharedPublicly) {
       for (const assessmentKey in courseInstance.assessments) {
         const assessment = courseInstance.assessments[assessmentKey];
@@ -70,7 +71,7 @@ export async function syncDiskToSqlWithLock(
                     'info.json',
                   );
 
-                  readQuestionInfoJson(infoJsonPath, question.id, courseInstanceKey);
+                  await readQuestionInfoJson(infoJsonPath, question.id, courseInstanceKey);
                 }
               }
             }
@@ -94,8 +95,10 @@ export async function syncDiskToSqlWithLock(
   await perf.timed('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
   await perf.timed('syncAssessmentModules', () => syncAssessmentModules.sync(courseId, courseData));
   perf.start('syncAssessments');
+
   await Promise.all(
     Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
+      console.log('Course instance data: ', courseInstanceData);
       const courseInstanceId = courseInstanceIds[ciid];
       await perf.timed(`syncAssessments${ciid}`, () =>
         syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
@@ -170,28 +173,32 @@ export async function syncOrCreateDiskToSql(
   return await syncDiskToSql(course.id, courseDir, logger);
 }
 
-
-async function readQuestionInfoJson(infoJsonPath: string, questionId: string, courseInstanceKey: string) {
+async function readQuestionInfoJson(
+  infoJsonPath: string,
+  questionId: string,
+  courseInstanceKey: string,
+) {
   try {
     // Check if the file exists
     if (fs.existsSync(infoJsonPath)) {
       // Read and parse the info.json file
       const fileContent = fs.readFileSync(infoJsonPath, 'utf8');
-      const questionInfo = JSON.parse(fileContent);  
-      
-      // TEST, uncomment later. Unable to test other stuff since I can't make questions public yet (at least easily)    
+      const questionInfo = JSON.parse(fileContent);
+
+      // TEST, uncomment later. Unable to test other stuff since I can't make questions public yet (at least easily)
       if (!questionInfo.sharedPublicly || questionInfo.sharedPublicly === undefined) {
-        throw new Error(`Question ${questionId} is not shared publicly in public course instance ${courseInstanceKey}. All questions in a public course instance must be shared publicly.`);
+        throw new Error(
+          `Question ${questionId} is not shared publicly in public course instance ${courseInstanceKey}. All questions in a public course instance must be shared publicly.`,
+        );
       } else {
-        console.log(`Question ${questionId} is shared publicly in public course instance ${courseInstanceKey}. CONGRATS! TEST!`); // TEST
-       }
+        console.log(
+          `Question ${questionId} is shared publicly in public course instance ${courseInstanceKey}. CONGRATS! TEST!`,
+        ); // TEST
+      }
     } else {
       console.error(`Missing JSON file: ${infoJsonPath}`);
     }
   } catch (error) {
     console.error(`Error reading or parsing JSON file: ${infoJsonPath}`, error);
   }
-
-
-  
 }

@@ -249,6 +249,8 @@ function getParamsForAssessment(
     can_assign_roles: role.canAssignRoles,
   }));
 
+  console.log('title: ', assessment.title, 'shared publicly: ', assessment.sharedPublicly);
+  console.log(assessment);
   return {
     type: assessment.type,
     number: assessment.number,
@@ -284,6 +286,7 @@ function getParamsForAssessment(
     groupRoles,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,
+    shared_publicly: assessment.sharedPublicly ? true : false,
   };
 }
 
