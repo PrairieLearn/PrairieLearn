@@ -1,10 +1,7 @@
 import * as sqldb from '@prairielearn/postgres';
 
-import * as infofile from '../infofile';
-import { makePerformance } from '../performance';
-import { CourseData } from '../course-db';
-
-const perf = makePerformance('authors');
+import { CourseData } from '../course-db.js';
+import * as infofile from '../infofile.js';
 
 export async function sync(
   courseId: string,
@@ -20,7 +17,5 @@ export async function sync(
     }
   });
 
-  perf.start('sproc:sync_question_authors');
   await sqldb.callAsync('sync_question_authors', [questionAuthorsParam]);
-  perf.end('sproc:sync_question_authors');
 }

@@ -1,5 +1,5 @@
 columns
-    author_name: text
+    author_id: bigint not null
     id: bigint not null default nextval('question_authors_id_seq'::regclass)
     question_id: bigint not null
 
@@ -7,4 +7,5 @@ indexes
     question_authors_pkey: PRIMARY KEY (id) USING btree (id)
 
 foreign-key constraints
+    question_authors_author_id_fkey: FOREIGN KEY (author_id) REFERENCES authors(id) ON UPDATE CASCADE ON DELETE CASCADE
     question_authors_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
