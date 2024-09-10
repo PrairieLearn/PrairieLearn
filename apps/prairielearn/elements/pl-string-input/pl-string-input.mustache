@@ -22,7 +22,11 @@
 {{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
     {{#multiline}}
         {{#label}}
-        <label id="pl-string-input-{{uuid}}-label" class="form-label">{{{label}}}</label>
+        <label
+            id="pl-string-input-{{uuid}}-label"
+            class="form-label"
+            for="pl-string-input-{{uuid}}-area"
+        >{{{label}}}</label>
         {{/label}}
         <span id="pl-string-input-{{uuid}}" class="input-group pl-string-input">
             <textarea
@@ -38,7 +42,6 @@
                 autocorrect="off"
                 {{^editable}}disabled{{/editable}}
                 aria-describedby="pl-string-input-{{uuid}}-suffix"
-                aria-labelledby="pl-string-input-{{uuid}}-label"
                 placeholder="{{placeholder}}"
             >{{raw_submitted_answer}}</textarea>
     {{/multiline}}
@@ -46,7 +49,11 @@
         <span id="pl-string-input-{{uuid}}" class="input-group pl-string-input">
             {{#label}}
             <span class="input-group-prepend">
-                <span class="input-group-text" id="pl-string-input-{{uuid}}-label">{{{label}}}</span>
+                <span
+                    id="pl-string-input-{{uuid}}-label"
+                    class="input-group-text"
+                    for="pl-string-input-{{uuid}}-input"
+                >{{{label}}}</span>
             </span>
             {{/label}}
             <input
@@ -61,7 +68,6 @@
                 autocorrect="off"
                 {{^editable}}disabled{{/editable}}
                 aria-describedby="pl-string-input-{{uuid}}-suffix"
-                aria-labelledby="pl-string-input-{{uuid}}-label"
                 placeholder="{{placeholder}}"
             >
     {{/multiline}}
@@ -156,7 +162,11 @@
 {{#multiline}}
     <span class="input-group">
     {{#label}}
-    <label class="form-label" id="pl-string-input-submission-{{uuid}}-label">{{{label}}}</label>
+    <label
+        id="pl-string-input-submission-{{uuid}}-label"
+        class="form-label"
+        for="pl-string-input-{{uuid}}-area"
+    >{{{label}}}</label>
     {{/label}}
     <span class="input-group">
         <textarea
@@ -209,7 +219,11 @@
 {{#multiline}}
     <span class="input-group">
     {{#label}}
-    <label class="form-label" id="pl-string-input-answer-{{uuid}}-label">{{{label}}}</label>
+    <label
+        id="pl-string-input-answer-{{uuid}}-label"
+        class="form-label"
+        for="pl-string-input-{{uuid}}-area"
+    >{{{label}}}</label>
     {{/label}}
     <span class="input-group">
         <textarea
@@ -221,7 +235,6 @@
             style="resize:none;"
             disabled
             aria-describedby="pl-string-input-answer-{{uuid}}-suffix"
-            aria-labelledby="pl-string-input-answer-{{uuid}}-label"
         >{{a_tru}}</textarea>
     </span>
     {{#suffix}}
