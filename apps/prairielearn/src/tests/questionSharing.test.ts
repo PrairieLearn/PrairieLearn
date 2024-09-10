@@ -547,11 +547,9 @@ describe('Question Sharing', function () {
         'Commit hash of sharing course should not change when attempting to sync breaking change.',
       );
 
-      const sharedQuestionExists = await fs
-        .stat(path.join(sharingCourseLiveDir, 'questions', SHARING_QUESTION_QID))
-        .then(() => true)
-        .catch(() => false);
-
+      const sharedQuestionExists = await fs.pathExists(
+        path.join(sharingCourseLiveDir, 'questions', SHARING_QUESTION_QID),
+      );
       assert(
         sharedQuestionExists,
         'When origin repo moves shared question, live should not sync that change.',
