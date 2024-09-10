@@ -10,6 +10,7 @@ import * as Sentry from '@prairielearn/sentry';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
+import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import * as util from 'node:util';
 import * as url from 'url';
@@ -1132,6 +1133,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)',
     (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
+    (await import('./middlewares/authzHasCoursePreview.js')).default,
   );
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/question\/[0-9]+)\/?$/,
@@ -2351,6 +2353,35 @@ if (esMain(import.meta) && config.startServer) {
               return event;
             },
           });
+        }
+
+        // Start capturing profiling information as soon as possible.
+        if (config.pyroscopeEnabled) {
+          // Despite the fact that Pyroscope publishes itself as a dual CJS/ESM module,
+          // the ESM distribution is currently broken:
+          // https://github.com/grafana/pyroscope-nodejs/issues/32
+          //
+          // There are a few WIP PRs to fix this:
+          // https://github.com/grafana/pyroscope-nodejs/pull/89
+          // https://github.com/grafana/pyroscope-nodejs/pull/94
+          //
+          // Until this is fixed, we'll use `createRequire` to load the module as CJS.
+          //
+          // Pyroscope relies on global state. If you intend to use the Pyroscope API
+          // in other files, you MUST load it as a CJS module.
+          const require = createRequire(import.meta.url);
+          const Pyroscope = require('@pyroscope/nodejs');
+          Pyroscope.init({
+            appName: 'prairielearn',
+            serverAddress: config.pyroscopeServerAddress,
+            basicAuthUser: config.pyroscopeBasicAuthUser,
+            basicAuthPassword: config.pyroscopeBasicAuthPassword,
+            tags: {
+              instanceId: config.instanceId,
+              ...config.pyroscopeTags,
+            },
+          });
+          Pyroscope.start();
         }
 
         if (config.logFilename) {

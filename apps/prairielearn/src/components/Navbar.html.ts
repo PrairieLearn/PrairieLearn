@@ -716,15 +716,26 @@ function NavbarInstructor({
         Issues ${IssueBadge({ count: navbarOpenIssueCount, suppressLink: true })}
       </a>
     </li>
-    <li
-      class="nav-item ${navPage === 'course_admin' && navSubPage === 'questions' ? 'active' : ''}"
-    >
-      <a class="nav-link" href="${urlPrefix}/course_admin/questions">Questions</a>
-    </li>
-    <li class="nav-item ${navPage === 'course_admin' && navSubPage === 'syncs' ? 'active' : ''}">
-      <a class="nav-link" href="${urlPrefix}/course_admin/syncs">Sync</a>
-    </li>
-
+    ${authz_data.has_course_permission_preview
+      ? html`
+          <li
+            class="nav-item ${navPage === 'course_admin' && navSubPage === 'questions'
+              ? 'active'
+              : ''}"
+          >
+            <a class="nav-link" href="${urlPrefix}/course_admin/questions">Questions</a>
+          </li>
+        `
+      : ''}
+    ${authz_data.has_course_permission_edit
+      ? html`
+          <li
+            class="nav-item ${navPage === 'course_admin' && navSubPage === 'syncs' ? 'active' : ''}"
+          >
+            <a class="nav-link" href="${urlPrefix}/course_admin/syncs">Sync</a>
+          </li>
+        `
+      : ''}
     ${course_instance
       ? html`
           <li class="navbar-text mx-2 no-select">/</li>
