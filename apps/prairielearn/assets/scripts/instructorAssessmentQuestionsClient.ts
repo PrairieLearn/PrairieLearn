@@ -612,12 +612,14 @@ onDocumentReady(() => {
     const otherAssessmentsInput = document.getElementById(
       'otherAssessmentsInput',
     ) as HTMLInputElement;
-    qidInput.value = foundQuestion.qid;
-    titleInput.value = foundQuestion.title;
-    tagsInput.value = JSON.stringify(foundQuestion.tags);
-    topicInput.value = JSON.stringify(foundQuestion.topic);
-    otherAssessmentsInput.value = JSON.stringify(foundQuestion.assessments);
-    document.getElementById('updateQuestionButton')?.removeAttribute('disabled');
+    if (foundQuestion) {
+      qidInput.value = foundQuestion.qid ?? '';
+      titleInput.value = foundQuestion.title;
+      tagsInput.value = JSON.stringify(foundQuestion.tags);
+      topicInput.value = JSON.stringify(foundQuestion.topic);
+      otherAssessmentsInput.value = JSON.stringify(foundQuestion.assessments);
+      document.getElementById('updateQuestionButton')?.removeAttribute('disabled');
+    }
     $('#editQuestionModal').modal('show');
   });
 
