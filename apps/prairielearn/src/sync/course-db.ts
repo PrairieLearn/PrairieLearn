@@ -235,6 +235,8 @@ interface CourseInstanceAllowAccess {
 export interface CourseInstance {
   uuid: string;
   longName: string;
+  /** @deprecated */
+  shortName?: string | null;
   number: number;
   timezone: string;
   hideInEnrollPage: boolean;
@@ -1343,6 +1345,18 @@ async function validateCourseInstance(
       warnings.push(
         'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.',
       );
+    }
+
+    // `shortName` has never been a meaningful property in course instance config.
+    // However, for many years our template course erroneously included it in the
+    // template course instance, so it's been copied around to basically every course.
+    // We didn't set `additionalProperties: false` in the schema, so we never caught
+    // this and for a long time it was silently ignored.
+    //
+    // To avoid breaking existing courses, we added it as a valid property to the schema,
+    // but we'll warn about it for any active or future course instances.
+    if (courseInstance.shortName) {
+      warnings.push('The property "shortName" is not used and should be deleted.');
     }
   }
 

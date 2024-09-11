@@ -41,7 +41,6 @@ This file specifies basic information about the course instance:
 ```json
 {
   "uuid": "62fbe2a4-8c22-471a-98fe-19e5d5da1bbe",
-  "shortName": "Sp15",
   "longName": "Spring 2015",
   "allowAccess": [
     {
