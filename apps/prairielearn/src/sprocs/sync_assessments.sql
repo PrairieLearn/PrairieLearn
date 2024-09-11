@@ -450,13 +450,8 @@ BEGIN
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
 
+                    -- If the assessment is configured as group work, sync the role permissions.
                     IF (valid_assessment.data->>'group_work')::boolean THEN
-                        -- Iterate over all group roles in assessment
-                        WITH valid_group_roles AS (
-                            SELECT gr.id, gr.role_name
-                            FROM group_roles as gr
-                            WHERE gr.assessment_id = new_assessment_id
-                        )
                         INSERT INTO assessment_question_role_permissions (
                             assessment_question_id,
                             group_role_id,
@@ -464,10 +459,10 @@ BEGIN
                             can_submit
                         ) SELECT
                             new_assessment_question_id AS assessment_question_id,
-                            valid_group_roles.id AS group_role_id,
-                            (valid_group_roles.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view'))) AS can_view,
-                            (valid_group_roles.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit'))) AS can_submit
-                        FROM valid_group_roles
+                            gr.id AS group_role_id,
+                            (gr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view'))) AS can_view,
+                            (gr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit'))) AS can_submit
+                        FROM group_roles AS gr
                         ON CONFLICT (assessment_question_id, group_role_id)
                         DO UPDATE
                         SET
