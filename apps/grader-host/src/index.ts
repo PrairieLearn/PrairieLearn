@@ -213,51 +213,54 @@ async function handleJob(job: GradingJobMessage) {
       // image not existing in our cache. We'll allow this error to bubble up
       // but we won't report it to Sentry.
       initDocker(context),
+      // This should never fail, but if it does, something has gone very wrong,
+      // so we'll specifically report it to Sentry.
       initFiles(context).catch((err) => {
         Sentry.captureException(err);
         throw err;
       }),
     ]);
 
+    const tempDir = initResults[2].status === 'fulfilled' ? initResults[2].value : undefined;
+
     const results = await run(async () => {
       const initSucceeded = initResults.every((result) => result.status === 'fulfilled');
-      if (initSucceeded && initResults[2].status === 'fulfilled') {
-        const tempDir = initResults[2].value;
-        return await runJob(context, receivedTime, tempDir?.tempDir);
-      } else {
-        const message = run(() => {
-          const dockerInitSucceeded = initResults[1].status === 'fulfilled';
-          const fileInitSucceeded = initResults[2].status === 'fulfilled';
-
-          const messages: string[] = [];
-          if (!dockerInitSucceeded) {
-            messages.push(`Could not pull Docker image ${job.image}.`);
-          }
-          if (!fileInitSucceeded) {
-            messages.push('Could not initialize files for grading.');
-          }
-
-          // This should never occur, as `reportReceived` should never reject. But,
-          // just in case, we'll return a generic error message.
-          if (messages.length === 0) {
-            return 'An unknown error occurred.';
-          }
-
-          return messages.join('\n');
-        });
-
-        return {
-          job_id: job.jobId,
-          received_time: receivedTime,
-          start_time: new Date(),
-          end_time: new Date(),
-          succeeded: false,
-          message,
-        };
+      if (initSucceeded && tempDir) {
+        return await runJob(context, receivedTime, tempDir.path);
       }
-    });
 
-    const tempDir = initResults[2].status === 'fulfilled' ? initResults[2].value : undefined;
+      // We failed to init, so we weren't able to run the job. We'll report
+      // generic error messages as the result of the job.
+      const message = run(() => {
+        const dockerInitSucceeded = initResults[1].status === 'fulfilled';
+        const fileInitSucceeded = initResults[2].status === 'fulfilled';
+
+        const messages: string[] = [];
+        if (!dockerInitSucceeded) {
+          messages.push(`Could not pull Docker image ${job.image}.`);
+        }
+        if (!fileInitSucceeded) {
+          messages.push('Could not initialize files for grading.');
+        }
+
+        // This should never occur, as `reportReceived` should never reject. But,
+        // just in case, we'll return a generic error message.
+        if (messages.length === 0) {
+          return 'An unknown error occurred.';
+        }
+
+        return messages.join('\n');
+      });
+
+      return {
+        job_id: job.jobId,
+        received_time: receivedTime,
+        start_time: new Date(),
+        end_time: new Date(),
+        succeeded: false,
+        message,
+      };
+    });
 
     logger.info(`Job ${job.jobId} completed with results:`, results);
 
@@ -265,12 +268,14 @@ async function handleJob(job: GradingJobMessage) {
       await Promise.all([
         uploadResults(context, results),
         // Only attempt to upload the archive if the directory was created.
-        tempDir ? uploadArchive(context, tempDir.tempDir) : Promise.resolve(),
+        tempDir ? uploadArchive(context, tempDir.path) : Promise.resolve(),
       ]);
 
-      logger.info('Removing temporary directories');
-      await tempDir?.tempDirCleanup();
-      logger.info('Successfully removed temporary directories');
+      if (tempDir) {
+        logger.info('Removing temporary directories');
+        await tempDir.cleanup();
+        logger.info('Successfully removed temporary directories');
+      }
     } catch (err) {
       Sentry.captureException(err);
       throw err;
@@ -403,10 +408,7 @@ async function initFiles(context: Context) {
       logger.error('Could not make file executable; continuing execution anyways');
     });
 
-    return {
-      tempDir: jobDirectory.path,
-      tempDirCleanup: jobDirectory.cleanup,
-    };
+    return jobDirectory;
   } finally {
     await jobArchiveFile.cleanup();
   }
