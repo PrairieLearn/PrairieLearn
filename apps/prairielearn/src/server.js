@@ -2357,20 +2357,15 @@ if (esMain(import.meta) && config.startServer) {
 
         // Start capturing profiling information as soon as possible.
         if (config.pyroscopeEnabled) {
-          // Despite the fact that Pyroscope publishes itself as a dual CJS/ESM module,
-          // the ESM distribution is currently broken:
-          // https://github.com/grafana/pyroscope-nodejs/issues/32
-          //
-          // There are a few WIP PRs to fix this:
-          // https://github.com/grafana/pyroscope-nodejs/pull/89
-          // https://github.com/grafana/pyroscope-nodejs/pull/94
-          //
-          // Until this is fixed, we'll use `createRequire` to load the module as CJS.
-          //
-          // Pyroscope relies on global state. If you intend to use the Pyroscope API
-          // in other files, you MUST load it as a CJS module.
-          const require = createRequire(import.meta.url);
-          const Pyroscope = require('@pyroscope/nodejs');
+          if (
+            !config.pyroscopeServerAddress ||
+            !config.pyroscopeBasicAuthUser ||
+            !config.pyroscopeBasicAuthPassword
+          ) {
+            throw new Error('Pyroscope configuration is incomplete');
+          }
+
+          const Pyroscope = await import('@pyroscope/nodejs');
           Pyroscope.init({
             appName: 'prairielearn',
             serverAddress: config.pyroscopeServerAddress,
