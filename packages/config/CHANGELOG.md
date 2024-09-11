@@ -1,5 +1,11 @@
 # @prairielearn/config
 
+## 3.0.5
+
+### Patch Changes
+
+- 852c2e2: Upgrade all JavaScript dependencies
+
 ## 3.0.4
 
 ### Patch Changes

@@ -2,10 +2,11 @@ import { assert } from 'chai';
 import fetchCookie from 'fetch-cookie';
 import { step } from 'mocha-steps';
 
-import { callRows, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { IdSchema, type User, UserSchema } from '../lib/db-types.js';
+import { IdSchema, type User } from '../lib/db-types.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import {
   assertAlert,
@@ -37,16 +38,7 @@ describe('Instructor group controls', () => {
   });
 
   step('enroll random users', async () => {
-    users = await callRows(
-      'users_randomly_generate',
-      [
-        // Generate 5 users
-        5,
-        // Enroll them in the course instance
-        1,
-      ],
-      UserSchema,
-    );
+    users = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
   });
 
   step('can create a new group', async () => {

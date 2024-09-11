@@ -6,6 +6,7 @@ import * as sqldb from '@prairielearn/postgres';
 import * as groupUpdate from '../lib/group-update.js';
 import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
 
@@ -25,8 +26,8 @@ describe('test auto group and delete groups', function () {
   });
 
   step('create 500 users', async () => {
-    const result = await sqldb.queryAsync(sql.generate_500, []);
-    assert.equal(result.rows.length, 500);
+    const result = await generateAndEnrollUsers({ count: 500, course_instance_id: '1' });
+    assert.equal(result.length, 500);
   });
 
   step('auto assign groups', async () => {

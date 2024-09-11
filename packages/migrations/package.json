@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/migrations",
-  "version": "3.0.6",
+  "version": "3.0.7",
   "type": "module",
   "main": "./dist/index.js",
   "repository": {
@@ -26,13 +26,13 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
     "@types/mocha": "^10.0.7",
-    "@types/node": "^20.14.13",
+    "@types/node": "^20.16.2",
     "c8": "^10.1.2",
     "chai": "^5.1.1",
     "chai-as-promised": "^8.0.0",
-    "mocha": "^10.7.0",
+    "mocha": "^10.7.3",
     "tmp-promise": "^3.0.3",
-    "tsx": "^4.16.5",
+    "tsx": "^4.19.0",
     "typescript": "^5.5.4",
     "typescript-cp": "^0.1.9"
   },

@@ -2,20 +2,29 @@ import { escapeHtml, html } from '@prairielearn/html';
 
 import { AssessmentQuestion, InstanceQuestion } from '../lib/db-types.js';
 
+type EditableField = 'points' | 'auto_points' | 'manual_points' | 'score_perc';
+
+function findLabel(field: EditableField) {
+  return {
+    points: 'points',
+    auto_points: 'auto points',
+    manual_points: 'manual points',
+    score_perc: 'score percentage',
+  }[field];
+}
+
 export function EditQuestionPointsScoreButton({
   field,
   instance_question,
   assessment_question,
   urlPrefix,
   csrfToken,
-  buttonId,
 }: {
   field: 'points' | 'auto_points' | 'manual_points' | 'score_perc';
   instance_question: Omit<InstanceQuestion, 'modified_at'> & { modified_at: string };
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   csrfToken: string;
-  buttonId: string;
 }) {
   const editForm = EditQuestionPointsScoreForm({
     field,
@@ -23,25 +32,18 @@ export function EditQuestionPointsScoreButton({
     assessment_question,
     urlPrefix,
     csrfToken,
-    buttonId,
   });
-  const label = {
-    points: 'points',
-    auto_points: 'auto points',
-    manual_points: 'manual points',
-    score_perc: 'score percentage',
-  }[field];
 
   return html`<button
     type="button"
     class="btn btn-xs btn-secondary"
-    id="${buttonId}"
     data-toggle="popover"
     data-container="body"
     data-html="true"
     data-placement="auto"
-    title="Change question ${label}"
+    aria-label="Change question ${findLabel(field)}"
     data-content="${escapeHtml(editForm)}"
+    data-testid="edit-question-points-score-button-${field}"
   >
     <i class="fa fa-edit" aria-hidden="true"></i>
   </button>`;
@@ -53,14 +55,12 @@ function EditQuestionPointsScoreForm({
   assessment_question,
   urlPrefix,
   csrfToken,
-  buttonId,
 }: {
   field: 'points' | 'auto_points' | 'manual_points' | 'score_perc';
   instance_question: Omit<InstanceQuestion, 'modified_at'> & { modified_at: string };
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   csrfToken: string;
-  buttonId: string;
 }) {
   const manualGradingUrl = `${urlPrefix}/assessment/${assessment_question.assessment_id}/manual_grading/instance_question/${instance_question.id}`;
   if (assessment_question.manual_rubric_id != null) {
@@ -71,13 +71,7 @@ function EditQuestionPointsScoreForm({
           <a href="${manualGradingUrl}">the manual grading page</a>.
         </p>
         <div class="text-right">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            onclick="$('#${buttonId}').popover('hide')"
-          >
-            Cancel
-          </button>
+          <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         </div>
       </div>
     `;
@@ -104,6 +98,7 @@ function EditQuestionPointsScoreForm({
             class="form-control"
             name="${field}"
             value="${pointsOrScore}"
+            aria-label="${findLabel(field)}"
           />
           <div class="input-group-append">
             <span class="input-group-text">
@@ -121,9 +116,7 @@ function EditQuestionPointsScoreForm({
         </small>
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${buttonId}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>

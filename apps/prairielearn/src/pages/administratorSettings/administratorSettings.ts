@@ -36,7 +36,7 @@ router.post(
       let course_ids: string[];
       try {
         course_ids = course_ids_string.split(',').map((x) => IdSchema.parse(x));
-      } catch (err) {
+      } catch {
         throw new error.HttpStatusError(
           400,
           `could not split course_ids into an array of integers: ${course_ids_string}`,

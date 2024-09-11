@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 
 export const AssessmentAccessRulesSchema = z.object({
@@ -37,12 +37,7 @@ export function InstructorAssessmentAccess({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -54,11 +49,11 @@ export function InstructorAssessmentAccess({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access
+              <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access</h1>
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="Access rules">
                 <thead>
                   <tr>
                     <th>Mode</th>

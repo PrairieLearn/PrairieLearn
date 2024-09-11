@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 
@@ -25,10 +25,7 @@ export function EditError({
       </head>
 
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'error',
-        })}
+        ${Navbar({ resLocals, navPage: 'error' })}
 
         <main id="content" class="container">
           <script>
@@ -45,22 +42,18 @@ export function EditError({
           </script>
 
           <div class="card mb-4">
-            <h5 class="card-header bg-danger text-white">
-              <div class="row align-items-center justify-content-between">
-                <div class="col-auto">Edit Failure</div>
-                <div class="col-auto">
-                  <button
-                    type="button"
-                    class="btn btn-light btn-sm"
-                    data-toggle="collapse"
-                    data-target="#job-sequence-results"
-                    id="job-sequence-results-button"
-                  >
-                    Show detail
-                  </button>
-                </div>
-              </div>
-            </h5>
+            <div class="card-header bg-danger text-white d-flex align-items-center">
+              <h1>Edit Failure</h1>
+              <button
+                type="button"
+                class="btn btn-light btn-sm ml-auto"
+                data-toggle="collapse"
+                data-target="#job-sequence-results"
+                id="job-sequence-results-button"
+              >
+                Show detail
+              </button>
+            </div>
             <div class="card-body">
               <p>The file edit did not complete successfully.</p>
               ${failedSync

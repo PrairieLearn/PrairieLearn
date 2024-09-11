@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/html",
-  "version": "4.0.4",
+  "version": "4.0.5",
   "type": "module",
   "main": "dist/index.js",
   "sideEffects": false,
@@ -16,11 +16,11 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.14.13",
+    "@types/node": "^20.16.2",
     "c8": "^10.1.2",
     "chai": "^5.1.1",
-    "mocha": "^10.7.0",
-    "tsx": "^4.16.5",
+    "mocha": "^10.7.3",
+    "tsx": "^4.19.0",
     "typescript": "^5.5.4"
   },
   "c8": {

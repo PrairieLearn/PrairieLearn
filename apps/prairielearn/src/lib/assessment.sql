@@ -510,7 +510,10 @@ WITH
           'variant_seed',
           v.variant_seed,
           'params',
-          v.params,
+          CASE
+            WHEN $include_files THEN v.params
+            ELSE (v.params - '_workspace_files')
+          END,
           'true_answer',
           v.true_answer,
           'options',
@@ -734,7 +737,7 @@ WITH
             ELSE (s.submitted_answer - '_files')
           END,
           'true_answer',
-          v.true_answer
+          s.true_answer
         ) AS data
       FROM
         grading_jobs AS gj

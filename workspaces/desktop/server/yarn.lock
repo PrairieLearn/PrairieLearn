@@ -10,7 +10,7 @@
     lodash.assignwith "^4.2.0"
     typical "^7.1.1"
 
-"@novnc/novnc@^1.4.0":
+"@novnc/novnc@1.4.0":
   version "1.4.0"
   resolved "https://registry.yarnpkg.com/@novnc/novnc/-/novnc-1.4.0.tgz#68adae81a741624142b518323441e852c1f34281"
   integrity sha512-kW6ALMc5BuH08e/ond/I1naYcfjc19JYMN1EdtmgjjjzPGCjW8fMtVM3MwM6q7YLRjPlQ3orEvoKMgSS7RkEVQ==

@@ -1,8 +1,8 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
 
@@ -31,9 +31,8 @@ export function AdministratorInstitutionLti13({
         ${compiledScriptTag('administratorInstitutionLti13Client.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
-          ...resLocals,
-          institution,
+        ${Navbar({
+          resLocals: { ...resLocals, institution },
           navbarType: 'administrator_institution',
           navPage: 'administrator_institution',
           navSubPage: 'lti13',
@@ -233,7 +232,13 @@ ${JSON.stringify(instance.issuer_params, null, 3)}</textarea
 ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           >
           <small id="custom_fieldsHelp" class="form-text text-muted">
-            Provide suggestions to the LMS in the config JSON for how to setup LTI 1.3 custom fields
+            Provide suggestions to the LMS in the config JSON for how to setup LTI 1.3 custom
+            fields.
+            <a
+              href="https://canvas.instructure.com/doc/api/file.tools_variable_substitutions.html"
+              target="_blank"
+              >Canvas variable substitution docs</a
+            >
           </small>
         </div>
 
@@ -337,7 +342,9 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
           <small id="uinAttributeHelp" class="form-text text-muted">
             The UIN is used as an internal, immutable identifier for the user. It
             <strong>MUST</strong> never change for a given individual, even if they change their
-            name or UID.
+            name or UID. Possibly
+            <code>["https://purl.imsglobal.org/spec/lti/claim/lis"]["person_sourcedid"]</code> or
+            <code>["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]</code>
           </small>
         </div>
 

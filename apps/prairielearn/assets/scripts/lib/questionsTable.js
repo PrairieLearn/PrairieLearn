@@ -185,9 +185,17 @@ onDocumentReady(() => {
         },
       },
     },
-    onPreBody() {},
+
     onResetView() {
-      $('.js-sync-popover[data-toggle="popover"]').popover({ sanitize: false });
+      const searchInputs = document.querySelectorAll(
+        '#questionsTable .form-control, #questionsTable .form-select',
+      );
+      searchInputs.forEach((searchInput) => {
+        searchInput.setAttribute(
+          'aria-label',
+          `Filter by ${searchInput.closest('th').querySelector('div.th-inner').textContent.trim()}`,
+        );
+      });
     },
   };
 

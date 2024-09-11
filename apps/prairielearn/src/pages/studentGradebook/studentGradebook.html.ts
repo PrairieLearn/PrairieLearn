@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import {
   AssessmentInstanceSchema,
@@ -38,15 +38,14 @@ export function StudentGradebook({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'gradebook',
-        })}
+        ${Navbar({ resLocals, navPage: 'gradebook' })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Gradebook</div>
+            <div class="card-header bg-primary text-white">
+              <h1>Gradebook</h1>
+            </div>
 
-            <table class="table table-sm table-hover">
+            <table class="table table-sm table-hover" aria-label="Gradebook">
               <thead>
                 <tr>
                   <th style="width: 1%"><span class="sr-only">Label</span></th>

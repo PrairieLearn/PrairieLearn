@@ -11,10 +11,6 @@
   border-style: solid;
 }
 
-[id^='file-upload'] .file-status-container.has-preview {
-  cursor: pointer;
-}
-
 [id^='file-upload'] .file-status-icon {
   margin-right: 10px;
   transition: all 400ms;
@@ -30,7 +26,7 @@
   content: 'Show preview';
 }
 
-[id^='file-upload'] .file-status-container:not(.collapsed) .file-preview-button::before {
+[id^='file-upload'] .file-preview-button:not(.collapsed)::before {
   content: 'Hide preview';
 }
 
@@ -39,7 +35,7 @@
   transition: transform 400ms;
 }
 
-[id^='file-upload'] .file-status-container:not(.collapsed) .file-preview-icon {
+[id^='file-upload'] .file-preview-button:not(.collapsed) .file-preview-icon {
   transform: rotateX(180deg);
 }
 

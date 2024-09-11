@@ -1,6 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import {
   RegenerateInstanceAlert,
@@ -10,6 +9,7 @@ import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import {
   ExamQuestionAvailablePoints,
@@ -22,13 +22,7 @@ import { Scorebar } from '../../components/Scorebar.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import {
-  Assessment,
-  AssessmentInstance,
-  AssessmentSet,
-  GroupConfig,
-  InstanceQuestion,
-} from '../../lib/db-types.js';
+import { AssessmentInstance, GroupConfig, InstanceQuestion } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 import { GroupInfo } from '../../lib/groups.js';
 
@@ -69,13 +63,9 @@ export function StudentAssessmentInstance({
               'time-limit-data',
             )}`
           : ''}
-        ${compiledScriptTag('studentAssessmentInstanceClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'assessment_instance',
-        })}
+        ${Navbar({ resLocals, navPage: 'assessment_instance' })}
         ${resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
           ? ConfirmFinishModal({
               instance_questions: resLocals.instance_questions,
@@ -91,11 +81,11 @@ export function StudentAssessmentInstance({
           ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              <span>
+              <h1>
                 ${resLocals.assessment_set.abbreviation}${resLocals.assessment.number}:
                 ${resLocals.assessment.title}
-                ${resLocals.assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
-              </span>
+              </h1>
+              ${resLocals.assessment.group_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
             </div>
 
             <div class="card-body">
@@ -128,8 +118,6 @@ export function StudentAssessmentInstance({
                       </div>
                       <div class="col-md-9 col-sm-12">
                         ${AssessmentStatus({
-                          assessment: resLocals.assessment,
-                          assessment_set: resLocals.assessment_set,
                           assessment_instance: resLocals.assessment_instance,
                           authz_result: resLocals.authz_result,
                         })}
@@ -157,8 +145,6 @@ export function StudentAssessmentInstance({
                       </div>
                       <div class="col-md-6 col-sm-12">
                         ${AssessmentStatus({
-                          assessment: resLocals.assessment,
-                          assessment_set: resLocals.assessment_set,
                           assessment_instance: resLocals.assessment_instance,
                           authz_result: resLocals.authz_result,
                         })}
@@ -203,7 +189,11 @@ export function StudentAssessmentInstance({
                 : ''}
             </div>
 
-            <table class="table table-sm table-hover" data-testid="assessment-questions">
+            <table
+              class="table table-sm table-hover"
+              aria-label="Questions"
+              data-testid="assessment-questions"
+            >
               <thead>
                 ${InstanceQuestionTableHeader({ resLocals })}
               </thead>
@@ -502,14 +492,16 @@ export function StudentAssessmentInstance({
             </div>
           </div>
 
-          ${PersonalNotesPanel({
-            fileList: resLocals.file_list,
-            context: 'assessment',
-            courseInstanceId: resLocals.course_instance.id,
-            assessment_instance: resLocals.assessment_instance,
-            csrfToken: resLocals.__csrf_token,
-            authz_result: resLocals.authz_result,
-          })}
+          ${resLocals.assessment.allow_personal_notes
+            ? PersonalNotesPanel({
+                fileList: resLocals.file_list,
+                context: 'assessment',
+                courseInstanceId: resLocals.course_instance.id,
+                assessment_instance: resLocals.assessment_instance,
+                csrfToken: resLocals.__csrf_token,
+                authz_result: resLocals.authz_result,
+              })
+            : ''}
           ${InstructorInfoPanel({
             course: resLocals.course,
             course_instance: resLocals.course_instance,
@@ -531,13 +523,9 @@ export function StudentAssessmentInstance({
 }
 
 function AssessmentStatus({
-  assessment,
-  assessment_set,
   assessment_instance,
   authz_result,
 }: {
-  assessment: Assessment;
-  assessment_set: AssessmentSet;
   assessment_instance: AssessmentInstance;
   authz_result: any;
 }) {
@@ -548,8 +536,6 @@ function AssessmentStatus({
       Available credit: ${authz_result.credit_date_string}
       ${StudentAccessRulesPopover({
         accessRules: authz_result.access_rules,
-        assessmentSetName: assessment_set.name,
-        assessmentNumber: assessment.number,
       })}
     `;
   }

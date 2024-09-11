@@ -1,9 +1,9 @@
 import { filesize } from 'filesize';
 
 import { escapeHtml, html, type HtmlValue, joinHtml, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import {
   AssessmentSyncErrorsAndWarnings,
   CourseInstanceSyncErrorsAndWarnings,
@@ -12,7 +12,6 @@ import {
 } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
-import { User } from '../../lib/db-types.js';
 import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
 import { encodePath } from '../../lib/uri-util.js';
 
@@ -90,47 +89,6 @@ export interface FileRenameInfo {
   dir: string;
 }
 
-export function InstructorFileBrowserNoPermission({
-  resLocals,
-  courseOwners,
-}: {
-  resLocals: Record<string, any>;
-  courseOwners: User[];
-}) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Files' })}
-      </head>
-      <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
-        <main id="content" class="container-fluid">
-          <div class="card mb-4">
-            <div class="card-header bg-danger text-white">Files</div>
-            <div class="card-body">
-              <h2>Insufficient permissions</h2>
-              <p>You must have at least &quot;Viewer&quot; permissions for this course.</p>
-              ${courseOwners.length > 0
-                ? html`
-                    <p>Contact one of the below course owners to request access.</p>
-                    <ul>
-                      ${courseOwners.map(
-                        (owner) => html`
-                          <li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li>
-                        `,
-                      )}
-                    </ul>
-                  `
-                : ''}
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
-}
-
 export function InstructorFileBrowser({
   resLocals,
   paths,
@@ -193,9 +151,10 @@ export function InstructorFileBrowser({
         </style>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${syncErrorsAndWarnings}
+          <h1 class="sr-only">Files</h1>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               <div class="row align-items-center justify-content-between">
@@ -259,7 +218,6 @@ function FileBrowserActions({
     </a>
     <button
       type="button"
-      id="instructorFileUploadForm-${fileInfo.id}"
       class="btn btn-sm btn-light"
       data-toggle="popover"
       data-container="body"
@@ -284,7 +242,6 @@ function FileBrowserActions({
     </a>
     <button
       type="button"
-      id="instructorFileRenameForm-${fileInfo.id}"
       class="btn btn-sm btn-light"
       data-toggle="popover"
       data-container="body"
@@ -302,7 +259,6 @@ function FileBrowserActions({
     </button>
     <button
       type="button"
-      id="instructorFileDeleteForm-${fileInfo.id}"
       class="btn btn-sm btn-light"
       data-toggle="popover"
       data-container="body"
@@ -396,13 +352,12 @@ function FileContentPreview({
   if (fileInfo.isPDF) {
     return html`
       <div class="embed-responsive embed-responsive-4by3">
-        <object
-          data="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH"
-          type="application/pdf"
+        <iframe
+          src="${paths.urlPrefix}/file_download/${paths.workingPathRelativeToCourse}?type=application/pdf#view=FitH"
           class="embed-responsive-item"
         >
           This PDF cannot be displayed.
-        </object>
+        </iframe>
       </div>
     `;
   }
@@ -419,7 +374,7 @@ function DirectoryBrowserBody({
   csrfToken: string;
 }) {
   return html`
-    <table class="table table-sm table-hover">
+    <table class="table table-sm table-hover" aria-label="Directories and files">
       <tbody>
         ${directoryListings.files?.map(
           (f) => html`
@@ -497,7 +452,6 @@ function DirectoryBrowserBody({
                 </a>
                 <button
                   type="button"
-                  id="instructorFileRenameForm-${f.id}"
                   class="btn btn-xs btn-secondary"
                   data-toggle="popover"
                   data-container="body"
@@ -508,6 +462,7 @@ function DirectoryBrowserBody({
                     FileRenameForm({ file: f, csrfToken, isViewingFile: false }),
                   )}"
                   data-trigger="click"
+                  data-testid="rename-file-button"
                   ${f.canRename ? '' : 'disabled'}
                 >
                   <i class="fa fa-i-cursor"></i>
@@ -515,7 +470,6 @@ function DirectoryBrowserBody({
                 </button>
                 <button
                   type="button"
-                  id="instructorFileDeleteForm-${f.id}"
                   class="btn btn-xs btn-secondary"
                   data-toggle="popover"
                   data-container="body"
@@ -524,6 +478,7 @@ function DirectoryBrowserBody({
                   title="Confirm delete"
                   data-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
                   data-trigger="click"
+                  data-testid="delete-file-button"
                   ${f.canDelete ? '' : 'disabled'}
                 >
                   <i class="far fa-trash-alt"></i>
@@ -584,13 +539,7 @@ function FileUploadForm({ file, csrfToken }: { file: FileUploadInfo; csrfToken: 
           ? html`<input type="hidden" name="file_path" value="${file.path}" />`
           : html`<input type="hidden" name="working_path" value="${file.working_path}" />`}
         <div class="text-right">
-          <button
-            type="button"
-            class="btn btn-secondary"
-            onclick="$('#instructorFileUploadForm-${file.id}').popover('hide')"
-          >
-            Cancel
-          </button>
+          <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
           <button type="submit" class="btn btn-primary">Upload file</button>
         </div>
       </div>
@@ -606,13 +555,7 @@ function FileDeleteForm({ file, csrfToken }: { file: FileDeleteInfo; csrfToken: 
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="file_path" value="${file.path}" />
       <div class="text-right">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          onclick="$('#instructorFileDeleteForm-${file.id}').popover('hide')"
-        >
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Delete</button>
       </div>
     </form>
@@ -661,13 +604,7 @@ function FileRenameForm({
         />
       </div>
       <div class="text-right">
-        <button
-          type="button"
-          class="btn btn-secondary"
-          onclick="$('#instructorFileRenameForm-${file.id}').popover('hide')"
-        >
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>

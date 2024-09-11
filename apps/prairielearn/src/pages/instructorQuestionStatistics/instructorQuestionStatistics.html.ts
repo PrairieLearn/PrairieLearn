@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
@@ -50,7 +50,7 @@ export function InstructorQuestionStatistics({
         ${compiledScriptTag('instructorQuestionStatisticsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${QuestionSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -61,11 +61,14 @@ export function InstructorQuestionStatistics({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              Detailed assessment statistics for question ${resLocals.question.qid}
+              <h1>Detailed assessment statistics for question ${resLocals.question.qid}</h1>
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover tablesorter table-bordered">
+              <table
+                class="table table-sm table-hover tablesorter table-bordered"
+                aria-label="Question statistics by assessment"
+              >
                 <thead>
                   <tr>
                     <th class="text-center">Course Instance</th>

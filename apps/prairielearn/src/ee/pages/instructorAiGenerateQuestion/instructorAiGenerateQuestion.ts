@@ -14,7 +14,11 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
 
-import { AiGeneratePage, GenerationResults } from './instructorAiGenerateQuestion.html.js';
+import {
+  AiGeneratePage,
+  GenerationFailure,
+  GenerationResults,
+} from './instructorAiGenerateQuestion.html.js';
 
 const router = express.Router();
 
@@ -44,7 +48,7 @@ export async function saveGeneratedQuestion(
 
   try {
     await editor.executeWithServerJob(serverJob);
-  } catch (err) {
+  } catch {
     throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
   }
 
@@ -120,13 +124,12 @@ router.post(
           ),
         );
       } else {
-        if (req.get('HX-Request')) {
-          res
-            .set('HX-Redirect', res.locals.urlPrefix + '/jobSequence/' + result.jobSequenceId)
-            .send();
-        } else {
-          res.redirect(res.locals.urlPrefix + '/jobSequence/' + result.jobSequenceId);
-        }
+        res.send(
+          GenerationFailure({
+            urlPrefix: res.locals.urlPrefix,
+            jobSequenceId: result.jobSequenceId,
+          }),
+        );
       }
     } else if (req.body.__action === 'regenerate_question') {
       const genJobs = await selectJobsByJobSequenceId(req.body.unsafe_sequence_job_id);
@@ -161,13 +164,12 @@ router.post(
           ),
         );
       } else {
-        if (req.get('HX-Request')) {
-          res
-            .set('HX-Redirect', res.locals.urlPrefix + '/jobSequence/' + result.jobSequenceId)
-            .send();
-        } else {
-          res.redirect(res.locals.urlPrefix + '/jobSequence/' + result.jobSequenceId);
-        }
+        res.send(
+          GenerationFailure({
+            urlPrefix: res.locals.urlPrefix,
+            jobSequenceId: result.jobSequenceId,
+          }),
+        );
       }
     } else if (req.body.__action === 'save_question') {
       const genJobs = await selectJobsByJobSequenceId(req.body.unsafe_sequence_job_id);

@@ -42,12 +42,22 @@ For more information about how to create your own assessment modules, see [Cours
 
 ## Assessment types
 
-Each assessment has a `type`, as listed below. A randomized assessment is one where each student gets a different set of questions in a randomized order, while a non-randomized assessment shows all students the same list of questions in the same order. Broadly speaking, randomized assessments are designed for exams and non-randomized assessments are designed for homeworks.
+Each assessment has a `type` set to either `Homework` or `Exam`, as listed below.
 
-| Type       | Randomized | Description                                                                                         |
-| ---------- | ---------- | --------------------------------------------------------------------------------------------------- |
-| `Homework` | No         | A gamified assessment that rewards repeated correct answers to questions.                           |
-| `Exam`     | Yes        | An exam where students can grade their answers at any time, and retry questions for reduced points. |
+|                          | `Homework`                                                                                          | `Exam`                                                                                     |
+| ------------------------ | --------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------ |
+| **General purpose**      | Formative assessments, practice                                                                     | Summative assessments, measure learning                                                    |
+| **Randomized questions** | [Multiple variants (if question supports them)](#limiting-the-number-of-attempts-for-each-question) | Each student gets a single variant                                                         |
+| **Number of attempts**   | Unlimited attempts                                                                                  | [Limited attempts, possibly with decreasing points](#question-points-for-exam-assessments) |
+| **Gamification**         | [Rewards repeated correct answers](#question-points-for-homework-assessments)                       | Incentivizes a correct answer as early as possible                                         |
+| **Question order**       | [Fixed order by default](#changing-question-order-randomization)                                    | [Shuffled order within zones by default](#changing-question-order-randomization)           |
+| **Time limits**          | Not supported                                                                                       | [Supported](accessControl.md#time-limits)                                                  |
+| **Passwords**            | Not supported                                                                                       | [Supported](accessControl.md#passwords)                                                    |
+| **Multiple instances**   | Not supported                                                                                       | [Supported](#multiple-instance-versus-single-instance-assessments)                         |
+| **Assessment updates**   | Updated if assessment changes                                                                       | Assessment is fixed on creation                                                            |
+| **Closing assessments**  | Assessments remain open                                                                             | [By default, idle assessments are closed after 6 hours](#auto-closing-exam-assessments)    |
+| **Honor pledge**         | Not supported                                                                                       | [Enabled by default](#honor-code)                                                          |
+| **Real-time grading**    | Always enabled                                                                                      | [Can be disabled](#disabling-real-time-grading)                                            |
 
 ## Changing question-order randomization
 
@@ -547,11 +557,13 @@ See the [`clientFiles` and `serverFiles`](clientServerFiles.md) page for details
 
 ## Student-attached personal notes
 
-Students can attach files to assessments as personal notes, either by uploading them or by pasting the file contents as text. This can be done on the assessment overview page, or on individual question pages. These files can be viewed by the student anytime they can view the assessment.
+By default, students can attach files to assessments as personal notes, either by uploading them or by pasting the file contents as text. This can be done on the assessment overview page, or on individual question pages. These files can be viewed by the student anytime they can view the assessment.
 
 The purpose of this is to allow students to take extra notes during exams, for later review. For example, if a student has a Matlab script that they used to solve a question, they could attach it to that question so they can review it later.
 
-This file attachment functionality does not provide a way for students to attach files before an exam starts, so it can't be used for student-provided "formula sheets" on exams.
+Although we do not recommend this for regular exams, personal notes can be disabled by setting `"allowPersonalNotes": false` as a top-level option in the `infoAssessment.json` file. Note that this setting does not delete notes that were uploaded before the option is set, but prevents any access or modifications to them.
+
+One particular use case for disabling personal notes can be the upload of a "formula sheet" through a separate pre-exam assessment. These uploads should take place as a regular file upload so that they can be reviewed by course staff. The assessment can then be configured so that submissions are accessible during the exam. Disabling personal notes for the "formula sheet" assessment ensures that students cannot attach any other information that they can access during an exam.
 
 ## Disabling real-time grading
 

@@ -140,7 +140,7 @@
           // Show the preview for the newly-uploaded file
           const container = this.element.find(`li[data-file="${name}"]`);
           container.find('.file-preview').addClass('show');
-          container.find('.file-status-container').removeClass('collapsed');
+          container.find('.file-preview-button').removeClass('collapsed');
 
           // Ensure that students see a prompt if they try to navigate away
           // from the page without saving the form. This check is initially
@@ -207,16 +207,7 @@
         var fileData = this.getSubmittedFileContents(fileName);
 
         var $file = $('<li class="list-group-item" data-file="' + fileName + '"></li>');
-        var $fileStatusContainer = $(
-          '<div class="file-status-container collapsed d-flex flex-row" data-toggle="collapse" data-target="#file-preview-' +
-            uuid +
-            '-' +
-            index +
-            '"></div>',
-        );
-        if (isExpanded) {
-          $fileStatusContainer.removeClass('collapsed');
-        }
+        var $fileStatusContainer = $('<div class="file-status-container d-flex flex-row"></div>');
         if (fileData) {
           $fileStatusContainer.addClass('has-preview');
         }
@@ -258,7 +249,7 @@
           var download =
             '<a download="' +
             fileName +
-            '" class="btn btn-outline-secondary btn-sm mr-1" onclick="event.stopPropagation();" href="data:application/octet-stream;base64,' +
+            '" class="btn btn-outline-secondary btn-sm mr-1" href="data:application/octet-stream;base64,' +
             fileData +
             '">Download</a>';
 
@@ -284,31 +275,53 @@
           if (isExpanded) {
             $preview.addClass('show');
           }
+
           try {
-            var fileContents = this.b64DecodeUnicode(fileData);
-            if (!this.isBinary(fileContents)) {
-              $preview.find('code').text(fileContents);
+            if (this.isPdf(fileData)) {
+              const url = this.b64ToBlobUrl(fileData, { type: 'application/pdf' });
+              const $objectPreview = $(
+                `<div class="mt-2 embed-responsive embed-responsive-4by3">
+                   <iframe class="embed-responsive-item" src="${url}">
+                     PDF file cannot be displayed.
+                   </iframe>
+                 </div>`,
+              );
+              $objectPreview.find('iframe').on('load', () => {
+                URL.revokeObjectURL(url);
+              });
+              $preview.append($objectPreview);
             } else {
-              $preview.find('code').text('Binary file not previewed.');
+              var fileContents = this.b64DecodeUnicode(fileData);
+              if (!this.isBinary(fileContents)) {
+                $preview.find('code').text(fileContents);
+              } else {
+                $preview.find('code').text('Binary file not previewed.');
+              }
+              $codePreview.removeClass('d-none');
             }
-            $codePreview.removeClass('d-none');
-          } catch (e) {
+          } catch {
+            const url = this.b64ToBlobUrl(fileData);
             $imgPreview
               .on('load', () => {
                 $imgPreview.removeClass('d-none');
+                URL.revokeObjectURL(url);
               })
               .on('error', () => {
                 $error
                   .text('Content preview is not available for this type of file.')
                   .removeClass('d-none');
+                URL.revokeObjectURL(url);
               })
-              .attr('src', 'data:application/octet-stream;base64,' + fileData);
+              .attr('src', url);
           }
           $file.append($preview);
           $fileStatusContainer.append(
             '<div class="align-self-center">' +
               download +
-              '<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button"><span class="file-preview-icon fa fa-angle-down"></span></button></div>',
+              `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-toggle="collapse" data-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}">` +
+              '<span class="file-preview-icon fa fa-angle-down"></span>' +
+              '</button>' +
+              '</div>',
           );
         }
 
@@ -339,6 +352,21 @@
     }
 
     /**
+     * Checks if the given file contents should be interpreted as a PDF file.
+     * Using the magic numbers from the `file` utility command:
+     * https://github.com/file/file/blob/master/magic/Magdir/pdf
+     * The signatures are converted to base64 for comparison, to avoid issues
+     * with converting from base64 to binary.
+     */
+    isPdf(base64FileData) {
+      return (
+        base64FileData.match(/^JVBERi[0-3]/) || // "%PDF-"
+        base64FileData.match(/^CiVQREYt/) || // "\x0a%PDF-"
+        base64FileData.match(/^77u\/JVBERi[0-3]/) // "\xef\xbb\xbf%PDF-"
+      );
+    }
+
+    /**
      * To support unicode strings, we use a method from Mozilla to decode:
      * first we get the bytestream, then we percent-encode it, then we
      * decode that to the original string.
@@ -356,6 +384,20 @@
           })
           .join(''),
       );
+    }
+
+    b64ToBlobUrl(str, options = undefined) {
+      const blob = new Blob(
+        [
+          new Uint8Array(
+            atob(str)
+              .split('')
+              .map((c) => c.charCodeAt(0)),
+          ),
+        ],
+        options,
+      );
+      return URL.createObjectURL(blob);
     }
   }
 

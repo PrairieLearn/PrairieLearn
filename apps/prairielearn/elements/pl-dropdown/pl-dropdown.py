@@ -81,7 +81,6 @@ def render(element_html, data):
     answers_name = pl.get_string_attrib(element, "answers-name")
     dropdown_options = get_options(element, data)
     submitted_answer = data["submitted_answers"].get(answers_name, None)
-    uuid = pl.get_uuid()
 
     sort_type = pl.get_string_attrib(element, "sort", SORT_DEFAULT).upper().strip()
     blank_start = pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT)
@@ -118,7 +117,6 @@ def render(element_html, data):
         html_params = {
             "answers-name": answers_name,
             "question": True,
-            "uuid": uuid,
             "options": dropdown_options,
             "has_submission": correct is not None,
             "editable": data["editable"],
@@ -127,7 +125,6 @@ def render(element_html, data):
 
     elif data["panel"] == "submission":
         html_params = {
-            "uuid": uuid,
             "parse-error": data["format_errors"].get(answers_name, None),
             "submission": True,
             "submitted-answer": submitted_answer,

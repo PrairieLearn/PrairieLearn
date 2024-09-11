@@ -1,25 +1,28 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import {
   compiledStylesheetTag,
   compiledScriptTag,
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
+import type { User } from '../../../lib/db-types.js';
 
 import { InstanceQuestionTableData } from './assessmentQuestion.types.js';
 
 export function AssessmentQuestion({
   resLocals,
-  botGradingEnabled,
+  courseStaff,
+  aiGradingEnabled,
 }: {
   resLocals: Record<string, any>;
-  botGradingEnabled: boolean;
+  courseStaff: User[];
+  aiGradingEnabled: boolean;
 }) {
   const {
     number_in_alternative_group,
@@ -30,7 +33,6 @@ export function AssessmentQuestion({
     __csrf_token,
     authz_data,
     assessment_question,
-    course_staff,
     num_open_instances,
     course_instance,
     course,
@@ -65,16 +67,15 @@ export function AssessmentQuestion({
             maxPoints: assessment_question.max_points,
             groupWork: assessment.group_work,
             maxAutoPoints: assessment_question.max_auto_points,
-            botGradingEnabled,
-            courseStaff: course_staff,
+            aiGradingEnabled,
+            courseStaff,
             csrfToken: __csrf_token,
           },
           'instance-question-table-data',
         )}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
-        ${GradingConflictModal()}
+        ${Navbar({ resLocals })} ${GradingConflictModal()}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
             authz_data,
@@ -96,22 +97,24 @@ export function AssessmentQuestion({
             <i class="fas fa-arrow-left"></i>
             Back to ${assessment_set.name} ${assessment.number} Overview
           </a>
-          ${botGradingEnabled
+          ${aiGradingEnabled
             ? html`
-                <form name="start-bot-grading" method="POST" id="bot-grading">
-                  <input type="hidden" name="__action" value="bot_grade_assessment" />
+                <form name="start-ai-grading" method="POST" id="ai-grading">
+                  <input type="hidden" name="__action" value="ai_grade_assessment" />
                   <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                 </form>
               `
             : ''}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}
+              <h1>
+                ${assessment.tid} / Question ${number_in_alternative_group}. ${question.title}
+              </h1>
             </div>
             <form name="grading-form" method="POST">
               <input type="hidden" name="__action" value="batch_action" />
               <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-              <table id="grading-table"></table>
+              <table id="grading-table" aria-label="Instance questions for manual grading"></table>
             </form>
           </div>
         </main>

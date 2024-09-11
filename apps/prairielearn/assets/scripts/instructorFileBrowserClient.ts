@@ -1,11 +1,5 @@
 import { on } from 'delegated-events';
 
-import { onDocumentReady } from '@prairielearn/browser-utils';
-
-onDocumentReady(() => {
-  $('[data-toggle="popover"]').popover({ sanitize: false });
-});
-
 on('submit', '.needs-validation', function (event) {
   const form = event.target as HTMLFormElement;
   form.reportValidity();

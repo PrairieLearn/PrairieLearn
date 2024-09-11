@@ -72,9 +72,14 @@ async function ensureUpToDate(locals: Record<string, any>) {
 }
 
 async function processFileUpload(req: Request, res: Response) {
-  if (!res.locals.assessment_instance.open) throw new Error('Assessment is not open');
+  if (!res.locals.assessment_instance.open) {
+    throw new HttpStatusError(403, 'Assessment is not open');
+  }
+  if (!res.locals.assessment.allow_personal_notes) {
+    throw new HttpStatusError(403, 'This assessment does not allow personal notes.');
+  }
   if (!res.locals.authz_result.active) {
-    throw new Error('This assessment is not accepting submissions at this time.');
+    throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
   if (!req.file) {
     throw new HttpStatusError(400, 'Upload requested but no file provided');
@@ -92,9 +97,14 @@ async function processFileUpload(req: Request, res: Response) {
 }
 
 async function processTextUpload(req: Request, res: Response) {
-  if (!res.locals.assessment_instance.open) throw new Error('Assessment is not open');
+  if (!res.locals.assessment_instance.open) {
+    throw new HttpStatusError(403, 'Assessment is not open');
+  }
+  if (!res.locals.assessment.allow_personal_notes) {
+    throw new HttpStatusError(403, 'This assessment does not allow personal notes.');
+  }
   if (!res.locals.authz_result.active) {
-    throw new Error('This assessment is not accepting submissions at this time.');
+    throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
   await uploadFile({
     display_filename: req.body.filename,
@@ -109,20 +119,27 @@ async function processTextUpload(req: Request, res: Response) {
 }
 
 async function processDeleteFile(req: Request, res: Response) {
-  if (!res.locals.assessment_instance.open) throw new Error('Assessment is not open');
+  if (!res.locals.assessment_instance.open) {
+    throw new HttpStatusError(403, 'Assessment is not open');
+  }
+  if (!res.locals.assessment.allow_personal_notes) {
+    throw new HttpStatusError(403, 'This assessment does not allow personal notes.');
+  }
   if (!res.locals.authz_result.active) {
-    throw new Error('This assessment is not accepting submissions at this time.');
+    throw new HttpStatusError(403, 'This assessment is not accepting submissions at this time.');
   }
 
   // Check the requested file belongs to the current assessment instance
   const validFiles = (res.locals.file_list ?? []).filter((file) =>
     idsEqual(file.id, req.body.file_id),
   );
-  if (validFiles.length === 0) throw new Error(`No such file_id: ${req.body.file_id}`);
+  if (validFiles.length === 0) {
+    throw new HttpStatusError(404, `No such file_id: ${req.body.file_id}`);
+  }
   const file = validFiles[0];
 
   if (file.type !== 'student_upload') {
-    throw new Error(`Cannot delete file type ${file.type} for file_id=${file.id}`);
+    throw new HttpStatusError(403, `Cannot delete file type ${file.type} for file_id=${file.id}`);
   }
 
   await deleteFile(file.id, res.locals.authn_user.user_id);

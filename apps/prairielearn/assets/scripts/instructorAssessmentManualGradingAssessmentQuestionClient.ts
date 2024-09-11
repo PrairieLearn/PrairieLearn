@@ -19,7 +19,7 @@ onDocumentReady(() => {
     instancesUrl,
     groupWork,
     maxAutoPoints,
-    botGradingEnabled,
+    aiGradingEnabled,
     courseStaff,
     csrfToken,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
@@ -55,22 +55,22 @@ onDocumentReady(() => {
     autoRefresh: true,
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
-    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'botGrade'],
+    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'aiGrade'],
     theadClasses: 'thead-light',
     stickyHeader: true,
     filterControl: true,
     rowStyle: (row) => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
     buttons: {
-      botGrade: {
-        text: 'Bot Grade All',
+      aiGrade: {
+        text: 'AI Grade All',
         icon: 'fa-pen',
-        render: botGradingEnabled,
+        render: aiGradingEnabled,
         attributes: {
-          id: 'js-bot-grade-button',
-          title: 'Bot grade all instances',
+          id: 'js-ai-grade-button',
+          title: 'AI grade all instances',
         },
         event: () => {
-          const form = document.getElementById('bot-grading') as HTMLFormElement;
+          const form = document.getElementById('ai-grading') as HTMLFormElement;
           form?.submit();
         },
       },
@@ -130,9 +130,10 @@ onDocumentReady(() => {
     },
     onPostBody: () => {
       updateGradingTagButton();
-      $('#grading-table [data-toggle="popover"]')
-        .popover({ sanitize: false })
-        .on('shown.bs.popover', updatePointsPopoverHandlers);
+      $('#grading-table [data-toggle="popover"]').on(
+        'shown.bs.popover',
+        updatePointsPopoverHandlers,
+      );
     },
     columns: [
       [
@@ -297,7 +298,7 @@ async function pointsFormEventListener(this: HTMLFormElement, event: SubmitEvent
     $('#grading-conflict-modal')
       .find('a.conflict-details-link')
       .attr('href', data.conflict_details_url);
-    $('#grading-conflict-modal').modal({});
+    $('#grading-conflict-modal').modal('show');
   }
 }
 
@@ -389,7 +390,6 @@ function pointsFormatter(
 ) {
   const points = row[field];
   const maxPoints = row.assessment_question[`max_${field}`];
-  const buttonId = `editQuestionPoints_${field}_${row.id}`;
 
   return html`${formatPoints(points ?? 0)}
     <small>/<span class="text-muted">${maxPoints ?? 0}</span></small>
@@ -400,7 +400,6 @@ function pointsFormatter(
           assessment_question: row.assessment_question,
           urlPrefix: urlPrefix ?? '',
           csrfToken: csrfToken ?? '',
-          buttonId,
         })
       : ''}`;
 }
@@ -412,8 +411,6 @@ function scorebarFormatter(
   urlPrefix: string,
   csrfToken: string,
 ) {
-  const buttonId = `editQuestionScorePerc${row.id}`;
-
   return html`<div class="d-inline-block align-middle">
       ${score == null ? '' : Scorebar(score, { minWidth: '10em' })}
     </div>
@@ -424,7 +421,6 @@ function scorebarFormatter(
           assessment_question: row.assessment_question,
           urlPrefix: urlPrefix ?? '',
           csrfToken: csrfToken ?? '',
-          buttonId,
         })
       : ''}`.toString();
 }

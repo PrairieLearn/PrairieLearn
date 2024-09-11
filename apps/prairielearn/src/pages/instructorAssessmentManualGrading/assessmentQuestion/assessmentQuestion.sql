@@ -57,15 +57,4 @@ SET
   END
 WHERE
   iq.assessment_question_id = $assessment_question_id
-  AND iq.id = ANY ($instance_question_ids::BIGINT[])
-  AND (
-    $assigned_grader::BIGINT IS NULL
-    OR $assigned_grader IN (
-      SELECT
-        user_id
-      FROM
-        UNNEST(
-          course_instances_select_graders ($course_instance_id)
-        )
-    )
-  );
+  AND iq.id = ANY ($instance_question_ids::BIGINT[]);

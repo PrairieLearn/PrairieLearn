@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
@@ -82,7 +82,7 @@ export function InstructorQuestionSettings({
         </style>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container">
           ${QuestionSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -91,7 +91,9 @@ export function InstructorQuestionSettings({
             urlPrefix: resLocals.urlPrefix,
           })}
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex">Question Settings</div>
+            <div class="card-header bg-primary text-white d-flex">
+              <h1>Question Settings</h1>
+            </div>
             <div class="card-body">
               <form>
                 <div class="form-group">
@@ -137,7 +139,10 @@ export function InstructorQuestionSettings({
                 </div>
 
                 <div class="table-responsive card mb-3">
-                  <table class="table two-column-description">
+                  <table
+                    class="table two-column-description"
+                    aria-label="Question topic, tags, and assessments"
+                  >
                     <tr>
                       <th class="border-top-0">Topic</th>
                       <td class="border-top-0">${TopicBadge(resLocals.topic)}</td>
@@ -209,7 +214,7 @@ export function InstructorQuestionSettings({
                         href="${resLocals.urlPrefix}/question/${resLocals.question
                           .id}/file_view/${infoPath}"
                       >
-                        View course configuration
+                        View question configuration
                       </a>
                       in <code>info.json</code>
                     `
@@ -238,11 +243,8 @@ export function InstructorQuestionSettings({
                                     csrfToken: resLocals.__csrf_token,
                                     editableCourses,
                                     courseId: resLocals.course.id,
-                                    buttonId: 'copyQuestionButton',
                                   }),
                                 )}"
-                                data-trigger="manual"
-                                onclick="$(this).popover('show')"
                               >
                                 <i class="fa fa-clone"></i>
                                 <span>Make a copy of this question</span>
@@ -286,12 +288,10 @@ function CopyForm({
   csrfToken,
   editableCourses,
   courseId,
-  buttonId,
 }: {
   csrfToken: string;
   editableCourses: CourseWithPermissions[];
   courseId: string;
-  buttonId: string;
 }) {
   return html`
     <form name="copy-question-form" method="POST">
@@ -312,9 +312,7 @@ function CopyForm({
         </select>
       </div>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${buttonId}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Submit</button>
       </div>
     </form>

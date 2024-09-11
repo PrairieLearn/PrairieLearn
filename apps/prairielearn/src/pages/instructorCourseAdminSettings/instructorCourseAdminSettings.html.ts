@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { formatTimezone, type Timezone } from '../../lib/timezones.js';
@@ -27,9 +27,7 @@ export function InstructorCourseAdminSettings({
         ${compiledScriptTag('instructorCourseAdminSettingsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-        })}
+        ${Navbar({ resLocals })}
         <main id="content" class="container">
           ${CourseSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -38,7 +36,9 @@ export function InstructorCourseAdminSettings({
           })}
 
           <div class="card  mb-4">
-            <div class="card-header bg-primary text-white d-flex">Course Settings</div>
+            <div class="card-header bg-primary text-white d-flex">
+              <h1>Course Settings</h1>
+            </div>
             <div class="card-body">
               ${!courseInfoExists || !coursePathExists
                 ? CourseDirectoryMissingAlert({

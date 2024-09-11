@@ -1,7 +1,30 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
+
+const examplePrompts = [
+  {
+    id: 'random_mc',
+    question:
+      'Write a multiple choice question asking the user to choose the median of 5 random numbers between 1 and 100. Display all of the numbers to the user, and then make each of the numbers a potential answer, with the median being the correct answer.',
+  },
+  {
+    id: 'random_int',
+    question:
+      'Write a question that asks the user to multiply two integers. You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B in an integer input box. The correct answer should be the product of the two numbers that you generated.',
+  },
+  {
+    id: 'basic_int',
+    question:
+      'Write a question asking "What The Answer to the Ultimate Question of Life, the Universe, and Everything?". Provide an integer box for the user to answer. The correct answer is 42.',
+  },
+  {
+    id: 'implicit_specified_physics',
+    question:
+      'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
+  },
+];
 
 export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
@@ -11,10 +34,7 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
         ${HeadContents({ resLocals })}
       </head>
       <body hx-ext="loading-states">
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
-          navPage: 'course_admin',
-          ...resLocals,
-        })}
+        ${Navbar({ navPage: 'course_admin', resLocals })}
         <main id="content" class="container-fluid">
           <div class="card  mb-4">
             <div class="card-header bg-primary text-white d-flex">Generate Question using AI</div>
@@ -43,11 +63,30 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
                   Create question
                 </button>
               </form>
+              Or choose a question from our list of example prompts:
+              <select id="user-prompt-example" onchange="setPromptToExample()">
+                <option value=""></option>
+                ${examplePrompts.map(
+                  (question) => html`<option value="${question.question}">${question.id}</option>`,
+                )}
+              </select>
               <div id="generation-results"></div>
+              <br />
+              <div>
+                <a href="${resLocals.urlPrefix}/ai_generate_question_jobs" class="btn btn-primary">
+                  Previous Generation Jobs
+                </a>
+              </div>
             </div>
           </div>
         </main>
       </body>
+      <script>
+        function setPromptToExample() {
+          const prompt = document.getElementById('user-prompt-example').value;
+          document.getElementById('user-prompt-llm').value = prompt;
+        }
+      </script>
     </html>
   `.toString();
 }
@@ -135,3 +174,20 @@ ${generatedPython}
     </div>
   `.toString();
 };
+
+export function GenerationFailure({
+  urlPrefix,
+  jobSequenceId,
+}: {
+  urlPrefix: string;
+  jobSequenceId: string;
+}): string {
+  return html`
+    <div id="generation-results">
+      <h3>Generation Failed</h3>
+
+      <p>The LLM did not generate any question file.</p>
+      <a href="${urlPrefix + '/jobSequence/' + jobSequenceId}">See job logs</a>
+    </div>
+  `.toString();
+}

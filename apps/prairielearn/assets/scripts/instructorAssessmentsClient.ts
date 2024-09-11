@@ -14,8 +14,6 @@ const statElements = [
 ];
 
 onDocumentReady(() => {
-  $('.js-sync-popover[data-toggle="popover"]').popover({ sanitize: false });
-
   updatePlots(document.body);
 
   const { assessmentIdsNeedingStatsUpdate, urlPrefix } =

@@ -6,13 +6,12 @@ const featureNames = [
   // Should only be applied to courses/institutions.
   'process-questions-in-worker',
   'question-sharing',
-  'bot-grading',
+  'ai-grading',
   'disable-public-workspaces',
   'ai-question-generation',
   'bootstrap-4',
   // Should only be applied to institutions.
   'lti13',
-  'terms-clickthrough',
 ] as const;
 
 const features = new FeatureManager(featureNames);

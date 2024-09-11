@@ -549,7 +549,7 @@ describe('Exam and homework assessment with active access restriction', function
       form,
       headers,
     });
-    assert.equal(response.status, 500);
+    assert.equal(response.status, 403);
   });
 
   step('get CSRF token and variant ID for attaching text on question page', async () => {
@@ -610,7 +610,7 @@ describe('Exam and homework assessment with active access restriction', function
       form,
       headers,
     });
-    assert.equal(response.status, 500);
+    assert.equal(response.status, 403);
   });
 
   step('check that no files or text were attached', async () => {
