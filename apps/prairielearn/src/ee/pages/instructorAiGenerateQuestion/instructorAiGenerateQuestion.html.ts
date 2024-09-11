@@ -122,10 +122,12 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
       </body>
       <script>
         const questions = {
-          ${examplePrompts.map(
-            (question) =>
-              `${question.id}: {prompt: \`${question.prompt}\`, userPrompt: \`${question.userPrompt}\`, gradingPrompt: \`${question.gradingPrompt}\`}, `,
-          )},
+          ${examplePrompts
+            .map(
+              (question) =>
+                `${question.id}: {prompt: \`${question.prompt}\`, userPrompt: \`${question.userPrompt}\`, gradingPrompt: \`${question.gradingPrompt}\`}`,
+            )
+            .join(', ')},
         };
         function setPromptToExample() {
           const selection = document.getElementById('user-prompt-example').value;
