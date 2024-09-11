@@ -1,8 +1,11 @@
+import * as path from 'path';
+
 import { OpenAI } from 'openai';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
+import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
@@ -51,14 +54,40 @@ ${context}
  * @param authnUserId The user's authenticated user ID.
  * @returns A string of all relevant context documents.
  */
-async function makeContext(client: OpenAI, prompt: string, authnUserId: string): Promise<string> {
+async function makeContext(
+  client: OpenAI,
+  prompt: string,
+  promptUserInput: string | undefined,
+  authnUserId: string,
+): Promise<string> {
   const embedding = await createEmbedding(client, prompt, openAiUserFromAuthn(authnUserId));
+  let docs;
 
-  const docs = await queryRows(
-    sql.select_nearby_documents,
-    { embedding: vectorToString(embedding), limit: 5 },
-    QuestionGenerationContextEmbeddingSchema,
-  );
+  if (promptUserInput === undefined) {
+    docs = await queryRows(
+      sql.select_nearby_documents,
+      { embedding: vectorToString(embedding), limit: 5 },
+      QuestionGenerationContextEmbeddingSchema,
+    );
+  } else {
+    docs = (
+      await queryRows(
+        sql.select_nearby_documents,
+        { embedding: vectorToString(embedding), limit: 4 },
+        QuestionGenerationContextEmbeddingSchema,
+      )
+    ).concat(
+      await queryRows(
+        sql.select_nearby_documents_from_file,
+        {
+          embedding: vectorToString(embedding),
+          doc_path: path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md'),
+          limit: 1,
+        },
+        QuestionGenerationContextEmbeddingSchema,
+      ),
+    );
+  }
 
   return docs.map((doc) => doc.doc_text).join('\n\n');
 }
@@ -102,14 +131,18 @@ function extractFromCompletion(
  * @param client The OpenAI client to use.
  * @param courseId The ID of the current course.
  * @param authnUserId The authenticated user's ID.
- * @param prompt The prompt for how to generate a question.
+ * @param promptGeneral The prompt for how to generate a question.
+ * @param promptUserInput The prompt for how to take user input.
+ * @param promptGrading The prompt for how to grade user input.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
  */
 export async function generateQuestion(
   client: OpenAI,
   courseId: string | undefined,
   authnUserId: string,
-  prompt: string,
+  promptGeneral: string,
+  promptUserInput: string,
+  promptGrading: string,
 ): Promise<{
   jobSequenceId: string;
   htmlResult: string | undefined;
@@ -123,9 +156,15 @@ export async function generateQuestion(
   });
 
   const jobData = await serverJob.execute(async (job) => {
-    job.info(`prompt is ${prompt}`);
+    const userPrompt = `${promptGeneral}
+    
+    You should provide the following input methods for students to answer: ${promptUserInput}
+    
+    To calculate the right answer, you should: ${promptGrading}`;
 
-    const context = await makeContext(client, prompt, authnUserId);
+    job.info(`prompt is ${userPrompt}`);
+
+    const context = await makeContext(client, userPrompt, promptUserInput, authnUserId);
 
     const sysPrompt = `
 ${promptPreamble(context)}
@@ -142,13 +181,13 @@ Keep in mind you are not just generating an example; you are generating an actua
       model: 'gpt-3.5-turbo',
       messages: [
         { role: 'system', content: sysPrompt },
-        { role: 'user', content: prompt },
+        { role: 'user', content: userPrompt },
       ],
       user: openAiUserFromAuthn(authnUserId),
     });
 
     extractFromCompletion(completion, job);
-    job.data['prompt'] = prompt;
+    job.data['prompt'] = userPrompt;
     job.data['generation'] = completion.choices[0].message.content;
     job.data['context'] = context;
     job.data['completion'] = completion;
@@ -196,7 +235,7 @@ export async function regenerateQuestion(
   const jobData = await serverJob.execute(async (job) => {
     job.info(`prompt is ${revisionPrompt}`);
 
-    const context = await makeContext(client, originalPrompt, authnUserId);
+    const context = await makeContext(client, originalPrompt, undefined, authnUserId);
     const sysPrompt = `
 ${promptPreamble(context)}
 # Previous Generations

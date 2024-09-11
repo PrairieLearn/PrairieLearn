@@ -8,21 +8,39 @@ const examplePrompts = [
     id: 'random_mc',
     question:
       'Write a multiple choice question asking the user to choose the median of 5 random numbers between 1 and 100. Display all of the numbers to the user, and then make each of the numbers a potential answer, with the median being the correct answer.',
+    userPrompt:
+      'Each random number generated should be a potential answer to the multiple-choice question. Randomize the order of the numbers.',
+    prompt:
+      'Write a multiple choice question asking the user to choose the median of 5 random numbers between 1 and 100. Display all numbers to the user, and ask them to choose the median.',
+    gradingPrompt: 'Make the actual median the correct answer.',
   },
   {
     id: 'random_int',
     question:
       'Write a question that asks the user to multiply two integers. You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B in an integer input box. The correct answer should be the product of the two numbers that you generated.',
+    prompt:
+      'Write a question that asks the user to multiply two integers. You should randomly generate two integers A and B, display them to the user, and then ask the user to provide the product C = A * B.',
+    userPrompt: 'Provide an integer input box for the user to enter the product.',
+    gradingPrompt: 'The correct answer is the actual product',
   },
   {
     id: 'basic_int',
     question:
       'Write a question asking "What The Answer to the Ultimate Question of Life, the Universe, and Everything?". Provide an integer box for the user to answer. The correct answer is 42.',
+    prompt:
+      'Write a question asking "What The Answer to the Ultimate Question of Life, the Universe, and Everything?".',
+    userPrompt: 'Provide an integer box for the user to answer.',
+    gradingPrompt: 'The correct answer is 42.',
   },
   {
     id: 'implicit_specified_physics',
     question:
       'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
+    prompt:
+      'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
+    userPrompt: 'Provide a numerical input box for the user to enter an answer.',
+    gradingPrompt:
+      'The correct answer is the distance that the projectile will travel, using the corresponding formula',
   },
 ];
 
@@ -50,8 +68,29 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <input type="hidden" name="__action" value="generate_question" />
                 <div class="form-group">
-                  <label for="user-prompt-llm">Prompt:</label>
+                  <label for="user-prompt-llm"
+                    >Please give a high-level overview of the question. What internal parameters
+                    need to be generated and what information do we provide to students?</label
+                  >
                   <textarea name="prompt" id="user-prompt-llm" class="form-control"></textarea>
+                  <label for="user-prompt-llm-user-input"
+                    >How should students input their solution? What choices or input boxes are they
+                    given?</label
+                  >
+                  <textarea
+                    name="prompt_user_input"
+                    id="user-prompt-llm-user-input"
+                    class="form-control"
+                  ></textarea>
+                  <label for="user-prompt-llm-grading"
+                    >How do we determine if a solution is correct/which answer choice is
+                    correct?</label
+                  >
+                  <textarea
+                    name="prompt_grading"
+                    id="user-prompt-llm-grading"
+                    class="form-control"
+                  ></textarea>
                 </div>
                 <button class="btn btn-primary">
                   <span
@@ -67,7 +106,7 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
               <select id="user-prompt-example" onchange="setPromptToExample()">
                 <option value=""></option>
                 ${examplePrompts.map(
-                  (question) => html`<option value="${question.question}">${question.id}</option>`,
+                  (question) => html`<option value="${question.id}">${question.id}</option>`,
                 )}
               </select>
               <div id="generation-results"></div>
@@ -82,9 +121,19 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
         </main>
       </body>
       <script>
+        const questions = {
+          ${examplePrompts.map(
+            (question) =>
+              `${question.id}: {prompt: \`${question.prompt}\`, userPrompt: \`${question.userPrompt}\`, gradingPrompt: \`${question.gradingPrompt}\`}, `,
+          )},
+        };
         function setPromptToExample() {
-          const prompt = document.getElementById('user-prompt-example').value;
-          document.getElementById('user-prompt-llm').value = prompt;
+          const selection = document.getElementById('user-prompt-example').value;
+          document.getElementById('user-prompt-llm').value = questions[selection].prompt;
+          document.getElementById('user-prompt-llm-user-input').value =
+            questions[selection].userPrompt;
+          document.getElementById('user-prompt-llm-grading').value =
+            questions[selection].gradingPrompt;
         }
       </script>
     </html>

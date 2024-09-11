@@ -112,6 +112,8 @@ router.post(
         res.locals.course.id,
         res.locals.authn_user.user_id,
         req.body.prompt,
+        req.body.prompt_user_input,
+        req.body.prompt_grading,
       );
 
       if (result.htmlResult) {
