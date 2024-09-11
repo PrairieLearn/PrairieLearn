@@ -10,7 +10,6 @@ import * as Sentry from '@prairielearn/sentry';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
-import { createRequire } from 'node:module';
 import * as path from 'node:path';
 import * as util from 'node:util';
 import * as url from 'url';
