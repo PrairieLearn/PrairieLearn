@@ -1,6 +1,6 @@
 <script>
     $(function(){
-        document.querySelectorAll('.multiline-input#pl-string-input-{{uuid}}-area').forEach((input) => {
+        document.querySelectorAll('.pl-string-input-multiline#pl-string-input-{{uuid}}-area').forEach((input) => {
             input.addEventListener('input', function () {
             // Adjusts the height based on the feedback content. If the feedback changes, the height
             // changes as well. This is done by resetting the height (so the scrollHeight is computed
@@ -23,7 +23,6 @@
     {{#multiline}}
         {{#label}}
         <label
-            id="pl-string-input-{{uuid}}-label"
             class="form-label"
             for="pl-string-input-{{uuid}}-area"
         >{{{label}}}</label>
@@ -35,7 +34,7 @@
                 name="{{name}}"
                 type="text"
                 inputmode="text"
-                class="form-control pl-string-input-input multiline-input"
+                class="form-control pl-string-input-input pl-string-input-multiline"
                 cols="{{size}}"
                 rows="2"
                 autocomplete="off"
@@ -52,7 +51,6 @@
                 <span
                     id="pl-string-input-{{uuid}}-label"
                     class="input-group-text"
-                    for="pl-string-input-{{uuid}}-input"
                 >{{{label}}}</span>
             </span>
             {{/label}}
@@ -61,13 +59,14 @@
                 name="{{name}}"
                 type="text"
                 inputmode="text"
-                class="form-control pl-string-input-input {{#multiline}}multiline-input{{/multiline}}"
+                class="form-control pl-string-input-input"
                 size="{{size}}"
                 {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
                 autocomplete="off"
                 autocorrect="off"
                 {{^editable}}disabled{{/editable}}
                 aria-describedby="pl-string-input-{{uuid}}-suffix"
+                aria-labelledby="pl-string-input-{{uuid}}-label"
                 placeholder="{{placeholder}}"
             >
     {{/multiline}}
@@ -163,7 +162,6 @@
     <span class="input-group">
     {{#label}}
     <label
-        id="pl-string-input-submission-{{uuid}}-label"
         class="form-label"
         for="pl-string-input-{{uuid}}-area"
     >{{{label}}}</label>
@@ -174,11 +172,10 @@
             wrap="soft"
             type="text"
             inputmode="text"
-            class="form-control multiline-input"
+            class="form-control pl-string-input-multiline"
             style="resize:none;"
             disabled
             aria-describedby="pl-string-input-submission-{{uuid}}-suffix"
-            aria-labelledby="pl-string-input-submission-{{uuid}}-label"
         >{{a_sub}}</textarea>
     </span>
     {{#suffix}}
@@ -220,7 +217,6 @@
     <span class="input-group">
     {{#label}}
     <label
-        id="pl-string-input-answer-{{uuid}}-label"
         class="form-label"
         for="pl-string-input-{{uuid}}-area"
     >{{{label}}}</label>
@@ -231,7 +227,7 @@
             wrap="soft"
             type="text"
             inputmode="text"
-            class="form-control multiline-input"
+            class="form-control pl-string-input-multiline"
             style="resize:none;"
             disabled
             aria-describedby="pl-string-input-answer-{{uuid}}-suffix"
