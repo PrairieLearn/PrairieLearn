@@ -48,7 +48,7 @@ export function setupCountdown(options: {
   serverUpdateURL?: string;
   onTimerOut?: () => void;
   onRemainingTime?: Record<number, () => void>;
-  onServerUpdateFail?: (lastRemainingMS: number) => void;
+  onServerUpdateFail?: (remainingMS: number) => void;
   getBackgroundColor?: (remainingSec: number) => string;
 }) {
   const countdownDisplay = document.querySelector<HTMLElement>(options.displaySelector);

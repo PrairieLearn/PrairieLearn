@@ -82,12 +82,14 @@ onDocumentReady(() => {
         }
       },
     },
-    onServerUpdateFail: (lastRemainingMS: number) => {
+    onServerUpdateFail: (remainingMS: number) => {
       // On time limit fail, reload the page
       if (timeLimitData.reloadOnFail) {
         window.location.reload();
       } else {
-        if (lastRemainingMS > 0) {
+        // Once the exam access period finishes, we expect updates of the remaining time
+        // to fail, so we only show a warning popup if time hasn't yet expired.
+        if (remainingMS > 0) {
           showWarningPopup(
             'updateFail',
             'Failed to refresh exam timer. The displayed remaining time might be inaccurate.',
