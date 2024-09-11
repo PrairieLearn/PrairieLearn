@@ -34,12 +34,12 @@ import * as timeReporter from './lib/timeReporter.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface GradingResults {
-  job_id?: string | number;
-  timedOut?: boolean;
-  received_time?: Date;
+  job_id: string;
+  received_time: Date;
   start_time?: Date;
   end_time?: Date;
   succeeded?: boolean;
+  timedOut?: boolean;
   results?: any;
   message?: string;
 }
