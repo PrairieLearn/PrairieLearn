@@ -1,4 +1,5 @@
 import { escapeHtml, html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import type {
   Assessment,
@@ -11,6 +12,8 @@ import type {
 import { formatPoints, formatPointsOrList } from '../lib/format.js';
 import { idsEqual } from '../lib/id.js';
 import type { VariantWithScore } from '../models/variant.js';
+
+import { Scorebar } from './Scorebar.html.js';
 
 export function QuestionScorePanel({
   instance_question,
@@ -55,10 +58,57 @@ export function QuestionScorePanel({
       <table class="table table-sm two-column-description-no-header" aria-label="Question score">
         <tbody>
           <tr>
-            <td>Submission status:</td>
-            <td>${ExamQuestionStatus({ instance_question })}</td>
+            <td>Awarded points:</td>
+            <td class="align-middle">
+              ${InstanceQuestionPoints({
+                instance_question,
+                assessment_question,
+                component: 'total',
+              })}
+            </td>
           </tr>
-          ${assessment.allow_real_time_grading &&
+          ${assessment.type === 'Exam' && assessment_question.max_auto_points
+            ? html`
+                <tr>
+                  <td>Available points:</td>
+                  <td>
+                    ${ExamQuestionAvailablePoints({
+                      open: !!assessment_instance.open && instance_question.open,
+                      currentWeight:
+                        (instance_question.points_list_original?.[
+                          instance_question.number_attempts
+                        ] ?? 0) - (assessment_question.max_manual_points ?? 0),
+                      pointsList: instance_question.points_list?.map(
+                        (p) => p - (assessment_question.max_manual_points ?? 0),
+                      ),
+                      highestSubmissionScore: instance_question.highest_submission_score,
+                    })}
+                  </td>
+                </tr>
+              `
+            : ''}
+          ${assessment.type === 'Homework' && !question.single_variant
+            ? html`
+                <tr>
+                  <td>Value:</td>
+                  <td class="align-middle">
+                    <span class="badge badge-primary">
+                      ${formatPoints(instance_question.current_value)}
+                    </span>
+                  </td>
+                </tr>
+              `
+            : ''}
+          ${assessment.type === 'Exam'
+            ? html`
+                <tr>
+                  <td>Submission status:</td>
+                  <td>${ExamQuestionStatus({ instance_question })}</td>
+                </tr>
+              `
+            : ''}
+          ${assessment.type === 'Exam' &&
+          assessment.allow_real_time_grading &&
           (assessment_question.max_auto_points || !assessment_question.max_manual_points)
             ? html`
                 <tr>
@@ -67,10 +117,11 @@ export function QuestionScorePanel({
                 </tr>
               `
             : ''}
-          ${assessment.type === 'Homework'
-            ? // Only show previous variants if the question allows multiple variants, or there are multiple variants (i.e., they were allowed at some point)
-              !question.single_variant ||
-              (instance_question_info.previous_variants?.length ?? 0) > 1
+          ${
+            // Only show previous variants if the question allows multiple variants,
+            // or there are multiple variants (i.e., they were allowed at some point)
+            (assessment.type === 'Homework' && !question.single_variant) ||
+            (instance_question_info.previous_variants?.length ?? 0) > 1
               ? html`
                   <tr>
                     <td colspan="2" class="text-wrap">
@@ -85,26 +136,7 @@ export function QuestionScorePanel({
                   </tr>
                 `
               : ''
-            : assessment_question.max_auto_points
-              ? html`
-                  <tr>
-                    <td>Available points:</td>
-                    <td>
-                      ${ExamQuestionAvailablePoints({
-                        open: !!assessment_instance.open && instance_question.open,
-                        currentWeight:
-                          (instance_question.points_list_original?.[
-                            instance_question.number_attempts
-                          ] ?? 0) - (assessment_question.max_manual_points ?? 0),
-                        pointsList: instance_question.points_list?.map(
-                          (p) => p - (assessment_question.max_manual_points ?? 0),
-                        ),
-                        highestSubmissionScore: instance_question.highest_submission_score,
-                      })}
-                    </td>
-                  </tr>
-                `
-              : ''}
+          }
           ${hasAutoAndManualPoints
             ? html`
                 <tr>
@@ -129,16 +161,6 @@ export function QuestionScorePanel({
                 </tr>
               `
             : ''}
-          <tr>
-            <td>Total points:</td>
-            <td>
-              ${InstanceQuestionPoints({
-                instance_question,
-                assessment_question,
-                component: 'total',
-              })}
-            </td>
-          </tr>
           ${!hasAutoAndManualPoints && assessment_question.max_points
             ? html`
                 <tr>
@@ -371,15 +393,36 @@ export function InstanceQuestionPoints({
     (['saved', 'grading'].includes(instance_question.status ?? '') && component !== 'manual') ||
     (instance_question.requires_manual_grading && component !== 'auto');
 
+  if (!points && !maxPoints) {
+    // This question doesn't have any points of this type associated with it.
+    return html`<span class="text-nowrap">&mdash;</span>`;
+  }
+
+  // Special case: describe!
+  if (!pointsPending && points && maxPoints != null) {
+    return html`
+      <span class="text-nowrap">
+        ${Scorebar((points / maxPoints) * 100, { label: `${formatPoints(points)}/${maxPoints}` })}
+      </span>
+    `;
+  }
+
   return html`
     <span class="text-nowrap">
-      ${instance_question.status === 'unanswered'
-        ? html`&mdash;`
-        : pointsPending
-          ? html`<span class="badge badge-info">pending</span>`
-          : !points && !maxPoints
-            ? html`&mdash;`
-            : html`<span data-testid="awarded-points">${formatPoints(points)}</span>`}
+      ${run(() => {
+        if (instance_question.status === 'unanswered') {
+          return html`&mdash;`;
+        }
+
+        if (pointsPending) {
+          return html`<span class="badge badge-info">pending</span>`;
+        }
+
+        if (!points && !maxPoints) {
+          return html`&mdash;`;
+        }
+        return html`<span data-testid="awarded-points">${formatPoints(points)}</span>`;
+      })}
       ${maxPoints ? html`<small>/<span class="text-muted">${maxPoints}</span></small>` : ''}
     </span>
   `;
