@@ -137,27 +137,41 @@ function writeOutTables(elementSections: ElementSection[]) {
           firstRow.children[2].children[0].value === 'Default' &&
           firstRow.children[3].children[0].value === 'Description'
         ) {
-          const statements: string[] = [];
-          for (let row_idx = 1; row_idx < node.children.length; row_idx++) {
-            const row = node.children[row_idx];
-            const attribute = stringify([row.children[0]]).trimEnd();
-            const type = stringify([row.children[1]]).trimEnd();
-            const defaultVal = stringify([row.children[2]]).trimEnd();
-            const description = stringify([row.children[3]]).trimEnd();
-            statements.push(
-              attribute +
-                ': of type ' +
-                type +
-                ', ' +
-                (defaultVal !== '-' && defaultVal !== '—'
-                  ? 'default val: ' + defaultVal + ', '
-                  : '') +
-                'description: ' +
+          const statements = [];
+          for (let rowIdx = 1; rowIdx < node.children.length; rowIdx++) {
+            const row = node.children[rowIdx];
+            const attribute = row.children[0];
+            const type = row.children[1];
+            const defaultValProcessed = stringify([row.children[2]]).trimEnd();
+            const defaultVal = row.children[2];
+            const description = row.children[3];
+
+            if (defaultValProcessed !== '-' && defaultValProcessed !== '—') {
+              statements.push(
+                attribute,
+                { type: 'text', value: ': of type ' },
+                type,
+                { type: 'text', value: ', default val: ' },
+                defaultVal,
+                { type: 'text', value: ', description: ' },
                 description,
-            );
+              );
+            } else {
+              statements.push(
+                attribute,
+                { type: 'text', value: ': of type ' },
+                type,
+                { type: 'text', value: ', description: ' },
+                description,
+              );
+            }
+
+            if (rowIdx < node.children.length - 1) {
+              statements.push({ type: 'text', value: '\n' });
+            }
           }
           node.type = 'paragraph';
-          node.children = [{ type: 'text', value: statements.join('\n') }];
+          node.children = statements;
         }
       }
       return node;
@@ -179,7 +193,7 @@ export async function buildContextForElementDocs(rawMarkdown: string): Promise<D
       children: [{ type: 'text', value: section.elementName }],
     });
 
-    const markdown = stringify(section.content).replace(/\\`/g, '`');
+    const markdown = stringify(section.content);
 
     return {
       chunkId: section.elementName,
