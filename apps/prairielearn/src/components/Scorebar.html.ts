@@ -10,7 +10,10 @@ export function Scorebar(
       <div class="progress-bar bg-success" style="width: ${Math.floor(Math.min(100, score))}%">
         ${score >= 50 ? `${Math.floor(score)}%` : ''}
       </div>
-      <div class="progress-bar bg-danger" style="width: ${100 - Math.floor(Math.min(100, score))}%">
+      <div
+        class="d-flex flex-column justify-content-center text-center"
+        style="width: ${100 - Math.floor(Math.min(100, score))}%"
+      >
         ${score >= 50 ? '' : `${Math.floor(score)}%`}
       </div>
     </div>

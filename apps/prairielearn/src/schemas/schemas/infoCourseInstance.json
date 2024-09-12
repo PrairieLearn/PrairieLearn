@@ -3,6 +3,7 @@
   "title": "Course instance information",
   "description": "The specification file for a course instance.",
   "type": "object",
+  "additionalProperties": false,
   "required": ["uuid", "longName"],
   "properties": {
     "comment": {
@@ -16,6 +17,10 @@
     },
     "longName": {
       "description": "The long name of this course instance (e.g., 'Spring 2015').",
+      "type": "string"
+    },
+    "shortName": {
+      "description": "DEPRECATED -- do not use.",
       "type": "string"
     },
     "timezone": {
@@ -50,6 +55,7 @@
       "items": {
         "description": "An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.",
         "type": "object",
+        "additionalProperties": false,
         "properties": {
           "comment": {
             "description": "Arbitrary comment for reference purposes.",
