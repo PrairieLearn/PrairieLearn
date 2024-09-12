@@ -117,7 +117,7 @@ async function getAllSubmissionEmbeddings({
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   openai: OpenAI;
-}): Promise<any> {
+}): Promise<number> {
   const question_course = await getQuestionCourse(question, course);
 
   const result = await queryRows(
@@ -128,6 +128,8 @@ async function getAllSubmissionEmbeddings({
     },
     InstanceQuestionSchema,
   );
+
+  let emb_count = 0;
 
   for (const instance_question of result) {
     const { variant, submission } = await queryRow(
@@ -165,7 +167,9 @@ async function getAllSubmissionEmbeddings({
       submission_id: submission.id,
       submission_text: student_answer,
     });
+    emb_count++;
   }
+  return emb_count;
 }
 
 export async function aiGrade({
@@ -207,13 +211,15 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
-    await getAllSubmissionEmbeddings({
+    job.info('Checking for embeddings for all submissions.');
+    const emb_count = await getAllSubmissionEmbeddings({
       course,
       question,
       assessment_question,
       urlPrefix,
       openai,
     });
+    job.info(`Calculated ${emb_count} embeddings.`);
 
     const result = await queryRows(
       sql.select_instance_questions_manual_grading,
