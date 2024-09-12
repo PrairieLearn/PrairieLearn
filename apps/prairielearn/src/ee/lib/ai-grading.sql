@@ -52,7 +52,7 @@ VALUES
 
 -- BLOCK select_closest_embeddings
 SELECT
-  emb.embedding, emb.submission_text, iq.id AS instance_question_id
+  emb.submission_text, iq.score_perc, iq.id AS instance_question_id
 FROM
   (SELECT s.id, MAX(g.graded_at)
     FROM (SELECT * FROM grading_jobs WHERE graded_by != $ai_grader_id) AS g
@@ -69,3 +69,11 @@ ORDER BY
   embedding <=> $embedding
 LIMIT
   $limit;
+
+-- BLOCK get_submission_grade
+SELECT
+  score
+FROM
+  submissions
+WHERE
+  id = $submission_id;

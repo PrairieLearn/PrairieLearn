@@ -31,6 +31,7 @@ import * as questionServers from '../../question-servers/index.js';
 import { createEmbedding, vectorToString } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+const ai_grader_id = '1';
 
 const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -38,10 +39,71 @@ const SubmissionVariantSchema = z.object({
 });
 const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
 const GradedExampleSchema = z.object({
-  embedding: z.string(),
   submission_text: z.string(),
+  score_perc: z.number(),
   instance_question_id: z.string(),
 });
+type GradedExample = z.infer<typeof GradedExampleSchema>;
+
+async function generateGPTPromptWithExamples({
+  question_prompt,
+  student_answer,
+  example_submissions,
+}: {
+  question_prompt: string;
+  student_answer: string;
+  example_submissions: GradedExample[];
+}): Promise<
+  (
+    | {
+        role: 'system';
+        content: string;
+      }
+    | {
+        role: 'user';
+        content: string;
+      }
+  )[]
+> {
+  const messages: (
+    | {
+        role: 'system';
+        content: string;
+      }
+    | {
+        role: 'user';
+        content: string;
+      }
+  )[] = [];
+
+  // Instructions for grading
+  messages.push({
+    role: 'system',
+    content:
+      'You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. I will provide some example answers and their corresponding grades.',
+  });
+
+  // Question prompt
+  messages.push({
+    role: 'user',
+    content: `Question: \n${question_prompt}`,
+  });
+
+  // Examples
+  for (const example of example_submissions) {
+    messages.push({
+      role: 'user',
+      content: `Example answer: \n${example.submission_text} \nGrade to this example answer: \n${example.score_perc}`,
+    });
+  }
+
+  // Student answer
+  messages.push({
+    role: 'user',
+    content: `Answer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
+  });
+  return messages;
+}
 
 async function getAllSubmissionEmbeddings({
   course,
@@ -55,11 +117,7 @@ async function getAllSubmissionEmbeddings({
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   openai: OpenAI;
-}): Promise<number> {
-  if (!config.openAiApiKey || !config.openAiOrganization) {
-    throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
-  }
-
+}): Promise<any> {
   const question_course = await getQuestionCourse(question, course);
 
   const result = await queryRows(
@@ -83,7 +141,7 @@ async function getAllSubmissionEmbeddings({
       SubmissionGradingContextEmbeddingSchema,
     );
 
-    // Do no recalculate embedding if it already exists for a submission
+    // Do not recalculate embedding if it already exists for a submission
     if (submission_embedding) {
       continue;
     }
@@ -101,7 +159,6 @@ async function getAllSubmissionEmbeddings({
     const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
     $('script').remove();
     const student_answer = $.html();
-    console.log('getting embedding for new submission');
     const embedding = await createEmbedding(openai, student_answer, `course_${course.id}`);
     await queryOneRowAsync(sql.update_embedding_for_submission, {
       embedding: vectorToString(embedding),
@@ -109,8 +166,6 @@ async function getAllSubmissionEmbeddings({
       submission_text: student_answer,
     });
   }
-
-  return 0;
 }
 
 export async function aiGrade({
@@ -218,7 +273,7 @@ export async function aiGrade({
           submission_id: submission.id,
           assessment_question_id: assessment_question.id,
           embedding: submission_embedding.embedding,
-          ai_grader_id: '1',
+          ai_grader_id,
           limit: 5,
         },
         GradedExampleSchema,
@@ -229,18 +284,14 @@ export async function aiGrade({
       }
       msg += '\n';
 
+      const messages = await generateGPTPromptWithExamples({
+        question_prompt,
+        student_answer,
+        example_submissions,
+      });
+
       const completion = await openai.beta.chat.completions.parse({
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. ',
-          },
-          {
-            role: 'user',
-            content: `Question: \n${question_prompt} \nAnswer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
-          },
-        ],
+        messages,
         model: 'gpt-4o-2024-08-06',
         user: `course_${course.id}`,
         response_format: zodResponseFormat(GPTGradeSchema, 'grades'),
@@ -261,7 +312,7 @@ export async function aiGrade({
               feedback: { manual: grade_response.parsed.feedback },
               // NEXT STEPS: rubrics
             },
-            '1',
+            ai_grader_id,
           );
           msg += `\nAI grades: ${grade_response.parsed.grade}`;
         } else if (grade_response.refusal) {
