@@ -9,7 +9,10 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
   const classes =
     type === 'error' ? 'fa-times text-danger' : 'fa-exclamation-triangle text-warning';
 
-  const popoverContent = html`<pre class="bg-dark text-white rounded p-3 mb-0">
+  const popoverContent = html`<pre
+    class="text-white rounded p-3 mb-0"
+    style="background-color: black;"
+  >
 ${unsafeHtml(ansiUp.ansi_to_html(output))}</pre
   >`;
 
