@@ -127,6 +127,7 @@ router.post(
     );
 
     const serverJobOptions = {
+      courseId: res.locals.course.id,
       courseInstanceId: res.locals.course_instance.id,
       userId: res.locals.user.user_id,
       authnUserId: res.locals.authn_user.user_id,
@@ -167,7 +168,7 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         await syncLineitems(instance, job);
       });
-      return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
+      return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else if (req.body.__action === 'unlink_assessment') {
       await unlinkAssessment(instance.lti13_course_instance.id, req.body.unsafe_assessment_id);
       return res.redirect(req.originalUrl);
@@ -195,7 +196,7 @@ router.post(
 
         await createAndLinkLineitem(instance, job, assessment_metadata);
       });
-      return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
+      return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else if (req.body.__action === 'link_assessment') {
       await queryAndLinkLineitem(instance, req.body.lineitem_id, req.body.unsafe_assessment_id);
       return res.redirect(req.originalUrl);
@@ -258,7 +259,7 @@ router.post(
           await createAndLinkLineitem(instance, job, assessment_metadata);
         }
       });
-      return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
+      return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else if (req.body.__action === 'send_grades') {
       // Should something like this be in a model?
       const assessment = await queryRow(
@@ -282,8 +283,9 @@ router.post(
         await queryAsync(sql.update_lti13_assessment_last_activity, {
           assessment_id: assessment.id,
         });
+        job.info('Done.');
       });
-      return res.redirect(`/pl/jobSequence/${serverJob.jobSequenceId}`);
+      return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else {
       throw error.make(400, `Unknown action: ${req.body.__action}`);
     }

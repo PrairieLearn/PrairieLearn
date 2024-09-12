@@ -9,7 +9,6 @@ import { z } from 'zod';
 
 import { HttpStatusError, makeWithData } from '@prairielearn/error';
 import {
-  callAsync,
   loadSqlEquiv,
   queryRow,
   queryRows,
@@ -27,7 +26,6 @@ import {
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { ServerJob } from '../../lib/server-jobs.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
 import { getInstitutionAuthenticationProviders } from './institution.js';
@@ -327,7 +325,7 @@ export async function getAccessToken(lti13_instance_id: string) {
 
 export async function getLineitems(instance: Lti13CombinedInstance) {
   if (instance.lti13_course_instance.lineitems_url == null) {
-    throw new Error('Lineitems not defined');
+    throw new HttpStatusError(400, 'Lineitems not defined');
   }
   const token = await getAccessToken(instance.lti13_instance.id);
   const lineitems = LineitemsSchema.parse(
@@ -387,72 +385,6 @@ export async function syncLineitems(instance: Lti13CombinedInstance, job: Server
   job.info('Done.');
 }
 
-export async function enrollUsersFromLti13(instance: Lti13CombinedInstance) {
-  if (instance.lti13_course_instance.context_memberships_url === null) {
-    throw new Error('LTI 1.3 missing context_memberships_url');
-  }
-
-  const token = await getAccessToken(instance.lti13_instance.id);
-  const memberships = await fetchRetry(instance.lti13_course_instance.context_memberships_url, {
-    method: 'GET',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'Content-type': 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
-    },
-  });
-
-  for (const member of memberships.members) {
-    /*
-    {
-      status: 'Active',
-      name: 'Harry Potter',
-      picture: 'http://canvas.instructure.com/images/messages/avatar-50.png',
-      given_name: 'Harry',
-      family_name: 'Potter',
-      email: 'potter@example.com',
-      lis_person_sourcedid: '2000',
-      user_id: '8da76658-3726-4c03-b117-503697e2bd0f',
-      lti11_legacy_user_id: '3855b23dac0e1d4aaa0d23ea532bce3abfd7cec2',
-      roles: ['http://purl.imsglobal.org/vocab/lis/v2/membership#Learner'],
-    }
-    */
-
-    // Skip invalid cases
-    if (
-      member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser') ||
-      !('email' in member)
-    ) {
-      continue;
-    }
-
-    // Skip non-student cases
-    if (!member.roles.includes('http://purl.imsglobal.org/vocab/lis/v2/membership#Learner')) {
-      continue;
-    }
-
-    const newUser = await callAsync('users_select_or_insert', [
-      member.email,
-      member.name,
-      null, // uin
-      member.email,
-      'LTI 1.3',
-      instance.lti13_instance.institution_id,
-    ]);
-
-    await ensureEnrollment({
-      course_instance_id: instance.lti13_course_instance.course_instance_id,
-      user_id: newUser.rows[0].user_id,
-    });
-
-    await queryAsync(sql.upsert_lti13_users, {
-      institution_id: instance.lti13_instance.institution_id,
-      lti13_instance_id: instance.lti13_instance.id,
-      uid: member.email, // translate from the LTI property 'email' to our users.uid
-      sub: member.user_id, // translate from the LTI property 'user_id' to our lti13_users.sub
-    });
-  }
-}
-
 export async function createAndLinkLineitem(
   instance: Lti13CombinedInstance,
   job: ServerJob,
@@ -463,7 +395,7 @@ export async function createAndLinkLineitem(
   },
 ) {
   if (instance.lti13_course_instance.lineitems_url == null) {
-    throw new Error('Lineitems not defined');
+    throw new HttpStatusError(400, 'Lineitems not defined');
   }
 
   const createBody: Omit<Lineitem, 'id'> = {
@@ -501,12 +433,12 @@ export async function createAndLinkLineitem(
 export async function queryAndLinkLineitem(
   instance: Lti13CombinedInstance,
   lineitem_id_url: string,
-  assessment_id: string | number,
+  unsafe_assessment_id: string | number,
 ) {
   const item = await getLineitem(instance, lineitem_id_url);
 
   if (item) {
-    await linkAssessment(instance.lti13_course_instance.id, assessment_id, item);
+    await linkAssessment(instance.lti13_course_instance.id, unsafe_assessment_id, item);
   } else {
     throw new HttpStatusError(400, 'Lineitem not found');
   }
@@ -537,7 +469,7 @@ export async function linkAssessment(
   );
 
   if (assessment === null) {
-    throw new Error('Invalid assessment.id');
+    throw new HttpStatusError(403, 'Invalid assessment id');
   }
 
   await queryAsync(sql.upsert_lti13_assessment, {
@@ -639,7 +571,7 @@ const ContextMembershipSchema = z.object({
 type ContextMembership = z.infer<typeof ContextMembershipSchema>;
 
 export async function updateLti13Scores(
-  assessment_id: string | number,
+  unsafe_assessment_id: string | number,
   instance: Lti13CombinedInstance,
   job: ServerJob,
 ) {
@@ -650,8 +582,8 @@ export async function updateLti13Scores(
   const assessment = await queryRow(
     sql.select_assessment_with_lti13_course_instance_id,
     {
-      assessment_id,
-      lti13_instance_id: instance.lti13_instance.id,
+      unsafe_assessment_id,
+      lti13_course_instance_id: instance.lti13_course_instance.id,
     },
     AssessmentSchema.extend({
       lti13_lineitem_id_url: z.string(),
@@ -661,7 +593,7 @@ export async function updateLti13Scores(
   );
 
   if (assessment === null) {
-    throw new Error('Invalid assessment.id');
+    throw new HttpStatusError(403, 'Invalid assessment.id');
   }
 
   job.info(`Sending grade data for ${assessment.tid} ${assessment.title}`);
@@ -671,7 +603,7 @@ export async function updateLti13Scores(
   const assessment_instances = await queryRows(
     sql.select_assessment_instances_for_scores,
     {
-      assessment_id,
+      assessment_id: assessment.id,
     },
     AssessmentInstanceSchema.extend({
       score_perc: z.number(), // not .nullable() from SQL query
@@ -690,7 +622,11 @@ export async function updateLti13Scores(
         continue;
       }
 
-      // https://canvas.instructure.com/doc/api/score.html#method.lti/ims/scores.create
+      /*
+       https://www.imsglobal.org/spec/lti-ags/v2p0#score-service-media-type-and-schema
+       Canvas has extensions we could use described at
+       https://canvas.instructure.com/doc/api/score.html#method.lti/ims/scores.create
+      */
       const score: Lti13Score = {
         timestamp: assessment_instance.modified_at,
         startedAt: assessment_instance.date,
@@ -742,7 +678,24 @@ async function lookupSub(
       },
     );
 
-    memberships = ContextMembershipSchema.array().parse(ltiMemberships.members);
+    const filteredMemberships = ltiMemberships.members.filter((member: ContextMembership) => {
+      // Skip invalid cases
+      if (
+        member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser') ||
+        !('email' in member)
+      ) {
+        return false;
+      }
+
+      // Skip non-student cases
+      //if (!member.roles.includes('http://purl.imsglobal.org/vocab/lis/v2/membership#Learner')) {
+      //  return false;
+      //}
+
+      return true;
+    });
+
+    memberships = ContextMembershipSchema.array().parse(filteredMemberships);
   }
 
   if (memberships === null) {

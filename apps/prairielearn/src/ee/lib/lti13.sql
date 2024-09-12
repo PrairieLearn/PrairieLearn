@@ -126,23 +126,6 @@ WHERE
   AND ai.score_perc IS NOT NULL
   AND ai.date IS NOT NULL;
 
--- BLOCK upsert_lti13_users
-INSERT INTO
-  lti13_users (user_id, lti13_instance_id, sub)
-SELECT
-  user_id,
-  $lti13_instance_id,
-  $sub
-FROM
-  users
-WHERE
-  uid = $uid
-  AND institution_id = $institution_id
-ON CONFLICT (user_id, lti13_instance_id) DO
-UPDATE
-SET
-  sub = $sub;
-
 -- BLOCK select_assessment_with_lti13_course_instance_id
 SELECT
   a.*,
@@ -151,11 +134,11 @@ SELECT
   lti13_course_instances.context_memberships_url
 FROM
   assessments AS a
-  JOIN lti13_assessments AS la ON (la.assessment_id = a.id)
   JOIN lti13_course_instances ON (
-    lti13_course_instances.id = la.lti13_course_instance_id
+    lti13_course_instances.course_instance_id = a.course_instance_id
   )
+  LEFT JOIN lti13_assessments AS la ON (la.assessment_id = a.id)
 WHERE
-  a.id = $assessment_id
-  AND lti13_course_instances.lti13_instance_id = $lti13_instance_id
+  a.id = $unsafe_assessment_id
+  AND lti13_course_instances.id = $lti13_course_instance_id
   AND a.deleted_at IS NULL;
