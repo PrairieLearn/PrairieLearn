@@ -1,8 +1,10 @@
 import { html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { CourseInstanceAuthz } from '../../models/course-instances.js';
 
 export type CourseInstanceAuthzRow = CourseInstanceAuthz & { enrollment_count?: number };
@@ -96,6 +98,21 @@ export function InstructorCourseAdminInstances({
                     return html`
                       <tr>
                         <td class="align-left">
+                          ${run(() => {
+                            if (row.sync_errors) {
+                              return SyncProblemButton({
+                                type: 'error',
+                                output: row.sync_errors,
+                              });
+                            }
+
+                            if (row.sync_warnings) {
+                              return SyncProblemButton({
+                                type: 'warning',
+                                output: row.sync_warnings,
+                              });
+                            }
+                          })}
                           <a
                             href="${resLocals.plainUrlPrefix}/course_instance/${row.id}/instructor/instance_admin"
                             >${row.long_name}</a
