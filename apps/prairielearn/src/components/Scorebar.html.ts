@@ -6,7 +6,10 @@ export function Scorebar(
 ) {
   if (score == null) return '';
   return html`
-    <div class="progress bg" style="min-width: ${minWidth}; max-width: ${maxWidth};">
+    <div
+      class="progress border border-success"
+      style="min-width: ${minWidth}; max-width: ${maxWidth};"
+    >
       <div class="progress-bar bg-success" style="width: ${Math.floor(Math.min(100, score))}%">
         ${score >= 50 ? `${Math.floor(score)}%` : ''}
       </div>
