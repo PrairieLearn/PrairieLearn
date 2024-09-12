@@ -262,7 +262,7 @@ export async function regenerateQuestion(
   const jobData = await serverJob.execute(async (job) => {
     job.info(`prompt is ${revisionPrompt}`);
 
-    let tags = [];
+    let tags: string[] = [];
     if (originalHTML) {
       const ast = parse5.parseFragment(originalHTML);
       tags = Array.from(traverseForTagNames(ast));
