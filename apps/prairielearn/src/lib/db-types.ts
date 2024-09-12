@@ -932,6 +932,16 @@ export const StripeCheckoutSessionSchema = z.object({
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
 
+export const SubmissionGradingContextEmbeddingSchema = z.object({
+  id: IdSchema,
+  embedding: z.string(),
+  submission_id: IdSchema,
+  submission_text: z.string(),
+});
+export type SubmissionGradingContextEmbedding = z.infer<
+  typeof SubmissionGradingContextEmbeddingSchema
+>;
+
 export const SubmissionSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   broken: z.boolean().nullable(),

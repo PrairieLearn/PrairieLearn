@@ -3,11 +3,18 @@ import { OpenAI } from 'openai';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryOneRowAsync,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import {
   InstanceQuestionSchema,
+  SubmissionGradingContextEmbeddingSchema,
   SubmissionSchema,
   VariantSchema,
   Question,
@@ -20,6 +27,8 @@ import { getQuestionCourse } from '../../lib/question-variant.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import * as questionServers from '../../question-servers/index.js';
 
+import { createEmbedding, vectorToString } from './contextEmbeddings.js';
+
 const sql = loadSqlEquiv(import.meta.url);
 
 const SubmissionVariantSchema = z.object({
@@ -27,6 +36,77 @@ const SubmissionVariantSchema = z.object({
   submission: SubmissionSchema,
 });
 const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
+
+async function embed({
+  course,
+  question,
+  assessment_question,
+  urlPrefix,
+  openai,
+}: {
+  question: Question;
+  course: Course;
+  assessment_question: AssessmentQuestion;
+  urlPrefix: string;
+  openai: OpenAI;
+}): Promise<number> {
+  if (!config.openAiApiKey || !config.openAiOrganization) {
+    throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
+  }
+
+  const question_course = await getQuestionCourse(question, course);
+
+  const result = await queryRows(
+    sql.select_all_instance_questions,
+    {
+      assessment_id: assessment_question.assessment_id,
+      assessment_question_id: assessment_question.id,
+    },
+    InstanceQuestionSchema,
+  );
+
+  for (const instance_question of result) {
+    const { variant, submission } = await queryRow(
+      sql.select_last_variant_and_submission,
+      { instance_question_id: instance_question.id },
+      SubmissionVariantSchema,
+    );
+    const submission_embedding = await queryOptionalRow(
+      sql.select_embedding_for_submission,
+      { submission_id: submission.id },
+      SubmissionGradingContextEmbeddingSchema,
+    );
+
+    // Do no recalculate embedding if it already exists for a submission
+    if (submission_embedding) {
+      continue;
+    }
+    const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
+    const questionModule = questionServers.getModule(question.type);
+    const render_submission_results = await questionModule.render(
+      { question: false, submissions: true, answer: false },
+      variant,
+      question,
+      submission,
+      [submission],
+      question_course,
+      urls,
+    );
+    const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
+    $('script').remove();
+    const student_answer = $.html();
+    console.log('getting embedding for new submission');
+    // const embedding = createEmbedding(openai, student_answer, `course_${course.id}`);
+    const embedding = [1, 2, 3];
+    await queryOneRowAsync(sql.update_embedding_for_submission, {
+      embedding,
+      submission_id: submission.id,
+      submission_text: student_answer,
+    });
+  }
+
+  return 0;
+}
 
 export async function aiGrade({
   course,
@@ -67,6 +147,14 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
+    await embed({
+      course,
+      question,
+      assessment_question,
+      urlPrefix,
+      openai,
+    });
+
     const result = await queryRows(
       sql.select_instance_questions_manual_grading,
       {
