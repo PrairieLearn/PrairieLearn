@@ -1,11 +1,9 @@
-import * as path from 'path';
-
 import { OpenAI } from 'openai';
+import * as parse5 from 'parse5';
 
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, queryRow } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
-import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
@@ -51,6 +49,8 @@ ${context}
  *
  * @param client The OpenAI client to use.
  * @param prompt The user's question generation prompt.
+ * @param promptUserInput The user's indication of how to create student input boxes.
+ * @param mandatoryElementIds Elements that we must pull documentation for.
  * @param authnUserId The user's authenticated user ID.
  * @returns A string of all relevant context documents.
  */
@@ -58,38 +58,50 @@ async function makeContext(
   client: OpenAI,
   prompt: string,
   promptUserInput: string | undefined,
+  mandatoryElementIds: string[],
   authnUserId: string,
 ): Promise<string> {
   const embedding = await createEmbedding(client, prompt, openAiUserFromAuthn(authnUserId));
-  let docs;
+  const mandatoryElements =
+    mandatoryElementIds.length > 0
+      ? await queryRows(
+          sql.select_documents_by_chunk_id,
+          {
+            doc_path: 'docs/elements.md',
+            chunk_ids: mandatoryElementIds,
+          },
+          QuestionGenerationContextEmbeddingSchema,
+        )
+      : [];
 
-  if (promptUserInput === undefined) {
-    docs = await queryRows(
-      sql.select_nearby_documents,
-      { embedding: vectorToString(embedding), limit: 5 },
+  const numElements = Math.max(5 - mandatoryElements.length, 0);
+
+  const docs = await queryRows(
+    sql.select_nearby_documents,
+    { embedding: vectorToString(embedding), limit: numElements },
+    QuestionGenerationContextEmbeddingSchema,
+  );
+
+  if (promptUserInput !== undefined) {
+    const elementDoc = await queryRow(
+      sql.select_nearby_documents_from_file,
+      {
+        embedding: vectorToString(embedding),
+        doc_path: 'docs/elements.md',
+        limit: 1,
+      },
       QuestionGenerationContextEmbeddingSchema,
     );
-  } else {
-    docs = (
-      await queryRows(
-        sql.select_nearby_documents,
-        { embedding: vectorToString(embedding), limit: 4 },
-        QuestionGenerationContextEmbeddingSchema,
-      )
-    ).concat(
-      await queryRows(
-        sql.select_nearby_documents_from_file,
-        {
-          embedding: vectorToString(embedding),
-          doc_path: path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md'),
-          limit: 1,
-        },
-        QuestionGenerationContextEmbeddingSchema,
-      ),
-    );
+    if (numElements > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {
+      //override last (least relevant) doc
+      docs[numElements - 1] = elementDoc;
+    }
   }
 
-  return docs.map((doc) => doc.doc_text).join('\n\n');
+  return docs
+    .concat(mandatoryElements)
+    .map((doc) => doc.doc_text)
+    .join('\n\n');
 }
 
 /**
@@ -164,7 +176,7 @@ export async function generateQuestion(
 
     job.info(`prompt is ${userPrompt}`);
 
-    const context = await makeContext(client, userPrompt, promptUserInput, authnUserId);
+    const context = await makeContext(client, userPrompt, promptUserInput, [], authnUserId);
 
     const sysPrompt = `
 ${promptPreamble(context)}
@@ -198,6 +210,21 @@ Keep in mind you are not just generating an example; you are generating an actua
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
   };
+}
+
+/**
+ * Gets all of the tag names in an HTML parse tree.
+ * @param ast The tree to use.
+ * @returns All tag names in the tree.
+ */
+function traverseForTagNames(ast: any): Set<string> {
+  const nodeNames = new Set<string>([ast.nodeName]);
+  if (ast.childNodes) {
+    for (const child of ast.childNodes) {
+      traverseForTagNames(child).forEach((name) => nodeNames.add(name));
+    }
+  }
+  return nodeNames;
 }
 
 /**
@@ -235,7 +262,13 @@ export async function regenerateQuestion(
   const jobData = await serverJob.execute(async (job) => {
     job.info(`prompt is ${revisionPrompt}`);
 
-    const context = await makeContext(client, originalPrompt, undefined, authnUserId);
+    let tags = [];
+    if (originalHTML) {
+      const ast = parse5.parseFragment(originalHTML);
+      tags = Array.from(traverseForTagNames(ast));
+    }
+
+    const context = await makeContext(client, originalPrompt, undefined, tags, authnUserId);
     const sysPrompt = `
 ${promptPreamble(context)}
 # Previous Generations
