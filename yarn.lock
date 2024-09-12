@@ -3492,7 +3492,7 @@ __metadata:
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
-    "@pyroscope/nodejs": "npm:^0.3.11"
+    "@pyroscope/nodejs": "npm:^0.4.0"
     "@sa11y/format": "npm:^6.10.1"
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@types/archiver": "npm:^6.0.2"
@@ -3943,9 +3943,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@pyroscope/nodejs@npm:^0.3.11":
-  version: 0.3.11
-  resolution: "@pyroscope/nodejs@npm:0.3.11"
+"@pyroscope/nodejs@npm:^0.4.0":
+  version: 0.4.0
+  resolution: "@pyroscope/nodejs@npm:0.4.0"
   dependencies:
     "@datadog/pprof": "npm:^5.3.0"
     axios: "npm:^0.28.0"
@@ -3953,7 +3953,7 @@ __metadata:
     form-data: "npm:^4.0.0"
     regenerator-runtime: "npm:^0.13.11"
     source-map: "npm:^0.7.3"
-  checksum: 10c0/7993f96632b0d72ce1a68c76a6ad9bb82374d156adf0c5f8b7bb0d204eabdcdf2b35684ad37ac087c24dfe850c3c656aa10c28220ca54bb11cf66b26c9939284
+  checksum: 10c0/ad3bd32e5796298887f36bc68f011def45c1b1c5607ac242629c13b7f5bcddeafce6bba346b6ebefd20d43f0ee1848eed37740bad5008d4d5210af35a7304102
   languageName: node
   linkType: hard
 
