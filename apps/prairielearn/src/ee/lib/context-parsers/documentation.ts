@@ -137,7 +137,7 @@ function writeOutTables(elementSections: ElementSection[]) {
           firstRow.children[2].children[0].value === 'Default' &&
           firstRow.children[3].children[0].value === 'Description'
         ) {
-          const statements = [];
+          const statements: any[] = [];
           for (let rowIdx = 1; rowIdx < node.children.length; rowIdx++) {
             const row = node.children[rowIdx];
             const attribute = row.children[0];
