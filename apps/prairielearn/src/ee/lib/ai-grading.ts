@@ -37,8 +37,13 @@ const SubmissionVariantSchema = z.object({
   submission: SubmissionSchema,
 });
 const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
+const GradedExampleSchema = z.object({
+  embedding: z.string(),
+  submission_text: z.string(),
+  instance_question_id: z.string(),
+});
 
-async function embed({
+async function getAllSubmissionEmbeddings({
   course,
   question,
   assessment_question,
@@ -97,10 +102,9 @@ async function embed({
     $('script').remove();
     const student_answer = $.html();
     console.log('getting embedding for new submission');
-    // const embedding = createEmbedding(openai, student_answer, `course_${course.id}`);
-    const embedding = [1, 2, 3];
+    const embedding = await createEmbedding(openai, student_answer, `course_${course.id}`);
     await queryOneRowAsync(sql.update_embedding_for_submission, {
-      embedding,
+      embedding: vectorToString(embedding),
       submission_id: submission.id,
       submission_text: student_answer,
     });
@@ -148,7 +152,7 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
-    await embed({
+    await getAllSubmissionEmbeddings({
       course,
       question,
       assessment_question,
@@ -197,22 +201,33 @@ export async function aiGrade({
         job.error('Error occurred');
         job.fail('Errors occurred while AI grading, see output for details');
       }
-      let $ = cheerio.load(render_question_results.data.questionHtml, null, false);
+      const $ = cheerio.load(render_question_results.data.questionHtml, null, false);
       $('script').remove();
       const question_prompt = $.html();
 
-      const render_submission_results = await questionModule.render(
-        { question: false, submissions: true, answer: false },
-        variant,
-        question,
-        submission,
-        [submission],
-        question_course,
-        urls,
+      const submission_embedding = await queryRow(
+        sql.select_embedding_for_submission,
+        { submission_id: submission.id },
+        SubmissionGradingContextEmbeddingSchema,
       );
-      $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
-      $('script').remove();
-      const student_answer = $.html();
+      const student_answer = submission_embedding.submission_text;
+
+      const example_submissions = await queryRows(
+        sql.select_closest_embeddings,
+        {
+          submission_id: submission.id,
+          assessment_question_id: assessment_question.id,
+          embedding: submission_embedding.embedding,
+          ai_grader_id: '1',
+          limit: 5,
+        },
+        GradedExampleSchema,
+      );
+      let msg = `\nInstance question ${instance_question.id}\nGraded examples:`;
+      for (const example of example_submissions) {
+        msg += ` ${example.instance_question_id}`;
+      }
+      msg += '\n';
 
       const completion = await openai.beta.chat.completions.parse({
         messages: [
@@ -231,7 +246,6 @@ export async function aiGrade({
         response_format: zodResponseFormat(GPTGradeSchema, 'grades'),
       });
 
-      let msg = `\nInstance question ${instance_question.id}\n`;
       try {
         msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
         const grade_response = completion.choices[0].message;
