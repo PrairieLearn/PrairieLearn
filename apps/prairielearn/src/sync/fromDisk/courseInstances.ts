@@ -51,9 +51,7 @@ export async function sync(
     // Select only the valid institution names.
     const validInstitutions = await sqldb.queryRows(
       sql.select_valid_institution_short_names,
-      {
-        short_names: Array.from(new Set(institutions)),
-      },
+      { short_names: Array.from(new Set(institutions)) },
       z.string(),
     );
 
