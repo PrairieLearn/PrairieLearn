@@ -2,19 +2,21 @@
 import * as os from 'node:os';
 
 import debugfn from 'debug';
-import { createPool } from 'generic-pool';
+import { createPool, type Pool } from 'generic-pool';
 import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
+import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
 import * as chunks from '../chunks.js';
 import { config } from '../config.js';
+import { Course } from '../db-types.js';
 import * as load from '../load.js';
 
 import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container.js';
 import { CodeCallerNative } from './code-caller-native.js';
-import { FunctionMissingError } from './code-caller-shared.js';
+import { type CodeCaller, FunctionMissingError } from './code-caller-shared.js';
 
 const debug = debugfn('prairielearn:code-caller');
 
@@ -28,10 +30,7 @@ const debug = debugfn('prairielearn:code-caller');
  * - python_callback_waiting: number of queued jobs/callbacks waiting for an available worker
  */
 
-/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
-
-/** @type {import('generic-pool').Pool<CodeCaller> | null} */
-let pool = null;
+let pool: Pool<CodeCaller> | null = null;
 
 export async function init() {
   debug('init()');
@@ -50,27 +49,33 @@ export async function init() {
   }
 
   const numWorkers = config.workersCount ?? Math.ceil(config.workersPerCpu * os.cpus().length);
-  pool = createPool(
+  pool = createPool<CodeCaller>(
     {
       create: async () => {
-        let codeCallerOptions = {
+        const codeCallerOptions = {
           questionTimeoutMilliseconds: config.questionTimeoutMilliseconds,
           pingTimeoutMilliseconds: config.workerPingTimeoutMilliseconds,
           errorLogger: logger.error.bind(logger),
         };
-        let codeCaller;
-        if (workersExecutionMode === 'container') {
-          codeCaller = new CodeCallerContainer(codeCallerOptions);
-        } else if (workersExecutionMode === 'native') {
-          codeCaller = new CodeCallerNative(codeCallerOptions);
-        } else {
-          throw new Error(`Unexpected workersExecutionMode: ${workersExecutionMode}`);
-        }
+
+        const codeCaller = run(() => {
+          if (workersExecutionMode === 'container') {
+            return new CodeCallerContainer(codeCallerOptions);
+          } else if (workersExecutionMode === 'native') {
+            return new CodeCallerNative(codeCallerOptions);
+          } else {
+            throw new Error(`Unexpected workersExecutionMode: ${workersExecutionMode}`);
+          }
+        });
+
         await codeCaller.ensureChild();
         load.startJob('python_worker_idle', codeCaller.uuid);
         return codeCaller;
       },
       destroy: async (codeCaller) => {
+        logger.info(
+          `Destroying Python worker ${codeCaller.uuid} (last course path: ${codeCaller.getCoursePath()})`,
+        );
         load.endJob('python_worker_idle', codeCaller.uuid);
         codeCaller.done();
       },
@@ -127,13 +132,11 @@ export function getMetrics() {
 /**
  * Acquires a Python worker and automatically returns it to the pool or
  * disposes of it once it has been used.
- *
- * @template T
- * @param {import('../db-types.js').Course} course
- * @param {(codeCaller: CodeCaller) => Promise<T>} fn
- * @returns {Promise<T>}
  */
-export async function withCodeCaller(course, fn) {
+export async function withCodeCaller<T>(
+  course: Course,
+  fn: (codeCaller: CodeCaller) => Promise<T>,
+): Promise<T> {
   if (config.workersExecutionMode === 'disabled') {
     throw new Error('Code execution is disabled');
   }
@@ -216,8 +219,8 @@ export async function withCodeCaller(course, fn) {
     // TypeScript doesn't understand our error-handling logic above. If
     // `overallErr` is falsy, `fnResult` will indeed have type `T`. We'll
     // cast it to `T` to appease TypeScript.
-    return /** @type {T} */ (fnResult);
+    return fnResult as T;
   }
 }
 
-export { FunctionMissingError };
+export { FunctionMissingError, CodeCaller };
