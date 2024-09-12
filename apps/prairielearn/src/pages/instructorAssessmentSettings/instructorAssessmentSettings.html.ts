@@ -180,7 +180,7 @@ export function InstructorAssessmentSettings({
                     !resLocals.course.example_course
                     ? html`
                         <a
-                          data-testid="edit-question-configuration-link"
+                          data-testid="edit-assessment-configuration-link"
                           href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
                             .id}/file_edit/${infoAssessmentPath}"
                         >
