@@ -199,8 +199,8 @@ export function InstructorAssessmentSettings({
                       `
                   : ''
               }
-            </div>
             </form>
+            </div>
             ${
               resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course
                 ? html`
