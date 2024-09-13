@@ -1,6 +1,6 @@
 import * as parse5 from 'parse5';
 
-const HTML_GLOBAL_TAGS = [
+const htmlGlobalAttributes = [
   'accesskey',
   'class',
   'contenteditable',
@@ -21,6 +21,8 @@ const HTML_GLOBAL_TAGS = [
   'translate',
 ];
 
+const mustacheTemplateRegex = /^\{\{.*\}\}$/;
+
 /**
  * Checks that the required property is an int (or property to be inserted) or adds an error to the provided list.
  * @param tag The name of the tag being checked.
@@ -29,7 +31,7 @@ const HTML_GLOBAL_TAGS = [
  * @param errors The list of errors to add to.
  */
 function assertInt(tag: string, key: string, val: string, errors: string[]) {
-  if (!(/^\d+$/.test(val) || /^\{\{.*\}\}$/.test(val))) {
+  if (!(/^\d+$/.test(val) || mustacheTemplateRegex.test(val))) {
     errors.push(
       `${tag}: value for attribute ${key} must be an integer, but value provided is "${val}"`,
     );
@@ -44,7 +46,7 @@ function assertInt(tag: string, key: string, val: string, errors: string[]) {
  * @param errors The list of errors to add to.
  */
 function assertFloat(tag: string, key: string, val: string, errors: string[]) {
-  if (!(/^(\d+)\.?(\d*)(e-\d+)?$/.test(val) || /^\{\{.*\}\}$/.test(val))) {
+  if (!(/^(\d+)\.?(\d*)(e-\d+)?$/.test(val) || mustacheTemplateRegex.test(val))) {
     errors.push(
       `${tag}: value for attribute ${key} must be an floating-point number, but value provided is "${val}"`,
     );
@@ -66,7 +68,7 @@ function assertInChoices(
   choices: string[],
   errors: string[],
 ) {
-  if (!(choices.includes(val) || /^\{\{.*\}\}$/.test(val))) {
+  if (!(choices.includes(val) || mustacheTemplateRegex.test(val))) {
     errors.push(
       `${tag}: value for attribute ${key} must be in ${choices}, but value provided is ${val}`,
     );
@@ -82,7 +84,36 @@ function assertInChoices(
  * @param errors The list of errors to add to.
  */
 function assertBool(tag: string, key: string, val: string, errors: string[]) {
-  assertInChoices(tag, key, val, ['true', 'false'], errors);
+  assertInChoices(
+    tag,
+    key,
+    val,
+    [
+      'true',
+      't',
+      '1',
+      'True',
+      'T',
+      'TRUE',
+      'yes',
+      'y',
+      'Yes',
+      'Y',
+      'YES',
+      'false',
+      'f',
+      '0',
+      'False',
+      'F',
+      'FALSE',
+      'no',
+      'n',
+      'No',
+      'N',
+      'NO',
+    ],
+    errors,
+  );
 }
 
 /**
@@ -91,15 +122,16 @@ function assertBool(tag: string, key: string, val: string, errors: string[]) {
  * @returns The list of errors for the tag, if any.
  */
 function checkTag(ast: any): string[] {
+  console.log(typeof ast)
   switch (ast.tagName) {
     case 'pl-multiple-choice':
-      return checkMC(ast);
+      return checkMultipleChoice(ast);
     case 'pl-integer-input':
-      return checkInt(ast);
+      return checkIntegerInput(ast);
     case 'pl-number-input':
-      return checkNum(ast);
+      return checkNumericalInput(ast);
     case 'pl-answer':
-      return checkMCAnswer(ast);
+      return checkAnswer(ast);
     case 'pl-overlay':
       return checkOverlay(ast);
     case 'pl-location':
@@ -107,17 +139,17 @@ function checkTag(ast: any): string[] {
     case 'pl-order-blocks':
       return checkOrderBlocks(ast);
     case 'pl-matrix-input':
-      return checkMatrix(ast);
+      return checkMatrixInput(ast);
   }
   return [];
 }
 
 /**
- * Checks that a multiple choice question tag has valid properties.
+ * Checks that a `pl-multiple-choice` element has valid properties.
  * @param ast The tree to consider, rooted at the tag.
  * @returns The list of errors for the tag, if any.
  */
-function checkMC(ast: any): string[] {
+function checkMultipleChoice(ast: any): string[] {
   const errors: string[] = [];
   let usedAnswersName = false;
   let displayDropdown = false;
@@ -184,13 +216,13 @@ function checkMC(ast: any): string[] {
         assertInt('pl-multiple-choice', key, val, errors);
         break;
       default:
-        if (!HTML_GLOBAL_TAGS.includes(key)) {
-          errors.push(`${key} is not a valid property for pl-multiple-choice.`);
+        if (!htmlGlobalAttributes.includes(key)) {
+          errors.push(`pl-multiple-choice: ${key} is not a valid property.`);
         }
     }
   }
   if (!usedAnswersName) {
-    errors.push('answers-name is a required property for pl-multiple-choice tags.');
+    errors.push('pl-multiple-choice: answers-name is a required property.');
   }
   if (!usedAllOfTheAbove && usedAllOfTheAboveFeedback) {
     errors.push(
@@ -209,11 +241,11 @@ function checkMC(ast: any): string[] {
 }
 
 /**
- * Checks that an integer answer question tag has valid properties.
+ * Checks that a `pl-integer-input` element has valid properties.
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkInt(ast: any): string[] {
+function checkIntegerInput(ast: any): string[] {
   const errors: string[] = [];
   let usedAnswersName = false;
   for (const attr of ast.attrs) {
@@ -247,23 +279,23 @@ function checkInt(ast: any): string[] {
         assertInChoices('pl-integer-input', key, val, ['block', 'inline'], errors);
         break;
       default:
-        if (!HTML_GLOBAL_TAGS.includes(key)) {
-          errors.push(`${key} is not a valid property for pl-integer-input.`);
+        if (!htmlGlobalAttributes.includes(key)) {
+          errors.push(`pl-integer-input: ${key} is not a valid property.`);
         }
     }
   }
   if (!usedAnswersName) {
-    errors.push('answers-name is a required property for pl-integer-input tags.');
+    errors.push('pl-integer-input: answers-name is a required property.');
   }
   return errors;
 }
 
 /**
- * Checks that a numerical answer question tag has valid properties.
+ * Checks that a `pl-number-input` element has valid properties.
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkNum(ast: any): string[] {
+function checkNumericalInput(ast: any): string[] {
   const errors: string[] = [];
   let usedAnswersName = false;
   let usedRelabs = true;
@@ -329,13 +361,13 @@ function checkNum(ast: any): string[] {
         usedBlankValue = true;
         break;
       default:
-        if (!HTML_GLOBAL_TAGS.includes(key)) {
-          errors.push(`${key} is not a valid property for pl-number-input.`);
+        if (!htmlGlobalAttributes.includes(key)) {
+          errors.push(`pl-number-input: ${key} is not a valid property.`);
         }
     }
   }
   if (!usedAnswersName) {
-    errors.push('answers-name is a required property for pl-number-input tags.');
+    errors.push('pl-number-input: answers-name is a required property.');
   }
   if ((usedRtol || usedAtol) && !usedRelabs) {
     errors.push(
@@ -352,11 +384,11 @@ function checkNum(ast: any): string[] {
 }
 
 /**
- * Checks that an potential multiple choice answer tag has valid properties.
+ * Checks that a `pl-answer` element has valid properties..
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkMCAnswer(ast: any): string[] {
+function checkAnswer(ast: any): string[] {
   const errors: string[] = [];
   for (const attr of ast.attrs) {
     switch (attr.name) {
@@ -375,8 +407,8 @@ function checkMCAnswer(ast: any): string[] {
       case 'distractor-feedback':
         break;
       default:
-        if (!HTML_GLOBAL_TAGS.includes(attr.name)) {
-          errors.push(`${attr.name} is not a valid property for pl-answer.`);
+        if (!htmlGlobalAttributes.includes(attr.name)) {
+          errors.push(`pl-answer: ${attr.name} is not a valid property.`);
         }
     }
   }
@@ -384,7 +416,7 @@ function checkMCAnswer(ast: any): string[] {
 }
 
 /**
- * Checks that an potential overlay tag has valid properties.
+ * Checks that a `pl-overlay` element has valid properties.
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
@@ -400,8 +432,8 @@ function checkOverlay(ast: any): string[] {
         assertBool('pl-overlay', attr.name, attr.value, errors);
         break;
       default:
-        if (!HTML_GLOBAL_TAGS.includes(attr.name)) {
-          errors.push(`${attr.name} is not a valid property for pl-overlay.`);
+        if (!htmlGlobalAttributes.includes(attr.name)) {
+          errors.push(`pl-overlay: ${attr.name} is not a valid property.`);
         }
     }
   }
@@ -409,7 +441,7 @@ function checkOverlay(ast: any): string[] {
 }
 
 /**
- * Checks that an location tag has valid properties.
+ * Checks that a `pl-location` element has valid properties.
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
@@ -430,8 +462,8 @@ function checkLocation(ast: any): string[] {
         assertInChoices('pl-location', attr.name, attr.value, ['left', 'center', 'right'], errors);
         break;
       default:
-        if (!HTML_GLOBAL_TAGS.includes(attr.name)) {
-          errors.push(`${attr.name} is not a valid property for pl-location.`);
+        if (!htmlGlobalAttributes.includes(attr.name)) {
+          errors.push(`pl-location: ${attr.name} is not a valid property.`);
         }
     }
   }
@@ -439,7 +471,7 @@ function checkLocation(ast: any): string[] {
 }
 
 /**
- * Checks that a order blocks question tag has valid properties.
+ * Checks that a `pl-order-blocks` element has valid properties..
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
@@ -507,13 +539,13 @@ function checkOrderBlocks(ast: any): string[] {
         assertInChoices('pl-order-blocks', key, val, ['code', 'default'], errors);
         break;
       default:
-        if (!HTML_GLOBAL_TAGS.includes(attr.name)) {
-          errors.push(`${attr.name} is not a valid property for pl-order-blocks.`);
+        if (!htmlGlobalAttributes.includes(attr.name)) {
+          errors.push(`pl-order-blocks: ${attr.name} is not a valid property.`);
         }
     }
   }
   if (!usedAnswersName) {
-    errors.push('answers-name is a required property for pl-order-blocks tags.');
+    errors.push('pl-order-blocks: answers-name is a required property.');
   }
   if (usedFeedback && !usedDagRanking) {
     errors.push(
@@ -524,11 +556,11 @@ function checkOrderBlocks(ast: any): string[] {
 }
 
 /**
- * Checks that a matrix question tag has valid properties.
+ * Checks that a `pl-matrix-input` element has valid properties..
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkMatrix(ast: any): string[] {
+function checkMatrixInput(ast: any): string[] {
   const errors: string[] = [];
   let usedAnswersName = false;
   let usedDigits = false;
@@ -570,13 +602,13 @@ function checkMatrix(ast: any): string[] {
         assertBool('pl-matrix-input', key, val, errors);
         break;
       default:
-        if (!HTML_GLOBAL_TAGS.includes(attr.name)) {
-          errors.push(`${attr.name} is not a valid property for pl-matrix-input.`);
+        if (!htmlGlobalAttributes.includes(attr.name)) {
+          errors.push(`pl-matrix-input: ${attr.name} is not a valid property.`);
         }
     }
   }
   if (!usedAnswersName) {
-    errors.push('answers-name is a required property for pl-matrix-input tags.');
+    errors.push('pl-matrix-input: answers-name is a required property.');
   }
   if ((usedRtol || usedAtol) && !usedRelabs) {
     errors.push(
@@ -611,6 +643,6 @@ function dfsCheckParseTree(ast: any): string[] {
  * @returns A list of human-readable render error messages, if any.
  */
 export function validateHTML(file: string): string[] {
-  const tree = parse5.Parser.parse(file);
+  const tree = parse5.parseFragment(file);
   return dfsCheckParseTree(tree);
 }
