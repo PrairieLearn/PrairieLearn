@@ -1,11 +1,23 @@
+import { group } from 'console';
 import * as path from 'path';
 
 import { assert } from 'chai';
 import fs from 'fs-extra';
+import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
+import {
+  AlternativeGroupSchema,
+  AssessmentQuestionRolePermissionsSchema,
+  AssessmentQuestionSchema,
+  AssessmentSchema,
+  GroupRoleSchema,
+  QuestionSchema,
+  ZoneSchema,
+} from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import * as helperDb from '../helperDb.js';
@@ -23,7 +35,7 @@ function makeAssessment(
 ): util.Assessment {
   const assessmentSet = courseData.course.assessmentSets[0].name;
   return {
-    uuid: '1e0724c3-47af-4ca3-9188-5227ef0c5549',
+    uuid: uuidv4(),
     type,
     title: 'Test assessment',
     set: assessmentSet,
@@ -60,11 +72,18 @@ function getPermission(permissions, groupRole, assessmentQuestion) {
   );
 }
 
-async function getSyncedAssessmentData(tid) {
-  const res = await sqldb.queryOneRowAsync(sql.get_data_for_assessment, {
-    tid,
-  });
-  return res.rows[0];
+async function getSyncedAssessmentData(tid: string) {
+  return await sqldb.queryRow(
+    sql.get_data_for_assessment,
+    { tid },
+    z.object({
+      assessment: AssessmentSchema,
+      zones: z.array(ZoneSchema),
+      alternative_groups: z.array(AlternativeGroupSchema),
+      assessment_questions: z.array(AssessmentQuestionSchema.extend({ question: QuestionSchema })),
+      group_roles: z.array(GroupRoleSchema),
+    }),
+  );
 }
 
 async function findSyncedAssessment(tid) {
@@ -203,6 +222,7 @@ describe('Assessment syncing', () => {
     const firstAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.QUESTION_ID,
     );
+    assert.ok(firstAssessmentQuestion);
     assert.equal(firstAssessmentQuestion.max_points, 10);
     assert.equal(firstAssessmentQuestion.max_auto_points, 10);
     assert.deepEqual(firstAssessmentQuestion.points_list, [10]);
@@ -211,6 +231,7 @@ describe('Assessment syncing', () => {
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
+    assert.ok(secondAssessmentQuestion);
     assert.equal(secondAssessmentQuestion.max_points, 5);
     assert.equal(secondAssessmentQuestion.max_auto_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [5]);
@@ -219,6 +240,7 @@ describe('Assessment syncing', () => {
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
     );
+    assert.ok(thirdAssessmentQuestion);
     assert.equal(thirdAssessmentQuestion.max_points, 7);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
     assert.deepEqual(thirdAssessmentQuestion.points_list, [7]);
@@ -262,6 +284,7 @@ describe('Assessment syncing', () => {
     const firstAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.QUESTION_ID,
     );
+    assert.ok(firstAssessmentQuestion);
     assert.equal(firstAssessmentQuestion.init_points, 10);
     assert.equal(firstAssessmentQuestion.max_points, 20);
     assert.equal(firstAssessmentQuestion.max_auto_points, 20);
@@ -270,6 +293,7 @@ describe('Assessment syncing', () => {
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
+    assert.ok(secondAssessmentQuestion);
     assert.equal(secondAssessmentQuestion.init_points, 5);
     assert.equal(secondAssessmentQuestion.max_points, 15);
     assert.equal(secondAssessmentQuestion.max_auto_points, 15);
@@ -278,6 +302,7 @@ describe('Assessment syncing', () => {
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
     );
+    assert.ok(thirdAssessmentQuestion);
     assert.equal(thirdAssessmentQuestion.init_points, 7);
     assert.equal(thirdAssessmentQuestion.max_points, 7);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
@@ -321,6 +346,7 @@ describe('Assessment syncing', () => {
     const firstAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.QUESTION_ID,
     );
+    assert.ok(firstAssessmentQuestion);
     assert.equal(firstAssessmentQuestion.max_points, 13);
     assert.equal(firstAssessmentQuestion.max_auto_points, 10);
     assert.deepEqual(firstAssessmentQuestion.points_list, [13]);
@@ -329,6 +355,7 @@ describe('Assessment syncing', () => {
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
+    assert.ok(secondAssessmentQuestion);
     assert.equal(secondAssessmentQuestion.max_points, 8);
     assert.equal(secondAssessmentQuestion.max_auto_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [8]);
@@ -337,6 +364,7 @@ describe('Assessment syncing', () => {
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
     );
+    assert.ok(thirdAssessmentQuestion);
     assert.equal(thirdAssessmentQuestion.max_points, 8);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 1);
     assert.deepEqual(thirdAssessmentQuestion.points_list, [8]);
@@ -498,6 +526,7 @@ describe('Assessment syncing', () => {
     const firstAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.QUESTION_ID,
     );
+    assert.ok(firstAssessmentQuestion);
     assert.equal(firstAssessmentQuestion.max_points, 18);
     assert.equal(firstAssessmentQuestion.max_auto_points, 10);
     assert.deepEqual(firstAssessmentQuestion.points_list, [18, 15, 13, 10, 9]);
@@ -506,6 +535,7 @@ describe('Assessment syncing', () => {
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
+    assert.ok(secondAssessmentQuestion);
     assert.equal(secondAssessmentQuestion.max_points, 13);
     assert.equal(secondAssessmentQuestion.max_auto_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [13, 11]);
@@ -514,6 +544,7 @@ describe('Assessment syncing', () => {
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
     );
+    assert.ok(thirdAssessmentQuestion);
     assert.equal(thirdAssessmentQuestion.max_points, 10);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 7);
     assert.deepEqual(thirdAssessmentQuestion.points_list, [10, 9, 8]);
@@ -568,6 +599,10 @@ describe('Assessment syncing', () => {
       (aq) => aq.question.qid === util.QUESTION_ID,
     );
     // The questions were reordered, but they should still have the same assessment question IDs
+    assert.ok(originalFirstSyncedAssessmentQuestion);
+    assert.ok(originalSecondSyncedAssessmentQuestion);
+    assert.ok(newFirstSyncedAssessmentQuestion);
+    assert.ok(newSecondSyncedAssessmentQuestion);
     assert.equal(newFirstSyncedAssessmentQuestion.id, originalSecondSyncedAssessmentQuestion.id);
     assert.equal(newSecondSyncedAssessmentQuestion.id, originalFirstSyncedAssessmentQuestion.id);
   });
@@ -1250,6 +1285,9 @@ describe('Assessment syncing', () => {
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
 
+    assert.ok(firstAssessmentQuestion);
+    assert.ok(secondAssessmentQuestion);
+
     const newSyncedPermissions = await util.dumpTable('assessment_question_role_permissions');
     // Contributor can no longer view QUESTION_ID
     const firstQuestionContributorPermission = newSyncedPermissions.find(
@@ -1268,6 +1306,87 @@ describe('Assessment syncing', () => {
     );
     assert.isTrue(secondQuestionContributorPermission?.can_view);
     assert.isFalse(secondQuestionContributorPermission?.can_submit);
+  });
+
+  // At one point we were missing a `WHERE` clause in the syncing code, which caused
+  // excess `assessment_question_role_permissions` to be created. This test ensures
+  // that this bug is fixed.
+  it('isolates roles/permissions to the assessment they are defined in', async () => {
+    const courseData = util.getCourseData();
+
+    const firstGroupAssessment = makeAssessment(courseData, 'Homework');
+    firstGroupAssessment.groupWork = true;
+    firstGroupAssessment.groupRoles = [{ name: 'Recorder', minimum: 1, canAssignRoles: true }];
+    firstGroupAssessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          canView: ['Recorder'],
+          canSubmit: ['Recorder'],
+        },
+      ],
+    });
+
+    const secondGroupAssessment = makeAssessment(courseData, 'Homework');
+    secondGroupAssessment.groupWork = true;
+    secondGroupAssessment.groupRoles = [{ name: 'Recorder', minimum: 1, canAssignRoles: true }];
+    secondGroupAssessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          canView: ['Recorder'],
+          canSubmit: ['Recorder'],
+        },
+      ],
+    });
+
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['firstGroupAssessment'] =
+      firstGroupAssessment;
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['secondGroupAssessment'] =
+      secondGroupAssessment;
+
+    await util.writeAndSyncCourseData(courseData);
+
+    const firstSyncedAssessment = await getSyncedAssessmentData('firstGroupAssessment');
+    const secondSyncedAssessment = await getSyncedAssessmentData('secondGroupAssessment');
+    assert.lengthOf(firstSyncedAssessment.group_roles, 1);
+    assert.lengthOf(secondSyncedAssessment.group_roles, 1);
+
+    const syncedPermissions = await util.dumpTableWithSchema(
+      'assessment_question_role_permissions',
+      AssessmentQuestionRolePermissionsSchema,
+    );
+    assert.lengthOf(syncedPermissions, 2);
+
+    const firstAssessmentQuestion = firstSyncedAssessment.assessment_questions[0];
+    const firstGroupRole = firstSyncedAssessment.group_roles[0];
+    assert.ok(firstAssessmentQuestion);
+    assert.ok(firstGroupRole);
+
+    const secondAssessmentQuestion = secondSyncedAssessment.assessment_questions[0];
+    const secondGroupRole = secondSyncedAssessment.group_roles[0];
+    assert.ok(secondAssessmentQuestion);
+    assert.ok(secondGroupRole);
+
+    const firstQuestionPermission = syncedPermissions.find((p) => {
+      return (
+        p.assessment_question_id === firstAssessmentQuestion.id &&
+        p.group_role_id === firstGroupRole.id
+      );
+    });
+    assert.ok(firstQuestionPermission);
+
+    const secondQuestionPermission = syncedPermissions.find((p) => {
+      return (
+        p.assessment_question_id === secondAssessmentQuestion.id &&
+        p.group_role_id === secondGroupRole.id
+      );
+    });
+    assert.ok(secondQuestionPermission);
   });
 
   it('handles assessment sets that are not present in infoCourse.json', async () => {
@@ -1733,11 +1852,13 @@ describe('Assessment syncing', () => {
     const firstAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.QUESTION_ID,
     );
+    assert.ok(firstAssessmentQuestion);
     assert.deepEqual(firstAssessmentQuestion.points_list, [5]);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
+    assert.ok(secondAssessmentQuestion);
     assert.deepEqual(secondAssessmentQuestion.points_list, [10]);
 
     const syncedAssessment = await findSyncedAssessment('points_array_size_one');
@@ -1827,11 +1948,13 @@ describe('Assessment syncing', () => {
     const firstAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.QUESTION_ID,
     );
+    assert.ok(firstAssessmentQuestion);
     assert.deepEqual(firstAssessmentQuestion.points_list, [10]);
 
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
+    assert.ok(secondAssessmentQuestion);
     assert.deepEqual(secondAssessmentQuestion.points_list, [5]);
 
     const syncedAssessment = await findSyncedAssessment('points_array_size_one');
@@ -1847,12 +1970,12 @@ describe('Assessment syncing', () => {
     const syncedAssessment1 = await findSyncedAssessment('fail1');
     assert.match(
       syncedAssessment1?.sync_warnings,
-      /UUID "1e0724c3-47af-4ca3-9188-5227ef0c5549" is used in other assessments in this course instance: fail2/,
+      /UUID ".*" is used in other assessments in this course instance: fail2/,
     );
     const syncedAssessment2 = await findSyncedAssessment('fail2');
     assert.match(
       syncedAssessment2?.sync_warnings,
-      /UUID "1e0724c3-47af-4ca3-9188-5227ef0c5549" is used in other assessments in this course instance: fail1/,
+      /UUID ".*" is used in other assessments in this course instance: fail1/,
     );
   });
 

@@ -2,6 +2,7 @@ import * as path from 'path';
 
 import { assert } from 'chai';
 import fs from 'fs-extra';
+import { v4 as uuidv4 } from 'uuid';
 
 import { idsEqual } from '../../lib/id.js';
 import * as helperDb from '../helperDb.js';
@@ -13,7 +14,7 @@ import * as util from './util.js';
  */
 function makeQuestion(courseData: util.CourseData): util.Question {
   return {
-    uuid: '1e0724c3-47af-4ca3-9188-5227ef0c5549',
+    uuid: uuidv4(),
     title: 'Test question',
     type: 'v3',
     topic: courseData.course.topics[0].name,
