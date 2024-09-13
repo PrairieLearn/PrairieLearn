@@ -1,4 +1,3 @@
-import { group } from 'console';
 import * as path from 'path';
 
 import { assert } from 'chai';
@@ -410,6 +409,7 @@ describe('Assessment syncing', () => {
     const firstAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.QUESTION_ID,
     );
+    assert.ok(firstAssessmentQuestion);
     assert.equal(firstAssessmentQuestion.init_points, 13);
     assert.equal(firstAssessmentQuestion.max_points, 23);
     assert.equal(firstAssessmentQuestion.max_auto_points, 20);
@@ -418,6 +418,7 @@ describe('Assessment syncing', () => {
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
+    assert.ok(secondAssessmentQuestion);
     assert.equal(secondAssessmentQuestion.init_points, 8);
     assert.equal(secondAssessmentQuestion.max_points, 18);
     assert.equal(secondAssessmentQuestion.max_auto_points, 15);
@@ -426,6 +427,7 @@ describe('Assessment syncing', () => {
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
     );
+    assert.ok(thirdAssessmentQuestion);
     assert.equal(thirdAssessmentQuestion.init_points, 8);
     assert.equal(thirdAssessmentQuestion.max_points, 8);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 1);
@@ -467,6 +469,7 @@ describe('Assessment syncing', () => {
     const firstAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.QUESTION_ID,
     );
+    assert.ok(firstAssessmentQuestion);
     assert.equal(firstAssessmentQuestion.max_points, 10);
     assert.equal(firstAssessmentQuestion.max_auto_points, 10);
     assert.deepEqual(firstAssessmentQuestion.points_list, [10, 7, 5, 2, 1]);
@@ -475,6 +478,7 @@ describe('Assessment syncing', () => {
     const secondAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
+    assert.ok(secondAssessmentQuestion);
     assert.equal(secondAssessmentQuestion.max_points, 5);
     assert.equal(secondAssessmentQuestion.max_auto_points, 5);
     assert.deepEqual(secondAssessmentQuestion.points_list, [5, 3]);
@@ -483,6 +487,7 @@ describe('Assessment syncing', () => {
     const thirdAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.MANUAL_GRADING_QUESTION_ID,
     );
+    assert.ok(thirdAssessmentQuestion);
     assert.equal(thirdAssessmentQuestion.max_points, 7);
     assert.equal(thirdAssessmentQuestion.max_auto_points, 0);
     assert.deepEqual(thirdAssessmentQuestion.points_list, [7, 6, 5]);
