@@ -124,7 +124,9 @@ FROM
 WHERE
   ai.assessment_id = $assessment_id
   AND ai.score_perc IS NOT NULL
-  AND ai.date IS NOT NULL;
+  AND ai.date IS NOT NULL
+ORDER BY
+  ai.id;
 
 -- BLOCK select_assessment_with_lti13_course_instance_id
 SELECT
