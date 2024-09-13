@@ -252,7 +252,7 @@ export function ExamQuestionStatus({
   };
 }) {
   const badge_color = {
-    unanswered: 'danger',
+    unanswered: 'warning',
     invalid: 'danger',
     grading: 'default',
     saved: 'info',
