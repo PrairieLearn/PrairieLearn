@@ -73,12 +73,12 @@ WITH
   ),
   group_roles_data AS (
     SELECT
-      coalesce(jsonb_agg(to_jsonb(group_roles)), '[]'::jsonb) AS group_roles
+      coalesce(jsonb_agg(to_jsonb(gr)), '[]'::jsonb) AS group_roles
     FROM
-      group_roles,
+      group_roles AS gr,
       assessment
     WHERE
-      assessment_id = assessment.id
+      gr.assessment_id = assessment.id
   )
 SELECT
   assessment,

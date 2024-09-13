@@ -503,7 +503,7 @@ export async function dumpTableWithSchema<Schema extends z.ZodTypeAny>(
   tableName: string,
   schema: Schema,
 ): Promise<z.infer<Schema>[]> {
-  return await sqldb.queryRows(`SELECT * FROM ${tableName};`, {}, schema);
+  return await sqldb.queryRows(`SELECT * FROM ${tableName};`, schema);
 }
 
 export async function captureDatabaseSnapshot() {
