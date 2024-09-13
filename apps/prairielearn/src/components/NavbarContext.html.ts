@@ -140,6 +140,12 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       iconClasses: 'fas fa-quote-right',
       tabLabel: 'Topics',
     },
+    {
+      activeSubPage: 'modules',
+      urlSuffix: '/course_admin/modules',
+      iconClasses: 'fa fa-layer-group',
+      tabLabel: 'Modules',
+    },
   ],
   assessment: [
     {
