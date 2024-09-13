@@ -159,7 +159,15 @@ BEGIN
         WHERE
             ci.course_id = syncing_course_id
             AND ci.deleted_at IS NULL
-    ), synced_access_rules AS (
+    ), inserted_access_rules AS (
+        INSERT INTO course_instance_access_rules (
+            course_instance_id,
+            number,
+            uids,
+            start_date,
+            end_date,
+            institution
+        )
         SELECT
             ci.id AS course_instance_id,
             number,
@@ -173,23 +181,6 @@ BEGIN
         FROM
             synced_course_instances AS ci,
             JSONB_ARRAY_ELEMENTS(ci.data->'access_rules') WITH ORDINALITY AS t(access_rule, number)
-    ), inserted_access_rules AS (
-        INSERT INTO course_instance_access_rules (
-            course_instance_id, 
-            number,
-            uids,
-            start_date,
-            end_date,
-            institution
-        )
-        SELECT
-            course_instance_id,
-            number,
-            uids,
-            start_date,
-            end_date,
-            institution
-        FROM synced_access_rules
         ON CONFLICT (number, course_instance_id) DO UPDATE
         SET
             uids = EXCLUDED.uids,
