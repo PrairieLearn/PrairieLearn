@@ -83,7 +83,11 @@ export function InstructorAssessmentSettings({
                       .abbreviation})"
                     disabled
                   />
-                  <small class="form-text text-muted"> The set this assessment belongs to. </small>
+                  <small class="form-text text-muted">
+                    The
+                    <a href="${resLocals.urlPrefix}/course_admin/sets">assessment set</a>
+                    this assessment belongs to.
+                  </small>
                 </div>
                 <div class="form-group">
                   <label for="number">Number</label>
