@@ -12,11 +12,13 @@ export function Navbar({
   navPage,
   navSubPage,
   navbarType,
+  showContextNavigation = true,
 }: {
   resLocals: Record<string, any>;
   navPage?: NavPage;
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
+  showContextNavigation?: boolean;
 }) {
   const { __csrf_token, course, urlPrefix, homeUrl } = resLocals;
   navPage ??= resLocals.navPage;
@@ -24,17 +26,19 @@ export function Navbar({
   navbarType ??= resLocals.navbarType;
 
   return html`
-    ${config.devMode && __csrf_token
-      ? // Unit tests often need access to the CSRF token even when the page contains
-        // no form - for example, to confirm that a POST with a prohibited
-        // action is denied. For convenience, we include the CSRF token here, on
-        // all pages. We do this only in devMode and only for the purpose of
-        // testing.
-        html`
-          <!-- DO NOT RELY ON OR USE THIS CSRF TOKEN FOR ANYTHING OTHER THAN UNIT TESTS! -->
-          <span id="test_csrf_token" hidden>${__csrf_token}</span>
-        `
-      : ''}
+    ${
+      config.devMode && __csrf_token
+        ? // Unit tests often need access to the CSRF token even when the page contains
+          // no form - for example, to confirm that a POST with a prohibited
+          // action is denied. For convenience, we include the CSRF token here, on
+          // all pages. We do this only in devMode and only for the purpose of
+          // testing.
+          html`
+            <!-- DO NOT RELY ON OR USE THIS CSRF TOKEN FOR ANYTHING OTHER THAN UNIT TESTS! -->
+            <span id="test_csrf_token" hidden>${__csrf_token}</span>
+          `
+        : ''
+    }
 
     <div class="container-fluid bg-primary">
       <a href="#content" class="sr-only sr-only-focusable d-inline-flex p-2 m-2 text-white">
@@ -42,24 +46,81 @@ export function Navbar({
       </a>
     </div>
 
-    ${config.announcementHtml
-      ? html`
-          <div
-            class="alert alert-${config.announcementColor ?? 'primary'} mb-0 rounded-0 text-center"
-          >
-            ${unsafeHtml(config.announcementHtml)}
-          </div>
-        `
-      : ''}
+    ${
+      config.announcementHtml
+        ? html`
+            <div
+              class="alert alert-${config.announcementColor ??
+              'primary'} mb-0 rounded-0 text-center"
+            >
+              ${unsafeHtml(config.announcementHtml)}
+            </div>
+          `
+        : ''
+    }
 
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
       <div class="container-fluid">
         <a class="navbar-brand" href="${homeUrl}" aria-label="Homepage">
           <span class="navbar-brand-label">PrairieLearn</span>
-          <span class="navbar-brand-hover-label">
-            Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
-          </span>
         </a>
+
+        <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+          <li class="nav-item">
+            <a class="nav-link" href="#">Home</a>
+          </li>
+
+          <li class="nav-item d-none d-lg-block" aria-hidden="true">
+            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
+              &rarr;
+            </span>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">Global Admin</a>
+          </li>
+
+          <li class="nav-item d-none d-lg-block" aria-hidden="true">
+            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
+              &rarr;
+            </span>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">Institutions</a>
+          </li>
+
+          <li class="nav-item d-none d-lg-block" aria-hidden="true">
+            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
+              &rarr;
+            </span>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">UIUC</a>
+          </li>
+
+          <li class="nav-item d-none d-lg-block" aria-hidden="true">
+            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
+              &rarr;
+            </span>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link" href="#">Courses</a>
+          </li>
+
+          <li class="nav-item d-none d-lg-block" aria-hidden="true">
+            <span class="nav-link disabled px-0" style="color: var(--bs-nav-link-color);">
+              &rarr;
+            </span>
+          </li>
+
+          <li class="nav-item">
+            <a class="nav-link active" href="#">TAM 212</i></a>
+          </li>
+        </ul>
+
         <button
           class="navbar-toggler"
           type="button"
@@ -71,34 +132,22 @@ export function Navbar({
           <span class="navbar-toggler-icon"></span>
         </button>
         <div id="course-nav" class="collapse navbar-collapse">
-          <ul class="nav navbar-nav mr-auto" id="main-nav">
-            ${NavbarByType({ resLocals, navPage, navSubPage, navbarType })}
-          </ul>
+          <ul class="nav navbar-nav mr-auto" id="main-nav"></ul>
 
-          ${config.devMode
-            ? html`
-                <a
-                  id="navbar-load-from-disk"
-                  class="btn btn-success btn-sm"
-                  href="${urlPrefix}/loadFromDisk"
-                >
-                  Load from disk
-                </a>
-              `
-            : ''}
           ${UserDropdownMenu({ resLocals, navPage, navbarType })}
         </div>
       </div>
     </nav>
 
-    ${navbarType === 'instructor' && course && course.announcement_html && course.announcement_color
-      ? html`
-          <div class="alert alert-${course.announcement_color} mb-0 rounded-0 text-center">
-            ${unsafeHtml(course.announcement_html)}
-          </div>
-        `
-      : ''}
-    ${ContextNavigation({ resLocals, navPage, navSubPage })} ${FlashMessages()}
+    ${
+      navbarType === 'instructor' && course && course.announcement_html && course.announcement_color
+        ? html`
+            <div class="alert alert-${course.announcement_color} mb-0 rounded-0 text-center">
+              ${unsafeHtml(course.announcement_html)}
+            </div>
+          `
+        : ''
+    }
   `;
 }
 
@@ -263,7 +312,7 @@ function FlashMessages() {
   } as const;
 
   return html`
-    <div class="mb-3">
+    <div>
       ${flash(Object.keys(globalFlashColors) as FlashMessageType[]).map(
         ({ type, message }) => html`
           <div
