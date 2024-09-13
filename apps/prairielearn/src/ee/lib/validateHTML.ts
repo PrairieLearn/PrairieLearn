@@ -122,7 +122,6 @@ function assertBool(tag: string, key: string, val: string, errors: string[]) {
  * @returns The list of errors for the tag, if any.
  */
 function checkTag(ast: any): string[] {
-  console.log(typeof ast)
   switch (ast.tagName) {
     case 'pl-multiple-choice':
       return checkMultipleChoice(ast);

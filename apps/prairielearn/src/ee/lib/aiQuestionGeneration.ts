@@ -149,7 +149,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     });
 
     extractFromCompletion(completion, job);
-    const html = String(job?.data?.html);
+    const html = job?.data?.html;
 
     job.data['errorsInit'] = [];
     job.data['prompt'] = prompt;
@@ -157,7 +157,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data['context'] = context;
     job.data['completion'] = completion;
 
-    if (html) {
+    if (html && typeof html === 'string') {
       const errors = validateHTML(html);
       job.data['errorsInit'] = errors;
       job.data['errors'] = errors;
@@ -169,7 +169,7 @@ Keep in mind you are not just generating an example; you are generating an actua
           prompt,
           `Please fix the following issues: \n${errors.join('\n')}`,
           html,
-          String(job.data.python),
+          typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
           0,
           false,
         );
@@ -204,7 +204,7 @@ async function regenInternal(
   originalPrompt: string,
   revisionPrompt: string,
   originalHTML: string,
-  originalPython: string,
+  originalPython: string | undefined,
   numRegens: number,
   saveInitialErrors: boolean,
 ) {
@@ -260,14 +260,14 @@ Keep in mind you are not just generating an example; you are generating an actua
   extractFromCompletion(completion, job);
   job.data['generation'] = completion.choices[0].message.content;
 
-  const html = String(job?.data?.html);
+  const html = job?.data?.html;
 
   if (saveInitialErrors) {
     job.data['errorsInit'] = [];
   }
   job.data['errors'] = [];
 
-  if (html) {
+  if (html && typeof html === 'string') {
     const errors = validateHTML(html);
     if (saveInitialErrors) {
       job.data['errorsInit'] = errors;
@@ -283,7 +283,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         originalPrompt,
         autoRevisionPrompt,
         html,
-        String(job.data.python),
+        typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
         numRegens - 1,
         false,
       );
