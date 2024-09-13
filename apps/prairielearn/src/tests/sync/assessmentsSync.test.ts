@@ -577,12 +577,16 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['newexam'] = assessment;
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
     let syncedData = await getSyncedAssessmentData('newexam');
+
     const originalFirstSyncedAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.QUESTION_ID,
     );
+    assert.ok(originalFirstSyncedAssessmentQuestion);
+
     const originalSecondSyncedAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
+    assert.ok(originalSecondSyncedAssessmentQuestion);
 
     const removedQuestion = assessment.zones[0].questions?.shift();
     if (!removedQuestion) throw new Error('removedQuestion is null');
@@ -597,17 +601,17 @@ describe('Assessment syncing', () => {
     assessment.zones[0].questions?.push(removedQuestion);
     await util.overwriteAndSyncCourseData(courseData, courseDir);
     syncedData = await getSyncedAssessmentData('newexam');
+
     const newFirstSyncedAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.ALTERNATIVE_QUESTION_ID,
     );
+    assert.ok(newFirstSyncedAssessmentQuestion);
     const newSecondSyncedAssessmentQuestion = syncedData.assessment_questions.find(
       (aq) => aq.question.qid === util.QUESTION_ID,
     );
-    // The questions were reordered, but they should still have the same assessment question IDs
-    assert.ok(originalFirstSyncedAssessmentQuestion);
-    assert.ok(originalSecondSyncedAssessmentQuestion);
-    assert.ok(newFirstSyncedAssessmentQuestion);
     assert.ok(newSecondSyncedAssessmentQuestion);
+
+    // The questions were reordered, but they should still have the same assessment question IDs
     assert.equal(newFirstSyncedAssessmentQuestion.id, originalSecondSyncedAssessmentQuestion.id);
     assert.equal(newSecondSyncedAssessmentQuestion.id, originalFirstSyncedAssessmentQuestion.id);
   });
