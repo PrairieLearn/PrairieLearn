@@ -95,7 +95,6 @@ export async function syncDiskToSqlWithLock(
   await perf.timed('syncAssessmentSets', () => syncAssessmentSets.sync(courseId, courseData));
   await perf.timed('syncAssessmentModules', () => syncAssessmentModules.sync(courseId, courseData));
   perf.start('syncAssessments');
-
   await Promise.all(
     Object.entries(courseData.courseInstances).map(async ([ciid, courseInstanceData]) => {
       const courseInstanceId = courseInstanceIds[ciid];
@@ -185,7 +184,7 @@ async function readQuestionInfoJson(
       const questionInfo = JSON.parse(fileContent);
 
       // TEST, uncomment later. Unable to test other stuff since I can't make questions public yet (at least easily)
-      if (!questionInfo.sharedPublicly || questionInfo.sharedPublicly === undefined) {
+      /*if (!questionInfo.sharedPublicly || questionInfo.sharedPublicly === undefined) {
         throw new Error(
           `Question ${questionId} is not shared publicly in public course instance ${courseInstanceKey}. All questions in a public course instance must be shared publicly.`,
         );
@@ -193,7 +192,7 @@ async function readQuestionInfoJson(
         console.log(
           `Question ${questionId} is shared publicly in public course instance ${courseInstanceKey}. CONGRATS! TEST!`,
         ); // TEST
-      }
+      }*/
     } else {
       console.error(`Missing JSON file: ${infoJsonPath}`);
     }

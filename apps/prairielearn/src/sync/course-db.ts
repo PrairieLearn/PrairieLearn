@@ -424,13 +424,12 @@ export async function loadFullCourse(
       questions,
     );
 
-    //const sharedPublicly = courseInstance.data?.allowAccess.some((rule) => rule.mode === 'Public'); // TODO/TEST: How to get the sharedPublicly value?
-    const sharedPublicly = false; // TEST, remove when sharedPublicly is implemented above
+    const sharedPublicly = courseInstance.data?.sharedPublicly ?? false; // TEST, works if sharedPublicly is in the infoCourseInstance.json file, or is set to false
 
     courseInstances[courseInstanceId] = {
       courseInstance,
       assessments,
-      sharedPublicly, // TODO: Implement sharedPublicly
+      sharedPublicly,
     };
   }
   return {
@@ -1434,7 +1433,6 @@ export async function loadAssessments(
       validateAssessment(assessment, questions, courseInstanceExpired),
     recursive: true,
   });
-
   checkDuplicateUUIDs(
     assessments,
     (uuid, ids) =>

@@ -96,18 +96,10 @@ describe('Question Sharing', function () {
       },
     };
 
-    console.log(sharingCourseData.courseInstances);
-    sharingCourseData.courseInstances['Fa19'].assessments.test.sharedPublicly = true;
+    sharingCourseData.courseInstances['Fa19'].assessments.test.sharedPublicly = true; // TEST, maybe, not sure
 
     const sharingCourseResults = await syncUtil.writeAndSyncCourseData(sharingCourseData);
     sharingCourse = await selectCourseById(sharingCourseResults.syncResults.courseId);
-
-    // TODO delete this temporary check
-    const tempResult = await sqldb.queryAsync(
-      'select tid, title, shared_publicly from assessments;',
-      {},
-    );
-    console.log(tempResult.rows);
 
     // Fill in empty `question.html` files for our two questions so that we can
     // view them without errors. We don't actually need any contents.

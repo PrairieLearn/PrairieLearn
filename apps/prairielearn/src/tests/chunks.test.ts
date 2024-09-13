@@ -32,7 +32,7 @@ const COURSE: courseDB.CourseData = {
         'simple-assessment': makeInfoFile(),
         'complex/assessment': makeInfoFile(),
       },
-      sharedPublicly: false, // TODO: Figure out what to put here
+      sharedPublicly: false,
     },
     'complex/course/instance': {
       courseInstance: makeInfoFile(),
@@ -40,7 +40,7 @@ const COURSE: courseDB.CourseData = {
         'simple-assessment': makeInfoFile(),
         'complex/assessment': makeInfoFile(),
       },
-      sharedPublicly: false, // TODO: Figure out what to put here
+      sharedPublicly: false, 
     },
   },
 };
