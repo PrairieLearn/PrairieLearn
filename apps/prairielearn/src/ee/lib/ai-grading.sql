@@ -92,11 +92,3 @@ ORDER BY
   embedding <=> $embedding
 LIMIT
   $limit;
-
--- BLOCK get_submission_grade
-SELECT
-  score
-FROM
-  submissions
-WHERE
-  id = $submission_id;

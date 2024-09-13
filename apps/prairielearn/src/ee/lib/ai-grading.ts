@@ -31,6 +31,8 @@ import * as questionServers from '../../question-servers/index.js';
 import { createEmbedding, vectorToString } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+// Current AI grader is set to user 1
 const ai_grader_id = '1';
 
 const SubmissionVariantSchema = z.object({
