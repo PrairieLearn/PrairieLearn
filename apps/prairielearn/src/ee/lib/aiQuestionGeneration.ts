@@ -211,6 +211,10 @@ async function regenInternal(
   job.info(`prompt is ${revisionPrompt}`);
 
   const context = await makeContext(client, originalPrompt, authnUserId);
+  if (saveInitialErrors) {
+    job.data['context'] = context;
+  }
+
   const sysPrompt = `
 ${promptPreamble(context)}
 # Previous Generations
@@ -326,7 +330,6 @@ export async function regenerateQuestion(
   const jobData = await serverJob.execute(async (job) => {
     job.data['prompt'] = revisionPrompt;
     job.data['originalPrompt'] = originalPrompt;
-    job.data['context'] = context;
 
     await regenInternal(
       job,
