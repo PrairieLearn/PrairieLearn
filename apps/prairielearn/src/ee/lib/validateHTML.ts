@@ -129,8 +129,6 @@ function checkTag(ast: any): string[] {
       return checkIntegerInput(ast);
     case 'pl-number-input':
       return checkNumericalInput(ast);
-    case 'pl-answer':
-      return checkAnswer(ast);
     case 'pl-overlay':
       return checkOverlay(ast);
     case 'pl-location':
@@ -139,6 +137,8 @@ function checkTag(ast: any): string[] {
       return checkOrderBlocks(ast);
     case 'pl-matrix-input':
       return checkMatrixInput(ast);
+    case 'pl-string-input':
+      return checkStringInput(ast);
   }
   return [];
 }
@@ -236,7 +236,15 @@ function checkMultipleChoice(ast: any): string[] {
   if (!displayDropdown && usedSize) {
     errors.push('pl-multiple-choice: if using size, you must also use set display to "dropdown".');
   }
-  return errors;
+
+  let errorsChildren: string[] = [];
+  for (const child of ast.chidNodes) {
+    if (child.tagName === 'pl-answer') {
+      errorsChildren = errorsChildren.concat(checkAnswerMultipleChoice(child));
+    }
+  }
+
+  return errors.concat(errorsChildren);
 }
 
 /**
@@ -383,22 +391,46 @@ function checkNumericalInput(ast: any): string[] {
 }
 
 /**
- * Checks that a `pl-answer` element has valid properties..
+ * Checks that a `pl-answer` element in a multiple choice tag has valid properties.
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkAnswer(ast: any): string[] {
+function checkAnswerMultipleChoice(ast: any): string[] {
   const errors: string[] = [];
   for (const attr of ast.attrs) {
     switch (attr.name) {
       case 'correct':
-        assertBool('pl-answer', attr.name, attr.value, errors);
+        assertBool('pl-answer (for pl-multiple-choice)', attr.name, attr.value, errors);
         break;
       case 'feedback':
         break;
+      case 'score':
+        assertFloat('pl-answer (for pl-multiple-choice)', attr.name, attr.value, errors);
+        break;
+      default:
+        if (!htmlGlobalAttributes.includes(attr.name)) {
+          errors.push(`pl-answer (for pl-multiple-choice): ${attr.name} is not a valid property.`);
+        }
+    }
+  }
+  return errors;
+}
+
+/**
+ * Checks that a `pl-answer` element in an order blocks tag has valid properties.
+ * @param ast The tree to consider, rooted at the tag to consider.
+ * @returns The list of errors for the tag, if any.
+ */
+function checkAnswerOrderBlocks(ast: any): string[] {
+  const errors: string[] = [];
+  for (const attr of ast.attrs) {
+    switch (attr.name) {
+      case 'correct':
+        assertBool('pl-answer (for pl-order-blocks)', attr.name, attr.value, errors);
+        break;
       case 'ranking':
       case 'indent':
-        assertInt('pl-answer', attr.name, attr.val, errors);
+        assertInt('pl-answer (for pl-order-blocks)', attr.name, attr.val, errors);
         break;
       case 'depends':
       case 'tag':
@@ -407,7 +439,7 @@ function checkAnswer(ast: any): string[] {
         break;
       default:
         if (!htmlGlobalAttributes.includes(attr.name)) {
-          errors.push(`pl-answer: ${attr.name} is not a valid property.`);
+          errors.push(`pl-answer (for pl-order-blocks): ${attr.name} is not a valid property.`);
         }
     }
   }
@@ -470,7 +502,7 @@ function checkLocation(ast: any): string[] {
 }
 
 /**
- * Checks that a `pl-order-blocks` element has valid properties..
+ * Checks that a `pl-order-blocks` element has valid properties.
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
@@ -551,11 +583,18 @@ function checkOrderBlocks(ast: any): string[] {
       'pl-order-blocks: if property "feedback" is "first-wrong" or "first-wrong-verbose", then "grading-method" must be "ranking" or "dag".',
     );
   }
-  return errors;
+  let errorsChildren: string[] = [];
+  for (const child of ast.chidNodes) {
+    if (child.tagName === 'pl-answer') {
+      errorsChildren = errorsChildren.concat(checkAnswerOrderBlocks(child));
+    }
+  }
+
+  return errors.concat(errorsChildren);
 }
 
 /**
- * Checks that a `pl-matrix-input` element has valid properties..
+ * Checks that a `pl-matrix-input` element has valid properties.
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
@@ -616,6 +655,56 @@ function checkMatrixInput(ast: any): string[] {
   }
   if (usedDigits && usedRelabs) {
     errors.push('pl-matrix-input: comparison mode relabs uses rtol and atol, not digits.');
+  }
+  return errors;
+}
+
+/**
+ * Checks that a `pl-string-input` element has valid properties.
+ * @param ast The tree to consider, rooted at the tag to consider.
+ * @returns The list of errors for the tag, if any.
+ */
+function checkStringInput(ast: any): string[] {
+  const errors: string[] = [];
+  let usedAnswersName = false;
+  let usedCorrectAnswer = false;
+  for (const attr of ast.attrs) {
+    const key = attr.name;
+    const val = attr.value;
+    switch (key) {
+      case 'answers-name':
+        usedAnswersName = true;
+        break;
+      case 'weight':
+      case 'size':
+        assertInt('pl-string-input', key, val, errors);
+        break;
+      case 'correct-answer':
+        usedCorrectAnswer = true;
+        break;
+      case 'label':
+      case 'suffix':
+      case 'placeholder':
+        break;
+      case 'display':
+        assertInChoices('pl-string-input', key, val, ['block', 'inline'], errors);
+        break;
+      case 'remove-leading-trailing':
+      case 'remove-spaces':
+      case 'allow-blank':
+      case 'ignore-case':
+      case 'normalize-to-ascii':
+      case 'show-help-text':
+        assertBool('pl-string-input', key, val, errors);
+        break;
+      default:
+        if (!htmlGlobalAttributes.includes(attr.name)) {
+          errors.push(`pl-string-input: ${attr.name} is not a valid property.`);
+        }
+    }
+  }
+  if (usedAnswersName === usedCorrectAnswer) {
+    errors.push('pl-string-input: exactly one of answers-name and correct-answer should be set.');
   }
   return errors;
 }
