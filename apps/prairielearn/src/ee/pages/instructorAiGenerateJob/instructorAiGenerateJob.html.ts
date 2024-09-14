@@ -33,16 +33,16 @@ export function InstructorAiGenerateJob({
               <pre class="bg-dark text-white rounded p-3">${job.data['generation']}</pre>
               <h2 class="card-title">Context Documents</h2>
               <pre class="bg-dark text-white rounded p-3">${job.data['context']}</pre>
-              ${job.data?.errorsInit
+              ${job.data?.initialGenerationErrors
                 ? html`<h2 class="card-title">Initial Generation Errors</h2>
                     <pre class="bg-dark text-white rounded p-3">
-${job.data['errorsInit'].join('\n')}</pre
+${job.data['initialGenerationErrors'].join('\n')}</pre
                     >`
                 : ''}
-              ${job.data?.errors
+              ${job.data?.finalGenerationErrors
                 ? html`<h2 class="card-title">Final Generation Errors</h2>
                     <pre class="bg-dark text-white rounded p-3">
-${job.data['errors'].join('\n')}</pre
+${job.data['finalGenerationErrors'].join('\n')}</pre
                     >`
                 : ''}
             </div>

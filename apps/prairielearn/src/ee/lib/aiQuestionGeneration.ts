@@ -151,7 +151,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     extractFromCompletion(completion, job);
     const html = job?.data?.html;
 
-    job.data['errorsInit'] = [];
+    job.data['initialGenerationErrors'] = [];
     job.data['prompt'] = prompt;
     job.data['generation'] = completion.choices[0].message.content;
     job.data['context'] = context;
@@ -159,8 +159,8 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     if (html && typeof html === 'string') {
       const errors = validateHTML(html);
-      job.data['errorsInit'] = errors;
-      job.data['errors'] = errors;
+      job.data['initialGenerationErrors'] = errors;
+      job.data['finalGenerationErrors'] = errors;
       if (errors.length > 0) {
         await regenInternal(
           job,
@@ -263,16 +263,16 @@ Keep in mind you are not just generating an example; you are generating an actua
   const html = job?.data?.html;
 
   if (saveInitialErrors) {
-    job.data['errorsInit'] = [];
+    job.data['initialGenerationErrors'] = [];
   }
-  job.data['errors'] = [];
+  job.data['finalGenerationErrors'] = [];
 
   if (html && typeof html === 'string') {
     const errors = validateHTML(html);
     if (saveInitialErrors) {
-      job.data['errorsInit'] = errors;
+      job.data['initialGenerationErrors'] = errors;
     }
-    job.data['errors'] = errors;
+    job.data['finalGenerationErrors'] = errors;
     if (errors.length > 0 && numRegens > 0) {
       const autoRevisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
       job.data['autoRevisionPrompt'] = autoRevisionPrompt;
