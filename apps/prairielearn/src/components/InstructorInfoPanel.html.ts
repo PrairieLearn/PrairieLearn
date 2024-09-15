@@ -296,15 +296,6 @@ function AssessmentInstanceInfo({
 
     <div class="pb-2">
       <a href="${instructorUrlPrefix}/assessment_instance/${assessment_instance.id}">View log</a>
-      <br /><a
-        href="#"
-        role="button"
-        data-toggle="modal"
-        data-target="#regenerateInstanceModal"
-        data-bs-target="#regenerateInstanceModal"
-        data-bs-toggle="modal"
-        >Regenerate your assessment instance</a
-      >
     </div>
   `;
 }

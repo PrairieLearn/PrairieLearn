@@ -28,7 +28,7 @@ export function RegenerateInstanceModal({ csrfToken }: { csrfToken: string }) {
 export function RegenerateInstanceAlert() {
   return html`
     <div class="alert alert-warning alert-dismissible fade show">
-      Instructors:
+      Instructor in student view:
       <a href="#" role="button" data-toggle="modal" data-target="#regenerateInstanceModal">
         Regenerate your assessment instance</a
       >

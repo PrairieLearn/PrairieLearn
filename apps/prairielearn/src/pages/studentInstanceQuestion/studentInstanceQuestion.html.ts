@@ -73,6 +73,7 @@ export function StudentInstanceQuestion({
           ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
           : ''}
         <main id="content" class="container">
+          ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
           <div class="row">
             <div class="col-lg-9 col-sm-12">
               ${resLocals.variant == null
