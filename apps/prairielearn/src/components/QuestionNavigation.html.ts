@@ -66,7 +66,7 @@ export function QuestionNavSideButton({
 
   if (instanceQuestionId == null) {
     return html`
-      <button id="${buttonId}" class="btn mb-3 btn-primary disabled" disabled>
+      <button id="${buttonId}" class="btn btn-primary mb-3 disabled" disabled>
         ${buttonLabel}
       </button>
     `;
@@ -85,7 +85,7 @@ export function QuestionNavSideButton({
     return html`
       <button
         id="${buttonId}"
-        class="btn mb-3 btn-secondary pl-sequence-locked"
+        class="btn btn-secondary mb-3 pl-sequence-locked"
         data-toggle="popover"
         data-trigger="focus"
         data-container="body"
@@ -101,7 +101,7 @@ export function QuestionNavSideButton({
   return html`
     <a
       id="${buttonId}"
-      class="btn mb-3 btn-primary"
+      class="btn btn-primary mb-3"
       href="${urlPrefix}/instance_question/${instanceQuestionId}/"
     >
       ${buttonLabel}
