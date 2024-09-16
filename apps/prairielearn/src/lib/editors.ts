@@ -264,7 +264,6 @@ export abstract class Editor {
           if (!sharingConfigurationValid) {
             throw new Error('Invalid sharing operation, need to revert to last known good state.');
           }
-          courseData = possibleCourseData;
           try {
             job.info('Push changes to remote git repository');
             await job.exec('git', ['push'], {
@@ -272,6 +271,7 @@ export abstract class Editor {
               env: gitEnv,
             });
             job.data.saveSucceeded = true;
+            courseData = possibleCourseData;
           } catch {
             job.info('Failed to push changes to remote git repository');
             job.info('Pulling changes from remote git repository and trying again');
