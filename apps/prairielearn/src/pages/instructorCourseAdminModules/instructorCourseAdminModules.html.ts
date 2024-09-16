@@ -52,6 +52,15 @@ export function InstructorCourseAdminModules({
                 </tbody>
               </table>
             </div>
+            <div class="card-footer">
+              <small>
+                Modules can represent course topics, chapters, or any assessments of related
+                content. More information on modules can be found in the
+                <a href="https://prairielearn.readthedocs.io/en/latest/course/#assessment-modules">
+                  PrairieLearn documentation</a
+                >.
+              </small>
+            </div>
           </div>
         </main>
       </body>
