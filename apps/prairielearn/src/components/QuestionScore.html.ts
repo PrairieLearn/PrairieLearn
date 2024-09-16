@@ -442,7 +442,7 @@ export function ExamQuestionAvailablePoints({
     <a
       tabindex="0"
       type="button"
-      class="btn btn-xs js-available-points-popover"
+      class="btn btn-xs btn-xs-light js-available-points-popover"
       data-toggle="popover"
       data-trigger="focus"
       data-container="body"

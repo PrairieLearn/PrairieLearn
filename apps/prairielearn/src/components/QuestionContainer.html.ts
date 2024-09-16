@@ -406,7 +406,7 @@ function QuestionFooterContent({
             ? html`
                 <button
                   type="button"
-                  class="btn btn-xs order-3"
+                  class="btn btn-xs btn-ghost mr-1"
                   data-toggle="popover"
                   data-trigger="focus"
                   data-content="Your group role (${assessment_instance.user_group_roles}) is not allowed to submit this question."
@@ -445,7 +445,7 @@ function QuestionFooterContent({
                       Additional attempts available with new variants
                     </small>
                     <a
-                      class="btn btn-xs align-self-center"
+                      class="btn btn-xs btn-ghost align-self-center ml-1"
                       data-toggle="popover"
                       data-trigger="focus"
                       data-container="body"
