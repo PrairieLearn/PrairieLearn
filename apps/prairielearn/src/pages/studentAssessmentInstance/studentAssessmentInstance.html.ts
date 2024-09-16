@@ -13,7 +13,6 @@ import { Navbar } from '../../components/Navbar.html.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import {
   ExamQuestionAvailablePoints,
-  ExamQuestionScore,
   ExamQuestionStatus,
   InstanceQuestionPoints,
   QuestionAwardedPoints,
@@ -253,12 +252,6 @@ export function StudentAssessmentInstance({
                             resLocals.assessment.allow_real_time_grading
                               ? html`
                                   <td class="text-center">
-                                    ${ExamQuestionScore({
-                                      instance_question,
-                                      assessment_question: instance_question, // Required fields are in instance_question
-                                    })}
-                                  </td>
-                                  <td class="text-center">
                                     ${ExamQuestionAvailablePoints({
                                       open:
                                         resLocals.assessment_instance.open &&
@@ -431,10 +424,11 @@ export function StudentAssessmentInstance({
                               the question page.
                             </li>
                             <li>
-                              Look at <strong>Best submission</strong> to confirm that each question
-                              has been graded. Questions with <strong>Available points</strong> can
-                              be attempted again for more points. Attempting questions again will
-                              never reduce the points you already have.
+                              Look at <strong>Submission status</strong> to confirm that each
+                              question has been graded. Questions with
+                              <strong>Available points</strong> can be attempted again for more
+                              points. Attempting questions again will never reduce the points you
+                              already have.
                             </li>
                             ${resLocals.authz_result.password != null ||
                             !resLocals.authz_result.show_closed_assessment
@@ -551,7 +545,6 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
       ? html`
           ${resLocals.has_auto_grading_question && resLocals.assessment.allow_real_time_grading
             ? html`
-                <th class="text-center">Best submission ${ExamQuestionHelpBestSubmission()}</th>
                 <th class="text-center">Available points ${ExamQuestionHelpAvailablePoints()}</th>
                 <th class="text-center">Awarded points ${ExamQuestionHelpAwardedPoints()}</th>
               `
@@ -705,24 +698,6 @@ function RowLabel({
           </a>
         `
       : ''}
-  `;
-}
-
-function ExamQuestionHelpBestSubmission() {
-  return html`
-    <a
-      tabindex="0"
-      role="button"
-      data-toggle="popover"
-      data-trigger="focus"
-      data-container="body"
-      data-html="true"
-      data-placement="auto"
-      title="Best submission"
-      data-content="The percentage score of the best submitted answer, or whether the question is <strong>unanswered</strong>, has a <strong>saved</strong> but ungraded answer, or is in <strong>grading</strong>."
-    >
-      <i class="far fa-question-circle" aria-hidden="true"></i>
-    </a>
   `;
 }
 

@@ -58,15 +58,6 @@ export function QuestionScorePanel({
             <td>Submission status:</td>
             <td>${ExamQuestionStatus({ instance_question })}</td>
           </tr>
-          ${assessment.allow_real_time_grading &&
-          (assessment_question.max_auto_points || !assessment_question.max_manual_points)
-            ? html`
-                <tr>
-                  <td>Best submission:</td>
-                  <td>${ExamQuestionScore({ instance_question, assessment_question })}</td>
-                </tr>
-              `
-            : ''}
           ${assessment.type === 'Homework'
             ? // Only show previous variants if the question allows multiple variants, or there are multiple variants (i.e., they were allowed at some point)
               !question.single_variant ||
@@ -208,38 +199,6 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
         </div>
       </form>
     </div>
-  `;
-}
-
-export function ExamQuestionScore({
-  instance_question,
-  assessment_question,
-}: {
-  instance_question: InstanceQuestion;
-  assessment_question: Pick<AssessmentQuestion, 'max_auto_points' | 'max_manual_points'>;
-}) {
-  const statusWithScore = ['correct', 'incorrect', 'complete'] as InstanceQuestion['status'][];
-  if (
-    !statusWithScore.includes(instance_question.status) ||
-    (!assessment_question.max_auto_points && assessment_question.max_manual_points)
-  ) {
-    return html`<span class="align-middle">&mdash;</span>`;
-  }
-
-  const score = instance_question.highest_submission_score ?? 0;
-
-  return html`
-    <span class="align-middle">
-      <span
-        class="badge ${score >= 1
-          ? 'badge-success'
-          : score <= 0
-            ? 'badge-danger'
-            : 'badge-warning'}"
-      >
-        ${Math.floor(score * 100)}%
-      </span>
-    </span>
   `;
 }
 
