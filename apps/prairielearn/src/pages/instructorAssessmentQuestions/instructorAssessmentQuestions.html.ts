@@ -9,6 +9,7 @@ import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -31,9 +32,7 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   number: z.string().nullable(),
   open_issue_count: z.coerce.number().nullable(),
   other_assessments: AssessmentsFormatForQuestionSchema.nullable(),
-  sync_errors_ansified: z.string().optional(),
   sync_errors: QuestionSchema.shape.sync_errors,
-  sync_warnings_ansified: z.string().optional(),
   sync_warnings: QuestionSchema.shape.sync_warnings,
   topic: TopicSchema,
   qid: QuestionSchema.shape.qid,
@@ -234,38 +233,15 @@ function AssessmentQuestionsTable({
                 </td>
                 <td>
                   ${question.sync_errors
-                    ? html`
-                        <button
-                          class="btn btn-xs mr-1 js-sync-popover"
-                          data-toggle="popover"
-                          data-trigger="hover"
-                          data-container="body"
-                          data-html="true"
-                          data-title="Sync Errors"
-                          data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_errors_ansified}</pre>'
-                          data-custom-class="popover-wide"
-                        >
-                          <i class="fa fa-times text-danger" aria-hidden="true"></i>
-                        </button>
-                      `
+                    ? SyncProblemButton({
+                        type: 'error',
+                        output: question.sync_errors,
+                      })
                     : question.sync_warnings
-                      ? html`
-                          <button
-                            class="btn btn-xs mr-1 js-sync-popover"
-                            data-toggle="popover"
-                            data-trigger="hover"
-                            data-container="body"
-                            data-html="true"
-                            data-title="Sync Warnings"
-                            data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_warnings_ansified}</pre>'
-                            data-custom-class="popover-wide"
-                          >
-                            <i
-                              class="fa fa-exclamation-triangle text-warning"
-                              aria-hidden="true"
-                            ></i>
-                          </button>
-                        `
+                      ? SyncProblemButton({
+                          type: 'warning',
+                          output: question.sync_warnings,
+                        })
                       : ''}
                   ${question.display_name}
                 </td>
