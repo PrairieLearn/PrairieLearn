@@ -95,6 +95,12 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       tabLabel: 'Issues',
     },
     {
+      activeSubPage: 'modules',
+      urlSuffix: '/course_admin/modules',
+      iconClasses: 'fa fa-layer-group',
+      tabLabel: 'Modules',
+    },
+    {
       activeSubPage: 'questions',
       urlSuffix: '/course_admin/questions',
       iconClasses: 'fa fa-question',
@@ -139,12 +145,6 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       urlSuffix: '/course_admin/topics',
       iconClasses: 'fas fa-quote-right',
       tabLabel: 'Topics',
-    },
-    {
-      activeSubPage: 'modules',
-      urlSuffix: '/course_admin/modules',
-      iconClasses: 'fa fa-layer-group',
-      tabLabel: 'Modules',
     },
   ],
   assessment: [
