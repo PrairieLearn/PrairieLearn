@@ -3,12 +3,17 @@ CREATE FUNCTION
         IN ip inet,
         IN date timestamptz,
         IN authn_user_id bigint,
-        OUT mode enum_mode
+        OUT mode enum_mode,
+        OUT mode_reason enum_mode_reason
     )
 AS $$
 DECLARE
     reservation RECORD;
 BEGIN
+    -- Default to 'Public' mode.
+    mode := 'Public';
+    mode_reason := 'Default';
+
     -- Is the user accessing via an exam mode network?
     PERFORM *
     FROM exam_mode_networks
@@ -16,8 +21,7 @@ BEGIN
 
     IF FOUND THEN
         mode := 'Exam';
-    ELSE
-        mode := 'Public';
+        mode_reason := 'Network';
     END IF;
 
     -- Consider each PT reservation which is either active or corresponds to
@@ -76,10 +80,12 @@ BEGIN
             -- might put us in 'Exam' mode.
             IF reservation.reservation_active THEN
                 mode := 'Exam';
+                mode_reason := 'PrairieTest';
                 RETURN;
             END IF;
 
             mode := 'Public';
+            mode_reason := 'Default';
             CONTINUE;
         END IF;
 
@@ -93,6 +99,7 @@ BEGIN
             -- The user is physically inside the testing center. Set
             -- mode to 'Exam'.
             mode := 'Exam';
+            mode_reason := 'PrairieTest';
             RETURN;
         ELSE
             -- Although we have a checked-in reservation, the user is
@@ -100,6 +107,7 @@ BEGIN
             -- 'Public', but continue looping to see if we have any other
             -- reservations that might put us in 'Exam' mode.
             mode := 'Public';
+            mode_reason := 'Default';
             CONTINUE;
         END IF;
     END LOOP;

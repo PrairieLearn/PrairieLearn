@@ -188,8 +188,8 @@ def prepare(data):
     pass
 
 def parse(data):
-    # data["raw_submitted_answer"][NAME] is the exact raw answer submitted by the student.
-    # data["submitted_answer"][NAME] is the answer parsed by elements (e.g., strings converted to numbers).
+    # data["raw_submitted_answers"][NAME] is the exact raw answer submitted by the student.
+    # data["submitted_answers"][NAME] is the answer parsed by elements (e.g., strings converted to numbers).
     # data["format_errors"][NAME] is the answer format error (if any) from elements.
     # We can modify or delete format errors if we have custom logic (rarely needed).
     # If there are format errors then the submission is "invalid" and is not graded.
@@ -470,7 +470,7 @@ Example of valid HTML:
 
 ## Options for grading student answers
 
-For most elements, there are four different ways of auto-grading the student answer. This applies to elements like [`pl-number-input`](elements/#pl-number-input-element) and [`pl-string-input`](elements/#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](elements/#pl-multiple-choice-element) or [`pl-checkbox`](elements/#pl-checkbox-element) that are much more constrained. The four ways are:
+For most elements, there are four different ways of auto-grading the student answer. This applies to elements like [`pl-number-input`](elements.md#pl-number-input-element) and [`pl-string-input`](elements.md#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](elements.md#pl-multiple-choice-element) or [`pl-checkbox`](elements.md#pl-checkbox-element) that are much more constrained. The four ways are:
 
 1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. Given that this option is typically used for answers with a hard-coded value, without randomization, it is not expected to be used frequently.
 
@@ -480,7 +480,7 @@ For most elements, there are four different ways of auto-grading the student ans
 
 4. Write an [external grader](externalGrading.md), though this is typically applied to more complex questions like coding.
 
-If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements/#pl-answer-panel-element) that any correct answer would be accepted and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
+If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements.md#pl-answer-panel-element) that any correct answer would be accepted and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
 
 ### Custom grading best practices
 
@@ -493,7 +493,7 @@ Any custom grading function for the whole question should set `data["score"]` as
 
 More detailed information can be found in the docstrings for these functions. If you would prefer not to show score badges for individual parts, you may unset the dictionary entries in `data["partial_scores"]` once `data["score"]` has been computed.
 
-To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above question](#Question-server.py) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feeback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
+To set custom feedback, the grading function should set the corresponding entry in the `data["feedback"]` dictionary. These feedback entries are passed in when rendering the `question.html`, which can be accessed by using the mustache prefix `{{feedback.}}`. See the [above question](#question-serverpy) or [this demo question](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/custom/gradeFunction) for examples of this. Note that the feeback set in the `data["feedback"]` dictionary is meant for use by custom grader code in a `server.py` file, while the feedback set in `data["partial_scores"]` is meant for use by element grader code.
 
 For generated floating point answers, it's important to use consistent rounding when displaying numbers to students _and_ when computing the correct answer. For example, the following is problematic:
 

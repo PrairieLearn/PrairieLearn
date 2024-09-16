@@ -122,7 +122,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsInsertButton]',
+      'button[data-testid="add-users-button"]',
     );
     const form = {
       __action: 'course_permissions_insert_by_user_uids',
@@ -147,7 +147,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsInsertButton]',
+      'button[data-testid="add-users-button"]',
     );
     const form = {
       __action: 'course_permissions_insert_by_user_uids',
@@ -174,7 +174,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsInsertButton]',
+      'button[data-testid="add-users-button"]',
     );
     const form = {
       __action: 'course_permissions_insert_by_user_uids',
@@ -370,7 +370,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsInsertButton]',
+      'button[data-testid="add-users-button"]',
     );
     const form = {
       __action: 'course_permissions_insert_by_user_uids',
@@ -501,7 +501,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsRemoveStudentDataAccessButton]',
+      'button[data-testid="remove-all-student-data-access-button"]',
     );
     const form = {
       __action: 'remove_all_student_data_access',
@@ -551,7 +551,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsDeleteNoAccessButton]',
+      'button[data-testid="delete-users-with-no-access-button"]',
     );
     const form = {
       __action: 'delete_no_access',
@@ -576,7 +576,7 @@ function runTest(context) {
     helperClient.extractAndSaveCSRFTokenFromDataContent(
       context,
       response.$,
-      'button[id=coursePermissionsDeleteNonOwnersButton]',
+      'button[data-testid="delete-non-owners-button"]',
     );
     const form = {
       __action: 'delete_non_owners',

@@ -12,7 +12,13 @@ import {
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
 
-import { setUser, parseInstanceQuestionId, saveOrGrade, User } from './helperClient.js';
+import {
+  setUser,
+  parseInstanceQuestionId,
+  saveOrGrade,
+  User,
+  assertAlert,
+} from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -443,8 +449,7 @@ describe('Manual Grading', function () {
         setUser(defaultUser);
         const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
         $manualGradingPage = cheerio.load(manualGradingPage);
-        const row = $manualGradingPage('div.alert:contains("has one open instance")');
-        assert.equal(row.length, 1);
+        assertAlert($manualGradingPage, 'has one open instance');
       });
 
       step('manual grading page should list one question requiring grading', async () => {
@@ -467,8 +472,7 @@ describe('Manual Grading', function () {
             await fetch(manualGradingAssessmentQuestionUrl)
           ).text();
           const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
-          const row = $manualGradingAQPage('div.alert:contains("has one open instance")');
-          assert.equal(row.length, 1);
+          assertAlert($manualGradingAQPage, 'has one open instance');
         },
       );
 
@@ -494,8 +498,7 @@ describe('Manual Grading', function () {
           setUser(defaultUser);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const row = $manualGradingIQPage('div.alert:contains("is still open")');
-          assert.equal(row.length, 1);
+          assertAlert($manualGradingIQPage, 'is still open');
         },
       );
     });
@@ -521,8 +524,7 @@ describe('Manual Grading', function () {
         setUser(defaultUser);
         const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
         $manualGradingPage = cheerio.load(manualGradingPage);
-        const row = $manualGradingPage('div.alert:contains("has one open instance")');
-        assert.equal(row.length, 0);
+        assertAlert($manualGradingPage, 'has one open instance', 0);
       });
 
       step(
@@ -533,8 +535,7 @@ describe('Manual Grading', function () {
             await fetch(manualGradingAssessmentQuestionUrl)
           ).text();
           const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
-          const row = $manualGradingAQPage('div.alert:contains("has one open instance")');
-          assert.equal(row.length, 0);
+          assertAlert($manualGradingAQPage, 'has one open instance', 0);
         },
       );
 
@@ -544,8 +545,7 @@ describe('Manual Grading', function () {
           setUser(defaultUser);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const row = $manualGradingIQPage('div.alert:contains("is still open")');
-          assert.equal(row.length, 0);
+          assertAlert($manualGradingIQPage, 'is still open', 0);
         },
       );
 
@@ -1083,8 +1083,7 @@ describe('Manual Grading', function () {
         setUser(defaultUser);
         const manualGradingPage = await (await fetch(manualGradingAssessmentUrl)).text();
         $manualGradingPage = cheerio.load(manualGradingPage);
-        const row = $manualGradingPage('div.alert:contains("has one open instance")');
-        assert.equal(row.length, 1);
+        assertAlert($manualGradingPage, 'has one open instance');
       });
 
       step('manual grading page should list one question requiring grading', async () => {
@@ -1105,8 +1104,7 @@ describe('Manual Grading', function () {
             await fetch(manualGradingAssessmentQuestionUrl)
           ).text();
           const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
-          const row = $manualGradingAQPage('div.alert:contains("has one open instance")');
-          assert.equal(row.length, 1);
+          assertAlert($manualGradingAQPage, 'has one open instance');
         },
       );
 
@@ -1128,8 +1126,7 @@ describe('Manual Grading', function () {
           setUser(defaultUser);
           const manualGradingIQPage = await (await fetch(manualGradingIQUrl)).text();
           const $manualGradingIQPage = cheerio.load(manualGradingIQPage);
-          const row = $manualGradingIQPage('div.alert:contains("is still open")');
-          assert.equal(row.length, 1);
+          assertAlert($manualGradingIQPage, 'is still open');
         },
       );
 

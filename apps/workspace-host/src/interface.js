@@ -38,7 +38,7 @@ const debug = debugfn('prairielearn:interface');
 const docker = new Docker();
 
 const app = express();
-app.use(Sentry.Handlers.requestHandler());
+app.use(Sentry.requestHandler());
 app.use(bodyParser.urlencoded({ extended: false }));
 app.use(bodyParser.json());
 
@@ -53,7 +53,7 @@ app.get(
         instance_id: workspace_server_settings.instance_id,
       });
       db_status = 'ok';
-    } catch (_err) {
+    } catch {
       db_status = null;
     }
 
@@ -94,7 +94,7 @@ app.post(
   }),
 );
 
-app.use(Sentry.Handlers.errorHandler());
+app.use(Sentry.expressErrorHandler());
 
 let server;
 let workspace_server_settings = {};
@@ -278,7 +278,7 @@ async function pruneStoppedContainers() {
     try {
       // Try to grab the container, but don't care if it doesn't exist
       container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
-    } catch (_err) {
+    } catch {
       // No container
       await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
         workspace_id: ws.id,
@@ -308,7 +308,7 @@ async function pruneRunawayContainers() {
   let running_workspaces;
   try {
     running_workspaces = await docker.listContainers({ all: true });
-  } catch (err) {
+  } catch {
     // Nothing to do
     return;
   }
@@ -1029,7 +1029,7 @@ async function sendGradedFilesArchive(workspace_id, res) {
       const filePath = path.join(workspaceDir, file.path);
       archive.file(filePath, { name: file.path });
       debug(`Sending ${file.path}`);
-    } catch (err) {
+    } catch {
       logger.warn(`Graded file ${file.path} does not exist.`);
       continue;
     }

@@ -16,7 +16,7 @@ import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 import * as chunks from './chunks.js';
 import { config } from './config.js';
 import { IdSchema, User, UserSchema } from './db-types.js';
-import { createServerJob } from './server-jobs.js';
+import { createServerJob, ServerJobResult } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -66,7 +66,7 @@ export async function pullAndUpdateCourse({
   branch?: string | null;
   repository?: string | null;
   commit_hash?: string | null;
-}): Promise<{ jobSequenceId: string; jobPromise: Promise<void> }> {
+}): Promise<{ jobSequenceId: string; jobPromise: Promise<ServerJobResult> }> {
   const serverJob = await createServerJob({
     courseId,
     userId: userId ?? undefined,
@@ -115,6 +115,7 @@ export async function pullAndUpdateCourse({
           return;
         }
 
+        const gitOptions = { cwd: path, env: gitEnv };
         const coursePathExists = await fs.pathExists(path);
         if (!coursePathExists) {
           // path does not exist, start with 'git clone'
@@ -132,7 +133,6 @@ export async function pullAndUpdateCourse({
             path,
             commit_hash,
           });
-          const gitOptions = { cwd: path, env: gitEnv };
 
           job.info('Updating to latest remote origin address');
           await job.exec('git', ['remote', 'set-url', 'origin', repository], gitOptions);
@@ -162,7 +162,10 @@ export async function pullAndUpdateCourse({
 
         job.info('Sync git repository to database');
         const syncResult = await syncDiskToSqlWithLock(courseId, path, job);
-        if (syncResult.hardFail) {
+        if (syncResult.status === 'sharing_error') {
+          if (startGitHash) {
+            await job.exec('git', ['reset', '--hard', startGitHash], gitOptions);
+          }
           job.fail('Sync completely failed due to invalid question sharing edit.');
           return;
         }

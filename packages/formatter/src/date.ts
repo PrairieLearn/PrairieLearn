@@ -12,7 +12,11 @@ import keyBy from 'lodash/keyBy.js';
 export function formatDate(
   date: Date,
   timeZone: string,
-  { includeTz = true, longTz = false }: { includeTz?: boolean; longTz?: boolean } = {},
+  {
+    includeTz = true,
+    longTz = false,
+    includeMs = false,
+  }: { includeTz?: boolean; longTz?: boolean; includeMs?: boolean } = {},
 ): string {
   const options: Intl.DateTimeFormatOptions = {
     timeZone,
@@ -23,10 +27,14 @@ export function formatDate(
     hour: '2-digit',
     minute: '2-digit',
     second: '2-digit',
+    fractionalSecondDigits: includeMs ? 3 : undefined,
     timeZoneName: longTz ? 'long' : 'short',
   };
   const parts = keyBy(new Intl.DateTimeFormat('en-US', options).formatToParts(date), (x) => x.type);
   let dateFormatted = `${parts.year.value}-${parts.month.value}-${parts.day.value} ${parts.hour.value}:${parts.minute.value}:${parts.second.value}`;
+  if (includeMs) {
+    dateFormatted = `${dateFormatted}.${parts.fractionalSecond.value}`;
+  }
   if (includeTz) {
     dateFormatted = `${dateFormatted} (${parts.timeZoneName.value})`;
   }

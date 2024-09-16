@@ -1,12 +1,6 @@
 -- BLOCK select_file_edit
 SELECT
-  fe.id,
-  fe.orig_hash,
-  fe.file_id,
-  floor(
-    DATE_PART('epoch', CURRENT_TIMESTAMP - fe.created_at) / 3600
-  ) AS age,
-  fe.job_sequence_id
+  fe.*
 FROM
   file_edits AS fe
 WHERE
@@ -14,7 +8,12 @@ WHERE
   AND fe.course_id = $course_id
   AND fe.dir_name = $dir_name
   AND fe.file_name = $file_name
-  AND fe.deleted_at IS NULL;
+  AND fe.created_at > (NOW() - make_interval(secs => $max_age_sec))
+  AND fe.deleted_at IS NULL
+ORDER BY
+  fe.created_at DESC
+LIMIT
+  1;
 
 -- BLOCK insert_file_edit
 INSERT INTO

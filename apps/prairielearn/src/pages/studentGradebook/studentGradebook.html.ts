@@ -1,8 +1,10 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { Scorebar } from '../../components/Scorebar.html.js';
 import {
   AssessmentInstanceSchema,
   AssessmentSchema,
@@ -33,18 +35,17 @@ export function StudentGradebook({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'gradebook',
-        })}
+        ${Navbar({ resLocals, navPage: 'gradebook' })}
         <main id="content" class="container">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Gradebook</div>
+            <div class="card-header bg-primary text-white">
+              <h1>Gradebook</h1>
+            </div>
 
-            <table class="table table-sm table-hover">
+            <table class="table table-sm table-hover" aria-label="Gradebook">
               <thead>
                 <tr>
                   <th style="width: 1%"><span class="sr-only">Label</span></th>
@@ -76,9 +77,7 @@ export function StudentGradebook({
                       </td>
                       <td class="text-center align-middle">
                         ${row.show_closed_assessment_score
-                          ? renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
-                              score: row.assessment_instance_score_perc,
-                            })
+                          ? Scorebar(row.assessment_instance_score_perc)
                           : 'Score not shown'}
                       </td>
                     </tr>

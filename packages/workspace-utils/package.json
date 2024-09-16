@@ -15,8 +15,8 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.13.0",
-    "typescript": "^5.4.5",
+    "@types/node": "^20.16.2",
+    "typescript": "^5.5.4",
     "typescript-cp": "^0.1.9"
   },
   "dependencies": {
@@ -24,7 +24,7 @@
     "@prairielearn/postgres": "workspace:^",
     "@socket.io/redis-emitter": "^5.1.0",
     "fast-glob": "^3.3.2",
-    "filesize": "^10.1.2",
+    "filesize": "^10.1.4",
     "socket.io": "^4.7.5"
   }
 }

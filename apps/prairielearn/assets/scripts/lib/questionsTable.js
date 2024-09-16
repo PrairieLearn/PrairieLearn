@@ -5,12 +5,20 @@ import _ from 'lodash';
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
+import { AssessmentBadge } from '../../../src/components/AssessmentBadge.html.js';
+import { SyncProblemButton } from '../../../src/components/SyncProblemButton.html.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
 
 onDocumentReady(() => {
-  const { course_instance_ids, showAddQuestionButton, qidPrefix, urlPrefix, plainUrlPrefix } =
-    decodeData('questions-table-data');
+  const {
+    course_instance_ids,
+    showAddQuestionButton,
+    showAiGenerateQuestionButton,
+    qidPrefix,
+    urlPrefix,
+    plainUrlPrefix,
+  } = decodeData('questions-table-data');
   window.topicList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.topic.name));
@@ -38,29 +46,15 @@ onDocumentReady(() => {
   window.qidFormatter = function (qid, question) {
     var text = '';
     if (question.sync_errors) {
-      text += html`<button
-        class="btn btn-xs mr-1 js-sync-popover"
-        data-toggle="popover"
-        data-trigger="hover"
-        data-container="body"
-        data-html="true"
-        data-title="Sync Errors"
-        data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_errors_ansified}</pre>'
-      >
-        <i class="fa fa-times text-danger" aria-hidden="true"></i>
-      </button>`;
+      text += SyncProblemButton({
+        type: 'error',
+        output: question.sync_errors,
+      });
     } else if (question.sync_warnings) {
-      text += html`<button
-        class="btn btn-xs mr-1 js-sync-popover"
-        data-toggle="popover"
-        data-trigger="hover"
-        data-container="body"
-        data-html="true"
-        data-title="Sync Warnings"
-        data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_warnings_ansified}</pre>'
-      >
-        <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
-      </button>`;
+      text += SyncProblemButton({
+        type: 'warning',
+        output: question.sync_warnings,
+      });
     }
     text += html`
       <a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">
@@ -122,23 +116,21 @@ onDocumentReady(() => {
     var values = $('<div>')
       .html(value)
       .find('.badge')
-      .filter((i, elem) => $(elem).text().toUpperCase() === search.toUpperCase()).length;
+      .filter(
+        (i, elem) => $(elem).text().trim().toUpperCase() === search.trim().toUpperCase(),
+      ).length;
     return !!values;
   };
 
-  let assessmentsByCourseInstanceFormatter = function (ci_id, question) {
-    var ci_assessments = _.filter(
-      question.assessments ?? [],
-      (assessment) => assessment.course_instance_id.toString() === ci_id.toString(),
-    );
-    return _.map(ci_assessments, (assessment) =>
-      html`<a
-        href="${plainUrlPrefix}/course_instance/${ci_id}/instructor/assessment/${assessment.assessment_id}"
-        class="badge color-${assessment.color} color-hover"
-        onclick="event.stopPropagation();"
-        ><span>${assessment.label}</span></a
-      >`.toString(),
-    ).join(' ');
+  let assessmentsByCourseInstanceFormatter = function (course_instance_id, question) {
+    return (question.assessments ?? [])
+      .filter(
+        (assessment) => assessment.course_instance_id.toString() === course_instance_id.toString(),
+      )
+      .map((assessment) =>
+        AssessmentBadge({ plainUrlPrefix, course_instance_id, assessment }).toString(),
+      )
+      .join(' ');
   };
 
   let assessmentsByCourseInstanceList = function (ci_id) {
@@ -161,9 +153,13 @@ onDocumentReady(() => {
   });
 
   const tableSettings = {
+    // TODO: If we can pick up the following change, we can drop the `icons` config here:
+    // https://github.com/wenzhixin/bootstrap-table/pull/7190
+    iconsPrefix: 'fa',
     icons: {
-      columns: 'fa-th-list',
+      columns: 'fa-table-list',
     },
+
     buttons: {
       clearFilters: {
         text: 'Clear filters',
@@ -174,15 +170,17 @@ onDocumentReady(() => {
         },
       },
     },
-    onPreBody() {},
+
     onResetView() {
-      $('.js-sync-popover[data-toggle="popover"]')
-        .popover({
-          sanitize: false,
-        })
-        .on('show.bs.popover', function () {
-          $($(this).data('bs.popover').getTipElement()).css('max-width', '80%');
-        });
+      const searchInputs = document.querySelectorAll(
+        '#questionsTable .form-control, #questionsTable .form-select',
+      );
+      searchInputs.forEach((searchInput) => {
+        searchInput.setAttribute(
+          'aria-label',
+          `Filter by ${searchInput.closest('th').querySelector('div.th-inner').textContent.trim()}`,
+        );
+      });
     },
   };
 
@@ -194,6 +192,17 @@ onDocumentReady(() => {
       event: () => {
         $('form[name=add-question-form]').submit();
       },
+    };
+  }
+
+  if (showAiGenerateQuestionButton) {
+    tableSettings.buttons.aiGenerateQuestion = {
+      html: html`
+        <a class="btn btn-secondary" href="${urlPrefix}/ai_generate_question">
+          <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
+          Generate Question with AI
+        </a>
+      `.toString(),
     };
   }
 

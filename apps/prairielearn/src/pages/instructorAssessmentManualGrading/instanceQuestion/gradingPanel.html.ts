@@ -65,19 +65,16 @@ export function GradingPanel({
         ${resLocals.assessment_question.max_points
           ? // Percentage-based grading is only suitable if the question has points
             html`
-              <li class="list-group-item">
-                <div class="form-group row justify-content-center">
-                  <label class="custom-control-inline col-auto mx-0">
-                    <span class="">Points</span>
-                    <div class="custom-control custom-switch mx-2">
-                      <input
-                        class="custom-control-input js-manual-grading-pts-perc-select"
-                        name="use_score_perc"
-                        type="checkbox"
-                      />
-                      <span class="custom-control-label">Percentage</span>
-                    </div>
-                  </label>
+              <li class="list-group-item d-flex justify-content-center">
+                <span>Points</span>
+                <div class="custom-control custom-switch mx-2">
+                  <input
+                    class="custom-control-input js-manual-grading-pts-perc-select"
+                    name="use_score_perc"
+                    id="use-score-perc"
+                    type="checkbox"
+                  />
+                  <label class="custom-control-label" for="use-score-perc">Percentage</label>
                 </div>
               </li>
             `
@@ -102,7 +99,7 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        <li class="form-group list-group-item">
+        <li class="list-group-item">
           <label>
             Feedback:
             <textarea
@@ -122,7 +119,7 @@ ${submission.feedback?.manual}</textarea
         </li>
         ${open_issues.length > 0 && context !== 'existing'
           ? html`
-              <li class="form-group list-group-item">
+              <li class="list-group-item">
                 <div class="form-check">
                   ${open_issues.map(
                     (issue) => html`

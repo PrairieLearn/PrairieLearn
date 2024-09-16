@@ -1,4 +1,3 @@
-// @ts-check
 import * as url from 'node:url';
 
 import { Router } from 'express';

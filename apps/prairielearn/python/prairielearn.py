@@ -1810,3 +1810,39 @@ def is_int_json_serializable(n: int) -> bool:
 def full_unidecode(input_str: str) -> str:
     """Does unidecode of input and replaces the unicode minus with the normal one."""
     return unidecode(input_str.replace("\u2212", "-"))
+
+
+def add_files_format_error(data: QuestionData, error: str) -> None:
+    """Adds a format error to the data dictionary."""
+
+    if data["format_errors"].get("_files") is None:
+        data["format_errors"]["_files"] = []
+    if isinstance(data["format_errors"]["_files"], list):
+        data["format_errors"]["_files"].append(error)
+    else:
+        data["format_errors"]["_files"] = [
+            '"_files" was present in "format_errors" but was not an array',
+            error,
+        ]
+
+
+def add_submitted_file(
+    data: QuestionData,
+    file_name: str,
+    base64_contents: str,
+) -> None:
+    """Adds a submitted file to the data dictionary."""
+
+    if data["submitted_answers"].get("_files") is None:
+        data["submitted_answers"]["_files"] = []
+    if isinstance(data["submitted_answers"]["_files"], list):
+        data["submitted_answers"]["_files"].append(
+            {
+                "name": file_name,
+                "contents": base64_contents,
+            }
+        )
+    else:
+        add_files_format_error(
+            data, '"_files" is present in "submitted_answers" but is not an array'
+        )

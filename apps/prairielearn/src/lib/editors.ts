@@ -22,6 +22,7 @@ import {
   updateCourseCommitHash,
   getOrUpdateCourseCommitHash,
 } from '../models/course.js';
+import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import * as b64Util from './base64-util.js';
@@ -34,12 +35,22 @@ import { ServerJob, ServerJobExecutor, createServerJob } from './server-jobs.js'
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
 
-async function syncCourseFromDisk(course: Course, startGitHash: string, job: ServerJob) {
+async function syncCourseFromDisk(
+  course: Course,
+  startGitHash: string,
+  job: ServerJob,
+  courseData?: courseDB.CourseData,
+) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course.id, course.path, job);
+  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(
+    course.id,
+    course.path,
+    job,
+    courseData,
+  );
 
-  if (syncResult.hardFail) {
+  if (syncResult.status === 'sharing_error') {
     throw new Error('Sync completely failed due to invalid question sharing edit.');
   }
 
@@ -61,15 +72,16 @@ async function syncCourseFromDisk(course: Course, startGitHash: string, job: Ser
   }
 }
 
-export async function cleanAndResetRepository(
+async function cleanAndResetRepository(
   course: Course,
+  revision: string,
   env: NodeJS.ProcessEnv,
   job: ServerJob,
 ) {
   job.info('Clean local files not in remote git repository');
   await job.exec('git', ['clean', '-fdx'], { cwd: course.path, env });
   job.info('Reset state to remote git repository');
-  await job.exec('git', ['reset', '--hard', `origin/${course.branch}`], {
+  await job.exec('git', ['reset', '--hard', revision], {
     cwd: course.path,
     env,
   });
@@ -202,7 +214,7 @@ export abstract class Editor {
           env: gitEnv,
         });
 
-        await cleanAndResetRepository(this.course, gitEnv, job);
+        await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
 
         const writeAndCommitChanges = async () => {
           job.data.saveAttempted = true;
@@ -235,9 +247,23 @@ export abstract class Editor {
           );
         };
 
+        let sharingConfigurationValid = true;
+        let courseData;
         try {
           await writeAndCommitChanges();
 
+          const possibleCourseData = await courseDB.loadFullCourse(
+            this.course.id,
+            this.course.path,
+          );
+          sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
+            this.course.id,
+            possibleCourseData,
+            logger,
+          );
+          if (!sharingConfigurationValid) {
+            throw new Error('Invalid sharing operation, need to revert to last known good state.');
+          }
           try {
             job.info('Push changes to remote git repository');
             await job.exec('git', ['push'], {
@@ -245,7 +271,8 @@ export abstract class Editor {
               env: gitEnv,
             });
             job.data.saveSucceeded = true;
-          } catch (err) {
+            courseData = possibleCourseData;
+          } catch {
             job.info('Failed to push changes to remote git repository');
             job.info('Pulling changes from remote git repository and trying again');
 
@@ -257,7 +284,7 @@ export abstract class Editor {
 
             // This will both discard the commit we made locally and also pull
             // in any new changes from the remote.
-            await cleanAndResetRepository(this.course, gitEnv, job);
+            await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
 
             await writeAndCommitChanges();
 
@@ -276,7 +303,10 @@ export abstract class Editor {
           //
           // If pushing (or anything before pushing) failed, the reset will get
           // us back to a known good state.
-          await cleanAndResetRepository(this.course, gitEnv, job);
+          const revision = sharingConfigurationValid
+            ? `origin/${this.course.branch}`
+            : startGitHash;
+          await cleanAndResetRepository(this.course, revision, gitEnv, job);
 
           // Similarly, whether or not we error, we'll a course sync.
           //
@@ -287,7 +317,7 @@ export abstract class Editor {
           // syncing the changes we pulled from the remote git repository.
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, startGitHash, job);
+          await syncCourseFromDisk(this.course, startGitHash, job, courseData);
           job.data.syncSucceeded = true;
         }
       });
@@ -855,12 +885,15 @@ export class CourseInstanceAddEditor extends Editor {
 export class QuestionAddEditor extends Editor {
   public readonly uuid: string;
 
-  constructor(params: BaseEditorOptions) {
+  files?: Record<string, string>;
+
+  constructor(params: BaseEditorOptions & { files?: Record<string, string> }) {
     super(params);
 
     this.description = 'Add question';
 
     this.uuid = uuidv4();
+    this.files = params.files;
   }
 
   async write() {
@@ -883,8 +916,42 @@ export class QuestionAddEditor extends Editor {
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
     const toPath = questionPath;
+
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+
+    if (this.files != null) {
+      debug('Remove template files when file texts provided');
+      await fs.remove(path.join(toPath, 'question.html'));
+      await fs.remove(path.join(toPath, 'server.py'));
+
+      if ('info.json' in this.files) {
+        await fs.remove(path.join(toPath, 'info.json'));
+      }
+
+      debug('Load files from text');
+      for (const file of Object.keys(this.files)) {
+        const newPath = path.join(toPath, file);
+
+        // Ensure that files are fully contained in the question directory.
+        if (contains(toPath, newPath)) {
+          await fs.writeFile(newPath, this.files[file]);
+        } else {
+          throw new AugmentedError('Invalid file path', {
+            info: html`
+              <p>The path of the file to add</p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
+              </div>
+              <p>must be inside the root directory</p>
+              <div class="container">
+                <pre class="bg-dark text-white rounded p-2">${toPath}</pre>
+              </div>
+            `,
+          });
+        }
+      }
+    }
 
     debug('Read info.json');
     const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
@@ -892,6 +959,8 @@ export class QuestionAddEditor extends Editor {
     debug('Write info.json with new title and uuid');
     infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
+    // The template question contains tags that shouldn't be copied to the new question.
+    delete infoJson.tags;
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1135,6 +1204,12 @@ export class QuestionTransferEditor extends Editor {
     debug('Write info.json with new title and uuid');
     infoJson.title = questionTitle;
     infoJson.uuid = this.uuid;
+
+    // When transferring a question from an example/template course, drop the tags. They
+    // are likely undesirable in the template course.
+    if (this.course.example_course || this.course.template_course) {
+      delete infoJson.tags;
+    }
 
     // We do not want to preserve sharing settings when copying a question to another course
     delete infoJson['sharingSets'];

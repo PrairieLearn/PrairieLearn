@@ -36,14 +36,15 @@ async function getNavTitleHref(res: express.Response): Promise<string> {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    let navTitle: string;
+    let navTitle: string, pageTitle: string | undefined, pageNote: string | undefined;
     if (res.locals.assessment == null) {
       // instructor preview
-      res.locals.pageNote = 'Preview';
-      res.locals.pageTitle = res.locals.question_qid;
-      navTitle = res.locals.pageTitle;
+      pageTitle = 'Workspace Preview';
+      pageNote = res.locals.question_qid;
+      navTitle = res.locals.question_qid;
     } else {
       // student assessment
+      pageTitle = 'Workspace';
       navTitle = `${res.locals.instance_question_info.question_number} - ${res.locals.course.short_name}`;
     }
 
@@ -51,9 +52,13 @@ router.get(
 
     res.send(
       Workspace({
+        pageTitle,
+        pageNote,
         navTitle,
         navTitleHref,
-        showLogs: res.locals.authn_is_administrator || res.locals.authn_is_instructor,
+        showLogs:
+          res.locals.authz_data.has_course_instance_permission_view ||
+          res.locals.authz_data.has_course_permission_preview,
         heartbeatIntervalSec: config.workspaceHeartbeatIntervalSec,
         visibilityTimeoutSec: config.workspaceVisibilityTimeoutSec,
         socketToken: generateSignedToken(

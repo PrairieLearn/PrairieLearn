@@ -53,7 +53,7 @@ describe('API', function () {
       assert.isTrue(res.ok);
       const page$ = cheerio.load(await res.text());
 
-      const button = page$('#generateTokenButton').get(0);
+      const button = page$('[data-testid="generate-token-button"]').get(0);
       assert(button);
 
       // Load the popover content

@@ -122,6 +122,20 @@ mjx-container {
   text-rendering: geometricPrecision;
 }
 
+.popover-wide {
+  max-width: min(800px, 90vw);
+}
+
+/**
+ * Remove the bottom border from the final row of the last table in a card.
+ */
+.card > table.table:last-of-type tbody tr:last-child th,
+.card > table.table:last-of-type tbody tr:last-child td,
+.card > .table-responsive > table.table:last-of-type tbody tr:last-child th,
+.card > .table-responsive > table.table:last-of-type tbody tr:last-child td {
+  border-bottom: 0;
+}
+
 /**************
  * Submissions
  **************/
@@ -139,12 +153,7 @@ mjx-container {
   transform: rotateX(180deg);
 }
 
-/* Button in submission header context
-   prepends "hide" or "show" automatically */
-.submission-header {
-  cursor: pointer;
-}
-
+/* Button in submission header context prepends "hide" or "show" automatically */
 .submission-header .expand-icon {
   transition: transform 400ms;
 }
@@ -153,11 +162,11 @@ mjx-container {
   content: 'hide';
 }
 
-.submission-header.collapsed .expand-icon {
+.submission-header .expand-icon-container.collapsed .expand-icon {
   transform: rotateX(180deg);
 }
 
-.submission-header.collapsed .expand-icon-container::before {
+.submission-header .expand-icon-container.collapsed::before {
   content: 'show';
 }
 
@@ -205,25 +214,20 @@ a.badge {
   transform: translate(0px, -3px);
 }
 
-.navbar-brand:hover .navbar-brand-label {
+.navbar-brand:is(:hover, :focus) .navbar-brand-label {
   transform: translate(0px, -7px);
 }
 
-.navbar-brand:hover .navbar-brand-hover-label {
+.navbar-brand:is(:hover, :focus) .navbar-brand-hover-label {
   opacity: 1;
   transform: translate(0px, 0px);
 }
 
 /* Supports a color accent at the tops of nav tabs, github-style */
 .nav-tabs.pl-nav-tabs-bar .nav-link.active {
-  border-top-color: var(--primary);
+  border-top-color: var(--primary, var(--bs-primary));
   border-top-width: 0.2rem;
   padding-top: 0.4rem;
-}
-
-/* Used to help vertically center badges in table cells */
-table td > .badge {
-  transform: translate(0, -12.5%);
 }
 
 /* Used to give table rows the same padding as Bootstrap card headers */
@@ -238,6 +242,14 @@ table td > .badge {
 .card > .table-responsive > table tr td:last-child,
 .card > .table-responsive > table tr th:last-child {
   padding-right: 1.25rem;
+}
+
+/** Ensure that headings in card headers are styled the same as standard card headers. */
+.card-header > :is(h1, h2, h3, h4, h5, h6) {
+  line-height: 1.5rem;
+  margin-bottom: 0;
+  font-size: 1rem;
+  font-weight: 400;
 }
 
 /* Custom button styles that look better in input groups */
@@ -302,4 +314,159 @@ small .user-output-invalid {
   border-color: #6c757d;
   margin-left: 5px;
   background: #fff;
+}
+
+/***********************************
+ * Button focus accessibility styles
+ ***********************************/
+
+/**
+ * TODO: After we're running with only Bootstrap 5, these can be collapsed into
+ * a single rule with all the different selectors, since they can all share the
+ * same var(--bs-btn-hover-color) value.
+ */
+
+.btn.btn-primary:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-secondary:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-success:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-danger:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-warning:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #000000) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-info:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-light:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #000000) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-dark:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #ffffff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-link:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #007bff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-primary:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #007bff) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-secondary:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #6c757d) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-success:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #28a745) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-danger:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #dc3545) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-warning:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #ffc107) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-info:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #17a2b8) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-light:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #f8f9fa) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+.btn.btn-outline-dark:focus:focus-visible {
+  outline-style: solid !important;
+  outline-color: var(--bs-btn-hover-color, #343a40) !important;
+  outline-width: 2px !important;
+  outline-offset: -2px !important;
+}
+
+/* The sticky-column class is used to make the first column of a bootstrap-table sticky. */
+.table > :not(caption) > * > .sticky-column {
+  position: sticky;
+  left: 0;
+  background-color: var(--bs-body-bg, white);
+  background-clip: padding-box;
+  box-shadow: inset -1px 0 #dee2e6;
+}
+
+.table.table-hover > tbody > tr:hover > td.sticky-column {
+  color: var(--bs-table-hover-color, #212529);
+  /* This must be opaque, to ensure the cell shows on top of others.
+     TODO: compute this value by combining --bs-body-bg (opaque) with --bs-table-hover-bg (semi-transparent). */
+  background-color: #efefef;
+}
+
+/* This class is used in pages with bootstrap-table. Since these pages include the navigation in the toolbar, some padding is necessary. */
+.fixed-table-toolbar {
+  padding: 0 1em 0 1em;
+}
+
+.fixed-table-toolbar div.pagination,
+.fixed-table-toolbar div.pagination-detail {
+  margin: 0 1em 0 0 !important;
 }

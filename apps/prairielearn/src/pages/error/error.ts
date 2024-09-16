@@ -49,4 +49,4 @@ export default (function (err, req, res, _next) {
       resLocals: res.locals,
     }),
   );
-} satisfies ErrorRequestHandler as ErrorRequestHandler); // https://github.com/microsoft/TypeScript/issues/13626#issuecomment-1472348545
+} satisfies ErrorRequestHandler);

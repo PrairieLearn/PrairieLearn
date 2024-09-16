@@ -25,18 +25,16 @@ $(() => {
   const modal = document.querySelector('#conflictGradingJobModal');
   if (modal) {
     $(modal)
-      .modal({})
       .on('shown.bs.modal', function () {
         modal
           .querySelectorAll('.js-submission-feedback')
           .forEach((item) => item.dispatchEvent(new Event('input')));
-      });
+      })
+      .modal('show');
   }
 });
 
 function resetInstructorGradingPanel() {
-  $('[data-toggle="tooltip"]').tooltip();
-
   document.querySelectorAll('.js-rubric-settings-modal').forEach((modal) => {
     let clipboard = new ClipboardJS(modal.querySelectorAll('.js-copy-on-click'), {
       container: modal,
