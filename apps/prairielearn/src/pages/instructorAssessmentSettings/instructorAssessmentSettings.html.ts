@@ -116,7 +116,8 @@ export function InstructorAssessmentSettings({
                     disabled
                   />
                   <small class="form-text text-muted">
-                    The module this assessment belongs to.
+                    The <a href="${resLocals.urlPrefix}/course_admin/modules">module</a> this
+                    assessment belongs to.
                   </small>
                 </div>
                 <div class="form-group">
