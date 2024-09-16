@@ -22,6 +22,7 @@ import {
   updateCourseCommitHash,
   getOrUpdateCourseCommitHash,
 } from '../models/course.js';
+import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import * as b64Util from './base64-util.js';
@@ -34,10 +35,20 @@ import { ServerJob, ServerJobExecutor, createServerJob } from './server-jobs.js'
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
 
-async function syncCourseFromDisk(course: Course, startGitHash: string, job: ServerJob) {
+async function syncCourseFromDisk(
+  course: Course,
+  startGitHash: string,
+  job: ServerJob,
+  courseData?: courseDB.CourseData,
+) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course.id, course.path, job);
+  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(
+    course.id,
+    course.path,
+    job,
+    courseData,
+  );
 
   if (syncResult.sharingSyncError) {
     throw new Error('Sync completely failed due to invalid question sharing edit.');
@@ -237,17 +248,24 @@ export abstract class Editor {
         };
 
         let sharingSyncError = false;
+        let courseData;
         try {
           await writeAndCommitChanges();
-          const result = await syncFromDisk.validateCourseData(
+
+          const possibleCourseData = await courseDB.loadFullCourse(
             this.course.id,
             this.course.path,
+          );
+          const result = await syncFromDisk.validateSharingConfiguration(
+            this.course.id,
+            possibleCourseData,
             logger,
           );
           sharingSyncError = result.sharingSyncError;
           if (sharingSyncError) {
             throw new Error('Invalid sharing operation, need to revert to last known good state.');
           }
+          courseData = possibleCourseData;
           try {
             job.info('Push changes to remote git repository');
             await job.exec('git', ['push'], {
@@ -298,7 +316,7 @@ export abstract class Editor {
           // syncing the changes we pulled from the remote git repository.
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, startGitHash, job);
+          await syncCourseFromDisk(this.course, startGitHash, job, courseData);
           job.data.syncSucceeded = true;
         }
       });

@@ -31,13 +31,11 @@ interface Logger {
   verbose: (msg: string) => void;
 }
 
-export async function validateCourseData(
+export async function validateSharingConfiguration(
   courseId: string,
-  courseDir: string,
+  courseData: courseDB.CourseData,
   logger: Logger,
 ): Promise<{ courseData: courseDB.CourseData; sharingSyncError: boolean }> {
-  const courseData = await courseDB.loadFullCourse(courseId, courseDir);
-
   if (config.checkSharingOnSync) {
     // TODO: also check if questions were un-shared in the JSON or if any
     // sharing sets were deleted
@@ -62,6 +60,7 @@ export async function syncDiskToSqlWithLock(
   courseId: string,
   courseDir: string,
   logger: Logger,
+  courseData?: courseDB.CourseData,
 ): Promise<SyncResults> {
   async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
     const start = performance.now();
@@ -76,10 +75,16 @@ export async function syncDiskToSqlWithLock(
 
   logger.info('Loading info.json files from course repository');
 
-  const { courseData, sharingSyncError } = await timed('Loaded course data from disk', () =>
-    validateCourseData(courseId, courseDir, logger),
+  if (typeof courseData === 'undefined') {
+    courseData = await timed('Loaded course data from disk', () =>
+      courseDB.loadFullCourse(courseId, courseDir),
+    );
+  }
+
+  const result = await timed('Validate Sharing Configuration', () =>
+    validateSharingConfiguration(courseId, courseData, logger),
   );
-  if (sharingSyncError) {
+  if (result.sharingSyncError) {
     const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
     const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
     return {
