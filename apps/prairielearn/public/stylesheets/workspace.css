@@ -20,3 +20,25 @@
 .popover {
   max-width: 30rem;
 }
+
+@keyframes pulse {
+  0%,
+  40%,
+  60%,
+  100% {
+    transform: scale(100%);
+  }
+
+  45%,
+  55% {
+    transform: scale(103%);
+  }
+
+  50% {
+    transform: scale(100%);
+  }
+}
+
+.pulse {
+  animation: pulse 3s infinite;
+}
