@@ -6,6 +6,7 @@ import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../../src/components/AssessmentBadge.html.js';
+import { SyncProblemButton } from '../../../src/components/SyncProblemButton.html.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
 
@@ -45,31 +46,15 @@ onDocumentReady(() => {
   window.qidFormatter = function (qid, question) {
     var text = '';
     if (question.sync_errors) {
-      text += html`<button
-        class="btn btn-xs mr-1 js-sync-popover"
-        data-toggle="popover"
-        data-trigger="hover"
-        data-container="body"
-        data-html="true"
-        data-title="Sync Errors"
-        data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_errors_ansified}</pre>'
-        data-custom-class="popover-wide"
-      >
-        <i class="fa fa-times text-danger" aria-hidden="true"></i>
-      </button>`;
+      text += SyncProblemButton({
+        type: 'error',
+        output: question.sync_errors,
+      });
     } else if (question.sync_warnings) {
-      text += html`<button
-        class="btn btn-xs mr-1 js-sync-popover"
-        data-toggle="popover"
-        data-trigger="hover"
-        data-container="body"
-        data-html="true"
-        data-title="Sync Warnings"
-        data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_warnings_ansified}</pre>'
-        data-custom-class="popover-wide"
-      >
-        <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
-      </button>`;
+      text += SyncProblemButton({
+        type: 'warning',
+        output: question.sync_warnings,
+      });
     }
     text += html`
       <a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">

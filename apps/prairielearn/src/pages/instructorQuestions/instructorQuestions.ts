@@ -10,7 +10,7 @@ import { getCourseOwners } from '../../lib/course.js';
 import { QuestionAddEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
-import { QuestionsPageDataAnsified, selectQuestionsForCourse } from '../../models/questions.js';
+import { selectQuestionsForCourse } from '../../models/questions.js';
 
 import { QuestionsPage } from './instructorQuestions.html.js';
 
@@ -43,7 +43,7 @@ router.get(
       authn_is_administrator: res.locals.authz_data.authn_is_administrator,
     });
 
-    const questions: QuestionsPageDataAnsified[] = await selectQuestionsForCourse(
+    const questions = await selectQuestionsForCourse(
       res.locals.course.id,
       courseInstances.map((ci) => ci.id),
     );
