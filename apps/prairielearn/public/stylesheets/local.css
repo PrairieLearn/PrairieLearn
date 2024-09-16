@@ -126,6 +126,12 @@ mjx-container {
   max-width: min(800px, 90vw);
 }
 
+/**
+ * Identical to the variables for `btn-light`, except with a transparent
+ * background and border in the default state. This style is useful for
+ * buttons that should carry little visual weight, while still ensuring
+ * that they have hover/focus/active styles.
+ */
 .btn.btn-ghost {
   --bs-btn-color: #000;
   --bs-btn-bg: transparent;
