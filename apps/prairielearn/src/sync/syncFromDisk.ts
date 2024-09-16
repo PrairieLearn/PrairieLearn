@@ -18,24 +18,31 @@ import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import { getInvalidRenames } from './sharing.js';
 
-export interface SyncResults {
-  sharingSyncError: boolean;
+interface SyncResultSharingError {
+  status: 'sharing_error';
+  courseId: string;
+}
+
+interface SyncResultComplete {
+  status: 'complete';
   hadJsonErrors: boolean;
   hadJsonErrorsOrWarnings: boolean;
   courseId: string;
   courseData: courseDB.CourseData;
 }
 
+export type SyncResults = SyncResultSharingError | SyncResultComplete;
+
 interface Logger {
   info: (msg: string) => void;
   verbose: (msg: string) => void;
 }
 
-export async function validateSharingConfiguration(
+export async function checkSharingConfigurationValid(
   courseId: string,
   courseData: courseDB.CourseData,
   logger: Logger,
-): Promise<{ courseData: courseDB.CourseData; sharingSyncError: boolean }> {
+): Promise<boolean> {
   if (config.checkSharingOnSync) {
     // TODO: also check if questions were un-shared in the JSON or if any
     // sharing sets were deleted
@@ -46,14 +53,10 @@ export async function validateSharingConfiguration(
           `✖ Course sync completely failed. The following questions are shared and cannot be renamed or deleted: ${invalidRenames.join(', ')}`,
         ),
       );
-      return {
-        courseData,
-        sharingSyncError: true,
-      };
+      return false;
     }
   }
-
-  return { courseData, sharingSyncError: false };
+  return true;
 }
 
 export async function syncDiskToSqlWithLock(
@@ -81,18 +84,13 @@ export async function syncDiskToSqlWithLock(
     );
   }
 
-  const result = await timed('Validate Sharing Configuration', () =>
-    validateSharingConfiguration(courseId, courseData, logger),
+  const sharingConfigurationValid = await timed('Validate Sharing Configuration', () =>
+    checkSharingConfigurationValid(courseId, courseData, logger),
   );
-  if (result.sharingSyncError) {
-    const courseDataHasErrors = courseDB.courseDataHasErrors(courseData);
-    const courseDataHasErrorsOrWarnings = courseDB.courseDataHasErrorsOrWarnings(courseData);
+  if (!sharingConfigurationValid) {
     return {
-      sharingSyncError: true,
-      hadJsonErrors: courseDataHasErrors,
-      hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
+      status: 'sharing_error',
       courseId,
-      courseData,
     };
   }
 
@@ -154,7 +152,7 @@ export async function syncDiskToSqlWithLock(
   );
 
   return {
-    sharingSyncError: false,
+    status: 'complete',
     hadJsonErrors: courseDataHasErrors,
     hadJsonErrorsOrWarnings: courseDataHasErrorsOrWarnings,
     courseId,

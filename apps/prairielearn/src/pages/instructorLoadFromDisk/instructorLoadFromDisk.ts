@@ -34,7 +34,7 @@ async function update(locals: Record<string, any>) {
         return;
       }
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(courseDir, job);
-      if (syncResult.sharingSyncError) {
+      if (syncResult.status === 'sharing_error') {
         job.fail('Sync completely failed due to invalid question sharing edit.');
         return;
       }

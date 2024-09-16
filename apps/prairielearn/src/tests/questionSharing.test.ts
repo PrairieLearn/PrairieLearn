@@ -177,7 +177,7 @@ describe('Question Sharing', function () {
 
     step('Fail to sync course when validating shared question paths', async () => {
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
-      if (!syncResult?.hadJsonErrorsOrWarnings) {
+      if (syncResult.status === 'complete' && !syncResult?.hadJsonErrorsOrWarnings) {
         throw new Error(
           'Sync of consuming course succeeded when it should have failed due to unresolved shared question path.',
         );
@@ -193,7 +193,7 @@ describe('Question Sharing', function () {
       'Sync course with sharing enabled, disabling validating shared question paths',
       async () => {
         const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
-        if (syncResult?.hadJsonErrorsOrWarnings) {
+        if (syncResult.status !== 'complete' || syncResult?.hadJsonErrorsOrWarnings) {
           throw new Error('Errors or warnings found during sync of consuming course');
         }
       },
@@ -475,7 +475,7 @@ describe('Question Sharing', function () {
     });
     step('Re-sync test course, validating shared questions', async () => {
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
-      if (syncResult === undefined || syncResult.hadJsonErrorsOrWarnings) {
+      if (syncResult?.status !== 'complete' || syncResult.hadJsonErrorsOrWarnings) {
         throw new Error('Errors or warnings found during sync of consuming course');
       }
     });
@@ -501,8 +501,8 @@ describe('Question Sharing', function () {
       await fs.rename(questionPath, questionTempPath);
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
       assert(
-        syncResult.sharingSyncError,
-        'sharingSyncError should be set when attempting sync after moving shared question',
+        syncResult.status === 'sharing_error',
+        'sync should not complete when attempting sync after moving shared question',
       );
 
       const question_id = await sqldb.queryOptionalRow(

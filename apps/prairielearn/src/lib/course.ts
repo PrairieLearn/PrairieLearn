@@ -162,7 +162,7 @@ export async function pullAndUpdateCourse({
 
         job.info('Sync git repository to database');
         const syncResult = await syncDiskToSqlWithLock(courseId, path, job);
-        if (syncResult.sharingSyncError) {
+        if (syncResult.status === 'sharing_error') {
           if (startGitHash) {
             await job.exec('git', ['reset', '--hard', startGitHash], gitOptions);
           }

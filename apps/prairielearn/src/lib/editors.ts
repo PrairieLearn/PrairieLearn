@@ -50,7 +50,7 @@ async function syncCourseFromDisk(
     courseData,
   );
 
-  if (syncResult.sharingSyncError) {
+  if (syncResult.status === 'sharing_error') {
     throw new Error('Sync completely failed due to invalid question sharing edit.');
   }
 
@@ -247,7 +247,7 @@ export abstract class Editor {
           );
         };
 
-        let sharingSyncError = false;
+        let sharingConfigurationValid = true;
         let courseData;
         try {
           await writeAndCommitChanges();
@@ -256,13 +256,12 @@ export abstract class Editor {
             this.course.id,
             this.course.path,
           );
-          const result = await syncFromDisk.validateSharingConfiguration(
+          sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
             this.course.id,
             possibleCourseData,
             logger,
           );
-          sharingSyncError = result.sharingSyncError;
-          if (sharingSyncError) {
+          if (!sharingConfigurationValid) {
             throw new Error('Invalid sharing operation, need to revert to last known good state.');
           }
           courseData = possibleCourseData;
@@ -304,7 +303,9 @@ export abstract class Editor {
           //
           // If pushing (or anything before pushing) failed, the reset will get
           // us back to a known good state.
-          const revision = sharingSyncError ? startGitHash : `origin/${this.course.branch}`;
+          const revision = sharingConfigurationValid
+            ? `origin/${this.course.branch}`
+            : startGitHash;
           await cleanAndResetRepository(this.course, revision, gitEnv, job);
 
           // Similarly, whether or not we error, we'll a course sync.
