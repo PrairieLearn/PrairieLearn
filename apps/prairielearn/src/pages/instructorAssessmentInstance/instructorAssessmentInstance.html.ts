@@ -170,7 +170,7 @@ export function InstructorAssessmentInstance({
                         <td colspan="2">
                           ${resLocals.assessment_instance.client_fingerprint_id_change_count}
                           <button
-                          type="button
+                            type="button"
                             class="btn btn-xs"
                             id="fingerprintDescriptionPopover"
                             data-toggle="popover"
