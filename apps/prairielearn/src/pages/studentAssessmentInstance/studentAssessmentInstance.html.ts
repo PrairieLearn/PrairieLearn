@@ -1,5 +1,6 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import {
   RegenerateInstanceAlert,
@@ -44,6 +45,28 @@ export function StudentAssessmentInstance({
     }
   | { groupConfig?: undefined; groupInfo?: undefined; userCanAssignRoles?: undefined }
 )) {
+  // Keep this in sync with the `InstanceQuestionTableHeader` function below.
+  const zoneTitleColspan = run(() => {
+    const trailingColumnsCount =
+      resLocals.assessment.type === 'Exam'
+        ? resLocals.has_auto_grading_question && resLocals.assessment.allow_real_time_grading
+          ? 2
+          : resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
+            ? 3
+            : 1
+        : (resLocals.has_auto_grading_question ? 2 : 0) + 1;
+
+    return resLocals.assessment.type === 'Exam'
+      ? resLocals.has_auto_grading_question &&
+        resLocals.has_manual_grading_question &&
+        resLocals.assessment.allow_real_time_grading
+        ? 6
+        : 2 + trailingColumnsCount
+      : resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
+        ? 5
+        : 1 + trailingColumnsCount;
+  });
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -204,12 +227,7 @@ export function StudentAssessmentInstance({
                     ${instance_question.start_new_zone && instance_question.zone_title
                       ? html`
                           <tr>
-                            <th
-                              colspan="${(resLocals.has_auto_grading_question
-                                ? (resLocals.has_manual_grading_question ? 2 : 0) +
-                                  (resLocals.assessment.allow_real_time_grading ? 4 : 2)
-                                : 2) + (resLocals.assessment.type === 'Exam' ? 1 : 0)}"
-                            >
+                            <th colspan="${zoneTitleColspan}">
                               <span class="mr-1">${instance_question.zone_title}</span>
                               ${instance_question.zone_has_max_points
                                 ? ZoneInfoBadge({
@@ -576,7 +594,7 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
                 <tr>
                   <th rowspan="2">Question</th>
                   <th class="text-center" rowspan="2">Submission status</th>
-                  <th class="text-center" colspan="3">Auto-grading</th>
+                  <th class="text-center" colspan="2">Auto-grading</th>
                   <th class="text-center" rowspan="2">Manual grading points</th>
                   <th class="text-center" rowspan="2">Total points</th>
                 </tr>
@@ -597,7 +615,7 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
             ? html`
                 <tr>
                   <th rowspan="2">Question</th>
-                  <th class="text-center" colspan="3">Auto-grading</th>
+                  <th class="text-center" colspan="2">Auto-grading</th>
                   <th class="text-center" rowspan="2">Manual grading points</th>
                   <th class="text-center" rowspan="2">Total points</th>
                 </tr>
