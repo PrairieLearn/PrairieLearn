@@ -51,7 +51,7 @@ export function InstructorAssessmentSettings({
               <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
             </div>
             <div class="card-body">
-              <form method="POST">
+              <form name="edit-assessment-settings-form" method="POST">
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <input type="hidden" name="orig_hash" value="${origHash}" />
                 <div class="form-group">
@@ -149,6 +149,7 @@ export function InstructorAssessmentSettings({
                     id="aid"
                     name="aid"
                     value="${resLocals.assessment.tid}"
+                    data-other-values="${tids.join(',')}"
                     ${resLocals.authz_data.has_course_permission_edit &&
                     !resLocals.course.example_course
                       ? ''
