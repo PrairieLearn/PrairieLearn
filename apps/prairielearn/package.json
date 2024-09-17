@@ -154,6 +154,7 @@
     "qs": "^6.13.0",
     "quill": "^2.0.2",
     "quilljs-markdown": "^1.2.0",
+    "remark-gfm": "^4.0.0",
     "remark-parse": "^11.0.0",
     "remark-stringify": "^11.0.0",
     "requirejs": "^2.3.7",
