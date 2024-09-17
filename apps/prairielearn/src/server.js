@@ -1268,6 +1268,13 @@ export async function initExpress() {
     },
     (await import('./pages/instructorCourseAdminSets/instructorCourseAdminSets.js')).default,
   ]);
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/modules', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'moduls';
+      next();
+    },
+    (await import('./pages/instructorCourseAdminModules/instructorCourseAdminModules.js')).default,
+  ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/instances', [
     function (req, res, next) {
       res.locals.navSubPage = 'instances';
@@ -1816,6 +1823,13 @@ export async function initExpress() {
       next();
     },
     (await import('./pages/instructorCourseAdminSets/instructorCourseAdminSets.js')).default,
+  ]);
+  app.use('/pl/course/:course_id(\\d+)/course_admin/modules', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'modules';
+      next();
+    },
+    (await import('./pages/instructorCourseAdminModules/instructorCourseAdminModules.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/instances', [
     function (req, res, next) {
