@@ -7,7 +7,7 @@ import fetch, { RequestInfo, RequestInit } from 'node-fetch';
 import { Issuer, TokenSet } from 'openid-client';
 import { z } from 'zod';
 
-import { HttpStatusError, makeWithData } from '@prairielearn/error';
+import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import {
   loadSqlEquiv,
   queryRow,
@@ -148,11 +148,11 @@ export class Lti13Claim {
   constructor(req: Request) {
     try {
       this.claims = Lti13ClaimSchema.passthrough().parse(req.session.lti13_claims);
-    } catch {
-      throw new HttpStatusError(
-        403,
-        'LTI session invalid or timed out, please try logging in again.',
-      );
+    } catch (err) {
+      throw new AugmentedError('LTI session invalid or timed out, please try logging in again.', {
+        cause: err,
+        status: 403,
+      });
     }
     this.valid = true;
     this.req = req;
@@ -513,10 +513,12 @@ export async function fetchRetry(
     }
 
     if (!response.ok) {
-      throw makeWithData('LTI 1.3 fetch error, please try again', {
-        status: response.status,
-        statusText: response.statusText,
-        body: response.text(),
+      throw new AugmentedError('LTI 1.3 fetch error, please try again', {
+        data: {
+          status: response.status,
+          statusText: response.statusText,
+          body: response.text(),
+        },
       });
     }
 
@@ -571,10 +573,21 @@ const ContextMembershipSchema = z.object({
 type ContextMembership = z.infer<typeof ContextMembershipSchema>;
 
 class Lti13ContextMembership {
-  #memberships: ContextMembership[] | null = null;
-  #cache: Record<string, string> = {};
+  #memberships: Record<string, ContextMembership[]> = {};
 
-  async loadForInstance({ lti13_instance, lti13_course_instance }) {
+  private constructor(memberships: ContextMembership[]) {
+    // Turn array into an object for efficient lookups. We need to retain duplicates
+    // so that we can detect and handle the case where two users have the same email.
+    for (const member of memberships) {
+      this.#memberships[member.email] ??= [];
+      this.#memberships[member.email].push(member);
+    }
+  }
+
+  static async loadForInstance({
+    lti13_instance,
+    lti13_course_instance,
+  }: Lti13CombinedInstance): Promise<Lti13ContextMembership> {
     if (lti13_course_instance.context_memberships_url === null) {
       throw new HttpStatusError(
         403,
@@ -603,37 +616,33 @@ class Lti13ContextMembership {
       return true;
     });
 
-    this.#memberships = ContextMembershipSchema.array().parse(filteredMemberships);
+    const memberships = ContextMembershipSchema.array().parse(filteredMemberships);
+
+    return new Lti13ContextMembership(memberships);
   }
 
-  async lookup(user: UsersWithLti13Sub) {
+  /**
+   * @param user The user to look up.
+   * @returns The LTI 1.3 sub (user_id) for the user, or null if not found.
+   */
+  async lookup(user: UsersWithLti13Sub): Promise<string | null> {
     if (user.lti13_sub !== null) {
       return user.lti13_sub;
     }
-    if (user.user_id in this.#cache) {
-      return this.#cache[user.user_id];
-    }
-    if (this.#memberships === null) {
-      return null;
-    }
 
     for (const match of ['uid', 'email']) {
-      const memberResults = this.#memberships.filter((m) => m.email === user[match]);
+      const memberResults = this.#memberships[user[match]];
+
+      if (!memberResults) continue;
 
       // member.email cannot be duplicated in memberships
-      if (memberResults.length > 1) {
-        return null;
-      }
-      const member = memberResults[0];
+      if (memberResults.length > 1) return null;
 
-      // member.user_id is what we call lti13_sub
-      if (member?.user_id) {
-        this.#cache[user.user_id] = member.user_id;
-        return member.user_id;
-      }
+      // The `user_id` that we get from the membership API is what we call `lti13_sub`.
+      return memberResults[0].user_id;
     }
 
-    // Failthrough case
+    // The user wan't found.
     return null;
   }
 }
@@ -677,14 +686,13 @@ export async function updateLti13Scores(
     }),
   );
 
-  const membership = new Lti13ContextMembership();
-  membership.loadForInstance(instance);
+  const memberships = await Lti13ContextMembership.loadForInstance(instance);
 
   for (const assessment_instance of assessment_instances) {
     for (const user of assessment_instance.users) {
       job.info(`ai=${assessment_instance.id}, ${assessment_instance.score_perc}% for ${user.name}`);
 
-      const userId = await membership.lookup(user);
+      const userId = await memberships.lookup(user);
       if (userId === null) {
         job.warn(`* Could not find LTI user information for ${user.name} ${user.uid}, skipping...`);
         continue;

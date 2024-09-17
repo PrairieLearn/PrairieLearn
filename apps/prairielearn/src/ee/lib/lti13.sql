@@ -132,12 +132,12 @@ ORDER BY
 SELECT
   a.*
 FROM
-  assessments
+  assessments AS a
   JOIN lti13_course_instances ON (
     lti13_course_instances.course_instance_id = a.course_instance_id
   )
 WHERE
-  a.id = $assessment_id
+  a.id = $unsafe_assessment_id
   AND lti13_course_instances.id = $lti13_course_instance_id
   AND a.deleted_at IS NULL;
 
