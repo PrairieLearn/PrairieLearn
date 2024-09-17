@@ -460,7 +460,7 @@ export async function linkAssessment(
   lineitem: Lineitem,
 ) {
   const assessment = await queryRow(
-    sql.select_assessment_with_lti13_course_instance_id,
+    sql.select_assessment_in_lti13_course_instance,
     {
       unsafe_assessment_id,
       lti13_course_instance_id,
@@ -570,17 +570,82 @@ const ContextMembershipSchema = z.object({
 });
 type ContextMembership = z.infer<typeof ContextMembershipSchema>;
 
+class Lti13ContextMembership {
+  #memberships: ContextMembership[] | null = null;
+  #cache: Record<string, string> = {};
+
+  async loadForInstance({ lti13_instance, lti13_course_instance }) {
+    if (lti13_course_instance.context_memberships_url === null) {
+      throw new HttpStatusError(
+        403,
+        'LTI 1.3 course instance context_memberships_url not configured',
+      );
+    }
+
+    const token = await getAccessToken(lti13_instance.id);
+    const ltiMemberships = await fetchRetry(lti13_course_instance.context_memberships_url, {
+      method: 'GET',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-type': 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
+      },
+    });
+
+    const filteredMemberships = ltiMemberships.members.filter((member: ContextMembership) => {
+      // Skip invalid cases
+      if (
+        member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser') ||
+        !('email' in member)
+      ) {
+        return false;
+      }
+
+      return true;
+    });
+
+    this.#memberships = ContextMembershipSchema.array().parse(filteredMemberships);
+  }
+
+  async lookup(user: UsersWithLti13Sub) {
+    if (user.lti13_sub !== null) {
+      return user.lti13_sub;
+    }
+    if (user.user_id in this.#cache) {
+      return this.#cache[user.user_id];
+    }
+    if (this.#memberships === null) {
+      return null;
+    }
+
+    for (const match of ['uid', 'email']) {
+      const memberResults = this.#memberships.filter((m) => m.email === user[match]);
+
+      // member.email cannot be duplicated in memberships
+      if (memberResults.length > 1) {
+        return null;
+      }
+      const member = memberResults[0];
+
+      // member.user_id is what we call lti13_sub
+      if (member?.user_id) {
+        this.#cache[user.user_id] = member.user_id;
+        return member.user_id;
+      }
+    }
+
+    // Failthrough case
+    return null;
+  }
+}
+
 export async function updateLti13Scores(
   unsafe_assessment_id: string | number,
   instance: Lti13CombinedInstance,
   job: ServerJob,
 ) {
-  const memberships: ContextMembership[] | null = null;
-  const userSubCache = {};
-
   // Get the assessment metadata
   const assessment = await queryRow(
-    sql.select_assessment_with_lti13_course_instance_id,
+    sql.select_assessment_for_lt13_scores,
     {
       unsafe_assessment_id,
       lti13_course_instance_id: instance.lti13_course_instance.id,
@@ -612,11 +677,14 @@ export async function updateLti13Scores(
     }),
   );
 
+  const membership = new Lti13ContextMembership();
+  membership.loadForInstance(instance);
+
   for (const assessment_instance of assessment_instances) {
     for (const user of assessment_instance.users) {
       job.info(`ai=${assessment_instance.id}, ${assessment_instance.score_perc}% for ${user.name}`);
 
-      const userId = await lookupSub(user, memberships, instance, userSubCache);
+      const userId = await membership.lookup(user);
       if (userId === null) {
         job.warn(`* Could not find LTI user information for ${user.name} ${user.uid}, skipping...`);
         continue;
@@ -647,72 +715,4 @@ export async function updateLti13Scores(
       });
     }
   }
-}
-
-async function lookupSub(
-  user: UsersWithLti13Sub,
-  memberships: ContextMembership[] | null,
-  instance: Lti13CombinedInstance,
-  cache: Record<string, string>,
-) {
-  if (user.lti13_sub !== null) {
-    return user.lti13_sub;
-  }
-  if (user.user_id in cache) {
-    return cache[user.user_id];
-  }
-  if (memberships === null) {
-    if (instance.lti13_course_instance.context_memberships_url === null) {
-      return null;
-    }
-
-    const token = await getAccessToken(instance.lti13_instance.id);
-    const ltiMemberships = await fetchRetry(
-      instance.lti13_course_instance.context_memberships_url,
-      {
-        method: 'GET',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-type': 'application/vnd.ims.lti-nrps.v2.membershipcontainer+json',
-        },
-      },
-    );
-
-    const filteredMemberships = ltiMemberships.members.filter((member: ContextMembership) => {
-      // Skip invalid cases
-      if (
-        member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser') ||
-        !('email' in member)
-      ) {
-        return false;
-      }
-
-      // Skip non-student cases
-      //if (!member.roles.includes('http://purl.imsglobal.org/vocab/lis/v2/membership#Learner')) {
-      //  return false;
-      //}
-
-      return true;
-    });
-
-    memberships = ContextMembershipSchema.array().parse(filteredMemberships);
-  }
-
-  if (memberships === null) {
-    return null;
-  }
-
-  for (const match of ['uid', 'email']) {
-    // Check for duplicate emails in database?
-    // Check institution?
-    const member = memberships.find((m) => m.email === user[match]);
-    // member.user_id is what we call lti13_sub
-    if (member?.user_id) {
-      cache[user.user_id] = member.user_id;
-      return member.user_id;
-    }
-  }
-
-  // Failthrough case
-  return null;
 }

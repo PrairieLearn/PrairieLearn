@@ -128,7 +128,20 @@ WHERE
 ORDER BY
   ai.id;
 
--- BLOCK select_assessment_with_lti13_course_instance_id
+-- BLOCK select_assessment_in_lti13_course_instance
+SELECT
+  a.*
+FROM
+  assessments
+  JOIN lti13_course_instances ON (
+    lti13_course_instances.course_instance_id = a.course_instance_id
+  )
+WHERE
+  a.id = $assessment_id
+  AND lti13_course_instances.id = $lti13_course_instance_id
+  AND a.deleted_at IS NULL;
+
+-- BLOCK select_assessment_for_lt13_scores
 SELECT
   a.*,
   la.lineitem_id_url AS lti13_lineitem_id_url,
@@ -139,7 +152,7 @@ FROM
   JOIN lti13_course_instances ON (
     lti13_course_instances.course_instance_id = a.course_instance_id
   )
-  LEFT JOIN lti13_assessments AS la ON (la.assessment_id = a.id)
+  JOIN lti13_assessments AS la ON (la.assessment_id = a.id)
 WHERE
   a.id = $unsafe_assessment_id
   AND lti13_course_instances.id = $lti13_course_instance_id

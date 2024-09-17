@@ -261,7 +261,6 @@ router.post(
       });
       return res.redirect(res.locals.urlPrefix + '/jobSequence/' + serverJob.jobSequenceId);
     } else if (req.body.__action === 'send_grades') {
-      // Should something like this be in a model?
       const assessment = await queryRow(
         sql.select_assessment_in_course_instance,
         {
@@ -271,7 +270,7 @@ router.post(
         AssessmentSchema,
       );
       if (assessment === null) {
-        throw new Error('Invalid assessment.id');
+        throw new error.HttpStatusError(403, 'Invalid assessment.id');
       }
 
       serverJobOptions.description = 'LTI 1.3 send assessment grades to LMS';
