@@ -98,7 +98,6 @@ export function StudentInstanceQuestion({
             </div>
 
             <div class="col-lg-3 col-sm-12">
-              ${userCanDeleteAssessmentInstance ? RegenerateInstanceAlert() : ''}
               ${resLocals.assessment.type === 'Exam'
                 ? html`
                     <div class="card mb-4">
