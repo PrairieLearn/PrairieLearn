@@ -151,7 +151,6 @@ describe('Question syncing', () => {
   });
 
   it('syncs entrypoint as an array', async () => {
-    // Note that we want the database to contain empty arrays, not NULL
     const courseData = util.getCourseData();
     courseData.questions[util.QUESTION_ID].externalGradingOptions = {
       image: 'docker-image',
@@ -164,7 +163,6 @@ describe('Question syncing', () => {
   });
 
   it('syncs workspace args as an array', async () => {
-    // Note that we want the database to contain empty arrays, not NULL
     const courseData = util.getCourseData();
     courseData.questions[util.QUESTION_ID].workspaceOptions = {
       image: 'docker-image',
