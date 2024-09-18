@@ -54,10 +54,14 @@ export function QuestionScorePanel({
       </div>
       <table class="table table-sm two-column-description-no-header" aria-label="Question score">
         <tbody>
-          <tr>
-            <td>Submission status:</td>
-            <td>${ExamQuestionStatus({ instance_question })}</td>
-          </tr>
+          ${assessment.type === 'Exam'
+            ? html`
+                <tr>
+                  <td>Submission status:</td>
+                  <td>${ExamQuestionStatus({ instance_question })}</td>
+                </tr>
+              `
+            : ''}
           ${assessment.allow_real_time_grading &&
           (assessment_question.max_auto_points || !assessment_question.max_manual_points)
             ? html`
