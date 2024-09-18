@@ -272,6 +272,16 @@ export abstract class Editor {
               env: gitEnv,
             });
             job.data.saveSucceeded = true;
+
+            // If we were able to push the change to GitHub, we can safely
+            // use the course data that we already loaded from disk because
+            // we can be sure that there weren't any further changes to the
+            // files on disk. This helps keep syncing fast by avoiding loading
+            // all course JSON files twice.
+            //
+            // If pushing fails, we'll need to incorporate the latest changes
+            // from the remote repository, so we'll have to load the latest 
+            // course data from disk after we do so.
             courseData = possibleCourseData;
           } catch {
             job.info('Failed to push changes to remote git repository');
