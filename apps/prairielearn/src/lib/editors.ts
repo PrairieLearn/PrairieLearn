@@ -253,6 +253,10 @@ export abstract class Editor {
           await writeAndCommitChanges();
 
           await cleanAndResetRepository(this.course, 'HEAD', gitEnv, job);
+          // Before pushing the changes, ensure that we don't allow someone
+          // to put their course into an invalid state by deleting a shared
+          // question or otherwise breaking the invariants we rely upon for
+          // question sharing.
           const possibleCourseData = await courseDB.loadFullCourse(
             this.course.id,
             this.course.path,
@@ -265,6 +269,7 @@ export abstract class Editor {
           if (!sharingConfigurationValid) {
             throw new Error('Invalid sharing operation, need to revert to last known good state.');
           }
+
           try {
             job.info('Push changes to remote git repository');
             await job.exec('git', ['push'], {
