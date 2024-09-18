@@ -1268,6 +1268,13 @@ export async function initExpress() {
     },
     (await import('./pages/instructorCourseAdminSets/instructorCourseAdminSets.js')).default,
   ]);
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/modules', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'moduls';
+      next();
+    },
+    (await import('./pages/instructorCourseAdminModules/instructorCourseAdminModules.js')).default,
+  ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/instances', [
     function (req, res, next) {
       res.locals.navSubPage = 'instances';
@@ -1817,6 +1824,13 @@ export async function initExpress() {
     },
     (await import('./pages/instructorCourseAdminSets/instructorCourseAdminSets.js')).default,
   ]);
+  app.use('/pl/course/:course_id(\\d+)/course_admin/modules', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'modules';
+      next();
+    },
+    (await import('./pages/instructorCourseAdminModules/instructorCourseAdminModules.js')).default,
+  ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/instances', [
     function (req, res, next) {
       res.locals.navSubPage = 'instances';
@@ -2352,6 +2366,30 @@ if (esMain(import.meta) && config.startServer) {
               return event;
             },
           });
+        }
+
+        // Start capturing profiling information as soon as possible.
+        if (config.pyroscopeEnabled) {
+          if (
+            !config.pyroscopeServerAddress ||
+            !config.pyroscopeBasicAuthUser ||
+            !config.pyroscopeBasicAuthPassword
+          ) {
+            throw new Error('Pyroscope configuration is incomplete');
+          }
+
+          const Pyroscope = await import('@pyroscope/nodejs');
+          Pyroscope.init({
+            appName: 'prairielearn',
+            serverAddress: config.pyroscopeServerAddress,
+            basicAuthUser: config.pyroscopeBasicAuthUser,
+            basicAuthPassword: config.pyroscopeBasicAuthPassword,
+            tags: {
+              instanceId: config.instanceId,
+              ...config.pyroscopeTags,
+            },
+          });
+          Pyroscope.start();
         }
 
         if (config.logFilename) {
