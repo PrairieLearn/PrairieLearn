@@ -327,9 +327,7 @@ export function StudentAssessmentInstance({
                             ${resLocals.has_auto_grading_question
                               ? html`
                                   <td class="text-center">
-                                    <span class="badge badge-primary">
-                                      ${formatPoints(instance_question.current_value)}
-                                    </span>
+                                    ${formatPoints(instance_question.current_value)}
                                   </td>
                                   <td class="text-center">
                                     ${QuestionAwardedPoints({

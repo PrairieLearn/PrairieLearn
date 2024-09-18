@@ -1,4 +1,4 @@
-import { escapeHtml, html } from '@prairielearn/html';
+import { escapeHtml, html, HtmlValue, joinHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import type {
@@ -471,13 +471,73 @@ function QuestionValue({
   instance_question: InstanceQuestion;
   assessment_question: AssessmentQuestion;
 }) {
-  const popoverContent = run(() => {
-    // const bestCurrentScore = (instance_question.variants_points_list.at(-1) ?? 0) *
-    return html`Hello, world!`;
+  const initAutoPoints =
+    (assessment_question.init_points ?? 0) - (assessment_question.max_manual_points ?? 0);
+
+  const currentAutoValue =
+    (instance_question.current_value ?? 0) - (assessment_question.max_manual_points ?? 0);
+
+  const bestCurrentScore = run(() => {
+    const variantPoints = instance_question.variants_points_list.at(-1);
+    if (variantPoints == null) return 0;
+    if (variantPoints < initAutoPoints) return (variantPoints / initAutoPoints) * 100;
+    return 0;
   });
 
-  console.log(instance_question);
+  const popoverContent = run(() => {
+    const parts: HtmlValue[] = [
+      'This question awards partial credit if you continue getting closer to the correct answer.',
+    ];
 
+    if (bestCurrentScore === 0) {
+      parts.push(html`<hr />`);
+      parts.push(
+        `If you score 100% on your next submission, you will be awarded an additional ${formatPoints(currentAutoValue)} points.`,
+      );
+
+      parts.push(html`<hr />`);
+      parts.push(
+        html`If you score less than 100%, you will be awarded an additional
+          <code>${formatPoints(initAutoPoints)} * score / 100</code> points.`,
+      );
+    } else {
+      parts.push(html`<hr />`);
+
+      if (instance_question.some_perfect_submission) {
+        parts.push(
+          `Your highest submission score since your last 100% submission is ${formatPoints(bestCurrentScore)}%.`,
+        );
+      } else {
+        parts.push(`Your highest submission score so far is ${formatPoints(bestCurrentScore)}%.`);
+      }
+
+      // TODO: do we want to show the full formula, or just the number of points?
+      const perfectAdditionalPoints = (currentAutoValue * (100 - bestCurrentScore)) / 100;
+      parts.push(html`<hr />`);
+      parts.push(
+        `If you score 100% on your next submission, you will be awarded an additional ${formatPoints(perfectAdditionalPoints)} points.`,
+      );
+
+      parts.push(html`<hr />`);
+      parts.push(
+        html`If you score between ${formatPoints(bestCurrentScore)}% and 100%, you will be awarded
+          an additional
+          <code>
+            ${formatPoints(currentAutoValue)} * (score - ${formatPoints(bestCurrentScore)}) / 100
+          </code>
+          points.`,
+      );
+      parts.push(html`<hr />`);
+      parts.push(html`If you score less than 100%, you will not be awarded any additional points.`);
+    }
+
+    return joinHtml(parts);
+  });
+
+  // TODO: do we want to show `current_value` or `currentAutoValue` to the student?
+  // We currently show `current_value` on the assessment instance page, but when manual
+  // points are involved, showing `current_value` could be confusing, as the student can
+  // only actually earn `currentAutoValue` points.
   return html`
     ${instance_question.current_value}
     <button
