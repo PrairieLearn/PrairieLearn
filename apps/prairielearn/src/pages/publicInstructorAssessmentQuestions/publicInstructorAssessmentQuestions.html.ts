@@ -144,7 +144,7 @@ function AssessmentQuestionsTable({
               <tr>
                 <td>
                   <a
-                    href="${urlPrefix}/public/course/${course_id}/question/${question.question_id}/preview"
+                    href="/pl/public/course/${course_id}/question/${question.question_id}/preview"
                   >
                     ${question.alternative_group_size === 1
                       ? `${question.alternative_group_number}.`

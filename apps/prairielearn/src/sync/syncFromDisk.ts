@@ -1,6 +1,6 @@
 import { error } from 'console';
-import * as fs from 'fs'; // TEST
-import * as path from 'path'; // TEST
+import * as fs from 'fs';
+import * as path from 'path';
 
 import * as namedLocks from '@prairielearn/named-locks';
 
