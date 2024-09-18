@@ -42,6 +42,8 @@ export function Workspace({
                 serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
                 serverUpdateURL: `${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance_id}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
                 canTriggerFinish: false,
+                showsTimeoutWarning: true,
+                reloadOnFail: false,
                 csrfToken: resLocals.__csrf_token,
               },
               'time-limit-data',
