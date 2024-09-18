@@ -316,7 +316,7 @@ export abstract class Editor {
             job.data.saveSucceeded = true;
           }
         } finally {
-          // Whether or not we error, we'll a course sync.
+          // Whether or not we error, we'll sync the course.
           //
           // If pushing succeeded, then we will be syncing the changes made
           // by this edit.
