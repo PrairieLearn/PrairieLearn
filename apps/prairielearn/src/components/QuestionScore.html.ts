@@ -1,4 +1,5 @@
 import { escapeHtml, html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import type {
   Assessment,
@@ -68,23 +69,31 @@ export function QuestionScorePanel({
               `
             : ''}
           ${assessment.type === 'Homework'
-            ? // Only show previous variants if the question allows multiple variants, or there are multiple variants (i.e., they were allowed at some point)
-              !question.single_variant ||
-              (instance_question_info.previous_variants?.length ?? 0) > 1
-              ? html`
-                  <tr>
-                    <td colspan="2" class="text-wrap">
-                      All variants:
-                      ${QuestionAwardedPoints({
-                        instanceQuestionId: instance_question.id,
-                        previousVariants: instance_question_info.previous_variants,
-                        currentVariantId: variant?.id,
-                        urlPrefix,
-                      })}
-                    </td>
-                  </tr>
-                `
-              : ''
+            ? html`
+                <tr>
+                  <td>Value:</td>
+                  <td>${QuestionValue({ instance_question, assessment_question })}</td>
+                </tr>
+                ${
+                  // Only show previous variants if the question allows multiple variants, or there are multiple variants (i.e., they were allowed at some point)
+                  !question.single_variant ||
+                  (instance_question_info.previous_variants?.length ?? 0) > 1
+                    ? html`
+                        <tr>
+                          <td colspan="2" class="text-wrap">
+                            All variants:
+                            ${QuestionAwardedPoints({
+                              instanceQuestionId: instance_question.id,
+                              previousVariants: instance_question_info.previous_variants,
+                              currentVariantId: variant?.id,
+                              urlPrefix,
+                            })}
+                          </td>
+                        </tr>
+                      `
+                    : ''
+                }
+              `
             : assessment_question.max_auto_points
               ? html`
                   <tr>
@@ -452,5 +461,35 @@ export function ExamQuestionAvailablePoints({
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
     </a>
+  `;
+}
+
+function QuestionValue({
+  instance_question,
+  assessment_question,
+}: {
+  instance_question: InstanceQuestion;
+  assessment_question: AssessmentQuestion;
+}) {
+  const popoverContent = run(() => {
+    // const bestCurrentScore = (instance_question.variants_points_list.at(-1) ?? 0) *
+    return html`Hello, world!`;
+  });
+
+  console.log(instance_question);
+
+  return html`
+    ${instance_question.current_value}
+    <button
+      type="button"
+      class="btn btn-xs js-value-popover"
+      data-toggle="popover"
+      data-container="body"
+      data-html="true"
+      data-content="${escapeHtml(popoverContent)}"
+      data-placement="auto"
+    >
+      <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </button>
   `;
 }
