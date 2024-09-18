@@ -267,7 +267,7 @@ export abstract class Editor {
           );
           if (!sharingConfigurationValid) {
             await cleanAndResetRepository(this.course, startGitHash, gitEnv, job);
-            throw new Error('Invalid sharing operation, need to revert to last known good state.');
+            throw new Error('Invalid sharing operation, reverted to last known good state.');
           }
 
           try {
