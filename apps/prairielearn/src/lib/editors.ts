@@ -304,8 +304,8 @@ export abstract class Editor {
 
             await writeAndCommitChanges();
 
-            // Clean up to remove any empty directories
-            // that might have been left behind by operations like renames.
+            // Clean up to remove any empty directories that might have been
+            // left behind by operations like renames.
             await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
 
             job.info('Push changes to remote git repository');
