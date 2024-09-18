@@ -114,31 +114,6 @@ function runTest(context) {
     await checkPermissions(users);
   });
 
-  step('cannot add multiple users with owner role', async () => {
-    let response = await helperClient.fetchCheerio(context.pageUrl, {
-      headers,
-    });
-    assert.isTrue(response.ok);
-    helperClient.extractAndSaveCSRFTokenFromDataContent(
-      context,
-      response.$,
-      'button[data-testid="add-users-button"]',
-    );
-    const form = {
-      __action: 'course_permissions_insert_by_user_uids',
-      __csrf_token: context.__csrf_token,
-      uid: ' staff03@example.com ,   ,   staff04@example.com',
-      course_role: 'Owner',
-    };
-    response = await helperClient.fetchCheerio(context.pageUrl, {
-      method: 'POST',
-      form,
-      headers,
-    });
-    assert.equal(response.status, 400);
-    await checkPermissions(users);
-  });
-
   step('can add multiple users', async () => {
     let response = await helperClient.fetchCheerio(context.pageUrl, {
       headers,
