@@ -252,6 +252,7 @@ export abstract class Editor {
         try {
           await writeAndCommitChanges();
 
+          await cleanAndResetRepository(this.course, 'HEAD', gitEnv, job);
           const possibleCourseData = await courseDB.loadFullCourse(
             this.course.id,
             this.course.path,
