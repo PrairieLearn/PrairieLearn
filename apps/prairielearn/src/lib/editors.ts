@@ -248,7 +248,7 @@ export abstract class Editor {
         };
 
         let sharingConfigurationValid = true;
-        let courseData;
+        let courseData: courseDB.CourseData | undefined;
         try {
           await writeAndCommitChanges();
 
@@ -285,7 +285,7 @@ export abstract class Editor {
             // all course JSON files twice.
             //
             // If pushing fails, we'll need to incorporate the latest changes
-            // from the remote repository, so we'll have to load the latest 
+            // from the remote repository, so we'll have to load the latest
             // course data from disk after we do so.
             courseData = possibleCourseData;
           } catch {
@@ -311,19 +311,12 @@ export abstract class Editor {
             });
             job.data.saveSucceeded = true;
           }
-        } finally {
-          // Whether or not we error, we'll do a clean and reset.
-          //
-          // If pushing succeeded, the clean will remove any empty directories
-          // that might have been left behind by operations like renames.
-          //
-          // If pushing (or anything before pushing) failed, the reset will get
-          // us back to a known good state.
+        } catch {
           const revision = sharingConfigurationValid
             ? `origin/${this.course.branch}`
             : startGitHash;
           await cleanAndResetRepository(this.course, revision, gitEnv, job);
-
+        } finally {
           // Similarly, whether or not we error, we'll a course sync.
           //
           // If pushing succeeded, then we will be syncing the changes made
