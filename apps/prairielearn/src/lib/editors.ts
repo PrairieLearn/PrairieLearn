@@ -247,7 +247,6 @@ export abstract class Editor {
           );
         };
 
-        let sharingConfigurationValid = true;
         let courseData: courseDB.CourseData | undefined;
         try {
           await writeAndCommitChanges();
@@ -261,12 +260,13 @@ export abstract class Editor {
             this.course.id,
             this.course.path,
           );
-          sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
+          const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
             this.course.id,
             possibleCourseData,
             logger,
           );
           if (!sharingConfigurationValid) {
+            await cleanAndResetRepository(this.course, startGitHash, gitEnv, job);
             throw new Error('Invalid sharing operation, need to revert to last known good state.');
           }
 
@@ -304,6 +304,10 @@ export abstract class Editor {
 
             await writeAndCommitChanges();
 
+            // Clean up to remove any empty directories
+            // that might have been left behind by operations like renames.
+            await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
+
             job.info('Push changes to remote git repository');
             await job.exec('git', ['push'], {
               cwd: this.course.path,
@@ -311,13 +315,8 @@ export abstract class Editor {
             });
             job.data.saveSucceeded = true;
           }
-        } catch {
-          const revision = sharingConfigurationValid
-            ? `origin/${this.course.branch}`
-            : startGitHash;
-          await cleanAndResetRepository(this.course, revision, gitEnv, job);
         } finally {
-          // Similarly, whether or not we error, we'll a course sync.
+          // Whether or not we error, we'll a course sync.
           //
           // If pushing succeeded, then we will be syncing the changes made
           // by this edit.
