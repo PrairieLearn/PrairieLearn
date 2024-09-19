@@ -167,10 +167,6 @@ export function InstructorQuestionSettings({
                         ${QuestionSharing({
                           questionSharedPublicly: resLocals.question.shared_publicly,
                           sharingSetsIn,
-                          hasCoursePermissionOwn: resLocals.authz_data.has_course_permission_own,
-                          sharingSetsOther,
-                          csrfToken: resLocals.__csrf_token,
-                          qid: resLocals.question.qid,
                         })}
                       </div>
                     </div>
@@ -428,17 +424,9 @@ function QuestionTestsForm({
 function QuestionSharing({
   questionSharedPublicly,
   sharingSetsIn,
-  hasCoursePermissionOwn,
-  sharingSetsOther,
-  csrfToken,
-  qid,
 }: {
   questionSharedPublicly: boolean;
   sharingSetsIn: SharingSetRow[];
-  hasCoursePermissionOwn: boolean;
-  sharingSetsOther: SharingSetRow[];
-  csrfToken: string;
-  qid: string;
 }) {
   if (questionSharedPublicly) {
     return html`
@@ -463,55 +451,6 @@ function QuestionSharing({
             })}
           </p>
         `}
-    ${hasCoursePermissionOwn
-      ? html`
-          ${sharingSetsOther.length > 0
-            ? html`
-                <form name="sharing-set-add" method="POST" class="d-inline">
-                  <input type="hidden" name="__action" value="sharing_set_add" />
-                  <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                  <div class="btn-group btn-group-sm" role="group">
-                    <button
-                      id="addSharingSet"
-                      type="button"
-                      class="btn btn-sm btn-outline-dark dropdown-toggle"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Add...
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="addSharingSet">
-                      ${sharingSetsOther.map(function (sharing_set) {
-                        return html`
-                          <button
-                            class="dropdown-item"
-                            name="unsafe_sharing_set_id"
-                            value="${sharing_set.id}"
-                          >
-                            ${sharing_set.name}
-                          </button>
-                        `;
-                      })}
-                    </div>
-                  </div>
-                </form>
-              `
-            : ''}
-          <button
-            class="btn btn-sm btn-outline-primary"
-            type="button"
-            data-toggle="modal"
-            data-target="#publiclyShareModal"
-          >
-            Share Publicly
-          </button>
-          ${PubliclyShareModal({
-            csrfToken,
-            qid,
-          })}
-        `
-      : ''}
   `;
 }
 
