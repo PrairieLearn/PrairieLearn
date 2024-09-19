@@ -224,7 +224,6 @@ const verifyFileData = [
     url: courseInstanceQuestionUrl + '/file_view',
     path: questionPath,
     clientFilesDir: 'clientFilesQuestion',
-    serverFilesDir: 'serverFilesQuestion',
     testFilesDir: 'tests',
   },
   {
@@ -232,14 +231,12 @@ const verifyFileData = [
     url: assessmentUrl + '/file_view',
     path: assessmentPath,
     clientFilesDir: 'clientFilesAssessment',
-    serverFilesDir: 'serverFilesAssessment',
   },
   {
     title: 'course instance',
     url: courseInstanceInstanceAdminUrl + '/file_view',
     path: courseInstancePath,
     clientFilesDir: 'clientFilesCourseInstance',
-    serverFilesDir: 'serverFilesCourseInstance',
   },
   {
     title: 'course (through course instance)',
@@ -758,7 +755,7 @@ function doFiles(data: {
   url: string;
   path: string;
   clientFilesDir: string;
-  serverFilesDir: string;
+  serverFilesDir?: string;
   testFilesDir?: string;
 }) {
   describe(`test file handlers for ${data.title}`, function () {
@@ -823,34 +820,36 @@ function doFiles(data: {
       });
     });
     describe('Server Files', function () {
-      testUploadFile({
-        fileViewBaseUrl: data.url,
-        url: data.url,
-        path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
-        newButtonId: 'NewServer',
-        contents: 'This is a line of text.',
-        filename: 'testfile.txt',
-      });
+      if (data.serverFilesDir) {
+        testUploadFile({
+          fileViewBaseUrl: data.url,
+          url: data.url,
+          path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
+          newButtonId: 'NewServer',
+          contents: 'This is a line of text.',
+          filename: 'testfile.txt',
+        });
 
-      testUploadFile({
-        fileViewBaseUrl: data.url,
-        url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
-        path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
-        contents: 'This is a different line of text.',
-        filename: 'anotherfile.txt',
-      });
+        testUploadFile({
+          fileViewBaseUrl: data.url,
+          url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
+          path: path.join(data.path, data.serverFilesDir, 'testfile.txt'),
+          contents: 'This is a different line of text.',
+          filename: 'anotherfile.txt',
+        });
 
-      testRenameFile({
-        url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
-        path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
-        contents: 'This is a different line of text.',
-        new_file_name: path.join('subdir', 'testfile.txt'),
-      });
+        testRenameFile({
+          url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir)),
+          path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
+          contents: 'This is a different line of text.',
+          new_file_name: path.join('subdir', 'testfile.txt'),
+        });
 
-      testDeleteFile({
-        url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir, 'subdir')),
-        path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
-      });
+        testDeleteFile({
+          url: data.url + '/' + encodePath(path.join(data.path, data.serverFilesDir, 'subdir')),
+          path: path.join(data.path, data.serverFilesDir, 'subdir', 'testfile.txt'),
+        });
+      }
     });
     if (data.testFilesDir) {
       describe('Test Files', function () {

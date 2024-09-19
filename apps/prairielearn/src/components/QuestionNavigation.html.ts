@@ -87,7 +87,6 @@ export function QuestionNavSideButton({
         id="${buttonId}"
         class="btn mb-3 btn-secondary pl-sequence-locked"
         data-toggle="popover"
-        data-trigger="focus"
         data-container="body"
         data-html="true"
         data-content="${disabledExplanation}"
