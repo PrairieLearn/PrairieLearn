@@ -78,7 +78,7 @@ export async function syncDiskToSqlWithLock(
 
   logger.info('Loading info.json files from course repository');
 
-  if (typeof courseData === 'undefined') {
+  if (!courseData) {
     courseData = await timed('Loaded course data from disk', () =>
       courseDB.loadFullCourse(courseId, courseDir),
     );
