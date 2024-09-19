@@ -19,6 +19,14 @@ WHERE
     )
   );
 
+-- BLOCK select_sharing_sets
+SELECT
+  ss.name
+FROM
+  sharing_sets AS ss
+WHERE
+  ss.course_id = $course_id;
+
 -- BLOCK select_sharing_set_questions
 SELECT
   *

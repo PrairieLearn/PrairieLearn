@@ -57,6 +57,26 @@ export async function getInvalidPublicSharingRemovals(
   return invalidUnshares;
 }
 
+export async function getInvalidSharingSetDeletions(
+  courseId: string,
+  courseData: CourseData,
+): Promise<string[]> {
+  const sharingSets = await sqldb.queryRows(
+    sql.select_sharing_sets,
+    { course_id: courseId },
+    z.string(),
+  );
+
+  const invalidSharingSetDeletions: string[] = [];
+  const sharingSetNames = courseData.course.data?.sharingSets.map((ss) => ss.name);
+  sharingSets.forEach((sharingSet) => {
+    if (!sharingSetNames?.includes(sharingSet)) {
+      invalidSharingSetDeletions.push(sharingSet);
+    }
+  });
+  return invalidSharingSetDeletions;
+}
+
 export async function getInvalidSharingSetRemovals(
   courseId: string,
   courseData: CourseData,

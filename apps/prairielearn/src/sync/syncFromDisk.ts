@@ -21,6 +21,7 @@ import {
   getInvalidRenames,
   getInvalidSharingSetRemovals,
   getInvalidPublicSharingRemovals,
+  getInvalidSharingSetDeletions,
 } from './sharing.js';
 
 interface SyncResultSharingError {
@@ -69,6 +70,16 @@ export async function checkSharingConfigurationValid(
     logger.info(
       chalk.red(
         `✖ Course sync completely failed. The following questions are are publicly shared and cannot be unshared: ${invalidPublicSharingRemovals.join(', ')}`,
+      ),
+    );
+    sharingConfigurationValid = false;
+  }
+
+  const invalidSharingSetDeletions = await getInvalidSharingSetDeletions(courseId, courseData);
+  if (invalidSharingSetDeletions.length > 0) {
+    logger.info(
+      chalk.red(
+        `✖ Course sync completely failed. The following sharing sets cannot be removed from 'infoCourse.json': ${invalidSharingSetDeletions.join(', ')}`,
       ),
     );
     sharingConfigurationValid = false;
