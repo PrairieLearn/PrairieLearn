@@ -5,9 +5,6 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '../../lib/db-types.js';
 import { CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
-import { makePerformance } from '../performance.js';
-
-const perf = makePerformance('sharing_sets');
 
 export async function sync(
   courseId: string,
@@ -23,13 +20,11 @@ export async function sync(
 
   console.log('course sharing sets', courseSharingSets);
 
-  perf.start('sproc:sync_course_tags');
   const newSharingSets = await sqldb.callRow(
     'sync_course_sharing_sets',
     [!infofile.hasErrors(courseData.course), courseSharingSets, courseId],
     z.array(z.tuple([z.string(), IdSchema])),
   );
-  perf.end('sproc:sync_course_tags');
 
   const sharingSetIdsByName = new Map(newSharingSets);
 
@@ -46,7 +41,5 @@ export async function sync(
 
   console.log('question sharing sets', questionSharingSetsParam);
 
-  perf.start('sproc:sync_question_tags');
   await sqldb.callAsync('sync_question_sharing_sets', [questionSharingSetsParam]);
-  perf.end('sproc:sync_question_tags');
 }
