@@ -275,6 +275,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   extractFromCompletion(completion, job);
   job.data['generation'] = completion.choices[0].message.content;
+  job.data['completion'] = completion;
 
   const html = job?.data?.html;
 
