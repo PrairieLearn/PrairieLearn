@@ -176,8 +176,9 @@ export function InstructorAssessmentGroups({
                                     <div class="dropdown js-group-action-dropdown">
                                       <button
                                         type="button"
-                                        class="btn btn-xs dropdown-toggle"
+                                        class="btn btn-xs btn-ghost dropdown-toggle"
                                         data-toggle="dropdown"
+                                        data-boundary="window"
                                         aria-haspopup="true"
                                         aria-expanded="false"
                                       >

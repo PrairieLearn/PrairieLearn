@@ -151,7 +151,7 @@ export function SubmissionPanel({
                                     ? html`
                                         <button
                                           type="button"
-                                          class="btn btn-xs text-info"
+                                          class="btn btn-xs btn-ghost"
                                           data-toggle="popover"
                                           data-content="${item.explanation_rendered}"
                                           data-html="true"

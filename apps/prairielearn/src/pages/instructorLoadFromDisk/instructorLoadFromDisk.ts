@@ -33,15 +33,18 @@ async function update(locals: Record<string, any>) {
         if (index !== config.courseDirs.length - 1) job.info('');
         return;
       }
-      const result = await syncFromDisk.syncOrCreateDiskToSql(courseDir, job);
+      const syncResult = await syncFromDisk.syncOrCreateDiskToSql(courseDir, job);
+      if (syncResult.status === 'sharing_error') {
+        job.fail('Sync completely failed due to invalid question sharing edit.');
+        return;
+      }
       if (index !== config.courseDirs.length - 1) job.info('');
-      if (!result) throw new Error('syncOrCreateDiskToSql() returned null');
-      if (result.hadJsonErrors) anyCourseHadJsonErrors = true;
+      if (syncResult.hadJsonErrors) anyCourseHadJsonErrors = true;
       if (config.chunksGenerator) {
         const chunkChanges = await updateChunksForCourse({
           coursePath: courseDir,
-          courseId: result.courseId,
-          courseData: result.courseData,
+          courseId: syncResult.courseId,
+          courseData: syncResult.courseData,
           oldHash: 'HEAD~1',
           newHash: 'HEAD',
         });
