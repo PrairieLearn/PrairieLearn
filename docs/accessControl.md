@@ -71,7 +71,7 @@ Each user accesses the PrairieLearn server in a _mode_, as listed below. This ca
 | `Public` | Access is normally allowed, but is blocked when the student is checked in on PrairieTest, either in a testing center or in a course-managed session. This is the default mode.                                |
 | `Exam`   | Access is normally blocked, and is only allowed when the student is checked in on PrairieTest, either in a testing center or in a course-managed session. This mode is used when the `examUuid` is specified. |
 
-In general usage it is best to keep the Public mode for any homework (assessments that students should do at home or without special access control), and to use exam mode, either with an explicit `"mode": "Exam"` setting or by setting the `"examUuid"`, for exams with access controlled by PrairieTest. This will make it so that exams are only accessible in a testing center or a controlled course session, and homework is _not_ accessible during exams.
+In general usage it is best to keep the default Public mode for any homework (assessments that students should do at home or without special access control), and to use exam mode, by setting the `"examUuid"`, for exams with access controlled by PrairieTest. This will make it so that exams are only accessible in a testing center or a controlled course session, and homework is _not_ accessible during exams.
 
 ## Credit
 
