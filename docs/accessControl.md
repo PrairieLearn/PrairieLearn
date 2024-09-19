@@ -24,20 +24,20 @@ The general format of `allowAccess` is:
 
 Each `accessRule` is an object that specifies a set of circumstances under which the assessment is accessible to students. If any of the access rules gives access, then the assessment is accessible. Each access rule can have one or more restrictions as follows. The "courseInstance" and "assessment" columns indicate whether the restriction is available for the respective objects.
 
-| Access restriction                                                  | courseInstance | assessment | Meaning                                                                                                    | Example                                                    |
-| ------------------------------------------------------------------- | -------------- | ---------- | ---------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
-| `uids`                                                              | ✓              | ✓          | Require one of the UIDs in the array to access.                                                            | `"uids": ["student1@example.com", "student2@example.com"]` |
-| [`startDate`](#dates)                                               | ✓              | ✓          | Only allow access after this date.                                                                         | `"startDate": "2015-01-19T00:00:01"`                       |
-| [`endDate`](#dates)                                                 | ✓              | ✓          | Only access access before this date.                                                                       | `"endDate": "2015-05-13T23:59:59"`                         |
-| [`institution`](#institutions)                                      | ✓              |            | Only people from this institution (or "Any" or "LTI").                                                     | `"institution": "UIUC"`                                    |
-| [`mode`](#server-modes)                                             |                | ✓          | Only allow access from this server mode.                                                                   | `"mode": "Exam"`                                           |
-| [`credit`](#credit)                                                 |                | ✓          | Maximum credit as percentage of full credit (can be more than 100).                                        | `"credit": 100`                                            |
-| [`timeLimitMin`](#time-limits)                                      |                | ✓          | Time limit in minutes to complete an assessment (only for Exams).                                          | `"timeLimitMin": 60`                                       |
-| [`password`](#passwords)                                            |                | ✓          | Password required to start an assessment (only for Exams).                                                 | `"password": "mysecret"`                                   |
-| [`examUuid`](#exam-uuids)                                           |                | ✓          | PrairieTest UUID for the exam that students must register for.                                             | `"examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"`       |
-| [`showClosedAssessment`](#showinghiding-closed-assessments)         |                | ✓          | Whether to allow viewing of assessment contents when closed (default `true`).                              | `"showClosedAssessment": false`                            |
-| [`showClosedAssessmentScore`](#showinghiding-all-score-information) |                | ✓          | Whether to allow viewing of the score of a closed assessment (default `true`).                             | `"showClosedAssessmentScore": false`                       |
-| [`active`](#active-assessments)                                     |                | ✓          | Whether the student can create a new assessment instance and submit answers to questions (default `true`). | `"active": false`                                          |
+| Access restriction                                                  | courseInstance | assessment | Meaning                                                                                                                                   | Example                                                    |
+| ------------------------------------------------------------------- | -------------- | ---------- | ----------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------- |
+| `uids`                                                              | ✓              | ✓          | Require one of the UIDs in the array to access.                                                                                           | `"uids": ["student1@example.com", "student2@example.com"]` |
+| [`startDate`](#dates)                                               | ✓              | ✓          | Only allow access after this date.                                                                                                        | `"startDate": "2015-01-19T00:00:01"`                       |
+| [`endDate`](#dates)                                                 | ✓              | ✓          | Only access access before this date.                                                                                                      | `"endDate": "2015-05-13T23:59:59"`                         |
+| [`institution`](#institutions)                                      | ✓              |            | Only people from this institution (or "Any" or "LTI").                                                                                    | `"institution": "UIUC"`                                    |
+| [`mode`](#server-modes)                                             |                | ✓          | Only allow access from this server mode. By default the mode is Public, unless `examUuid` is provided, in which case the default is Exam. | `"mode": "Exam"`                                           |
+| [`credit`](#credit)                                                 |                | ✓          | Maximum credit as percentage of full credit (can be more than 100).                                                                       | `"credit": 100`                                            |
+| [`timeLimitMin`](#time-limits)                                      |                | ✓          | Time limit in minutes to complete an assessment (only for assessments with type: Exam).                                                   | `"timeLimitMin": 60`                                       |
+| [`password`](#passwords)                                            |                | ✓          | Password required to start an assessment (only for assessments with type: Exam).                                                          | `"password": "mysecret"`                                   |
+| [`examUuid`](#exam-uuids)                                           |                | ✓          | PrairieTest UUID for the exam that students must register for.                                                                            | `"examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"`       |
+| [`showClosedAssessment`](#showinghiding-closed-assessments)         |                | ✓          | Whether to allow viewing of assessment contents when closed (default `true`).                                                             | `"showClosedAssessment": false`                            |
+| [`showClosedAssessmentScore`](#showinghiding-all-score-information) |                | ✓          | Whether to allow viewing of the score of a closed assessment (default `true`).                                                            | `"showClosedAssessmentScore": false`                       |
+| [`active`](#active-assessments)                                     |                | ✓          | Whether the student can create a new assessment instance and submit answers to questions (default `true`).                                | `"active": false`                                          |
 
 Each access rule will only grant access if all of the restrictions are satisfied.
 
@@ -64,15 +64,14 @@ Every course belongs to an **institution** and by default access is only allowed
 
 ## Server modes
 
-Each user accesses the PrairieLearn server in a `mode`, as listed below. This can be used to restrict access to assessments based on the current mode. The `mode` setting of an access rule has the following effect:
+Each user accesses the PrairieLearn server in a _mode_, as listed below. This can be used to restrict access to assessments based on the current mode. The mode of an access rule has the following effect:
 
-| Mode        | When is access allowed?                                                                                                                                                                                                                                       |
-| ----------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `Public`    | Access is normally allowed, but is blocked when the student is checked in on PrairieTest, either in a testing center or in a course-managed session.                                                                                                          |
-| `Exam`      | Access is normally blocked, and is only allowed when the student is checked in on PrairieTest, either in a testing center or in a course-managed session. The `examUuid` should also be specified in the same access rule to limit access to a specific exam. |
-| no mode set | This is equivalent to setting the `mode` to `Public`.                                                                                                                                                                                                         |
+| Mode     | When is access allowed?                                                                                                                                                                                       |
+| -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `Public` | Access is normally allowed, but is blocked when the student is checked in on PrairieTest, either in a testing center or in a course-managed session. This is the default mode.                                |
+| `Exam`   | Access is normally blocked, and is only allowed when the student is checked in on PrairieTest, either in a testing center or in a course-managed session. This mode is used when the `examUuid` is specified. |
 
-In general usage it is best to set `"mode": "Public"` for any homework (assessments that students should do at home or without special access control), and to set both `"mode": "Exam"` and `"examUuid"` for exams with access controlled by PrairieTest. This will make it so that exams are only accessible in a testing center or a controlled course session, and homework is _not_ accessible during exams.
+In general usage it is best to keep the default Public mode for any homework (assessments that students should do at home or without special access control), and to use exam mode, by setting the `"examUuid"`, for exams with access controlled by PrairieTest. This will make it so that exams are only accessible in a testing center or a controlled course session, and homework is _not_ accessible during exams.
 
 ## Credit
 
@@ -99,7 +98,7 @@ The above example will give students 90 minutes for this exam, and they must sta
 
 ![Time limit illustrations](exam_timer.svg)
 
-**Note that time limits should not be set for exams in a testing center or course session managed by PrairieTest. Instead, such exams should set `"mode": "Exam"`, in which case `timeLimitMin` will have no effect and the time limits will be enforced by PrairieTest.**
+**Note that time limits should not be set for exams in a testing center or course session managed by PrairieTest. Instead, such exams should set `"examUuid"` to the value associated to the PrairieTest exam, in which case `timeLimitMin` will have no effect and the time limits will be enforced by PrairieTest.**
 
 ### Time limit adjustments for open assessments
 
@@ -123,7 +122,6 @@ Remote or online exams sometimes use a “proctor password” to control access 
 ```json
 "allowAccess": [
     {
-        "mode": "Public",
         "startDate": "2015-01-19T00:00:01",
         "endDate": "2015-05-13T23:59:59",
         "password": "mysecret",
@@ -132,7 +130,7 @@ Remote or online exams sometimes use a “proctor password” to control access 
 ]
 ```
 
-Before a student can do the exam, a proctor will need to type the phrase `mysecret` into the password field on the exam start page.
+Before a student can do the exam, a proctor will need to type the phrase `mysecret` into the password field on the exam start page. Alternatively, the proctor may provide this phrase to students during the session.
 
 ## Exam UUIDs
 
@@ -141,7 +139,6 @@ To require that students take a particular exam in a testing center or a course-
 ```
 "allowAccess": [
     {
-        "mode": "Exam",
         "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
         "credit": 100
     }
@@ -256,22 +253,20 @@ The above `allowAccess` rule is appropriate for an `infoCourseInstance.json` fil
 ```json
 "allowAccess": [
     {
-        "mode": "Exam",
-        "credit": 100,
-        "startDate": "2014-09-07T00:00:01",
-        "endDate": "2014-09-10T23:59:59"
-    },
-    {
-        "mode": "Exam",
         "uids": ["student1@example.com", "student2@example.com"],
         "credit": 100,
         "startDate": "2014-09-12T00:00:01",
         "endDate": "2014-09-12T23:59:59"
+    },
+    {
+        "credit": 100,
+        "startDate": "2014-09-07T00:00:01",
+        "endDate": "2014-09-10T23:59:59"
     }
 ],
 ```
 
-The above `allowAccess` directive is appropriate for an `Exam` assessment, and means that this assessment is available under two different circumstances and always for full credit. First, any student can access this assessment in `Exam` mode from Sept 7th to Sept 10th. Second, there are two specific students who have access to take the exam on Sept 12th.
+The above `allowAccess` directive means that this assessment is available under two different circumstances and always for full credit. First, there are two specific students who have access to take the exam on Sept 12th. Second, any student can access this assessment from Sept 7th to Sept 10th. Note that exception rules are typically listed first, so that they take priority when access is determined. Also note that because the second rule does not overlap the first one, the two specific students listed in the first rule also have access to the exam during the range set in the second rule.
 
 ## Exam with remote students example
 
@@ -280,7 +275,6 @@ The above `allowAccess` directive is appropriate for an `Exam` assessment, and m
 ```json
 "allowAccess": [
     {
-        "mode": "Exam",
         "credit": 100,
         "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"
     },
@@ -294,7 +288,7 @@ The above `allowAccess` directive is appropriate for an `Exam` assessment, and m
 ],
 ```
 
-The above `allowAccess` directive is appropriate for an `Exam` being taken by on-campus students in a testing center (or a course-managed PrairieTest session) and by remote students. First, anyone (i.e., on-campus students) can access the assessment in a testing center (`"mode": "Exam"`) for full credit. Second, a defined set of students (remote students) can take the exam for full credit on Sept 10th. For the off-campus students we set a time limit (50 minutes). For on-campus students no time limit should be given because the time limit is enforced by PrairieTest.
+The above `allowAccess` directive is appropriate for an exam being taken by on-campus students in a testing center (or a course-managed PrairieTest session) and by remote students. First, anyone (i.e., on-campus students) can access the assessment in a testing center (the `"examUuid"` rule) for full credit. Second, a defined set of students (remote students) can take the exam for full credit on Sept 10th. For the off-campus students we set a time limit (50 minutes). For on-campus students no time limit should be given because the time limit is enforced by PrairieTest.
 
 The student's access will expire if they exceed the `timeLimitMin` minute duration of the exam or go past the configured `endDate` - whichever comes first. Time limits are visible to the student during the exam; endDate configurations are not. If the student tries to load an assessment page when the access rules no longer apply, they will receive an "Access denied" message.
 
@@ -303,30 +297,25 @@ The student's access will expire if they exceed the `timeLimitMin` minute durati
 ```json
 "allowAccess": [
     {
-        "mode": "Public",
         "active": false,
         "endDate": "2014-10-11T23:59:59"
     },
     {
-        "mode": "Public",
         "credit": 110,
         "startDate": "2014-10-12T00:00:01",
         "endDate": "2014-10-15T23:59:59"
     },
     {
-        "mode": "Public",
         "credit": 100,
         "startDate": "2014-10-16T00:00:01",
         "endDate": "2014-10-18T23:59:59"
     },
     {
-        "mode": "Public",
         "credit": 80,
         "startDate": "2014-10-19T00:00:01",
         "endDate": "2014-10-25T23:59:59"
     },
     {
-        "mode": "Public",
         "startDate": "2014-10-26T00:00:01"
     }
 ],

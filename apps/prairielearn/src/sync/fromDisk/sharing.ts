@@ -18,6 +18,7 @@ export async function sync(
     );
   }
 
+  console.log('Sharing Sets for Course:', courseId);
   console.log('course sharing sets', courseSharingSets);
 
   const newSharingSets = await sqldb.callRow(

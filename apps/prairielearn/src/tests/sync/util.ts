@@ -46,6 +46,7 @@ interface Course {
   options?: CourseOptions;
   tags: Tag[];
   topics: Topic[];
+  sharingSets: string[];
   assessmentSets: AssessmentSet[];
   assessmentModules?: Module[];
 }
