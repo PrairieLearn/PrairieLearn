@@ -1094,8 +1094,8 @@ async function validateAssessment(
       const allowAccessWarnings = checkAllowAccessRoles(rule);
       warnings.push(...allowAccessWarnings);
 
-      if (rule.examUuid && rule.mode !== 'Exam') {
-        warnings.push('Invalid allowAccess rule: examUuid can only be used with "mode": "Exam"');
+      if (rule.examUuid && rule.mode === 'Public') {
+        warnings.push('Invalid allowAccess rule: examUuid cannot be used with "mode": "Public"');
       }
     });
   }

@@ -23,7 +23,6 @@ To allow students to see their entire exam after it is over, you can add an [acc
     ...
     {
         "startDate": "2015-01-19T00:00:01",
-        "mode": "Public",
         "active": false
     }
 ]
