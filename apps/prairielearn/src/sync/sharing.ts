@@ -29,6 +29,34 @@ export async function getInvalidRenames(
   return invalidRenames;
 }
 
+export async function getInvalidPublicSharingRemovals(
+  courseId: string,
+  courseData: CourseData,
+): Promise<string[]> {
+  const sharedQuestions = await sqldb.queryRows(
+    sql.select_shared_questions,
+    { course_id: courseId },
+    z.object({
+      id: IdSchema,
+      qid: z.string(),
+      shared_publicly: z.boolean(),
+    }),
+  );
+  const invalidUnshares: string[] = [];
+  sharedQuestions.forEach((question) => {
+    if (!question.shared_publicly) {
+      return;
+    }
+
+    // TODO: allow if question is not used in anyone else's assessments
+    const questionData = courseData.questions[question.qid].data;
+    if (!(questionData?.sharedPublicly || questionData?.sharedPubliclyWithSource)) {
+      invalidUnshares.push(question.qid);
+    }
+  });
+  return invalidUnshares;
+}
+
 export async function getInvalidSharingSetRemovals(
   courseId: string,
   courseData: CourseData,
@@ -45,7 +73,7 @@ export async function getInvalidSharingSetRemovals(
 
   const invalidSharingSetRemovals: Record<string, string[]> = {};
   sharedQuestions.forEach((question) => {
-    if (!courseData.questions[question.qid].data) {
+    if (!courseData.questions[question.qid]) {
       // this case is handled by the checks for shared questions being
       // renamed or deleted
       return;

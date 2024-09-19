@@ -545,5 +545,28 @@ describe('Question Sharing', function () {
       // remove breaking change in origin repo
       await execa('git', ['reset', '--hard', 'HEAD~1'], gitOptions);
     });
+
+    step('Unshare a publicly shared question, ensure live does not sync it', async () => {
+      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharedPublicly = false;
+      await fs.writeJSON(
+        path.join(sharingCourseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
+      );
+      await execa('git', ['add', '-A'], gitOptions);
+      await execa('git', ['commit', '-m', 'remove question from sharing set'], gitOptions);
+
+      const commitHash = await getCourseCommitHash(sharingCourseLiveDir);
+      const job_sequence_id = await syncSharingCourse(sharingCourse.id);
+      await helperServer.waitForJobSequenceStatus(job_sequence_id, 'Error');
+      assert(
+        commitHash === (await getCourseCommitHash(sharingCourseLiveDir)),
+        'Commit hash of sharing course should not change when attempting to sync breaking change.',
+      );
+
+      // TODO also validate that the data is correct in the database?
+
+      // remove breaking change in origin repo
+      await execa('git', ['reset', '--hard', 'HEAD~1'], gitOptions);
+    });
   });
 });

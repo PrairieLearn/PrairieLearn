@@ -1,7 +1,8 @@
 -- BLOCK select_shared_questions
 SELECT
   q.id,
-  q.qid
+  q.qid,
+  q.shared_publicly
 FROM
   questions AS q
 WHERE

@@ -17,7 +17,11 @@ import * as syncQuestions from './fromDisk/questions.js';
 import * as syncSharingSets from './fromDisk/sharing.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
-import { getInvalidRenames, getInvalidSharingSetRemovals } from './sharing.js';
+import {
+  getInvalidRenames,
+  getInvalidSharingSetRemovals,
+  getInvalidPublicSharingRemovals,
+} from './sharing.js';
 
 interface SyncResultSharingError {
   status: 'sharing_error';
@@ -50,7 +54,7 @@ export async function checkSharingConfigurationValid(
 
   let sharingConfigurationValid = true;
   const invalidRenames = await getInvalidRenames(courseId, courseData);
-  console.log('invalid renames', invalidRenames);
+  // console.log('invalid renames', invalidRenames);
   if (invalidRenames.length > 0) {
     logger.info(
       chalk.red(
@@ -60,8 +64,18 @@ export async function checkSharingConfigurationValid(
     sharingConfigurationValid = false;
   }
 
+  const invalidPublicSharingRemovals = await getInvalidPublicSharingRemovals(courseId, courseData);
+  if (invalidPublicSharingRemovals.length > 0) {
+    logger.info(
+      chalk.red(
+        `✖ Course sync completely failed. The following questions are are publicly shared and cannot be unshared: ${invalidPublicSharingRemovals.join(', ')}`,
+      ),
+    );
+    sharingConfigurationValid = false;
+  }
+
   const invalidSharingSetRemovals = await getInvalidSharingSetRemovals(courseId, courseData);
-  console.log('Invalid Removals', invalidSharingSetRemovals);
+  // console.log('Invalid Removals', invalidSharingSetRemovals);
   if (Object.keys(invalidSharingSetRemovals).length > 0) {
     logger.info(
       chalk.red(
