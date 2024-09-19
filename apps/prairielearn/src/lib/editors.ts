@@ -247,23 +247,29 @@ export abstract class Editor {
           );
         };
 
-        let sharingConfigurationValid = true;
-        let courseData;
+        let courseData: courseDB.CourseData | undefined;
         try {
           await writeAndCommitChanges();
 
+          await cleanAndResetRepository(this.course, 'HEAD', gitEnv, job);
+          // Before pushing the changes, ensure that we don't allow someone
+          // to put their course into an invalid state by deleting a shared
+          // question or otherwise breaking the invariants we rely upon for
+          // question sharing.
           const possibleCourseData = await courseDB.loadFullCourse(
             this.course.id,
             this.course.path,
           );
-          sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
+          const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
             this.course.id,
             possibleCourseData,
             logger,
           );
           if (!sharingConfigurationValid) {
-            throw new Error('Invalid sharing operation, need to revert to last known good state.');
+            await cleanAndResetRepository(this.course, startGitHash, gitEnv, job);
+            throw new Error('Invalid sharing operation, reverted to last known good state.');
           }
+
           try {
             job.info('Push changes to remote git repository');
             await job.exec('git', ['push'], {
@@ -271,6 +277,16 @@ export abstract class Editor {
               env: gitEnv,
             });
             job.data.saveSucceeded = true;
+
+            // If we were able to push the change to GitHub, we can safely
+            // use the course data that we already loaded from disk because
+            // we can be sure that there weren't any further changes to the
+            // files on disk. This helps keep syncing fast by avoiding loading
+            // all course JSON files twice.
+            //
+            // If pushing fails, we'll need to incorporate the latest changes
+            // from the remote repository, so we'll have to load the latest
+            // course data from disk after we do so.
             courseData = possibleCourseData;
           } catch {
             job.info('Failed to push changes to remote git repository');
@@ -294,21 +310,13 @@ export abstract class Editor {
               env: gitEnv,
             });
             job.data.saveSucceeded = true;
+
+            // Clean up to remove any empty directories that might have been
+            // left behind by operations like renames.
+            await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
           }
         } finally {
-          // Whether or not we error, we'll do a clean and reset.
-          //
-          // If pushing succeeded, the clean will remove any empty directories
-          // that might have been left behind by operations like renames.
-          //
-          // If pushing (or anything before pushing) failed, the reset will get
-          // us back to a known good state.
-          const revision = sharingConfigurationValid
-            ? `origin/${this.course.branch}`
-            : startGitHash;
-          await cleanAndResetRepository(this.course, revision, gitEnv, job);
-
-          // Similarly, whether or not we error, we'll a course sync.
+          // Whether or not we error, we'll sync the course.
           //
           // If pushing succeeded, then we will be syncing the changes made
           // by this edit.

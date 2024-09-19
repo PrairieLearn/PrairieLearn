@@ -85,7 +85,7 @@ export async function syncDiskToSqlWithLock(
     );
   }
 
-  const sharingConfigurationValid = await timed('Validate Sharing Configuration', () =>
+  const sharingConfigurationValid = await timed('Validated sharing configuration', () =>
     checkSharingConfigurationValid(courseId, courseData, logger),
   );
   if (!sharingConfigurationValid) {
