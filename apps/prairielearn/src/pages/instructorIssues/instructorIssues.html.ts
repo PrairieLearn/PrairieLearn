@@ -261,15 +261,15 @@ function IssueRow({
                   (<a href="${questionPreviewUrl}?variant_seed=${issue.variant_seed}"
                     >instructor view</a
                   >)
-                  <a
-                    tabindex="0"
+                  <button
+                    type="button"
                     class="badge badge-warning badge-sm"
                     data-toggle="tooltip"
                     data-html="true"
                     title="This issue was raised in course instance <strong>${issue.course_instance_short_name}</strong>. You do not have student data access for ${issue.course_instance_short_name}, so you can't view some of the issue details. Student data access can be granted by a course owner on the Staff page."
                   >
                     No student data access
-                  </a>
+                  </button>
                 `}
         </div>
         <p class="mb-0">${getFormattedMessage(issue)}</p>
