@@ -72,6 +72,16 @@ const gitOptions = {
   cwd: sharingCourseOriginDir,
   env: process.env,
 };
+async function commitAndPullSharingCourse() {
+  await execa('git', ['add', '-A'], gitOptions);
+  await execa('git', ['commit', '-m', 'Add sharing set'], gitOptions);
+  await execa('git', ['pull'], {
+    cwd: sharingCourseLiveDir,
+    env: process.env,
+  });
+  const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir);
+  assert(syncResults.status === 'complete' && !syncResults.hadJsonErrorsOrWarnings);
+}
 
 async function syncSharingCourse(course_id) {
   const syncUrl = `${baseUrl}/course/${course_id}/course_admin/syncs`;
@@ -303,14 +313,7 @@ describe('Question Sharing', function () {
         sharingCourseData.questions[SHARING_QUESTION_QID],
       );
 
-      await execa('git', ['add', '-A'], gitOptions);
-      await execa('git', ['commit', '-m', 'Add sharing set'], gitOptions);
-      await execa('git', ['pull'], {
-        cwd: sharingCourseLiveDir,
-        env: process.env,
-      });
-      const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir);
-      assert(syncResults.status === 'complete' && !syncResults.hadJsonErrorsOrWarnings);
+      await commitAndPullSharingCourse();
     });
 
     step('Share sharing set with test course', async () => {
@@ -417,14 +420,7 @@ describe('Question Sharing', function () {
         sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
       );
 
-      await execa('git', ['add', '-A'], gitOptions);
-      await execa('git', ['commit', '-m', 'Add sharing set'], gitOptions);
-      await execa('git', ['pull'], {
-        cwd: sharingCourseLiveDir,
-        env: process.env,
-      });
-      const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir);
-      assert(syncResults.status === 'complete' && !syncResults.hadJsonErrorsOrWarnings);
+      await commitAndPullSharingCourse();
     });
 
     step('Successfully access publicly shared question through other course', async () => {
