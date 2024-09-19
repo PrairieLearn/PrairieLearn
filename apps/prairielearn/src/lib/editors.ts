@@ -313,7 +313,9 @@ export abstract class Editor {
               job.data.saveSucceeded = true;
             } finally {
               // Clean up to remove any empty directories that might have been
-              // left behind by operations like renames.
+              // left behind by operations like renames. This will also ensure
+              // that we get back to a good state if the changes couldn't be
+              // pushed to the remote.
               await cleanAndResetRepository(
                 this.course,
                 `origin/${this.course.branch}`,
