@@ -440,7 +440,7 @@ export function ExamQuestionAvailablePoints({
           <span class="text-muted">${formatPointsOrList(pointsList.slice(1))}</span>`}
     <button
       type="button"
-      class="btn btn-xs js-available-points-popover"
+      class="btn btn-xs btn-ghost js-available-points-popover"
       data-toggle="popover"
       data-container="body"
       data-html="true"
