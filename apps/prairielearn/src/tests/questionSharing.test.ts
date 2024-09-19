@@ -303,12 +303,6 @@ describe('Question Sharing', function () {
         sharingCourseData.questions[SHARING_QUESTION_QID],
       );
 
-      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharedPublicly = true;
-      await fs.writeJSON(
-        path.join(sharingCourseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
-        sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
-      );
-
       await execa('git', ['add', '-A'], gitOptions);
       await execa('git', ['commit', '-m', 'Add sharing set'], gitOptions);
       await execa('git', ['pull'], {
@@ -392,8 +386,6 @@ describe('Question Sharing', function () {
       assert.equal(res.status, 400);
     });
 
-    // TODO: add question to sharing set using JSON
-
     step('Fail to change the sharing name when a question has been shared', async () => {
       const res = await setSharingName(sharingCourse.id, 'Question shared');
       assert(res.status === 400);
@@ -416,6 +408,23 @@ describe('Question Sharing', function () {
       const sharedQuestionSharedUrl = `${baseUrl}/course_instance/${consumingCourse.id}/instructor/question/${publiclySharedQuestionId}`;
       const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
       assert(!sharedQuestionSharedPage.ok);
+    });
+
+    step('Publicly share a question', async () => {
+      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharedPublicly = true;
+      await fs.writeJSON(
+        path.join(sharingCourseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
+      );
+
+      await execa('git', ['add', '-A'], gitOptions);
+      await execa('git', ['commit', '-m', 'Add sharing set'], gitOptions);
+      await execa('git', ['pull'], {
+        cwd: sharingCourseLiveDir,
+        env: process.env,
+      });
+      const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir);
+      assert(syncResults.status === 'complete' && !syncResults.hadJsonErrorsOrWarnings);
     });
 
     step('Successfully access publicly shared question through other course', async () => {
