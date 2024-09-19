@@ -284,6 +284,7 @@ function CoursePermissionsInsertForm({
           <option value="Previewer">Previewer</option>
           <option value="Viewer">Viewer</option>
           <option value="Editor">Editor</option>
+          <option value="Owner">Owner</option>
         </select>
       </div>
 
