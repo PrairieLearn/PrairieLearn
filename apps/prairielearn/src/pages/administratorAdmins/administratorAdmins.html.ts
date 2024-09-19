@@ -1,7 +1,7 @@
 import { html, escapeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { User } from '../../lib/db-types.js';
 
 export function AdministratorAdmins({
@@ -18,11 +18,7 @@ export function AdministratorAdmins({
         ${HeadContents({ resLocals, pageTitle: 'Administrators' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'administrators',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'administrators' })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -48,7 +44,7 @@ export function AdministratorAdmins({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
+              <table class="table table-sm table-hover table-striped" aria-label="Administrators">
                 <thead>
                   <tr>
                     <th>UID</th>

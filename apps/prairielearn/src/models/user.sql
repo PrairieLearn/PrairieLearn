@@ -57,3 +57,12 @@ SELECT
   *
 FROM
   inserted_user;
+
+-- BLOCK insert_user
+INSERT INTO
+  users (uid, name, email)
+VALUES
+  ($uid, $name, $email)
+ON CONFLICT DO NOTHING
+RETURNING
+  *;

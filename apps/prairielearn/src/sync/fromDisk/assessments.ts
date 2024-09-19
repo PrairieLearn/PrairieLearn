@@ -9,10 +9,8 @@ import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { Assessment, CourseInstanceData } from '../course-db.js';
 import * as infofile from '../infofile.js';
-import { makePerformance } from '../performance.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const perf = makePerformance('assessments');
 
 type AssessmentInfoFile = infofile.InfoFile<Assessment>;
 
@@ -486,12 +484,10 @@ export async function sync(
     ]);
   });
 
-  perf.start('sproc:sync_assessments');
   await sqldb.callOneRowAsync('sync_assessments', [
     assessmentParams,
     courseId,
     courseInstanceId,
     config.checkSharingOnSync,
   ]);
-  perf.end('sproc:sync_assessments');
 }

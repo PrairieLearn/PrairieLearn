@@ -16,9 +16,6 @@ import { selectInstitutionForCourse } from '../models/institution.js';
 import * as schemas from '../schemas/index.js';
 
 import * as infofile from './infofile.js';
-import { makePerformance } from './performance.js';
-
-const perf = makePerformance('course-db');
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
@@ -238,6 +235,8 @@ interface CourseInstanceAllowAccess {
 export interface CourseInstance {
   uuid: string;
   longName: string;
+  /** @deprecated */
+  shortName?: string | null;
   number: number;
   timezone: string;
   hideInEnrollPage: boolean;
@@ -399,9 +398,7 @@ export async function loadFullCourse(
   courseDir: string,
 ): Promise<CourseData> {
   const courseInfo = await loadCourseInfo(courseId, courseDir);
-  perf.start('loadQuestions');
   const questions = await loadQuestions(courseDir);
-  perf.end('loadQuestions');
   const courseInstanceInfos = await loadCourseInstances(courseDir);
   const courseInstances: Record<string, CourseInstanceData> = {};
   for (const [courseInstanceId, courseInstance] of Object.entries(courseInstanceInfos)) {
@@ -534,16 +531,13 @@ export async function loadInfoFile<T extends { uuid: string }>({
   const absolutePath = path.join(coursePath, filePath);
   let contents: string;
   try {
-    // perf.start(`readfile:${absolutePath}`);
     // fs-extra uses graceful-fs, which in turn will enqueue open operations.
     // this slows us down an unnecessary amount. Avoiding this queueing means
     // we could potentially hit an EMFILE error, but we haven't seen that in
     // practice in years, so that's a risk we're willing to take. We explicitly
     // use the native Node fs API here to opt out of this queueing behavior.
     contents = await fs.readFile(absolutePath, 'utf8');
-    // perf.end(`readfile:${absolutePath}`);
   } catch (err) {
-    // perf.end(`readfile:${absolutePath}`);
     if (err.code === 'ENOTDIR' && err.path === absolutePath) {
       // In a previous version of this code, we'd pre-filter
       // all files in the parent directory to remove anything
@@ -608,7 +602,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     } catch (err) {
       return infofile.makeError(err.message);
     }
-  } catch (err) {
+  } catch {
     // Invalid JSON; let's reparse with jju to get a better error message
     // for the user.
     let result: InfoFile<T> = { errors: [], warnings: [] };
@@ -849,7 +843,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
   // disabled, we'll still utilize the same recursive function, but the
   // recursive function won't actually recurse.
   const infoFilesRootDir = path.join(coursePath, directory);
-  const walk = async (relativeDir) => {
+  const walk = async (relativeDir: string) => {
     const infoFiles: Record<string, InfoFile<T>> = {};
     const files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
 
@@ -1351,6 +1345,18 @@ async function validateCourseInstance(
       warnings.push(
         'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.',
       );
+    }
+
+    // `shortName` has never been a meaningful property in course instance config.
+    // However, for many years our template course erroneously included it in the
+    // template course instance, so it's been copied around to basically every course.
+    // We didn't set `additionalProperties: false` in the schema, so we never caught
+    // this and for a long time it was silently ignored.
+    //
+    // To avoid breaking existing courses, we added it as a valid property to the schema,
+    // but we'll warn about it for any active or future course instances.
+    if (courseInstance.shortName) {
+      warnings.push('The property "shortName" is not used and should be deleted.');
     }
   }
 

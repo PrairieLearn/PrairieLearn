@@ -9,8 +9,8 @@
     "test": "c8 mocha src/**/*.test.ts"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.631.0",
-    "@aws-sdk/client-secrets-manager": "^3.631.0",
+    "@aws-sdk/client-ec2": "^3.641.0",
+    "@aws-sdk/client-secrets-manager": "^3.637.0",
     "@prairielearn/aws-imds": "workspace:^",
     "fs-extra": "^11.2.0",
     "lodash": "^4.17.21",
@@ -21,12 +21,12 @@
     "@types/fs-extra": "^11.0.4",
     "@types/lodash": "^4.17.7",
     "@types/mocha": "^10.0.7",
-    "@types/node": "^20.14.15",
+    "@types/node": "^20.16.2",
     "c8": "^10.1.2",
     "chai": "^5.1.1",
     "mocha": "^10.7.3",
     "tmp-promise": "^3.0.3",
-    "tsx": "^4.17.0",
+    "tsx": "^4.19.0",
     "typescript": "^5.5.4"
   },
   "c8": {

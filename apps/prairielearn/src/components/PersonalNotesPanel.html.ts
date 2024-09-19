@@ -26,47 +26,40 @@ export function PersonalNotesPanel({
 }) {
   return html`
     <div class="card mb-4" id="attach-file-panel">
-      <div class="card-header bg-secondary text-white">
+      <div class="card-header bg-secondary text-white d-flex align-items-center">
         <i class="fas fa-paperclip"></i>
-        Personal Notes
+        <h2>&nbsp;Personal Notes</h2>
       </div>
-      <table class="table table-sm">
-        <tbody>
-          ${fileList.length === 0
-            ? html`
-                <tr>
-                  <td><i>No attached notes</i></td>
-                </tr>
-              `
-            : fileList.map(
+      ${fileList.length === 0
+        ? html`<div class="card-body"><i>No attached notes</i></div>`
+        : html`
+            <ul class="list-group list-group-flush">
+              ${fileList.map(
                 (file) => html`
-                  <tr>
-                    <td style="word-break:break-all;">
-                      <a
-                        class="attached-file"
-                        href="${config.urlPrefix}/course_instance/${courseInstanceId}/assessment_instance/${assessment_instance.id}/file/${file.id}/${file.display_filename}"
-                      >
-                        ${file.display_filename}
-                      </a>
-                    </td>
+                  <li class="list-group-item d-flex align-items-center">
+                    <a
+                      class="text-break mr-2"
+                      href="${config.urlPrefix}/course_instance/${courseInstanceId}/assessment_instance/${assessment_instance.id}/file/${file.id}/${file.display_filename}"
+                      data-testid="attached-file"
+                    >
+                      ${file.display_filename}
+                    </a>
                     ${assessment_instance.open &&
                     authz_result.active &&
                     authz_result.authorized_edit &&
-                    allowNewUploads
+                    allowNewUploads &&
+                    file.type === 'student_upload'
                       ? html`
-                          <td style="width:1%; text-align:right;">
-                            ${file.type === 'student_upload'
-                              ? DeletePersonalNoteButton({ file, variantId, csrfToken })
-                              : ''}
-                          </td>
+                          <div class="ml-auto">
+                            ${DeletePersonalNoteButton({ file, variantId, csrfToken })}
+                          </div>
                         `
                       : ''}
-                  </tr>
+                  </li>
                 `,
               )}
-        </tbody>
-      </table>
-
+            </ul>
+          `}
       ${allowNewUploads
         ? html`
             <div class="card-footer">
@@ -233,6 +226,7 @@ function DeletePersonalNoteButton({
       data-html="true"
       data-placement="auto"
       title="Confirm delete"
+      aria-label="Delete personal note ${file.display_filename}"
       data-content="${escapeHtml(popoverContent)}"
       data-testid="delete-personal-note-button"
     >

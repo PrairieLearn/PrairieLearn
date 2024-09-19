@@ -5,7 +5,7 @@
         <label class="input-group-text" id="pl-matrix-input-{{uuid}}-label">{{{label}}}</label>
     </span>
     {{/label}}
-    <input name="{{name}}" type="text" class="form-control pl-matrix-input-input {{^display_append_span}}rounded-right{{/display_append_span}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} aria-describedby="pl-matrix-input-{{uuid}}-label" placeholder="{{shortinfo}}" />
+    <input name="{{name}}" type="text" class="form-control pl-matrix-input-input {{^display_append_span}}rounded-right{{/display_append_span}}" {{^editable}}disabled{{/editable}} {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}} placeholder="{{shortinfo}}" aria-labelledby="pl-matrix-input-{{uuid}}-label" />
     <div class="input-group-append">
         {{#show_info}}
         <a role="button" class="btn btn-light border d-flex align-items-center" data-toggle="popover" data-html="true" title="Matrix" data-content="{{info}}" data-placement="auto" data-trigger="focus" tabindex="0">

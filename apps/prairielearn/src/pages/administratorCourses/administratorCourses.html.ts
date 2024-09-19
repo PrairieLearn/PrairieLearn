@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
 import { CourseRequestRow } from '../../lib/course-request.js';
 import { CourseSchema, Institution, InstitutionSchema } from '../../lib/db-types.js';
@@ -34,11 +34,7 @@ export function AdministratorCourses({
         ${HeadContents({ resLocals, pageTitle: 'Courses' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar') %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'courses',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'courses' })}
         <main id="content" class="container-fluid">
           <h1 class="sr-only">Courses</h1>
           ${CourseRequestsTable({
@@ -73,7 +69,7 @@ export function AdministratorCourses({
               </button>
             </div>
             <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped">
+              <table class="table table-sm table-hover table-striped" aria-label="Courses">
                 <thead>
                   <tr>
                     <th>Institution</th>
@@ -325,6 +321,7 @@ function CourseUpdateColumn({
             course,
             column_name,
             csrfToken,
+            label,
           }),
         )}"
       >
@@ -338,10 +335,12 @@ function CourseUpdateColumnForm({
   course,
   column_name,
   csrfToken,
+  label,
 }: {
   course: CourseWithInstitution;
   column_name: keyof CourseWithInstitution;
   csrfToken: string;
+  label: string;
 }) {
   return html`
     <form name="edit-course-column-form" method="POST">
@@ -350,7 +349,13 @@ function CourseUpdateColumnForm({
       <input type="hidden" name="course_id" value="${course.id}" />
       <input type="hidden" name="column_name" value="${column_name}" />
       <div class="form-group">
-        <input type="text" class="form-control" name="value" value="${course[column_name]}" />
+        <input
+          type="text"
+          class="form-control"
+          name="value"
+          value="${course[column_name]}"
+          aria-label="${label}"
+        />
       </div>
       <div class="text-right">
         <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>

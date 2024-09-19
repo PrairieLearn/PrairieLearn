@@ -21,7 +21,7 @@ export function UserSettingsPurchasesCard({ purchases }: { purchases: Purchase[]
 function PurchaseTable({ purchases }: { purchases: Purchase[] }) {
   return html`
     <div class="table-responsive">
-      <table class="table">
+      <table class="table" aria-label="Purchases">
         <thead>
           <tr>
             <th>ID</th>

@@ -2,8 +2,7 @@
 SELECT
   gj.*,
   gj.score * 100 AS score_perc,
-  COALESCE(u.name, u.uid) AS grader_name,
-  format_date_short (gj.date, ci.display_timezone) AS grading_date_formatted
+  COALESCE(u.name, u.uid) AS grader_name
 FROM
   grading_jobs AS gj
   JOIN submissions AS s ON (s.id = gj.submission_id)

@@ -1,0 +1,13 @@
+{
+  "version": "2.0.0",
+  "tasks": [
+    {
+      "label": "focus-terminal",
+      "command": "${command:workbench.action.terminal.toggleTerminal}",
+      "runOptions": {
+        "runOn": "folderOpen"
+      },
+      "isBackground": true
+    }
+  ]
+}

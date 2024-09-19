@@ -74,7 +74,9 @@ export function QuestionContainer({
         : QuestionPanel({ resLocals, questionContext })}
 
       <div class="card mb-4 grading-block${showTrueAnswer ? '' : ' d-none'}">
-        <div class="card-header bg-secondary text-white">Correct answer</div>
+        <div class="card-header bg-secondary text-white">
+          <h2>Correct answer</h2>
+        </div>
         <div class="card-body answer-body">${showTrueAnswer ? unsafeHtml(answerHtml) : ''}</div>
       </div>
 
@@ -166,7 +168,10 @@ export function IssuePanel({
         ${issue.manually_reported ? 'Manually reported issue' : 'Issue'}
       </div>
 
-      <table class="table table-sm table-hover two-column-description">
+      <table
+        class="table table-sm table-hover two-column-description"
+        aria-label="Issue information"
+      >
         <tbody>
           ${showUserName
             ? html`

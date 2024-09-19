@@ -153,6 +153,10 @@ export class CodeCallerContainer {
     this.debug(`exit constructor(), state: ${String(this.state)}, uuid: ${this.uuid}`);
   }
 
+  getCoursePath() {
+    return this.coursePath;
+  }
+
   /**
    * Wrapper around `debug` that automatically includes UUID and the caller state.
    *
@@ -752,7 +756,7 @@ async function cleanupMountDirectories() {
         try {
           debug(`removing bind mount at ${absolutePath}`);
           await bindMount.umount(absolutePath);
-        } catch (e) {
+        } catch {
           // Ignore this, it was hopefully unmounted successfully before
         }
 

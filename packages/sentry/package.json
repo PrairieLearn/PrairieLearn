@@ -14,13 +14,13 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^20.14.15",
-    "tsx": "^4.17.0",
+    "@types/node": "^20.16.2",
+    "tsx": "^4.19.0",
     "typescript": "^5.5.4"
   },
   "dependencies": {
-    "@sentry/node": "^8.26.0",
-    "@sentry/utils": "^8.26.0",
+    "@sentry/node": "^8.27.0",
+    "@sentry/utils": "^8.27.0",
     "execa": "^9.3.1"
   }
 }

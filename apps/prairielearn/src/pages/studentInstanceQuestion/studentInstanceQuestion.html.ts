@@ -1,6 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import {
   RegenerateInstanceModal,
@@ -9,6 +8,7 @@ import {
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.html.js';
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.js';
@@ -39,6 +39,8 @@ export function StudentInstanceQuestion({
                   serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
                   serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
                   canTriggerFinish: resLocals.authz_result.authorized_edit,
+                  showsTimeoutWarning: false,
+                  reloadOnFail: true,
                   csrfToken: resLocals.__csrf_token,
                 },
                 'time-limit-data',
@@ -66,10 +68,7 @@ export function StudentInstanceQuestion({
             `}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: '',
-        })}
+        ${Navbar({ resLocals })}
         ${userCanDeleteAssessmentInstance
           ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
           : ''}
@@ -81,11 +80,13 @@ export function StudentInstanceQuestion({
                 ? html`
                     <div class="card mb-4">
                       <div class="card-header bg-primary text-white">
-                        ${QuestionTitle({
-                          questionContext,
-                          question: resLocals.question,
-                          questionNumber: resLocals.instance_question_info.question_number,
-                        })}
+                        <h1>
+                          ${QuestionTitle({
+                            questionContext,
+                            question: resLocals.question,
+                            questionNumber: resLocals.instance_question_info.question_number,
+                          })}
+                        </h1>
                       </div>
                       <div class="card-body">
                         This question was not viewed while the assessment was open, so no variant
@@ -101,13 +102,15 @@ export function StudentInstanceQuestion({
                 ? html`
                     <div class="card mb-4">
                       <div class="card-header bg-secondary">
-                        <a
-                          class="text-white"
-                          href="${resLocals.urlPrefix}/assessment_instance/${resLocals
-                            .assessment_instance.id}/"
-                        >
-                          ${resLocals.assessment_set.name} ${resLocals.assessment.number}
-                        </a>
+                        <h2>
+                          <a
+                            class="text-white"
+                            href="${resLocals.urlPrefix}/assessment_instance/${resLocals
+                              .assessment_instance.id}/"
+                          >
+                            ${resLocals.assessment_set.name} ${resLocals.assessment.number}
+                          </a>
+                        </h2>
                       </div>
 
                       <div class="card-body">

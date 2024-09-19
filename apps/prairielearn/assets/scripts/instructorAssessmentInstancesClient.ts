@@ -412,6 +412,7 @@ onDocumentReady(() => {
         <select
           class="custom-select select-time-limit"
           name="plus_minus"
+          aria-label="Time limit options"
           onchange="
             $(this).parents('form').find('.time-limit-field').toggle(this.value !== 'unlimited' && this.value !== 'expire');
             $(this).parents('form').find('.reopen-closed-field').toggle(this.value !== '+1' && this.value !== '-1' && this.value !== 'expire');
@@ -442,10 +443,11 @@ onDocumentReady(() => {
             class="form-control time-limit-field"
             type="number"
             name="time_add"
+            aria-label="Time value"
             style="width: 5em"
             value="5"
           />
-          <select class="custom-select time-limit-field" name="time_ref">
+          <select class="custom-select time-limit-field" name="time_ref" aria-label="Time unit">
             <option value="minutes">minutes</option>
             ${row.time_remaining_sec !== null
               ? html`<option value="percent">% total limit</option>`
@@ -500,6 +502,7 @@ onDocumentReady(() => {
         <button
           class="btn btn-secondary btn-xs ml-1 time-limit-edit-button"
           id="row${row.assessment_instance_id}PopoverTimeLimit"
+          aria-label="Change time limit"
           data-row="${JSON.stringify(row)}"
           data-placement="bottom"
           data-boundary="window"
@@ -530,14 +533,13 @@ onDocumentReady(() => {
     rowA: AssessmentInstanceRow,
     rowB: AssessmentInstanceRow,
   ) {
-    let nameA: string | null, nameB: string | null, idA, idB;
-    if (assessmentGroupWork) {
-      (nameA = rowA.group_name), (nameB = rowB.group_name);
-      (idA = rowA.group_id ?? ''), (idB = rowB.group_id ?? '');
-    } else {
-      (nameA = rowA.uid), (nameB = rowB.uid);
-      (idA = rowA.user_id ?? ''), (idB = rowB.user_id ?? '');
-    }
+    const nameKey = assessmentGroupWork ? 'group_name' : 'uid';
+    const idKey = assessmentGroupWork ? 'group_id' : 'user_id';
+
+    const nameA = rowA[nameKey];
+    const nameB = rowB[nameKey];
+    const idA = rowA[idKey] ?? '';
+    const idB = rowB[idKey] ?? '';
 
     // Compare first by UID/group name, then user/group ID, then
     // instance number, then by instance ID.
