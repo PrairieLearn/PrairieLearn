@@ -32,9 +32,6 @@ import { createEmbedding, vectorToString } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-// Current AI grader is set to user 1
-const ai_grader_id = '1';
-
 const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
@@ -281,7 +278,6 @@ export async function aiGrade({
           submission_id: submission.id,
           assessment_question_id: assessment_question.id,
           embedding: submission_embedding.embedding,
-          ai_grader_id,
           limit: 5,
         },
         GradedExampleSchema,
@@ -320,7 +316,7 @@ export async function aiGrade({
               feedback: { manual: grade_response.parsed.feedback },
               // NEXT STEPS: rubrics
             },
-            ai_grader_id,
+            user_id,
           );
           msg += `\nAI grades: ${grade_response.parsed.grade}`;
         } else if (grade_response.refusal) {

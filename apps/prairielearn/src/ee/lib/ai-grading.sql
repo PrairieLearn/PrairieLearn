@@ -66,8 +66,9 @@ FROM
           *
         FROM
           grading_jobs
-        WHERE
-          graded_by != $ai_grader_id
+          -- WHERE
+          --   graded_by != $ai_grader_id 
+          -- NEXT PR: FILTER INSTRUCTOR-GRADED SUBMISSIONS
       ) AS g
       JOIN (
         SELECT
