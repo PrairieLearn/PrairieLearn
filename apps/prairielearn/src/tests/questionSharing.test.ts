@@ -317,6 +317,8 @@ describe('Question Sharing', function () {
         }),
       });
       assert.equal(result.status, 500);
+    });
+
     // TODO make sharing set with JSON
     step('Add sharing set to JSON', async () => {
       // const sharingUrl = sharingPageUrl(sharingCourse.id);
@@ -331,7 +333,6 @@ describe('Question Sharing', function () {
       //   }),
       // });
       sharingCourseData.course.sharingSets = [SHARING_SET_NAME];
-
       const courseInfoPath = path.join(sharingCourseOriginDir, 'infoCourse.json');
       await fs.writeJSON(courseInfoPath, sharingCourseData.course);
       await execa('git', ['add', '-A'], gitOptions);
