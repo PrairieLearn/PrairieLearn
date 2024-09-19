@@ -163,7 +163,7 @@ Otherwise, for cheatsheets in `clientFilesAssessment`, use:
 
 To learn more about where files are stored, please see [clientFiles and serverFiles](clientServerFiles.md).
 
-## How can I reference material in `serverFilesQuestion` and `clientFilesQuestion` from the `server.py`?
+## How can I reference material in `clientFilesQuestion` from the `server.py`?
 
 To reference a question in the `clientFilesQuestion` folder from `server.py`,
 use the relative path from the base of the question.
@@ -172,7 +172,7 @@ use the relative path from the base of the question.
 ./clientFilesQuestion/<your_file_here>
 ```
 
-The same pattern holds for referencing material in a `serverFilesQuestion`.
+The same pattern holds for referencing material in any subdirectory of the question directory.
 
 To learn more about where files are stored, please see
 [clientFiles and serverFiles](https://prairielearn.readthedocs.io/en/latest/clientServerFiles/).
