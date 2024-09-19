@@ -99,9 +99,8 @@ router.post(
       // Verify there is at least one UID
       if (uids.length === 0) throw new error.HttpStatusError(400, 'Empty list of UIDs');
 
-      // Verify the requested course role is valid - we choose to disallow Owner
-      // because we want to discourage the assignment of this role to many users
-      if (!['None', 'Previewer', 'Viewer', 'Editor'].includes(req.body.course_role)) {
+      // Verify the requested course role is valid
+      if (!['None', 'Previewer', 'Viewer', 'Editor', 'Owner'].includes(req.body.course_role)) {
         throw new error.HttpStatusError(
           400,
           `Invalid requested course role: ${req.body.course_role}`,
