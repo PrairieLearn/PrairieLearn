@@ -270,6 +270,7 @@ export function ExamQuestionStatus({
       ${(instance_question.allow_grade_left_ms ?? 0) > 0
         ? html`
             <button
+              type="button"
               class="grade-rate-limit-popover btn btn-xs"
               data-toggle="popover"
               data-container="body"
