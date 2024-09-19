@@ -1,6 +1,8 @@
 import json
 import re
 import shutil
+import textwrap
+
 import bs4
 import requests
 from dataclasses import dataclass
@@ -12,6 +14,13 @@ from swagger_client import *
 
 
 @dataclass
+class StyleCustomizations:
+    # Items next to checkboxes and radios are not vertically aligned to the checkbox
+    choice_alignment_fix: bool = False
+    # Checkboxes and radios have a letter-key (a), (b) label
+    choice_remove_letter_id: bool = False
+
+@dataclass
 class CanvasConfig:
     debug: bool
     host: str
@@ -20,6 +29,7 @@ class CanvasConfig:
     quiz_id: int
     questions_dir: Path
     download_images: bool
+    styling: StyleCustomizations
 
 def str_to_ident(s: str) -> str:
     return re.sub(r"\W+", "-", s).lower()
@@ -145,11 +155,27 @@ class Canvas:
         yield "</pl-question-panel>"
 
     def render_question_item(self, entry: QuestionItem):
+        choice_alignment_class = ("class='canvas-newquiz-alignment-fix'"
+                 if self.config.styling.choice_alignment_fix else "")
+        choice_alignment_style = textwrap.dedent("""
+            <style>
+                .canvas-newquiz-alignment-fix p:last-of-type {
+                    margin-bottom: unset;
+                }
+            </style>
+        """)
+        choice_letter_key = ("hide-letter-keys=true" if self.config.styling.choice_remove_letter_id else "")
+
         match entry.interaction_type_slug:
             case "multi-answer":
                 yield from self.vendor_html(entry.item_body)
                 answers_name = str_to_ident(entry.title or placeholder_ident())
-                yield f'<pl-checkbox answers-name="{answers_name}">'
+
+                if self.config.styling.choice_alignment_fix:
+                    yield choice_alignment_style
+
+                yield f"<div {choice_alignment_class}>"
+                yield f'<pl-checkbox answers-name="{answers_name}" {choice_letter_key}>'
                 choices: dict = entry.interaction_data["choices"]
                 for choice in choices:
                     correct = "true" if choice["id"] in entry.scoring_data["value"] else "false"
@@ -157,6 +183,7 @@ class Canvas:
                     yield from self.vendor_html(choice["item_body"])
                     yield "</pl-answer>"
                 yield "</pl-checkbox>"
+                yield "</div>"
 
             case "essay":
                 yield from self.vendor_html(entry.item_body)
@@ -177,13 +204,19 @@ class Canvas:
 
             case "choice":
                 yield from self.vendor_html(entry.item_body)
-                yield f"<pl-multiple-choice answers-name='{str_to_ident(entry.title or placeholder_ident())}'>"
+
+                if self.config.styling.choice_alignment_fix:
+                    yield choice_alignment_style
+
+                yield f"<div {choice_alignment_class}>"
+                yield f"<pl-multiple-choice answers-name='{str_to_ident(entry.title or placeholder_ident())}' {choice_letter_key}>"
                 for choice in entry.interaction_data["choices"]:
                     correct = "true" if choice["id"] == entry.scoring_data["value"] else "false"
                     yield f"<pl-answer correct='{correct}'>"
                     yield from self.vendor_html(choice['item_body'])
                     yield "</pl-answer>"
                 yield "</pl-multiple-choice>"
+                yield "</div>"
 
             case "matching":
                 yield from self.vendor_html(entry.item_body)
@@ -218,10 +251,13 @@ class Canvas:
 
 def main():
     config = CanvasConfig(debug=False, host="https://canvas.ubc.ca/api",
-                          token="xxxxx",
-                          course_id=155642, quiz_id=1907637,
-                          questions_dir=Path("../PrairieLearn/testCourse/questions"),
-                          download_images=True)
+                          token="",
+                          course_id=155642, quiz_id=1907638,
+                          questions_dir=Path(""),
+                          download_images=True,
+                          styling=StyleCustomizations(
+                              choice_alignment_fix=True,
+                              choice_remove_letter_id=True))
     canvas = Canvas(config)
     canvas.render_items()
 
