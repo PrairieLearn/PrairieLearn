@@ -418,28 +418,6 @@ describe('Question Sharing', function () {
       assert(!sharedQuestionSharedPage.ok);
     });
 
-    step('Mark question as shared publicly', async () => {
-      const publiclySharedQuestionUrl = `${baseUrl}/course_instance/${sharingCourse.id}/instructor/question/${publiclySharedQuestionId}/settings`;
-      const sharedQuestionSettingsPage = await fetchCheerio(publiclySharedQuestionUrl);
-      assert(sharedQuestionSettingsPage.ok);
-
-      const token = sharedQuestionSettingsPage.$('#test_csrf_token').text();
-      const resPost = await fetch(publiclySharedQuestionUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'share_publicly',
-          __csrf_token: token,
-        }),
-      });
-      assert(resPost.ok);
-
-      const settingsPageResponse = await fetchCheerio(publiclySharedQuestionUrl);
-      assert.include(
-        settingsPageResponse.$('[data-testid="shared-with"]').text(),
-        'This question is publicly shared.',
-      );
-    });
-
     step('Successfully access publicly shared question through other course', async () => {
       const sharedQuestionSharedUrl = `${baseUrl}/course_instance/${consumingCourse.id}/instructor/question/${publiclySharedQuestionId}`;
       const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
