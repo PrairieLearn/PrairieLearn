@@ -50,7 +50,7 @@ ${context}
  * @param client The OpenAI client to use.
  * @param prompt The user's question generation prompt.
  * @param promptUserInput The user's indication of how to create student input boxes.
- * @param mandatoryElementIds Elements that we must pull documentation for.
+ * @param mandatoryElementNames Elements that we must pull documentation for.
  * @param authnUserId The user's authenticated user ID.
  * @returns A string of all relevant context documents.
  */
@@ -58,17 +58,19 @@ async function makeContext(
   client: OpenAI,
   prompt: string,
   promptUserInput: string | undefined,
-  mandatoryElementIds: string[],
+  mandatoryElementNames: string[],
   authnUserId: string,
 ): Promise<string> {
   const embedding = await createEmbedding(client, prompt, openAiUserFromAuthn(authnUserId));
+
+  //identify all elements that we are using *and* have documentation document chunks.
   const mandatoryElements =
-    mandatoryElementIds.length > 0
+    mandatoryElementNames.length > 0
       ? await queryRows(
           sql.select_documents_by_chunk_id,
           {
             doc_path: 'docs/elements.md',
-            chunk_ids: mandatoryElementIds,
+            chunk_ids: mandatoryElementNames,
           },
           QuestionGenerationContextEmbeddingSchema,
         )
@@ -82,6 +84,8 @@ async function makeContext(
     QuestionGenerationContextEmbeddingSchema,
   );
 
+  //if a prompt specifies how user input is handled, try to find documentation for those types of input
+  //and save as last doc. Regeneration prompts don't use this, so promptUserInput may be undefined.
   if (promptUserInput !== undefined) {
     const elementDoc = await queryRow(
       sql.select_nearby_documents_from_file,
@@ -148,14 +152,21 @@ function extractFromCompletion(
  * @param promptGrading The prompt for how to grade user input.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
  */
-export async function generateQuestion(
-  client: OpenAI,
-  courseId: string | undefined,
-  authnUserId: string,
-  promptGeneral: string,
-  promptUserInput: string,
-  promptGrading: string,
-): Promise<{
+export async function generateQuestion({
+  client,
+  courseId,
+  authnUserId,
+  promptGeneral,
+  promptUserInput,
+  promptGrading,
+}: {
+  client: OpenAI;
+  courseId: string | undefined;
+  authnUserId: string;
+  promptGeneral: string;
+  promptUserInput: string;
+  promptGrading: string;
+}): Promise<{
   jobSequenceId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
