@@ -20,24 +20,31 @@ WHERE
 
 -- BLOCK select_sharing_set_questions
 SELECT
-  q.id,
-  q.qid,
-  q.shared_publicly,
+  *
+FROM
   (
     SELECT
-      jsonb_agg(to_jsonb(ss))
+      q.id,
+      q.qid,
+      q.shared_publicly,
+      (
+        SELECT
+          jsonb_agg(ss.name)
+        FROM
+          sharing_set_questions AS ssq
+          JOIN sharing_sets AS ss on (ss.id = ssq.sharing_set_id)
+        WHERE
+          ssq.question_id = q.id
+      ) AS sharing_sets
     FROM
-      sharing_set_questions AS ssq
-      JOIN sharing_sets AS ss on (ss.id = ssq.sharing_set_id)
+      questions AS q
     WHERE
-      ssq.question_id = q.id
-  ) AS sharing_sets,
-FROM
-  questions AS q
+      q.course_id = $course_id
+      AND q.deleted_at IS NULL
+    GROUP BY
+      q.id
+    ORDER BY
+      q.qid
+  ) as f
 WHERE
-  q.course_id = $course_id
-  AND q.deleted_at IS NULL
-GROUP BY
-  q.id,
-ORDER BY
-  q.qid;
+  sharing_sets IS NOT NULL

@@ -42,6 +42,7 @@ export async function getInvalidSharingSetRemovals(
       sharing_sets: z.string().array(),
     }),
   );
+
   const invalidSharingSetRemovals: Record<string, string[]> = {};
   sharedQuestions.forEach((question) => {
     if (!courseData.questions[question.qid].data) {
@@ -59,7 +60,7 @@ export async function getInvalidSharingSetRemovals(
         if (!(question.qid in invalidSharingSetRemovals)) {
           invalidSharingSetRemovals[question.qid] = [];
         }
-        invalidSharingSetRemovals[question.qid].push(question.qid);
+        invalidSharingSetRemovals[question.qid].push(sharingSet);
       }
     });
   });

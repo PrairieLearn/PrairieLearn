@@ -50,6 +50,7 @@ export async function checkSharingConfigurationValid(
 
   let sharingConfigurationValid = true;
   const invalidRenames = await getInvalidRenames(courseId, courseData);
+  console.log('invalid renames', invalidRenames);
   if (invalidRenames.length > 0) {
     logger.info(
       chalk.red(
@@ -59,8 +60,9 @@ export async function checkSharingConfigurationValid(
     sharingConfigurationValid = false;
   }
 
-  const invalidSharingSetRemovals = getInvalidSharingSetRemovals(courseId, courseData);
-  if (Object.keys(invalidSharingSetRemovals).length > 1) {
+  const invalidSharingSetRemovals = await getInvalidSharingSetRemovals(courseId, courseData);
+  console.log('Invalid Removals', invalidSharingSetRemovals);
+  if (Object.keys(invalidSharingSetRemovals).length > 0) {
     logger.info(
       chalk.red(
         `✖ Course sync completely failed. The following questions are not allowed to be removed from the listed sharing sets: ${Object.keys(
