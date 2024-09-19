@@ -131,7 +131,7 @@ const badExampleCoursePathUrl = courseAdminUrl + '/file_edit/' + encodePath('inf
 const findEditUrlData = [
   {
     name: 'assessment',
-    selector: 'a:contains("infoAssessment.json") + a:contains("Edit")',
+    selector: '[data-testid="edit-assessment-configuration-link"]',
     url: assessmentSettingsUrl,
     expectedEditUrl: assessmentEditUrl,
   },

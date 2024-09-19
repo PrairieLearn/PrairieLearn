@@ -3199,6 +3199,7 @@ __metadata:
     "@prairielearn/config": "workspace:^"
     "@prairielearn/docker-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
+    "@prairielearn/run": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@types/async": "npm:^3.2.24"
@@ -3654,6 +3655,7 @@ __metadata:
     qs: "npm:^6.13.0"
     quill: "npm:^2.0.2"
     quilljs-markdown: "npm:^1.2.0"
+    remark-gfm: "npm:^4.0.0"
     remark-parse: "npm:^11.0.0"
     remark-stringify: "npm:^11.0.0"
     requirejs: "npm:^2.3.7"
@@ -3703,7 +3705,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/run@workspace:packages/run":
+"@prairielearn/run@workspace:^, @prairielearn/run@workspace:packages/run":
   version: 0.0.0-use.local
   resolution: "@prairielearn/run@workspace:packages/run"
   dependencies:
