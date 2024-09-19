@@ -8,4 +8,4 @@ WORKDIR /xterm
 RUN yarn install --frozen-lockfile
 
 RUN useradd -m student
-ENTRYPOINT node server.js -w /home/student
+ENTRYPOINT ["node", "server.js", "-w", "/home/student"]

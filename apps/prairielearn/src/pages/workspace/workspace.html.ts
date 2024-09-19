@@ -137,19 +137,17 @@ export function Workspace({
                     `
                   : null}
                 <li class="nav-item ml-2 ml-md-3 my-1">
-                  <a
-                    tabindex="0"
+                  <button
                     type="button"
                     class="nav-item btn btn-light"
                     data-toggle="popover"
-                    data-trigger="focus"
                     data-container="body"
                     data-placement="bottom"
                     data-html="true"
                     data-content="${escapeHtml(HelpButtonContents())}"
                   >
                     <i class="fas fa-question-circle text-secondary" aria-hidden="true"></i>
-                  </a>
+                  </button>
                 </li>
               </ul>
             </div>
@@ -203,7 +201,7 @@ function ResetModal({ __csrf_token }: { __csrf_token: string }) {
       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <button name="__action" value="reset" class="btn btn-danger">
-        <i class="fas fa-trash text-white" aria-hidden="true"></i>
+        <i class="fas fa-trash" aria-hidden="true"></i>
         Reset
       </button>
     `,
@@ -231,7 +229,7 @@ function RebootModal({ __csrf_token }: { __csrf_token: string }) {
       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <button name="__action" value="reboot" class="btn btn-info">
-        <i class="fas fa-sync text-white" aria-hidden="true"></i>
+        <i class="fas fa-sync" aria-hidden="true"></i>
         Reboot
       </button>
     `,
