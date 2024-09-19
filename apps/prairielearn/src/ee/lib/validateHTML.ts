@@ -24,7 +24,7 @@ const htmlGlobalAttributes = [
 const mustacheTemplateRegex = /^\{\{.*\}\}$/;
 
 /**
- * Checks that the required property is an int (or property to be inserted) or adds an error to the provided list.
+ * Checks that the required property is an int (or mustache template) or adds an error to the provided list.
  * @param tag The name of the tag being checked.
  * @param key The property name.
  * @param val The property value.
@@ -39,7 +39,7 @@ function assertInt(tag: string, key: string, val: string, errors: string[]) {
 }
 
 /**
- * Checks that the required property is an float (or property to be inserted) or adds an error to the provided list.
+ * Checks that the required property is an float (or mustache template) or adds an error to the provided list.
  * @param tag The name of the tag being checked.
  * @param key The property name.
  * @param val The property value.
@@ -54,7 +54,7 @@ function assertFloat(tag: string, key: string, val: string, errors: string[]) {
 }
 
 /**
- * Checks that the required property is in a list of possibilities (or property to be inserted) or adds an error to the provided list.
+ * Checks that the required property is in a list of possibilities (or mustache template) or adds an error to the provided list.
  * @param tag The name of the tag being checked.
  * @param key The property name.
  * @param val The property value.
@@ -76,7 +76,7 @@ function assertInChoices(
 }
 
 /**
- * Checks that the required property is a boolean (or property to be inserted) or adds an error to the provided list.
+ * Checks that the required property is a boolean (or mustache template) or adds an error to the provided list.
  * @param tag The name of the tag being checked.
  * @param key The property name.
  * @param val The property value.
@@ -238,9 +238,11 @@ function checkMultipleChoice(ast: any): string[] {
   }
 
   let errorsChildren: string[] = [];
-  for (const child of ast.chidNodes) {
+  for (const child of ast.childNodes) {
     if (child.tagName === 'pl-answer') {
       errorsChildren = errorsChildren.concat(checkAnswerMultipleChoice(child));
+    } else {
+      errorsChildren.push(`pl-multiple-choice: ${child.tagName} is not a valid child tag.`);
     }
   }
 
@@ -583,14 +585,24 @@ function checkOrderBlocks(ast: any): string[] {
       'pl-order-blocks: if property "feedback" is "first-wrong" or "first-wrong-verbose", then "grading-method" must be "ranking" or "dag".',
     );
   }
-  let errorsChildren: string[] = [];
-  for (const child of ast.chidNodes) {
-    if (child.tagName === 'pl-answer') {
-      errorsChildren = errorsChildren.concat(checkAnswerOrderBlocks(child));
-    }
-  }
+
+  const errorsChildren = checkOrderBlocksChildren(ast);
 
   return errors.concat(errorsChildren);
+}
+
+function checkOrderBlocksChildren(ast: any): string[] {
+  let errorsChildren: string[] = [];
+  for (const child of ast.childNodes) {
+    if (child.tagName === 'pl-answer') {
+      errorsChildren = errorsChildren.concat(checkAnswerOrderBlocks(child));
+    } else if (child.tagname === 'pl-block-group') {
+      errorsChildren = errorsChildren.concat(checkAnswerOrderBlocks(child));
+    } else {
+      errorsChildren.push(`${ast.tagName}: ${child.tagName} is not a valid child tag.`);
+    }
+  }
+  return errorsChildren;
 }
 
 /**

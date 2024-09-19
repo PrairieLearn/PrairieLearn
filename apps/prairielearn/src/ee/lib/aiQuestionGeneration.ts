@@ -174,6 +174,18 @@ Keep in mind you are not just generating an example; you are generating an actua
           false,
         );
       }
+    } else {
+      await regenInternal(
+        job,
+        client,
+        authnUserId,
+        prompt,
+        'Please generate a question.html file.',
+        '',
+        typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
+        0,
+        false,
+      );
     }
   });
 
