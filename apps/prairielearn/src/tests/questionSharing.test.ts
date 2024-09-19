@@ -290,24 +290,25 @@ describe('Question Sharing', function () {
       assert(testCourseSharingToken != null);
     });
 
-    // TODO make sharing set with JSON
     step('Add sharing set to JSON', async () => {
-      // const sharingUrl = sharingPageUrl(sharingCourse.id);
-      // const response = await fetchCheerio(sharingUrl);
-      // const token = response.$('#test_csrf_token').text();
-      // await fetch(sharingUrl, {
-      //   method: 'POST',
-      //   body: new URLSearchParams({
-      //     __action: 'sharing_set_create',
-      //     __csrf_token: token,
-      //     sharing_set_name: SHARING_SET_NAME,
-      //   }),
-      // });
       sharingCourseData.course.sharingSets = [
         { name: SHARING_SET_NAME, description: 'Sharing set for testing' },
       ];
       const courseInfoPath = path.join(sharingCourseOriginDir, 'infoCourse.json');
       await fs.writeJSON(courseInfoPath, sharingCourseData.course);
+
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [SHARING_SET_NAME];
+      await fs.writeJSON(
+        path.join(sharingCourseOriginDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[SHARING_QUESTION_QID],
+      );
+
+      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharedPublicly = true;
+      await fs.writeJSON(
+        path.join(sharingCourseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
+      );
+
       await execa('git', ['add', '-A'], gitOptions);
       await execa('git', ['commit', '-m', 'Add sharing set'], gitOptions);
       await execa('git', ['pull'], {
