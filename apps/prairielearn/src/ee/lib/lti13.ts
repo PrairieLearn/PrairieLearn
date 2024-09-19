@@ -654,7 +654,7 @@ export async function updateLti13Scores(
 ) {
   // Get the assessment metadata
   const assessment = await queryRow(
-    sql.select_assessment_for_lt13_scores,
+    sql.select_assessment_for_lti13_scores,
     {
       unsafe_assessment_id,
       lti13_course_instance_id: instance.lti13_course_instance.id,

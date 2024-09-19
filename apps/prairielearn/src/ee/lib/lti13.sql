@@ -141,7 +141,7 @@ WHERE
   AND lti13_course_instances.id = $lti13_course_instance_id
   AND a.deleted_at IS NULL;
 
--- BLOCK select_assessment_for_lt13_scores
+-- BLOCK select_assessment_for_lti13_scores
 SELECT
   a.*,
   la.lineitem_id_url AS lti13_lineitem_id_url,
