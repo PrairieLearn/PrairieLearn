@@ -124,6 +124,7 @@ function InstanceUserInfo({
             `}
       </details>
     </div>
+    <hr />
   `;
 }
 
@@ -161,7 +162,6 @@ function QuestionInfo({
     : `@${course.sharing_name}/${question.qid}`;
 
   return html`
-    <hr />
     <h3 class="card-title h5">Question:</h3>
 
     <div class="d-flex flex-wrap">
