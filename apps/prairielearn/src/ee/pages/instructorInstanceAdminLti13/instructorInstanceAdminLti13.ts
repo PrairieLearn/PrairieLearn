@@ -52,6 +52,10 @@ router.use(
 router.get(
   '/:unsafe_lti13_course_instance_id?',
   asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
+
     const instances = await queryRows(
       sql.select_lti13_instances,
       {
@@ -117,6 +121,10 @@ router.get(
 router.post(
   '/:unsafe_lti13_course_instance_id',
   asyncHandler(async (req, res) => {
+    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    }
+
     const instance = await queryRow(
       sql.select_lti13_instance,
       {
