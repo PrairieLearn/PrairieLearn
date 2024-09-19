@@ -1,4 +1,3 @@
-// @ts-check
 import { Router } from 'express';
 
 import { generateSignedToken } from '@prairielearn/signed-token';
@@ -14,13 +13,13 @@ router.get('/', function (req, res) {
   res.send(
     AuthPassword({
       resLocals: res.locals,
-      passwordInvalid: 'pl_assessmentpw' in req.cookies,
+      passwordInvalid: 'pl2_assessmentpw' in req.cookies,
     }),
   );
 });
 
 router.post('/', function (req, res) {
-  const redirectUrl = req.cookies.pl_pw_origUrl ?? '/';
+  const redirectUrl = req.cookies.pl2_pw_original_url ?? '/';
   const maxAge = 1000 * 60 * 60 * 12; // 12 hours
 
   const pwCookie = generateSignedToken({ password: req.body.password, maxAge }, config.secretKey);

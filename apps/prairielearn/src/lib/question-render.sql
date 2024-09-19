@@ -67,7 +67,6 @@ SELECT
   s.variant_id,
   s.manual_rubric_grading_id,
   to_jsonb(gj) AS grading_job,
-  grading_job_status (gj.id) AS grading_job_status,
   format_date_full_compact (
     s.date,
     coalesce(ci.display_timezone, c.display_timezone)
@@ -171,6 +170,7 @@ SELECT
   to_jsonb(s) AS submission,
   to_jsonb(v) AS variant,
   to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
+  qo.question_number,
   jsonb_build_object(
     'id',
     next_iq.id,
@@ -185,7 +185,6 @@ SELECT
   to_jsonb(ci) AS course_instance,
   to_jsonb(c) AS variant_course,
   to_jsonb(qc) AS question_course,
-  grading_job_status (lgj.id) AS grading_job_status,
   format_date_full_compact (
     s.date,
     coalesce(ci.display_timezone, c.display_timezone)
@@ -224,6 +223,7 @@ FROM
   JOIN LATERAL instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
   LEFT JOIN users AS u ON (s.auth_user_id = u.user_id)
+  LEFT JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
 WHERE
   s.id = $submission_id
   AND q.id = $question_id

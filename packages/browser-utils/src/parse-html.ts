@@ -12,10 +12,13 @@ export function parseHTML(document: Document, html: string | HtmlSafeString): Do
  * {@link DocumentFragment}. If the HTML being parsed does not contain
  * exactly one element, an error is thrown.
  */
-export function parseHTMLElement(document: Document, html: string | HtmlSafeString): Element {
+export function parseHTMLElement<T extends Element = Element>(
+  document: Document,
+  html: string | HtmlSafeString,
+): T {
   const documentFragment = parseHTML(document, html);
   if (documentFragment.childElementCount !== 1) {
     throw new Error('Expected HTML to contain exactly one element');
   }
-  return documentFragment.firstElementChild as Element;
+  return documentFragment.firstElementChild as T;
 }

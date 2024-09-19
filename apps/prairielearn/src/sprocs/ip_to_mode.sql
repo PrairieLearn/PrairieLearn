@@ -3,12 +3,17 @@ CREATE FUNCTION
         IN ip inet,
         IN date timestamptz,
         IN authn_user_id bigint,
-        OUT mode enum_mode
+        OUT mode enum_mode,
+        OUT mode_reason enum_mode_reason
     )
 AS $$
 DECLARE
     reservation RECORD;
 BEGIN
+    -- Default to 'Public' mode.
+    mode := 'Public';
+    mode_reason := 'Default';
+
     -- Is the user accessing via an exam mode network?
     PERFORM *
     FROM exam_mode_networks
@@ -16,18 +21,33 @@ BEGIN
 
     IF FOUND THEN
         mode := 'Exam';
-    ELSE
-        mode := 'Public';
+        mode_reason := 'Network';
     END IF;
 
     -- Consider each PT reservation which is either active or corresponds to
     -- a session that will start soon or started recently.
+    --
+    -- We consider a session to be "active" is either of the following is true:
+    --
+    -- - The reservation is checked in but hasn't had their access start yet.
+    --   We'll consider the reservation active for the first hour after check-in.
+    -- - The reservation has had their access start at some point, and the current
+    --   time is within the access window.
     FOR reservation IN
         SELECT
             r.session_id,
             (
-                (r.checked_in IS NOT NULL AND ip_to_mode.date BETWEEN r.checked_in AND r.checked_in + '1 hour'::interval)
-                OR ip_to_mode.date BETWEEN r.access_start AND r.access_end
+                (
+                    r.checked_in IS NOT NULL
+                    AND r.access_start IS NULL
+                    AND r.access_end IS NULL
+                    AND ip_to_mode.date BETWEEN r.checked_in AND r.checked_in + '1 hour'::interval
+                )
+                OR (
+                    r.access_start IS NOT NULL
+                    AND r.access_end IS NOT NULL
+                    AND ip_to_mode.date BETWEEN r.access_start AND r.access_end
+                )
             ) AS reservation_active,
             l.id AS location_id,
             l.filter_networks AS location_filter_networks
@@ -60,10 +80,12 @@ BEGIN
             -- might put us in 'Exam' mode.
             IF reservation.reservation_active THEN
                 mode := 'Exam';
+                mode_reason := 'PrairieTest';
                 RETURN;
             END IF;
 
             mode := 'Public';
+            mode_reason := 'Default';
             CONTINUE;
         END IF;
 
@@ -77,6 +99,7 @@ BEGIN
             -- The user is physically inside the testing center. Set
             -- mode to 'Exam'.
             mode := 'Exam';
+            mode_reason := 'PrairieTest';
             RETURN;
         ELSE
             -- Although we have a checked-in reservation, the user is
@@ -84,6 +107,7 @@ BEGIN
             -- 'Public', but continue looping to see if we have any other
             -- reservations that might put us in 'Exam' mode.
             mode := 'Public';
+            mode_reason := 'Default';
             CONTINUE;
         END IF;
     END LOOP;

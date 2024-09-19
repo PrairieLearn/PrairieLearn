@@ -1,8 +1,9 @@
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { Assessment, GroupConfig, User } from '../../lib/db-types.js';
 import { GroupInfo } from '../../lib/groups.js';
 
@@ -23,18 +24,14 @@ export function StudentAssessment({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
-        ${compiledScriptTag('studentAssessmentClient.js')}
+        ${HeadContents({ resLocals })} ${compiledScriptTag('studentAssessmentClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: '',
-        })}
+        ${Navbar({ resLocals })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${assessment_set.abbreviation}${assessment.number}: ${assessment.title}
+              <h1>${assessment_set.abbreviation}${assessment.number}: ${assessment.title}</h1>
               ${assessment.group_work ? html`<i class="fas fa-users"></i>` : ''}
             </div>
 
@@ -126,8 +123,8 @@ function HonorPledge({ user, groupWork }: { user: User; groupWork: boolean }) {
         </li>
       </ul>
 
-      <div class="card-footer text-center border-top-0 py-2">
-        <span class="form-check d-inline">
+      <div class="card-footer d-flex justify-content-center">
+        <span class="form-check">
           <input type="checkbox" class="form-check-input" id="certify-pledge" />
           <label class="form-check-label font-weight-bold" for="certify-pledge">
             I certify and pledge the above.
@@ -215,7 +212,7 @@ function GroupCreationJoinForm({
           ? html`
               <div class="col-sm bg-light py-4 px-4 border">
                 <form id="create-form" name="create-form" method="POST">
-                  <h6>Group name</h6>
+                  <label for="groupNameInput">Group name</label>
                   <input
                     type="text"
                     class="form-control"
@@ -223,6 +220,7 @@ function GroupCreationJoinForm({
                     name="groupName"
                     maxlength="30"
                     placeholder="e.g. teamOne"
+                    aria-label="Group name"
                     aria-describedby="groupNameHelp"
                   />
                   <small id="groupNameHelp" class="form-text text-muted">
@@ -244,7 +242,7 @@ function GroupCreationJoinForm({
           ? html`
               <div class="col-sm bg-light py-4 px-4 border">
                 <form id="joingroup-form" name="joingroup-form" method="POST">
-                  <h6>Join code</h6>
+                  <label for="joinCodeInput">Join code</label>
                   <input
                     type="text"
                     class="form-control"

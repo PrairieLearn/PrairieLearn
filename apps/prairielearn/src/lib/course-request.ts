@@ -4,7 +4,7 @@ import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRows, queryAsync } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { DateFromISOString, IdSchema } from '../lib/db-types.js';
+import { DateFromISOString, IdSchema, JobSequenceSchema } from '../lib/db-types.js';
 import { createCourseRepoJob } from '../lib/github.js';
 import { sendCourseRequestMessage } from '../lib/opsbot.js';
 
@@ -17,7 +17,7 @@ const JobsRowSchema = z.object({
   id: IdSchema,
   number: z.number(),
   start_date: DateFromISOString,
-  status: z.string(),
+  status: JobSequenceSchema.shape.status,
 });
 
 const CourseRequestRowSchema = z.object({
@@ -95,7 +95,7 @@ export async function createCourseFromRequest(req, res) {
 
   try {
     await sendCourseRequestMessage(
-      `*Creating course*\n` +
+      '*Creating course*\n' +
         `Course rubric: ${req.body.repository_short_name}\n` +
         `Course title: ${req.body.title}\n` +
         `Approved by: ${res.locals.authn_user.name}`,

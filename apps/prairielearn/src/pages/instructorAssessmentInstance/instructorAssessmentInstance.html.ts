@@ -1,13 +1,18 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
+import { Scorebar } from '../../components/Scorebar.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { InstanceLogEntry } from '../../lib/assessment.js';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets.js';
-import { IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
-import { formatFloat } from '../../lib/format.js';
+import { AssessmentQuestionSchema, IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
+import { formatFloat, formatPoints } from '../../lib/format.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -32,10 +37,7 @@ type AssessmentInstanceStats = z.infer<typeof AssessmentInstanceStatsSchema>;
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   instructor_question_number: z.string(),
-  manual_rubric_id: IdSchema.nullable(),
-  max_auto_points: z.number().nullable(),
-  max_manual_points: z.number().nullable(),
-  max_points: z.number().nullable(),
+  assessment_question: AssessmentQuestionSchema,
   modified_at: z.string(),
   qid: z.string().nullable(),
   question_id: IdSchema,
@@ -75,7 +77,10 @@ export function InstructorAssessmentInstance({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", { ...resLocals })}
+        ${HeadContents({
+          resLocals,
+          pageTitle: resLocals.instance_group?.name || resLocals.instance_user?.uid,
+        })}
         <link
           href="${nodeModulesAssetPath('tablesorter/dist/css/theme.bootstrap.min.css')}"
           rel="stylesheet"
@@ -87,37 +92,41 @@ export function InstructorAssessmentInstance({
         <script src="${nodeModulesAssetPath(
             'tablesorter/dist/js/jquery.tablesorter.widgets.min.js',
           )}"></script>
-        ${compiledScriptTag('popover.ts')}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: '',
-        })}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
+          <h1 class="sr-only">
+            ${resLocals.assessment_instance_label} instance for
+            ${resLocals.instance_group
+              ? html`${resLocals.instance_group.name}`
+              : html`${resLocals.instance_user.name}`}
+          </h1>
           ${ResetQuestionVariantsModal({
             csrfToken: resLocals.__csrf_token,
             groupWork: resLocals.assessment.group_work,
           })}
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
-            { ...resLocals },
-          )}
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            assessment: resLocals.assessment,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Summary:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2>
+                ${resLocals.assessment_instance_label} Summary:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
 
-            <table class="table table-sm table-hover two-column-description">
+            <table
+              class="table table-sm table-hover two-column-description"
+              aria-label="Assessment instance summary"
+            >
               <tbody>
                 ${resLocals.instance_group
                   ? html`
@@ -169,6 +178,7 @@ export function InstructorAssessmentInstance({
                             data-container="body"
                             data-html="false"
                             title="Client Fingerprint Changes"
+                            aria-label="Client Fingerprint Changes"
                             data-content="Client fingerprints are a record of a user's IP address, user agent and sesssion. These attributes are tracked while a user is accessing an assessment. This value indicates the amount of times that those attributes changed as the student accessed the assessment, while the assessment was active. Some changes may naturally occur during an assessment, such as if a student changes network connections or browsers. However, a high number of changes in an exam-like environment could be an indication of multiple people accessing the same assessment simultaneously, which may suggest an academic integrity issue. Accesses taking place after the assessment has been closed are not counted, as they typically indicate scenarios where a student is reviewing their results, which may happen outside of a controlled environment."
                             ><i class="fa fa-question-circle"></i
                           ></a>
@@ -180,15 +190,14 @@ export function InstructorAssessmentInstance({
                 <tr>
                   <th>Points</th>
                   <td colspan="2">
-                    ${renderEjs(import.meta.url, "<% include('../partials/pointsFormatter'); %>")}
-                    <span id="total-points"
-                      >${resLocals.assessment_instance.points.toString()}</span
-                    >
-                    <small
-                      >/<span id="total-max-points" class="text-muted"
-                        >${resLocals.assessment_instance.max_points.toString()}</span
-                      ></small
-                    >
+                    <span id="total-points">
+                      ${formatPoints(resLocals.assessment_instance.points)}
+                    </span>
+                    <small>
+                      /<span id="total-max-points" class="text-muted"
+                        >${formatPoints(resLocals.assessment_instance.max_points)}
+                      </span>
+                    </small>
                     ${resLocals.authz_data.has_course_instance_permission_edit
                       ? html`
                           <button
@@ -196,14 +205,14 @@ export function InstructorAssessmentInstance({
                             class="btn btn-xs btn-secondary"
                             id="editTotalPointsButton"
                             data-toggle="popover"
+                            data-container="body"
                             data-html="true"
                             data-placement="auto"
-                            data-container="body"
                             title="Change total points"
+                            aria-label="Change total points"
                             data-content="${escapeHtml(
                               EditTotalPointsForm({
                                 resLocals,
-                                id: 'editTotalPointsButton',
                               }),
                             )}"
                           >
@@ -216,9 +225,7 @@ export function InstructorAssessmentInstance({
                 <tr>
                   <th>Score</th>
                   <td class="align-middle" style="width: 20%;">
-                    ${renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
-                      score: resLocals.assessment_instance.score_perc,
-                    })}
+                    ${Scorebar(resLocals.assessment_instance.score_perc)}
                   </td>
                   <td class="align-middle" style="width: 100%;">
                     ${resLocals.authz_data.has_course_instance_permission_edit
@@ -232,10 +239,10 @@ export function InstructorAssessmentInstance({
                             data-html="true"
                             data-placement="auto"
                             title="Change total percentage score"
+                            aria-label="Change total percentage score"
                             data-content="${escapeHtml(
                               EditTotalScorePercForm({
                                 resLocals,
-                                id: 'editTotalScorePercButton',
                               }),
                             )}"
                           >
@@ -293,13 +300,19 @@ export function InstructorAssessmentInstance({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Questions:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2>
+                ${resLocals.assessment_instance_label} Questions:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
 
-            <table id="instanceQuestionList" class="table table-sm table-hover">
+            <table
+              id="instanceQuestionList"
+              class="table table-sm table-hover"
+              aria-label="Assessment instance questions"
+            >
               <thead>
                 <tr>
                   <th>Student question</th>
@@ -313,7 +326,7 @@ export function InstructorAssessmentInstance({
                 </tr>
               </thead>
               <tbody>
-                ${instance_questions.map((instance_question, i_instance_question) => {
+                ${instance_questions.map((instance_question) => {
                   return html`
                     ${instance_question.start_new_zone && instance_question.zone_title
                       ? html`
@@ -345,141 +358,65 @@ export function InstructorAssessmentInstance({
                         >)
                       </td>
                       <td class="text-center">
-                        ${renderEjs(
-                          import.meta.url,
-                          "<%- include('../partials/instanceQuestionPoints') %>",
-                          { instance_question, component: 'auto' },
-                        )}
+                        ${InstanceQuestionPoints({
+                          instance_question,
+                          assessment_question: instance_question.assessment_question,
+                          component: 'auto',
+                        })}
                         ${resLocals.authz_data.has_course_instance_permission_edit
-                          ? html`
-                              <button
-                                type="button"
-                                class="btn btn-xs btn-secondary editQuestionAutoPointsButton"
-                                id="editQuestionPointsAuto${i_instance_question}"
-                                data-toggle="popover"
-                                data-container="body"
-                                data-html="true"
-                                data-placement="auto"
-                                title="Change question ${instance_question.question_number} points"
-                                data-content="${renderEjs(
-                                  import.meta.url,
-                                  "<%= include('../partials/editQuestionPointsForm'); %>",
-                                  {
-                                    ...resLocals,
-                                    id: 'editQuestionPointsAuto' + i_instance_question,
-                                    field: 'auto_points',
-                                    instance_question: {
-                                      ...instance_question,
-                                      points: instance_question.auto_points,
-                                      max_points: instance_question.max_auto_points,
-                                    },
-                                  },
-                                )}"
-                              >
-                                <i class="fa fa-edit" aria-hidden="true"></i>
-                              </button>
-                            `
+                          ? EditQuestionPointsScoreButton({
+                              field: 'auto_points',
+                              instance_question,
+                              assessment_question: instance_question.assessment_question,
+                              urlPrefix: resLocals.urlPrefix,
+                              csrfToken: resLocals.__csrf_token,
+                            })
                           : ''}
                       </td>
                       <td class="text-center">
-                        ${renderEjs(
-                          import.meta.url,
-                          "<%- include('../partials/instanceQuestionPoints'); %>",
-                          { instance_question, component: 'manual' },
-                        )}
+                        ${InstanceQuestionPoints({
+                          instance_question,
+                          assessment_question: instance_question.assessment_question,
+                          component: 'manual',
+                        })}
                         ${resLocals.authz_data.has_course_instance_permission_edit
-                          ? html`
-                              <button
-                                type="button"
-                                class="btn btn-xs btn-secondary editQuestionManualPointsButton"
-                                id="editQuestionPointsManual${i_instance_question}"
-                                data-toggle="popover"
-                                data-container="body"
-                                data-html="true"
-                                data-placement="auto"
-                                title="Change question ${instance_question.question_number} points"
-                                data-content="${renderEjs(
-                                  import.meta.url,
-                                  "<%= include('../partials/editQuestionPointsForm') %>",
-                                  {
-                                    ...resLocals,
-                                    id: 'editQuestionPointsManual' + i_instance_question,
-                                    field: 'manual_points',
-                                    instance_question: {
-                                      ...instance_question,
-                                      points: instance_question.manual_points,
-                                      max_points: instance_question.max_manual_points,
-                                    },
-                                  },
-                                )}"
-                              >
-                                <i class="fa fa-edit" aria-hidden="true"></i>
-                              </button>
-                            `
+                          ? EditQuestionPointsScoreButton({
+                              field: 'manual_points',
+                              instance_question,
+                              assessment_question: instance_question.assessment_question,
+                              urlPrefix: resLocals.urlPrefix,
+                              csrfToken: resLocals.__csrf_token,
+                            })
                           : ''}
                       </td>
                       <td class="text-center">
-                        ${renderEjs(
-                          import.meta.url,
-                          "<%- include('../partials/instanceQuestionPoints'); %>",
-                          { instance_question, component: 'total' },
-                        )}
+                        ${InstanceQuestionPoints({
+                          instance_question,
+                          assessment_question: instance_question.assessment_question,
+                          component: 'total',
+                        })}
                         ${resLocals.authz_data.has_course_instance_permission_edit
-                          ? html`
-                              <button
-                                type="button"
-                                class="btn btn-xs btn-secondary editQuestionPointsButton"
-                                id="editQuestionPoints${i_instance_question}"
-                                data-toggle="popover"
-                                data-container="body"
-                                data-html="true"
-                                data-placement="auto"
-                                title="Change question ${instance_question.question_number} points"
-                                data-content="${renderEjs(
-                                  import.meta.url,
-                                  "<%= include('../partials/editQuestionPointsForm'); %>",
-                                  {
-                                    ...resLocals,
-                                    id: 'editQuestionPoints' + i_instance_question,
-                                    instance_question,
-                                  },
-                                )}"
-                              >
-                                <i class="fa fa-edit" aria-hidden="true"></i>
-                              </button>
-                            `
+                          ? EditQuestionPointsScoreButton({
+                              field: 'points',
+                              instance_question,
+                              assessment_question: instance_question.assessment_question,
+                              urlPrefix: resLocals.urlPrefix,
+                              csrfToken: resLocals.__csrf_token,
+                            })
                           : ''}
                       </td>
                       <td class="align-middle text-center text-nowrap">
-                        ${renderEjs(import.meta.url, "<%- include('../partials/scorebar'); %>", {
-                          score: instance_question.score_perc,
-                        })}
+                        ${Scorebar(instance_question.score_perc)}
                       </td>
                       <td class="align-middle" style="width: 1em;">
                         ${resLocals.authz_data.has_course_instance_permission_edit
-                          ? html`
-                              <button
-                                type="button"
-                                class="btn btn-xs btn-secondary editQuestionScorePercButton"
-                                id="editQuestionScorePerc${i_instance_question}"
-                                data-toggle="popover"
-                                data-container="body"
-                                data-html="true"
-                                data-placement="auto"
-                                title="Change question ${instance_question.question_number} percentage score"
-                                data-content="${renderEjs(
-                                  import.meta.url,
-                                  "<%= include('../partials/editQuestionScorePercForm');%>",
-                                  {
-                                    ...resLocals,
-                                    id: 'editQuestionScorePerc' + i_instance_question,
-                                    instance_question,
-                                  },
-                                )}"
-                              >
-                                <i class="fa fa-edit" aria-hidden="true"></i>
-                              </button>
-                            `
+                          ? EditQuestionPointsScoreButton({
+                              field: 'score_perc',
+                              instance_question,
+                              assessment_question: instance_question.assessment_question,
+                              urlPrefix: resLocals.urlPrefix,
+                              csrfToken: resLocals.__csrf_token,
+                            })
                           : ''}
                       </td>
                       <td class="align-middle text-nowrap" style="width: 1em;">
@@ -535,12 +472,18 @@ export function InstructorAssessmentInstance({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Statistics:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2>
+                ${resLocals.assessment_instance_label} Statistics:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
-            <table id="instanceQuestionStatsTable" class="table table-sm table-hover tablesorter">
+            <table
+              id="instanceQuestionStatsTable"
+              class="table table-sm table-hover tablesorter"
+              aria-label="Assessment instance statistics"
+            >
               <thead>
                 <tr>
                   <th>Instructor question</th>
@@ -587,10 +530,12 @@ export function InstructorAssessmentInstance({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_instance_label} Log:
-              ${resLocals.instance_group
-                ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
-                : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              <h2>
+                ${resLocals.assessment_instance_label} Log:
+                ${resLocals.instance_group
+                  ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+                  : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
+              </h2>
             </div>
             <div class="card-body">
               <small>
@@ -609,7 +554,11 @@ export function InstructorAssessmentInstance({
               </small>
             </div>
 
-            <table id="logTable" class="table table-sm table-hover tablesorter">
+            <table
+              id="logTable"
+              class="table table-sm table-hover tablesorter"
+              aria-label="Assessment instance log"
+            >
               <thead>
                 <tr>
                   <th>Time</th>
@@ -626,7 +575,7 @@ export function InstructorAssessmentInstance({
                   return html`
                     <tr>
                       <td class="text-nowrap">${row.formatted_date}</td>
-                      <td>${row.auth_user_uid ?? html`$mdash;`}</td>
+                      <td>${row.auth_user_uid ?? html`&mdash;`}</td>
                       ${resLocals.instance_user
                         ? row.client_fingerprint && row.client_fingerprint_number !== null
                           ? html`
@@ -740,7 +689,7 @@ export function InstructorAssessmentInstance({
   `.toString();
 }
 
-function EditTotalPointsForm({ resLocals, id }: { resLocals: Record<string, any>; id: string }) {
+function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
     <form name="edit-total-points-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_points" />
@@ -757,6 +706,7 @@ function EditTotalPointsForm({ resLocals, id }: { resLocals: Record<string, any>
             class="form-control"
             name="points"
             value="${resLocals.assessment_instance.points}"
+            aria-label="Total points"
           />
           <span class="input-group-addon">/${resLocals.assessment_instance.max_points}</span>
         </div>
@@ -767,16 +717,14 @@ function EditTotalPointsForm({ resLocals, id }: { resLocals: Record<string, any>
         </small>
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>
   `;
 }
 
-function EditTotalScorePercForm({ resLocals, id }: { resLocals: Record<string, any>; id: string }) {
+function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
     <form name="edit-total-score-perc-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_score_perc" />
@@ -793,6 +741,7 @@ function EditTotalScorePercForm({ resLocals, id }: { resLocals: Record<string, a
             class="form-control"
             name="score_perc"
             value="${resLocals.assessment_instance.score_perc}"
+            aria-label="Total score percentage"
           />
           <span class="input-group-addon">%</span>
         </div>
@@ -803,9 +752,7 @@ function EditTotalScorePercForm({ resLocals, id }: { resLocals: Record<string, a
         </small>
       </p>
       <div class="text-right">
-        <button type="button" class="btn btn-secondary" onclick="$('#${id}').popover('hide')">
-          Cancel
-        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
         <button type="submit" class="btn btn-primary">Change</button>
       </div>
     </form>

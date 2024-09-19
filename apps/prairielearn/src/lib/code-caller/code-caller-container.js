@@ -153,6 +153,10 @@ export class CodeCallerContainer {
     this.debug(`exit constructor(), state: ${String(this.state)}, uuid: ${this.uuid}`);
   }
 
+  getCoursePath() {
+    return this.coursePath;
+  }
+
   /**
    * Wrapper around `debug` that automatically includes UUID and the caller state.
    *
@@ -293,11 +297,11 @@ export class CodeCallerContainer {
       // was restarted, we can slightly optimize things by skipping the
       // restart. This is safe, as no user-provided code will have been
       // loaded into the Python interpreter.
-      this.debug(`exit restart() - skipping since no calls recorded since last restart`);
+      this.debug('exit restart() - skipping since no calls recorded since last restart');
       return true;
     } else if (this.state === CREATED) {
       // no need to restart if we don't have a worker
-      this.debug(`exit restart()`);
+      this.debug('exit restart()');
       return true;
     } else if (this.state === WAITING) {
       const { result } = await this.call('restart', null, null, 'restart', []);
@@ -752,7 +756,7 @@ async function cleanupMountDirectories() {
         try {
           debug(`removing bind mount at ${absolutePath}`);
           await bindMount.umount(absolutePath);
-        } catch (e) {
+        } catch {
           // Ignore this, it was hopefully unmounted successfully before
         }
 

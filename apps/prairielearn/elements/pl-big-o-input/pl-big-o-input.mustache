@@ -1,21 +1,6 @@
 {{#question}}
-        <script>
-            $(function(){
-                $('#big-o-input-{{uuid}} [data-toggle="popover"]').popover({
-                    sanitize: false,
-                    container: 'body',
-                    template: `
-                        <div class="popover big-o-input-popover" role="tooltip">
-                            <div class="arrow"></div>
-                            <h3 class="popover-header"></h3>
-                            <div class="popover-body"></div>
-                        </div>`,
-                });
-            });
-        </script>
-
         {{#inline}}<span class="form-inline d-inline-block ml-2">{{/inline}}
-            <span id="big-o-input-{{uuid}}" class="input-group big-o-input">
+            <span class="input-group big-o-input">
                 <span class="input-group-prepend">
                     <span class="input-group-text" id="pl-big-o-input-{{uuid}}-label">${{type}}($</span>
                 </span>
@@ -29,7 +14,8 @@
                     {{^editable}}disabled{{/editable}}
                     {{#raw_submitted_answer}}value="{{raw_submitted_answer}}"{{/raw_submitted_answer}}
                     placeholder="{{placeholder}}"
-                    aria-describedby="pl-big-o-input-{{uuid}}-label pl-big-o-input-{{uuid}}-suffix"
+                    aria-describedby="pl-big-o-input-{{uuid}}-suffix"
+                    aria-labelledby="pl-big-o-input-{{uuid}}-label"
                 />
                 <span class="input-group-append">
                     <span
@@ -79,25 +65,7 @@
     {{#inline}}<span class="d-inline-block">{{/inline}}
     {{#error}}
 
-    <script>
-        $(function(){
-            $('#big-o-input-submission-{{uuid}} [data-toggle="popover"]').popover({
-                sanitize: false,
-                container: 'body',
-                template: `
-                    <div class="popover big-o-input-popover" role="tooltip">
-                        <div class="arrow"></div>
-                        <h3 class="popover-header"></h3>
-                        <div class="popover-body"></div>
-                    </div>`,
-            });
-            $('#big-o-input-submission-{{uuid}} [data-toggle="popover"]').on('shown.bs.popover', function() {
-                MathJax.typesetPromise();
-            });
-        });
-    </script>
-
-    <span id="big-o-input-submission-{{uuid}}">
+    <span>
     {{#parse_error}}
         {{#raw_submitted_answer}}
             <code class="user-output-invalid">{{raw_submitted_answer}}</code>
@@ -115,13 +83,15 @@
             data-content="{{parse_error}}"
         > Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i></a>
     {{/parse_error}}
-
     {{#missing_input}}
+        ${{type}}($
         <span class="badge text-dark badge-missing-input"><i class="fa fa-question-circle" aria-hidden="true"></i> Missing Input</span>
 
         <a href="javascript:void(0);" role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" title="Missing Input" tabindex="0" data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i>
         </a>
+        $)$
     {{/missing_input}}
+
     </span>
 
     {{/error}}

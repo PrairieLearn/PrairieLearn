@@ -8,9 +8,9 @@ Consider **[adding the question or issue](https://github.com/PrairieLearn/Prairi
 
 There are three different ways to let a student re-attempt or continue an exam:
 
-1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using the CBTF and have a new reservation, otherwise they will need a custom [access rule](accessControl.md) with their UID.
+1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using a PrairieTest session and have a new reservation, otherwise they will need a custom [access rule](accessControl.md) with their UID.
 
-2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using the CBTF they need to sign up for a new reservation, or outside the CBTF they will need a custom [access rule](accessControl.md) with their UID.
+2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using PrairieTest they need to sign up for a new reservation, or outside a PrairieTest environment they will need a custom [access rule](accessControl.md) with their UID.
 
 3. **Make a custom retry exam with a different selection of questions on it:** This is normally used if many students are going to take a second-chance exam. You can copy the original exam to a new assessment in PrairieLearn (use the "Copy" button on the "Settings" tab for the assessment) and adjust the question selection and access controls as appropriate.
 
@@ -38,7 +38,7 @@ Note that when granting access via `"active": false`, students can still access 
 Writing and maintaining a large pool of questions is a lot of work. There are many strategies for managing this process. The approach taken by the TAM 2XX courses (Introductory Mechanics sequence) at Illinois is:
 
 1. Homework questions are always re-used semester-to-semester. It is assumed that solutions to these will be posted by students on the internet, so they are strictly for practice. Students do get credit for homeworks, but it assumed that any student who puts in the effort will get 100%.
-2. Some questions in the pool are [tagged](https://prairielearn.readthedocs.io/en/latest/question/#question-infojson) as "secret". These questions are only used on exams. Exams consist of a few homework questions, as well as secret questions on that topic. Secret questions are re-used for multiple semesters. Exams are only administered until highly secure conditions in a computer-based testing facility (CBTF) or similar environment.
+2. Some questions in the pool are [tagged](https://prairielearn.readthedocs.io/en/latest/question/#question-infojson) as "secret". These questions are only used on exams. Exams consist of a few homework questions, as well as secret questions on that topic. Secret questions are re-used for multiple semesters. Exams are only administered until highly secure conditions in a testing center or similar environment.
 3. Every semester a small number of secret questions are written and some of the older secret questions are moved to homeworks. This keeps the secret pool reasonably fresh and grows the homework pool over time. It also ensures that homework and exam questions are truly comparable in topics and difficulty.
 4. For homeworks, the [`maxPoints`](https://prairielearn.readthedocs.io/en/latest/assessment/#question-specification) option is used so that students don't need to complete all homework questions to get 100% on the homework. This allows the homework to be quite long, and to be partially for credit and partially as a set of extra questions that students can practice.
 5. Homeworks can be accessed for 100% credit until the due date, for 80% credit for a week after that, and for 0% credit (but students can still practice the questions) for the rest of the semester.
@@ -63,7 +63,7 @@ The PrairieLearn interface only shows the most recent `variant` (a particular ra
 
 Instructors can see all past variants for students by going to the "Log" table on the view of a student's assessment instance (go to an assessment, then "Students" tab, then "Details" for a student, the scroll down to "Log"). In the Log table there is a column called "Student question" that shows a numbered list of the student views of the question, like `S-1#1`, `S-1#2`, `S-1#3`, etc. These are the first, second, third variants of that question that the student was given. Clicking those numbered links will show the specific variants, along with student answers to them.
 
-The raw history of student answers can also be accessed in the "Data" column of the Log table, from the "XXX_all_submissions.csv" file on the "Downloads" tab, and via the [PrairieLearn API](api).
+The raw history of student answers can also be accessed in the "Data" column of the Log table, from the "XXX_all_submissions.csv" file on the "Downloads" tab, and via the [PrairieLearn API](api.md).
 
 ## How do I give a student access to homeworks or an exam after the semester is over?
 
@@ -132,7 +132,7 @@ then the feature can be disabled by specifying in the `infoAsssement.json`:
 See [Auto-closing Exam assessments](assessment.md#auto-closing-exam-assessments)
 for more details.
 
-## How can we provide a cheat sheet for CBTF exams?
+## How can we provide a cheat sheet for exams held in a testing center?
 
 To make a cheatsheet available to students, place the cheatsheet inside of either:
 

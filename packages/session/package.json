@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/session",
-  "version": "3.0.2",
+  "version": "3.0.5",
   "type": "module",
   "main": "dist/index.js",
   "repository": {
@@ -24,24 +24,24 @@
   "devDependencies": {
     "@prairielearn/express-test-utils": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/chai": "^4.3.16",
+    "@types/chai": "^4.3.19",
     "@types/cookie": "^0.6.0",
     "@types/cookie-signature": "^1.1.2",
-    "@types/node": "^20.13.0",
+    "@types/node": "^20.16.2",
     "@types/node-fetch": "^2.6.11",
     "@types/on-headers": "^1.0.3",
-    "@types/set-cookie-parser": "^2.4.7",
+    "@types/set-cookie-parser": "^2.4.10",
     "@types/uid-safe": "^2.1.5",
-    "c8": "^9.1.0",
+    "c8": "^10.1.2",
     "chai": "^5.1.1",
     "express": "^4.19.2",
     "fetch-cookie": "^3.0.1",
-    "mocha": "^10.4.0",
+    "mocha": "^10.7.3",
     "node-fetch": "^3.3.2",
-    "set-cookie-parser": "^2.6.0",
+    "set-cookie-parser": "^2.7.0",
     "source-map-support": "^0.5.21",
-    "tsx": "^4.11.0",
-    "typescript": "^5.4.5"
+    "tsx": "^4.19.0",
+    "typescript": "^5.5.4"
   },
   "c8": {
     "reporter": [

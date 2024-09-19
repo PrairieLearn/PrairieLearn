@@ -9,7 +9,7 @@ import { clearCookie } from '../lib/cookie.js';
 export default function (req, res, next) {
   // We use the pl_requested_data_changed cookie to detect when we
   // have attempted to change the effective user (or other emulation
-  // data). This cookie is set in pages/partials/navbar.ejs and
+  // data). This cookie is set in components/Navbar.html.ts and
   // pages/instructorEffectiveUser.
   //
   // We use this cookie in
@@ -23,7 +23,7 @@ export default function (req, res, next) {
   // unauthorized page for some reason other than emulating, they
   // will receive an error page as expected.
 
-  if (req.cookies.pl_requested_data_changed) {
+  if (req.cookies.pl2_requested_data_changed) {
     clearCookie(res, ['pl_requested_data_changed', 'pl2_requested_data_changed']);
     res.locals.pl_requested_data_changed = true;
   }

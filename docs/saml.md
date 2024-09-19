@@ -27,3 +27,11 @@ This attribute's value _must never change_ for a given individual, even if they 
 This value will be visible to instructors and included in gradebook downloads, so it _should_ be a value with a useful meaning to instructors and across other campus services.
 
 For institutions using PrairieTest, this value can be used when deploying ID-card-based check-in for exams, so it's beneficial if this value is derivable (either directly or indirectly) from swiping or tapping an individual's institutional ID card.
+
+## Optional attributes
+
+### Email
+
+The email address of the user, e.g. "student@example.com". This attribute is often named `mail` or `urn:oid:0.9.2342.19200300.100.1.3`.
+
+While this attribute is not strictly required, it is highly recommended. In the future, it will be used to send notifications to students about upcoming exams and other important information.

@@ -88,6 +88,16 @@ FROM
 ORDER BY
   minimum DESC;
 
+-- BLOCK select_user_roles
+SELECT
+  gr.*
+FROM
+  group_roles AS gr
+  JOIN group_user_roles AS gur ON gur.group_role_id = gr.id
+WHERE
+  gur.user_id = $user_id
+  AND gur.group_id = $group_id;
+
 -- BLOCK select_question_permissions
 SELECT
   COALESCE(BOOL_OR(aqrp.can_view), FALSE) AS can_view,

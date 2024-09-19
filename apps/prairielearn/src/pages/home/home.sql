@@ -1,15 +1,30 @@
--- BLOCK select_home
+-- BLOCK select_instructor_courses
 WITH
+  admin_institutions AS (
+    -- Note that we only consider institutions where the user is explicitly
+    -- added as an administrator. We do not include all institutions if the
+    -- user is a global administrator, as that would be a very long list.
+    --
+    -- Global admins can access institutions/courses via the admin pages.
+    SELECT
+      i.*
+    FROM
+      institutions AS i
+      JOIN institution_administrators AS ia ON (
+        ia.institution_id = i.id
+        AND ia.user_id = $user_id
+      )
+  ),
   example_courses AS (
     SELECT
-      c.short_name || ': ' || c.title AS label,
       c.short_name,
       c.title,
       c.id,
-      TRUE AS do_link,
+      c.example_course,
+      TRUE AS can_open_course,
       coalesce(
         jsonb_agg(
-          jsonb_build_object('label', ci.long_name, 'id', ci.id)
+          jsonb_build_object('long_name', ci.long_name, 'id', ci.id)
           ORDER BY
             d.start_date DESC NULLS LAST,
             d.end_date DESC NULLS LAST,
@@ -37,16 +52,12 @@ WITH
       AND c.example_course IS TRUE
     GROUP BY
       c.id
-    ORDER BY
-      c.short_name,
-      c.title,
-      c.id
   ),
   instructor_course_instances AS (
     SELECT
       c.id,
       jsonb_agg(
-        jsonb_build_object('label', ci.long_name, 'id', ci.id)
+        jsonb_build_object('long_name', ci.long_name, 'id', ci.id)
         ORDER BY
           d.start_date DESC NULLS LAST,
           d.end_date DESC NULLS LAST,
@@ -89,14 +100,14 @@ WITH
   ),
   instructor_courses AS (
     SELECT
-      c.short_name || ': ' || c.title AS label,
       c.short_name,
       c.title,
       c.id,
+      c.example_course,
       (
         $is_administrator
         OR cp.course_role > 'None'
-      ) AS do_link,
+      ) AS can_open_course,
       coalesce(ici.course_instances, '[]'::jsonb) AS course_instances
     FROM
       pl_courses AS c
@@ -113,90 +124,85 @@ WITH
         OR cp.course_role > 'None'
         OR ici.id IS NOT NULL
       )
-    ORDER BY
-      c.short_name,
-      c.title,
-      c.id
-  ),
-  student_courses AS (
-    SELECT
-      coalesce(
-        jsonb_agg(
-          jsonb_build_object(
-            'label',
-            c.short_name || ': ' || c.title || ', ' || ci.long_name,
-            'id',
-            ci.id
-          )
-          ORDER BY
-            d.start_date DESC NULLS LAST,
-            d.end_date DESC NULLS LAST,
-            ci.id DESC
-        ),
-        '[]'::jsonb
-      ) AS course_instances
-    FROM
-      users AS u
-      JOIN enrollments AS e ON (e.user_id = u.user_id)
-      JOIN course_instances AS ci ON (
-        ci.id = e.course_instance_id
-        AND ci.deleted_at IS NULL
-        AND check_course_instance_access (ci.id, u.uid, u.institution_id, $req_date)
-      )
-      JOIN pl_courses AS c ON (
-        c.id = ci.course_id
-        AND c.deleted_at IS NULL
-        AND (
-          c.example_course IS FALSE
-          or $include_example_course_enrollments
-        )
-        AND users_is_instructor_in_course ($user_id, c.id) IS FALSE
-      ),
-      LATERAL (
-        SELECT
-          min(ar.start_date) AS start_date,
-          max(ar.end_date) AS end_date
-        FROM
-          course_instance_access_rules AS ar
-        WHERE
-          ar.course_instance_id = ci.id
-      ) AS d
-    WHERE
-      u.user_id = $user_id
   )
 SELECT
-  ec.courses AS example_courses,
-  ic.courses AS instructor_courses,
-  sc.course_instances AS student_courses
+  ic.*
 FROM
-  (
+  instructor_courses AS ic
+UNION ALL
+SELECT
+  ec.*
+FROM
+  example_courses AS ec
+WHERE
+  $include_example_course
+  -- Example courses are shown if the user is an instructor in any course
+  OR EXISTS (
     SELECT
-      coalesce(
-        jsonb_agg(
-          ec.*
-          ORDER BY
-            ec.short_name,
-            ec.title,
-            ec.id
-        ),
-        '[]'::jsonb
-      ) AS courses
+      id
     FROM
-      example_courses AS ec
-  ) AS ec,
-  (
+      instructor_courses
+  )
+ORDER BY
+  example_course,
+  short_name,
+  title,
+  id;
+
+-- BLOCK select_student_courses
+SELECT
+  c.short_name AS course_short_name,
+  c.title AS course_title,
+  ci.long_name,
+  ci.id
+FROM
+  users AS u
+  JOIN enrollments AS e ON (e.user_id = u.user_id)
+  JOIN course_instances AS ci ON (
+    ci.id = e.course_instance_id
+    AND ci.deleted_at IS NULL
+    AND check_course_instance_access (ci.id, u.uid, u.institution_id, $req_date)
+  )
+  JOIN pl_courses AS c ON (
+    c.id = ci.course_id
+    AND c.deleted_at IS NULL
+    AND (
+      c.example_course IS FALSE
+      OR $include_example_course_enrollments
+    )
+    AND users_is_instructor_in_course ($user_id, c.id) IS FALSE
+  ),
+  LATERAL (
     SELECT
-      coalesce(
-        jsonb_agg(
-          ic.*
-          ORDER BY
-            ic.short_name,
-            ic.title,
-            ic.id
-        ),
-        '[]'::jsonb
-      ) AS courses
+      min(ar.start_date) AS start_date,
+      max(ar.end_date) AS end_date
     FROM
-      instructor_courses AS ic
-  ) AS ic,
-  student_courses AS sc;
+      course_instance_access_rules AS ar
+    WHERE
+      ar.course_instance_id = ci.id
+  ) AS d
+WHERE
+  u.user_id = $user_id
+ORDER BY
+  d.start_date DESC NULLS LAST,
+  d.end_date DESC NULLS LAST,
+  ci.id DESC;
+
+-- BLOCK select_admin_institutions
+-- Note that we only consider institutions where the user is explicitly
+-- added as an administrator. We do not include all institutions if the
+-- user is a global administrator, as that would be a very long list.
+--
+-- Global admins can access institutions/courses via the admin pages.
+SELECT
+  i.*
+FROM
+  institutions AS i
+  JOIN institution_administrators AS ia ON (
+    ia.institution_id = i.id
+    AND ia.user_id = $user_id
+  )
+ORDER BY
+  i.short_name,
+  i.long_name,
+  i.id;

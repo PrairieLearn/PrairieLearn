@@ -64,7 +64,7 @@ When you are finished with PrairieLearn, type Control-C on the terminal where yo
 
 If you're using an Apple silicon Mac (M-series chips, etc.) or another ARM-based machine, you may see an error like the following when you try to run the PrairieLearn Docker image:
 
-```
+```console
 no matching manifest for linux/arm64/v8 in the manifest list entries
 ```
 

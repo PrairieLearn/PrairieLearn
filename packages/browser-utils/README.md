@@ -32,7 +32,7 @@ const elements = parseHTML(
     <div>Goodbye, world</div>
   `,
 );
-const div = parseHTMLElement(document, html`<div>Hello, world</div>`);
+const div = parseHTMLElement<HTMLDivElement>(document, html`<div>Hello, world</div>`);
 ```
 
 ### `EncodedData` and `decodeData`
@@ -89,4 +89,29 @@ document.querySelectorAll('.js-delete-course').forEach((el) => {
     });
   });
 });
+```
+
+### `trapFocus`
+
+This function can be used to trap focus within an element, such as a popover or modal. It will ensure that the user cannot tab out of the element.
+
+```ts
+import { trapFocus } from '@prairielearn/browser-utils';
+
+const popover = document.querySelector('.popover');
+const trap = trapFocus(popover);
+
+// When the container is being closed or removed, deactivate the trap.
+trap.deactivate();
+```
+
+### `focusFirstFocusableChild`
+
+This function will focus the first focusable child of an element. This is useful when opening a modal or popover.
+
+```ts
+import { focusFirstFocusableChild } from '@prairielearn/browser-utils';
+
+const modal = document.querySelector('.modal');
+focusFirstFocusableChild(modal);
 ```

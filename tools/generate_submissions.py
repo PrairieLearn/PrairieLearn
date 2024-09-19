@@ -1,4 +1,4 @@
-#! /usr/bin/python3
+#! /usr/bin/env python3
 
 # Generates blank submissions for all students in an assessment. This
 # can be used in local testing where having several submissions is
@@ -23,9 +23,12 @@
 # Students tab to change the remaining time for all instances, which
 # has the option to re-open all closed assessment instances.
 
-import argparse, json
+import argparse
+import json
+
 import requests
 from lxml import html
+
 
 def get_csrf_token(url):
     pass # parser = etree
@@ -47,9 +50,9 @@ def main():
     for uid in [g['uid'] for g in grades]:
         print(f'Generating submissions for {uid}...')
         cookies = {
-            'pl_requested_uid': uid,
-            'pl_requested_course_instance_role': 'Student Data Editor',
-            'pl_requested_course_role': 'Owner'
+            'pl2_requested_uid': uid,
+            'pl2_requested_course_instance_role': 'Student Data Editor',
+            'pl2_requested_course_role': 'Owner'
         }
         url = f'{base_url}/assessment/{args.assessment}'
         with requests.get(url, cookies=cookies) as response:

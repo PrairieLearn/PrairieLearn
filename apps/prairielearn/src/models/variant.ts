@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
@@ -5,6 +7,12 @@ import { IdSchema, SubmissionSchema, Variant, VariantSchema } from '../lib/db-ty
 import { idsEqual } from '../lib/id.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+const VariantWithScoreSchema = VariantSchema.extend({
+  instance_question_id: IdSchema, // Since only variants assigned to instance questions are returned, this is never null.
+  max_submission_score: SubmissionSchema.shape.score.unwrap(),
+});
+export type VariantWithScore = z.infer<typeof VariantWithScoreSchema>;
 
 export async function selectVariantById(variant_id: string): Promise<Variant | null> {
   return queryOptionalRow(sql.select_variant_by_id, { variant_id }, VariantSchema);
@@ -52,10 +60,7 @@ export async function selectVariantsByInstanceQuestion({
   return await queryRows(
     sql.select_variant_by_instance_question_id,
     { assessment_instance_id, instance_question_id },
-    VariantSchema.extend({
-      instance_question_id: IdSchema, // Since only variants assigned to instance questions are returned, this is never null.
-      max_submission_score: SubmissionSchema.shape.score.unwrap(),
-    }),
+    VariantWithScoreSchema,
   );
 }
 export async function validateVariantAgainstQuestion(

@@ -13,10 +13,6 @@ function getNumericalAttribute(element: HTMLElement, name: string, defaultValue:
 }
 
 $(function () {
-  $('[data-toggle="popover"]').popover({
-    trigger: 'focus',
-  });
-
   const socketToken = document.body.getAttribute('data-socket-token');
   const workspaceId = document.body.getAttribute('data-workspace-id');
   const heartbeatIntervalSec = getNumericalAttribute(
@@ -57,7 +53,7 @@ $(function () {
 
   function setMessage(message: string) {
     console.log('message', message);
-    messageBadge.innerHTML = message;
+    messageBadge.textContent = message;
     if (message) {
       stateBadge.classList.add('badge-prepend');
     } else {
@@ -83,7 +79,7 @@ $(function () {
         showStoppedFrame();
       }
     }
-    stateBadge.innerHTML = state;
+    stateBadge.textContent = state;
 
     previousState = state;
   }

@@ -76,7 +76,7 @@ const testEditData = [
     ]),
   },
   {
-    formSelector: '#delete-question-form',
+    formSelector: '#deleteQuestionModal',
     action: 'delete_question',
     files: new Set([
       'README.md',
@@ -111,7 +111,7 @@ const testEditData = [
     ]),
   },
   {
-    formSelector: '#delete-question-form',
+    formSelector: '#deleteQuestionModal',
     action: 'delete_question',
     files: new Set([
       'README.md',
@@ -227,7 +227,7 @@ const testEditData = [
     url: courseInstancesUrl,
     formSelector: 'form[name="add-course-instance-form"]',
     action: 'add_course_instance',
-    info: `courseInstances/New_1/infoCourseInstance.json`,
+    info: 'courseInstances/New_1/infoCourseInstance.json',
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -236,7 +236,7 @@ const testEditData = [
       'questions/test/question/info.json',
       'questions/test/question/question.html',
       'questions/test/question/server.py',
-      `courseInstances/New_1/infoCourseInstance.json`,
+      'courseInstances/New_1/infoCourseInstance.json',
     ]),
   },
   {

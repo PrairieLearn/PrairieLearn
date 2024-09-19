@@ -1,9 +1,12 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { JobStatus } from '../../components/JobStatus.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
+import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 
 export const RegradingJobSequenceSchema = z.object({
@@ -24,21 +27,18 @@ export function InstructorAssessmentRegrading({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../partials/head'); %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
-        <script>
-          $(function () {
-            $('[data-toggle="popover"]').popover({ sanitize: false });
-          });
-        </script>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
-          ${renderEjs(
-            import.meta.url,
-            "<%- include('../partials/assessmentSyncErrorsAndWarnings'); %>",
-            resLocals,
-          )}
+          ${AssessmentSyncErrorsAndWarnings({
+            authz_data: resLocals.authz_data,
+            assessment: resLocals.assessment,
+            courseInstance: resLocals.course_instance,
+            course: resLocals.course,
+            urlPrefix: resLocals.urlPrefix,
+          })}
           ${resLocals.authz_data.has_course_instance_permission_edit
             ? html`
                 ${regradeAllAssessmentInstancesModal({
@@ -51,7 +51,7 @@ export function InstructorAssessmentRegrading({
 
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
-              ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Regrading
+              <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Regrading</h1>
             </div>
 
             ${resLocals.authz_data.has_course_instance_permission_edit
@@ -83,7 +83,7 @@ export function InstructorAssessmentRegrading({
               : ''}
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="Regrading job history">
                 <thead>
                   <tr>
                     <th>Number</th>
@@ -103,15 +103,7 @@ export function InstructorAssessmentRegrading({
                             <td>${jobSequence.start_date_formatted}</td>
                             <td>${jobSequence.job_sequence.description}</td>
                             <td>${jobSequence.user_uid}</td>
-                            <td>
-                              ${renderEjs(
-                                import.meta.url,
-                                "<%- include('../partials/jobStatus'); %>",
-                                {
-                                  status: jobSequence.job_sequence.status,
-                                },
-                              )}
-                            </td>
+                            <td>${JobStatus({ status: jobSequence.job_sequence.status })}</td>
                             <td>
                               <a
                                 href="${resLocals.urlPrefix}/jobSequence/${jobSequence.job_sequence

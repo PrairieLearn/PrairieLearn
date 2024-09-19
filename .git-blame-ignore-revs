@@ -19,3 +19,9 @@ b5ee36cebacd8c3192dd0e2457ab472cc185a055
 
 # Order all imports with the `import/order` ESLint rule
 1b3268b50c71ac447d4f7885259c2a9164cef461
+
+# Force single quotes when possible
+623f369b794110a40acf00334b7eb2b70cc86fb4
+
+# Format exampleCourse/testCourse JSON files with Prettier
+f2d5d6a0cacbdd759d7db0ae09fea464c1d92b20

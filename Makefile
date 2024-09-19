@@ -94,4 +94,9 @@ changeset:
 	@yarn changeset
 	@yarn prettier --write ".changeset/**/*.md"
 
-ci: lint typecheck check-dependencies test
+build-docs:
+	@python3 -m venv /tmp/pldocs/venv
+	@/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt
+	@/tmp/pldocs/venv/bin/python3 -m mkdocs build --strict
+
+ci: lint typecheck check-dependencies test build-docs

@@ -5,7 +5,7 @@ import Transport from 'winston-transport';
 
 import { config } from './config.js';
 
-interface WinstonBufferedLogger extends winston.Logger {
+export interface WinstonBufferedLogger extends winston.Logger {
   getBuffer(): Buffer;
 }
 

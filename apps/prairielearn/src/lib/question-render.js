@@ -1,9 +1,6 @@
 // @ts-check
-import * as path from 'path';
-import * as util from 'util';
 
 import * as async from 'async';
-import * as ejs from 'ejs';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -12,6 +9,8 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
 import { QuestionFooter } from '../components/QuestionContainer.html.js';
+import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
+import { QuestionScorePanel } from '../components/QuestionScore.html.js';
 import {
   SubmissionPanel,
   SubmissionBasicSchema,
@@ -30,7 +29,6 @@ import {
   CourseSchema,
   DateFromISOString,
   GradingJobSchema,
-  GradingJobStatusSchema,
   IdSchema,
   InstanceQuestionSchema,
   IssueSchema,
@@ -38,9 +36,13 @@ import {
   SubmissionSchema,
   VariantSchema,
 } from './db-types.js';
+import { getGroupConfig, getQuestionGroupPermissions, getUserRoles } from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { getQuestionCourse, ensureVariant } from './question-variant.js';
+
+/** @import { SubmissionPanels } from './question-render.types.js'  */
+/** @import { SubmissionForRender } from '../components/SubmissionPanel.html.js' */
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -84,26 +86,13 @@ const SubmissionInfoSchema = z.object({
   course_instance: CourseInstanceSchema.nullable(),
   variant_course: CourseSchema,
   question_course: CourseSchema,
-  grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string(),
   user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
   submission_count: z.coerce.number(),
+  question_number: z.string().nullable(),
 });
 
-/**
- * @typedef {Object} SubmissionPanels
- * @property {string?} submissionPanel
- * @property {string?} scorePanel
- * @property {string?} extraHeadersHtml
- * @property {string?} [answerPanel]
- * @property {string?} [questionScorePanel]
- * @property {string?} [assessmentScorePanel]
- * @property {string?} [questionPanelFooter]
- * @property {string?} [questionNavNextButton]
- */
-
-/** @typedef {import('../components/SubmissionPanel.html.js').SubmissionForRender} SubmissionForRender */
 /**
  * To improve performance, we'll only render at most three submissions on page
  * load. If the user requests more, we'll render them on the fly.
@@ -164,7 +153,7 @@ async function render(
  * @param  {import('./db-types.js').InstanceQuestion?} instance_question The instance question.
  * @return {Record<string, any>} An object containing the named URLs.
  */
-function buildQuestionUrls(urlPrefix, variant, question, instance_question) {
+export function buildQuestionUrls(urlPrefix, variant, question, instance_question) {
   const urls = {};
 
   if (!instance_question) {
@@ -214,7 +203,7 @@ function buildQuestionUrls(urlPrefix, variant, question, instance_question) {
   return urls;
 }
 
-function buildLocals(
+export function buildLocals(
   variant,
   question,
   instance_question,
@@ -542,6 +531,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
  * @param  {string} param.question_id The id of the question (for authorization check)
  * @param  {string | null} param.instance_question_id The id of the instance question (for authorization check)
  * @param  {string | null} param.variant_id The id of the variant (for authorization check)
+ * @param  {string} param.user_id The id of the authenticated user, used to identify group roles
  * @param  {String}  param.urlPrefix URL prefix to be used when rendering
  * @param  {import('../components/QuestionContainer.types.js').QuestionContext} param.questionContext The rendering context of this question
  * @param  {String?} param.csrfToken CSRF token for this question page
@@ -554,6 +544,7 @@ export async function renderPanelsForSubmission({
   question_id,
   instance_question_id,
   variant_id,
+  user_id,
   urlPrefix,
   questionContext,
   csrfToken,
@@ -583,9 +574,9 @@ export async function renderPanelsForSubmission({
     submission_index,
     submission_count,
     grading_job,
-    grading_job_status,
     formatted_date,
     user_uid,
+    question_number,
   } = submissionInfo;
   const previous_variants =
     variant.instance_question_id == null || assessment_instance == null
@@ -598,7 +589,6 @@ export async function renderPanelsForSubmission({
   /** @type {SubmissionPanels} */
   const panels = {
     submissionPanel: null,
-    scorePanel: null,
     extraHeadersHtml: null,
   };
 
@@ -618,10 +608,6 @@ export async function renderPanelsForSubmission({
     ),
   );
 
-  // Using util.promisify on renderFile instead of {async: true} from EJS, because the
-  // latter would require all includes in EJS to be translated to await recursively.
-  /** @type function */
-  let renderFileAsync = util.promisify(ejs.renderFile);
   await async.parallel([
     async () => {
       // Render the submission panel
@@ -654,7 +640,6 @@ export async function renderPanelsForSubmission({
         submission: {
           ...submission,
           grading_job,
-          grading_job_status,
           formatted_date,
           user_uid,
           submission_number: submission_index,
@@ -672,29 +657,31 @@ export async function renderPanelsForSubmission({
 
       // The score panel can and should only be rendered for
       // questions that are part of an assessment
-      if (variant.instance_question_id == null) return;
+      if (
+        instance_question == null ||
+        assessment_question == null ||
+        assessment_instance == null ||
+        assessment == null
+      ) {
+        return;
+      }
+      if (csrfToken == null) {
+        // This should not happen in this context
+        throw new Error('CSRF token not provided in a context where the score panel is rendered.');
+      }
 
-      const renderParams = {
+      panels.questionScorePanel = QuestionScorePanel({
         instance_question,
         assessment_question,
         assessment_instance,
         assessment,
         question,
         variant,
-        submission,
-        __csrf_token: csrfToken,
+        csrfToken,
         authz_result: { authorized_edit: authorizedEdit },
         urlPrefix,
-        instance_question_info: { previous_variants },
-      };
-      const templatePath = path.join(
-        import.meta.dirname,
-        '..',
-        'pages',
-        'partials',
-        'questionScorePanel.ejs',
-      );
-      panels.questionScorePanel = await renderFileAsync(templatePath, renderParams);
+        instance_question_info: { question_number, previous_variants },
+      }).toString();
     },
     async () => {
       // Render the assessment score panel
@@ -732,30 +719,40 @@ export async function renderPanelsForSubmission({
     async () => {
       if (!renderScorePanels) return;
 
-      // only render if variant is part of assessment
-      if (variant.instance_question_id == null) return;
+      // If there is no assessment, the next question button won't exist, so it
+      // does not need to be rendered. If there is no next question, the button
+      // is disabled, so it does not need to be replaced.
+      if (variant.instance_question_id == null || next_instance_question.id == null) return;
 
-      // Render the next question nav link
-      // NOTE: This must be kept in sync with the corresponding code in
-      // `pages/partials/questionNavSideButtonGroup.ejs`.
-      const renderParams = {
-        question: next_instance_question,
-        advance_score_perc: assessment_question?.advance_score_perc,
-        button: {
-          id: 'question-nav-next',
-          label: 'Next question',
-        },
-        ...locals,
-        urlPrefix, // needed to get urlPrefix for the course instance, not the site
-      };
-      const templatePath = path.join(
-        import.meta.dirname,
-        '..',
-        'pages',
-        'partials',
-        'questionNavSideButton.ejs',
-      );
-      panels.questionNavNextButton = await renderFileAsync(templatePath, renderParams);
+      /** @type {{can_view: boolean} | null} */
+      let groupRolePermissions = null;
+      /** @type {string} */
+      let userGroupRoles = 'None';
+
+      if (assessment?.group_work && assessment_instance?.group_id != null) {
+        const groupConfig = await getGroupConfig(assessment.id);
+        if (groupConfig.has_roles) {
+          groupRolePermissions = await getQuestionGroupPermissions(
+            next_instance_question.id,
+            assessment_instance.group_id,
+            user_id,
+          );
+          userGroupRoles =
+            (await getUserRoles(assessment_instance.group_id, user_id))
+              .map((role) => role.role_name)
+              .join(', ') || 'None';
+        }
+      }
+
+      panels.questionNavNextButton = QuestionNavSideButton({
+        instanceQuestionId: next_instance_question.id,
+        sequenceLocked: next_instance_question.sequence_locked,
+        urlPrefix,
+        whichButton: 'next',
+        groupRolePermissions,
+        advanceScorePerc: assessment_question?.advance_score_perc,
+        userGroupRoles,
+      }).toString();
     },
   ]);
   return panels;

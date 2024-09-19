@@ -1,10 +1,11 @@
 import { type Response } from 'express';
+import { z } from 'zod';
 
 import { callRow } from '@prairielearn/postgres';
 
+import { config } from '../../lib/config.js';
 import { setCookie } from '../../lib/cookie.js';
 import { EnumModeSchema, type User } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { HttpRedirect } from '../../lib/redirect.js';
 
 function hasUserAcceptedTerms(user: User): boolean {
@@ -28,15 +29,13 @@ function hasUserAcceptedTerms(user: User): boolean {
  * @returns Whether the user should be redirected to the terms acceptance page
  */
 export async function shouldRedirectToTermsPage(user: User, ip: string) {
-  if (hasUserAcceptedTerms(user)) return false;
+  if (!config.requireTermsAcceptance || hasUserAcceptedTerms(user)) return false;
 
-  const featureEnabled = await features.enabled('terms-clickthrough', {
-    institution_id: user.institution_id,
-    user_id: user.user_id,
-  });
-  if (!featureEnabled) return false;
-
-  const mode = await callRow('ip_to_mode', [ip, new Date(), user.user_id], EnumModeSchema);
+  const { mode } = await callRow(
+    'ip_to_mode',
+    [ip, new Date(), user.user_id],
+    z.object({ mode: EnumModeSchema }),
+  );
   return mode === 'Public';
 }
 

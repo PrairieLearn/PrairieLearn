@@ -5,15 +5,16 @@ import fetch from 'node-fetch';
 import {
   queryAsync,
   queryValidatedOneRow,
-  queryRows,
   loadSqlEquiv,
   queryValidatedRows,
   queryOneRowAsync,
 } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { QuestionSchema, UserSchema, GroupRoleSchema } from '../lib/db-types.js';
+import type { User } from '../lib/db-types.js';
+import { QuestionSchema, GroupRoleSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -26,7 +27,7 @@ const courseInstanceUrl = baseUrl + '/course_instance/1';
 
 const storedConfig: any = {};
 
-const GROUP_WORK_EXAM_TID = 'exam15-groupWorkRoles';
+const GROUP_WORK_EXAM_TID = 'exam16-groupWorkRoles';
 const QUESTION_ID_1 = 'demo/demoNewton-page1';
 const QUESTION_ID_2 = 'demo/demoNewton-page2';
 const QUESTION_ID_3 = 'addNumbers';
@@ -36,22 +37,8 @@ const QuestionIdSchema = QuestionSchema.pick({
   id: true,
 });
 
-const StudentUserSchema = UserSchema.pick({
-  user_id: true,
-  uid: true,
-  name: true,
-  uin: true,
-});
-
-interface StudentUser {
-  user_id: string | null;
-  uid: string;
-  name: string | null;
-  uin: string | null;
-}
-
-async function generateThreeStudentUsers(): Promise<StudentUser[]> {
-  const rows = await queryRows(sql.generate_and_enroll_3_users, StudentUserSchema);
+async function generateThreeStudentUsers() {
+  const rows = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
   assert.lengthOf(rows, 3);
   return rows;
 }
@@ -61,7 +48,7 @@ async function generateThreeStudentUsers(): Promise<StudentUser[]> {
  * token value from a form on the page
  */
 async function switchUserAndLoadAssessment(
-  studentUser: StudentUser,
+  studentUser: User,
   assessmentUrl: string,
   formName: string | null,
   formContainer = 'body',
@@ -136,7 +123,7 @@ async function joinGroup(
 async function updateGroupRoles(
   roleUpdates: any[],
   groupRoles: any[],
-  studentUsers: StudentUser[],
+  studentUsers: User[],
   csrfToken: string,
   assessmentUrl: string,
   $: cheerio.CheerioAPI,

@@ -3,7 +3,7 @@ import * as path from 'path';
 import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
 import betterAjvErrors from 'better-ajv-errors';
-import { parseISO, isValid, isAfter, isFuture } from 'date-fns';
+import { parseISO, isValid, isAfter, isFuture, isPast } from 'date-fns';
 import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
@@ -16,9 +16,6 @@ import { selectInstitutionForCourse } from '../models/institution.js';
 import * as schemas from '../schemas/index.js';
 
 import * as infofile from './infofile.js';
-import { makePerformance } from './performance.js';
-
-const perf = makePerformance('course-db');
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
@@ -244,6 +241,8 @@ interface CourseInstanceAllowAccess {
 export interface CourseInstance {
   uuid: string;
   longName: string;
+  /** @deprecated */
+  shortName?: string | null;
   number: number;
   timezone: string;
   hideInEnrollPage: boolean;
@@ -408,20 +407,31 @@ export async function loadFullCourse(
   courseDir: string,
 ): Promise<CourseData> {
   const courseInfo = await loadCourseInfo(courseId, courseDir);
-  perf.start('loadQuestions');
   const questions = await loadQuestions(courseDir);
-  perf.end('loadQuestions');
   const courseInstanceInfos = await loadCourseInstances(courseDir);
   const courseInstances: Record<string, CourseInstanceData> = {};
-  for (const courseInstanceId in courseInstanceInfos) {
-    // TODO: is it really necessary to do all the crazy error checking on `lstat` for the assessments dir?
-    // If so, duplicate all that here
-    const assessments = await loadAssessments(courseDir, courseInstanceId, questions);
-    const courseInstance = {
-      courseInstance: courseInstanceInfos[courseInstanceId],
+  for (const [courseInstanceId, courseInstance] of Object.entries(courseInstanceInfos)) {
+    // Check if the course instance is "expired". A course instance is considered
+    // expired if it either has zero `allowAccess` rules (in which case it is never
+    // accessible), or if it has one or more `allowAccess` rules and they all have
+    // an `endDate` that is in the past.
+    const allowAccessRules = courseInstance.data?.allowAccess ?? [];
+    const courseInstanceExpired = allowAccessRules.every((rule) => {
+      const endDate = rule.endDate ? parseAllowAccessDate(rule.endDate) : null;
+      return endDate && isPast(endDate);
+    });
+
+    const assessments = await loadAssessments(
+      courseDir,
+      courseInstanceId,
+      courseInstanceExpired,
+      questions,
+    );
+
+    courseInstances[courseInstanceId] = {
+      courseInstance,
       assessments,
     };
-    courseInstances[courseInstanceId] = courseInstance;
   }
   return {
     course: courseInfo,
@@ -530,16 +540,13 @@ export async function loadInfoFile<T extends { uuid: string }>({
   const absolutePath = path.join(coursePath, filePath);
   let contents: string;
   try {
-    // perf.start(`readfile:${absolutePath}`);
     // fs-extra uses graceful-fs, which in turn will enqueue open operations.
     // this slows us down an unnecessary amount. Avoiding this queueing means
     // we could potentially hit an EMFILE error, but we haven't seen that in
     // practice in years, so that's a risk we're willing to take. We explicitly
     // use the native Node fs API here to opt out of this queueing behavior.
     contents = await fs.readFile(absolutePath, 'utf8');
-    // perf.end(`readfile:${absolutePath}`);
   } catch (err) {
-    // perf.end(`readfile:${absolutePath}`);
     if (err.code === 'ENOTDIR' && err.path === absolutePath) {
       // In a previous version of this code, we'd pre-filter
       // all files in the parent directory to remove anything
@@ -604,7 +611,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     } catch (err) {
       return infofile.makeError(err.message);
     }
-  } catch (err) {
+  } catch {
     // Invalid JSON; let's reparse with jju to get a better error message
     // for the user.
     let result: InfoFile<T> = { errors: [], warnings: [] };
@@ -713,6 +720,8 @@ export async function loadCourseInfo(
   );
   const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
   const topics = getFieldWithoutDuplicates('topics', 'name');
+  const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
+
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
   const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
@@ -764,7 +773,7 @@ export async function loadCourseInfo(
     assessmentModules,
     tags,
     topics,
-    sharingSets: [],
+    sharingSets,
     exampleCourse,
     options: {
       useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
@@ -846,7 +855,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
   // disabled, we'll still utilize the same recursive function, but the
   // recursive function won't actually recurse.
   const infoFilesRootDir = path.join(coursePath, directory);
-  const walk = async (relativeDir) => {
+  const walk = async (relativeDir: string) => {
     const infoFiles: Record<string, InfoFile<T>> = {};
     const files = await fs.readdir(path.join(infoFilesRootDir, relativeDir));
 
@@ -946,12 +955,10 @@ function checkDuplicateUUIDs<T>(
  */
 function checkAllowAccessRoles(rule: { role?: string }): string[] {
   const warnings: string[] = [];
-  if ('role' in rule) {
-    if (rule.role !== 'Student') {
-      warnings.push(
-        `The entire "allowAccess" rule with "role: ${rule.role}" should be deleted. Instead, course owners can now manage course staff access on the "Staff" page.`,
-      );
-    }
+  if ('role' in rule && rule.role !== 'Student') {
+    warnings.push(
+      `The entire "allowAccess" rule with "role: ${rule.role}" should be deleted. Instead, course owners can now manage course staff access on the "Staff" page.`,
+    );
   }
   return warnings;
 }
@@ -976,11 +983,11 @@ function parseAllowAccessDate(date: string): Date | null {
 
 /**
  * Checks that dates, if present, are valid and sequenced correctly.
- * @returns A list of errors, if any, and whether there are any dates in the future
+ * @returns A list of errors, if any, and whether it allows access in the future
  */
 function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): {
   errors: string[];
-  dateInFuture: boolean;
+  accessibleInFuture: boolean;
 } {
   const errors: string[] = [];
 
@@ -1011,14 +1018,10 @@ function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): 
       `Invalid allowAccess rule: startDate (${rule.startDate}) must not be after endDate (${rule.endDate})`,
     );
   }
-  let dateInFuture = false;
-  if (startDate && isFuture(startDate)) {
-    dateInFuture = true;
-  }
-  if (endDate && isFuture(endDate)) {
-    dateInFuture = true;
-  }
-  return { errors, dateInFuture };
+  return {
+    errors,
+    accessibleInFuture: !endDate || isFuture(endDate),
+  };
 }
 
 async function validateQuestion(
@@ -1052,6 +1055,7 @@ async function validateQuestion(
 async function validateAssessment(
   assessment: Assessment,
   questions: Record<string, InfoFile<Question>>,
+  courseInstanceExpired: boolean,
 ): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -1061,35 +1065,38 @@ async function validateAssessment(
     // Because of how Homework-type assessments work, we don't allow
     // real-time grading to be disabled for them.
     if (!allowRealTimeGrading) {
-      errors.push(`Real-time grading cannot be disabled for Homework-type assessments`);
+      errors.push('Real-time grading cannot be disabled for Homework-type assessments');
     }
 
     // Homework-type assessments with multiple instances are not supported
     if (assessment.multipleInstance) {
-      errors.push(`"multipleInstance" cannot be used for Homework-type assessments`);
+      errors.push('"multipleInstance" cannot be used for Homework-type assessments');
     }
   }
 
-  // Check assessment access rules
-  let anyDateInFuture = false;
+  // Check assessment access rules.
   (assessment.allowAccess || []).forEach((rule) => {
     const allowAccessResult = checkAllowAccessDates(rule);
-    if (allowAccessResult.dateInFuture) {
-      anyDateInFuture = true;
-    }
 
     if ('active' in rule && rule.active === false && 'credit' in rule && rule.credit !== 0) {
-      errors.push(`Invalid allowAccess rule: credit must be 0 if active is false`);
+      errors.push('Invalid allowAccess rule: credit must be 0 if active is false');
     }
 
     errors.push(...allowAccessResult.errors);
   });
 
-  if (anyDateInFuture) {
-    // only warn about new roles for current or future courses
+  // When additional validation is added, we don't want to warn for past course
+  // instances that instructors will never touch again, as they won't benefit
+  // from fixing things. So, we'll only show some warnings for course instances
+  // which are accessible either now or any time in the future.
+  if (!courseInstanceExpired) {
     (assessment.allowAccess || []).forEach((rule) => {
       const allowAccessWarnings = checkAllowAccessRoles(rule);
       warnings.push(...allowAccessWarnings);
+
+      if (rule.examUuid && rule.mode !== 'Exam') {
+        warnings.push('Invalid allowAccess rule: examUuid can only be used with "mode": "Exam"');
+      }
     });
   }
 
@@ -1116,7 +1123,7 @@ async function validateAssessment(
       const autoPoints = zoneQuestion.autoPoints ?? zoneQuestion.points;
       if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
         errors.push(
-          `Cannot specify an array of multiple point values for a question if real-time grading is disabled`,
+          'Cannot specify an array of multiple point values for a question if real-time grading is disabled',
         );
       }
       // We'll normalize either single questions or alternative groups
@@ -1136,7 +1143,7 @@ async function validateAssessment(
           const autoPoints = alternative.autoPoints ?? alternative.points;
           if (!allowRealTimeGrading && Array.isArray(autoPoints) && autoPoints.length > 1) {
             errors.push(
-              `Cannot specify an array of multiple point values for an alternative if real-time grading is disabled`,
+              'Cannot specify an array of multiple point values for an alternative if real-time grading is disabled',
             );
           }
           return {
@@ -1159,7 +1166,7 @@ async function validateAssessment(
           },
         ];
       } else {
-        errors.push(`Zone question must specify either "alternatives" or "id"`);
+        errors.push('Zone question must specify either "alternatives" or "id"');
       }
 
       alternatives.forEach((alternative) => {
@@ -1329,18 +1336,18 @@ async function validateCourseInstance(
     }
   }
 
-  let anyDateInFuture = false;
+  let accessibleInFuture = false;
   (courseInstance.allowAccess || []).forEach((rule) => {
     const allowAccessResult = checkAllowAccessDates(rule);
-    if (allowAccessResult.dateInFuture) {
-      anyDateInFuture = true;
+    if (allowAccessResult.accessibleInFuture) {
+      accessibleInFuture = true;
     }
 
     errors.push(...allowAccessResult.errors);
   });
 
-  if (anyDateInFuture) {
-    // only warn about new roles for current or future courses
+  if (accessibleInFuture) {
+    // Only warn about new roles for current or future courses.
     (courseInstance.allowAccess || []).forEach((rule) => {
       const allowAccessWarnings = checkAllowAccessRoles(rule);
       warnings.push(...allowAccessWarnings);
@@ -1350,6 +1357,18 @@ async function validateCourseInstance(
       warnings.push(
         'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.',
       );
+    }
+
+    // `shortName` has never been a meaningful property in course instance config.
+    // However, for many years our template course erroneously included it in the
+    // template course instance, so it's been copied around to basically every course.
+    // We didn't set `additionalProperties: false` in the schema, so we never caught
+    // this and for a long time it was silently ignored.
+    //
+    // To avoid breaking existing courses, we added it as a valid property to the schema,
+    // but we'll warn about it for any active or future course instances.
+    if (courseInstance.shortName) {
+      warnings.push('The property "shortName" is not used and should be deleted.');
     }
   }
 
@@ -1375,7 +1394,7 @@ export async function loadQuestions(
   // used to import questions from other courses.
   for (const qid in questions) {
     if (qid[0] === '@') {
-      infofile.addError(questions[qid], `Question IDs are not allowed to begin with '@'`);
+      infofile.addError(questions[qid], "Question IDs are not allowed to begin with '@'");
     }
   }
   checkDuplicateUUIDs(
@@ -1413,18 +1432,18 @@ export async function loadCourseInstances(
 export async function loadAssessments(
   coursePath: string,
   courseInstance: string,
+  courseInstanceExpired: boolean,
   questions: Record<string, InfoFile<Question>>,
 ): Promise<Record<string, InfoFile<Assessment>>> {
   const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
-  const validateAssessmentWithQuestions = (assessment: Assessment) =>
-    validateAssessment(assessment, questions);
   const assessments = await loadInfoForDirectory({
     coursePath,
     directory: assessmentsPath,
     infoFilename: 'infoAssessment.json',
     defaultInfo: DEFAULT_ASSESSMENT_INFO,
     schema: schemas.infoAssessment,
-    validate: validateAssessmentWithQuestions,
+    validate: (assessment: Assessment) =>
+      validateAssessment(assessment, questions, courseInstanceExpired),
     recursive: true,
   });
   checkDuplicateUUIDs(

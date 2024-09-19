@@ -60,12 +60,12 @@ router.get(
     const serverJob = await editor.prepareServerJob();
     try {
       await editor.executeWithServerJob(serverJob);
-    } catch (err) {
+    } catch {
       res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       return;
     }
 
-    debug(`Soft-delete file transfer`);
+    debug('Soft-delete file transfer');
     await sqldb.queryOneRowAsync(sql.soft_delete_file_transfer, {
       id: req.params.file_transfer_id,
       user_id: res.locals.user.user_id,

@@ -44,7 +44,7 @@ export let jobs: CronJob[] = [];
 // the jobs will still only run at the required frequency.
 
 export async function init() {
-  debug(`init()`);
+  debug('init()');
   if (!config.cronActive) {
     logger.verbose('cronActive is false, skipping cron initialization');
     return;
@@ -75,11 +75,6 @@ export async function init() {
       name: 'sendExternalGraderDeadLetters',
       module: await import('./sendExternalGraderDeadLetters.js'),
       intervalSec: 'daily',
-    },
-    {
-      name: 'externalGraderLoad',
-      module: await import('./externalGraderLoad.js'),
-      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
     },
     {
       name: 'serverLoad',
@@ -122,6 +117,12 @@ export async function init() {
   ];
 
   if (isEnterprise()) {
+    jobs.push({
+      name: 'externalGraderLoad',
+      module: await import('../ee/cron/externalGraderLoad.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalExternalGraderLoadSec,
+    });
+
     jobs.push({
       name: 'workspaceHostLoads',
       module: await import('../ee/cron/workspaceHostLoads.js'),
@@ -221,7 +222,7 @@ function queueJobs(jobsList: CronJob[], intervalSec: number) {
 }
 
 function queueDailyJobs(jobsList: CronJob[]) {
-  debug(`queueDailyJobs()`);
+  debug('queueDailyJobs()');
   function timeToNextMS() {
     const now = Date.now();
     const midnight = new Date(now).setHours(0, 0, 0, 0);
@@ -243,7 +244,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
     return tMS;
   }
   function queueRun() {
-    debug(`queueDailyJobs(): starting run`);
+    debug('queueDailyJobs(): starting run');
     jobTimeouts['daily'] = 0;
     runJobs(jobsList)
       .catch((err) => {
@@ -251,14 +252,14 @@ function queueDailyJobs(jobsList: CronJob[]) {
         Sentry.captureException(err);
       })
       .finally(() => {
-        debug(`queueDailyJobs(): completed run`);
+        debug('queueDailyJobs(): completed run');
         if (jobTimeouts['daily'] === -1) {
           // someone requested a stop
-          debug(`queueDailyJobs(): stop requested`);
+          debug('queueDailyJobs(): stop requested');
           delete jobTimeouts['daily'];
           return;
         }
-        debug(`queueDailyJobs(): waiting for next run time`);
+        debug('queueDailyJobs(): waiting for next run time');
         jobTimeouts['daily'] = setTimeout(queueRun, timeToNextMS());
       });
   }
@@ -267,7 +268,7 @@ function queueDailyJobs(jobsList: CronJob[]) {
 
 // run a list of jobs
 async function runJobs(jobsList: CronJob[]) {
-  debug(`runJobs()`);
+  debug('runJobs()');
   const cronUuid = uuidv4();
   logger.verbose('cron: jobs starting', { cronUuid });
 
@@ -313,7 +314,7 @@ async function runJobs(jobsList: CronJob[]) {
     });
   }
 
-  debug(`runJobs(): done`);
+  debug('runJobs(): done');
   logger.verbose('cron: jobs finished', { cronUuid });
 }
 

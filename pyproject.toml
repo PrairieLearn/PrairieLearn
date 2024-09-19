@@ -10,6 +10,10 @@ exclude = [
     # These files are intentionally not parseable as Python.
     "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_binary_file/fib.py",
     "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_large_text_file/fib.py",
+    # Files related to the Python autograder will often intentionally appear
+    # broken in isolation. We'll exclude these files from linting.
+    "exampleCourse/questions/**/tests/initial_code.py",
+    "exampleCourse/questions/**/tests/trailing_code.py"
 ]
 target-version = "py310"
 
@@ -24,11 +28,8 @@ extend-select = ["I"]
 # - F401: module imported but unused
 # - F821: undefined name
 # - F841: local variable name is assigned to but never used
-# - E999: SyntaxError
 "exampleCourse/questions/**/tests/setup_code.py" = ["F401", "F821"]
-"exampleCourse/questions/**/tests/initial_code.py" = ["F401", "F821", "E999"]
 "exampleCourse/questions/**/tests/leading_code.py" = ["F401", "F821", "F841"]
-"exampleCourse/questions/**/tests/trailing_code.py" = ["F821", "E999"]
 "exampleCourse/questions/**/tests/ans.py" = ["F821"]
 # Questions commonly use "ambiguous variable names" to represent specific
 # concepts, e.g. I for an identity matrix. We'll allow these to be used in
@@ -51,6 +52,7 @@ include = [
     "./apps/prairielearn/elements/pl-card",
     "./apps/prairielearn/elements/pl-code",
     "./apps/prairielearn/elements/pl-dataframe",
+    "./apps/prairielearn/elements/pl-excalidraw",
     "./apps/prairielearn/elements/pl-external-grader-results",
     "./apps/prairielearn/elements/pl-external-grader-variables",
     "./apps/prairielearn/elements/pl-figure",

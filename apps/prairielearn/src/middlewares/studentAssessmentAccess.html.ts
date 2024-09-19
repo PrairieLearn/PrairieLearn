@@ -1,6 +1,8 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
+import { HeadContents } from '../components/HeadContents.html.js';
+import { Navbar } from '../components/Navbar.html.js';
+import { Scorebar } from '../components/Scorebar.html.js';
 import { TimeLimitExpiredModal } from '../components/TimeLimitExpiredModal.html.js';
 import type { Assessment, AssessmentInstance, AssessmentSet } from '../lib/db-types.js';
 import { formatPoints } from '../lib/format.js';
@@ -24,13 +26,10 @@ export function StudentAssessmentAccess({
     <!doctype html>
     <html lang="en">
       <head>
-        ${renderEjs(import.meta.url, "<%- include('../pages/partials/head') %>", resLocals)}
+        ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../pages/partials/navbar'); %>", {
-          ...resLocals,
-          navPage: '',
-        })}
+        ${Navbar({ resLocals, navPage: 'assessment_instance' })}
         ${showTimeLimitExpiredModal ? TimeLimitExpiredModal({ showAutomatically: true }) : ''}
         <main id="content" class="container">
           <div class="card mb-4">
@@ -51,11 +50,7 @@ export function StudentAssessmentAccess({
                         )}
                       </div>
                       <div class="col-md-3 col-sm-6">
-                        ${renderEjs(
-                          import.meta.url,
-                          "<%- include('../pages/partials/scorebar') %>",
-                          { score: assessment_instance.score_perc },
-                        )}
+                        ${Scorebar(assessment_instance.score_perc)}
                       </div>
 
                       ${AssessmentStatusDescription({

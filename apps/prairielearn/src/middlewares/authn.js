@@ -54,7 +54,6 @@ export default asyncHandler(async (req, res, next) => {
     };
 
     await authnLib.loadUser(req, res, authnParams, {
-      pl_authn_cookie: false,
       redirect: false,
     });
 
@@ -79,7 +78,7 @@ export default asyncHandler(async (req, res, next) => {
   // - Use the "bypass" authentication option on the login page to log in as
   //   the user configured by `config.authUid` etc (see `pages/authLoginDev`).
   // - Log in as a specific UID/name/UIN (see `pages/authLogin`).
-  if (config.devMode && !req.cookies.pl_disable_auto_authn && !req.cookies.pl_authn) {
+  if (config.devMode && !req.cookies.pl2_disable_auto_authn && req.session.user_id == null) {
     var uid = config.authUid;
     var name = config.authName;
     var uin = config.authUin;
@@ -107,93 +106,60 @@ export default asyncHandler(async (req, res, next) => {
 
     await authnLib.loadUser(req, res, authnParams, {
       redirect: false,
-      pl_authn_cookie: true,
     });
     return next();
   }
 
-  var authnData = null;
-
-  // `authnLib.loadUser` will migrate data into the session. If that data is
-  // already available, use it instead of the cookie.
-  if (req.session.user_id && req.session.authn_provider_name) {
-    authnData = {
-      user_id: req.session.user_id,
-      authn_provider_name: req.session.authn_provider_name,
-    };
-  }
-
-  if (!authnData && req.cookies.pl_authn) {
-    // If we have a authn cookie then we try and unpack it. If we fail to
-    // unpack the cookie's data, then authnData will be null and we'll
-    // treat the user as though they're not authenticated.
-    authnData = getCheckedSignedTokenData(req.cookies.pl_authn, config.secretKey, {
-      maxAge: config.authnCookieMaxAgeMilliseconds,
-    });
-  }
-
-  if (authnData == null) {
-    // We failed to authenticate.
+  if (req.session.user_id == null || req.session.authn_provider_name == null) {
+    // The user is not authenticated.
 
     // Clear the auth cookie in case it was bad
     clearCookie(res, ['pl_authn', 'pl2_authn']);
 
-    // Check if we're requesting the homepage. We avoid the usage of `req.path`
-    // since this middleware might be mounted on a subpath.
-    const requestPath = req.baseUrl + req.path;
-    if (/^(\/?)$|^(\/pl\/?)$/.test(requestPath)) {
-      // the requested path is the homepage, so allow this request to proceed without an authenticated user
-      next();
-      return;
-    } else {
-      // We aren't authenticated, and we've requested some page that isn't the homepage, so bounce to the login page.
+    // If we're in the middle of a PrairieTest login flow, propagate that to
+    // the login page so we can show a message to the user.
+    let query = '';
+    if (req.path === '/pl/prairietest/auth') {
+      query = '?service=PrairieTest';
+    }
 
-      // If we're in the middle of a PrairieTest login flow, propagate that to
-      // the login page so we can show a message to the user.
-      let query = '';
-      if (req.path === '/pl/prairietest/auth') {
-        query = '?service=PrairieTest';
-      }
+    const loginUrl = `/pl/login${query}`;
 
-      const loginUrl = `/pl/login${query}`;
+    // If this request is being made by HTMX, use the special `HX-Redirect`
+    // header to redirect the page as a whole, not just the response.
+    if (req.get('HX-Request')) {
+      // Instead of redirecting to `req.originalUrl`, we redirect back to the
+      // page from which the HTMX request was made. This ensures that users
+      // don't end up redirected to a route that renders HTML that's meant to
+      // be embedded in another page.
+      //
+      // Fall back to the home page if we're somehow missing this header.
+      setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], req.get('HX-Current-URL') ?? '/pl');
+      res.set('HX-Redirect', loginUrl);
 
-      // If this request is being made by HTMX, use the special `HX-Redirect`
-      // header to redirect the page as a whole, not just the response.
-      if (req.get('HX-Request')) {
-        // Instead of redirecting to `req.originalUrl`, we redirect back to the
-        // page from which the HTMX request was made. This ensures that users
-        // don't end up redirected to a route that renders HTML that's meant to
-        // be embedded in another page.
-        //
-        // Fall back to the home page if we're somehow missing this header.
-        setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], req.get('HX-Current-URL') ?? '/pl');
-        res.set('HX-Redirect', loginUrl);
-
-        // Note that Node doesn't allow us to set headers if the response is a
-        // redirect, so we send this as a 200 response. HTMX will perform the
-        // redirect on the client.
-        //
-        // https://stackoverflow.com/questions/39997413/how-to-pass-headers-while-doing-res-redirect-in-express-js
-        res.send();
-        return;
-      }
-
-      // first set the preAuthUrl cookie for redirection after authn
-      setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], req.originalUrl);
-
-      res.redirect(loginUrl);
+      // Note that Node doesn't allow us to set headers if the response is a
+      // redirect, so we send this as a 200 response. HTMX will perform the
+      // redirect on the client.
+      //
+      // https://stackoverflow.com/questions/39997413/how-to-pass-headers-while-doing-res-redirect-in-express-js
+      res.send();
       return;
     }
+
+    // first set the preAuthUrl cookie for redirection after authn
+    setCookie(res, ['preAuthUrl', 'pl2_pre_auth_url'], req.originalUrl);
+
+    res.redirect(loginUrl);
+    return;
   }
 
   let authnParams = {
-    user_id: authnData.user_id,
-    provider: authnData.authn_provider_name,
+    user_id: req.session.user_id,
+    provider: req.session.authn_provider_name,
   };
+
   await authnLib.loadUser(req, res, authnParams, {
     redirect: false,
-    // Cookie is being set here again to reset the cookie timeout (#2268)
-    pl_authn_cookie: true,
   });
 
   next();

@@ -31,6 +31,7 @@ export function QuestionContainer({
     issues,
     variant,
     instance_question,
+    user,
     variantToken,
     __csrf_token,
     questionJsonBase64,
@@ -53,6 +54,7 @@ export function QuestionContainer({
       data-variant-id="${variant.id}"
       data-question-id="${question.id}"
       data-instance-question-id="${instance_question?.id ?? ''}"
+      data-user-id="${user.user_id}"
       data-variant-token="${variantToken}"
       data-url-prefix="${urlPrefix}"
       data-question-context="${questionContext}"
@@ -72,7 +74,9 @@ export function QuestionContainer({
         : QuestionPanel({ resLocals, questionContext })}
 
       <div class="card mb-4 grading-block${showTrueAnswer ? '' : ' d-none'}">
-        <div class="card-header bg-secondary text-white">Correct answer</div>
+        <div class="card-header bg-secondary text-white">
+          <h2>Correct answer</h2>
+        </div>
         <div class="card-body answer-body">${showTrueAnswer ? unsafeHtml(answerHtml) : ''}</div>
       </div>
 
@@ -89,7 +93,7 @@ export function QuestionContainer({
               ? html`
                   <div class="mb-4 d-flex justify-content-center">
                     <button
-                      class="show-hide-btn expand-icon-container btn btn-outline-secondary btn-sm collapsed"
+                      class="show-hide-btn btn btn-outline-secondary btn-sm collapsed"
                       type="button"
                       data-toggle="collapse"
                       data-target="#more-submissions-collapser"
@@ -164,7 +168,10 @@ export function IssuePanel({
         ${issue.manually_reported ? 'Manually reported issue' : 'Issue'}
       </div>
 
-      <table class="table table-sm table-hover two-column-description">
+      <table
+        class="table table-sm table-hover two-column-description"
+        aria-label="Issue information"
+      >
         <tbody>
           ${showUserName
             ? html`
@@ -440,13 +447,13 @@ function QuestionFooterContent({
                     <a
                       class="btn btn-xs align-self-center"
                       data-toggle="popover"
+                      data-trigger="focus"
+                      data-container="body"
                       data-html="true"
                       data-content="${escapeHtml(
                         NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
                       )}"
                       data-placement="auto"
-                      data-trigger="focus"
-                      data-container="body"
                       tabindex="0"
                     >
                       <i class="fa fa-question-circle" aria-hidden="true"></i>
@@ -491,7 +498,7 @@ function SubmitRateFooter({
     <p>
       You can still save your answer as frequently as you like.
       ${questionContext === 'student_exam'
-        ? `If your assessment ends before your last saved answer is graded, it will be automatically graded for you.`
+        ? 'If your assessment ends before your last saved answer is graded, it will be automatically graded for you.'
         : ''}
     </p>
   `;
@@ -523,11 +530,11 @@ function SubmitRateFooter({
           <a
             class="btn btn-xs"
             data-toggle="popover"
+            data-trigger="focus"
+            data-container="body"
             data-html="true"
             data-content="${escapeHtml(popoverContent)}"
             data-placement="auto"
-            data-trigger="focus"
-            data-container="body"
             tabindex="0"
           >
             <i class="fa fa-question-circle" aria-hidden="true"></i>
@@ -615,11 +622,13 @@ function QuestionPanel({
   return html`
     <div class="card mb-4 question-block">
       <div class="card-header bg-primary text-white d-flex align-items-center">
-        ${QuestionTitle({
-          questionContext,
-          question,
-          questionNumber: instance_question_info?.question_number,
-        })}
+        <h1>
+          ${QuestionTitle({
+            questionContext,
+            question,
+            questionNumber: instance_question_info?.question_number,
+          })}
+        </h1>
         ${showCopyQuestionButton
           ? html`
               <button
@@ -691,7 +700,7 @@ function CopyQuestionModal({ resLocals }: { resLocals: Record<string, any> }) {
               This question can be copied to any course for which you have editor permissions.
               Select one of your courses to copy this question.
             </p>
-            <select class="form-control" name="to_course_id" required>
+            <select class="custom-select" name="to_course_id" required>
               ${question_copy_targets.map(
                 (course, index) => html`
                   <option

@@ -193,6 +193,9 @@ window.PLDrawingApi = {
         if (image_tooltip !== null) {
           btn.setAttribute('title', image_tooltip);
         }
+        if (!elem_options.editable) {
+          btn.disabled = true;
+        }
         let cloned_opts = _.clone(opts || {});
         $(btn).click(() => elem.button_press(canvas, cloned_opts, submittedAnswer));
       }

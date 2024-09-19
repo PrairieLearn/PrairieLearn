@@ -80,7 +80,7 @@ export class ExternalGraderLocal {
             '+x',
             path.join(dir, question.external_grading_entrypoint.slice(6)),
           ]);
-        } catch (e) {
+        } catch {
           logger.error('Could not make file executable; continuing execution anyways');
         }
       }
@@ -92,7 +92,7 @@ export class ExternalGraderLocal {
           await new Promise((resolve, reject) => {
             docker.modem.followProgress(stream, (err) => (err ? reject(err) : resolve(null)));
           });
-          logger.info(`Successfully pulled image`);
+          logger.info('Successfully pulled image');
         } catch (err) {
           logger.warn(
             `Error pulling "${question.external_grading_image}" image; attempting to fall back to cached version.`,
@@ -189,12 +189,12 @@ export class ExternalGraderLocal {
             try {
               results.results = JSON.parse(data.toString('utf8'));
               results.succeeded = true;
-            } catch (e) {
+            } catch {
               results.succeeded = false;
               results.message = 'Could not parse the grading results.';
             }
           }
-        } catch (err) {
+        } catch {
           logger.error('Could not read results.json');
           results.succeeded = false;
         }

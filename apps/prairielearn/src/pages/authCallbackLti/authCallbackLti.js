@@ -8,10 +8,8 @@ import { z } from 'zod';
 import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { config } from '../../lib/config.js';
-import { shouldSecureCookie, setCookie } from '../../lib/cookie.js';
 import { IdSchema, LtiCredentialsSchema } from '../../lib/db-types.js';
 
 const TIME_TOLERANCE_SEC = 3000;
@@ -128,21 +126,7 @@ router.post(
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    const pl_authn = generateSignedToken(
-      {
-        user_id: userResult.user_id,
-        authn_provider_name: 'LTI',
-      },
-      config.secretKey,
-    );
-    setCookie(res, ['pl_authn', 'pl2_authn'], pl_authn, {
-      maxAge: config.authnCookieMaxAgeMilliseconds,
-      httpOnly: true,
-      secure: shouldSecureCookie(req),
-    });
-
-    // Dual-write information to the session so that we can start reading
-    // it instead of the cookie in the future.
+    // Persist the user's authentication data in the session.
     req.session.user_id = userResult.user_id;
     req.session.authn_provider_name = 'LTI';
 

@@ -93,7 +93,7 @@ describe('Shared Question Preview', function () {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
-      questionBaseUrl: baseUrl + `/course/2/question`,
+      questionBaseUrl: baseUrl + '/course/2/question',
       questionPreviewTabUrl: '/preview',
       isStudentPage: false,
     };
@@ -109,7 +109,7 @@ describe('Shared Question Preview', function () {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
-      questionBaseUrl: baseUrl + `/course_instance/2/instructor/question`,
+      questionBaseUrl: baseUrl + '/course_instance/2/instructor/question',
       questionPreviewTabUrl: '/preview',
       isStudentPage: false,
     };

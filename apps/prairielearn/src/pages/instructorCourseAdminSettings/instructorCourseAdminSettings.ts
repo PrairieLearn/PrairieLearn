@@ -63,7 +63,7 @@ router.post(
       if (!(await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
         throw new error.HttpStatusError(400, 'infoCourse.json does not exist');
       }
-      const paths = getPaths(req, res);
+      const paths = getPaths(undefined, res.locals);
 
       const courseInfo = JSON.parse(
         await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
@@ -92,7 +92,7 @@ router.post(
         await editor.executeWithServerJob(serverJob);
         flash('success', 'Course configuration updated successfully');
         return res.redirect(req.originalUrl);
-      } catch (err) {
+      } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     }
@@ -117,7 +117,7 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
         return res.redirect(req.originalUrl);
-      } catch (err) {
+      } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else {

@@ -23,9 +23,7 @@ SELECT
   COALESCE(u.uid, array_to_string(gul.uid_list, ', ')) AS uid,
   COALESCE(agu.name, agu.uid) AS assigned_grader_name,
   COALESCE(lgu.name, lgu.uid) AS last_grader_name,
-  aq.max_points,
-  aq.max_auto_points,
-  aq.max_manual_points,
+  to_jsonb(aq.*) AS assessment_question,
   COALESCE(g.name, u.name) AS user_or_group_name,
   ic.open_issue_count
 FROM
@@ -59,15 +57,4 @@ SET
   END
 WHERE
   iq.assessment_question_id = $assessment_question_id
-  AND iq.id = ANY ($instance_question_ids::BIGINT[])
-  AND (
-    $assigned_grader::BIGINT IS NULL
-    OR $assigned_grader IN (
-      SELECT
-        user_id
-      FROM
-        UNNEST(
-          course_instances_select_graders ($course_instance_id)
-        )
-    )
-  );
+  AND iq.id = ANY ($instance_question_ids::BIGINT[]);
