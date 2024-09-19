@@ -269,18 +269,17 @@ export function ExamQuestionStatus({
 
       ${(instance_question.allow_grade_left_ms ?? 0) > 0
         ? html`
-            <a
+            <button
+              type="button"
               class="grade-rate-limit-popover btn btn-xs"
               data-toggle="popover"
-              data-trigger="focus"
               data-container="body"
               data-html="true"
               data-content="This question limits the rate of submissions. Further grade allowed ${instance_question.allow_grade_interval} (as of the loading of this page)."
               data-placement="auto"
-              tabindex="0"
             >
               <i class="fa fa-hourglass-half" aria-hidden="true"></i>
-            </a>
+            </button>
           `
         : ''}
     </span>
@@ -439,18 +438,16 @@ export function ExamQuestionAvailablePoints({
       ? formatPoints(pointsList[0])
       : html`${formatPoints(pointsList[0])},
           <span class="text-muted">${formatPointsOrList(pointsList.slice(1))}</span>`}
-    <a
-      tabindex="0"
+    <button
       type="button"
       class="btn btn-xs btn-ghost js-available-points-popover"
       data-toggle="popover"
-      data-trigger="focus"
       data-container="body"
       data-html="true"
       data-content="${escapeHtml(popoverContent)}"
       data-placement="auto"
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
-    </a>
+    </button>
   `;
 }

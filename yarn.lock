@@ -3655,6 +3655,7 @@ __metadata:
     qs: "npm:^6.13.0"
     quill: "npm:^2.0.2"
     quilljs-markdown: "npm:^1.2.0"
+    remark-gfm: "npm:^4.0.0"
     remark-parse: "npm:^11.0.0"
     remark-stringify: "npm:^11.0.0"
     requirejs: "npm:^2.3.7"
