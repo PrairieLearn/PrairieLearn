@@ -26,6 +26,11 @@ interface Topic {
   description: string;
 }
 
+interface SharingSet {
+  name: string;
+  description: string;
+}
+
 export interface AssessmentSet {
   abbreviation: string;
   name: string;
@@ -46,7 +51,7 @@ interface Course {
   options?: CourseOptions;
   tags: Tag[];
   topics: Topic[];
-  sharingSets: string[];
+  sharingSets?: SharingSet[];
   assessmentSets: AssessmentSet[];
   assessmentModules?: Module[];
 }
@@ -179,6 +184,9 @@ export interface Question {
   title: string;
   topic: string;
   tags?: string[];
+  sharingSets?: string[];
+  sharedPublicly?: boolean;
+  sharedPubliclyWithSource?: boolean;
   clientFiles?: string[];
   clientTemplates?: string[];
   template?: string;

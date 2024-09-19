@@ -319,48 +319,50 @@ describe('Question Sharing', function () {
       assert.equal(result.status, 500);
     });
 
-    // TODO make sharing set with JSON
     step('Add sharing set to JSON', async () => {
-      // const sharingUrl = sharingPageUrl(sharingCourse.id);
-      // const response = await fetchCheerio(sharingUrl);
-      // const token = response.$('#test_csrf_token').text();
-      // await fetch(sharingUrl, {
-      //   method: 'POST',
-      //   body: new URLSearchParams({
-      //     __action: 'sharing_set_create',
-      //     __csrf_token: token,
-      //     sharing_set_name: SHARING_SET_NAME,
-      //   }),
-      // });
-      sharingCourseData.course.sharingSets = [SHARING_SET_NAME];
+      sharingCourseData.course.sharingSets = [
+        { name: SHARING_SET_NAME, description: 'Sharing set for testing' },
+      ];
       const courseInfoPath = path.join(sharingCourseOriginDir, 'infoCourse.json');
       await fs.writeJSON(courseInfoPath, sharingCourseData.course);
+
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [SHARING_SET_NAME];
+      await fs.writeJSON(
+        path.join(sharingCourseOriginDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[SHARING_QUESTION_QID],
+      );
+
+      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharedPublicly = true;
+      await fs.writeJSON(
+        path.join(sharingCourseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
+      );
+
       await execa('git', ['add', '-A'], gitOptions);
       await execa('git', ['commit', '-m', 'Add sharing set'], gitOptions);
-      const pullResult = await execa('git', ['pull'], {
+      await execa('git', ['pull'], {
         cwd: sharingCourseLiveDir,
         env: process.env,
       });
-      console.log(pullResult);
       const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir);
-      assert(syncResults.status === 'complete');
-
-      // const result = await sqldb.queryAsync('select * from sharing_sets;', {});
-      // console.log(result.rows);
-      // console.log((await sqldb.queryAsync('select id, short_name from pl_courses;', {})).rows);
+      assert(syncResults.status === 'complete' && !syncResults.hadJsonErrorsOrWarnings);
     });
 
     step('Share sharing set with test course', async () => {
       const sharingUrl = sharingPageUrl(sharingCourse.id);
       const response = await fetchCheerio(sharingUrl);
-      // console.log(response.text());
       const token = response.$('#test_csrf_token').text();
+      const sharingSetId = await sqldb.queryRow(
+        sql.select_sharing_set,
+        { sharing_set_name: SHARING_SET_NAME },
+        IdSchema,
+      );
       const res = await fetch(sharingUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'course_sharing_set_add',
           __csrf_token: token,
-          unsafe_sharing_set_id: '1',
+          unsafe_sharing_set_id: sharingSetId,
           unsafe_course_sharing_token: testCourseSharingToken,
         }),
       });
@@ -468,28 +470,6 @@ describe('Question Sharing', function () {
       const sharedQuestionSharedUrl = `${baseUrl}/course_instance/${consumingCourse.id}/instructor/question/${publiclySharedQuestionId}`;
       const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
       assert(!sharedQuestionSharedPage.ok);
-    });
-
-    step('Mark question as shared publicly', async () => {
-      const publiclySharedQuestionUrl = `${baseUrl}/course_instance/${sharingCourse.id}/instructor/question/${publiclySharedQuestionId}/settings`;
-      const sharedQuestionSettingsPage = await fetchCheerio(publiclySharedQuestionUrl);
-      assert(sharedQuestionSettingsPage.ok);
-
-      const token = sharedQuestionSettingsPage.$('#test_csrf_token').text();
-      const resPost = await fetch(publiclySharedQuestionUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'share_publicly',
-          __csrf_token: token,
-        }),
-      });
-      assert(resPost.ok);
-
-      const settingsPageResponse = await fetchCheerio(publiclySharedQuestionUrl);
-      assert.include(
-        settingsPageResponse.$('[data-testid="shared-with"]').text(),
-        'This question is publicly shared.',
-      );
     });
 
     step('Successfully access publicly shared question through other course', async () => {
