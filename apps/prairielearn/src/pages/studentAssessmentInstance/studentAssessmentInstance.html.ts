@@ -58,7 +58,7 @@ export function StudentAssessmentInstance({
                 serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
                 serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
                 canTriggerFinish: resLocals.authz_result.authorized_edit,
-                showsTimeoutWarning: false,
+                showsTimeoutWarning: true,
                 reloadOnFail: true,
                 csrfToken: resLocals.__csrf_token,
               },
@@ -706,6 +706,7 @@ function ExamQuestionHelpBestSubmission() {
   return html`
     <button
       type="button"
+      class="btn btn-xs btn-ghost"
       data-toggle="popover"
       data-container="body"
       data-html="true"
@@ -713,7 +714,7 @@ function ExamQuestionHelpBestSubmission() {
       title="Best submission"
       data-content="The percentage score of the best submitted answer, or whether the question is <strong>unanswered</strong>, has a <strong>saved</strong> but ungraded answer, or is in <strong>grading</strong>."
     >
-      <i class="far fa-question-circle" aria-hidden="true"></i>
+      <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>
   `;
 }
@@ -722,6 +723,7 @@ function ExamQuestionHelpAvailablePoints() {
   return html`
     <button
       type="button"
+      class="btn btn-xs btn-ghost"
       data-toggle="popover"
       data-container="body"
       data-html="true"
@@ -729,7 +731,7 @@ function ExamQuestionHelpAvailablePoints() {
       title="Available points"
       data-content="The number of points that would be earned for a 100% correct answer on the next attempt. If retries are available for the question then a list of further points is shown, where the <i>n</i>-th value is the number of points that would be earned for a 100% correct answer on the <i>n</i>-th attempt."
     >
-      <i class="far fa-question-circle" aria-hidden="true"></i>
+      <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>
   `;
 }
@@ -738,6 +740,7 @@ function ExamQuestionHelpAwardedPoints() {
   return html`
     <button
       type="button"
+      class="btn btn-xs btn-ghost"
       data-toggle="popover"
       data-container="body"
       data-html="true"
@@ -745,7 +748,7 @@ function ExamQuestionHelpAwardedPoints() {
       title="Awarded points"
       data-content="The number of points already earned, as a fraction of the maximum possible points for the question."
     >
-      <i class="far fa-question-circle" aria-hidden="true"></i>
+      <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>
   `;
 }
