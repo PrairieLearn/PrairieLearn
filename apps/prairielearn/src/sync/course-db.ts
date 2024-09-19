@@ -678,7 +678,7 @@ export async function loadCourseInfo(
    * @param entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
    */
   function getFieldWithoutDuplicates<
-    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules',
+    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
   >(fieldName: K, entryIdentifier: string, defaults?: Course[K] | undefined): Course[K] {
     const known = new Map();
     const duplicateEntryIds = new Set();
