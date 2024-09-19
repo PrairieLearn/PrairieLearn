@@ -303,36 +303,36 @@ describe('Question Sharing', function () {
       //     sharing_set_name: SHARING_SET_NAME,
       //   }),
       // });
-      sharingCourseData.course.sharingSets = [SHARING_SET_NAME];
-
+      sharingCourseData.course.sharingSets = [
+        { name: SHARING_SET_NAME, description: 'Sharing set for testing' },
+      ];
       const courseInfoPath = path.join(sharingCourseOriginDir, 'infoCourse.json');
       await fs.writeJSON(courseInfoPath, sharingCourseData.course);
       await execa('git', ['add', '-A'], gitOptions);
       await execa('git', ['commit', '-m', 'Add sharing set'], gitOptions);
-      const pullResult = await execa('git', ['pull'], {
+      await execa('git', ['pull'], {
         cwd: sharingCourseLiveDir,
         env: process.env,
       });
-      console.log(pullResult);
       const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir);
-      assert(syncResults.status === 'complete');
-
-      // const result = await sqldb.queryAsync('select * from sharing_sets;', {});
-      // console.log(result.rows);
-      // console.log((await sqldb.queryAsync('select id, short_name from pl_courses;', {})).rows);
+      assert(syncResults.status === 'complete' && !syncResults.hadJsonErrorsOrWarnings);
     });
 
     step('Share sharing set with test course', async () => {
       const sharingUrl = sharingPageUrl(sharingCourse.id);
       const response = await fetchCheerio(sharingUrl);
-      // console.log(response.text());
       const token = response.$('#test_csrf_token').text();
+      const sharingSetId = await sqldb.queryRow(
+        sql.select_sharing_set,
+        { sharing_set_name: SHARING_SET_NAME },
+        IdSchema,
+      );
       const res = await fetch(sharingUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'course_sharing_set_add',
           __csrf_token: token,
-          unsafe_sharing_set_id: '1',
+          unsafe_sharing_set_id: sharingSetId,
           unsafe_course_sharing_token: testCourseSharingToken,
         }),
       });

@@ -18,8 +18,8 @@ export async function sync(
     );
   }
 
-  console.log('Sharing Sets for Course:', courseId);
-  console.log('course sharing sets', courseSharingSets);
+  // console.log('Sharing Sets for Course:', courseId);
+  // console.log('course sharing sets', courseSharingSets);
 
   const newSharingSets = await sqldb.callRow(
     'sync_course_sharing_sets',
@@ -40,7 +40,7 @@ export async function sync(
     questionSharingSetsParam.push(JSON.stringify([questionIds[qid], questionSharingSetIds]));
   });
 
-  console.log('question sharing sets', questionSharingSetsParam);
+  // console.log('question sharing sets', questionSharingSetsParam);
 
   await sqldb.callAsync('sync_question_sharing_sets', [questionSharingSetsParam]);
 }
