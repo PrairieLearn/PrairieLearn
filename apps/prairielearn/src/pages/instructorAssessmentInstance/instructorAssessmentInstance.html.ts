@@ -575,7 +575,7 @@ export function InstructorAssessmentInstance({
                   return html`
                     <tr>
                       <td class="text-nowrap">${row.formatted_date}</td>
-                      <td>${row.auth_user_uid ?? html`$mdash;`}</td>
+                      <td>${row.auth_user_uid ?? html`&mdash;`}</td>
                       ${resLocals.instance_user
                         ? row.client_fingerprint && row.client_fingerprint_number !== null
                           ? html`
