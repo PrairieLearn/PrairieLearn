@@ -8,7 +8,7 @@ There are multiple locations within each course where files can be stored for ac
 
 ## Directory layout
 
-The `clientFiles` subdirectory can be associated with the course, a question, a course instance, or an assessment, as shown below. The `serverFiles` subdirectory can be associated with the course.
+A `clientFiles*` subdirectory can be associated with the course, a question, a course instance, or an assessment, as shown below. The `serverFilesCourse` subdirectory is associated with the course as a whole.
 
 ```text
 exampleCourse
@@ -32,7 +32,7 @@ exampleCourse
 
 ## Access control
 
-Each different `clientFiles` directory is accessible under the same [access control rules](accessControl.md) for the course instances and assessments. That is, `clientFilesCourse` is accessible to any student who has access to some course instance, while `clientFilesQuestion`, `clientFilesCourseInstance`, and `clientFilesAssessment` are accessible to students with access to the corresponding question, course instance, or assessment.
+Each different `clientFiles*` directory is accessible under the same [access control rules](accessControl.md) for the course instances and assessments. That is, `clientFilesCourse` is accessible to any student who has access to some course instance, while `clientFilesQuestion`, `clientFilesCourseInstance`, and `clientFilesAssessment` are accessible to students with access to the corresponding question, course instance, or assessment.
 
 ## Accessing files from HTML templates
 
