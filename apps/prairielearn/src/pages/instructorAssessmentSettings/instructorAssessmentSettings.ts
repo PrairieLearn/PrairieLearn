@@ -165,6 +165,9 @@ router.post(
           'infoAssessment.json',
         ),
       );
+      if (!(await fs.pathExists(infoAssessmentPath))) {
+        throw new error.HttpStatusError(400, 'infoAssessment.json does not exist');
+      }
       const paths = getPaths(undefined, res.locals);
 
       const assessmentInfo = JSON.parse(await fs.readFile(infoAssessmentPath, 'utf8'));
