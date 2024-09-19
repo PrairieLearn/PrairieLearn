@@ -1,4 +1,6 @@
+import html
 import random
+import re
 from enum import Enum
 from typing import Any
 
@@ -11,6 +13,17 @@ from typing_extensions import assert_never
 class DisplayType(Enum):
     INLINE = "inline"
     BLOCK = "block"
+
+
+SPACE_HINT_DICT: dict[tuple[bool, bool], str] = {
+    (True, True): "All spaces will be removed from your answer.",
+    (True, False): "Leading and trailing spaces will be removed from your answer.",
+    (
+        False,
+        True,
+    ): "All spaces between text will be removed but leading and trailing spaces will be left as part of your answer.",
+    (False, False): "Leading and trailing spaces will be left as part of your answer.",
+}
 
 
 WEIGHT_DEFAULT = 1
@@ -27,6 +40,7 @@ SIZE_DEFAULT = 35
 SHOW_HELP_TEXT_DEFAULT = True
 SHOW_SCORE_DEFAULT = True
 NORMALIZE_TO_ASCII_DEFAULT = False
+MULTILINE_DEFAULT = False
 
 STRING_INPUT_MUSTACHE_TEMPLATE_NAME = "pl-string-input.mustache"
 
@@ -49,6 +63,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "show-help-text",
         "normalize-to-ascii",
         "show-score",
+        "multiline",
+        "escape-unicode",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
 
@@ -70,10 +86,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     name = pl.get_string_attrib(element, "answers-name")
     label = pl.get_string_attrib(element, "label", LABEL_DEFAULT)
     suffix = pl.get_string_attrib(element, "suffix", SUFFIX_DEFAULT)
-    display = pl.get_enum_attrib(element, "display", DisplayType, DISPLAY_DEFAULT)
-    remove_leading_trailing = pl.get_boolean_attrib(
-        element, "remove-leading-trailing", REMOVE_LEADING_TRAILING_DEFAULT
-    )
+
     remove_spaces = pl.get_boolean_attrib(
         element, "remove-spaces", REMOVE_SPACES_DEFAULT
     )
@@ -81,9 +94,24 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
-
+    multiline = pl.get_boolean_attrib(element, "multiline", MULTILINE_DEFAULT)
     score = data["partial_scores"].get(name, {"score": None}).get("score", None)
     parse_error = data["format_errors"].get(name)
+
+    # Defaults here depend on multiline
+    display = pl.get_enum_attrib(
+        element,
+        "display",
+        DisplayType,
+        DisplayType.BLOCK if multiline else DISPLAY_DEFAULT,
+    )
+
+    if display is DisplayType.INLINE and multiline:
+        raise ValueError('Display must be set to "block" for multiline input.')
+
+    remove_leading_trailing = pl.get_boolean_attrib(
+        element, "remove-leading-trailing", multiline or REMOVE_LEADING_TRAILING_DEFAULT
+    )
 
     # Get template
     with open(STRING_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
@@ -92,24 +120,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "question":
         editable = data["editable"]
 
-        space_hint_pair = (remove_leading_trailing, remove_spaces)
-        match space_hint_pair:
-            case (True, True):
-                space_hint = "All spaces will be removed from your answer."
-            case (True, False):
-                space_hint = (
-                    "Leading and trailing spaces will be removed from your answer."
-                )
-            case (False, True):
-                space_hint = "All spaces between text will be removed but leading and trailing spaces will be left as part of your answer."
-            case (False, False):
-                space_hint = (
-                    "Leading and trailing spaces will be left as part of your answer."
-                )
-            case _:
-                raise Exception("Should never reach here.")
-
-        info_params = {"format": True, "space_hint": space_hint}
+        space_hint = SPACE_HINT_DICT[(remove_leading_trailing, remove_spaces)]
+        info_params = {
+            "format": True,
+            "space_hint": space_hint,
+        }
         info = chevron.render(template, info_params).strip()
 
         show_help_text = pl.get_boolean_attrib(
@@ -130,6 +145,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             display.value: True,
             "raw_submitted_answer": raw_submitted_answer,
             "parse_error": parse_error,
+            "multiline": multiline,
         }
 
         if show_score and score is not None:
@@ -145,19 +161,23 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "suffix": suffix,
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
+            "multiline": multiline,
         }
 
         if parse_error is None and name in data["submitted_answers"]:
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data["submitted_answers"].get(name, None)
+
             if a_sub is None:
                 raise Exception("submitted answer is None")
 
             # If answer is in a format generated by pl.to_json, convert it
             # back to a standard type (otherwise, do nothing)
             a_sub = pl.from_json(a_sub)
-            a_sub = pl.escape_unicode_string(a_sub)
 
+            html_params["escaped_submitted_answer"] = html.escape(
+                pl.escape_unicode_string(a_sub)
+            )
             html_params["a_sub"] = a_sub
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
@@ -185,6 +205,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "label": label,
             "a_tru": a_tru,
             "suffix": suffix,
+            "multiline": multiline,
+            "uuid": pl.get_uuid(),
+            "escaped_correct_answer": html.escape(pl.escape_unicode_string(a_tru)),
         }
 
         return chevron.render(template, html_params).strip()
@@ -204,8 +227,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         element, "remove-spaces", REMOVE_SPACES_DEFAULT
     )
 
+    multiline = pl.get_boolean_attrib(element, "multiline", MULTILINE_DEFAULT)
     remove_leading_trailing = pl.get_boolean_attrib(
-        element, "remove-leading-trailing", REMOVE_LEADING_TRAILING_DEFAULT
+        element, "remove-leading-trailing", multiline or REMOVE_LEADING_TRAILING_DEFAULT
     )
 
     # Get submitted answer or return parse_error if it does not exist
@@ -226,6 +250,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # Remove the blank spaces between characters
     if remove_spaces:
         a_sub = "".join(a_sub.split())
+
+    # Always simplify multiline characters (if they still exist)
+    a_sub = re.sub("\r*\n", "\n", a_sub)
 
     if not a_sub and not allow_blank:
         data["format_errors"][name] = (
@@ -248,9 +275,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         element, "remove-spaces", REMOVE_SPACES_DEFAULT
     )
 
+    multiline = pl.get_boolean_attrib(element, "multiline", MULTILINE_DEFAULT)
     # Get remove-leading-trailing option
     remove_leading_trailing = pl.get_boolean_attrib(
-        element, "remove-leading-trailing", REMOVE_LEADING_TRAILING_DEFAULT
+        element, "remove-leading-trailing", multiline or REMOVE_LEADING_TRAILING_DEFAULT
     )
 
     # Get string case sensitivity option
@@ -263,7 +291,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         return
 
     # explicitly cast the true answer to a string, to handle the case where the answer might be a number or some other type
-    a_tru = str(a_tru)
+    # Always simplify multiline characters (if they still exist)
+    a_tru = re.sub("\r*\n", "\n", str(a_tru))
 
     def grade_function(a_sub: Any) -> tuple[bool, None]:
         # If submitted answer is in a format generated by pl.to_json, convert it
