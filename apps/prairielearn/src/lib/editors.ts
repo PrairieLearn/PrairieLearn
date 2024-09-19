@@ -304,16 +304,23 @@ export abstract class Editor {
 
             await writeAndCommitChanges();
 
-            job.info('Push changes to remote git repository');
-            await job.exec('git', ['push'], {
-              cwd: this.course.path,
-              env: gitEnv,
-            });
-            job.data.saveSucceeded = true;
-
-            // Clean up to remove any empty directories that might have been
-            // left behind by operations like renames.
-            await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
+            try {
+              job.info('Push changes to remote git repository');
+              await job.exec('git', ['push'], {
+                cwd: this.course.path,
+                env: gitEnv,
+              });
+              job.data.saveSucceeded = true;
+            } finally {
+              // Clean up to remove any empty directories that might have been
+              // left behind by operations like renames.
+              await cleanAndResetRepository(
+                this.course,
+                `origin/${this.course.branch}`,
+                gitEnv,
+                job,
+              );
+            }
           }
         } finally {
           // Whether or not we error, we'll sync the course.
