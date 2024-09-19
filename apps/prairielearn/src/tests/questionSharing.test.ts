@@ -102,8 +102,9 @@ describe('Question Sharing', function () {
   // to prevent all question sharing features from working.
   let sharingCourse: Course;
   let consumingCourse: Course;
+  let sharingCourseData: syncUtil.CourseData;
   before('construct and sync course', async () => {
-    const sharingCourseData = syncUtil.getCourseData();
+    sharingCourseData = syncUtil.getCourseData();
     sharingCourseData.course.name = 'SHARING 101';
     const privateQuestion = sharingCourseData.questions.private;
     sharingCourseData.questions = {
@@ -290,10 +291,41 @@ describe('Question Sharing', function () {
     });
 
     // TODO make sharing set with JSON
+    step('Add sharing set to JSON', async () => {
+      // const sharingUrl = sharingPageUrl(sharingCourse.id);
+      // const response = await fetchCheerio(sharingUrl);
+      // const token = response.$('#test_csrf_token').text();
+      // await fetch(sharingUrl, {
+      //   method: 'POST',
+      //   body: new URLSearchParams({
+      //     __action: 'sharing_set_create',
+      //     __csrf_token: token,
+      //     sharing_set_name: SHARING_SET_NAME,
+      //   }),
+      // });
+      sharingCourseData.course.sharingSets = [SHARING_SET_NAME];
+
+      const courseInfoPath = path.join(sharingCourseOriginDir, 'infoCourse.json');
+      await fs.writeJSON(courseInfoPath, sharingCourseData.course);
+      await execa('git', ['add', '-A'], gitOptions);
+      await execa('git', ['commit', '-m', 'Add sharing set'], gitOptions);
+      const pullResult = await execa('git', ['pull'], {
+        cwd: sharingCourseLiveDir,
+        env: process.env,
+      });
+      console.log(pullResult);
+      const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir);
+      assert(syncResults.status === 'complete');
+
+      // const result = await sqldb.queryAsync('select * from sharing_sets;', {});
+      // console.log(result.rows);
+      // console.log((await sqldb.queryAsync('select id, short_name from pl_courses;', {})).rows);
+    });
 
     step('Share sharing set with test course', async () => {
       const sharingUrl = sharingPageUrl(sharingCourse.id);
       const response = await fetchCheerio(sharingUrl);
+      // console.log(response.text());
       const token = response.$('#test_csrf_token').text();
       const res = await fetch(sharingUrl, {
         method: 'POST',
