@@ -21,9 +21,47 @@ export async function getInvalidRenames(
   );
   const invalidRenames: string[] = [];
   sharedQuestions.forEach((question) => {
+    // TODO: allow if question is not in a sharing set or publicly shared
     if (!courseData.questions[question.qid]) {
       invalidRenames.push(question.qid);
     }
   });
   return invalidRenames;
+}
+
+export async function getInvalidSharingSetRemovals(
+  courseId: string,
+  courseData: CourseData,
+): Promise<Record<string, string[]>> {
+  const sharedQuestions = await sqldb.queryRows(
+    sql.select_sharing_set_questions,
+    { course_id: courseId },
+    z.object({
+      id: IdSchema,
+      qid: z.string(),
+      sharing_sets: z.string().array(),
+    }),
+  );
+  const invalidSharingSetRemovals: Record<string, string[]> = {};
+  sharedQuestions.forEach((question) => {
+    if (!courseData.questions[question.qid].data) {
+      // this case is handled by the checks for shared questions being
+      // renamed or deleted
+      return;
+    }
+    if (!courseData.questions[question.qid].data?.sharingSets) {
+      invalidSharingSetRemovals[question.qid] = question.sharing_sets;
+    }
+
+    question.sharing_sets.forEach((sharingSet) => {
+      // TODO: allow if the sharing set hasn't been shared to a course
+      if (!courseData.questions[question.qid].data?.sharingSets.includes(sharingSet)) {
+        if (!(question.qid in invalidSharingSetRemovals)) {
+          invalidSharingSetRemovals[question.qid] = [];
+        }
+        invalidSharingSetRemovals[question.qid].push(question.qid);
+      }
+    });
+  });
+  return invalidSharingSetRemovals;
 }

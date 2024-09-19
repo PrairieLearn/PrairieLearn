@@ -17,7 +17,7 @@ import * as syncQuestions from './fromDisk/questions.js';
 import * as syncSharingSets from './fromDisk/sharing.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
-import { getInvalidRenames } from './sharing.js';
+import { getInvalidRenames, getInvalidSharingSetRemovals } from './sharing.js';
 
 interface SyncResultSharingError {
   status: 'sharing_error';
@@ -44,20 +44,36 @@ export async function checkSharingConfigurationValid(
   courseData: courseDB.CourseData,
   logger: Logger,
 ): Promise<boolean> {
-  if (config.checkSharingOnSync) {
-    // TODO: also check if questions were un-shared in the JSON or if any
-    // sharing sets were deleted
-    const invalidRenames = await getInvalidRenames(courseId, courseData);
-    if (invalidRenames.length > 0) {
-      logger.info(
-        chalk.red(
-          `✖ Course sync completely failed. The following questions are shared and cannot be renamed or deleted: ${invalidRenames.join(', ')}`,
-        ),
-      );
-      return false;
-    }
+  if (!config.checkSharingOnSync) {
+    return true;
   }
-  return true;
+
+  let sharingConfigurationValid = true;
+  const invalidRenames = await getInvalidRenames(courseId, courseData);
+  if (invalidRenames.length > 0) {
+    logger.info(
+      chalk.red(
+        `✖ Course sync completely failed. The following questions are shared and cannot be renamed or deleted: ${invalidRenames.join(', ')}`,
+      ),
+    );
+    sharingConfigurationValid = false;
+  }
+
+  const invalidSharingSetRemovals = getInvalidSharingSetRemovals(courseId, courseData);
+  if (Object.keys(invalidSharingSetRemovals).length > 1) {
+    logger.info(
+      chalk.red(
+        `✖ Course sync completely failed. The following questions are not allowed to be removed from the listed sharing sets: ${Object.keys(
+          invalidSharingSetRemovals,
+        )
+          .map((key) => `${key}: ${JSON.stringify(invalidSharingSetRemovals[key])}`)
+          .join(', ')}`,
+      ),
+    );
+    sharingConfigurationValid = false;
+  }
+
+  return sharingConfigurationValid;
 }
 
 export async function syncDiskToSqlWithLock(
