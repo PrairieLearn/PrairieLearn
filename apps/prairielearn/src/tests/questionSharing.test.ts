@@ -290,6 +290,35 @@ describe('Question Sharing', function () {
       assert(testCourseSharingToken != null);
     });
 
+    step('Create a sharing set', async () => {
+      const sharingUrl = sharingPageUrl(sharingCourse.id);
+      const response = await fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'sharing_set_create',
+          __csrf_token: token,
+          sharing_set_name: SHARING_SET_NAME,
+        }),
+      });
+    });
+
+    step('Attempt to create another sharing set with the same name', async () => {
+      const sharingUrl = sharingPageUrl(sharingCourse.id);
+      const response = await fetchCheerio(sharingUrl);
+      const token = response.$('#test_csrf_token').text();
+      const result = await fetch(sharingUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'sharing_set_create',
+          __csrf_token: token,
+          sharing_set_name: SHARING_SET_NAME,
+        }),
+      });
+      assert.equal(result.status, 500);
+    });
+
     step('Add sharing set to JSON', async () => {
       sharingCourseData.course.sharingSets = [
         { name: SHARING_SET_NAME, description: 'Sharing set for testing' },
@@ -392,7 +421,32 @@ describe('Question Sharing', function () {
       assert.equal(res.status, 400);
     });
 
-    // TODO: add question to sharing set using JSON
+    step(`Add question "${SHARING_QUESTION_QID}" to sharing set`, async () => {
+      const result = await sqldb.queryOneRowAsync(sql.get_question_id, {
+        course_id: sharingCourse.id,
+        qid: SHARING_QUESTION_QID,
+      });
+      const questionSettingsUrl = `${baseUrl}/course_instance/${sharingCourse.id}/instructor/question/${result.rows[0].id}/settings`;
+      const resGet = await fetchCheerio(questionSettingsUrl);
+      assert(resGet.ok);
+
+      const token = resGet.$('#test_csrf_token').text();
+      const resPost = await fetch(questionSettingsUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'sharing_set_add',
+          __csrf_token: token,
+          unsafe_sharing_set_id: '1',
+        }),
+      });
+      assert(resPost.ok);
+
+      const settingsPageResponse = await fetchCheerio(questionSettingsUrl);
+      assert.include(
+        settingsPageResponse.$('[data-testid="shared-with"]').text(),
+        SHARING_SET_NAME,
+      );
+    });
 
     step('Fail to change the sharing name when a question has been shared', async () => {
       const res = await setSharingName(sharingCourse.id, 'Question shared');
@@ -416,6 +470,28 @@ describe('Question Sharing', function () {
       const sharedQuestionSharedUrl = `${baseUrl}/course_instance/${consumingCourse.id}/instructor/question/${publiclySharedQuestionId}`;
       const sharedQuestionSharedPage = await fetchCheerio(sharedQuestionSharedUrl);
       assert(!sharedQuestionSharedPage.ok);
+    });
+
+    step('Mark question as shared publicly', async () => {
+      const publiclySharedQuestionUrl = `${baseUrl}/course_instance/${sharingCourse.id}/instructor/question/${publiclySharedQuestionId}/settings`;
+      const sharedQuestionSettingsPage = await fetchCheerio(publiclySharedQuestionUrl);
+      assert(sharedQuestionSettingsPage.ok);
+
+      const token = sharedQuestionSettingsPage.$('#test_csrf_token').text();
+      const resPost = await fetch(publiclySharedQuestionUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'share_publicly',
+          __csrf_token: token,
+        }),
+      });
+      assert(resPost.ok);
+
+      const settingsPageResponse = await fetchCheerio(publiclySharedQuestionUrl);
+      assert.include(
+        settingsPageResponse.$('[data-testid="shared-with"]').text(),
+        'This question is publicly shared.',
+      );
     });
 
     step('Successfully access publicly shared question through other course', async () => {
