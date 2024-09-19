@@ -30,6 +30,7 @@ from typing import Any, Iterable, Sequence
 
 import question_phases
 import zygote_utils as zu
+from faker import Faker
 
 saved_path = copy.copy(sys.path)
 
@@ -235,6 +236,7 @@ def worker_loop() -> None:
                 variant_seed = args[-1].get("variant_seed", None)
                 random.seed(variant_seed)
                 numpy.random.seed(variant_seed)
+                Faker.seed(variant_seed)
                 seeded = True
 
             # reset and then set up the path
