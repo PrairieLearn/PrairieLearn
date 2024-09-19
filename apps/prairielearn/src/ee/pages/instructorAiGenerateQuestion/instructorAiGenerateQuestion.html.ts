@@ -124,7 +124,7 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
       <script>
         function setPromptToExample() {
           const options = document.getElementById('user-prompt-example').options;
-          const selection = options[options.selectedIndexss].dataset;
+          const selection = options[options.selectedIndex].dataset;
 
           document.getElementById('user-prompt-llm').value = selection.promptGeneral;
           document.getElementById('user-prompt-llm-user-input').value = selection.promptUserInput;
