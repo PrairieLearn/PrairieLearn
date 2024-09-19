@@ -186,7 +186,6 @@ export function StudentInstanceQuestion({
                 instance_question: resLocals.instance_question,
                 question: resLocals.question,
                 variant: resLocals.variant,
-                user: resLocals.user,
                 instance_group: resLocals.instance_group,
                 instance_group_uid_list: resLocals.instance_group_uid_list,
                 instance_user: resLocals.instance_user,

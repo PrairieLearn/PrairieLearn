@@ -509,7 +509,6 @@ export function StudentAssessmentInstance({
             course_instance: resLocals.course_instance,
             assessment: resLocals.assessment,
             assessment_instance: resLocals.assessment_instance,
-            user: resLocals.user,
             instance_group: resLocals.instance_group,
             instance_group_uid_list: resLocals.instance_group_uid_list,
             instance_user: resLocals.instance_user,
