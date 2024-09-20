@@ -1049,6 +1049,12 @@ async function validateQuestion(
     }
   }
 
+  if (question.sharedPubliclyWithSource && question.sharedPublicly === false) {
+    warnings.push(
+      'Option "sharedPubliclyWithSource": true will override option "sharedPublicly": false',
+    );
+  }
+
   return { warnings, errors };
 }
 
