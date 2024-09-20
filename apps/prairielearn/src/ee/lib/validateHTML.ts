@@ -131,8 +131,6 @@ function checkTag(ast: any): string[] {
       return checkNumericalInput(ast);
     case 'pl-overlay':
       return checkOverlay(ast);
-    case 'pl-location':
-      return checkLocation(ast);
     case 'pl-order-blocks':
       return checkOrderBlocks(ast);
     case 'pl-matrix-input':
@@ -470,7 +468,17 @@ function checkOverlay(ast: any): string[] {
         }
     }
   }
-  return errors;
+
+  let errorsChildren: string[] = [];
+  for (const child of ast.childNodes) {
+    if (child.tagName === 'pl-location') {
+      errorsChildren = errorsChildren.concat(checkLocation(child));
+    } else {
+      errorsChildren.push(`pl-overlay: ${child.tagName} is not a valid child tag.`);
+    }
+  }
+
+  return errors.concat(errorsChildren);
 }
 
 /**
