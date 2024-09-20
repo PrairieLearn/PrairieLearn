@@ -1,8 +1,6 @@
-import { error } from 'console';
+import * as namedLocks from '@prairielearn/named-locks';
 import * as fs from 'fs';
 import * as path from 'path';
-
-import * as namedLocks from '@prairielearn/named-locks';
 
 import { chalk, chalkDim } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
@@ -19,6 +17,7 @@ import * as syncQuestions from './fromDisk/questions.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import { makePerformance } from './performance.js';
+import { error } from 'console';
 
 const perf = makePerformance('sync');
 
@@ -55,10 +54,13 @@ export async function syncDiskToSqlWithLock(
     const courseInstance = courseData.courseInstances[courseInstanceKey];
 
     console.log(`Checking course instance ${courseInstanceKey}`); // TEST
-    // courseInstance.sharedPublicly = true; // TEST
+    courseInstance.sharedPublicly = true; // TEST
+    courseData.courseInstances[courseInstanceKey].courseInstance.data.sharedPublicly = courseInstance.sharedPublicly; // TEST, probably unncecessary once the course instances have sharedPublicly defined correctly. Make sure it's defined correctly
     if (courseInstance.sharedPublicly) {
+      console.log(`Course instance ${courseInstanceKey} is shared publicly`); // TEST
       for (const assessmentKey in courseInstance.assessments) {
         const assessment = courseInstance.assessments[assessmentKey];
+        console.log(`Checking assessment ${assessmentKey}`); // TEST
         if (assessment.data && assessment.data.zones) {
           for (const zone of assessment.data.zones) {
             if (zone.questions) {
@@ -71,7 +73,7 @@ export async function syncDiskToSqlWithLock(
                     'info.json',
                   );
 
-                  await readQuestionInfoJson(infoJsonPath, question.id, courseInstanceKey);
+                  readQuestionInfoJson(infoJsonPath, question.id, courseInstanceKey);
                 }
               }
             }
@@ -185,14 +187,10 @@ async function readQuestionInfoJson(
 
       // TEST, uncomment later. Unable to test other stuff since I can't make questions public yet (at least easily)
       /*if (!questionInfo.sharedPublicly || questionInfo.sharedPublicly === undefined) {
-        throw new Error(
-          `Question ${questionId} is not shared publicly in public course instance ${courseInstanceKey}. All questions in a public course instance must be shared publicly.`,
-        );
+        throw new Error(`Question ${questionId} is not shared publicly in public course instance ${courseInstanceKey}. All questions in a public course instance must be shared publicly.`);
       } else {
-        console.log(
-          `Question ${questionId} is shared publicly in public course instance ${courseInstanceKey}. CONGRATS! TEST!`,
-        ); // TEST
-      }*/
+        console.log(`Question ${questionId} is shared publicly in public course instance ${courseInstanceKey}. CONGRATS! TEST!`); // TEST
+       }*/
     } else {
       console.error(`Missing JSON file: ${infoJsonPath}`);
     }
