@@ -26,7 +26,7 @@ async function setLocals(req, res) {
   res.locals.authz_data = { user: res.locals.user };
   res.locals.course = await selectCourseById(req.params.course_id);
   res.locals.question = await selectQuestionById(req.params.question_id);
-  res.locals.urlPrefix = `/pl/public/course/${res.locals.course.id}`;
+  res.locals.urlPrefix = `/pl`;
 
 
   const disablePublicWorkspaces = await features.enabledFromLocals(
@@ -54,7 +54,7 @@ router.post(
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variant_id = await processSubmission(req, res);
       res.redirect(
-        `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview/?variant_id=${variant_id}`,
+        `${res.locals.urlPrefix}/public/course/${res.locals.course.id}/question/${res.locals.question.id}/preview/?variant_id=${variant_id}`,
       );
     } else if (req.body.__action === 'report_issue') {
       // we currently don't report issues for public facing previews

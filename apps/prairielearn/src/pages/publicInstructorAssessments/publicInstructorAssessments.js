@@ -21,7 +21,7 @@ router.get(
     const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id);
     res.locals.course = await selectCourseById(courseId);
     res.locals.course_instance = await selectCourseInstanceById(res.locals.course_instance_id);
-    res.locals.urlPrefix = `/pl/public/course/${res.locals.course.id}`;
+    res.locals.urlPrefix = `/pl`;
 
     try {
       const isPublic = await new Promise((resolve, reject) => {

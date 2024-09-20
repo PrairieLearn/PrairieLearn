@@ -15,7 +15,7 @@ import {
 
 import { z } from 'zod';
 
-// TEST, put in different file (like assessments.ts)?
+// Put in assessments.ts? // TEST
 async function selectAssessmentById(assessment_id: string): Promise<Assessment> {
   return await queryRow(
     sql.select_assessment_by_id,
@@ -58,7 +58,7 @@ router.get(
 
 
     res.locals.course = course;
-    res.locals.urlPrefix = `/pl/public/course/${res.locals.course.id}`;
+    res.locals.urlPrefix = `/pl`;
     res.locals.assessment = await selectAssessmentById(res.locals.assessment_id);
     const questionRows = await queryRows(
       sql.questions,
