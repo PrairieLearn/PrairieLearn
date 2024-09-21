@@ -83,20 +83,9 @@ export const Lti13Iframe = ({
                 Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
               </span>
             </a>
-            <button
-              class="navbar-toggler"
-              type="button"
-              data-toggle="collapse"
-              data-target=".navbar-collapse"
-              aria-expanded="false"
-              aria-label="Toggle navigation"
-            >
-              <span class="navbar-toggler-icon"></span>
-            </button>
             <span class="navbar-text">${resLocals.authn_user.name}</span>
           </div>
         </nav>
-
         <main>
           <a class="btn btn-primary btn-lg m-3" href="${target_url}" target="_blank"
             >Open PrairieLearn in a new window</a
