@@ -17,7 +17,7 @@ import { getCanonicalHost } from '../../../lib/url.js';
 import { Lti13ClaimSchema, Lti13Claim } from '../../lib/lti13.js';
 import { selectLti13Instance } from '../../models/lti13Instance.js';
 
-import { Lti13Test } from './lti13Auth.html.js';
+import { Lti13Iframe, Lti13Test } from './lti13Auth.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
@@ -139,6 +139,16 @@ router.post(
       lti13_instance_id: lti13_instance.id,
       sub: ltiClaim.get('sub'),
     });
+
+    if (req.headers['sec-fetch-dest'] === 'iframe') {
+      res.end(
+        Lti13Iframe({
+          resLocals: res.locals,
+          target_url: ltiClaim.target_link_uri ?? '/pl',
+        }),
+      );
+      return;
+    }
 
     // Get the target_link out of the LTI request and redirect
     res.redirect(ltiClaim.target_link_uri ?? '/pl');

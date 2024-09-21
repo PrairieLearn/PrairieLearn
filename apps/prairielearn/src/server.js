@@ -486,7 +486,7 @@ export async function initExpress() {
   });
   app.use((await import('./middlewares/logResponse.js')).default); // defers to end of response
   app.use((await import('./middlewares/cors.js')).default);
-  app.use((await import('./middlewares/content-security-policy.js')).default);
+  //app.use((await import('./middlewares/content-security-policy.js')).default);
   app.use((await import('./middlewares/date.js')).default);
   app.use((await import('./middlewares/effectiveRequestChanged.js')).default);
 
@@ -514,6 +514,9 @@ export async function initExpress() {
   }
 
   app.use('/pl/lti', (await import('./pages/authCallbackLti/authCallbackLti.js')).default);
+
+  app.use((await import('./middlewares/content-security-policy.js')).default);
+
   app.use('/pl/login', (await import('./pages/authLogin/authLogin.js')).default);
   if (config.devMode) {
     app.use('/pl/dev_login', (await import('./pages/authLoginDev/authLoginDev.js')).default);

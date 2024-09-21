@@ -46,3 +46,63 @@ export const Lti13Test = ({
     </html>
   `.toString();
 };
+
+export const Lti13Iframe = ({
+  resLocals,
+  target_url,
+}: {
+  resLocals: Record<string, any>;
+  target_url: string;
+}) => {
+  return html`
+    <!doctype html>
+    <html lang="en">
+      <head>
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 redirect' })}
+        <script>
+          window.parent.postMessage(
+            {
+              subject: 'lti.frameResize',
+              height: 100,
+            },
+            '*',
+          );
+        </script>
+      </head>
+      <body>
+        <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
+          <div class="container-fluid">
+            <a
+              class="navbar-brand"
+              href="${resLocals.homeUrl}"
+              target="_blank"
+              aria-label="Homepage"
+            >
+              <span class="navbar-brand-label">PrairieLearn</span>
+              <span class="navbar-brand-hover-label">
+                Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
+              </span>
+            </a>
+            <button
+              class="navbar-toggler"
+              type="button"
+              data-toggle="collapse"
+              data-target=".navbar-collapse"
+              aria-expanded="false"
+              aria-label="Toggle navigation"
+            >
+              <span class="navbar-toggler-icon"></span>
+            </button>
+            <span class="navbar-text">${resLocals.authn_user.name}</span>
+          </div>
+        </nav>
+
+        <main>
+          <a class="btn btn-primary btn-lg m-3" href="${target_url}" target="_blank"
+            >Open PrairieLearn in a new window</a
+          >
+        </main>
+      </body>
+    </html>
+  `.toString();
+};
