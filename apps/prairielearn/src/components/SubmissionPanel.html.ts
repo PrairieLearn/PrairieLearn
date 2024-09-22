@@ -151,7 +151,7 @@ export function SubmissionPanel({
                                     ? html`
                                         <button
                                           type="button"
-                                          class="btn btn-xs text-info"
+                                          class="btn btn-xs btn-ghost"
                                           data-toggle="popover"
                                           data-content="${item.explanation_rendered}"
                                           data-html="true"
@@ -225,7 +225,7 @@ export function SubmissionPanel({
           </div>
           <button
             type="button"
-            class="btn btn-outline-secondary btn-sm ml-2 mr-2"
+            class="btn btn-outline-dark btn-sm ml-2 mr-2"
             data-submission-id="${submission.id}"
             data-toggle="modal"
             data-target="#submissionInfoModal-${submission.id}"
@@ -235,7 +235,7 @@ export function SubmissionPanel({
           </button>
           <button
             type="button"
-            class="expand-icon-container btn btn-outline-secondary btn-sm text-nowrap ${!expanded
+            class="expand-icon-container btn btn-outline-dark btn-sm text-nowrap ${!expanded
               ? 'collapsed'
               : ''}"
             data-toggle="collapse"
