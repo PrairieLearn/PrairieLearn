@@ -96,7 +96,7 @@ describe('Question Sharing', function () {
       },
     };
 
-    sharingCourseData.courseInstances['Fa19'].assessments.test.sharedPublicly = true; // TEST
+    sharingCourseData.courseInstances.assessment['Fa19'].sharedPublicly = true; // TEST
 
     const sharingCourseResults = await syncUtil.writeAndSyncCourseData(sharingCourseData);
     sharingCourse = await selectCourseById(sharingCourseResults.syncResults.courseId);
