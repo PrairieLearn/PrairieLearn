@@ -68,13 +68,35 @@ export async function getInvalidSharingSetDeletions(
   );
 
   const invalidSharingSetDeletions: string[] = [];
-  const sharingSetNames = courseData.course.data?.sharingSets.map((ss) => ss.name);
+  const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
   sharingSets.forEach((sharingSet) => {
-    if (!sharingSetNames?.includes(sharingSet)) {
+    if (!sharingSetNames.includes(sharingSet)) {
       invalidSharingSetDeletions.push(sharingSet);
     }
   });
   return invalidSharingSetDeletions;
+}
+
+export async function getInvalidSharingSetAdditions(
+  courseData: CourseData,
+): Promise<Record<string, string[]>> {
+  const invalidSharingSetAdditions: Record<string, string[]> = {};
+  const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
+
+  for (const qid in courseData.questions) {
+    const question = courseData.questions[qid];
+    console.log(question);
+    const questionSharingSets = question.data?.sharingSets || [];
+    questionSharingSets.forEach((sharingSet) => {
+      if (!sharingSetNames.includes(sharingSet)) {
+        if (!invalidSharingSetAdditions[qid]) {
+          invalidSharingSetAdditions[qid] = [];
+        }
+        invalidSharingSetAdditions[qid].push(sharingSet);
+      }
+    });
+  }
+  return invalidSharingSetAdditions;
 }
 
 export async function getInvalidSharingSetRemovals(
@@ -105,7 +127,7 @@ export async function getInvalidSharingSetRemovals(
     question.sharing_sets.forEach((sharingSet) => {
       // TODO: allow if the sharing set hasn't been shared to a course
       if (!courseData.questions[question.qid].data?.sharingSets.includes(sharingSet)) {
-        if (!(question.qid in invalidSharingSetRemovals)) {
+        if (!invalidSharingSetRemovals[question.qid]) {
           invalidSharingSetRemovals[question.qid] = [];
         }
         invalidSharingSetRemovals[question.qid].push(sharingSet);

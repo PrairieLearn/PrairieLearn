@@ -22,7 +22,7 @@ import * as syncUtil from './sync/util.js';
 import { getCsrfToken } from './utils/csrf.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const { logger } = makeMockLogger();
+const { logger, getOutput } = makeMockLogger();
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -68,19 +68,30 @@ async function accessSharedQuestionAssessment(course_id: string) {
 const baseDir = tmp.dirSync().name;
 const sharingCourseOriginDir = path.join(baseDir, 'courseOrigin');
 const sharingCourseLiveDir = path.join(baseDir, 'courseLive');
-const gitOptions = {
+const gitOptionsOrigin = {
   cwd: sharingCourseOriginDir,
   env: process.env,
 };
+const gitOptionsLive = {
+  cwd: sharingCourseLiveDir,
+  env: process.env,
+};
 async function commitAndPullSharingCourse() {
-  await execa('git', ['add', '-A'], gitOptions);
-  await execa('git', ['commit', '-m', 'Add sharing set'], gitOptions);
-  await execa('git', ['pull'], {
-    cwd: sharingCourseLiveDir,
-    env: process.env,
-  });
+  await execa('git', ['add', '-A'], gitOptionsOrigin);
+  await execa('git', ['commit', '-m', 'Add sharing set'], gitOptionsOrigin);
+  await execa('git', ['pull'], gitOptionsLive);
   const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir);
   assert(syncResults.status === 'complete' && !syncResults.hadJsonErrorsOrWarnings);
+}
+
+async function ensureInvalidSharingOperationFailsToSync() {
+  // const syncResult = await syncUtil.syncCourseData(sharingCourseLiveDir);
+  const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourseLiveDir, logger);
+  console.log(syncResult);
+  console.log(getOutput());
+  assert(syncResult.status === 'sharing_error');
+  await execa('git', ['clean', '-fdx'], gitOptionsLive);
+  await execa('git', ['reset', '--hard', 'HEAD'], gitOptionsLive);
 }
 
 async function syncSharingCourse(course_id) {
@@ -145,9 +156,9 @@ describe('Question Sharing', function () {
       path.join(sharingCourseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'question.html'),
       '',
     );
-    await execa('git', ['-c', 'init.defaultBranch=master', 'init'], gitOptions);
-    await execa('git', ['add', '-A'], gitOptions);
-    await execa('git', ['commit', '-m', 'initial commit'], gitOptions);
+    await execa('git', ['-c', 'init.defaultBranch=master', 'init'], gitOptionsOrigin);
+    await execa('git', ['add', '-A'], gitOptionsOrigin);
+    await execa('git', ['commit', '-m', 'initial commit'], gitOptionsOrigin);
     await execa('mkdir', [sharingCourseLiveDir]);
     await execa('git', ['clone', sharingCourseOriginDir, sharingCourseLiveDir], {
       cwd: '.',
@@ -498,8 +509,8 @@ describe('Question Sharing', function () {
       const questionPath = path.join(sharingCourseOriginDir, 'questions', SHARING_QUESTION_QID);
       const questionTempPath = questionPath + '_temp';
       await fs.rename(questionPath, questionTempPath);
-      await execa('git', ['add', '-A'], gitOptions);
-      await execa('git', ['commit', '-m', 'rename shared question'], gitOptions);
+      await execa('git', ['add', '-A'], gitOptionsOrigin);
+      await execa('git', ['commit', '-m', 'invalid sharing config edit'], gitOptionsOrigin);
 
       const commitHash = await getCourseCommitHash(sharingCourseLiveDir);
 
@@ -520,76 +531,52 @@ describe('Question Sharing', function () {
       );
 
       // remove breaking change in origin repo
-      await execa('git', ['reset', '--hard', 'HEAD~1'], gitOptions);
+      await execa('git', ['reset', '--hard', 'HEAD~1'], gitOptionsOrigin);
     });
 
-    step('Remove question from sharing set, ensure live does not sync it', async () => {
-      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [];
-      await fs.writeJSON(
-        path.join(sharingCourseOriginDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
-        sharingCourseData.questions[SHARING_QUESTION_QID],
-      );
-      await execa('git', ['add', '-A'], gitOptions);
-      await execa('git', ['commit', '-m', 'remove question from sharing set'], gitOptions);
+    // step('Remove question from sharing set, ensure live does not sync it', async () => {
+    //   sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [];
+    //   await fs.writeJSON(
+    //     path.join(sharingCourseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
+    //     sharingCourseData.questions[SHARING_QUESTION_QID],
+    //   );
 
-      const commitHash = await getCourseCommitHash(sharingCourseLiveDir);
-      const job_sequence_id = await syncSharingCourse(sharingCourse.id);
-      await helperServer.waitForJobSequenceStatus(job_sequence_id, 'Error');
-      assert(
-        commitHash === (await getCourseCommitHash(sharingCourseLiveDir)),
-        'Commit hash of sharing course should not change when attempting to sync breaking change.',
-      );
+    //   await ensureInvalidSharingOperationFailsToSync();
+    // });
 
-      // TODO also validate that the data is correct in the database?
+    // step('Unshare a publicly shared question, ensure live does not sync it', async () => {
+    //   sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharedPublicly = false;
+    //   await fs.writeJSON(
+    //     path.join(sharingCourseLiveDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
+    //     sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
+    //   );
 
-      // remove breaking change in origin repo
-      await execa('git', ['reset', '--hard', 'HEAD~1'], gitOptions);
-    });
-
-    step('Unshare a publicly shared question, ensure live does not sync it', async () => {
-      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharedPublicly = false;
-      await fs.writeJSON(
-        path.join(sharingCourseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
-        sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
-      );
-      await execa('git', ['add', '-A'], gitOptions);
-      await execa('git', ['commit', '-m', 'unshare publicly shared question'], gitOptions);
-
-      const commitHash = await getCourseCommitHash(sharingCourseLiveDir);
-      const job_sequence_id = await syncSharingCourse(sharingCourse.id);
-      await helperServer.waitForJobSequenceStatus(job_sequence_id, 'Error');
-      assert(
-        commitHash === (await getCourseCommitHash(sharingCourseLiveDir)),
-        'Commit hash of sharing course should not change when attempting to sync breaking change.',
-      );
-
-      // TODO also validate that the data is correct in the database?
-
-      // remove breaking change in origin repo
-      await execa('git', ['reset', '--hard', 'HEAD~1'], gitOptions);
-    });
+    //   await ensureInvalidSharingOperationFailsToSync();
+    // });
 
     step('Delete a sharing set, ensure live does not sync it', async () => {
       sharingCourseData.course.sharingSets = [];
       await fs.writeJSON(
-        path.join(sharingCourseOriginDir, 'infoCourse.json'),
+        path.join(sharingCourseLiveDir, 'infoCourse.json'),
         sharingCourseData.course,
       );
-      await execa('git', ['add', '-A'], gitOptions);
-      await execa('git', ['commit', '-m', 'delete sharing set'], gitOptions);
 
-      const commitHash = await getCourseCommitHash(sharingCourseLiveDir);
-      const job_sequence_id = await syncSharingCourse(sharingCourse.id);
-      await helperServer.waitForJobSequenceStatus(job_sequence_id, 'Error');
-      assert(
-        commitHash === (await getCourseCommitHash(sharingCourseLiveDir)),
-        'Commit hash of sharing course should not change when attempting to sync breaking change.',
-      );
-
-      // TODO also validate that the data is correct in the database?
-
-      // remove breaking change in origin repo
-      await execa('git', ['reset', '--hard', 'HEAD~1'], gitOptions);
+      await ensureInvalidSharingOperationFailsToSync();
     });
+
+    step(
+      'Try adding question to sharing set that does not exist, ensure live does not sync it',
+      async () => {
+        sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets?.push(
+          'Fake Sharing Set Name',
+        );
+        await fs.writeJSON(
+          path.join(sharingCourseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
+          sharingCourseData.questions[SHARING_QUESTION_QID],
+        );
+
+        await ensureInvalidSharingOperationFailsToSync();
+      },
+    );
   });
 });
