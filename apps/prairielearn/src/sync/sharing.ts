@@ -85,7 +85,6 @@ export async function getInvalidSharingSetAdditions(
 
   for (const qid in courseData.questions) {
     const question = courseData.questions[qid];
-    console.log(question);
     const questionSharingSets = question.data?.sharingSets || [];
     questionSharingSets.forEach((sharingSet) => {
       if (!sharingSetNames.includes(sharingSet)) {

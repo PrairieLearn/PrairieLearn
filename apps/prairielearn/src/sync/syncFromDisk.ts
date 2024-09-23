@@ -22,6 +22,7 @@ import {
   getInvalidSharingSetRemovals,
   getInvalidPublicSharingRemovals,
   getInvalidSharingSetDeletions,
+  getInvalidSharingSetAdditions,
 } from './sharing.js';
 
 interface SyncResultSharingError {
@@ -85,8 +86,21 @@ export async function checkSharingConfigurationValid(
     sharingConfigurationValid = false;
   }
 
+  const invalidSharingSetAdditions = await getInvalidSharingSetAdditions(courseData);
+  if (Object.keys(invalidSharingSetAdditions).length > 0) {
+    logger.info(
+      chalk.red(
+        `✖ Course sync completely failed. The following questions are being added to sharing sets which do not exist: ${Object.keys(
+          invalidSharingSetAdditions,
+        )
+          .map((key) => `${key}: ${JSON.stringify(invalidSharingSetAdditions[key])}`)
+          .join(', ')}`,
+      ),
+    );
+    sharingConfigurationValid = false;
+  }
+
   const invalidSharingSetRemovals = await getInvalidSharingSetRemovals(courseId, courseData);
-  // console.log('Invalid Removals', invalidSharingSetRemovals);
   if (Object.keys(invalidSharingSetRemovals).length > 0) {
     logger.info(
       chalk.red(

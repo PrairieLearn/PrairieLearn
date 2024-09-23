@@ -22,7 +22,7 @@ import * as syncUtil from './sync/util.js';
 import { getCsrfToken } from './utils/csrf.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const { logger, getOutput } = makeMockLogger();
+const { logger } = makeMockLogger();
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -85,13 +85,13 @@ async function commitAndPullSharingCourse() {
 }
 
 async function ensureInvalidSharingOperationFailsToSync() {
-  // const syncResult = await syncUtil.syncCourseData(sharingCourseLiveDir);
-  const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourseLiveDir, logger);
-  console.log(syncResult);
-  console.log(getOutput());
+  let syncResult = await syncUtil.syncCourseData(sharingCourseLiveDir);
   assert(syncResult.status === 'sharing_error');
   await execa('git', ['clean', '-fdx'], gitOptionsLive);
   await execa('git', ['reset', '--hard', 'HEAD'], gitOptionsLive);
+
+  syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourseLiveDir, logger);
+  assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
 }
 
 async function syncSharingCourse(course_id) {
@@ -532,29 +532,36 @@ describe('Question Sharing', function () {
 
       // remove breaking change in origin repo
       await execa('git', ['reset', '--hard', 'HEAD~1'], gitOptionsOrigin);
+
+      const job_sequence_id_success = await syncSharingCourse(sharingCourse.id);
+      await helperServer.waitForJobSequenceStatus(job_sequence_id_success, 'Success');
     });
 
-    // step('Remove question from sharing set, ensure live does not sync it', async () => {
-    //   sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [];
-    //   await fs.writeJSON(
-    //     path.join(sharingCourseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
-    //     sharingCourseData.questions[SHARING_QUESTION_QID],
-    //   );
+    step('Remove question from sharing set, ensure live does not sync it', async () => {
+      const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets || [];
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [];
+      await fs.writeJSON(
+        path.join(sharingCourseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[SHARING_QUESTION_QID],
+      );
 
-    //   await ensureInvalidSharingOperationFailsToSync();
-    // });
+      await ensureInvalidSharingOperationFailsToSync();
 
-    // step('Unshare a publicly shared question, ensure live does not sync it', async () => {
-    //   sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharedPublicly = false;
-    //   await fs.writeJSON(
-    //     path.join(sharingCourseLiveDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
-    //     sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
-    //   );
+      sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = saveSharingSets;
+    });
 
-    //   await ensureInvalidSharingOperationFailsToSync();
-    // });
+    step('Unshare a publicly shared question, ensure live does not sync it', async () => {
+      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharedPublicly = false;
+      await fs.writeJSON(
+        path.join(sharingCourseLiveDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
+        sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
+      );
+
+      await ensureInvalidSharingOperationFailsToSync();
+    });
 
     step('Delete a sharing set, ensure live does not sync it', async () => {
+      const saveSharingSets = sharingCourseData.course.sharingSets || [];
       sharingCourseData.course.sharingSets = [];
       await fs.writeJSON(
         path.join(sharingCourseLiveDir, 'infoCourse.json'),
@@ -562,6 +569,8 @@ describe('Question Sharing', function () {
       );
 
       await ensureInvalidSharingOperationFailsToSync();
+
+      sharingCourseData.course.sharingSets = saveSharingSets;
     });
 
     step(
