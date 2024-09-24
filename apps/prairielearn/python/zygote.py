@@ -117,6 +117,26 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
         return None
 
 
+# We want to initialize the Faker seed, but only if faker is loaded
+class FakerInitializeMetaPathFinder(MetaPathFinder):
+    def __init__(self, seed: int) -> None:
+        self.seed = seed
+
+    def find_spec(
+        self,
+        fullname: str,
+        path: Sequence[str] | None,
+        target: types.ModuleType | None = None,
+    ):
+        if fullname == "faker" or fullname.startswith("faker."):
+            # Once this initialization is done we no longer need this meta path finder
+            sys.meta_path.remove(self)
+            from faker import Faker
+
+            Faker.seed(self.seed)
+        return None
+
+
 # This function tries to convert a python object to valid JSON. If an exception
 # is raised, this function prints the object and re-raises the exception. This is
 # helpful because the object - which contains something that cannot be converted
@@ -235,6 +255,7 @@ def worker_loop() -> None:
                 variant_seed = args[-1].get("variant_seed", None)
                 random.seed(variant_seed)
                 numpy.random.seed(variant_seed)
+                sys.meta_path.insert(0, FakerInitializeMetaPathFinder(variant_seed))
                 seeded = True
 
             # reset and then set up the path
