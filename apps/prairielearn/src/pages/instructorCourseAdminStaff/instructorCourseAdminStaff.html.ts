@@ -284,6 +284,7 @@ function CoursePermissionsInsertForm({
           <option value="Previewer">Previewer</option>
           <option value="Viewer">Viewer</option>
           <option value="Editor">Editor</option>
+          <option value="Owner">Owner</option>
         </select>
       </div>
 
@@ -574,7 +575,7 @@ function StaffTable({
                                     <p class="small">
                                       Can see but not edit scores of individual students for the
                                       course instance
-                                      <code><%= cir.short_name %></code>.
+                                      <code>${cir.short_name}</code>.
                                     </p>
                                   </div>
                                 </button>
@@ -590,7 +591,7 @@ function StaffTable({
                                     <p class="small">
                                       Can see and edit scores of individual students for the course
                                       instance
-                                      <code><%= cir.short_name %></code>.
+                                      <code>${cir.short_name}</code>.
                                     </p>
                                   </div>
                                 </button>
