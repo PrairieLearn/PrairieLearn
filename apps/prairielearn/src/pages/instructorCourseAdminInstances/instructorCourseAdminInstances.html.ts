@@ -62,7 +62,6 @@ export function InstructorCourseAdminInstances({
                       <button
                         class="btn btn-xs btn-light"
                         data-toggle="popover"
-                        data-trigger="focus"
                         data-container="body"
                         data-placement="bottom"
                         data-html="true"
@@ -78,7 +77,6 @@ export function InstructorCourseAdminInstances({
                       <button
                         class="btn btn-xs btn-light"
                         data-toggle="popover"
-                        data-trigger="focus"
                         data-container="body"
                         data-placement="bottom"
                         data-html="true"
