@@ -28,7 +28,7 @@
     "archiver": "^7.0.1",
     "async": "^3.2.6",
     "async-mutex": "^0.5.0",
-    "body-parser": "^1.20.2",
+    "body-parser": "^1.20.3",
     "debug": "^4.3.6",
     "dockerode": "^4.0.2",
     "express": "^4.19.2",

@@ -115,6 +115,7 @@ export async function pullAndUpdateCourse({
           return;
         }
 
+        const gitOptions = { cwd: path, env: gitEnv };
         const coursePathExists = await fs.pathExists(path);
         if (!coursePathExists) {
           // path does not exist, start with 'git clone'
@@ -132,7 +133,6 @@ export async function pullAndUpdateCourse({
             path,
             commit_hash,
           });
-          const gitOptions = { cwd: path, env: gitEnv };
 
           job.info('Updating to latest remote origin address');
           await job.exec('git', ['remote', 'set-url', 'origin', repository], gitOptions);
@@ -162,6 +162,13 @@ export async function pullAndUpdateCourse({
 
         job.info('Sync git repository to database');
         const syncResult = await syncDiskToSqlWithLock(courseId, path, job);
+        if (syncResult.status === 'sharing_error') {
+          if (startGitHash) {
+            await job.exec('git', ['reset', '--hard', startGitHash], gitOptions);
+          }
+          job.fail('Sync completely failed due to invalid question sharing edit.');
+          return;
+        }
 
         if (config.chunksGenerator) {
           const chunkChanges = await chunks.updateChunksForCourse({
