@@ -1,12 +1,12 @@
 import csv
 import json
+from os import path
 
 with open("./sharing_sets.csv", mode="r") as sharingSetsFile:
     csv_dict_reader = csv.DictReader(sharingSetsFile)
 
     with open("infoCourse.json", mode="r+") as infoCourseFile:
         infoCourse = json.loads(infoCourseFile.read())
-        # print(infoCourse)
         if "sharingSets" not in infoCourse:
             infoCourse["sharingSets"] = []
 
@@ -24,16 +24,27 @@ with open("./sharing_sets.csv", mode="r") as sharingSetsFile:
 
 
 
-# # Example dictionary to save as JSON
-# data = {
-#     "name": "John",
-#     "age": 30,
-#     "city": "New York",
-#     "hobbies": ["reading", "traveling", "coding"],
-# }
+with open("./question_sharing_info.csv", mode="r") as sharingInfoFile:
+    csv_dict_reader = csv.DictReader(sharingInfoFile)
 
-# # Saving the dictionary as a formatted JSON file
-# with open("output.json", "w") as file:
-#     json.dump(data, file, indent="  ")  # Use '\t' to format with tabs
+    for row in csv_dict_reader:
+        qid = row['qid']
+        question_path = path.join('questions', qid, 'info.json')
+        with open(question_path, mode="r+") as infoFile:
+            infoQuestion = json.loads(infoFile.read())
 
-# print("JSON saved with tabbed formatting.")
+            if row['shared_publicly'] == 't':
+                infoQuestion['sharedPublicly'] = True
+
+            if row['sharing_sets'] != '':
+                if "sharingSets" not in infoQuestion:
+                    infoQuestion["sharingSets"] = []
+
+                sharingSets = json.loads(row['sharing_sets'])
+                for sharingSet in sharingSets:
+                    if sharingSet not in infoQuestion['sharingSets']:
+                        infoQuestion["sharingSets"].append(sharingSet)
+
+            infoFile.seek(0)
+            infoFile.truncate()
+            infoFile.write(json.dumps(infoQuestion, indent="  "))
