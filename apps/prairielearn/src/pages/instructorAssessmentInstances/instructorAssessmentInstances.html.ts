@@ -218,7 +218,7 @@ function FingerprintChangesHelpModal() {
     title: 'Client Fingerprints',
     body: html`
       <p>
-        Client fingerprints are a record of a user's IP address, user agent and sesssion. These
+        Client fingerprints are a record of a user's IP address, user agent and session. These
         attributes are tracked while a user is accessing an assessment. This value indicates the
         amount of times that those attributes changed as the student accessed the assessment, while
         the assessment was active. Some changes may naturally occur during an assessment, such as if
