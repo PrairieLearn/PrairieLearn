@@ -14,7 +14,7 @@ In your `infoCourse.json`, you will need to list all of the sharing sets that yo
 ...
 
 "sharingSets": [
-{"name": "python-exercises", "description": "Python exercises for shraing"},
+{"name": "python-exercises", "description": "Python exercises for sharing"},
 {"name": "final-exam", "description": "Questions that can be used on a final exam"}
 ]
 ...
