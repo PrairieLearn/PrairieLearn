@@ -95,6 +95,7 @@ window.PLOrderBlocks = function (uuid, options) {
           }
         };
         switch (ev.key) {
+          case ' ': // Space key
           case 'Enter':
             handleKey(ev, block, () => block.classList.add('pl-order-blocks-selected'));
             break;
@@ -141,6 +142,9 @@ window.PLOrderBlocks = function (uuid, options) {
         }
       } else {
         switch (ev.key) {
+          case ' ': // If selected, space bar should PreventDefault
+            handleKey(ev, block, () => {});
+            break;
           case 'ArrowDown':
             handleKey(ev, block, () => {
               if (block.nextElementSibling) {
