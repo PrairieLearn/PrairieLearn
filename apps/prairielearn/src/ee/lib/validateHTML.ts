@@ -119,6 +119,7 @@ function assertBool(tag: string, key: string, val: string, errors: string[]) {
 /**
  * Checks that a tag has valid properties.
  * @param ast The tree to consider, rooted at the tag.
+ * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns The list of errors for the tag, if any.
  */
 function checkTag(ast: any, optimistic: boolean): string[] {
@@ -474,6 +475,11 @@ function checkStringInput(ast: any): string[] {
   return errors;
 }
 
+/**
+ * Checks that a `pl-checkbox` element has valid properties.
+ * @param ast The tree to consider, rooted at the tag to consider.
+ * @returns The list of errors for the tag, if any.
+ */
 function checkCheckbox(ast: any): string[] {
   const errors: string[] = [];
   let usedAnswersName = false;
@@ -527,12 +533,25 @@ function checkCheckbox(ast: any): string[] {
       'pl-checkbox: if partial-credit-method is set, then partial-credit must be set to true.',
     );
   }
-  return errors;
+  
+  let errorsChildren: string[] = [];
+  for (const child of ast.childNodes) {
+    if (child.tagName) {
+      if (child.tagName === 'pl-answer') {
+        errorsChildren = errorsChildren.concat(checkAnswerMultipleChoice(child));
+      } else {
+        errorsChildren.push(`pl-multiple-choice: ${child.tagName} is not a valid child tag.`);
+      }
+    }
+  }
+
+  return errors.concat(errorsChildren);
 }
 
 /**
  * Optimistically checks the entire parse tree for errors in common PL tags recursively.
  * @param ast The tree to consider.
+ * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns A list of human-readable error messages, if any.
  */
 function dfsCheckParseTree(ast: any, optimistic: boolean): string[] {
@@ -549,6 +568,7 @@ function dfsCheckParseTree(ast: any, optimistic: boolean): string[] {
 /**
  * Checks for errors in common PL elements in an index.html file.
  * @param file The raw text of the file to use.
+ * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns A list of human-readable render error messages, if any.
  */
 export function validateHTML(file: string, optimistic: boolean): string[] {
