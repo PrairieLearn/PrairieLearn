@@ -2,7 +2,7 @@ Subject: Changes to Question Sharing in PrairieLearn
 
 First, I want to say thank you again for being one of our Beta users of PrairieLearn's question sharing features.
 
-We will be pushing some updates to the Question Sharing system soon that will require some action on your part to ensure your course continues to sync correctly.
+We will be pushing some updates to the question sharing system soon that will require some action on your part to ensure your course continues to sync correctly.
 
 Specifically, the sharing configuration of questions will be specified in JSON files, rather than only being edited in the web user interface.
 
