@@ -71,6 +71,9 @@ router.get(
       ).toString();
     }
 
+    const canEdit =
+      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
+
     res.send(
       InstructorAssessmentSettings({
         resLocals: res.locals,
@@ -80,6 +83,7 @@ router.get(
         infoAssessmentPath,
         assessmentSets,
         assessmentModules,
+        canEdit,
       }),
     );
   }),
@@ -157,15 +161,13 @@ router.post(
         }
       }
     } else if (req.body.__action === 'update_assessment') {
-      const infoAssessmentPath = encodePath(
-        path.join(
-          res.locals.course.path,
-          'courseInstances',
-          res.locals.course_instance.short_name,
-          'assessments',
-          res.locals.assessment.tid,
-          'infoAssessment.json',
-        ),
+      const infoAssessmentPath = path.join(
+        res.locals.course.path,
+        'courseInstances',
+        res.locals.course_instance.short_name,
+        'assessments',
+        res.locals.assessment.tid,
+        'infoAssessment.json',
       );
       if (!(await fs.pathExists(infoAssessmentPath))) {
         throw new error.HttpStatusError(400, 'infoAssessment.json does not exist');
@@ -173,12 +175,13 @@ router.post(
       const paths = getPaths(undefined, res.locals);
 
       const assessmentInfo = JSON.parse(await fs.readFile(infoAssessmentPath, 'utf8'));
-      const assessmentInfoEdit = assessmentInfo;
-      assessmentInfoEdit.title = req.body.title;
-      assessmentInfoEdit.set = req.body.set;
-      assessmentInfoEdit.number = req.body.number;
-      assessmentInfoEdit.module = req.body.module;
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfoEdit));
+      assessmentInfo.title = req.body.title;
+      assessmentInfo.set = req.body.set;
+      assessmentInfo.number = req.body.number;
+      if (assessmentInfo.module != null || req.body.module !== 'Default') {
+        assessmentInfo.module = req.body.module;
+      }
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(assessmentInfo));
 
       const editor = new FileModifyEditor({
         locals: res.locals,
@@ -193,7 +196,6 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-        flash('success', 'Assessment updated successfully');
       } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
@@ -208,34 +210,32 @@ router.post(
           `Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
         );
       }
-      if (res.locals.assessment.tid === req.body.aid) {
-        return res.redirect(req.originalUrl);
-      }
-      let tid_new;
-      try {
-        tid_new = path.normalize(req.body.aid);
-      } catch {
-        throw new error.HttpStatusError(
-          400,
-          `Invalid TID (could not be normalized): ${req.body.aid}`,
-        );
-      }
-      if (res.locals.assessment.tid === tid_new) {
-        res.redirect(req.originalUrl);
-      } else {
-        const editor = new AssessmentRenameEditor({
-          locals: res.locals,
-          tid_new,
-        });
-
-        const serverJob = await editor.prepareServerJob();
+      if (res.locals.assessment.tid !== req.body.aid) {
+        let tid_new;
         try {
-          await editor.executeWithServerJob(serverJob);
-          return res.redirect(req.originalUrl);
+          tid_new = path.normalize(req.body.aid);
         } catch {
-          return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+          throw new error.HttpStatusError(
+            400,
+            `Invalid TID (could not be normalized): ${req.body.aid}`,
+          );
+        }
+        if (res.locals.assessment.tid !== tid_new) {
+          const editor = new AssessmentRenameEditor({
+            locals: res.locals,
+            tid_new,
+          });
+
+          const serverJob = await editor.prepareServerJob();
+          try {
+            await editor.executeWithServerJob(serverJob);
+          } catch {
+            return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+          }
         }
       }
+      flash('success', 'Assessment updated successfully');
+      return res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

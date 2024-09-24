@@ -19,6 +19,8 @@ onDocumentReady(function () {
 
     if (otherTids.includes(newValue) && newValue !== tidField.defaultValue) {
       tidField.setCustomValidity('This ID is already in use');
+    } else if (newValue.includes(' ')) {
+      tidField.setCustomValidity('ID cannot contain spaces');
     } else {
       tidField.setCustomValidity('');
     }

@@ -15,6 +15,7 @@ export function InstructorAssessmentSettings({
   infoAssessmentPath,
   assessmentSets,
   assessmentModules,
+  canEdit,
 }: {
   resLocals: Record<string, any>;
   origHash: string;
@@ -23,6 +24,7 @@ export function InstructorAssessmentSettings({
   infoAssessmentPath: string;
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
+  canEdit: boolean;
 }) {
   return html`
     <!doctype html>
@@ -62,10 +64,7 @@ export function InstructorAssessmentSettings({
                     id="title"
                     name="title"
                     value="${resLocals.assessment.title}"
-                    ${resLocals.authz_data.has_course_permission_edit &&
-                    !resLocals.course.example_course
-                      ? ''
-                      : 'disabled'}
+                    ${canEdit ? '' : 'disabled'}
                   />
                   <small class="form-text text-muted"> The title of the assessment. </small>
                 </div>
@@ -85,8 +84,17 @@ export function InstructorAssessmentSettings({
                 </div>
                 <div class="form-group">
                   <label for="set">Set</label>
-                  <select class="form-control" id="set" name="set">
-                    ${setOptions({ assessmentSets, selectedSet: resLocals.assessment_set.name })}
+                  <select class="form-control" id="set" name="set" ${canEdit ? '' : 'disabled'}>
+                    ${assessmentSets.map(
+                      (set) => html`
+                        <option
+                          value="${set.name}"
+                          ${resLocals.assessment_set.name === set.name ? 'selected' : ''}
+                        >
+                          ${set.name}
+                        </option>
+                      `,
+                    )}
                   </select>
                   <small class="form-text text-muted">
                     The
@@ -102,10 +110,7 @@ export function InstructorAssessmentSettings({
                     id="number"
                     name="number"
                     value="${resLocals.assessment.number}"
-                    ${resLocals.authz_data.has_course_permission_edit &&
-                    !resLocals.course.example_course
-                      ? ''
-                      : 'disabled'}
+                    ${canEdit ? '' : 'disabled'}
                   />
                   <small class="form-text text-muted">
                     The number of the assessment within the set.
@@ -113,11 +118,22 @@ export function InstructorAssessmentSettings({
                 </div>
                 <div class="form-group">
                   <label for="module">Module</label>
-                  <select class="form-control" id="module" name="module">
-                    ${modulesOptions({
-                      assessmentModules,
-                      selectedModule: resLocals.assessment_module.name,
-                    })}
+                  <select
+                    class="form-control"
+                    id="module"
+                    name="module"
+                    ${canEdit ? '' : 'disabled'}
+                  >
+                    ${assessmentModules.map(
+                      (module) => html`
+                        <option
+                          value="${module.name}"
+                          ${resLocals.assessment_module.name === module.name ? 'selected' : ''}
+                        >
+                          ${module.name}
+                        </option>
+                      `,
+                    )}
                   </select>
                   <small class="form-text text-muted">
                     The <a href="${resLocals.urlPrefix}/course_admin/modules">module</a> this
@@ -133,10 +149,7 @@ export function InstructorAssessmentSettings({
                     name="aid"
                     value="${resLocals.assessment.tid}"
                     data-other-values="${tids.join(',')}"
-                    ${resLocals.authz_data.has_course_permission_edit &&
-                    !resLocals.course.example_course
-                      ? ''
-                      : 'disabled'}
+                    ${canEdit ? '' : 'disabled'}
                   />
                   <small class="form-text text-muted">
                     The unique identifier for this assessment. This may contain only letters,
@@ -180,8 +193,7 @@ export function InstructorAssessmentSettings({
                   </small>
                 </div>
                 ${resLocals.authz_data.has_course_permission_view
-                  ? resLocals.authz_data.has_course_permission_edit &&
-                    !resLocals.course.example_course
+                  ? canEdit
                     ? html`
                         <div>
                           <button
@@ -222,7 +234,7 @@ export function InstructorAssessmentSettings({
                   : ''}
               </form>
             </div>
-            ${resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course
+            ${canEdit
               ? html`
                   <div class="card-footer d-flex flex-wrap align-items-center">
                     <form name="copy-assessment-form" class="mr-2" method="POST">
@@ -273,34 +285,4 @@ export function InstructorAssessmentSettings({
       </body>
     </html>
   `.toString();
-}
-
-function setOptions({
-  assessmentSets,
-  selectedSet,
-}: {
-  assessmentSets: AssessmentSet[];
-  selectedSet: string;
-}) {
-  return assessmentSets.map(
-    (set) => html`
-      <option value="${set.name}" ${selectedSet === set.name ? 'selected' : ''}>${set.name}</option>
-    `,
-  );
-}
-
-function modulesOptions({
-  assessmentModules,
-  selectedModule,
-}: {
-  assessmentModules: AssessmentModule[];
-  selectedModule: string;
-}) {
-  return assessmentModules.map(
-    (module) => html`
-      <option value="${module.name}" ${selectedModule === module.name ? 'selected' : ''}>
-        ${module.name}
-      </option>
-    `,
-  );
 }
