@@ -101,6 +101,67 @@ describe('Editing assessment settings', () => {
     assert.equal(assessmentLiveInfo.module, 'Module2');
   });
 
+  step('verify nesting an assessment id', async () => {
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
+
+    const response = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
+      {
+        method: 'POST',
+        form: {
+          __action: 'update_assessment',
+          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
+          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+          title: 'Test Title',
+          type: 'Homework',
+          set: 'Practice Quiz',
+          number: '1',
+          module: 'Module2',
+          aid: 'nestedPath/HW2',
+        },
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`);
+  });
+
+  step('verify changing aid did not leave empty directories', async () => {
+    const assessmentDir = path.join(assessmentLiveDir, 'HW2');
+    assert.equal(await fs.pathExists(assessmentDir), false);
+  });
+
+  step('verify reverting a nested assessment id works correctly', async () => {
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
+
+    const response = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
+      {
+        method: 'POST',
+        form: {
+          __action: 'update_assessment',
+          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
+          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+          title: 'Test Title',
+          type: 'Homework',
+          set: 'Practice Quiz',
+          number: '1',
+          module: 'Module2',
+          aid: 'HW2',
+        },
+      },
+    );
+
+    assert.equal(response.status, 200);
+    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`);
+  });
+
   step('pull and verify changes', async () => {
     await execa('git', ['pull'], { cwd: courseDevDir, env: process.env });
     assessmentDevInfoPath = path.join(assessmentDevDir, 'HW2', 'infoAssessment.json');
