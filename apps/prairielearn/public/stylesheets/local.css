@@ -127,6 +127,29 @@ mjx-container {
 }
 
 /**
+ * Identical to the variables for `btn-light`, except with a transparent
+ * background and border in the default state. This style is useful for
+ * buttons that should carry little visual weight, while still ensuring
+ * that they have hover/focus/active styles.
+ */
+.btn.btn-ghost {
+  --bs-btn-color: #000;
+  --bs-btn-bg: transparent;
+  --bs-btn-border-color: transparent;
+  --bs-btn-hover-color: #000;
+  --bs-btn-hover-bg: #d3d4d5;
+  --bs-btn-hover-border-color: #c6c7c8;
+  --bs-btn-focus-shadow-rgb: 211, 212, 213;
+  --bs-btn-active-color: #000;
+  --bs-btn-active-bg: #c6c7c8;
+  --bs-btn-active-border-color: #babbbc;
+  --bs-btn-active-shadow: inset 0 3px 5px rgba(0, 0, 0, 0.125);
+  --bs-btn-disabled-color: #000;
+  --bs-btn-disabled-bg: #f8f9fa;
+  --bs-btn-disabled-border-color: #f8f9fa;
+}
+
+/**
  * Remove the bottom border from the final row of the last table in a card.
  */
 .card > table.table:last-of-type tbody tr:last-child th,
@@ -134,6 +157,31 @@ mjx-container {
 .card > .table-responsive > table.table:last-of-type tbody tr:last-child th,
 .card > .table-responsive > table.table:last-of-type tbody tr:last-child td {
   border-bottom: 0;
+}
+
+/**
+ * Subtle pulsing animation for warning pop-ups
+ */
+@keyframes pulse {
+  0%,
+  40%,
+  60%,
+  100% {
+    transform: scale(100%);
+  }
+
+  45%,
+  55% {
+    transform: scale(103%);
+  }
+
+  50% {
+    transform: scale(100%);
+  }
+}
+
+.pulse {
+  animation: pulse 3s infinite;
 }
 
 /**************
@@ -368,7 +416,8 @@ small .user-output-invalid {
   outline-offset: -2px !important;
 }
 
-.btn.btn-light:focus:focus-visible {
+.btn.btn-light:focus:focus-visible,
+.btn.btn-ghost:focus:focus-visible {
   outline-style: solid !important;
   outline-color: var(--bs-btn-hover-color, #000000) !important;
   outline-width: 2px !important;

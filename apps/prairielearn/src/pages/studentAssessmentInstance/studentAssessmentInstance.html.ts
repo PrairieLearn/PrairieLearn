@@ -73,7 +73,7 @@ export function StudentAssessmentInstance({
                 serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
                 serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
                 canTriggerFinish: resLocals.authz_result.authorized_edit,
-                showsTimeoutWarning: false,
+                showsTimeoutWarning: true,
                 reloadOnFail: true,
                 csrfToken: resLocals.__csrf_token,
               },
@@ -529,7 +529,6 @@ export function StudentAssessmentInstance({
             course_instance: resLocals.course_instance,
             assessment: resLocals.assessment,
             assessment_instance: resLocals.assessment_instance,
-            user: resLocals.user,
             instance_group: resLocals.instance_group,
             instance_group_uid_list: resLocals.instance_group_uid_list,
             instance_user: resLocals.instance_user,
@@ -650,18 +649,16 @@ function ZoneInfoBadge({
   mainContent: string;
 }) {
   return html`
-    <a
-      tabindex="0"
+    <button
+      type="button"
       class="btn btn-xs btn-secondary badge badge-secondary text-white font-weight-normal py-1"
-      role="button"
       data-toggle="popover"
-      data-trigger="focus"
       data-container="body"
       data-html="true"
       data-content="${popoverContent}"
     >
       ${mainContent}&nbsp;<i class="far fa-question-circle" aria-hidden="true"></i>
-    </a>
+    </button>
   `;
 }
 
@@ -690,12 +687,10 @@ function RowLabel({
     ${lockedPopoverText != null
       ? html`
           <span class="text-muted">${rowLabelText}</span>
-          <a
-            tabindex="0"
+          <button
+            type="button"
             class="btn btn-xs border text-secondary ml-1"
-            role="button"
             data-toggle="popover"
-            data-trigger="focus"
             data-container="body"
             data-html="true"
             data-content="${lockedPopoverText}"
@@ -703,26 +698,24 @@ function RowLabel({
             aria-label="Locked"
           >
             <i class="fas fa-lock" aria-hidden="true"></i>
-          </a>
+          </button>
         `
       : html`
           <a href="${urlPrefix}/instance_question/${instance_question.id}/">${rowLabelText}</a>
         `}
     ${instance_question.file_count > 0
       ? html`
-          <a
-            tabindex="0"
+          <button
+            type="button"
             class="btn btn-xs border text-secondary ml-1"
-            role="button"
             data-toggle="popover"
-            data-trigger="focus"
             data-container="body"
             data-html="true"
             data-content="Personal notes: ${instance_question.file_count}"
             aria-label="Has personal note attachments"
           >
             <i class="fas fa-paperclip"></i>
-          </a>
+          </button>
         `
       : ''}
   `;
@@ -730,55 +723,52 @@ function RowLabel({
 
 function ExamQuestionHelpBestSubmission() {
   return html`
-    <a
-      tabindex="0"
-      role="button"
+    <button
+      type="button"
+      class="btn btn-xs btn-ghost"
       data-toggle="popover"
-      data-trigger="focus"
       data-container="body"
       data-html="true"
       data-placement="auto"
       title="Best submission"
       data-content="The percentage score of the best submitted answer, or whether the question is <strong>unanswered</strong>, has a <strong>saved</strong> but ungraded answer, or is in <strong>grading</strong>."
     >
-      <i class="far fa-question-circle" aria-hidden="true"></i>
-    </a>
+      <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </button>
   `;
 }
 
 function ExamQuestionHelpAvailablePoints() {
   return html`
-    <a
-      tabindex="0"
-      role="button"
+    <button
+      type="button"
+      class="btn btn-xs btn-ghost"
       data-toggle="popover"
-      data-trigger="focus"
       data-container="body"
       data-html="true"
       data-placement="auto"
       title="Available points"
       data-content="The number of points that would be earned for a 100% correct answer on the next attempt. If retries are available for the question then a list of further points is shown, where the <i>n</i>-th value is the number of points that would be earned for a 100% correct answer on the <i>n</i>-th attempt."
     >
-      <i class="far fa-question-circle" aria-hidden="true"></i>
-    </a>
+      <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </button>
   `;
 }
 
 function ExamQuestionHelpAwardedPoints() {
   return html`
-    <a
-      tabindex="0"
-      role="button"
+    <button
+      type="button"
+      class="btn btn-xs btn-ghost"
       data-toggle="popover"
-      data-trigger="focus"
       data-container="body"
       data-html="true"
       data-placement="auto"
       title="Awarded points"
       data-content="The number of points already earned, as a fraction of the maximum possible points for the question."
     >
-      <i class="far fa-question-circle" aria-hidden="true"></i>
-    </a>
+      <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </button>
   `;
 }
 

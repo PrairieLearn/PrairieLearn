@@ -8,6 +8,7 @@ from types import ModuleType
 
 import numpy as np
 import pl_helpers
+from faker import Faker
 
 
 class UserCodeFailed(Exception):
@@ -19,6 +20,7 @@ class UserCodeFailed(Exception):
 def set_random_seed(seed=None):
     np.random.seed(seed)
     random.seed(seed)
+    Faker.seed(seed)
 
 
 def try_read(fname):
