@@ -235,6 +235,16 @@ export const AssessmentInstanceSchema = z.object({
 });
 export type AssessmentInstance = z.infer<typeof AssessmentInstanceSchema>;
 
+export const AssessmentModuleSchema = z.object({
+  id: IdSchema,
+  course_id: IdSchema,
+  name: z.string(),
+  heading: z.string().nullable(),
+  number: z.number().nullable(),
+  implicit: z.boolean(),
+});
+export type AssessmentModule = z.infer<typeof AssessmentModuleSchema>;
+
 export const AssessmentQuestionSchema = z.object({
   advance_score_perc: z.number().nullable(),
   alternative_group_id: IdSchema.nullable(),
@@ -617,6 +627,13 @@ export const InstitutionSchema = z.object({
 });
 export type Institution = z.infer<typeof InstitutionSchema>;
 
+export const InstitutionAdministratorSchema = z.object({
+  id: IdSchema,
+  institution_id: IdSchema,
+  user_id: IdSchema,
+});
+export type InstitutionAdministrator = z.infer<typeof InstitutionAdministratorSchema>;
+
 export const IssueSchema = z.object({
   assessment_id: IdSchema.nullable(),
   authn_user_id: IdSchema.nullable(),
@@ -686,6 +703,16 @@ export const JobSequenceSchema = z.object({
 });
 export type JobSequence = z.infer<typeof JobSequenceSchema>;
 
+export const Lti13AssessmentsSchema = z.object({
+  assessment_id: IdSchema,
+  id: IdSchema,
+  last_activity: DateFromISOString,
+  lineitem_id_url: z.string(),
+  lineitem: z.record(z.string(), z.any()),
+  lti13_course_instance_id: IdSchema,
+});
+export type Lti13Assessments = z.infer<typeof Lti13AssessmentsSchema>;
+
 export const Lti13CourseInstanceSchema = z.object({
   context_id: z.string(),
   context_label: z.string().nullable(),
@@ -695,6 +722,8 @@ export const Lti13CourseInstanceSchema = z.object({
   deployment_id: z.string(),
   id: IdSchema,
   lti13_instance_id: IdSchema,
+  lineitems_url: z.string().nullable(),
+  context_memberships_url: z.string().nullable(),
 });
 export type Lti13CourseInstance = z.infer<typeof Lti13CourseInstanceSchema>;
 

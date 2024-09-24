@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 
 export const CourseInstanceRowSchema = z.object({
   label: z.string(),
@@ -38,10 +38,7 @@ export function Enroll({
         ]}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'enroll',
-        })}
+        ${Navbar({ resLocals, navPage: 'enroll' })}
         ${AddCourseModal({ csrfToken: resLocals.__csrf_token })}
         ${RemoveCourseModal({ csrfToken: resLocals.__csrf_token })}
         <main id="content" class="container">
@@ -121,10 +118,7 @@ export function EnrollLtiMessage({
         ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'enroll',
-        })}
+        ${Navbar({ resLocals, navPage: 'enroll' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
@@ -165,10 +159,7 @@ export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: Recor
         ${HeadContents({ resLocals, pageTitle: 'Enrollment - Courses' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'enroll',
-        })}
+        ${Navbar({ resLocals, navPage: 'enroll' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-danger text-white">Enrollment limit exceeded</div>

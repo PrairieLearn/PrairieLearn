@@ -1,10 +1,10 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import {
   compiledStylesheetTag,
@@ -18,11 +18,11 @@ import { InstanceQuestionTableData } from './assessmentQuestion.types.js';
 export function AssessmentQuestion({
   resLocals,
   courseStaff,
-  botGradingEnabled,
+  aiGradingEnabled,
 }: {
   resLocals: Record<string, any>;
   courseStaff: User[];
-  botGradingEnabled: boolean;
+  aiGradingEnabled: boolean;
 }) {
   const {
     number_in_alternative_group,
@@ -67,7 +67,7 @@ export function AssessmentQuestion({
             maxPoints: assessment_question.max_points,
             groupWork: assessment.group_work,
             maxAutoPoints: assessment_question.max_auto_points,
-            botGradingEnabled,
+            aiGradingEnabled,
             courseStaff,
             csrfToken: __csrf_token,
           },
@@ -75,8 +75,7 @@ export function AssessmentQuestion({
         )}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
-        ${GradingConflictModal()}
+        ${Navbar({ resLocals })} ${GradingConflictModal()}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
             authz_data,
@@ -98,10 +97,10 @@ export function AssessmentQuestion({
             <i class="fas fa-arrow-left"></i>
             Back to ${assessment_set.name} ${assessment.number} Overview
           </a>
-          ${botGradingEnabled
+          ${aiGradingEnabled
             ? html`
-                <form name="start-bot-grading" method="POST" id="bot-grading">
-                  <input type="hidden" name="__action" value="bot_grade_assessment" />
+                <form name="start-ai-grading" method="POST" id="ai-grading">
+                  <input type="hidden" name="__action" value="ai_grade_assessment" />
                   <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                 </form>
               `

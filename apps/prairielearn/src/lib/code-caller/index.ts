@@ -1,21 +1,22 @@
 // @ts-check
 import * as os from 'node:os';
-import { setTimeout as sleep } from 'node:timers/promises';
 
 import debugfn from 'debug';
-import { createPool } from 'generic-pool';
+import { createPool, type Pool } from 'generic-pool';
 import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
+import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
 import * as chunks from '../chunks.js';
 import { config } from '../config.js';
+import { Course } from '../db-types.js';
 import * as load from '../load.js';
 
 import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container.js';
 import { CodeCallerNative } from './code-caller-native.js';
-import { FunctionMissingError } from './code-caller-shared.js';
+import { type CodeCaller, FunctionMissingError } from './code-caller-shared.js';
 
 const debug = debugfn('prairielearn:code-caller');
 
@@ -29,45 +30,7 @@ const debug = debugfn('prairielearn:code-caller');
  * - python_callback_waiting: number of queued jobs/callbacks waiting for an available worker
  */
 
-/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
-
-/** @type {import('generic-pool').Pool<CodeCaller> | null} */
-let pool = null;
-
-/** @type {Set<CodeCaller>} */
-let unhealthyCodeCallers = new Set();
-
-async function getHealthyCodeCaller() {
-  if (!pool) {
-    throw new Error('CodeCaller pool not initialized');
-  }
-
-  // eslint-disable-next-line no-constant-condition
-  while (true) {
-    const codeCaller = await pool.acquire();
-    if (!unhealthyCodeCallers.has(codeCaller)) {
-      return codeCaller;
-    }
-    await pool.release(codeCaller);
-    await sleep(0);
-  }
-}
-
-function destroyUnhealthyCodeCallers() {
-  unhealthyCodeCallers.forEach((codeCaller) => {
-    // Delete from the set first. That way, if `pool.destroy()` is still running
-    // on the next tick of this `destroyUnhealthyCodeCallers()` function, we
-    // won't try to destroy it again.
-    unhealthyCodeCallers.delete(codeCaller);
-    pool?.destroy(codeCaller).catch((err) => {
-      logger.error('Error destroying unhealthy Python worker', err);
-      Sentry.captureException(err);
-    });
-  });
-
-  // Unref the timeout so that it doesn't keep the process alive.
-  setTimeout(destroyUnhealthyCodeCallers, 100).unref();
-}
+let pool: Pool<CodeCaller> | null = null;
 
 export async function init() {
   debug('init()');
@@ -86,27 +49,33 @@ export async function init() {
   }
 
   const numWorkers = config.workersCount ?? Math.ceil(config.workersPerCpu * os.cpus().length);
-  pool = createPool(
+  pool = createPool<CodeCaller>(
     {
       create: async () => {
-        let codeCallerOptions = {
+        const codeCallerOptions = {
           questionTimeoutMilliseconds: config.questionTimeoutMilliseconds,
           pingTimeoutMilliseconds: config.workerPingTimeoutMilliseconds,
           errorLogger: logger.error.bind(logger),
         };
-        let codeCaller;
-        if (workersExecutionMode === 'container') {
-          codeCaller = new CodeCallerContainer(codeCallerOptions);
-        } else if (workersExecutionMode === 'native') {
-          codeCaller = new CodeCallerNative(codeCallerOptions);
-        } else {
-          throw new Error(`Unexpected workersExecutionMode: ${workersExecutionMode}`);
-        }
+
+        const codeCaller = run(() => {
+          if (workersExecutionMode === 'container') {
+            return new CodeCallerContainer(codeCallerOptions);
+          } else if (workersExecutionMode === 'native') {
+            return new CodeCallerNative(codeCallerOptions);
+          } else {
+            throw new Error(`Unexpected workersExecutionMode: ${workersExecutionMode}`);
+          }
+        });
+
         await codeCaller.ensureChild();
         load.startJob('python_worker_idle', codeCaller.uuid);
         return codeCaller;
       },
       destroy: async (codeCaller) => {
+        logger.info(
+          `Destroying Python worker ${codeCaller.uuid} (last course path: ${codeCaller.getCoursePath()})`,
+        );
         load.endJob('python_worker_idle', codeCaller.uuid);
         codeCaller.done();
       },
@@ -126,24 +95,6 @@ export async function init() {
     logger.error('Error destroying Python worker', err);
     Sentry.captureException(err);
   });
-
-  // This is part of a huge kludge we use to work around the fact that Sentry
-  // uses domains. We need to ensure that new code callers are only created
-  // outside the context of the domain of a request. Otherwise, if a request
-  // has very large objects associated with it (e.g. `res.locals` for a large
-  // submission), those objects will be kept alive forever by the domain, which
-  // ends up being associated with the Docker HTTP client that survives for
-  // the lifetime of the container.
-  //
-  // To work around this, instead of calling `pool.destroy(codeCaller)`
-  // immediately after an error, we'll add the code caller to a set of
-  // unhealthy ones. This `destroyUnhealthyCodeCallers()` function will then
-  // execute at a regular interval and destroy any unhealthy code callers.
-  //
-  // See https://github.com/getsentry/sentry-javascript/issues/7031 for more
-  // details. If they ever switch to using AsyncLocalStorage, we can remove
-  // this and destroy code callers as soon as they become unhealthy.
-  destroyUnhealthyCodeCallers();
 
   // Ensure that the workers are ready; this will ensure that we're ready to
   // execute code as soon as we start processing requests.
@@ -169,16 +120,23 @@ export async function finish() {
   debug('finish(): pool finished draining');
 }
 
+export function getMetrics() {
+  return {
+    size: pool?.size ?? 0,
+    available: pool?.available ?? 0,
+    borrowed: pool?.borrowed ?? 0,
+    pending: pool?.pending ?? 0,
+  };
+}
+
 /**
  * Acquires a Python worker and automatically returns it to the pool or
  * disposes of it once it has been used.
- *
- * @template T
- * @param {import('../db-types.js').Course} course
- * @param {(codeCaller: CodeCaller) => Promise<T>} fn
- * @returns {Promise<T>}
  */
-export async function withCodeCaller(course, fn) {
+export async function withCodeCaller<T>(
+  course: Course,
+  fn: (codeCaller: CodeCaller) => Promise<T>,
+): Promise<T> {
   if (config.workersExecutionMode === 'disabled') {
     throw new Error('Code execution is disabled');
   }
@@ -199,7 +157,7 @@ export async function withCodeCaller(course, fn) {
   const jobUuid = uuidv4();
   load.startJob('python_callback_waiting', jobUuid);
 
-  const codeCaller = await getHealthyCodeCaller();
+  const codeCaller = await pool.acquire();
 
   try {
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
@@ -210,7 +168,7 @@ export async function withCodeCaller(course, fn) {
   } catch (err) {
     // If we fail to prepare for a course, assume that the code caller is
     // broken and dispose of it.
-    unhealthyCodeCallers.add(codeCaller);
+    await pool.destroy(codeCaller);
     throw err;
   } finally {
     load.endJob('python_callback_waiting', jobUuid);
@@ -249,7 +207,7 @@ export async function withCodeCaller(course, fn) {
   load.startJob('python_worker_idle', codeCaller.uuid);
 
   if (needsFullRestart) {
-    unhealthyCodeCallers.add(codeCaller);
+    await pool.destroy(codeCaller);
   } else {
     await pool.release(codeCaller);
   }
@@ -261,8 +219,8 @@ export async function withCodeCaller(course, fn) {
     // TypeScript doesn't understand our error-handling logic above. If
     // `overallErr` is falsy, `fnResult` will indeed have type `T`. We'll
     // cast it to `T` to appease TypeScript.
-    return /** @type {T} */ (fnResult);
+    return fnResult as T;
   }
 }
 
-export { FunctionMissingError };
+export { FunctionMissingError, CodeCaller };

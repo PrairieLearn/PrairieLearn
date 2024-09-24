@@ -1,6 +1,5 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import {
   RegenerateInstanceModal,
@@ -9,6 +8,7 @@ import {
 import { AssessmentScorePanel } from '../../components/AssessmentScorePanel.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { PersonalNotesPanel } from '../../components/PersonalNotesPanel.html.js';
 import { QuestionContainer, QuestionTitle } from '../../components/QuestionContainer.html.js';
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.js';
@@ -39,6 +39,8 @@ export function StudentInstanceQuestion({
                   serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
                   serverUpdateURL: `${resLocals.urlPrefix}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
                   canTriggerFinish: resLocals.authz_result.authorized_edit,
+                  showsTimeoutWarning: true,
+                  reloadOnFail: true,
                   csrfToken: resLocals.__csrf_token,
                 },
                 'time-limit-data',
@@ -66,10 +68,7 @@ export function StudentInstanceQuestion({
             `}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: '',
-        })}
+        ${Navbar({ resLocals })}
         ${userCanDeleteAssessmentInstance
           ? RegenerateInstanceModal({ csrfToken: resLocals.__csrf_token })
           : ''}
@@ -187,7 +186,6 @@ export function StudentInstanceQuestion({
                 instance_question: resLocals.instance_question,
                 question: resLocals.question,
                 variant: resLocals.variant,
-                user: resLocals.user,
                 instance_group: resLocals.instance_group,
                 instance_group_uid_list: resLocals.instance_group_uid_list,
                 instance_user: resLocals.instance_user,

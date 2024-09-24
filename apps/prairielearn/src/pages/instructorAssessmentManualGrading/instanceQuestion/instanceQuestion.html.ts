@@ -2,10 +2,10 @@ import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.html.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
@@ -61,7 +61,7 @@ export function InstanceQuestion({
         ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <div class="container-fluid">
           ${QuestionSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -117,7 +117,6 @@ export function InstanceQuestion({
                 instance_question: resLocals.instance_question,
                 question: resLocals.question,
                 variant: resLocals.variant,
-                user: resLocals.user,
                 instance_group: resLocals.instance_group,
                 instance_group_uid_list: resLocals.instance_group_uid_list,
                 instance_user: resLocals.instance_user,

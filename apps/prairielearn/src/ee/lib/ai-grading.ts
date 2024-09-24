@@ -1,11 +1,12 @@
 import * as cheerio from 'cheerio';
 import { OpenAI } from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import { config } from '../lib/config.js';
+import { config } from '../../lib/config.js';
 import {
   InstanceQuestionSchema,
   SubmissionSchema,
@@ -13,12 +14,12 @@ import {
   Question,
   Course,
   AssessmentQuestion,
-} from '../lib/db-types.js';
-import * as manualGrading from '../lib/manualGrading.js';
-import { buildQuestionUrls } from '../lib/question-render.js';
-import { getQuestionCourse } from '../lib/question-variant.js';
-import { createServerJob } from '../lib/server-jobs.js';
-import * as questionServers from '../question-servers/index.js';
+} from '../../lib/db-types.js';
+import * as manualGrading from '../../lib/manualGrading.js';
+import { buildQuestionUrls } from '../../lib/question-render.js';
+import { getQuestionCourse } from '../../lib/question-variant.js';
+import { createServerJob } from '../../lib/server-jobs.js';
+import * as questionServers from '../../question-servers/index.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -28,7 +29,7 @@ const SubmissionVariantSchema = z.object({
 });
 const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
 
-export async function botGrade({
+export async function aiGrade({
   course,
   course_instance_id,
   question,
@@ -62,7 +63,7 @@ export async function botGrade({
     assessmentId: assessment_question.assessment_id,
     authnUserId: authn_user_id,
     userId: user_id,
-    type: 'bot_grading',
+    type: 'ai_grading',
     description: 'Use LLM to grade assessment question',
   });
 
@@ -106,7 +107,7 @@ export async function botGrade({
       if (render_question_results.courseIssues.length) {
         job.info(render_question_results.courseIssues.toString());
         job.error('Error occurred');
-        job.fail('Errors occurred while bot grading, see output for details');
+        job.fail('Errors occurred while AI grading, see output for details');
       }
       let $ = cheerio.load(render_question_results.data.questionHtml, null, false);
       $('script').remove();
@@ -125,7 +126,7 @@ export async function botGrade({
       $('script').remove();
       const student_answer = $.html();
 
-      const completion = await openai.chat.completions.create({
+      const completion = await openai.beta.chat.completions.parse({
         messages: [
           {
             role: 'system',
@@ -137,34 +138,37 @@ export async function botGrade({
             content: `Question: \n${question_prompt} \nAnswer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
           },
         ],
-        model: 'gpt-3.5-turbo',
+        model: 'gpt-4o-2024-08-06',
         user: `course_${course.id}`,
+        response_format: zodResponseFormat(GPTGradeSchema, 'grades'),
       });
 
       let msg = `\nInstance question ${instance_question.id}\n`;
       try {
         msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
-        msg += `Raw ChatGPT response:\n${completion.choices[0].message.content}`;
-        if (completion.choices[0].message.content === null) {
+        const grade_response = completion.choices[0].message;
+        msg += `Raw ChatGPT response:\n${grade_response.content}`;
+        if (grade_response.parsed) {
+          await manualGrading.updateInstanceQuestionScore(
+            assessment_question.assessment_id,
+            instance_question.id,
+            submission.id,
+            null, // modified_at
+            {
+              score_perc: grade_response.parsed.grade,
+              feedback: { manual: grade_response.parsed.feedback },
+              // NEXT STEPS: rubrics
+            },
+            '1',
+          );
+          msg += `\nAI grades: ${grade_response.parsed.grade}`;
+        } else if (grade_response.refusal) {
+          job.error(`ERROR AI grading for ${instance_question.id}`);
+          job.error(grade_response.refusal);
           error_count++;
-          continue;
         }
-        const gpt_answer = GPTGradeSchema.parse(JSON.parse(completion.choices[0].message.content));
-        await manualGrading.updateInstanceQuestionScore(
-          assessment_question.assessment_id,
-          instance_question.id,
-          submission.id,
-          null, // modified_at
-          {
-            score_perc: gpt_answer.grade,
-            feedback: { manual: gpt_answer.feedback },
-            // NEXT STEPS: rubrics
-          },
-          '1',
-        );
-        msg += `\nBot grades: ${gpt_answer.grade}`;
       } catch (err) {
-        job.error(`ERROR bot grading for ${instance_question.id}`);
+        job.error(`ERROR AI grading for ${instance_question.id}`);
         job.error(err);
         error_count++;
       }
@@ -182,7 +186,7 @@ export async function botGrade({
     }
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);
-      job.fail('Errors occurred while bot grading, see output for details');
+      job.fail('Errors occurred while AI grading, see output for details');
     }
   });
 

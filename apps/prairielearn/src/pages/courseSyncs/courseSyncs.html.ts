@@ -3,10 +3,10 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobStatus } from '../../components/JobStatus.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
 import {
   Course,
@@ -50,7 +50,7 @@ export function CourseSyncs({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           <h1 class="sr-only">Course Sync</h1>
           <div class="card mb-4">
@@ -238,7 +238,6 @@ function ImageTable({
                           data-html="true"
                           title="Questions using ${image.image}"
                           data-content="${escapeHtml(ListQuestionsPopover({ image, urlPrefix }))}"
-                          data-trigger="focus"
                         >
                           Show
                         </button>

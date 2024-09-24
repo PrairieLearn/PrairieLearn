@@ -66,7 +66,7 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-      } catch (err) {
+      } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
 
@@ -89,7 +89,7 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
         res.redirect(res.locals.urlPrefix + '/instance_admin/assessments');
-      } catch (err) {
+      } catch {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else if (req.body.__action === 'change_id') {
@@ -105,7 +105,7 @@ router.post(
       let tid_new;
       try {
         tid_new = path.normalize(req.body.id);
-      } catch (err) {
+      } catch {
         throw new error.HttpStatusError(
           400,
           `Invalid TID (could not be normalized): ${req.body.id}`,
@@ -123,7 +123,7 @@ router.post(
         try {
           await editor.executeWithServerJob(serverJob);
           return res.redirect(req.originalUrl);
-        } catch (err) {
+        } catch {
           return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         }
       }

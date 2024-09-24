@@ -428,7 +428,7 @@ def grade(element_html, data):
 
     if not isinstance(student, list) or len(student) == 0:
         data["format_errors"][name] = "No submitted answer."
-        return data
+        return
 
     matches = {}  # If a reference object is matched to a student object
     num_correct = 0  # number correct
@@ -509,5 +509,3 @@ def grade(element_html, data):
         "weight": 1,
         "feedback": {"correct": (score == 1), "missing": {}, "matches": matches},
     }
-
-    return data
