@@ -499,7 +499,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             )
 
         if grading_method is GradingMethodType.UNORDERED:
-            help_text += "<p>Your answer ordering does not matter. "
+            help_text += "<p>Your answer ordering does not matter. </p>"
         elif grading_method is not GradingMethodType.EXTERNAL:
             help_text += "<p>The ordering of your answer matters and is graded.</p>"
         else:
