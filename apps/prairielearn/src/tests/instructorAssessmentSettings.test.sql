@@ -1,4 +1,4 @@
---BLOCK update_course_repo
+-- BLOCK update_course_repo
 UPDATE pl_courses
 SET
   repository = $repo
