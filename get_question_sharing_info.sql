@@ -1,5 +1,4 @@
--- psql -d postgres -t -A -F"," -c "select * from users" > output.csv
--- docker exec -it mypl psql postgres -f PrairieLearn/get_sharing_info.sql > sharing_info.csv
+-- docker exec -it mypl psql postgres -f PrairieLearn/get_question_sharing_info.sql > question_sharing_info.csv
 COPY (
   SELECT
     *
