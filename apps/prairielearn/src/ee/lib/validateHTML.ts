@@ -1,5 +1,8 @@
 import * as parse5 from 'parse5';
 
+type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
+type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
+
 const htmlGlobalAttributes = [
   'accesskey',
   'class',
@@ -122,28 +125,30 @@ function assertBool(tag: string, key: string, val: string, errors: string[]) {
  * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns The list of errors for the tag, if any.
  */
-function checkTag(ast: any, optimistic: boolean): string[] {
-  switch (ast.tagName) {
-    case 'pl-multiple-choice':
-      return checkMultipleChoice(ast);
-    case 'pl-integer-input':
-      return checkIntegerInput(ast);
-    case 'pl-number-input':
-      return checkNumericalInput(ast);
-    case 'pl-string-input':
-      return checkStringInput(ast);
-    case 'pl-checkbox':
-      return checkCheckbox(ast);
-    case 'pl-question-panel':
-      return [];
-    case 'pl-answer':
-      return []; //covered elsewhere
-    default:
-      if (ast.tagName && ast.tagName.substring(0, 3) === 'pl-' && !optimistic) {
-        return [
-          `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\``,
-        ];
-      }
+function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): string[] {
+  if ('tagName' in ast) {
+    switch (ast.tagName) {
+      case 'pl-multiple-choice':
+        return checkMultipleChoice(ast);
+      case 'pl-integer-input':
+        return checkIntegerInput(ast);
+      case 'pl-number-input':
+        return checkNumericalInput(ast);
+      case 'pl-string-input':
+        return checkStringInput(ast);
+      case 'pl-checkbox':
+        return checkCheckbox(ast);
+      case 'pl-question-panel':
+        return [];
+      case 'pl-answer':
+        return []; //covered elsewhere
+      default:
+        if (ast.tagName && ast.tagName.substring(0, 3) === 'pl-' && !optimistic) {
+          return [
+            `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\``,
+          ];
+        }
+    }
   }
   return [];
 }
@@ -153,7 +158,7 @@ function checkTag(ast: any, optimistic: boolean): string[] {
  * @param ast The tree to consider, rooted at the tag.
  * @returns The list of errors for the tag, if any.
  */
-function checkMultipleChoice(ast: any): string[] {
+function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
   const errors: string[] = [];
   let usedAnswersName = false;
   let displayDropdown = false;
@@ -163,66 +168,68 @@ function checkMultipleChoice(ast: any): string[] {
   let usedNoneOfTheAboveFeedback = false;
   let usedSize = false;
   const optionsOfTheAbove = ['false', 'random', 'correct', 'incorrect'];
-  for (const attr of ast.attrs) {
-    const key = attr.name;
-    const val = attr.value;
-    switch (key) {
-      case 'answers-name':
-        usedAnswersName = true;
-        break;
-      case 'weight':
-        assertInt('pl-multiple-choice', key, val, errors);
-        break;
-      case 'display':
-        assertInChoices('pl-multiple-choice', key, val, ['block', 'inline', 'dropdown'], errors);
-        if (val === 'dropdown') {
-          displayDropdown = true;
-        }
-        break;
-      case 'number-answers':
-        assertInt('pl-multiple-choice', key, val, errors);
-        break;
-      case 'order':
-        assertInChoices(
-          'pl-multiple-choice',
-          key,
-          val,
-          ['random', 'ascend', 'descend', 'fixed'],
-          errors,
-        );
-        break;
-      case 'hide-letter-keys':
-        assertBool('pl-multiple-choice', key, val, errors);
-        break;
-      case 'all-of-the-above':
-        assertInChoices('pl-multiple-choice', key, val, optionsOfTheAbove, errors);
-        if (optionsOfTheAbove.includes(val) && val !== 'false') {
-          usedAllOfTheAbove = true;
-        }
-        break;
-      case 'none-of-the-above':
-        assertInChoices('pl-multiple-choice', key, val, optionsOfTheAbove, errors);
-        if (optionsOfTheAbove.includes(val) && val !== 'false') {
-          usedNoneOfTheAbove = true;
-        }
-        break;
-      case 'all-of-the-above-feedback':
-        usedAllOfTheAboveFeedback = true;
-        break;
-      case 'none-of-the-above-feedback':
-        usedNoneOfTheAboveFeedback = true;
-        break;
-      case 'allow-blank':
-        assertBool('pl-multiple-choice', key, val, errors);
-        break;
-      case 'size':
-        usedSize = true;
-        assertInt('pl-multiple-choice', key, val, errors);
-        break;
-      default:
-        if (!htmlGlobalAttributes.includes(key)) {
-          errors.push(`pl-multiple-choice: ${key} is not a valid property.`);
-        }
+  if ('attrs' in ast) {
+    for (const attr of ast.attrs) {
+      const key = attr.name;
+      const val = attr.value;
+      switch (key) {
+        case 'answers-name':
+          usedAnswersName = true;
+          break;
+        case 'weight':
+          assertInt('pl-multiple-choice', key, val, errors);
+          break;
+        case 'display':
+          assertInChoices('pl-multiple-choice', key, val, ['block', 'inline', 'dropdown'], errors);
+          if (val === 'dropdown') {
+            displayDropdown = true;
+          }
+          break;
+        case 'number-answers':
+          assertInt('pl-multiple-choice', key, val, errors);
+          break;
+        case 'order':
+          assertInChoices(
+            'pl-multiple-choice',
+            key,
+            val,
+            ['random', 'ascend', 'descend', 'fixed'],
+            errors,
+          );
+          break;
+        case 'hide-letter-keys':
+          assertBool('pl-multiple-choice', key, val, errors);
+          break;
+        case 'all-of-the-above':
+          assertInChoices('pl-multiple-choice', key, val, optionsOfTheAbove, errors);
+          if (optionsOfTheAbove.includes(val) && val !== 'false') {
+            usedAllOfTheAbove = true;
+          }
+          break;
+        case 'none-of-the-above':
+          assertInChoices('pl-multiple-choice', key, val, optionsOfTheAbove, errors);
+          if (optionsOfTheAbove.includes(val) && val !== 'false') {
+            usedNoneOfTheAbove = true;
+          }
+          break;
+        case 'all-of-the-above-feedback':
+          usedAllOfTheAboveFeedback = true;
+          break;
+        case 'none-of-the-above-feedback':
+          usedNoneOfTheAboveFeedback = true;
+          break;
+        case 'allow-blank':
+          assertBool('pl-multiple-choice', key, val, errors);
+          break;
+        case 'size':
+          usedSize = true;
+          assertInt('pl-multiple-choice', key, val, errors);
+          break;
+        default:
+          if (!htmlGlobalAttributes.includes(key)) {
+            errors.push(`pl-multiple-choice: ${key} is not a valid property.`);
+          }
+      }
     }
   }
   if (!usedAnswersName) {
@@ -243,12 +250,14 @@ function checkMultipleChoice(ast: any): string[] {
   }
 
   let errorsChildren: string[] = [];
-  for (const child of ast.childNodes) {
-    if (child.tagName) {
-      if (child.tagName === 'pl-answer') {
-        errorsChildren = errorsChildren.concat(checkAnswerMultipleChoice(child));
-      } else {
-        errorsChildren.push(`pl-multiple-choice: ${child.tagName} is not a valid child tag.`);
+  if ('childNodes' in ast) {
+    for (const child of ast.childNodes) {
+      if ('tagName' in child && child.tagName) {
+        if (child.tagName === 'pl-answer') {
+          errorsChildren = errorsChildren.concat(checkAnswerMultipleChoice(child));
+        } else {
+          errorsChildren.push(`pl-multiple-choice: ${child.tagName} is not a valid child tag.`);
+        }
       }
     }
   }
@@ -261,43 +270,45 @@ function checkMultipleChoice(ast: any): string[] {
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkIntegerInput(ast: any): string[] {
+function checkIntegerInput(ast: DocumentFragment | ChildNode): string[] {
   const errors: string[] = [];
   let usedAnswersName = false;
-  for (const attr of ast.attrs) {
-    const key = attr.name;
-    const val = attr.value;
-    switch (key) {
-      case 'answers-name':
-        usedAnswersName = true;
-        break;
-      case 'weight':
-      case 'blank-answer':
-      case 'size':
-        assertInt('pl-integer-input', key, val, errors);
-        break;
-      //string inputs are valid as strings, and these don't affect other tags, so no validation required
-      case 'correct-answer':
-      case 'label':
-      case 'suffix':
-      case 'placeholder':
-        break;
-      case 'allow-blank':
-      case 'show-help-text':
-      case 'show-score':
-        assertBool('pl-integer-input', key, val, errors);
-        break;
-      case 'base':
-        //todo: validate that correct-answer is the right base
-        assertInt('pl-integer-input', key, val, errors);
-        break;
-      case 'display':
-        assertInChoices('pl-integer-input', key, val, ['block', 'inline'], errors);
-        break;
-      default:
-        if (!htmlGlobalAttributes.includes(key)) {
-          errors.push(`pl-integer-input: ${key} is not a valid property.`);
-        }
+  if ('attrs' in ast) {
+    for (const attr of ast.attrs) {
+      const key = attr.name;
+      const val = attr.value;
+      switch (key) {
+        case 'answers-name':
+          usedAnswersName = true;
+          break;
+        case 'weight':
+        case 'blank-answer':
+        case 'size':
+          assertInt('pl-integer-input', key, val, errors);
+          break;
+        //string inputs are valid as strings, and these don't affect other tags, so no validation required
+        case 'correct-answer':
+        case 'label':
+        case 'suffix':
+        case 'placeholder':
+          break;
+        case 'allow-blank':
+        case 'show-help-text':
+        case 'show-score':
+          assertBool('pl-integer-input', key, val, errors);
+          break;
+        case 'base':
+          //todo: validate that correct-answer is the right base
+          assertInt('pl-integer-input', key, val, errors);
+          break;
+        case 'display':
+          assertInChoices('pl-integer-input', key, val, ['block', 'inline'], errors);
+          break;
+        default:
+          if (!htmlGlobalAttributes.includes(key)) {
+            errors.push(`pl-integer-input: ${key} is not a valid property.`);
+          }
+      }
     }
   }
   if (!usedAnswersName) {
@@ -311,7 +322,7 @@ function checkIntegerInput(ast: any): string[] {
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkNumericalInput(ast: any): string[] {
+function checkNumericalInput(ast: DocumentFragment | ChildNode): string[] {
   const errors: string[] = [];
   let usedAnswersName = false;
   let usedRelabs = true;
@@ -321,65 +332,67 @@ function checkNumericalInput(ast: any): string[] {
   let allowsBlank = false;
   let usedBlankValue = false;
 
-  for (const attr of ast.attrs) {
-    const key = attr.name;
-    const val = attr.value;
-    switch (key) {
-      case 'answers-name':
-        usedAnswersName = true;
-        break;
-      case 'weight':
-      case 'size':
-        assertInt('pl-number-input', key, val, errors);
-        break;
-      case 'correct-answer':
-        assertFloat('pl-number-input', key, val, errors);
-        break;
-      case 'label':
-      case 'suffix':
-      case 'placeholder':
-      case 'custom-format':
-        break;
-      case 'display':
-        assertInChoices('pl-number-input', key, val, ['block', 'inline'], errors);
-        break;
-      case 'comparison':
-        assertInChoices('pl-number-input', key, val, ['relabs', 'sigfig', 'decdig'], errors);
-        if (val !== 'relabs') {
-          usedRelabs = false;
-        }
-        break;
-      case 'rtol':
-        assertFloat('pl-number-input', key, val, errors);
-        usedRtol = true;
-        break;
-      case 'atol':
-        assertFloat('pl-number-input', key, val, errors);
-        usedAtol = true;
-        break;
-      case 'digits':
-        assertInt('pl-number-input', key, val, errors);
-        usedDigits = true;
-        break;
-      case 'allow-complex':
-      case 'show-correct-answer':
-      case 'allow-fractions':
-      case 'show-help-text':
-        assertBool('pl-number-input', key, val, errors);
-        break;
-      case 'allow-blank':
-        assertBool('pl-number-input', key, val, errors);
-        if (val !== 'false') {
-          allowsBlank = true;
-        }
-        break;
-      case 'blank-value':
-        usedBlankValue = true;
-        break;
-      default:
-        if (!htmlGlobalAttributes.includes(key)) {
-          errors.push(`pl-number-input: ${key} is not a valid property.`);
-        }
+  if ('attrs' in ast) {
+    for (const attr of ast.attrs) {
+      const key = attr.name;
+      const val = attr.value;
+      switch (key) {
+        case 'answers-name':
+          usedAnswersName = true;
+          break;
+        case 'weight':
+        case 'size':
+          assertInt('pl-number-input', key, val, errors);
+          break;
+        case 'correct-answer':
+          assertFloat('pl-number-input', key, val, errors);
+          break;
+        case 'label':
+        case 'suffix':
+        case 'placeholder':
+        case 'custom-format':
+          break;
+        case 'display':
+          assertInChoices('pl-number-input', key, val, ['block', 'inline'], errors);
+          break;
+        case 'comparison':
+          assertInChoices('pl-number-input', key, val, ['relabs', 'sigfig', 'decdig'], errors);
+          if (val !== 'relabs') {
+            usedRelabs = false;
+          }
+          break;
+        case 'rtol':
+          assertFloat('pl-number-input', key, val, errors);
+          usedRtol = true;
+          break;
+        case 'atol':
+          assertFloat('pl-number-input', key, val, errors);
+          usedAtol = true;
+          break;
+        case 'digits':
+          assertInt('pl-number-input', key, val, errors);
+          usedDigits = true;
+          break;
+        case 'allow-complex':
+        case 'show-correct-answer':
+        case 'allow-fractions':
+        case 'show-help-text':
+          assertBool('pl-number-input', key, val, errors);
+          break;
+        case 'allow-blank':
+          assertBool('pl-number-input', key, val, errors);
+          if (val !== 'false') {
+            allowsBlank = true;
+          }
+          break;
+        case 'blank-value':
+          usedBlankValue = true;
+          break;
+        default:
+          if (!htmlGlobalAttributes.includes(key)) {
+            errors.push(`pl-number-input: ${key} is not a valid property.`);
+          }
+      }
     }
   }
   if (!usedAnswersName) {
@@ -404,22 +417,26 @@ function checkNumericalInput(ast: any): string[] {
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkAnswerMultipleChoice(ast: any): string[] {
+function checkAnswerMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
   const errors: string[] = [];
-  for (const attr of ast.attrs) {
-    switch (attr.name) {
-      case 'correct':
-        assertBool('pl-answer (for pl-multiple-choice)', attr.name, attr.value, errors);
-        break;
-      case 'feedback':
-        break;
-      case 'score':
-        assertFloat('pl-answer (for pl-multiple-choice)', attr.name, attr.value, errors);
-        break;
-      default:
-        if (!htmlGlobalAttributes.includes(attr.name)) {
-          errors.push(`pl-answer (for pl-multiple-choice): ${attr.name} is not a valid property.`);
-        }
+  if ('attrs' in ast) {
+    for (const attr of ast.attrs) {
+      switch (attr.name) {
+        case 'correct':
+          assertBool('pl-answer (for pl-multiple-choice)', attr.name, attr.value, errors);
+          break;
+        case 'feedback':
+          break;
+        case 'score':
+          assertFloat('pl-answer (for pl-multiple-choice)', attr.name, attr.value, errors);
+          break;
+        default:
+          if (!htmlGlobalAttributes.includes(attr.name)) {
+            errors.push(
+              `pl-answer (for pl-multiple-choice): ${attr.name} is not a valid property.`,
+            );
+          }
+      }
     }
   }
   return errors;
@@ -430,43 +447,45 @@ function checkAnswerMultipleChoice(ast: any): string[] {
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkStringInput(ast: any): string[] {
+function checkStringInput(ast: DocumentFragment | ChildNode): string[] {
   const errors: string[] = [];
   let usedAnswersName = false;
   let usedCorrectAnswer = false;
-  for (const attr of ast.attrs) {
-    const key = attr.name;
-    const val = attr.value;
-    switch (key) {
-      case 'answers-name':
-        usedAnswersName = true;
-        break;
-      case 'weight':
-      case 'size':
-        assertInt('pl-string-input', key, val, errors);
-        break;
-      case 'correct-answer':
-        usedCorrectAnswer = true;
-        break;
-      case 'label':
-      case 'suffix':
-      case 'placeholder':
-        break;
-      case 'display':
-        assertInChoices('pl-string-input', key, val, ['block', 'inline'], errors);
-        break;
-      case 'remove-leading-trailing':
-      case 'remove-spaces':
-      case 'allow-blank':
-      case 'ignore-case':
-      case 'normalize-to-ascii':
-      case 'show-help-text':
-        assertBool('pl-string-input', key, val, errors);
-        break;
-      default:
-        if (!htmlGlobalAttributes.includes(attr.name)) {
-          errors.push(`pl-string-input: ${attr.name} is not a valid property.`);
-        }
+  if ('attrs' in ast) {
+    for (const attr of ast.attrs) {
+      const key = attr.name;
+      const val = attr.value;
+      switch (key) {
+        case 'answers-name':
+          usedAnswersName = true;
+          break;
+        case 'weight':
+        case 'size':
+          assertInt('pl-string-input', key, val, errors);
+          break;
+        case 'correct-answer':
+          usedCorrectAnswer = true;
+          break;
+        case 'label':
+        case 'suffix':
+        case 'placeholder':
+          break;
+        case 'display':
+          assertInChoices('pl-string-input', key, val, ['block', 'inline'], errors);
+          break;
+        case 'remove-leading-trailing':
+        case 'remove-spaces':
+        case 'allow-blank':
+        case 'ignore-case':
+        case 'normalize-to-ascii':
+        case 'show-help-text':
+          assertBool('pl-string-input', key, val, errors);
+          break;
+        default:
+          if (!htmlGlobalAttributes.includes(attr.name)) {
+            errors.push(`pl-string-input: ${attr.name} is not a valid property.`);
+          }
+      }
     }
   }
   if (usedAnswersName === usedCorrectAnswer) {
@@ -480,49 +499,53 @@ function checkStringInput(ast: any): string[] {
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
-function checkCheckbox(ast: any): string[] {
+function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
   const errors: string[] = [];
   let usedAnswersName = false;
   let usedPartialCredit = true;
   let usedPartialCreditMethod = false;
-  for (const attr of ast.attrs) {
-    const key = attr.name;
-    const val = attr.value;
-    switch (key) {
-      case 'answers-name':
-        usedAnswersName = true;
-        break;
-      case 'weight':
-      case 'number-answers':
-      case 'min-correct':
-      case 'max-correct':
-      case 'min-select':
-      case 'max-select':
-        assertInt('pl-checkbox', key, val, errors);
-        break;
-      case 'inline':
-      case 'fixed-order':
-      case 'hide-help-text':
-      case 'detailed-help-text':
-      case 'hide-answer-panel':
-      case 'hide-score-badge':
-        assertBool('pl-checkbox', key, val, errors);
-        break;
+  if ('attrs' in ast) {
+    for (const attr of ast.attrs) {
+      const key = attr.name;
+      const val = attr.value;
+      switch (key) {
+        case 'answers-name':
+          usedAnswersName = true;
+          break;
+        case 'weight':
+        case 'number-answers':
+        case 'min-correct':
+        case 'max-correct':
+        case 'min-select':
+        case 'max-select':
+          assertInt('pl-checkbox', key, val, errors);
+          break;
+        case 'inline':
+        case 'fixed-order':
+        case 'hide-help-text':
+        case 'detailed-help-text':
+        case 'hide-answer-panel':
+        case 'hide-score-badge':
+          assertBool('pl-checkbox', key, val, errors);
+          break;
 
-      case 'partial-credit':
-        assertBool('pl-checkbox', key, val, errors);
-        if (['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'].includes(val)) {
-          usedPartialCredit = false;
-        }
-        break;
-      case 'partial-credit-method':
-        assertInChoices('pl-checkbox', key, val, ['COV', 'EDC', 'PC'], errors);
-        usedPartialCreditMethod = true;
-        break;
-      default:
-        if (!htmlGlobalAttributes.includes(key)) {
-          errors.push(`pl-checkbox: ${key} is not a valid property.`);
-        }
+        case 'partial-credit':
+          assertBool('pl-checkbox', key, val, errors);
+          if (
+            ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'].includes(val)
+          ) {
+            usedPartialCredit = false;
+          }
+          break;
+        case 'partial-credit-method':
+          assertInChoices('pl-checkbox', key, val, ['COV', 'EDC', 'PC'], errors);
+          usedPartialCreditMethod = true;
+          break;
+        default:
+          if (!htmlGlobalAttributes.includes(key)) {
+            errors.push(`pl-checkbox: ${key} is not a valid property.`);
+          }
+      }
     }
   }
   if (!usedAnswersName) {
@@ -533,14 +556,16 @@ function checkCheckbox(ast: any): string[] {
       'pl-checkbox: if partial-credit-method is set, then partial-credit must be set to true.',
     );
   }
-  
+
   let errorsChildren: string[] = [];
-  for (const child of ast.childNodes) {
-    if (child.tagName) {
-      if (child.tagName === 'pl-answer') {
-        errorsChildren = errorsChildren.concat(checkAnswerMultipleChoice(child));
-      } else {
-        errorsChildren.push(`pl-multiple-choice: ${child.tagName} is not a valid child tag.`);
+  if ('childNodes' in ast) {
+    for (const child of ast.childNodes) {
+      if ('tagName' in child && child.tagName) {
+        if (child.tagName === 'pl-answer') {
+          errorsChildren = errorsChildren.concat(checkAnswerMultipleChoice(child));
+        } else {
+          errorsChildren.push(`pl-multiple-choice: ${child.tagName} is not a valid child tag.`);
+        }
       }
     }
   }
@@ -554,9 +579,9 @@ function checkCheckbox(ast: any): string[] {
  * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns A list of human-readable error messages, if any.
  */
-function dfsCheckParseTree(ast: any, optimistic: boolean): string[] {
+function dfsCheckParseTree(ast: DocumentFragment | ChildNode, optimistic: boolean): string[] {
   let errors = checkTag(ast, optimistic);
-  if (ast.childNodes) {
+  if ('childNodes' in ast && ast.childNodes) {
     for (const child of ast.childNodes) {
       errors = errors.concat(dfsCheckParseTree(child, optimistic));
     }
