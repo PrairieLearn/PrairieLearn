@@ -6,6 +6,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { CourseData, CourseInstance } from '../course-db.js';
+import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
@@ -60,10 +61,14 @@ export async function sync(
     // This is a special hardcoded value that is always valid.
     validInstitutionSet.add('Any');
 
-    // Add sync warnings for invalid institutions.
+    // Add sync errors for invalid institutions.
     Object.values(courseData.courseInstances).forEach(({ courseInstance }) => {
+      // Note that we only emit errors for institutions referenced from access
+      // rules that will be accessible at some point in the future. This lets
+      // us avoid emitting errors for very old, unused course instances.
       const instanceInstitutions = new Set(
         courseInstance.data?.allowAccess
+          ?.filter(isAccessRuleAccessibleInFuture)
           ?.map((accessRule) => accessRule?.institution)
           .filter((institution) => institution != null),
       );
@@ -71,7 +76,7 @@ export async function sync(
       instanceInstitutions.forEach((institution) => {
         if (validInstitutionSet.has(institution)) return;
 
-        infofile.addWarning(courseInstance, `Institution "${institution}" not found.`);
+        infofile.addError(courseInstance, `Institution "${institution}" not found.`);
       });
     });
   }
