@@ -57,6 +57,24 @@ export function InstructorAssessmentSettings({
                 <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                 <input type="hidden" name="orig_hash" value="${origHash}" />
                 <div class="form-group">
+                  <label for="aid">AID</label>
+                  <input
+                    type="text"
+                    class="form-control text-monospace"
+                    id="aid"
+                    name="aid"
+                    value="${resLocals.assessment.tid}"
+                    pattern="[\\-A-Za-z0-9_\\/]+"
+                    data-other-values="${tids.join(',')}"
+                    ${canEdit ? '' : 'disabled'}
+                  />
+                  <small class="form-text text-muted">
+                    The unique identifier for this assessment. This may contain only letters,
+                    numbers, dashes, and underscores, with no spaces. You may use forward slashes to
+                    separate directories.
+                  </small>
+                </div>
+                <div class="form-group">
                   <label for="title">Title</label>
                   <input
                     type="text"
@@ -84,7 +102,7 @@ export function InstructorAssessmentSettings({
                 </div>
                 <div class="form-group">
                   <label for="set">Set</label>
-                  <select class="form-control" id="set" name="set" ${canEdit ? '' : 'disabled'}>
+                  <select class="form-select" id="set" name="set" ${canEdit ? '' : 'disabled'}>
                     ${assessmentSets.map(
                       (set) => html`
                         <option
@@ -119,7 +137,7 @@ export function InstructorAssessmentSettings({
                 <div class="form-group">
                   <label for="module">Module</label>
                   <select
-                    class="form-control"
+                    class="form-select"
                     id="module"
                     name="module"
                     ${canEdit ? '' : 'disabled'}
@@ -138,23 +156,6 @@ export function InstructorAssessmentSettings({
                   <small class="form-text text-muted">
                     The <a href="${resLocals.urlPrefix}/course_admin/modules">module</a> this
                     assessment belongs to.
-                  </small>
-                </div>
-                <div class="form-group">
-                  <label for="aid">AID</label>
-                  <input
-                    type="text"
-                    class="form-control text-monospace"
-                    id="aid"
-                    name="aid"
-                    value="${resLocals.assessment.tid}"
-                    data-other-values="${tids.join(',')}"
-                    ${canEdit ? '' : 'disabled'}
-                  />
-                  <small class="form-text text-muted">
-                    The unique identifier for this assessment. This may contain only letters,
-                    numbers, dashes, and underscores, with no spaces. You may use forward slashes to
-                    separate directories.
                   </small>
                 </div>
                 <div class="form-group">
