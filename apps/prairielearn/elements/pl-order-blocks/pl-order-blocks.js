@@ -100,44 +100,16 @@ window.PLOrderBlocks = function (uuid, options) {
             handleKey(ev, block, () => block.classList.add('pl-order-blocks-selected'));
             break;
           case 'ArrowUp':
-            handleKey(
-              ev,
-              block,
-              () => {
-                moveWithinOptionsOrDropzone(false);
-              },
-              false,
-            );
+            handleKey(ev, block, () => moveWithinOptionsOrDropzone(false), false);
             break;
           case 'ArrowDown':
-            handleKey(
-              ev,
-              block,
-              () => {
-                moveWithinOptionsOrDropzone(true);
-              },
-              false,
-            );
+            handleKey(ev, block, () => moveWithinOptionsOrDropzone(true), false);
             break;
           case 'ArrowLeft':
-            handleKey(
-              ev,
-              block,
-              () => {
-                moveBetweenOptionsOrDropzone(true);
-              },
-              false,
-            );
+            handleKey(ev, block, () => moveBetweenOptionsOrDropzone(true), false);
             break;
           case 'ArrowRight':
-            handleKey(
-              ev,
-              block,
-              () => {
-                moveBetweenOptionsOrDropzone(false);
-              },
-              false,
-            );
+            handleKey(ev, block, () => moveBetweenOptionsOrDropzone(false), false);
             break;
         }
       } else {
