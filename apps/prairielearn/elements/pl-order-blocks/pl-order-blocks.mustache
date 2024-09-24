@@ -16,9 +16,9 @@ $(function() {
         <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} ">
             <div class="card-header pl-order-blocks-header list-group-item-primary">
                 <span class="mr-2">{{source-header}}</span>
-                <a role="button" style="vertical-align:middle;" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}" data-trigger="focus" tabindex="0">
+                <button type="button" style="vertical-align:middle;" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}">
                     <i class="fa fa-question-circle" aria-hidden="true"></i>
-                </a>
+                </button>
             </div>
             <ul id="order-blocks-options-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable">
                 {{#options}}
@@ -35,9 +35,6 @@ $(function() {
         <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} ">
             <div class="card-header pl-order-blocks-header list-group-item-primary">
                 <span class="mr-2">{{solution-header}}</span>
-                <button type="button" style="vertical-align:middle;" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}">
-                    <i class="fa fa-question-circle" aria-hidden="true"></i>
-                </button>
             </div>
             <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone">
                 {{#submission_dict}}
