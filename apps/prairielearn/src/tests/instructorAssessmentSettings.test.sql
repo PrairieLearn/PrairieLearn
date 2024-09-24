@@ -5,7 +5,7 @@ SET
 WHERE
   id = 1;
 
---BLOCK select_assessment_by_id
+-- BLOCK select_assessment_by_id
 SELECT
   a.*,
   aset.name AS assessment_set_name,
