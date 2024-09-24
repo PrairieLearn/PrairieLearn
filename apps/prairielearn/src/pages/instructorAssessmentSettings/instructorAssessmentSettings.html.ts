@@ -97,7 +97,7 @@ export function InstructorAssessmentSettings({
                 <div class="form-group">
                   <label for="number">Number</label>
                   <input
-                    type="string"
+                    type="text"
                     class="form-control"
                     id="number"
                     name="number"
