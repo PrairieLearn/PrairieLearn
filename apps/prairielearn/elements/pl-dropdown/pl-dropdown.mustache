@@ -1,4 +1,3 @@
-
 {{#question}}
     <span class="d-inline-block form-group form-inline">
         <select name="{{answers-name}}" class="custom-select w-auto" {{^editable}}disabled{{/editable}}>
@@ -35,11 +34,17 @@
 
         {{#parse-error}}
             <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-            <button class="btn btn-sm btn-secondary small border ml-1"
-                    data-placement="auto" data-trigger="focus" data-toggle="popover"
-                    data-html="true" title="Format Error" tabindex="0" data-container="body"
-                    data-content="{{parse-error}}">
-              Why <i class="fa fa-question-circle" aria-hidden="true"></i>
+            <button 
+                type="button"
+                class="btn btn-sm btn-secondary small border ml-1"
+                data-placement="auto"
+                data-toggle="popover"
+                data-html="true"
+                title="Format Error"
+                data-container="body"
+                data-content="{{parse-error}}"
+            >
+                Why <i class="fa fa-question-circle" aria-hidden="true"></i>
             </button>
         {{/parse-error}}
     </span>

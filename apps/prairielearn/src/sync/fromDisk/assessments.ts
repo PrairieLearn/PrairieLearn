@@ -64,7 +64,11 @@ function getParamsForAssessment(
     .map((accessRule, index) => {
       return {
         number: index + 1,
-        mode: _.has(accessRule, 'mode') ? accessRule.mode : null,
+        mode: _.has(accessRule, 'mode')
+          ? accessRule.mode
+          : _.has(accessRule, 'examUuid')
+            ? 'Exam'
+            : null,
         uids: _.has(accessRule, 'uids') ? accessRule.uids : null,
         start_date: _.has(accessRule, 'startDate') ? accessRule.startDate : null,
         end_date: _.has(accessRule, 'endDate') ? accessRule.endDate : null,

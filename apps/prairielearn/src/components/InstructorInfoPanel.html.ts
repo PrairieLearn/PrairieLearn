@@ -26,7 +26,6 @@ export function InstructorInfoPanel({
   instance_question,
   question,
   variant,
-  user,
   instance_group,
   instance_group_uid_list,
   instance_user,
@@ -45,7 +44,6 @@ export function InstructorInfoPanel({
   };
   question?: Question;
   variant?: Variant;
-  user: User;
   instance_group?: Group | null;
   instance_group_uid_list?: string[] | null;
   instance_user?: User | null;
@@ -77,7 +75,6 @@ export function InstructorInfoPanel({
         <h2>Staff information</h2>
       </div>
       <div class="card-body">
-        ${StaffUserInfo({ user })}
         ${InstanceUserInfo({ instance_user, instance_group, instance_group_uid_list })}
         ${QuestionInfo({
           course,
@@ -97,16 +94,6 @@ export function InstructorInfoPanel({
   `;
 }
 
-function StaffUserInfo({ user }: { user: User }) {
-  return html`
-    <h3 class="card-title h5">Staff user:</h3>
-    <div class="d-flex flex-wrap pb-2">
-      <div class="pr-1">${user.name}</div>
-      <div class="pr-1">${user.uid}</div>
-    </div>
-  `;
-}
-
 function InstanceUserInfo({
   instance_user,
   instance_group,
@@ -118,7 +105,6 @@ function InstanceUserInfo({
 }) {
   if (instance_user == null && instance_group == null) return '';
   return html`
-    <hr />
     <div>
       <details>
         ${instance_group != null
@@ -138,6 +124,7 @@ function InstanceUserInfo({
             `}
       </details>
     </div>
+    <hr />
   `;
 }
 
@@ -175,7 +162,6 @@ function QuestionInfo({
     : `@${course.sharing_name}/${question.qid}`;
 
   return html`
-    <hr />
     <h3 class="card-title h5">Question:</h3>
 
     <div class="d-flex flex-wrap">
