@@ -14,7 +14,7 @@ export function InstructorAssessmentSettings({
   studentLink,
   infoAssessmentPath,
   assessmentSets,
-  modules,
+  assessmentModules,
 }: {
   resLocals: Record<string, any>;
   origHash: string;
@@ -22,7 +22,7 @@ export function InstructorAssessmentSettings({
   studentLink: string;
   infoAssessmentPath: string;
   assessmentSets: AssessmentSet[];
-  modules: AssessmentModule[];
+  assessmentModules: AssessmentModule[];
 }) {
   return html`
     <!doctype html>
@@ -71,36 +71,23 @@ export function InstructorAssessmentSettings({
                 </div>
                 <div class="form-group">
                   <label for="type">Type</label>
-                  <select class="form-control" id="type" name="type">
-                    <option
-                      value="Homework"
-                      ${resLocals.assessment.type === 'Homework' ? 'selected' : ''}
-                    >
-                      Homework
-                    </option>
-                    <option value="Exam" ${resLocals.assessment.type === 'Exam' ? 'selected' : ''}>
-                      Exam
-                    </option>
-                  </select>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="type"
+                    name="type"
+                    value="${resLocals.assessment.type}"
+                    disabled
+                  />
                   <small class="form-text text-muted">
                     The type of the assessment. This can be either Homework or Exam.
                   </small>
                 </div>
                 <div class="form-group">
                   <label for="set">Set</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="set"
-                    name="set"
-                    list="setsList"
-                    value="${resLocals.assessment_set.name}"
-                    ${resLocals.authz_data.has_course_permission_edit &&
-                    !resLocals.course.example_course
-                      ? ''
-                      : 'disabled'}
-                  />
-                  ${setsList(assessmentSets)}
+                  <select class="form-control" id="set" name="set">
+                    ${setOptions({ assessmentSets, selectedSet: resLocals.assessment_set.name })}
+                  </select>
                   <small class="form-text text-muted">
                     The
                     <a href="${resLocals.urlPrefix}/course_admin/sets">assessment set</a>
@@ -110,7 +97,7 @@ export function InstructorAssessmentSettings({
                 <div class="form-group">
                   <label for="number">Number</label>
                   <input
-                    type="number"
+                    type="string"
                     class="form-control"
                     id="number"
                     name="number"
@@ -126,16 +113,12 @@ export function InstructorAssessmentSettings({
                 </div>
                 <div class="form-group">
                   <label for="module">Module</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    res.locals.course.path,
-                    id="module"
-                    name="module"
-                    list="modulesList"
-                    value="${resLocals.assessment_module.name}"
-                  />
-                  ${modulesList(modules)}
+                  <select class="form-control" id="module" name="module">
+                    ${modulesOptions({
+                      assessmentModules,
+                      selectedModule: resLocals.assessment_module.name,
+                    })}
+                  </select>
                   <small class="form-text text-muted">
                     The <a href="${resLocals.urlPrefix}/course_admin/modules">module</a> this
                     assessment belongs to.
@@ -145,7 +128,7 @@ export function InstructorAssessmentSettings({
                   <label for="aid">AID</label>
                   <input
                     type="text"
-                    class="form-control"
+                    class="form-control text-monospace"
                     id="aid"
                     name="aid"
                     value="${resLocals.assessment.tid}"
@@ -211,7 +194,6 @@ export function InstructorAssessmentSettings({
                             Save
                           </button>
                           <button
-                            id="cancel-button"
                             type="button"
                             class="btn btn-secondary mb-2"
                             onclick="window.location.reload()"
@@ -293,18 +275,32 @@ export function InstructorAssessmentSettings({
   `.toString();
 }
 
-function setsList(sets: AssessmentSet[]) {
-  return html`
-    <datalist id="setsList">
-      ${sets.map((set) => html`<option value="${set.name}"></option>`)}
-    </datalist>
-  `;
+function setOptions({
+  assessmentSets,
+  selectedSet,
+}: {
+  assessmentSets: AssessmentSet[];
+  selectedSet: string;
+}) {
+  return assessmentSets.map(
+    (set) => html`
+      <option value="${set.name}" ${selectedSet === set.name ? 'selected' : ''}>${set.name}</option>
+    `,
+  );
 }
 
-function modulesList(modules: AssessmentModule[]) {
-  return html`
-    <datalist id="modulesList">
-      ${modules.map((module) => html`<option value="${module.name}"></option>`)}
-    </datalist>
-  `;
+function modulesOptions({
+  assessmentModules,
+  selectedModule,
+}: {
+  assessmentModules: AssessmentModule[];
+  selectedModule: string;
+}) {
+  return assessmentModules.map(
+    (module) => html`
+      <option value="${module.name}" ${selectedModule === module.name ? 'selected' : ''}>
+        ${module.name}
+      </option>
+    `,
+  );
 }

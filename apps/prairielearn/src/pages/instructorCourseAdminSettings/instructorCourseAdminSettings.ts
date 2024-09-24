@@ -65,7 +65,6 @@ router.post(
       }
       const paths = getPaths(undefined, res.locals);
 
-      console.log(res.locals.course.path);
       const courseInfo = JSON.parse(
         await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
       );

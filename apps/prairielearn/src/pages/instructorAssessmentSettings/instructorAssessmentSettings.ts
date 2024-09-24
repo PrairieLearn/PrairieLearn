@@ -41,7 +41,7 @@ router.get(
       { course_id: res.locals.course.id },
       AssessmentSetSchema,
     );
-    const modules = await sqldb.queryRows(
+    const assessmentModules = await sqldb.queryRows(
       sql.select_assessment_modules,
       { course_id: res.locals.course.id },
       AssessmentModuleSchema,
@@ -53,7 +53,6 @@ router.get(
     ).href;
     const infoAssessmentPath = encodePath(
       path.join(
-        res.locals.course.path,
         'courseInstances',
         res.locals.course_instance.short_name,
         'assessments',
@@ -61,12 +60,15 @@ router.get(
         'infoAssessment.json',
       ),
     );
+    const fullInfoAssessmentPath = path.join(res.locals.course.path, infoAssessmentPath);
 
-    const infoAssessmentPathExists = await fs.pathExists(infoAssessmentPath);
+    const infoAssessmentPathExists = await fs.pathExists(fullInfoAssessmentPath);
 
     let origHash = '';
     if (infoAssessmentPathExists) {
-      origHash = sha256(b64EncodeUnicode(await fs.readFile(infoAssessmentPath, 'utf8'))).toString();
+      origHash = sha256(
+        b64EncodeUnicode(await fs.readFile(fullInfoAssessmentPath, 'utf8')),
+      ).toString();
     }
 
     res.send(
@@ -77,7 +79,7 @@ router.get(
         studentLink,
         infoAssessmentPath,
         assessmentSets,
-        modules,
+        assessmentModules,
       }),
     );
   }),
@@ -173,7 +175,6 @@ router.post(
       const assessmentInfo = JSON.parse(await fs.readFile(infoAssessmentPath, 'utf8'));
       const assessmentInfoEdit = assessmentInfo;
       assessmentInfoEdit.title = req.body.title;
-      assessmentInfoEdit.type = req.body.type;
       assessmentInfoEdit.set = req.body.set;
       assessmentInfoEdit.number = req.body.number;
       assessmentInfoEdit.module = req.body.module;
