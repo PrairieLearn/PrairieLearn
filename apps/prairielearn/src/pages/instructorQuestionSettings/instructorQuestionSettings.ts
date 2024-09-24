@@ -1,7 +1,9 @@
 import * as path from 'path';
 
+import sha256 from 'crypto-js/sha256.js';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -9,10 +11,12 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
+import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
 import { IdSchema } from '../../lib/db-types.js';
 import {
+  FileModifyEditor,
   QuestionRenameEditor,
   QuestionDeleteEditor,
   QuestionCopyEditor,
@@ -20,6 +24,7 @@ import {
 import { features } from '../../lib/features/index.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
+import { getPaths } from '../../lib/instructorFiles.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
@@ -90,11 +95,48 @@ router.post(
     if (res.locals.question.course_id !== res.locals.course.id) {
       throw new error.HttpStatusError(403, 'Access denied');
     }
-    if (req.body.__action === 'change_id') {
-      if (!req.body.id) {
+    if (req.body.__action === 'update_question') {
+      // const infoPath = path.join(
+      //   res.locals.course.path,
+      //   'questions',
+      //   res.locals.question.qid,
+      //   'info.json',
+      // );
+      const paths = getPaths(undefined, res.locals);
+
+      const questionInfo = JSON.parse(
+        await fs.readFile(path.join(paths.rootPath, 'info.json'), 'utf8'),
+      );
+
+      const origHash = req.body.orig_hash;
+
+      const questionInfoEdit = questionInfo;
+      questionInfoEdit.title = req.body.title;
+
+      const editor = new FileModifyEditor({
+        locals: res.locals,
+        container: {
+          rootPath: paths.rootPath,
+          invalidRootPaths: paths.invalidRootPaths,
+        },
+        filePath: path.join(paths.rootPath, 'info.json'),
+        editContents: b64EncodeUnicode(JSON.stringify(questionInfoEdit, null, 2)),
+        origHash,
+      });
+
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+        flash('success', 'Question settings updated successfully');
+      } catch {
+        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+      }
+
+      // QID is not maintained in the info.json file, we must handle this separately.
+      if (!req.body.qid) {
         throw new error.HttpStatusError(400, `Invalid QID (was falsy): ${req.body.id}`);
       }
-      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.id)) {
+      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.qid)) {
         throw new error.HttpStatusError(
           400,
           `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
@@ -102,15 +144,15 @@ router.post(
       }
       let qid_new;
       try {
-        qid_new = path.normalize(req.body.id);
+        qid_new = path.normalize(req.body.qid);
       } catch {
         throw new error.HttpStatusError(
           400,
-          `Invalid QID (could not be normalized): ${req.body.id}`,
+          `Invalid QID (could not be normalized): ${req.body.qid}`,
         );
       }
       if (res.locals.question.qid === qid_new) {
-        res.redirect(req.originalUrl);
+        return res.redirect(req.originalUrl);
       } else {
         const editor = new QuestionRenameEditor({
           locals: res.locals,
@@ -119,9 +161,9 @@ router.post(
         const serverJob = await editor.prepareServerJob();
         try {
           await editor.executeWithServerJob(serverJob);
-          res.redirect(req.originalUrl);
+          return res.redirect(req.originalUrl);
         } catch {
-          res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+          return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         }
       }
     } else if (req.body.__action === 'copy_question') {
@@ -265,6 +307,14 @@ router.get(
     });
     const infoPath = encodePath(path.join('questions', res.locals.question.qid, 'info.json'));
 
+    const fullInfoPath = path.join(res.locals.course.path, infoPath);
+    const questionInfoExists = await fs.pathExists(fullInfoPath);
+
+    let origHash = '';
+    if (questionInfoExists) {
+      origHash = sha256(b64EncodeUnicode(await fs.readFile(fullInfoPath, 'utf8'))).toString();
+    }
+
     res.send(
       InstructorQuestionSettings({
         resLocals: res.locals,
@@ -278,6 +328,7 @@ router.get(
         sharingSetsOther,
         editableCourses,
         infoPath,
+        origHash,
       }),
     );
   }),

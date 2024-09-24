@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
-import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
@@ -52,6 +51,7 @@ export function InstructorQuestionSettings({
   sharingSetsOther,
   editableCourses,
   infoPath,
+  origHash,
 }: {
   resLocals: Record<string, any>;
   questionTestPath: string;
@@ -64,11 +64,12 @@ export function InstructorQuestionSettings({
   sharingSetsOther: SharingSetRow[];
   editableCourses: CourseWithPermissions[];
   infoPath: string;
+  origHash: string;
 }) {
   // Only show assessments on which this question is used when viewing the question
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
-
+  console.log(origHash);
   return html`
     <!doctype html>
     <html lang="en">
@@ -95,7 +96,9 @@ export function InstructorQuestionSettings({
               <h1>Question Settings</h1>
             </div>
             <div class="card-body">
-              <form>
+              <form name="edit-question-settings-form" method="POST">
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <input type="hidden" name="orig_hash" value="${origHash}" />
                 <div class="form-group">
                   <h2 class="h4">General</h2>
                   <label for="title">Title</label>
@@ -105,7 +108,10 @@ export function InstructorQuestionSettings({
                     id="title"
                     name="title"
                     value="${resLocals.question.title}"
-                    disabled
+                    ${resLocals.authz_data.has_course_permission_edit &&
+                    !resLocals.course.example_course
+                      ? ''
+                      : 'disabled'}
                   />
                   <small class="form-text text-muted">
                     The title of the question (e.g., "Add two numbers").
@@ -113,15 +119,6 @@ export function InstructorQuestionSettings({
                 </div>
                 <div class="form-group">
                   <label for="qid">QID</label>
-                  ${resLocals.authz_data.has_course_permission_edit &&
-                  !resLocals.course.example_course
-                    ? ChangeIdButton({
-                        label: 'QID',
-                        currentValue: resLocals.question.qid,
-                        otherValues: qids,
-                        csrfToken: resLocals.__csrf_token,
-                      })
-                    : ''}
                   ${questionGHLink
                     ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`
                     : ''}
@@ -131,10 +128,15 @@ export function InstructorQuestionSettings({
                     id="qid"
                     name="qid"
                     value="${resLocals.question.qid}"
-                    disabled
+                    ${resLocals.authz_data.has_course_permission_edit &&
+                    !resLocals.course.example_course
+                      ? ''
+                      : 'disabled'}
                   />
                   <small class="form-text text-muted">
-                    This is a unique identifier for the question. (e.g., "addNumbers")
+                    This is a unique identifier for the question. (e.g., "addNumbers"). Use only
+                    letters, numbers, dashes, and underscores, with no spaces. You may use forward
+                    slashes to separate directories.
                   </small>
                 </div>
 
@@ -159,6 +161,22 @@ export function InstructorQuestionSettings({
                       : ''}
                   </table>
                 </div>
+                <button
+                  id="save-button"
+                  type="submit"
+                  class="btn btn-primary mb-2"
+                  name="__action"
+                  value="update_question"
+                >
+                  Save
+                </button>
+                <button
+                  type="button"
+                  class="btn btn-secondary mb-2"
+                  onclick="window.location.reload()"
+                >
+                  Cancel
+                </button>
               </form>
               ${sharingEnabled
                 ? html`
