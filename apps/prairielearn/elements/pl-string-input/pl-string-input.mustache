@@ -84,7 +84,16 @@
 {{/parse_error}}
 {{#missing_input}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
-    <button type="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-toggle="popover" data-html="true" title="Missing Input" data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."> Why <i class="fa fa-question-circle" aria-hidden="true"></i></button>
+    <button
+        type="button"
+        class="badge text-dark badge-missing-input btn btn-sm btn-secondary small border"
+        data-placement="auto"
+        data-toggle="popover"
+        data-html="true"
+        title="Missing Input"
+        data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
+    > Missing Input <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </button>
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/missing_input}}
 
