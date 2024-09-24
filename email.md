@@ -6,7 +6,7 @@ We will be pushing some updates to the Question Sharing system soon that will re
 
 Specifically, the sharing configuration of questions will be specified in JSON files, rather than only being edited in the web user interface.
 
-As of now, we will do not support un-sharing questions (we will in the future), so once the deployments happens, the sharing configuration you have in your JSON will need to match what you have done in the Web UI in order for the sync to succeed.
+As of now, we will not support un-sharing questions (we will in the future), so once the deployments happens, the sharing configuration you have in your JSON will need to match what you have done in the Web UI in order for the sync to succeed.
 
 Sharing info will be specified with the following properties: 
 In your `infoCourse.json`, you will need to list all of the sharing sets that you have, e.g.:
