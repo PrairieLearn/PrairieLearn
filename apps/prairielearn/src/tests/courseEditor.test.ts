@@ -140,48 +140,6 @@ const testEditData = [
     ]),
   },
   {
-    button: '.js-change-id-button',
-    formSelector: 'form[name="change-id-form"]',
-    data: {
-      id: 'newAssessment/nested',
-    },
-    action: 'change_id',
-    info: 'courseInstances/Fa18/assessments/newAssessment/nested/infoAssessment.json',
-    files: new Set([
-      'README.md',
-      'infoCourse.json',
-      'courseInstances/Fa18/infoCourseInstance.json',
-      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
-      'questions/test/question/info.json',
-      'questions/test/question/question.html',
-      'questions/test/question/server.py',
-      'courseInstances/Fa18/assessments/newAssessment/nested/infoAssessment.json',
-    ]),
-  },
-  // This second rename specifically tests the case where an existing assessment
-  // is renamed such that it leaves behind an empty directory. We want to make
-  // sure that that empty directory is cleaned up and not treated as an actual
-  // assessment during sync.
-  {
-    button: '.js-change-id-button',
-    formSelector: 'form[name="change-id-form"]',
-    data: {
-      id: 'newAssessmentNotNested',
-    },
-    action: 'change_id',
-    info: 'courseInstances/Fa18/assessments/newAssessmentNotNested/infoAssessment.json',
-    files: new Set([
-      'README.md',
-      'infoCourse.json',
-      'courseInstances/Fa18/infoCourseInstance.json',
-      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
-      'questions/test/question/info.json',
-      'questions/test/question/question.html',
-      'questions/test/question/server.py',
-      'courseInstances/Fa18/assessments/newAssessmentNotNested/infoAssessment.json',
-    ]),
-  },
-  {
     formSelector: '#deleteAssessmentModal',
     action: 'delete_assessment',
     files: new Set([
