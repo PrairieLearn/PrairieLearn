@@ -158,7 +158,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data['completion'] = completion;
 
     if (html && typeof html === 'string') {
-      const errors = validateHTML(html);
+      const errors = validateHTML(html, false);
       job.data['initialGenerationErrors'] = errors;
       job.data['finalGenerationErrors'] = errors;
       if (errors.length > 0) {
@@ -285,7 +285,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   job.data['finalGenerationErrors'] = [];
 
   if (html && typeof html === 'string') {
-    const errors = validateHTML(html);
+    const errors = validateHTML(html, false);
     if (saveInitialErrors) {
       job.data['initialGenerationErrors'] = errors;
     }

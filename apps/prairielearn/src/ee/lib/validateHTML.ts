@@ -121,7 +121,7 @@ function assertBool(tag: string, key: string, val: string, errors: string[]) {
  * @param ast The tree to consider, rooted at the tag.
  * @returns The list of errors for the tag, if any.
  */
-function checkTag(ast: any): string[] {
+function checkTag(ast: any, optimistic: boolean): string[] {
   switch (ast.tagName) {
     case 'pl-multiple-choice':
       return checkMultipleChoice(ast);
@@ -129,14 +129,20 @@ function checkTag(ast: any): string[] {
       return checkIntegerInput(ast);
     case 'pl-number-input':
       return checkNumericalInput(ast);
-    case 'pl-overlay':
-      return checkOverlay(ast);
-    case 'pl-order-blocks':
-      return checkOrderBlocks(ast);
-    case 'pl-matrix-input':
-      return checkMatrixInput(ast);
     case 'pl-string-input':
       return checkStringInput(ast);
+    case 'pl-checkbox':
+      return checkCheckbox(ast);
+    case 'pl-question-panel':
+      return [];
+    case 'pl-answer':
+      return []; //covered elsewhere
+    default:
+      if (ast.tagName && ast.tagName.substring(0, 3) === 'pl-' && !optimistic) {
+        return [
+          `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\``,
+        ];
+      }
   }
   return [];
 }
@@ -237,10 +243,12 @@ function checkMultipleChoice(ast: any): string[] {
 
   let errorsChildren: string[] = [];
   for (const child of ast.childNodes) {
-    if (child.tagName === 'pl-answer') {
-      errorsChildren = errorsChildren.concat(checkAnswerMultipleChoice(child));
-    } else {
-      errorsChildren.push(`pl-multiple-choice: ${child.tagName} is not a valid child tag.`);
+    if (child.tagName) {
+      if (child.tagName === 'pl-answer') {
+        errorsChildren = errorsChildren.concat(checkAnswerMultipleChoice(child));
+      } else {
+        errorsChildren.push(`pl-multiple-choice: ${child.tagName} is not a valid child tag.`);
+      }
     }
   }
 
@@ -417,269 +425,6 @@ function checkAnswerMultipleChoice(ast: any): string[] {
 }
 
 /**
- * Checks that a `pl-answer` element in an order blocks tag has valid properties.
- * @param ast The tree to consider, rooted at the tag to consider.
- * @returns The list of errors for the tag, if any.
- */
-function checkAnswerOrderBlocks(ast: any): string[] {
-  const errors: string[] = [];
-  for (const attr of ast.attrs) {
-    switch (attr.name) {
-      case 'correct':
-        assertBool('pl-answer (for pl-order-blocks)', attr.name, attr.value, errors);
-        break;
-      case 'ranking':
-      case 'indent':
-        assertInt('pl-answer (for pl-order-blocks)', attr.name, attr.val, errors);
-        break;
-      case 'depends':
-      case 'tag':
-      case 'distractor-for':
-      case 'distractor-feedback':
-        break;
-      default:
-        if (!htmlGlobalAttributes.includes(attr.name)) {
-          errors.push(`pl-answer (for pl-order-blocks): ${attr.name} is not a valid property.`);
-        }
-    }
-  }
-  return errors;
-}
-
-/**
- * Checks that a `pl-overlay` element has valid properties.
- * @param ast The tree to consider, rooted at the tag to consider.
- * @returns The list of errors for the tag, if any.
- */
-function checkOverlay(ast: any): string[] {
-  const errors: string[] = [];
-  for (const attr of ast.attrs) {
-    switch (attr.name) {
-      case 'width':
-      case 'height':
-        assertFloat('pl-overlay', attr.name, attr.value, errors);
-        break;
-      case 'clip':
-        assertBool('pl-overlay', attr.name, attr.value, errors);
-        break;
-      default:
-        if (!htmlGlobalAttributes.includes(attr.name)) {
-          errors.push(`pl-overlay: ${attr.name} is not a valid property.`);
-        }
-    }
-  }
-
-  let errorsChildren: string[] = [];
-  for (const child of ast.childNodes) {
-    if (child.tagName === 'pl-location') {
-      errorsChildren = errorsChildren.concat(checkLocation(child));
-    } else {
-      errorsChildren.push(`pl-overlay: ${child.tagName} is not a valid child tag.`);
-    }
-  }
-
-  return errors.concat(errorsChildren);
-}
-
-/**
- * Checks that a `pl-location` element has valid properties.
- * @param ast The tree to consider, rooted at the tag to consider.
- * @returns The list of errors for the tag, if any.
- */
-function checkLocation(ast: any): string[] {
-  const errors: string[] = [];
-  for (const attr of ast.attrs) {
-    switch (attr.name) {
-      case 'left':
-      case 'right':
-      case 'top':
-      case 'bottom':
-        assertFloat('pl-location', attr.name, attr.value, errors);
-        break;
-      case 'valign':
-        assertInChoices('pl-location', attr.name, attr.value, ['top', 'middle', 'bottom'], errors);
-        break;
-      case 'halign':
-        assertInChoices('pl-location', attr.name, attr.value, ['left', 'center', 'right'], errors);
-        break;
-      default:
-        if (!htmlGlobalAttributes.includes(attr.name)) {
-          errors.push(`pl-location: ${attr.name} is not a valid property.`);
-        }
-    }
-  }
-  return errors;
-}
-
-/**
- * Checks that a `pl-order-blocks` element has valid properties.
- * @param ast The tree to consider, rooted at the tag to consider.
- * @returns The list of errors for the tag, if any.
- */
-function checkOrderBlocks(ast: any): string[] {
-  const errors: string[] = [];
-  let usedAnswersName = false;
-  let usedDagRanking = false;
-  let usedFeedback = false;
-  for (const attr of ast.attrs) {
-    const key = attr.name;
-    const val = attr.value;
-    switch (key) {
-      case 'answers-name':
-        usedAnswersName = true;
-        break;
-      case 'weight':
-      case 'max-incorrect':
-      case 'min-incorrect':
-        assertInt('pl-order-blocks', key, val, errors);
-        break;
-      case 'grading-method':
-        assertInChoices(
-          'pl-order-blocks',
-          key,
-          val,
-          ['ordered', 'unordered', 'ranking', 'dag', 'external'],
-          errors,
-        );
-        if (val === 'ranking' || val === 'dag') {
-          usedDagRanking = true;
-        }
-        break;
-      case 'allow-blank':
-      case 'indent':
-      case 'inline':
-        assertBool('pl-order-blocks', key, val, errors);
-        break;
-      case 'file-name':
-      case 'source-header':
-      case 'solution-header':
-      case 'code-language':
-        break;
-      case 'source-blocks-order':
-        assertInChoices('pl-order-blocks', key, val, ['random', 'ordered', 'alphabetized'], errors);
-        break;
-      case 'solution-placement':
-        assertInChoices('pl-order-blocks', key, val, ['right', 'bottom'], errors);
-        break;
-      case 'partial-credit':
-        assertInChoices('pl-order-blocks', key, val, ['none', 'lcs'], errors);
-        break;
-      case 'feedback':
-        assertInChoices(
-          'pl-order-blocks',
-          key,
-          val,
-          ['none', 'first-wrong', 'first-wrong-verbose'],
-          errors,
-        );
-        if (val === 'first-wrong' || val === 'first-wrong-verbose') {
-          usedFeedback = true;
-        }
-        break;
-      case 'format':
-        assertInChoices('pl-order-blocks', key, val, ['code', 'default'], errors);
-        break;
-      default:
-        if (!htmlGlobalAttributes.includes(attr.name)) {
-          errors.push(`pl-order-blocks: ${attr.name} is not a valid property.`);
-        }
-    }
-  }
-  if (!usedAnswersName) {
-    errors.push('pl-order-blocks: answers-name is a required property.');
-  }
-  if (usedFeedback && !usedDagRanking) {
-    errors.push(
-      'pl-order-blocks: if property "feedback" is "first-wrong" or "first-wrong-verbose", then "grading-method" must be "ranking" or "dag".',
-    );
-  }
-
-  const errorsChildren = checkOrderBlocksChildren(ast);
-
-  return errors.concat(errorsChildren);
-}
-
-function checkOrderBlocksChildren(ast: any): string[] {
-  let errorsChildren: string[] = [];
-  for (const child of ast.childNodes) {
-    if (child.tagName === 'pl-answer') {
-      errorsChildren = errorsChildren.concat(checkAnswerOrderBlocks(child));
-    } else if (child.tagname === 'pl-block-group') {
-      errorsChildren = errorsChildren.concat(checkAnswerOrderBlocks(child));
-    } else {
-      errorsChildren.push(`${ast.tagName}: ${child.tagName} is not a valid child tag.`);
-    }
-  }
-  return errorsChildren;
-}
-
-/**
- * Checks that a `pl-matrix-input` element has valid properties.
- * @param ast The tree to consider, rooted at the tag to consider.
- * @returns The list of errors for the tag, if any.
- */
-function checkMatrixInput(ast: any): string[] {
-  const errors: string[] = [];
-  let usedAnswersName = false;
-  let usedDigits = false;
-  let usedAtol = false;
-  let usedRtol = false;
-  let usedRelabs = true;
-  for (const attr of ast.attrs) {
-    const key = attr.name;
-    const val = attr.value;
-    switch (key) {
-      case 'answers-name':
-        usedAnswersName = true;
-        break;
-      case 'weight':
-        assertInt('pl-matrix-input', key, val, errors);
-        break;
-      case 'label':
-        break;
-      case 'comparison':
-        assertInChoices('pl-matrix-input', key, val, ['relabs', 'sigfig', 'decdig'], errors);
-        if (val !== 'relabs') {
-          usedRelabs = false;
-        }
-        break;
-      case 'rtol':
-        assertFloat('pl-matrix-input', key, val, errors);
-        usedRtol = true;
-        break;
-      case 'atol':
-        assertFloat('pl-matrix-input', key, val, errors);
-        usedAtol = true;
-        break;
-      case 'digits':
-        assertInt('pl-matrix-input', key, val, errors);
-        usedDigits = true;
-        break;
-      case 'allow-complex':
-      case 'show-help-text':
-        assertBool('pl-matrix-input', key, val, errors);
-        break;
-      default:
-        if (!htmlGlobalAttributes.includes(attr.name)) {
-          errors.push(`pl-matrix-input: ${attr.name} is not a valid property.`);
-        }
-    }
-  }
-  if (!usedAnswersName) {
-    errors.push('pl-matrix-input: answers-name is a required property.');
-  }
-  if ((usedRtol || usedAtol) && !usedRelabs) {
-    errors.push(
-      'pl-matrix-input: comparison modes decdigs and sigfigs use digits, not rtol or atol.',
-    );
-  }
-  if (usedDigits && usedRelabs) {
-    errors.push('pl-matrix-input: comparison mode relabs uses rtol and atol, not digits.');
-  }
-  return errors;
-}
-
-/**
  * Checks that a `pl-string-input` element has valid properties.
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
@@ -729,16 +474,72 @@ function checkStringInput(ast: any): string[] {
   return errors;
 }
 
+function checkCheckbox(ast: any): string[] {
+  const errors: string[] = [];
+  let usedAnswersName = false;
+  let usedPartialCredit = true;
+  let usedPartialCreditMethod = false;
+  for (const attr of ast.attrs) {
+    const key = attr.name;
+    const val = attr.value;
+    switch (key) {
+      case 'answers-name':
+        usedAnswersName = true;
+        break;
+      case 'weight':
+      case 'number-answers':
+      case 'min-correct':
+      case 'max-correct':
+      case 'min-select':
+      case 'max-select':
+        assertInt('pl-checkbox', key, val, errors);
+        break;
+      case 'inline':
+      case 'fixed-order':
+      case 'hide-help-text':
+      case 'detailed-help-text':
+      case 'hide-answer-panel':
+      case 'hide-score-badge':
+        assertBool('pl-checkbox', key, val, errors);
+        break;
+
+      case 'partial-credit':
+        assertBool('pl-checkbox', key, val, errors);
+        if (['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'].includes(val)) {
+          usedPartialCredit = false;
+        }
+        break;
+      case 'partial-credit-method':
+        assertInChoices('pl-checkbox', key, val, ['COV', 'EDC', 'PC'], errors);
+        usedPartialCreditMethod = true;
+        break;
+      default:
+        if (!htmlGlobalAttributes.includes(key)) {
+          errors.push(`pl-checkbox: ${key} is not a valid property.`);
+        }
+    }
+  }
+  if (!usedAnswersName) {
+    errors.push('pl-checkbox: answers-name is a required property.');
+  }
+  if (usedPartialCreditMethod && !usedPartialCredit) {
+    errors.push(
+      'pl-checkbox: if partial-credit-method is set, then partial-credit must be set to true.',
+    );
+  }
+  return errors;
+}
+
 /**
  * Optimistically checks the entire parse tree for errors in common PL tags recursively.
  * @param ast The tree to consider.
  * @returns A list of human-readable error messages, if any.
  */
-function dfsCheckParseTree(ast: any): string[] {
-  let errors = checkTag(ast);
+function dfsCheckParseTree(ast: any, optimistic: boolean): string[] {
+  let errors = checkTag(ast, optimistic);
   if (ast.childNodes) {
     for (const child of ast.childNodes) {
-      errors = errors.concat(dfsCheckParseTree(child));
+      errors = errors.concat(dfsCheckParseTree(child, optimistic));
     }
   }
 
@@ -750,7 +551,7 @@ function dfsCheckParseTree(ast: any): string[] {
  * @param file The raw text of the file to use.
  * @returns A list of human-readable render error messages, if any.
  */
-export function validateHTML(file: string): string[] {
+export function validateHTML(file: string, optimistic: boolean): string[] {
   const tree = parse5.parseFragment(file);
-  return dfsCheckParseTree(tree);
+  return dfsCheckParseTree(tree, optimistic);
 }

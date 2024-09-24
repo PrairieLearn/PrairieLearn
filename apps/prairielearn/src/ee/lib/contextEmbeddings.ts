@@ -120,13 +120,15 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
       if (filename !== 'question.html') continue;
 
       const fileText = await buildContextForQuestion(path.dirname(file.path));
-      await insertDocumentChunk(
-        client,
-        path.relative(REPOSITORY_ROOT_PATH, file.path),
-        { text: fileText, chunkId: '' },
-        job,
-        openAiUserFromAuthn(authnUserId),
-      );
+      if (fileText) {
+        await insertDocumentChunk(
+          client,
+          path.relative(REPOSITORY_ROOT_PATH, file.path),
+          { text: fileText, chunkId: '' },
+          job,
+          openAiUserFromAuthn(authnUserId),
+        );
+      }
     }
 
     const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md');

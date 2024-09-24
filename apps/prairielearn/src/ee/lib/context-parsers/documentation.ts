@@ -4,6 +4,14 @@ import remarkStringify from 'remark-stringify';
 import { unified } from 'unified';
 
 const DEPRECATED_ELEMENTS = new Set(['pl-prairiedraw-figure', 'pl-threejs', 'pl-variable-score']);
+const ALLOWED_ELEMENTS = [
+  'pl-question-panel',
+  'pl-multiple-choice',
+  'pl-checkbox',
+  'pl-integer-input',
+  'pl-number-input',
+  'pl-string-input',
+];
 
 interface ElementSection {
   elementName: string;
@@ -201,5 +209,5 @@ export async function buildContextForElementDocs(rawMarkdown: string): Promise<D
     };
   });
 
-  return contexts;
+  return contexts.filter((x) => ALLOWED_ELEMENTS.includes(x.chunkId));
 }
