@@ -2,7 +2,7 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 
-import { validateHTML } from '../validateHTML';
+import { validateHTML } from '../validateHTML.js';
 
 export async function buildContextForQuestion(dir: string): Promise<string | undefined> {
   const readmePath = path.join(dir, 'README.md');
