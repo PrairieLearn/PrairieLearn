@@ -17,9 +17,16 @@ import * as syncAssessments from './fromDisk/assessments.js';
 import * as syncCourseInfo from './fromDisk/courseInfo.js';
 import * as syncCourseInstances from './fromDisk/courseInstances.js';
 import * as syncQuestions from './fromDisk/questions.js';
+import * as syncSharingSets from './fromDisk/sharing.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
-import { getInvalidRenames } from './sharing.js';
+import {
+  getInvalidRenames,
+  getInvalidSharingSetRemovals,
+  getInvalidPublicSharingRemovals,
+  getInvalidSharingSetDeletions,
+  getInvalidSharingSetAdditions,
+} from './sharing.js';
 
 interface SyncResultSharingError {
   status: 'sharing_error';
@@ -46,20 +53,71 @@ export async function checkSharingConfigurationValid(
   courseData: courseDB.CourseData,
   logger: Logger,
 ): Promise<boolean> {
-  if (config.checkSharingOnSync) {
-    // TODO: also check if questions were un-shared in the JSON or if any
-    // sharing sets were deleted
-    const invalidRenames = await getInvalidRenames(courseId, courseData);
-    if (invalidRenames.length > 0) {
-      logger.info(
-        chalk.red(
-          `✖ Course sync completely failed. The following questions are shared and cannot be renamed or deleted: ${invalidRenames.join(', ')}`,
-        ),
-      );
-      return false;
-    }
+  if (!config.checkSharingOnSync) {
+    return true;
   }
-  return true;
+
+  let sharingConfigurationValid = true;
+  const invalidRenames = await getInvalidRenames(courseId, courseData);
+  // console.log('invalid renames', invalidRenames);
+  if (invalidRenames.length > 0) {
+    logger.info(
+      chalk.red(
+        `✖ Course sync completely failed. The following questions are shared and cannot be renamed or deleted: ${invalidRenames.join(', ')}`,
+      ),
+    );
+    sharingConfigurationValid = false;
+  }
+
+  const invalidPublicSharingRemovals = await getInvalidPublicSharingRemovals(courseId, courseData);
+  if (invalidPublicSharingRemovals.length > 0) {
+    logger.info(
+      chalk.red(
+        `✖ Course sync completely failed. The following questions are are publicly shared and cannot be unshared: ${invalidPublicSharingRemovals.join(', ')}`,
+      ),
+    );
+    sharingConfigurationValid = false;
+  }
+
+  const invalidSharingSetDeletions = await getInvalidSharingSetDeletions(courseId, courseData);
+  if (invalidSharingSetDeletions.length > 0) {
+    logger.info(
+      chalk.red(
+        `✖ Course sync completely failed. The following sharing sets cannot be removed from 'infoCourse.json': ${invalidSharingSetDeletions.join(', ')}`,
+      ),
+    );
+    sharingConfigurationValid = false;
+  }
+
+  const invalidSharingSetAdditions = await getInvalidSharingSetAdditions(courseData);
+  if (Object.keys(invalidSharingSetAdditions).length > 0) {
+    logger.info(
+      chalk.red(
+        `✖ Course sync completely failed. The following questions are being added to sharing sets which do not exist: ${Object.keys(
+          invalidSharingSetAdditions,
+        )
+          .map((key) => `${key}: ${JSON.stringify(invalidSharingSetAdditions[key])}`)
+          .join(', ')}`,
+      ),
+    );
+    sharingConfigurationValid = false;
+  }
+
+  const invalidSharingSetRemovals = await getInvalidSharingSetRemovals(courseId, courseData);
+  if (Object.keys(invalidSharingSetRemovals).length > 0) {
+    logger.info(
+      chalk.red(
+        `✖ Course sync completely failed. The following questions are not allowed to be removed from the listed sharing sets: ${Object.keys(
+          invalidSharingSetRemovals,
+        )
+          .map((key) => `${key}: ${JSON.stringify(invalidSharingSetRemovals[key])}`)
+          .join(', ')}`,
+      ),
+    );
+    sharingConfigurationValid = false;
+  }
+
+  return sharingConfigurationValid;
 }
 
 export async function syncDiskToSqlWithLock(
@@ -146,6 +204,7 @@ export async function syncDiskToSqlWithLock(
       syncQuestions.sync(courseId, courseData),
     );
 
+    await timed('Sync sharing sets', () => syncSharingSets.sync(courseId, courseData, questionIds));
     await timed('Synced tags', () => syncTags.sync(courseId, courseData, questionIds));
     await timed('Synced assessment sets', () => syncAssessmentSets.sync(courseId, courseData));
     await timed('Synced assessment modules', () =>

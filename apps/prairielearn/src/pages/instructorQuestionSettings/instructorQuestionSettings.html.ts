@@ -14,7 +14,6 @@ import { compiledScriptTag } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import { isEnterprise } from '../../lib/license.js';
 import { CourseWithPermissions } from '../../models/course.js';
 
 export const SelectedAssessmentsSchema = z.object({
@@ -49,7 +48,6 @@ export function InstructorQuestionSettings({
   assessmentsWithQuestion,
   sharingEnabled,
   sharingSetsIn,
-  sharingSetsOther,
   editableCourses,
   infoPath,
 }: {
@@ -61,7 +59,6 @@ export function InstructorQuestionSettings({
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
   sharingSetsIn: SharingSetRow[];
-  sharingSetsOther: SharingSetRow[];
   editableCourses: CourseWithPermissions[];
   infoPath: string;
 }) {
@@ -169,10 +166,6 @@ export function InstructorQuestionSettings({
                         ${QuestionSharing({
                           questionSharedPublicly: resLocals.question.shared_publicly,
                           sharingSetsIn,
-                          hasCoursePermissionOwn: resLocals.authz_data.has_course_permission_own,
-                          sharingSetsOther,
-                          csrfToken: resLocals.__csrf_token,
-                          qid: resLocals.question.qid,
                         })}
                       </div>
                     </div>
@@ -319,41 +312,6 @@ function CopyForm({
   `;
 }
 
-function PubliclyShareModal({ csrfToken, qid }: { csrfToken: string; qid: string }) {
-  return Modal({
-    id: 'publiclyShareModal',
-    title: 'Confirm Publicly Share Question',
-    body: html`
-      <p>Are you sure you want to publicly share this question?</p>
-      <p>
-        Once this question is publicly shared, anyone will be able to view it or use it as a part of
-        their course. This operation cannot be undone.
-      </p>
-      ${isEnterprise()
-        ? html`
-            <p>
-              You retain full ownership of all shared content as described in the
-              <a href="https://www.prairielearn.com/legal/terms#2-user-content" target="_blank"
-                >Terms of Service</a
-              >. To allow PrairieLearn to share your content to other users you agree to the
-              <a
-                href="https://www.prairielearn.com/legal/terms#3-user-content-license-grant"
-                target="_blank"
-                >User Content License Grant</a
-              >.
-            </p>
-          `
-        : ''}
-    `,
-    footer: html`
-      <input type="hidden" name="__action" value="share_publicly" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      <button class="btn btn-primary" type="submit">Publicly Share "${qid}"</button>
-    `,
-  });
-}
-
 function DeleteQuestionModal({
   qid,
   assessmentsWithQuestion,
@@ -430,17 +388,9 @@ function QuestionTestsForm({
 function QuestionSharing({
   questionSharedPublicly,
   sharingSetsIn,
-  hasCoursePermissionOwn,
-  sharingSetsOther,
-  csrfToken,
-  qid,
 }: {
   questionSharedPublicly: boolean;
   sharingSetsIn: SharingSetRow[];
-  hasCoursePermissionOwn: boolean;
-  sharingSetsOther: SharingSetRow[];
-  csrfToken: string;
-  qid: string;
 }) {
   if (questionSharedPublicly) {
     return html`
@@ -465,55 +415,6 @@ function QuestionSharing({
             })}
           </p>
         `}
-    ${hasCoursePermissionOwn
-      ? html`
-          ${sharingSetsOther.length > 0
-            ? html`
-                <form name="sharing-set-add" method="POST" class="d-inline">
-                  <input type="hidden" name="__action" value="sharing_set_add" />
-                  <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                  <div class="btn-group btn-group-sm" role="group">
-                    <button
-                      id="addSharingSet"
-                      type="button"
-                      class="btn btn-sm btn-outline-dark dropdown-toggle"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Add...
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="addSharingSet">
-                      ${sharingSetsOther.map(function (sharing_set) {
-                        return html`
-                          <button
-                            class="dropdown-item"
-                            name="unsafe_sharing_set_id"
-                            value="${sharing_set.id}"
-                          >
-                            ${sharing_set.name}
-                          </button>
-                        `;
-                      })}
-                    </div>
-                  </div>
-                </form>
-              `
-            : ''}
-          <button
-            class="btn btn-sm btn-outline-primary"
-            type="button"
-            data-toggle="modal"
-            data-target="#publiclyShareModal"
-          >
-            Share Publicly
-          </button>
-          ${PubliclyShareModal({
-            csrfToken,
-            qid,
-          })}
-        `
-      : ''}
   `;
 }
 

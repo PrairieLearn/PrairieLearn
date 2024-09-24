@@ -164,39 +164,6 @@ router.post(
       } catch {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
-    } else if (req.body.__action === 'sharing_set_add') {
-      const questionSharingEnabled = await features.enabledFromLocals(
-        'question-sharing',
-        res.locals,
-      );
-      if (!questionSharingEnabled) {
-        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
-      }
-      if (!res.locals.authz_data.has_course_permission_own) {
-        throw new error.HttpStatusError(403, 'Access denied (must be a course Owner)');
-      }
-      await sqldb.queryAsync(sql.sharing_set_add, {
-        course_id: res.locals.course.id,
-        question_id: res.locals.question.id,
-        unsafe_sharing_set_id: req.body.unsafe_sharing_set_id,
-      });
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'share_publicly') {
-      const questionSharingEnabled = await features.enabledFromLocals(
-        'question-sharing',
-        res.locals,
-      );
-      if (!questionSharingEnabled) {
-        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
-      }
-      if (!res.locals.authz_data.has_course_permission_own) {
-        throw new error.HttpStatusError(403, 'Access denied (must be a course Owner)');
-      }
-      await sqldb.queryAsync(sql.update_question_shared_publicly, {
-        course_id: res.locals.course.id,
-        question_id: res.locals.question.id,
-      });
-      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
@@ -246,7 +213,7 @@ router.get(
     );
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
-    let sharingSetsIn, sharingSetsOther;
+    let sharingSetsIn;
     if (sharingEnabled) {
       const result = await sqldb.queryRows(
         sql.select_sharing_sets,
@@ -257,7 +224,6 @@ router.get(
         SharingSetRowSchema,
       );
       sharingSetsIn = result.filter((row) => row.in_set);
-      sharingSetsOther = result.filter((row) => !row.in_set);
     }
     const editableCourses = await selectCoursesWithEditAccess({
       user_id: res.locals.user.user_id,
@@ -275,7 +241,6 @@ router.get(
         assessmentsWithQuestion,
         sharingEnabled,
         sharingSetsIn,
-        sharingSetsOther,
         editableCourses,
         infoPath,
       }),
