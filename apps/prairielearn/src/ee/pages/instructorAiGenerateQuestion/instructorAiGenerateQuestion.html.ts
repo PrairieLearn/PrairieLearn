@@ -10,7 +10,7 @@ const examplePrompts = [
       'Write a multiple choice question asking the user to choose the median of 5 random numbers between 1 and 100. Display all numbers to the user, and ask them to choose the median.',
     promptUserInput:
       'Each random number generated should be a potential answer to the multiple-choice question. Randomize the order of the numbers.',
-    promptGrading: 'Make the actual median the correct answer.',
+    promptGrading: 'The correct answer is the median of the numbers.',
   },
   {
     id: 'Sum random integers',
