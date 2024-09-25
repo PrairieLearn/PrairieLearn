@@ -30,6 +30,7 @@ import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
 import { config } from './config.js';
 import { Assessment, Course, CourseInstance, Question, User } from './db-types.js';
 import { EXAMPLE_COURSE_PATH } from './paths.js';
+import { formatJsonWithPrettier } from './prettier.js';
 import { ServerJob, ServerJobExecutor, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -1084,7 +1085,8 @@ export class QuestionRenameEditor extends Editor {
         logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
       }
       debug(`Write ${infoPath}`);
-      await fs.writeJson(infoPath, infoJson, { spaces: 4 });
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+      await fs.writeFile(infoPath, formattedJson);
     }
 
     return {

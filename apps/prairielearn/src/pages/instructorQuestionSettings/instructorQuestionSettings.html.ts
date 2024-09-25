@@ -69,7 +69,6 @@ export function InstructorQuestionSettings({
   // Only show assessments on which this question is used when viewing the question
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
-  console.log(origHash);
   return html`
     <!doctype html>
     <html lang="en">
@@ -128,6 +127,8 @@ export function InstructorQuestionSettings({
                     id="qid"
                     name="qid"
                     value="${resLocals.question.qid}"
+                    pattern="[\\-A-Za-z0-9_\\/]+"
+                    data-other-values="${qids.join(',')}"
                     ${resLocals.authz_data.has_course_permission_edit &&
                     !resLocals.course.example_course
                       ? ''

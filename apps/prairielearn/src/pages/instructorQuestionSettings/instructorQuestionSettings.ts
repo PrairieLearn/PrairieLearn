@@ -25,6 +25,7 @@ import { features } from '../../lib/features/index.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
@@ -96,12 +97,6 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied');
     }
     if (req.body.__action === 'update_question') {
-      // const infoPath = path.join(
-      //   res.locals.course.path,
-      //   'questions',
-      //   res.locals.question.qid,
-      //   'info.json',
-      // );
       const paths = getPaths(undefined, res.locals);
 
       const questionInfo = JSON.parse(
@@ -109,9 +104,9 @@ router.post(
       );
 
       const origHash = req.body.orig_hash;
+      questionInfo.title = req.body.title;
 
-      const questionInfoEdit = questionInfo;
-      questionInfoEdit.title = req.body.title;
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
       const editor = new FileModifyEditor({
         locals: res.locals,
@@ -120,14 +115,13 @@ router.post(
           invalidRootPaths: paths.invalidRootPaths,
         },
         filePath: path.join(paths.rootPath, 'info.json'),
-        editContents: b64EncodeUnicode(JSON.stringify(questionInfoEdit, null, 2)),
+        editContents: b64EncodeUnicode(formattedJson),
         origHash,
       });
 
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-        flash('success', 'Question settings updated successfully');
       } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
@@ -151,9 +145,7 @@ router.post(
           `Invalid QID (could not be normalized): ${req.body.qid}`,
         );
       }
-      if (res.locals.question.qid === qid_new) {
-        return res.redirect(req.originalUrl);
-      } else {
+      if (res.locals.question.qid !== qid_new) {
         const editor = new QuestionRenameEditor({
           locals: res.locals,
           qid_new,
@@ -161,11 +153,12 @@ router.post(
         const serverJob = await editor.prepareServerJob();
         try {
           await editor.executeWithServerJob(serverJob);
-          return res.redirect(req.originalUrl);
         } catch {
           return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         }
       }
+      flash('success', 'Question settings updated successfully');
+      return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'copy_question') {
       if (idsEqual(req.body.to_course_id, res.locals.course.id)) {
         // In this case, we are making a duplicate of this question in the same course
