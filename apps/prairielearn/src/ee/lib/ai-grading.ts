@@ -198,16 +198,6 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
-    job.info('Checking for embeddings for all submissions.');
-    const newEmbeddingsCount = await generateSubmissionEmbeddings({
-      course,
-      question,
-      assessment_question,
-      urlPrefix,
-      openai,
-    });
-    job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
-
     const result = await queryRows(
       sql.select_instance_questions_manual_grading,
       {
@@ -217,6 +207,15 @@ export async function aiGrade({
       InstanceQuestionSchema,
     );
 
+    job.info('Checking for embeddings for all submissions.');
+    const newEmbeddingsCount = await generateSubmissionEmbeddings({
+      course,
+      question,
+      assessment_question,
+      urlPrefix,
+      openai,
+    });
+    job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
     job.info(`Found ${result.length} submissions to grade!`);
 
     let error_count = 0;

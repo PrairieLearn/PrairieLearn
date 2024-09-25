@@ -1,8 +1,8 @@
 columns
-    embedding: vector(1536)
+    embedding: vector(1536) not null
     id: bigint not null default nextval('submission_grading_context_embeddings_id_seq'::regclass)
     submission_id: bigint not null
-    submission_text: text
+    submission_text: text not null
 
 indexes
     submission_grading_context_embeddings_pkey: PRIMARY KEY (id) USING btree (id)
