@@ -63,7 +63,7 @@ async function makeContext(
 ): Promise<string> {
   const embedding = await createEmbedding(client, prompt, openAiUserFromAuthn(authnUserId));
 
-  //identify all elements that we are using *and* have documentation document chunks.
+  // Identify all elements that we are using *and* have documentation document chunks.
   const mandatoryElements =
     mandatoryElementNames.length > 0
       ? await queryRows(
