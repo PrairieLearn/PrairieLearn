@@ -64,8 +64,8 @@
       if (options.submittedFileNames) {
         options.submittedFileNames.forEach((n) => {
           if (this.requiredFiles.includes(n)) return;
-          const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex(
-            (f) => new RegExp(f[0], 'i').test(n) && this.requiredFilesUnmatchedRegex.includes(f),
+          const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex((f) =>
+            new RegExp(f[0], 'i').test(n),
           );
           if (matchingRegex >= 0) {
             this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
@@ -267,8 +267,8 @@
       this.requiredFilesUnmatchedRegex = this.requiredFilesRegex.slice();
       this.files.forEach((n) => {
         if (this.requiredFiles.includes(n.name)) return;
-        const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex(
-          (f) => new RegExp(f[0], 'i').test(n.name) && this.requiredFilesUnmatchedRegex.includes(f),
+        const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex((f) =>
+          new RegExp(f[0], 'i').test(n.name),
         );
         if (matchingRegex >= 0) {
           this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
