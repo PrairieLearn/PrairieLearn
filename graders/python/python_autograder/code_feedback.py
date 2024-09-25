@@ -365,12 +365,16 @@ class Feedback:
         if entry_type_value is not None:
             for value in data.values():
                 if not isinstance(value, entry_type_value):
-                    return bad(f"{name} has the wrong type for value {value}, expecting type {entry_type_value}")
+                    return bad(
+                        f"{name} has the wrong type for value {value}, expecting type {entry_type_value}"
+                    )
 
         if entry_type_key is not None:
             for key in data.keys():
                 if not isinstance(key, entry_type_key):
-                    return bad(f"{name} has the wrong type for key {key}, expecting type {entry_type_key}")
+                    return bad(
+                        f"{name} has the wrong type for key {key}, expecting type {entry_type_key}"
+                    )
 
         if check_only_keys or check_only_values:
             check_keys = False
