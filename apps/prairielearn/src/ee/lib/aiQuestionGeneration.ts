@@ -84,8 +84,8 @@ async function makeContext(
     QuestionGenerationContextEmbeddingSchema,
   );
 
-  //if a prompt specifies how user input is handled, try to find documentation for those types of input
-  //and save as last doc. Regeneration prompts don't use this, so promptUserInput may be undefined.
+  // If a prompt specifies how user input is handled, try to find documentation for those types of input
+  // and save as last doc. Regeneration prompts don't use this, so promptUserInput may be undefined.
   if (promptUserInput !== undefined) {
     const elementDoc = await queryRow(
       sql.select_nearby_documents_from_file,
