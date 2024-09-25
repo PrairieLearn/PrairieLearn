@@ -53,27 +53,15 @@ async function generateGPTPromptWithExamples({
   student_answer: string;
   example_submissions: GradedExample[];
 }): Promise<
-  (
-    | {
-        role: 'system';
-        content: string;
-      }
-    | {
-        role: 'user';
-        content: string;
-      }
-  )[]
+  {
+    role: 'system' | 'user';
+    content: string;
+  }[]
 > {
-  const messages: (
-    | {
-        role: 'system';
-        content: string;
-      }
-    | {
-        role: 'user';
-        content: string;
-      }
-  )[] = [];
+  const messages: {
+    role: 'system' | 'user';
+    content: string;
+  }[] = [];
 
   // Instructions for grading
   messages.push({
@@ -104,7 +92,7 @@ async function generateGPTPromptWithExamples({
   return messages;
 }
 
-async function getAllSubmissionEmbeddings({
+async function generateSubmissionEmbeddings({
   course,
   question,
   assessment_question,
@@ -128,7 +116,7 @@ async function getAllSubmissionEmbeddings({
     InstanceQuestionSchema,
   );
 
-  let emb_count = 0;
+  let newEmbeddingsCount = 0;
 
   for (const instance_question of result) {
     const { variant, submission } = await queryRow(
@@ -166,9 +154,9 @@ async function getAllSubmissionEmbeddings({
       submission_id: submission.id,
       submission_text: student_answer,
     });
-    emb_count++;
+    newEmbeddingsCount++;
   }
-  return emb_count;
+  return newEmbeddingsCount;
 }
 
 export async function aiGrade({
@@ -211,14 +199,14 @@ export async function aiGrade({
 
   serverJob.executeInBackground(async (job) => {
     job.info('Checking for embeddings for all submissions.');
-    const emb_count = await getAllSubmissionEmbeddings({
+    const newEmbeddingsCount = await generateSubmissionEmbeddings({
       course,
       question,
       assessment_question,
       urlPrefix,
       openai,
     });
-    job.info(`Calculated ${emb_count} embeddings.`);
+    job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
 
     const result = await queryRows(
       sql.select_instance_questions_manual_grading,
