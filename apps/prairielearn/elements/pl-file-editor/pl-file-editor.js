@@ -124,7 +124,7 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
       sanitized_contents.includes('\\[') ||
       sanitized_contents.includes('\\]')
     ) {
-      MathJax.typesetPromise();
+      MathJax.typesetPromise([preview]);
     }
   }
 };
