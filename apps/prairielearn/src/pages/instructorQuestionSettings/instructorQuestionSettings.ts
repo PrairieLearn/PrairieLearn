@@ -135,7 +135,7 @@ router.post(
 
       // QID is not maintained in the info.json file, we must handle this separately.
       if (!req.body.qid) {
-        throw new error.HttpStatusError(400, `Invalid QID (was falsy): ${req.body.id}`);
+        throw new error.HttpStatusError(400, `Invalid QID (was falsy): ${req.body.qid}`);
       }
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.qid)) {
         throw new error.HttpStatusError(
