@@ -1253,6 +1253,7 @@ def generate(data):
 | `show-python`           | boolean       | true     | Show code that can be used to recreate the DataFrame in Python in a separate tab.                                                                      |
 | `digits`                | integer       | -        | Number of digits to display for floating point entries.                                                                                                |
 | `width`                 | integer       | 500      | Max characters per line for displaying Python code.                                                                                                    |
+| `presentation-type` | string  | `'g'`   | Floating point number display format. If `digits` is specified, formatted using `'{:.{digits}{presentation-type}}'`, otherwise `'{:{presentation-type}}'`. See [the Python documentation](https://docs.python.org/3/library/string.html#format-specification-mini-language) for more information on allowable presentation types.|
 
 #### Details
 
