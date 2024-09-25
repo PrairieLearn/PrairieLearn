@@ -27,10 +27,10 @@ const htmlGlobalAttributes = [
 const mustacheTemplateRegex = /^\{\{.*\}\}$/;
 
 /**
- * Checks that the required property is an int (or mustache template) or adds an error to the provided list.
+ * Checks that the required attribute is an int (or mustache template) or adds an error to the provided list.
  * @param tag The name of the tag being checked.
- * @param key The property name.
- * @param val The property value.
+ * @param key The attribute name.
+ * @param val The attribute value.
  * @param errors The list of errors to add to.
  */
 function assertInt(tag: string, key: string, val: string, errors: string[]) {
@@ -42,10 +42,10 @@ function assertInt(tag: string, key: string, val: string, errors: string[]) {
 }
 
 /**
- * Checks that the required property is an float (or mustache template) or adds an error to the provided list.
+ * Checks that the required attribute is an float (or mustache template) or adds an error to the provided list.
  * @param tag The name of the tag being checked.
- * @param key The property name.
- * @param val The property value.
+ * @param key The attribute name.
+ * @param val The attribute value.
  * @param errors The list of errors to add to.
  */
 function assertFloat(tag: string, key: string, val: string, errors: string[]) {
@@ -57,11 +57,11 @@ function assertFloat(tag: string, key: string, val: string, errors: string[]) {
 }
 
 /**
- * Checks that the required property is in a list of possibilities (or mustache template) or adds an error to the provided list.
+ * Checks that the required attribute is in a list of possibilities (or mustache template) or adds an error to the provided list.
  * @param tag The name of the tag being checked.
- * @param key The property name.
- * @param val The property value.
- * @param choices The list of potential choices for the property.
+ * @param key The attribute name.
+ * @param val The attribute value.
+ * @param choices The list of potential choices for the attribute.
  * @param errors The list of errors to add to.
  */
 function assertInChoices(
@@ -79,11 +79,11 @@ function assertInChoices(
 }
 
 /**
- * Checks that the required property is a boolean (or mustache template) or adds an error to the provided list.
+ * Checks that the required attribute is a boolean (or mustache template) or adds an error to the provided list.
  * @param tag The name of the tag being checked.
- * @param key The property name.
- * @param val The property value.
- * @param choices The list of potential choices for the property.
+ * @param key The attribute name.
+ * @param val The attribute value.
+ * @param choices The list of potential choices for the attribute.
  * @param errors The list of errors to add to.
  */
 function assertBool(tag: string, key: string, val: string, errors: string[]) {
@@ -120,7 +120,7 @@ function assertBool(tag: string, key: string, val: string, errors: string[]) {
 }
 
 /**
- * Checks that a tag has valid properties.
+ * Checks that a tag has valid attributes.
  * @param ast The tree to consider, rooted at the tag.
  * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns The list of errors for the tag, if any.
@@ -154,7 +154,7 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): strin
 }
 
 /**
- * Checks that a `pl-multiple-choice` element has valid properties.
+ * Checks that a `pl-multiple-choice` element has valid attributes.
  * @param ast The tree to consider, rooted at the tag.
  * @returns The list of errors for the tag, if any.
  */
@@ -227,13 +227,13 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
           break;
         default:
           if (!htmlGlobalAttributes.includes(key)) {
-            errors.push(`pl-multiple-choice: ${key} is not a valid property.`);
+            errors.push(`pl-multiple-choice: ${key} is not a valid attribute.`);
           }
       }
     }
   }
   if (!usedAnswersName) {
-    errors.push('pl-multiple-choice: answers-name is a required property.');
+    errors.push('pl-multiple-choice: answers-name is a required attribute.');
   }
   if (!usedAllOfTheAbove && usedAllOfTheAboveFeedback) {
     errors.push(
@@ -266,7 +266,7 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
 }
 
 /**
- * Checks that a `pl-integer-input` element has valid properties.
+ * Checks that a `pl-integer-input` element has valid attributes.
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
@@ -306,19 +306,19 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): string[] {
           break;
         default:
           if (!htmlGlobalAttributes.includes(key)) {
-            errors.push(`pl-integer-input: ${key} is not a valid property.`);
+            errors.push(`pl-integer-input: ${key} is not a valid attribute.`);
           }
       }
     }
   }
   if (!usedAnswersName) {
-    errors.push('pl-integer-input: answers-name is a required property.');
+    errors.push('pl-integer-input: answers-name is a required attribute.');
   }
   return errors;
 }
 
 /**
- * Checks that a `pl-number-input` element has valid properties.
+ * Checks that a `pl-number-input` element has valid attributes.
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
@@ -390,13 +390,13 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): string[] {
           break;
         default:
           if (!htmlGlobalAttributes.includes(key)) {
-            errors.push(`pl-number-input: ${key} is not a valid property.`);
+            errors.push(`pl-number-input: ${key} is not a valid attribute.`);
           }
       }
     }
   }
   if (!usedAnswersName) {
-    errors.push('pl-number-input: answers-name is a required property.');
+    errors.push('pl-number-input: answers-name is a required attribute.');
   }
   if ((usedRtol || usedAtol) && !usedRelabs) {
     errors.push(
@@ -413,7 +413,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): string[] {
 }
 
 /**
- * Checks that a `pl-answer` element in a multiple choice tag has valid properties.
+ * Checks that a `pl-answer` element in a multiple choice tag has valid attributes.
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
@@ -433,7 +433,7 @@ function checkAnswerMultipleChoice(ast: DocumentFragment | ChildNode): string[] 
         default:
           if (!htmlGlobalAttributes.includes(attr.name)) {
             errors.push(
-              `pl-answer (for pl-multiple-choice): ${attr.name} is not a valid property.`,
+              `pl-answer (for pl-multiple-choice): ${attr.name} is not a valid attribute.`,
             );
           }
       }
@@ -443,7 +443,32 @@ function checkAnswerMultipleChoice(ast: DocumentFragment | ChildNode): string[] 
 }
 
 /**
- * Checks that a `pl-string-input` element has valid properties.
+ * Checks that a `pl-answer` element in a multiple choice tag has valid attributes.
+ * @param ast The tree to consider, rooted at the tag to consider.
+ * @returns The list of errors for the tag, if any.
+ */
+function checkAnswerCheckbox(ast: DocumentFragment | ChildNode): string[] {
+  const errors: string[] = [];
+  if ('attrs' in ast) {
+    for (const attr of ast.attrs) {
+      switch (attr.name) {
+        case 'correct':
+          assertBool('pl-answer (for pl-checkbox)', attr.name, attr.value, errors);
+          break;
+        case 'feedback':
+          break;
+        default:
+          if (!htmlGlobalAttributes.includes(attr.name)) {
+            errors.push(`pl-answer (for pl-checkbox): ${attr.name} is not a valid attribute.`);
+          }
+      }
+    }
+  }
+  return errors;
+}
+
+/**
+ * Checks that a `pl-string-input` element has valid attributes.
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
@@ -483,7 +508,7 @@ function checkStringInput(ast: DocumentFragment | ChildNode): string[] {
           break;
         default:
           if (!htmlGlobalAttributes.includes(attr.name)) {
-            errors.push(`pl-string-input: ${attr.name} is not a valid property.`);
+            errors.push(`pl-string-input: ${attr.name} is not a valid attribute.`);
           }
       }
     }
@@ -495,7 +520,7 @@ function checkStringInput(ast: DocumentFragment | ChildNode): string[] {
 }
 
 /**
- * Checks that a `pl-checkbox` element has valid properties.
+ * Checks that a `pl-checkbox` element has valid attributes.
  * @param ast The tree to consider, rooted at the tag to consider.
  * @returns The list of errors for the tag, if any.
  */
@@ -543,13 +568,13 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
           break;
         default:
           if (!htmlGlobalAttributes.includes(key)) {
-            errors.push(`pl-checkbox: ${key} is not a valid property.`);
+            errors.push(`pl-checkbox: ${key} is not a valid attribute.`);
           }
       }
     }
   }
   if (!usedAnswersName) {
-    errors.push('pl-checkbox: answers-name is a required property.');
+    errors.push('pl-checkbox: answers-name is a required attribute.');
   }
   if (usedPartialCreditMethod && !usedPartialCredit) {
     errors.push(
@@ -562,7 +587,7 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
     for (const child of ast.childNodes) {
       if ('tagName' in child && child.tagName) {
         if (child.tagName === 'pl-answer') {
-          errorsChildren = errorsChildren.concat(checkAnswerMultipleChoice(child));
+          errorsChildren = errorsChildren.concat(checkAnswerCheckbox(child));
         } else {
           errorsChildren.push(`pl-multiple-choice: ${child.tagName} is not a valid child tag.`);
         }

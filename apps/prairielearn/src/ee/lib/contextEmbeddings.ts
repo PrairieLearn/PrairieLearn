@@ -113,6 +113,7 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
       REPOSITORY_ROOT_PATH,
       'exampleCourse/questions/template',
     );
+    const allowedFilepaths: string[] = [];
     for await (const file of klaw(templateQuestionsPath)) {
       if (file.stats.isDirectory()) continue;
 
@@ -128,10 +129,12 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
           job,
           openAiUserFromAuthn(authnUserId),
         );
+        allowedFilepaths.push(path.dirname(file.path));
       }
     }
 
     const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements.md');
+    allowedFilepaths.push(path.relative(REPOSITORY_ROOT_PATH, elementDocsPath));
     const fileText = await fs.readFile(elementDocsPath, { encoding: 'utf-8' });
     const files = await buildContextForElementDocs(fileText);
     for (const doc of files) {
@@ -143,6 +146,15 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
         openAiUserFromAuthn(authnUserId),
       );
     }
+
+    await queryRows(
+      sql.delete_unused_doc_chunks,
+      {
+        doc_paths: allowedFilepaths,
+        chunk_ids: files.map((doc) => doc.chunkId).concat(['']),
+      },
+      QuestionGenerationContextEmbeddingSchema,
+    );
   });
   return serverJob.jobSequenceId;
 }
