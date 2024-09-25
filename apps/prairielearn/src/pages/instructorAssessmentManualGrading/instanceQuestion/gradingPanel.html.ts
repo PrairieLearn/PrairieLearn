@@ -120,9 +120,9 @@ ${submission.feedback?.manual}</textarea
         ${open_issues.length > 0 && context !== 'existing'
           ? html`
               <li class="list-group-item">
-                <div class="form-check">
-                  ${open_issues.map(
-                    (issue) => html`
+                ${open_issues.map(
+                  (issue) => html`
+                    <div class="form-check">
                       <input
                         type="checkbox"
                         id="close-issue-checkbox-${issue.id}"
@@ -133,9 +133,9 @@ ${submission.feedback?.manual}</textarea
                       <label class="w-100 form-check-label" for="close-issue-checkbox-${issue.id}">
                         Close issue #${issue.id}
                       </label>
-                    `,
-                  )}
-                </div>
+                    </div>
+                  `,
+                )}
               </li>
             `
           : ''}
