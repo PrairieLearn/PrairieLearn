@@ -315,6 +315,9 @@ router.get(
       origHash = sha256(b64EncodeUnicode(await fs.readFile(fullInfoPath, 'utf8'))).toString();
     }
 
+    const canEdit =
+      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
+
     res.send(
       InstructorQuestionSettings({
         resLocals: res.locals,
@@ -329,6 +332,7 @@ router.get(
         editableCourses,
         infoPath,
         origHash,
+        canEdit,
       }),
     );
   }),

@@ -52,6 +52,7 @@ export function InstructorQuestionSettings({
   editableCourses,
   infoPath,
   origHash,
+  canEdit,
 }: {
   resLocals: Record<string, any>;
   questionTestPath: string;
@@ -65,6 +66,7 @@ export function InstructorQuestionSettings({
   editableCourses: CourseWithPermissions[];
   infoPath: string;
   origHash: string;
+  canEdit: boolean;
 }) {
   // Only show assessments on which this question is used when viewing the question
   // in the context of a course instance.
@@ -107,10 +109,7 @@ export function InstructorQuestionSettings({
                     id="title"
                     name="title"
                     value="${resLocals.question.title}"
-                    ${resLocals.authz_data.has_course_permission_edit &&
-                    !resLocals.course.example_course
-                      ? ''
-                      : 'disabled'}
+                    ${canEdit ? '' : 'disabled'}
                   />
                   <small class="form-text text-muted">
                     The title of the question (e.g., "Add two numbers").
@@ -129,10 +128,7 @@ export function InstructorQuestionSettings({
                     value="${resLocals.question.qid}"
                     pattern="[\\-A-Za-z0-9_\\/]+"
                     data-other-values="${qids.join(',')}"
-                    ${resLocals.authz_data.has_course_permission_edit &&
-                    !resLocals.course.example_course
-                      ? ''
-                      : 'disabled'}
+                    ${canEdit ? '' : 'disabled'}
                   />
                   <small class="form-text text-muted">
                     This is a unique identifier for the question, e.g. "addNumbers". Use only
@@ -162,22 +158,26 @@ export function InstructorQuestionSettings({
                       : ''}
                   </table>
                 </div>
-                <button
-                  id="save-button"
-                  type="submit"
-                  class="btn btn-primary mb-2"
-                  name="__action"
-                  value="update_question"
-                >
-                  Save
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-secondary mb-2"
-                  onclick="window.location.reload()"
-                >
-                  Cancel
-                </button>
+                ${canEdit
+                  ? html`
+                      <button
+                        id="save-button"
+                        type="submit"
+                        class="btn btn-primary mb-2"
+                        name="__action"
+                        value="update_question"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-secondary mb-2"
+                        onclick="window.location.reload()"
+                      >
+                        Cancel
+                      </button>
+                    `
+                  : ''}
               </form>
               ${sharingEnabled
                 ? html`
@@ -214,8 +214,7 @@ export function InstructorQuestionSettings({
                   `
                 : ''}
               ${resLocals.authz_data.has_course_permission_view
-                ? resLocals.authz_data.has_course_permission_edit &&
-                  !resLocals.course.example_course
+                ? canEdit
                   ? html`
                       <hr />
                       <a
@@ -240,7 +239,7 @@ export function InstructorQuestionSettings({
                 : ''}
             </div>
             ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) ||
-            (resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course)
+            canEdit
               ? html`
                   <div class="card-footer">
                       ${
@@ -272,8 +271,7 @@ export function InstructorQuestionSettings({
                           : ''
                       }
                       ${
-                        resLocals.authz_data.has_course_permission_edit &&
-                        !resLocals.course.example_course
+                        canEdit
                           ? html`
                               <button
                                 class="btn btn-sm btn-primary"

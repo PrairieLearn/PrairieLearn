@@ -11,6 +11,7 @@ import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
 import { config } from '../lib/config.js';
 import { QuestionSchema } from '../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
+import { selectQuestionById } from '../models/question.js';
 
 import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -129,7 +130,7 @@ describe('Editing question settings', () => {
   });
 
   step('verify question info change in db', async () => {
-    const question = await queryRow(sql.select_question_by_id, { id: 1 }, QuestionSchema);
+    const question = await selectQuestionById('1');
     assert.equal(question.title, 'New title');
   });
 
