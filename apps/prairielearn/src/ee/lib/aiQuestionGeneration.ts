@@ -97,7 +97,7 @@ async function makeContext(
       QuestionGenerationContextEmbeddingSchema,
     );
     if (numElements > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {
-      //override last (least relevant) doc
+      // Override the last (least relevant) doc.
       docs[numElements - 1] = elementDoc;
     }
   }
