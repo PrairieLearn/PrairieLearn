@@ -527,7 +527,7 @@ function SubmitRateFooter({
           </small>
           <button
             type="button"
-            class="btn btn-xs"
+            class="btn btn-xs btn-ghost"
             data-toggle="popover"
             data-container="body"
             data-html="true"

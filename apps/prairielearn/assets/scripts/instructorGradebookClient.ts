@@ -104,7 +104,7 @@ onDocumentReady(() => {
         field: 'role',
         title: html`Role
           <button
-            class="btn btn-xs"
+            class="btn btn-xs btn-ghost"
             type="button"
             title="Show roles help"
             data-toggle="modal"
