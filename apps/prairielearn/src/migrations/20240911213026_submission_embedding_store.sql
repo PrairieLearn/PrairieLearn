@@ -5,4 +5,4 @@ CREATE TABLE IF NOT EXISTS submission_grading_context_embeddings (
   submission_text text
 );
 
-CREATE INDEX ON submission_grading_context_embeddings USING hnsw (embedding vector_cosine_ops);
+CREATE INDEX IF NOT EXISTS grading_context_embeddings_submission_id_idx ON submission_grading_context_embeddings (submission_id);

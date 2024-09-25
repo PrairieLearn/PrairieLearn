@@ -51,44 +51,37 @@ VALUES
   ($embedding, $submission_id, $submission_text);
 
 -- BLOCK select_closest_embeddings
+WITH
+  latest_submissions AS (
+    SELECT
+      s.id AS s_id,
+      iq.id AS iq_id,
+      iq.score_perc AS iq_score_perc,
+      ROW_NUMBER() OVER (
+        PARTITION BY
+          s.variant_id
+        ORDER BY
+          s.date DESC
+      ) AS rn
+    FROM
+      instance_questions iq
+      JOIN variants v ON iq.id = v.instance_question_id
+      JOIN submissions s ON v.id = s.variant_id
+    WHERE
+      iq.assessment_question_id = $assessment_question_id
+      AND NOT iq.requires_manual_grading
+      AND iq.status != 'unanswered'
+      AND s.id != $submission_id
+  )
 SELECT
   emb.submission_text,
-  iq.score_perc,
-  iq.id AS instance_question_id
+  ls.iq_score_perc AS score_perc,
+  ls.iq_id AS instance_question_id
 FROM
-  (
-    SELECT
-      s.id,
-      MAX(g.graded_at)
-    FROM
-      (
-        SELECT
-          *
-        FROM
-          grading_jobs
-          -- WHERE
-          --   graded_by != $ai_grader_id 
-          -- NEXT PR: FILTER INSTRUCTOR-GRADED SUBMISSIONS
-      ) AS g
-      JOIN (
-        SELECT
-          *
-        FROM
-          submissions
-        WHERE
-          id != $submission_id
-      ) AS s ON (g.submission_id = s.id)
-    WHERE
-      g.graded_at = s.graded_at
-    GROUP BY
-      s.id
-  ) AS s_filter
-  JOIN submissions AS s ON (s_filter.id = s.id)
-  JOIN submission_grading_context_embeddings AS emb ON (emb.submission_id = s.id)
-  JOIN variants AS v ON (s.variant_id = v.id)
-  JOIN instance_questions AS iq ON (v.instance_question_id = iq.id)
+  latest_submissions ls
+  JOIN submission_grading_context_embeddings AS emb ON (emb.submission_id = ls.s_id)
 WHERE
-  iq.assessment_question_id = $assessment_question_id
+  ls.rn = 1
 ORDER BY
   embedding <=> $embedding
 LIMIT

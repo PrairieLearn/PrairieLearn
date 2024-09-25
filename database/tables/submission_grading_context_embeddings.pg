@@ -6,7 +6,7 @@ columns
 
 indexes
     submission_grading_context_embeddings_pkey: PRIMARY KEY (id) USING btree (id)
-    submission_grading_context_embeddings_embedding_idx: USING hnsw (embedding vector_cosine_ops)
+    grading_context_embeddings_submission_id_idx: USING btree (submission_id)
 
 foreign-key constraints
     submission_grading_context_embeddings_submission_id_fkey: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE
