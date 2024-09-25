@@ -422,6 +422,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
         },
       },
       authnUserId: null,
+      userId: null,
     });
   }
 

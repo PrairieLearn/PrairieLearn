@@ -16,18 +16,7 @@ BEGIN
     WHERE iq.id = instance_question_id;
 
     IF NOT instance_question_open THEN
-        -- this shouldn't happen, so log an error
-        PERFORM issues_insert_for_variant(
-            v.id, 'Submission when instance question is closed', '', false,
-            false, jsonb_build_object('grading_job_id', grading_job_id),
-            '{}'::jsonb, instance_questions_grade.authn_user_id)
-        FROM
-            grading_jobs AS gj
-            JOIN submissions AS s ON (s.id = gj.submission_id)
-            JOIN variants AS v ON (v.id = s.variant_id)
-        WHERE
-            gj.id = grading_job_id;
-
+        -- This shouldn't happen, but if it does, do nothing.
         RETURN;
     END IF;
 

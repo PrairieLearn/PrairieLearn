@@ -10,11 +10,14 @@ import { validateVariantAgainstQuestion } from '../models/variant.js';
 
 import { Variant } from './db-types.js';
 
+const sql = sqldb.loadSqlEquiv(import.meta.filename);
+
 interface IssueForErrorData {
   variantId: string;
   studentMessage: string | null;
   courseData: Record<string, any>;
   authnUserId: string | null;
+  userId: string | null;
 }
 
 interface IssueData extends IssueForErrorData {
@@ -40,6 +43,7 @@ export async function insertIssue({
   courseData,
   systemData,
   authnUserId,
+  userId,
 }: IssueData): Promise<void> {
   // Truncate all strings in the data objects to 1000 characters. This ensures
   // that we don't store too much unnecessary data. This data is here for
@@ -51,31 +55,16 @@ export async function insertIssue({
   // Allow for a higher limit on the system data. This object contains output
   // from the Python subprocess, which can be especially useful for debugging.
   const truncatedSystemData = recursivelyTruncateStrings(systemData, 10000);
-  await sqldb.callAsync('issues_insert_for_variant', [
-    variantId,
-    studentMessage,
-    instructorMessage,
-    manuallyReported,
-    courseCaused,
-    truncatedCourseData,
-    truncatedSystemData,
-    authnUserId,
-  ]);
-}
-
-/**
- * Inserts an issue for a thrown error.
- */
-export async function insertIssueForError(
-  err: ErrorMaybeWithData,
-  data: IssueForErrorData,
-): Promise<void> {
-  return insertIssue({
-    ...data,
-    manuallyReported: false,
-    courseCaused: true,
-    instructorMessage: err.toString(),
-    systemData: { stack: err.stack, courseErrData: err.data },
+  await sqldb.queryAsync(sql.insert_issue_for_variant, {
+    variant_id: variantId,
+    student_message: studentMessage,
+    instructor_message: instructorMessage,
+    manually_reported: manuallyReported,
+    course_caused: courseCaused,
+    course_data: truncatedCourseData,
+    system_data: truncatedSystemData,
+    authn_user_id: authnUserId,
+    user_id: userId,
   });
 }
 
@@ -96,14 +85,20 @@ export async function writeCourseIssues(
   courseData: Record<string, any>,
 ) {
   await async.eachSeries(courseIssues, async (courseErr) => {
-    await insertIssueForError(courseErr, {
+    await insertIssue({
       variantId: variant.id,
       studentMessage,
       courseData,
       authnUserId: authn_user_id,
+      userId: authn_user_id,
+      manuallyReported: false,
+      courseCaused: true,
+      instructorMessage: courseErr.toString(),
+      systemData: { stack: courseErr.stack, courseErrData: courseErr.data },
     });
   });
 }
+
 export async function reportIssueFromForm(
   req: Request,
   res: Response,
@@ -137,6 +132,7 @@ export async function reportIssueFromForm(
     ]),
     systemData: {},
     authnUserId: res.locals.authn_user.user_id,
+    userId: res.locals.user.user_id,
   });
   return variant.id;
 }
