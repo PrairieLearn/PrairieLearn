@@ -4,7 +4,7 @@ import './lib/changeIdButton.js';
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 
 onDocumentReady(() => {
-  const qidfield = document.querySelector('input[name="qid"]') as HTMLInputElement;
+  const qidField = document.querySelector('input[name="qid"]') as HTMLInputElement;
   const otherQids = qidfield.dataset.otherValues?.split(',') ?? [];
   const questionSettingsForm = document.querySelector<HTMLFormElement>(
     'form[name="edit-question-settings-form"]',
