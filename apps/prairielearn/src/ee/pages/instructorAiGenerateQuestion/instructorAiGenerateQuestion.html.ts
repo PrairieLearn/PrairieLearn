@@ -32,7 +32,7 @@ const examplePrompts = [
       'Write a question that asks the user to calculate how far a projectile will be launched. Display to the user an angle randomly generated between 30 and 60 degrees, and a velocity randomly generated between 10 and 20 m/s, and ask for the distance (in meters) that the object travels assuming no wind resistance.',
     promptUserInput: 'Provide a numerical input box for the user to enter an answer.',
     promptGrading:
-      'The correct answer is the distance that the projectile will travel, using the corresponding formula',
+      'The correct answer is the distance that the projectile will travel, using the corresponding formula.',
   },
 ];
 
