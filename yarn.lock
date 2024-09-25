@@ -3622,6 +3622,7 @@ __metadata:
     lodash: "npm:^4.17.21"
     loopbench: "npm:^2.0.0"
     lru-cache: "npm:^11.0.0"
+    marked: "npm:^14.1.0"
     mathjax: "npm:^3.2.2"
     memorystream: "npm:^0.3.1"
     mersenne: "npm:0.0.4"
@@ -11129,6 +11130,15 @@ __metadata:
   bin:
     marked: bin/marked.js
   checksum: 10c0/4713cceabdcd0b4de9a156d601a55ae7e9091cd89ba75d8283042ddbbedb7cd765e02445a80be01131aa24a79003346fc650d66bf4423f7aa186dcc46b403849
+  languageName: node
+  linkType: hard
+
+"marked@npm:^14.1.0":
+  version: 14.1.0
+  resolution: "marked@npm:14.1.0"
+  bin:
+    marked: bin/marked.js
+  checksum: 10c0/85bb74e5514975093b2772e6844503b373f422edd4e8a5382549b7c06808c5fb7422d3314846f48d30acffdc2f935196ab8f44b47c24ce0d18a62b0376e6e3f0
   languageName: node
   linkType: hard
 
