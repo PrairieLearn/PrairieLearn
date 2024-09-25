@@ -6,10 +6,9 @@ import fs from 'fs-extra';
 import { step } from 'mocha-steps';
 import * as tmp from 'tmp';
 
-import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { QuestionSchema } from '../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 import { selectQuestionById } from '../models/question.js';
 
