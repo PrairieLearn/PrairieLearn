@@ -561,7 +561,7 @@ def test_check_dict_with_type_mismatch(mock_file, mock_add_feedback):
 
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
-def test_check_dict_wrong_value_type1_only_values(mock_file, mock_add_feedback):
+def test_check_dict_wrong_value_type1_only_values_early(mock_file, mock_add_feedback):
     """
     This will fail the type check on the values.
     This will ALSO fail at the check_only_values because values are different among both the dicts, but the check_dict() will raise the error even before it hits this check_only_values checks.
