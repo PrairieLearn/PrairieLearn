@@ -13,7 +13,7 @@ exclude = [
     # Files related to the Python autograder will often intentionally appear
     # broken in isolation. We'll exclude these files from linting.
     "exampleCourse/questions/**/tests/initial_code.py",
-    "exampleCourse/questions/**/tests/trailing_code.py"
+    "exampleCourse/questions/**/tests/trailing_code.py",
 ]
 target-version = "py310"
 
@@ -42,7 +42,7 @@ extend-select = ["I"]
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
-    "./exampleCourse/questions/demo/autograder/python/square/tests/initial_code.py"
+    "./exampleCourse/questions/demo/autograder/python/square/tests/initial_code.py",
 ]
 
 [tool.pyright]
@@ -96,7 +96,6 @@ include = [
     "./apps/prairielearn/python/zygote.py",
     "./apps/prairielearn/python/zygote_utils.py",
     "./apps/prairielearn/python/zygote_utils_test.py",
-    "./graders/python/python_autograder/tests/code_feedback_test.py",
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
