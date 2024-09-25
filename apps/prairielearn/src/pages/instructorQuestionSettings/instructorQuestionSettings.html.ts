@@ -135,7 +135,7 @@ export function InstructorQuestionSettings({
                       : 'disabled'}
                   />
                   <small class="form-text text-muted">
-                    This is a unique identifier for the question. (e.g., "addNumbers"). Use only
+                    This is a unique identifier for the question, e.g. "addNumbers". Use only
                     letters, numbers, dashes, and underscores, with no spaces. You may use forward
                     slashes to separate directories.
                   </small>
