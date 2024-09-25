@@ -238,16 +238,18 @@ onDocumentReady(() => {
             },
             {
               field: 'group_roles',
-              title: html` Roles
+              title: html`
+                Roles
                 <button
-                  class="btn btn-xs"
+                  class="btn btn-xs btn-ghost"
                   type="button"
                   title="Show roles help"
                   data-toggle="modal"
                   data-target="#role-help"
                 >
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
-                </button>`,
+                </button>
+              `,
               sortable: true,
               class: 'text-center align-middle text-wrap',
               formatter: uniqueListFormatter,
@@ -274,16 +276,18 @@ onDocumentReady(() => {
             },
             {
               field: 'role',
-              title: html` Role
+              title: html`
+                Role
                 <button
-                  class="btn btn-xs"
+                  class="btn btn-xs btn-ghost"
                   type="button"
                   title="Show roles help"
                   data-toggle="modal"
                   data-target="#role-help"
                 >
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
-                </button>`,
+                </button>
+              `,
               sortable: true,
               class: 'text-center align-middle text-nowrap',
               switchable: true,
@@ -315,16 +319,18 @@ onDocumentReady(() => {
       },
       {
         field: 'duration',
-        title: html` Duration
+        title: html`
+          Duration
           <button
-            class="btn btn-xs"
+            class="btn btn-xs btn-ghost"
             type="button"
             title="Show duration help"
             data-toggle="modal"
             data-target="#duration-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
-          </button>`,
+          </button>
+        `,
         sortable: true,
         sortName: 'duration_secs',
         class: 'text-center align-middle text-nowrap',
@@ -332,16 +338,18 @@ onDocumentReady(() => {
       },
       {
         field: 'time_remaining',
-        title: html` Remaining
+        title: html`
+          Remaining
           <button
-            class="btn btn-xs"
+            class="btn btn-xs btn-ghost"
             type="button"
             title="Show remaining time help"
             data-toggle="modal"
             data-target="#time-remaining-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
-          </button>`,
+          </button>
+        `,
         sortable: true,
         sortName: 'time_remaining_sec',
         sorter: timeRemainingLimitSorter,
@@ -361,16 +369,18 @@ onDocumentReady(() => {
       },
       {
         field: 'client_fingerprint_id_change_count',
-        title: html` Fingerprint Changes
+        title: html`
+          Fingerprint Changes
           <button
-            class="btn btn-xs"
+            class="btn btn-xs btn-ghost"
             type="button"
             title="Show fingerprint changes help"
             data-toggle="modal"
             data-target="#fingerprint-changes-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
-          </button>`,
+          </button>
+        `,
         class: 'text-center align-middle',
         // Hidden for groupwork by default, as it is not as relevant in that context
         visible: !assessmentGroupWork,
@@ -412,6 +422,7 @@ onDocumentReady(() => {
         <select
           class="custom-select select-time-limit"
           name="plus_minus"
+          aria-label="Time limit options"
           onchange="
             $(this).parents('form').find('.time-limit-field').toggle(this.value !== 'unlimited' && this.value !== 'expire');
             $(this).parents('form').find('.reopen-closed-field').toggle(this.value !== '+1' && this.value !== '-1' && this.value !== 'expire');
@@ -442,10 +453,11 @@ onDocumentReady(() => {
             class="form-control time-limit-field"
             type="number"
             name="time_add"
+            aria-label="Time value"
             style="width: 5em"
             value="5"
           />
-          <select class="custom-select time-limit-field" name="time_ref">
+          <select class="custom-select time-limit-field" name="time_ref" aria-label="Time unit">
             <option value="minutes">minutes</option>
             ${row.time_remaining_sec !== null
               ? html`<option value="percent">% total limit</option>`
@@ -531,14 +543,13 @@ onDocumentReady(() => {
     rowA: AssessmentInstanceRow,
     rowB: AssessmentInstanceRow,
   ) {
-    let nameA: string | null, nameB: string | null, idA, idB;
-    if (assessmentGroupWork) {
-      (nameA = rowA.group_name), (nameB = rowB.group_name);
-      (idA = rowA.group_id ?? ''), (idB = rowB.group_id ?? '');
-    } else {
-      (nameA = rowA.uid), (nameB = rowB.uid);
-      (idA = rowA.user_id ?? ''), (idB = rowB.user_id ?? '');
-    }
+    const nameKey = assessmentGroupWork ? 'group_name' : 'uid';
+    const idKey = assessmentGroupWork ? 'group_id' : 'user_id';
+
+    const nameA = rowA[nameKey];
+    const nameB = rowB[nameKey];
+    const idA = rowA[idKey] ?? '';
+    const idB = rowB[idKey] ?? '';
 
     // Compare first by UID/group name, then user/group ID, then
     // instance number, then by instance ID.

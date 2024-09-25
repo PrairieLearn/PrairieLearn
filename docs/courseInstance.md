@@ -18,21 +18,17 @@ exampleCourse
     |   |       `-- ...               # files for Homework 2
     |   +-- clientFilesCourseInstance
     |   |   `-- Fa16_rules.pdf        # files for Fall 2016
-    |   `-- serverFilesCourseInstance
-    |       `-- secret2.js            # files only accessible from the server
     `-- Sp17
         +-- infoCourseInstance.json   # Spring 2017 configuration
         +-- assessments
         |   `-- ...                   # Spring 2017 assessments
         +-- clientFilesCourseInstance
         |   `-- ...                   # files for Spring 2017
-        `-- serverFilesCourseInstance
-            `-- ...                   # files only accessible from the server
 ```
 
 - See an [example course instances directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances) in PrairieLearn
 
-- See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` and `serverFilesCourseInstance` directories.
+- See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` directory.
 
 ## `infoCourseInstance.json`
 
@@ -41,7 +37,6 @@ This file specifies basic information about the course instance:
 ```json
 {
   "uuid": "62fbe2a4-8c22-471a-98fe-19e5d5da1bbe",
-  "shortName": "Sp15",
   "longName": "Spring 2015",
   "allowAccess": [
     {

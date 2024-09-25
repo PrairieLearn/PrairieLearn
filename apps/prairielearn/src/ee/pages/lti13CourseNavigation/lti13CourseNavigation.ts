@@ -76,6 +76,7 @@ router.get(
           context_label: ltiClaim.context?.label,
           context_title: ltiClaim.context?.title,
           lineitems_url: ltiClaim.lineitems,
+          context_memberships_url: ltiClaim.context_memberships_url,
         });
 
         // TODO: Set course/instance staff permissions for LMS course staff here?

@@ -164,12 +164,10 @@ function LtiCredentialsCard({
                     <td>
                       ${tc.deleted ||
                       html`
-                        <a
-                          tabindex="0"
+                        <button
+                          type="button"
                           class="btn btn-sm btn-danger"
-                          role="button"
                           data-toggle="popover"
-                          data-trigger="focus"
                           data-container="body"
                           data-html="true"
                           data-placement="auto"
@@ -184,7 +182,7 @@ function LtiCredentialsCard({
                           `)}"
                         >
                           Delete
-                        </a>
+                        </button>
                       `}
                     </td>
                   </tr>

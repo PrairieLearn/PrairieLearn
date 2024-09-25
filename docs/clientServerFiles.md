@@ -8,7 +8,7 @@ There are multiple locations within each course where files can be stored for ac
 
 ## Directory layout
 
-The `clientFiles` and `serverFiles` subdirectories can be associated with the course, a question, a course instance, or an assessment, as shown below.
+A `clientFiles*` subdirectory can be associated with the course, a question, a course instance, or an assessment, as shown below. The `serverFilesCourse` subdirectory is associated with the course as a whole.
 
 ```text
 exampleCourse
@@ -20,25 +20,19 @@ exampleCourse
 |   `-- fossilFuels
 |       +-- clientFilesQuestion           # client files for the fossilFuels question
 |       |   `-- power-station.jpg
-|       `-- serverFilesQuestion           # server files for the fossilFuels question
-|           `--
 `-- courseInstances
     `-- Fa16
        +-- clientFilesCourseInstance      # client files for the Fall 2016 course instance
        |   `-- Fa16_rules.pdf
-       +-- serverFilesCourseInstance
-       |   `-- secret2.js                 # server files for the Fall 2016 course instance
        `-- assessments
            `-- hw01
                `-- clientFilesAssessment  # client files for the Homework 1 assessment
                    `-- formulaSheet.pdf
-               `-- serverFilesAssessment  # server for the Homework 1 assessment
-                   `-- ...
 ```
 
 ## Access control
 
-Each different `clientFiles` or `serverFiles` directory is accessible under the same [access control rules](accessControl.md) for the course instances and assessments. That is, `clientFilesCourse` is accessible to any student who has access to some course instance, while `clientFilesQuestion`, `clientFilesCourseInstance`, and `clientFilesAssessment` are accessible to students with access to the corresponding question, course instance, or assessment.
+Each different `clientFiles*` directory is accessible under the same [access control rules](accessControl.md) for the course instances and assessments. That is, `clientFilesCourse` is accessible to any student who has access to some course instance, while `clientFilesQuestion`, `clientFilesCourseInstance`, and `clientFilesAssessment` are accessible to students with access to the corresponding question, course instance, or assessment.
 
 ## Accessing files from HTML templates
 

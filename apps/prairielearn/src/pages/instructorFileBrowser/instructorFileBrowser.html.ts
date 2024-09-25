@@ -10,9 +10,9 @@ import {
   CourseSyncErrorsAndWarnings,
   QuestionSyncErrorsAndWarnings,
 } from '../../components/SyncErrorsAndWarnings.html.js';
+import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
-import { User } from '../../lib/db-types.js';
 import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
 import { encodePath } from '../../lib/uri-util.js';
 
@@ -54,9 +54,7 @@ export interface DirectoryEntryFile extends DirectoryEntry {
   canRename: boolean;
   canDelete: boolean;
   sync_errors: string | null;
-  sync_errors_ansified: string;
   sync_warnings: string | null;
-  sync_warnings_ansified: string;
 }
 
 export interface DirectoryListings {
@@ -88,49 +86,6 @@ export interface FileRenameInfo {
   id: string | number;
   name: string;
   dir: string;
-}
-
-export function InstructorFileBrowserNoPermission({
-  resLocals,
-  courseOwners,
-}: {
-  resLocals: Record<string, any>;
-  courseOwners: User[];
-}) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Files' })}
-      </head>
-      <body>
-        ${Navbar({ resLocals })}
-        <main id="content" class="container-fluid">
-          <div class="card mb-4">
-            <div class="card-header bg-danger text-white">
-              <h1>Files</h1>
-            </div>
-            <div class="card-body">
-              <h2>Insufficient permissions</h2>
-              <p>You must have at least &quot;Viewer&quot; permissions for this course.</p>
-              ${courseOwners.length > 0
-                ? html`
-                    <p>Contact one of the below course owners to request access.</p>
-                    <ul>
-                      ${courseOwners.map(
-                        (owner) => html`
-                          <li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li>
-                        `,
-                      )}
-                    </ul>
-                  `
-                : ''}
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
 }
 
 export function InstructorFileBrowser({
@@ -425,35 +380,15 @@ function DirectoryBrowserBody({
             <tr>
               <td>
                 ${f.sync_errors
-                  ? html`
-                      <button
-                        type="button"
-                        class="btn btn-xs mr-1"
-                        data-toggle="popover"
-                        data-title="Sync Errors"
-                        data-html="true"
-                        data-container="body"
-                        data-trigger="hover"
-                        data-content='<pre style="background-color: black" class="text-white rounded p-3">${f.sync_errors_ansified}</pre>'
-                      >
-                        <i class="fa fa-times text-danger" aria-hidden="true"></i>
-                      </button>
-                    `
+                  ? SyncProblemButton({
+                      type: 'error',
+                      output: f.sync_errors,
+                    })
                   : f.sync_warnings
-                    ? html`
-                        <button
-                          type="button"
-                          class="btn btn-xs mr-1"
-                          data-toggle="popover"
-                          data-title="Sync Warnings"
-                          data-html="true"
-                          data-container="body"
-                          data-trigger="hover"
-                          data-content='<pre style="background-color: black" class="text-white rounded p-3">${f.sync_warnings_ansified}</pre>'
-                        >
-                          <i class="fa fa-exclamation-triangle text-warning" aria-hidden="true"></i>
-                        </button>
-                      `
+                    ? SyncProblemButton({
+                        type: 'warning',
+                        output: f.sync_warnings,
+                      })
                     : ''}
                 <span><i class="far fa-file-alt fa-fw"></i></span>
                 ${f.canView
