@@ -97,11 +97,18 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied');
     }
     if (req.body.__action === 'update_question') {
+      const infoPath = path.join(
+        res.locals.course.path,
+        'questions',
+        res.locals.question.qid,
+        'info.json',
+      );
+      if (!(await fs.pathExists(infoPath))) {
+        throw new error.HttpStatusError(400, 'Question info file does not exist');
+      }
       const paths = getPaths(undefined, res.locals);
 
-      const questionInfo = JSON.parse(
-        await fs.readFile(path.join(paths.rootPath, 'info.json'), 'utf8'),
-      );
+      const questionInfo = JSON.parse(await fs.readFile(infoPath, 'utf8'));
 
       const origHash = req.body.orig_hash;
       questionInfo.title = req.body.title;
