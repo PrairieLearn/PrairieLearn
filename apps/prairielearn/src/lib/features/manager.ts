@@ -53,14 +53,13 @@ export class FeatureManager<FeatureName extends string> {
   als: AsyncLocalStorage<FeatureOverrides>;
   globalOverrides: FeatureOverrides = {};
 
-  constructor(features: Record<FeatureName, boolean>) {
-    const featureNames = Object.keys(features);
-    featureNames.forEach((feature) => {
+  constructor(features: readonly FeatureName[]) {
+    features.forEach((feature) => {
       if (!feature.match(/^[a-z0-9:_-]+$/)) {
         throw new Error(`Invalid feature name: ${feature}`);
       }
     });
-    this.features = new Set(featureNames);
+    this.features = new Set(features);
     this.als = new AsyncLocalStorage<FeatureOverrides>();
   }
 
