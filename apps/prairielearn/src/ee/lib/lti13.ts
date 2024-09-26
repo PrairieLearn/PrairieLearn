@@ -517,21 +517,19 @@ export async function fetchRetry(
         data: {
           status: response.status,
           statusText: response.statusText,
-          body: response.text(),
+          body: await response.text(),
         },
       });
     }
 
-    const parsed = parseLinkHeader(response.headers.get('link')) ?? {};
-    if ('next' in parsed) {
-      const results = await response.json();
+    const results = await response.json();
 
-      if (Array.isArray(results)) {
-        return results.concat(await fetchRetry(parsed.next.url, opts, fetchRetryOpts));
-      }
+    const parsed = parseLinkHeader(response.headers.get('link')) ?? {};
+    if ('next' in parsed && Array.isArray(results)) {
+      return results.concat(await fetchRetry(parsed.next.url, opts, fetchRetryOpts));
     }
 
-    return await response.json();
+    return results;
   } catch (err) {
     fetchRetryOpts.retryLeft -= 1;
     if (fetchRetryOpts.retryLeft === 0) {
