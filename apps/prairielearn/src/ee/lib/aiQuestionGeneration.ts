@@ -62,11 +62,6 @@ async function makeContext(
   authnUserId: string,
 ): Promise<string> {
   const embedding = await createEmbedding(client, prompt, openAiUserFromAuthn(authnUserId));
-  const embeddingUserInput = await createEmbedding(
-    client,
-    promptUserInput,
-    openAiUserFromAuthn(authnUserId),
-  );
 
   // Identify all elements that we are using *and* have documentation document chunks.
   const mandatoryElements =
@@ -92,6 +87,12 @@ async function makeContext(
   // If a prompt specifies how user input is handled, try to find documentation for those types of input
   // and save as last doc. Regeneration prompts don't use this, so promptUserInput may be undefined.
   if (promptUserInput !== undefined) {
+    const embeddingUserInput = await createEmbedding(
+      client,
+      promptUserInput,
+      openAiUserFromAuthn(authnUserId),
+    );
+    
     const elementDoc = await queryRow(
       sql.select_nearby_documents_from_file,
       {
