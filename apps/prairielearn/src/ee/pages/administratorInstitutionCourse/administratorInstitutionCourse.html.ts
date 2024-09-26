@@ -126,6 +126,7 @@ export function AdministratorInstitutionCourse({
               Save
             </button>
           </form>
+          <p><a href="/pl/course/${course.id}/">Course instructor view</a></p>
 
           <h2 class="h4">Course instances</h2>
           <div class="table-responsive">
@@ -148,8 +149,12 @@ export function AdministratorInstitutionCourse({
                         <a
                           href="/pl/administrator/institution/${institution.id}/course_instance/${course_instance.id}"
                         >
-                          ${course_instance.short_name ?? '—'}: ${course_instance.long_name ?? '—'}
-                        </a>
+                          ${course_instance.short_name ?? '—'}:
+                          ${course_instance.long_name ?? '—'}</a
+                        >
+                        (<a href="/pl/course_instance/${course_instance.id}/instructor"
+                          >instructor view</a
+                        >)
                       </td>
                       <td>${enrollment_count}</td>
                       <td>
