@@ -56,4 +56,4 @@ FROM
       q.qid
   ) as f
 WHERE
-  sharing_sets IS NOT NULL
+  sharing_sets IS NOT NULL;
