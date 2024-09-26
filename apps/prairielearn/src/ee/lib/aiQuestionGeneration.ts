@@ -62,7 +62,11 @@ async function makeContext(
   authnUserId: string,
 ): Promise<string> {
   const embedding = await createEmbedding(client, prompt, openAiUserFromAuthn(authnUserId));
-  const embeddingUserInput = await createEmbedding(client, promptUserInput, openAiUserFromAuthn(authnUserId));
+  const embeddingUserInput = await createEmbedding(
+    client,
+    promptUserInput,
+    openAiUserFromAuthn(authnUserId),
+  );
 
   // Identify all elements that we are using *and* have documentation document chunks.
   const mandatoryElements =
