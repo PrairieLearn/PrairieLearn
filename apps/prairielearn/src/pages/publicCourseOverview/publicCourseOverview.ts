@@ -3,6 +3,7 @@ import { pipeline } from 'node:stream/promises';
 
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -10,11 +11,14 @@ import * as sqldb from '@prairielearn/postgres';
 import { features } from '../../lib/features/index.js';
 import { selectCourseById, selectAllCoursesInstancesOfCourseById } from '../../models/course.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectPublicQuestionsForCourse } from '../../models/questions.js';
 
-import { AssessmentRowSchema, InstructorAssessments } from '../publicInstructorAssessments/publicInstructorAssessments.html.js';
-import { QuestionsPage } from '../publicQuestions/publicQuestions.html.js';
-import { CombinedPage } from './publicCourseOverview.html.js';
+
+import { AssessmentRowSchema } from '../publicInstructorAssessments/publicInstructorAssessments.html.js';
+import { CourseInstanceAuthzRow } from './publicCourseOverview.html.js';
+import { publicCourseOverviewPage } from './publicCourseOverview.html.js';
+
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -27,9 +31,13 @@ router.get(
     res.locals.course_instances_ids = await selectAllCoursesInstancesOfCourseById(res.locals.course.id); // TEST, need to get all course instances for the course (though may need to be filtered in some way)
     res.locals.urlPrefix = `/pl`;
 
+    let courseInstances = []; // TEST, can't get from selectCourseInstancesWithStaffAccess (yet at least)
+
     const assessmentRows: typeof AssessmentRowSchema[] = [];
     for (const courseInstanceId of res.locals.course_instances_ids) {
       const courseInstance = await selectCourseInstanceById(courseInstanceId);
+      courseInstances.push(courseInstance); // TEST
+      console.log(courseInstance);
       if (courseInstance) {
         const rows: typeof AssessmentRowSchema[] = await sqldb.queryRows(
           sql.select_assessments,
@@ -54,23 +62,44 @@ router.get(
     // }
 
     const questions = await selectPublicQuestionsForCourse(res.locals.course.id);
-    const questionsData = QuestionsPage({
-      questions,
-      showAddQuestionButton: false,
-      resLocals: res.locals,
-    });
-
-    res.send(
-      CombinedPage({
-        assessmentRows,
-        questions: questionsData,
-        resLocals: res.locals,
-      }),
-    );
 
     // Course Instances
-    
+    try {
+      await fs.access(res.locals.course.path);
+    } catch (err) {
+      if (err.code === 'ENOENT') {
+        res.locals.needToSync = true;
+      } else {
+        throw new Error('Invalid course path');
+      }
+    }
 
+    // TEST, can't get using this (yet at least)
+    // const courseInstances: CourseInstanceAuthzRow[] = await selectCourseInstancesWithStaffAccess({
+    //   course_id: res.locals.course.id,
+    //   user_id: res.locals.user.user_id,
+    //   authn_user_id: res.locals.authn_user.user_id,
+    //   is_administrator: res.locals.is_administrator,
+    //   authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+    // });
+
+    // TEST, fake data for now since we're not using selectCourseInstancesWithStaffAccess (yet at least)
+    courseInstances.forEach((ci) => {
+      ci.formatted_start_date = '1800-01-19 00:00:01 (LMT)';
+      ci.formatted_end_date = '2400-05-13 23:59:59 (CDT)';
+    });
+
+  
+
+    // Send response
+    res.send(
+      publicCourseOverviewPage({
+        assessmentRows,
+        questions,
+        resLocals: res.locals,
+        courseInstances: courseInstances,
+      }),
+    );
   }),
 );
 
