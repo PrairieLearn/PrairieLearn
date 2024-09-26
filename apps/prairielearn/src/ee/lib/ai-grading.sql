@@ -58,11 +58,11 @@ FROM
 WHERE
   emb.submission_id = $submission_id;
 
--- BLOCK update_embedding_for_submission
+-- BLOCK create_embedding_for_submission
 INSERT INTO
-  submission_grading_context_embeddings (embedding, submission_id, submission_text)
+  submission_grading_context_embeddings (embedding, submission_id, submission_text, assessment_question_id)
 VALUES
-  ($embedding, $submission_id, $submission_text)
+  ($embedding, $submission_id, $submission_text, $assessment_question_id)
 RETURNING
   *;
 

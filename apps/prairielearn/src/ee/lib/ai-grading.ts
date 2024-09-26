@@ -157,10 +157,11 @@ async function generateSubmissionEmbeddings({
     $('script').remove();
     const student_answer = $.html();
     const embedding = await createEmbedding(openai, student_answer, `course_${course.id}`);
-    await queryOneRowAsync(sql.update_embedding_for_submission, {
+    await queryOneRowAsync(sql.create_embedding_for_submission, {
       embedding: vectorToString(embedding),
       submission_id: submission.id,
       submission_text: student_answer,
+      assessment_question_id: assessment_question.id,
     });
     newEmbeddingsCount++;
   }
@@ -214,11 +215,12 @@ async function ensureSubmissionEmbedding({
   const embedding = await createEmbedding(openai, student_answer, `course_${course.id}`);
   // insert new embedding into the table and return the new embedding
   const new_submission_embedding = await queryRow(
-    sql.update_embedding_for_submission,
+    sql.create_embedding_for_submission,
     {
       embedding: vectorToString(embedding),
       submission_id: submission.id,
       submission_text: student_answer,
+      assessment_question_id: instance_question.assessment_question_id,
     },
     SubmissionGradingContextEmbeddingSchema,
   );

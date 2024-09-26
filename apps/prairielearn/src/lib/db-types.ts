@@ -948,6 +948,9 @@ export const SubmissionGradingContextEmbeddingSchema = z.object({
   embedding: z.string(),
   submission_id: IdSchema,
   submission_text: z.string(),
+  created_at: DateFromISOString,
+  updated_at: DateFromISOString,
+  assessment_question_id: IdSchema,
 });
 export type SubmissionGradingContextEmbedding = z.infer<
   typeof SubmissionGradingContextEmbeddingSchema
