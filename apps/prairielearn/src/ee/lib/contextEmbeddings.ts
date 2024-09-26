@@ -129,7 +129,7 @@ export async function syncContextDocuments(client: OpenAI, authnUserId: string) 
           job,
           openAiUserFromAuthn(authnUserId),
         );
-        allowedFilepaths.push(path.dirname(file.path));
+        allowedFilepaths.push(path.relative(REPOSITORY_ROOT_PATH, file.path));
       }
     }
 
