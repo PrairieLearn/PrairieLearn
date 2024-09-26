@@ -9,7 +9,7 @@ import { config } from '../config.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const IsFeatureEnabledSchema = z.object({
-  has_feature_grant: z.boolean(),
+  enabled: z.array(z.boolean()),
   course_dev_mode_features: z.unknown(),
 });
 
@@ -53,13 +53,14 @@ export class FeatureManager<FeatureName extends string> {
   als: AsyncLocalStorage<FeatureOverrides>;
   globalOverrides: FeatureOverrides = {};
 
-  constructor(features: readonly FeatureName[]) {
-    features.forEach((feature) => {
+  constructor(features: Record<FeatureName, boolean>) {
+    const featureNames = Object.keys(features);
+    featureNames.forEach((feature) => {
       if (!feature.match(/^[a-z0-9:_-]+$/)) {
         throw new Error(`Invalid feature name: ${feature}`);
       }
     });
-    this.features = new Set(features);
+    this.features = new Set(featureNames);
     this.als = new AsyncLocalStorage<FeatureOverrides>();
   }
 
@@ -108,7 +109,7 @@ export class FeatureManager<FeatureName extends string> {
       IsFeatureEnabledSchema,
     );
 
-    if (featureIsEnabled.has_feature_grant) return true;
+    if (featureIsEnabled.enabled.at(-1)) return true;
 
     // Allow features to be enabled in dev mode via `options.devModeFeatures`
     // in `infoCourse.json`.
@@ -178,7 +179,7 @@ export class FeatureManager<FeatureName extends string> {
    */
   async enable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
-    await queryAsync(sql.enable_feature, { name, ...DEFAULT_CONTEXT, ...context });
+    await queryAsync(sql.toggle_feature, { name, enabled: true, ...DEFAULT_CONTEXT, ...context });
   }
 
   /**
@@ -189,7 +190,18 @@ export class FeatureManager<FeatureName extends string> {
    */
   async disable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
-    await queryAsync(sql.disable_feature, { name, ...DEFAULT_CONTEXT, ...context });
+    await queryAsync(sql.toggle_feature, { name, enabled: false, ...DEFAULT_CONTEXT, ...context });
+  }
+
+  /**
+   * Deletes the feature grant that exactly matches the given context, if any.
+   *
+   * @param name The name of the feature.
+   * @param context The context for which the feature grant should be deleted.
+   */
+  async delete(name: FeatureName, context: FeatureContext = {}) {
+    this.validateFeature(name, context);
+    await queryAsync(sql.delete_feature, { name, ...DEFAULT_CONTEXT, ...context });
   }
 
   /**
