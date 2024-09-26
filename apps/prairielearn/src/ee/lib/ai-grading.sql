@@ -76,6 +76,15 @@ VALUES
 RETURNING
   *;
 
+-- BLOCK update_embedding_for_submission
+UPDATE submission_grading_context_embeddings
+SET
+  embedding = $embedding,
+  submission_text = $submission_text,
+  updated_at = now()
+WHERE
+  submission_id = $submission_id;
+
 -- BLOCK select_closest_embeddings
 WITH
   latest_submissions AS (
