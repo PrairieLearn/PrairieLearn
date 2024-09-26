@@ -21,6 +21,20 @@ WHERE
   AND iq.assessment_question_id = $assessment_question_id
   AND iq.status != 'unanswered';
 
+-- BLOCK select_last_submission_id
+SELECT
+  s.id
+FROM
+  variants AS v
+  JOIN submissions AS s ON (s.variant_id = v.id)
+WHERE
+  v.instance_question_id = $instance_question_id
+ORDER BY
+  v.date DESC,
+  s.date DESC
+LIMIT
+  1;
+
 -- BLOCK select_last_variant_and_submission
 SELECT
   to_jsonb(v.*) AS variant,
@@ -48,7 +62,9 @@ WHERE
 INSERT INTO
   submission_grading_context_embeddings (embedding, submission_id, submission_text)
 VALUES
-  ($embedding, $submission_id, $submission_text);
+  ($embedding, $submission_id, $submission_text)
+RETURNING
+  *;
 
 -- BLOCK select_closest_embeddings
 WITH

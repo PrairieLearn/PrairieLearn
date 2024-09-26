@@ -21,6 +21,9 @@ import {
   Question,
   Course,
   AssessmentQuestion,
+  SubmissionGradingContextEmbedding,
+  IdSchema,
+  InstanceQuestion,
 } from '../../lib/db-types.js';
 import * as manualGrading from '../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../lib/question-render.js';
@@ -119,21 +122,26 @@ async function generateSubmissionEmbeddings({
   let newEmbeddingsCount = 0;
 
   for (const instance_question of result) {
+    const submission_id = await queryRow(
+      sql.select_last_submission_id,
+      { instance_question_id: instance_question.id },
+      IdSchema,
+    );
+    const submission_embedding = await queryOptionalRow(
+      sql.select_embedding_for_submission,
+      { submission_id },
+      SubmissionGradingContextEmbeddingSchema,
+    );
+
+    // Only recalculate embedding if it doesn't exist for a submission
+    if (submission_embedding) {
+      continue;
+    }
     const { variant, submission } = await queryRow(
       sql.select_last_variant_and_submission,
       { instance_question_id: instance_question.id },
       SubmissionVariantSchema,
     );
-    const submission_embedding = await queryOptionalRow(
-      sql.select_embedding_for_submission,
-      { submission_id: submission.id },
-      SubmissionGradingContextEmbeddingSchema,
-    );
-
-    // Do not recalculate embedding if it already exists for a submission
-    if (submission_embedding) {
-      continue;
-    }
     const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
     const questionModule = questionServers.getModule(question.type);
     const render_submission_results = await questionModule.render(
@@ -157,6 +165,64 @@ async function generateSubmissionEmbeddings({
     newEmbeddingsCount++;
   }
   return newEmbeddingsCount;
+}
+
+async function ensureSubmissionEmbedding({
+  submission_id,
+  course,
+  question,
+  instance_question,
+  urlPrefix,
+  openai,
+}: {
+  submission_id: string;
+  question: Question;
+  course: Course;
+  instance_question: InstanceQuestion;
+  urlPrefix: string;
+  openai: OpenAI;
+}): Promise<SubmissionGradingContextEmbedding> {
+  const submission_embedding = await queryOptionalRow(
+    sql.select_embedding_for_submission,
+    { submission_id },
+    SubmissionGradingContextEmbeddingSchema,
+  );
+  // if the submission embedding already exists, return the embedding
+  if (submission_embedding) {
+    return submission_embedding;
+  }
+  const question_course = await getQuestionCourse(question, course);
+  const { variant, submission } = await queryRow(
+    sql.select_last_variant_and_submission,
+    { instance_question_id: instance_question.id },
+    SubmissionVariantSchema,
+  );
+  const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
+  const questionModule = questionServers.getModule(question.type);
+  const render_submission_results = await questionModule.render(
+    { question: false, submissions: true, answer: false },
+    variant,
+    question,
+    submission,
+    [submission],
+    question_course,
+    urls,
+  );
+  const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
+  $('script').remove();
+  const student_answer = $.html();
+  const embedding = await createEmbedding(openai, student_answer, `course_${course.id}`);
+  // insert new embedding into the table and return the new embedding
+  const new_submission_embedding = await queryRow(
+    sql.update_embedding_for_submission,
+    {
+      embedding: vectorToString(embedding),
+      submission_id: submission.id,
+      submission_text: student_answer,
+    },
+    SubmissionGradingContextEmbeddingSchema,
+  );
+  return new_submission_embedding;
 }
 
 export async function aiGrade({
@@ -252,11 +318,14 @@ export async function aiGrade({
       $('script').remove();
       const question_prompt = $.html();
 
-      const submission_embedding = await queryRow(
-        sql.select_embedding_for_submission,
-        { submission_id: submission.id },
-        SubmissionGradingContextEmbeddingSchema,
-      );
+      const submission_embedding = await ensureSubmissionEmbedding({
+        submission_id: submission.id,
+        course,
+        question,
+        instance_question,
+        urlPrefix,
+        openai,
+      });
       const student_answer = submission_embedding.submission_text;
 
       const example_submissions = await queryRows(
