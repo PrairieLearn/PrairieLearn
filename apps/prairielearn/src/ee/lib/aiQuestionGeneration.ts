@@ -62,6 +62,7 @@ async function makeContext(
   authnUserId: string,
 ): Promise<string> {
   const embedding = await createEmbedding(client, prompt, openAiUserFromAuthn(authnUserId));
+  const embeddingUserInput = await createEmbedding(client, promptUserInput, openAiUserFromAuthn(authnUserId));
 
   // Identify all elements that we are using *and* have documentation document chunks.
   const mandatoryElements =
@@ -90,7 +91,7 @@ async function makeContext(
     const elementDoc = await queryRow(
       sql.select_nearby_documents_from_file,
       {
-        embedding: vectorToString(embedding),
+        embedding: vectorToString(embeddingUserInput),
         doc_path: 'docs/elements.md',
         limit: 1,
       },
