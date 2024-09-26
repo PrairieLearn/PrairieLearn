@@ -58,13 +58,11 @@ router.get(
       AssessmentRowSchema,
     );
 
-    const assessmentIdsNeedingStatsUpdate = rows.map((row) => row.id); // TEST, remove? Not needed in this context, but InstructorAssessments expects it
-
     res.send(
       InstructorAssessments({
         resLocals: res.locals,
         rows,
-        assessmentIdsNeedingStatsUpdate,
+        assessmentIdsNeedingStatsUpdate: [], // Don't show on public page
       }),
     );
   }),

@@ -7,6 +7,9 @@ import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 
+import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
+import { QuestionsPageData } from '../../models/questions.js';
+
 export const AssessmentStatsRowSchema = AssessmentSchema.extend({
   needs_statistics_update: z.boolean().optional(),
 });
@@ -19,25 +22,58 @@ export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
 });
 type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
-export function InstructorAssessments({
+export function PublicCourseOverview({ 
+  assessmentsData, 
+  questions, 
+  resLocals 
+}) {
+  return `
+    <!DOCTYPE html>
+    <html lang="en">
+    <head>
+      <meta charset="UTF-8">
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <title>Course Overview</title>
+      ${HeadContents({ resLocals, pageTitle: 'Course Overview' })}
+    </head>
+    <body>
+      <main>
+        <div>
+          ${assessmentsData}
+        </div>
+        <div>
+          ${questions}
+        </div>
+      </main>
+    </body>
+    </html>
+  `;
+}
+
+
+// Assessments above Questions
+export function CombinedPage({
   resLocals,
-  rows,
+  assessmentRows,
+  questions,
 }: {
   resLocals: Record<string, any>;
-  rows: AssessmentRow[];
-  assessmentIdsNeedingStatsUpdate: string[];
+  assessmentRows: AssessmentRow[];
+  questions: QuestionsPageData[];
 }) {
   const { urlPrefix, course, __csrf_token } = resLocals;
+  const qidPrefix = course.example_course ? '' : `@${course.sharing_name}/`;
 
   return html`
     <!doctype html>
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })} ${compiledScriptTag('instructorAssessmentsClient.ts')}
+        ${HeadContents({ resLocals, pageTitle: 'Course Overview' })}
+        ${compiledScriptTag('instructorAssessmentsClient.ts')}
+        ${QuestionsTableHead()}
       </head>
       <body>
         ${Navbar({ resLocals })}
-        
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary">
@@ -58,12 +94,12 @@ export function InstructorAssessments({
                   </tr>
                 </thead>
                 <tbody>
-                  ${rows.map(
+                  ${assessmentRows.map(
                     (row) => html`
                       <tr id="row-${row.id}">
                         <td class="align-middle" style="width: 1%">
                           <a
-                            href="/pl/public/course_instance/${resLocals.course_instance_id}/instructor/assessment/${row.id}/questions"
+                            href="/pl/public/course_instance/${row.course_instance_id}/instructor/assessment/${row.id}/questions"
                             class="badge color-${row.color} color-hover"
                           >
                             ${row.label}
@@ -71,7 +107,7 @@ export function InstructorAssessments({
                         </td>
                         <td class="align-middle">
                           <a
-                            href="/pl/public/course_instance/${resLocals.course_instance_id}/instructor/assessment/${row.id}/questions"
+                            href="/pl/public/course_instance/${row.course_instance_id}/instructor/assessment/${row.id}/questions"
                             >${row.title}
                             ${row.group_work
                               ? html` <i class="fas fa-users" aria-hidden="true"></i> `
@@ -87,6 +123,24 @@ export function InstructorAssessments({
               </table>
             </div>
           </div>
+
+          ${course.sharing_name
+            ? QuestionsTable({
+                questions,
+                showAddQuestionButton : false,
+                qidPrefix,
+                urlPrefix: resLocals.urlPrefix,
+                plainUrlPrefix: resLocals.plainUrlPrefix,
+                __csrf_token: resLocals.__csrf_token,
+              })
+            : html`<p>
+                This course doesn't have a sharing name. If you are an Owner of this course, please
+                choose a sharing name on the
+                <a
+                  href="${resLocals.plainUrlPrefix}/course/${course.id}/course_admin/sharing"
+                  >course sharing settings page</a
+                >.
+              </p>`}
         </main>
       </body>
     </html>
