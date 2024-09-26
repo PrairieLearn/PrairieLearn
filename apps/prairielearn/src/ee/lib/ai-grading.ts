@@ -101,14 +101,12 @@ async function generateSubmissionEmbeddings({
   assessment_question,
   urlPrefix,
   openai,
-  force_update,
 }: {
   question: Question;
   course: Course;
   assessment_question: AssessmentQuestion;
   urlPrefix: string;
   openai: OpenAI;
-  force_update: boolean;
 }): Promise<number> {
   const question_course = await getQuestionCourse(question, course);
 
@@ -136,7 +134,7 @@ async function generateSubmissionEmbeddings({
     );
 
     // Only recalculate embedding if it doesn't exist or if it requires a force update
-    if (submission_embedding && !force_update) {
+    if (submission_embedding) {
       continue;
     }
     const { variant, submission } = await queryRow(
@@ -159,20 +157,14 @@ async function generateSubmissionEmbeddings({
     $('script').remove();
     const student_answer = $.html();
     const embedding = await createEmbedding(openai, student_answer, `course_${course.id}`);
-    if (!submission_embedding) {
-      await queryOneRowAsync(sql.create_embedding_for_submission, {
-        embedding: vectorToString(embedding),
-        submission_id: submission.id,
-        submission_text: student_answer,
-        assessment_question_id: assessment_question.id,
-      });
-    } else {
-      await queryOneRowAsync(sql.update_embedding_for_submission, {
-        embedding: vectorToString(embedding),
-        submission_id: submission.id,
-        submission_text: student_answer,
-      });
-    }
+
+    await queryOneRowAsync(sql.create_embedding_for_submission, {
+      embedding: vectorToString(embedding),
+      submission_id: submission.id,
+      submission_text: student_answer,
+      assessment_question_id: assessment_question.id,
+    });
+
     newEmbeddingsCount++;
   }
   return newEmbeddingsCount;
@@ -292,7 +284,6 @@ export async function aiGrade({
       assessment_question,
       urlPrefix,
       openai,
-      force_update: false, // can be set to true later if we
     });
     job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
     job.info(`Found ${result.length} submissions to grade!`);
