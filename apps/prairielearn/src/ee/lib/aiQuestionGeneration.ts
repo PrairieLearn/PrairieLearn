@@ -92,7 +92,7 @@ async function makeContext(
       promptUserInput,
       openAiUserFromAuthn(authnUserId),
     );
-    
+
     const elementDoc = await queryRow(
       sql.select_nearby_documents_from_file,
       {
