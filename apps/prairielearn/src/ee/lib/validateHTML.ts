@@ -3,27 +3,6 @@ import * as parse5 from 'parse5';
 type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
 type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
 
-const htmlGlobalAttributes = [
-  'accesskey',
-  'class',
-  'contenteditable',
-  'data-*',
-  'dir',
-  'draggable',
-  'enterkeyhint',
-  'hidden',
-  'id',
-  'inert',
-  'inputmode',
-  'lang',
-  'popover',
-  'spellcheck',
-  'style',
-  'tabindex',
-  'title',
-  'translate',
-];
-
 const mustacheTemplateRegex = /^\{\{.*\}\}$/;
 
 /**
@@ -226,9 +205,7 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
           assertInt('pl-multiple-choice', key, val, errors);
           break;
         default:
-          if (!htmlGlobalAttributes.includes(key)) {
-            errors.push(`pl-multiple-choice: ${key} is not a valid attribute.`);
-          }
+          errors.push(`pl-multiple-choice: ${key} is not a valid attribute.`);
       }
     }
   }
@@ -305,9 +282,7 @@ function checkIntegerInput(ast: DocumentFragment | ChildNode): string[] {
           assertInChoices('pl-integer-input', key, val, ['block', 'inline'], errors);
           break;
         default:
-          if (!htmlGlobalAttributes.includes(key)) {
-            errors.push(`pl-integer-input: ${key} is not a valid attribute.`);
-          }
+          errors.push(`pl-integer-input: ${key} is not a valid attribute.`);
       }
     }
   }
@@ -389,9 +364,7 @@ function checkNumericalInput(ast: DocumentFragment | ChildNode): string[] {
           usedBlankValue = true;
           break;
         default:
-          if (!htmlGlobalAttributes.includes(key)) {
-            errors.push(`pl-number-input: ${key} is not a valid attribute.`);
-          }
+          errors.push(`pl-number-input: ${key} is not a valid attribute.`);
       }
     }
   }
@@ -431,11 +404,7 @@ function checkAnswerMultipleChoice(ast: DocumentFragment | ChildNode): string[] 
           assertFloat('pl-answer (for pl-multiple-choice)', attr.name, attr.value, errors);
           break;
         default:
-          if (!htmlGlobalAttributes.includes(attr.name)) {
-            errors.push(
-              `pl-answer (for pl-multiple-choice): ${attr.name} is not a valid attribute.`,
-            );
-          }
+          errors.push(`pl-answer (for pl-multiple-choice): ${attr.name} is not a valid attribute.`);
       }
     }
   }
@@ -458,9 +427,7 @@ function checkAnswerCheckbox(ast: DocumentFragment | ChildNode): string[] {
         case 'feedback':
           break;
         default:
-          if (!htmlGlobalAttributes.includes(attr.name)) {
-            errors.push(`pl-answer (for pl-checkbox): ${attr.name} is not a valid attribute.`);
-          }
+          errors.push(`pl-answer (for pl-checkbox): ${attr.name} is not a valid attribute.`);
       }
     }
   }
@@ -507,9 +474,7 @@ function checkStringInput(ast: DocumentFragment | ChildNode): string[] {
           assertBool('pl-string-input', key, val, errors);
           break;
         default:
-          if (!htmlGlobalAttributes.includes(attr.name)) {
-            errors.push(`pl-string-input: ${attr.name} is not a valid attribute.`);
-          }
+          errors.push(`pl-string-input: ${attr.name} is not a valid attribute.`);
       }
     }
   }
@@ -567,9 +532,7 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
           usedPartialCreditMethod = true;
           break;
         default:
-          if (!htmlGlobalAttributes.includes(key)) {
-            errors.push(`pl-checkbox: ${key} is not a valid attribute.`);
-          }
+          errors.push(`pl-checkbox: ${key} is not a valid attribute.`);
       }
     }
   }
