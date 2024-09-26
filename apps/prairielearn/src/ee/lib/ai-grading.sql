@@ -10,7 +10,7 @@ WHERE
   AND iq.requires_manual_grading
   AND iq.status != 'unanswered';
 
--- BLOCK select_all_instance_questions
+-- BLOCK select_instance_questions_for_assessment_question
 SELECT
   *
 FROM
