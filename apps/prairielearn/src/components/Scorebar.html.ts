@@ -2,12 +2,16 @@ import { html } from '@prairielearn/html';
 
 export function Scorebar(
   score: number | null,
-  { minWidth = '5em', maxWidth = '20em' }: { minWidth?: string; maxWidth?: string } = {},
+  {
+    minWidth = '5em',
+    maxWidth = '20em',
+    classes = '',
+  }: { minWidth?: string; maxWidth?: string; classes?: string } = {},
 ) {
   if (score == null) return '';
   return html`
     <div
-      class="progress border border-success"
+      class="progress border border-success ${classes}"
       style="min-width: ${minWidth}; max-width: ${maxWidth};"
     >
       <div class="progress-bar bg-success" style="width: ${Math.floor(Math.min(100, score))}%">
