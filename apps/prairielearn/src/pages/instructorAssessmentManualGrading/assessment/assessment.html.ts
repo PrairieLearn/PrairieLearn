@@ -177,7 +177,7 @@ function AssessmentQuestionRow({
                 ? html`
                     <button
                       type="button"
-                      class="btn btn-sm"
+                      class="btn btn-sm btn-ghost"
                       data-toggle="modal"
                       data-target="#grader-assignment-modal"
                       data-assessment-question-id="${question.id}"

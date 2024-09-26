@@ -238,7 +238,6 @@ function ImageTable({
                           data-html="true"
                           title="Questions using ${image.image}"
                           data-content="${escapeHtml(ListQuestionsPopover({ image, urlPrefix }))}"
-                          data-trigger="focus"
                         >
                           Show
                         </button>

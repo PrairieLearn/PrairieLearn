@@ -22,6 +22,7 @@ import {
   updateCourseCommitHash,
   getOrUpdateCourseCommitHash,
 } from '../models/course.js';
+import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import * as b64Util from './base64-util.js';
@@ -29,21 +30,36 @@ import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
 import { config } from './config.js';
 import { Assessment, Course, CourseInstance, Question, User } from './db-types.js';
 import { EXAMPLE_COURSE_PATH } from './paths.js';
+import { formatJsonWithPrettier } from './prettier.js';
 import { ServerJob, ServerJobExecutor, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
 
-async function syncCourseFromDisk(course: Course, startGitHash: string, job: ServerJob) {
+async function syncCourseFromDisk(
+  course: Course,
+  startGitHash: string,
+  job: ServerJob,
+  courseData?: courseDB.CourseData,
+) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  const result = await syncFromDisk.syncDiskToSqlWithLock(course.id, course.path, job);
+  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(
+    course.id,
+    course.path,
+    job,
+    courseData,
+  );
+
+  if (syncResult.status === 'sharing_error') {
+    throw new Error('Sync completely failed due to invalid question sharing edit.');
+  }
 
   if (config.chunksGenerator) {
     const chunkChanges = await updateChunksForCourse({
       coursePath: course.path,
       courseId: course.id,
-      courseData: result.courseData,
+      courseData: syncResult.courseData,
       oldHash: startGitHash,
       newHash: endGitHash,
     });
@@ -52,20 +68,21 @@ async function syncCourseFromDisk(course: Course, startGitHash: string, job: Ser
 
   await updateCourseCommitHash(course);
 
-  if (result.hadJsonErrors) {
+  if (syncResult.hadJsonErrors) {
     throw new Error('One or more JSON files contained errors and were unable to be synced');
   }
 }
 
-export async function cleanAndResetRepository(
+async function cleanAndResetRepository(
   course: Course,
+  revision: string,
   env: NodeJS.ProcessEnv,
   job: ServerJob,
 ) {
   job.info('Clean local files not in remote git repository');
   await job.exec('git', ['clean', '-fdx'], { cwd: course.path, env });
   job.info('Reset state to remote git repository');
-  await job.exec('git', ['reset', '--hard', `origin/${course.branch}`], {
+  await job.exec('git', ['reset', '--hard', revision], {
     cwd: course.path,
     env,
   });
@@ -198,7 +215,7 @@ export abstract class Editor {
           env: gitEnv,
         });
 
-        await cleanAndResetRepository(this.course, gitEnv, job);
+        await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
 
         const writeAndCommitChanges = async () => {
           job.data.saveAttempted = true;
@@ -231,8 +248,28 @@ export abstract class Editor {
           );
         };
 
+        let courseData: courseDB.CourseData | undefined;
         try {
           await writeAndCommitChanges();
+
+          await cleanAndResetRepository(this.course, 'HEAD', gitEnv, job);
+          // Before pushing the changes, ensure that we don't allow someone
+          // to put their course into an invalid state by deleting a shared
+          // question or otherwise breaking the invariants we rely upon for
+          // question sharing.
+          const possibleCourseData = await courseDB.loadFullCourse(
+            this.course.id,
+            this.course.path,
+          );
+          const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
+            this.course.id,
+            possibleCourseData,
+            logger,
+          );
+          if (!sharingConfigurationValid) {
+            await cleanAndResetRepository(this.course, startGitHash, gitEnv, job);
+            throw new Error('Invalid sharing operation, reverted to last known good state.');
+          }
 
           try {
             job.info('Push changes to remote git repository');
@@ -241,6 +278,17 @@ export abstract class Editor {
               env: gitEnv,
             });
             job.data.saveSucceeded = true;
+
+            // If we were able to push the change to GitHub, we can safely
+            // use the course data that we already loaded from disk because
+            // we can be sure that there weren't any further changes to the
+            // files on disk. This helps keep syncing fast by avoiding loading
+            // all course JSON files twice.
+            //
+            // If pushing fails, we'll need to incorporate the latest changes
+            // from the remote repository, so we'll have to load the latest
+            // course data from disk after we do so.
+            courseData = possibleCourseData;
           } catch {
             job.info('Failed to push changes to remote git repository');
             job.info('Pulling changes from remote git repository and trying again');
@@ -253,28 +301,32 @@ export abstract class Editor {
 
             // This will both discard the commit we made locally and also pull
             // in any new changes from the remote.
-            await cleanAndResetRepository(this.course, gitEnv, job);
+            await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
 
             await writeAndCommitChanges();
 
-            job.info('Push changes to remote git repository');
-            await job.exec('git', ['push'], {
-              cwd: this.course.path,
-              env: gitEnv,
-            });
-            job.data.saveSucceeded = true;
+            try {
+              job.info('Push changes to remote git repository');
+              await job.exec('git', ['push'], {
+                cwd: this.course.path,
+                env: gitEnv,
+              });
+              job.data.saveSucceeded = true;
+            } finally {
+              // Clean up to remove any empty directories that might have been
+              // left behind by operations like renames. This will also ensure
+              // that we get back to a good state if the changes couldn't be
+              // pushed to the remote.
+              await cleanAndResetRepository(
+                this.course,
+                `origin/${this.course.branch}`,
+                gitEnv,
+                job,
+              );
+            }
           }
         } finally {
-          // Whether or not we error, we'll do a clean and reset.
-          //
-          // If pushing succeeded, the clean will remove any empty directories
-          // that might have been left behind by operations like renames.
-          //
-          // If pushing (or anything before pushing) failed, the reset will get
-          // us back to a known good state.
-          await cleanAndResetRepository(this.course, gitEnv, job);
-
-          // Similarly, whether or not we error, we'll a course sync.
+          // Whether or not we error, we'll sync the course.
           //
           // If pushing succeeded, then we will be syncing the changes made
           // by this edit.
@@ -283,7 +335,7 @@ export abstract class Editor {
           // syncing the changes we pulled from the remote git repository.
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, startGitHash, job);
+          await syncCourseFromDisk(this.course, startGitHash, job, courseData);
           job.data.syncSucceeded = true;
         }
       });
@@ -1033,7 +1085,8 @@ export class QuestionRenameEditor extends Editor {
         logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
       }
       debug(`Write ${infoPath}`);
-      await fs.writeJson(infoPath, infoJson, { spaces: 4 });
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+      await fs.writeFile(infoPath, formattedJson);
     }
 
     return {
