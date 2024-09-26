@@ -36,8 +36,7 @@ router.get(
     const assessmentRows: typeof AssessmentRowSchema[] = [];
     for (const courseInstanceId of res.locals.course_instances_ids) {
       const courseInstance = await selectCourseInstanceById(courseInstanceId);
-      courseInstances.push(courseInstance); // TEST
-      console.log(courseInstance);
+      courseInstances.push(courseInstance); // TEST, 'fake' data for now since we're not using selectCourseInstancesWithStaffAccess (yet at least)
       if (courseInstance) {
         const rows: typeof AssessmentRowSchema[] = await sqldb.queryRows(
           sql.select_assessments,

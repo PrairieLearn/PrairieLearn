@@ -128,7 +128,7 @@ export function publicCourseOverviewPage ({
                       <tr>
                         <td class="align-left">
                           <a
-                            href="${resLocals.plainUrlPrefix}/course_instance/${row.id}/instructor/instance_admin"
+                            href="${resLocals.plainUrlPrefix}/public/course_instance/${row.id}/instructor/instance_admin/assessments"
                             >${row.long_name}</a
                           >
                         </td>
@@ -196,7 +196,7 @@ export function publicCourseOverviewPage ({
             questions,
             showAddQuestionButton: false,
             qidPrefix,
-            urlPrefix: resLocals.urlPrefix,
+            urlPrefix: resLocals.urlPrefix + `/public/course/${course.id}`,
             plainUrlPrefix: resLocals.plainUrlPrefix,
             __csrf_token: resLocals.__csrf_token,
           })}
