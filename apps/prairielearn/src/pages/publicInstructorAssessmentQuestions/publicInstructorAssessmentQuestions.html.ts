@@ -102,6 +102,15 @@ function AssessmentQuestionsTable({
             <th>Topic</th>
             <th>Tags</th>
             <th>Other Assessments</th>
+            <th>  
+              <button
+                class="btn btn-primary btn-sm"
+                onclick="window.location.href='${urlPrefix}/instance_admin/TEST'"
+                title="Copy assessment"
+              >
+                <i class="fa fa-download" aria-hidden="true"></i> Copy this Assessment
+              </button>
+            </th>  
           </tr>
         </thead>
         <tbody>
