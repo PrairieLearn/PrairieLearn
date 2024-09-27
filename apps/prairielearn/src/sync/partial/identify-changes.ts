@@ -1,7 +1,5 @@
 import path from 'node:path';
 
-import { GitChangedFiles } from '../../lib/git.js';
-
 interface PartialSyncPlan {
   syncCourse: boolean;
   syncQuestions: boolean;
@@ -29,11 +27,9 @@ export function extractCourseInstanceFromPath(courseInstances: Set<string>, file
   return null;
 }
 
-export function identifyChanges(changedFiles: GitChangedFiles, courseInstanceNames: Set<string>) {
+export function identifyChanges(changedFiles: string[], courseInstanceNames: Set<string>) {
   // We only care about JSON files in the syncing process.
-  const changedJsonFiles = Object.fromEntries(
-    Object.entries(changedFiles).filter(([changedFile]) => changedFile.endsWith('.json')),
-  );
+  const changedJsonFiles = changedFiles.filter((changedFile) => changedFile.endsWith('.json'));
 
   const plan: PartialSyncPlan = {
     syncCourse: false,
@@ -42,7 +38,7 @@ export function identifyChanges(changedFiles: GitChangedFiles, courseInstanceNam
     syncCourseInstanceAssessments: new Set(),
   };
 
-  for (const [changedFile, changeType] of Object.entries(changedJsonFiles)) {
+  for (const changedFile of changedJsonFiles) {
     if (changedFile === 'infoCourse.json') {
       plan.syncCourse = true;
       continue;

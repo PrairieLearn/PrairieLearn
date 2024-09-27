@@ -45,12 +45,7 @@ describe('extractCourseInstanceFromPath', () => {
 
 describe('identifyChanges', () => {
   it('handles change to infoCourse.json', () => {
-    const changes = identifyChanges(
-      {
-        'infoCourse.json': 'M',
-      },
-      COURSE_INSTANCE_NAMES,
-    );
+    const changes = identifyChanges(['infoCourse.json'], COURSE_INSTANCE_NAMES);
 
     assert.isTrue(changes.syncCourse);
     assert.isFalse(changes.syncQuestions);
@@ -59,12 +54,7 @@ describe('identifyChanges', () => {
   });
 
   it('handles changes to a question', () => {
-    const changes = identifyChanges(
-      {
-        'questions/foo/info.json': 'M',
-      },
-      COURSE_INSTANCE_NAMES,
-    );
+    const changes = identifyChanges(['questions/foo/info.json'], COURSE_INSTANCE_NAMES);
 
     assert.isFalse(changes.syncCourse);
     assert.isTrue(changes.syncQuestions);
@@ -74,9 +64,7 @@ describe('identifyChanges', () => {
 
   it('handles changes to a course instance', () => {
     const changes = identifyChanges(
-      {
-        'courseInstances/foo/infoCourseInstance.json': 'M',
-      },
+      ['courseInstances/foo/infoCourseInstance.json'],
       COURSE_INSTANCE_NAMES,
     );
 
@@ -88,9 +76,7 @@ describe('identifyChanges', () => {
 
   it('handles changes to a nested course instance', () => {
     const changes = identifyChanges(
-      {
-        'courseInstances/bar/baz/infoCourseInstance.json': 'M',
-      },
+      ['courseInstances/bar/baz/infoCourseInstance.json'],
       COURSE_INSTANCE_NAMES,
     );
 
@@ -102,9 +88,7 @@ describe('identifyChanges', () => {
 
   it('handles changes to an assessment', () => {
     const changes = identifyChanges(
-      {
-        'courseInstances/foo/assessments/bar/infoAssessment.json': 'M',
-      },
+      ['courseInstances/foo/assessments/bar/infoAssessment.json'],
       COURSE_INSTANCE_NAMES,
     );
 
@@ -116,12 +100,12 @@ describe('identifyChanges', () => {
 
   it('handles multiple changes', () => {
     const changes = identifyChanges(
-      {
-        'infoCourse.json': 'M',
-        'questions/foo/info.json': 'M',
-        'courseInstances/foo/infoCourseInstance.json': 'M',
-        'courseInstances/foo/assessments/bar.json': 'M',
-      },
+      [
+        'infoCourse.json',
+        'questions/foo/info.json',
+        'courseInstances/foo/infoCourseInstance.json',
+        'courseInstances/foo/assessments/bar.json',
+      ],
       COURSE_INSTANCE_NAMES,
     );
 
@@ -133,12 +117,12 @@ describe('identifyChanges', () => {
 
   it('handles changes to unrelated files', () => {
     const changes = identifyChanges(
-      {
-        'unrelated.txt': 'M',
-        'questions/foo/question.html': 'M',
-        'courseInstances/foo/clientFilesCourseInstance/formulas.pdf': 'M',
-        'courseInstances/bar/baz/assessments/bar/clientFilesAssessment/formulas.pdf': 'M',
-      },
+      [
+        'unrelated.txt',
+        'questions/foo/question.html',
+        'courseInstances/foo/clientFilesCourseInstance/formulas.pdf',
+        'courseInstances/bar/baz/assessments/bar/clientFilesAssessment/formulas.pdf',
+      ],
       COURSE_INSTANCE_NAMES,
     );
 

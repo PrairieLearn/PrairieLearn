@@ -4,10 +4,6 @@ import { execa } from 'execa';
 
 import { contains } from '@prairielearn/path-utils';
 
-type GitChangeType = 'A' | 'M' | 'D';
-
-export type GitChangedFiles = Record<string, GitChangeType>;
-
 /**
  * Identifies the files that changes between two commits in a given course.
  *
@@ -20,7 +16,7 @@ export async function identifyChangedFiles(
   coursePath: string,
   oldHash: string,
   newHash: string,
-): Promise<GitChangedFiles> {
+): Promise<string[]> {
   // In some specific scenarios, the course directory and the root of the course
   // repository might be different. For example, the example course is usually
   // manually cloned in production environments, and then the course is added
@@ -48,19 +44,18 @@ export async function identifyChangedFiles(
       maxBuffer: 10 * 1024 * 1024,
     },
   );
+  const changedFiles = diffStdout.trim().split('\n');
 
-  const changedFiles: GitChangedFiles = {};
-  diffStdout
-    .trim()
-    .split('\n')
-    .forEach((f) => {
-      const [changeType, filePath] = f.split('\t');
+  // Construct absolute path to all changed files.
+  const absoluteChangedFiles = changedFiles.map((changedFile) => path.join(topLevel, changedFile));
 
-      const absolutePath = path.join(topLevel, filePath);
-      if (!contains(coursePath, absolutePath)) return;
+  // Exclude any changed files that aren't in the course directory.
+  const courseChangedFiles = absoluteChangedFiles.filter((absoluteChangedFile) =>
+    contains(coursePath, absoluteChangedFile),
+  );
 
-      changedFiles[filePath] = changeType as GitChangeType;
-    });
-
-  return changedFiles;
+  // Convert all absolute paths back into relative paths.
+  return courseChangedFiles.map((absoluteChangedFile) =>
+    path.relative(coursePath, absoluteChangedFile),
+  );
 }
