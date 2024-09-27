@@ -82,8 +82,8 @@ export async function buildDirectory(
 
     // This uses the same fields passed v3's server.grade functions
     const data = {
-      params: variant.params,
-      correct_answers: variant.true_answer,
+      params: submission.params ?? {},
+      correct_answers: submission.true_answer ?? {},
       submitted_answers: submission.submitted_answer,
       format_errors: submission.format_errors,
       partial_scores: submission.partial_scores ?? {},
@@ -124,7 +124,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
   try {
     // replace NULL with unicode replacement character
     data = JSON.parse(dataStr.replace(/\0/g, '\ufffd'));
-  } catch (e) {
+  } catch {
     return makeGradingFailureWithMessage(jobId, dataStr, 'Could not parse the grading results.');
   }
 

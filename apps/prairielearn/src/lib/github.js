@@ -288,7 +288,12 @@ export async function createCourseRepoJob(options, authn_user) {
     });
 
     job.info('Sync git repository to database');
-    const sync_result = await syncDiskToSql(inserted_course.id, inserted_course.path, job);
+    const syncResult = await syncDiskToSql(inserted_course.id, inserted_course.path, job);
+    if (syncResult.status !== 'complete') {
+      // Sync should never fail when creating a brand new repository, if we hit this
+      // then we have a problem.
+      throw Error('Sync failed on brand new course repository');
+    }
 
     // If we have chunks enabled, then create associated chunks for the new course
     if (config.chunksGenerator) {
@@ -296,7 +301,7 @@ export async function createCourseRepoJob(options, authn_user) {
       const chunkChanges = await updateChunksForCourse({
         coursePath: inserted_course.path,
         courseId: inserted_course.id,
-        courseData: sync_result.courseData,
+        courseData: syncResult.courseData,
       });
       logChunkChangesToJob(chunkChanges, job);
     }

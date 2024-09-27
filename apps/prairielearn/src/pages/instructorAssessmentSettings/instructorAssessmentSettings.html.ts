@@ -1,22 +1,30 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
-import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { AssessmentSet, AssessmentModule } from '../../lib/db-types.js';
 
 export function InstructorAssessmentSettings({
   resLocals,
+  origHash,
   tids,
   studentLink,
   infoAssessmentPath,
+  assessmentSets,
+  assessmentModules,
+  canEdit,
 }: {
   resLocals: Record<string, any>;
+  origHash: string;
   tids: string[];
   studentLink: string;
   infoAssessmentPath: string;
+  assessmentSets: AssessmentSet[];
+  assessmentModules: AssessmentModule[];
+  canEdit: boolean;
 }) {
   return html`
     <!doctype html>
@@ -31,8 +39,8 @@ export function InstructorAssessmentSettings({
       </head>
 
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
-        <main id="content" class="container-fluid">
+        ${Navbar({ resLocals })}
+        <main id="content" class="container">
           ${AssessmentSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
             assessment: resLocals.assessment,
@@ -44,114 +52,190 @@ export function InstructorAssessmentSettings({
             <div class="card-header bg-primary text-white d-flex">
               <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
             </div>
-            <table
-              class="table table-sm table-hover two-column-description"
-              aria-label="Assessment settings"
-            >
-              <tbody>
-                <tr>
-                  <th scope="row">Title</th>
-                  <td>${resLocals.assessment.title}</td>
-                </tr>
-                <tr>
-                  <th scope="row">Type</th>
-                  <td>${resLocals.assessment.type}</td>
-                </tr>
-                <tr>
-                  <th scope="row">Set</th>
-                  <td>
-                    ${resLocals.assessment_set.name}
-                    <span class="text-muted">(${resLocals.assessment_set.abbreviation})</span>
-                  </td>
-                </tr>
-                <tr>
-                  <th scope="row">Number</th>
-                  <td>${resLocals.assessment.number}</td>
-                </tr>
-                <tr>
-                  <th scope="row">Module</th>
-                  <td>
-                    ${resLocals.assessment_module
-                      ? html`
-                          ${resLocals.assessment_module.heading}
-                          <span class="text-muted"> (${resLocals.assessment_module.name}) </span>
-                        `
-                      : html` &mdash; `}
-                  </td>
-                </tr>
-                <tr>
-                  <th scope="row">AID</th>
-                  <td>
-                    <span class="pr-2">${resLocals.assessment.tid}</span>
-                    ${resLocals.authz_data.has_course_permission_edit &&
-                    !resLocals.course.example_course
-                      ? ChangeIdButton({
-                          label: 'AID',
-                          currentValue: resLocals.assessment.tid,
-                          otherValues: tids,
-                          csrfToken: resLocals.__csrf_token,
-                        })
-                      : ''}
-                  </td>
-                </tr>
-                <tr>
-                  <th>Configuration</th>
-                  <td>
-                    ${resLocals.authz_data.has_course_permission_view
-                      ? html`
-                          <a
-                            href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                              .id}/file_view/${infoAssessmentPath}"
+            <div class="card-body">
+              <form name="edit-assessment-settings-form" method="POST">
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <input type="hidden" name="orig_hash" value="${origHash}" />
+                <div class="form-group">
+                  <label for="aid">AID</label>
+                  <input
+                    type="text"
+                    class="form-control text-monospace"
+                    id="aid"
+                    name="aid"
+                    value="${resLocals.assessment.tid}"
+                    pattern="[\\-A-Za-z0-9_\\/]+"
+                    data-other-values="${tids.join(',')}"
+                    ${canEdit ? '' : 'disabled'}
+                  />
+                  <small class="form-text text-muted">
+                    The unique identifier for this assessment. This may contain only letters,
+                    numbers, dashes, and underscores, with no spaces. You may use forward slashes to
+                    separate directories.
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="title">Title</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="title"
+                    name="title"
+                    value="${resLocals.assessment.title}"
+                    ${canEdit ? '' : 'disabled'}
+                  />
+                  <small class="form-text text-muted"> The title of the assessment. </small>
+                </div>
+                <div class="form-group">
+                  <label for="type">Type</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="type"
+                    name="type"
+                    value="${resLocals.assessment.type}"
+                    disabled
+                  />
+                  <small class="form-text text-muted">
+                    The type of the assessment. This can be either Homework or Exam.
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="set">Set</label>
+                  <select class="form-select" id="set" name="set" ${canEdit ? '' : 'disabled'}>
+                    ${assessmentSets.map(
+                      (set) => html`
+                        <option
+                          value="${set.name}"
+                          ${resLocals.assessment_set.name === set.name ? 'selected' : ''}
+                        >
+                          ${set.name}
+                        </option>
+                      `,
+                    )}
+                  </select>
+                  <small class="form-text text-muted">
+                    The
+                    <a href="${resLocals.urlPrefix}/course_admin/sets">assessment set</a>
+                    this assessment belongs to.
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="number">Number</label>
+                  <input
+                    type="text"
+                    class="form-control"
+                    id="number"
+                    name="number"
+                    value="${resLocals.assessment.number}"
+                    ${canEdit ? '' : 'disabled'}
+                  />
+                  <small class="form-text text-muted">
+                    The number of the assessment within the set.
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="module">Module</label>
+                  <select
+                    class="form-select"
+                    id="module"
+                    name="module"
+                    ${canEdit ? '' : 'disabled'}
+                  >
+                    ${assessmentModules.map(
+                      (module) => html`
+                        <option
+                          value="${module.name}"
+                          ${resLocals.assessment_module.name === module.name ? 'selected' : ''}
+                        >
+                          ${module.name}
+                        </option>
+                      `,
+                    )}
+                  </select>
+                  <small class="form-text text-muted">
+                    The <a href="${resLocals.urlPrefix}/course_admin/modules">module</a> this
+                    assessment belongs to.
+                  </small>
+                </div>
+                <div class="form-group">
+                  <label for="studentLink">Student Link</label>
+                  <span class="input-group">
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="studentLink"
+                      name="studentLink"
+                      value="${studentLink}"
+                      disabled
+                    />
+                    <div class="input-group-append">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary btn-copy"
+                        data-clipboard-text="${studentLink}"
+                        aria-label="Copy student link"
+                      >
+                        <i class="far fa-clipboard"></i>
+                      </button>
+                      <button
+                        type="button"
+                        title="Student Link QR Code"
+                        aria-label="Student Link QR Code"
+                        class="btn btn-sm btn-outline-secondary js-qrcode-button"
+                        data-qr-code-content="${studentLink}"
+                      >
+                        <i class="fas fa-qrcode"></i>
+                      </button>
+                    </div>
+                  </span>
+                  <small class="form-text text-muted">
+                    The link that students will use to access this assessment.
+                  </small>
+                </div>
+                ${resLocals.authz_data.has_course_permission_view
+                  ? canEdit
+                    ? html`
+                        <div>
+                          <button
+                            id="save-button"
+                            type="submit"
+                            class="btn btn-primary mb-2"
+                            name="__action"
+                            value="update_assessment"
                           >
-                            infoAssessment.json
-                          </a>
-                          ${resLocals.authz_data.has_course_permission_edit &&
-                          !resLocals.course.example_course
-                            ? html`
-                                <a
-                                  class="btn btn-xs btn-secondary mx-2"
-                                  href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                    .id}/file_edit/${infoAssessmentPath}"
-                                >
-                                  <i class="fa fa-edit"></i>
-                                  <span>Edit</span>
-                                </a>
-                              `
-                            : ''}
-                        `
-                      : 'infoAssessment.json'}
-                  </td>
-                </tr>
-                <tr>
-                  <th class="align-middle">Student Link</th>
-                  <td class="form-inline align-middle">
-                    <span class="input-group">
-                      <span readonly class="form-control form-control-sm">${studentLink}</span>
-                      <div class="input-group-append">
-                        <button
-                          type="button"
-                          class="btn btn-sm btn-outline-secondary btn-copy"
-                          data-clipboard-text="${studentLink}"
-                          aria-label="Copy student link"
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-secondary mb-2"
+                            onclick="window.location.reload()"
+                          >
+                            Cancel
+                          </button>
+                        </div>
+                        <a
+                          data-testid="edit-assessment-configuration-link"
+                          href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+                            .id}/file_edit/${infoAssessmentPath}"
                         >
-                          <i class="far fa-clipboard"></i>
-                        </button>
-                        <button
-                          type="button"
-                          title="Student Link QR Code"
-                          aria-label="Student Link QR Code"
-                          class="btn btn-sm btn-outline-secondary js-qrcode-button"
-                          data-qr-code-content="${studentLink}"
+                          Edit assessment configuration
+                        </a>
+                        in <code>infoAssessment.json</code>
+                      `
+                    : html`
+                        <a
+                          href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
+                            .id}/file_view/${infoAssessmentPath}"
                         >
-                          <i class="fas fa-qrcode"></i>
-                        </button>
-                      </div>
-                    </span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-            ${resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course
+                          View assessment configuration
+                        </a>
+                        in <code>infoAssessment.json</code>
+                      `
+                  : ''}
+              </form>
+            </div>
+            ${canEdit
               ? html`
                   <div class="card-footer d-flex flex-wrap align-items-center">
                     <form name="copy-assessment-form" class="mr-2" method="POST">

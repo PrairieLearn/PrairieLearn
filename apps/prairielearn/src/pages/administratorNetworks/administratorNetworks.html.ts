@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 
 export function AdministratorNetworks({ resLocals }) {
   return html`
@@ -11,11 +11,7 @@ export function AdministratorNetworks({ resLocals }) {
         ${HeadContents({ resLocals, pageTitle: 'Exam-mode networks' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'admin',
-          navSubPage: 'networks',
-        })}
+        ${Navbar({ resLocals, navPage: 'admin', navSubPage: 'networks' })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">

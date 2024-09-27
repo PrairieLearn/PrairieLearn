@@ -1,13 +1,13 @@
 import { AnsiUp } from 'ansi_up';
 
 import { html, joinHtml, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobSequenceResults } from '../../components/JobSequenceResults.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
-import type { FileEdit, User } from '../../lib/db-types.js';
+import type { FileEdit } from '../../lib/db-types.js';
 import type { InstructorFilePaths } from '../../lib/instructorFiles.js';
 import type { JobSequenceWithTokens } from '../../lib/server-jobs.types.js';
 import { encodePath } from '../../lib/uri-util.js';
@@ -30,55 +30,6 @@ export interface DraftEdit {
   alertChoice?: boolean;
   didSave?: boolean;
   didSync?: boolean;
-}
-
-export function InstructorFileEditorNoPermission({
-  resLocals,
-  courseOwners,
-}: {
-  resLocals: Record<string, any>;
-  courseOwners: User[];
-}) {
-  return html`
-    <!doctype html>
-    <html lang="en">
-      <head>
-        ${HeadContents({ resLocals, pageTitle: 'Edit' })}
-      </head>
-
-      <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
-
-        <main id="content" class="container-fluid">
-          <div class="card mb-4">
-            <div class="card-header bg-danger text-white">
-              <h1>File editor</h1>
-            </div>
-            <div class="card-body">
-              <h2>Insufficient permissions</h2>
-              ${resLocals.course.example_course
-                ? html`<p>No one is allowed to edit the example course.</p>`
-                : html`
-                    <p>You must have at least &quot;Editor&quot; permissions for this course.</p>
-                    ${courseOwners.length > 0
-                      ? html`
-                          <p>Contact one of the below course owners to request access.</p>
-                          <ul>
-                            ${courseOwners.map(
-                              (owner) => html`
-                                <li>${owner.uid} ${owner.name ? `(${owner.name})` : ''}</li>
-                              `,
-                            )}
-                          </ul>
-                        `
-                      : ''}
-                  `}
-            </div>
-          </div>
-        </main>
-      </body>
-    </html>
-  `.toString();
 }
 
 export function InstructorFileEditor({
@@ -108,7 +59,7 @@ export function InstructorFileEditor({
       </head>
 
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
 
         <main id="content" class="container-fluid">
           ${editorData.sync_errors

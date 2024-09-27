@@ -1,5 +1,5 @@
 // @ts-check
-import cheerio from 'cheerio';
+import * as cheerio from 'cheerio';
 import fs from 'fs-extra';
 import fetch from 'node-fetch';
 
