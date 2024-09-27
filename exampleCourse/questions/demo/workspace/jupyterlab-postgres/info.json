@@ -6,7 +6,7 @@
   "type": "v3",
   "singleVariant": true,
   "workspaceOptions": {
-    "image": "prairielearn/workspace-jupyterlab-postgres",
+    "image": "zacwarham/jupyterlab-psql",
     "port": 8080,
     "home": "/home/jovyan",
     "rewriteUrl": false,
