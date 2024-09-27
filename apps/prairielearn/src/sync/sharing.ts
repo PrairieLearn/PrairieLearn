@@ -21,7 +21,6 @@ export async function getInvalidRenames(
   );
   const invalidRenames: string[] = [];
   sharedQuestions.forEach((question) => {
-    // TODO: allow if question is not in a sharing set or publicly shared
     if (!courseData.questions[question.qid]) {
       invalidRenames.push(question.qid);
     }
@@ -77,9 +76,7 @@ export async function getInvalidSharingSetDeletions(
   return invalidSharingSetDeletions;
 }
 
-export async function getInvalidSharingSetAdditions(
-  courseData: CourseData,
-): Promise<Record<string, string[]>> {
+export function getInvalidSharingSetAdditions(courseData: CourseData): Record<string, string[]> {
   const invalidSharingSetAdditions: Record<string, string[]> = {};
   const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
 
