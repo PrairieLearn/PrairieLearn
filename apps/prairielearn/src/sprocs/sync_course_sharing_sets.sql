@@ -12,14 +12,15 @@ BEGIN
     IF valid_course_info THEN
         INSERT INTO sharing_sets (
             course_id,
-            name
+            name,
+            description
         ) SELECT
             syncing_course_id,
-            sharing_set->>0
+            sharing_set->>0,
+            sharing_set->>1
         FROM UNNEST(course_info_sharing_sets) WITH ORDINALITY AS t(sharing_set)
         ON CONFLICT (course_id, name)
-        DO NOTHING;
-        -- DO UPDATE SET description = EXCLUDED.description;
+        DO UPDATE SET description = EXCLUDED.description;
     END IF;
 
     SELECT
