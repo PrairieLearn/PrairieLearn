@@ -27,7 +27,7 @@ export function extractCourseInstanceFromPath(courseInstances: Set<string>, file
   return null;
 }
 
-export function identifyChanges(changedFiles: string[], courseInstanceNames: Set<string>) {
+export function planPartialSync(changedFiles: string[], courseInstanceNames: Set<string>) {
   // We only care about JSON files in the syncing process.
   const changedJsonFiles = changedFiles.filter((changedFile) => changedFile.endsWith('.json'));
 
