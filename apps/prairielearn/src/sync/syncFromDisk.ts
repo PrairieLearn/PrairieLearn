@@ -86,7 +86,7 @@ export async function checkSharingConfigurationValid(
     sharingConfigurationValid = false;
   }
 
-  const invalidSharingSetAdditions = await getInvalidSharingSetAdditions(courseData);
+  const invalidSharingSetAdditions = getInvalidSharingSetAdditions(courseData);
   if (Object.keys(invalidSharingSetAdditions).length > 0) {
     logger.info(
       chalk.red(
