@@ -23,7 +23,6 @@ export function Enroll({
   courseInstances: CourseInstance[];
   resLocals: Record<string, any>;
 }) {
-
   return html`
     <!doctype html>
     <html lang="en">
