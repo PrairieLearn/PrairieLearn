@@ -248,7 +248,13 @@ function FeatureGrant({
           </select>
         </form>
 
-        <form method="POST" hx-boost="true" hx-ext="morphdom-swap" hx-swap="morphdom">
+        <form
+          method="POST"
+          hx-boost="true"
+          hx-confirm="Are you sure you want to revoke this feature grant?"
+          hx-ext="morphdom-swap"
+          hx-swap="morphdom"
+        >
           <input type="hidden" name="__csrf_token" value="${csrfToken}" />
           <input type="hidden" name="feature_grant_id" value="${featureGrant.id}" />
           <button
