@@ -18,6 +18,7 @@ import * as syncSharingSets from './fromDisk/sharing.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import {
+  selectSharedQuestions,
   getInvalidRenames,
   getInvalidSharingSetRemovals,
   getInvalidPublicSharingRemovals,
@@ -55,8 +56,9 @@ export async function checkSharingConfigurationValid(
   }
 
   let sharingConfigurationValid = true;
-  const invalidRenames = await getInvalidRenames(courseId, courseData);
-  // console.log('invalid renames', invalidRenames);
+
+  const sharedQuestions = await selectSharedQuestions(courseId);
+  const invalidRenames = getInvalidRenames(sharedQuestions, courseData);
   if (invalidRenames.length > 0) {
     logger.info(
       chalk.red(
@@ -66,7 +68,7 @@ export async function checkSharingConfigurationValid(
     sharingConfigurationValid = false;
   }
 
-  const invalidPublicSharingRemovals = await getInvalidPublicSharingRemovals(courseId, courseData);
+  const invalidPublicSharingRemovals = getInvalidPublicSharingRemovals(sharedQuestions, courseData);
   if (invalidPublicSharingRemovals.length > 0) {
     logger.info(
       chalk.red(

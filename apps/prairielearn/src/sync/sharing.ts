@@ -7,18 +7,28 @@ import { IdSchema } from '../lib/db-types.js';
 import { CourseData } from './course-db.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export async function getInvalidRenames(
-  courseId: string,
-  courseData: CourseData,
-): Promise<string[]> {
-  const sharedQuestions = await sqldb.queryRows(
+interface SharedQuestion {
+  id: string;
+  qid: string;
+  shared_publicly: boolean;
+}
+
+export async function selectSharedQuestions(courseId: string): Promise<SharedQuestion[]> {
+  return await sqldb.queryRows(
     sql.select_shared_questions,
     { course_id: courseId },
     z.object({
       id: IdSchema,
       qid: z.string(),
+      shared_publicly: z.boolean(),
     }),
   );
+}
+
+export function getInvalidRenames(
+  sharedQuestions: SharedQuestion[],
+  courseData: CourseData,
+): string[] {
   const invalidRenames: string[] = [];
   sharedQuestions.forEach((question) => {
     if (!courseData.questions[question.qid]) {
@@ -28,19 +38,10 @@ export async function getInvalidRenames(
   return invalidRenames;
 }
 
-export async function getInvalidPublicSharingRemovals(
-  courseId: string,
+export function getInvalidPublicSharingRemovals(
+  sharedQuestions: SharedQuestion[],
   courseData: CourseData,
-): Promise<string[]> {
-  const sharedQuestions = await sqldb.queryRows(
-    sql.select_shared_questions,
-    { course_id: courseId },
-    z.object({
-      id: IdSchema,
-      qid: z.string(),
-      shared_publicly: z.boolean(),
-    }),
-  );
+): string[] {
   const invalidUnshares: string[] = [];
   sharedQuestions.forEach((question) => {
     if (!question.shared_publicly) {
