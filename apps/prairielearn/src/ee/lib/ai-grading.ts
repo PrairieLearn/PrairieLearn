@@ -270,7 +270,6 @@ export async function aiGrade({
     const result = await queryRows(
       sql.select_instance_questions_manual_grading,
       {
-        assessment_id: assessment_question.assessment_id,
         assessment_question_id: assessment_question.id,
       },
       InstanceQuestionSchema,

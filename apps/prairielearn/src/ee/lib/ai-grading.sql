@@ -3,10 +3,8 @@ SELECT
   iq.*
 FROM
   instance_questions AS iq
-  JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
-  ai.assessment_id = $assessment_id
-  AND iq.assessment_question_id = $assessment_question_id
+  iq.assessment_question_id = $assessment_question_id
   AND iq.requires_manual_grading
   AND iq.status != 'unanswered';
 
