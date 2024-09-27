@@ -26,15 +26,19 @@ export async function sync(
 
   const sharingSetIdsByName = new Map(newSharingSets);
 
-  const questionSharingSetsParam: string[] = [];
+  const questionSharingSetsParam: any[] = [];
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     if (infofile.hasErrors(question)) return;
     const dedupedQuestionSharingSetNames = new Set(question.data?.sharingSets ?? []);
     const questionSharingSetIds = [...dedupedQuestionSharingSetNames].map((t) =>
       sharingSetIdsByName.get(t),
     );
-    questionSharingSetsParam.push(JSON.stringify([questionIds[qid], questionSharingSetIds]));
+    questionSharingSetsParam.push([questionIds[qid], questionSharingSetIds]);
   });
 
-  await sqldb.callAsync('sync_question_sharing_sets', [questionSharingSetsParam]);
+  // await sqldb.callAsync('sync_question_sharing_sets', [questionSharingSetsParam]);
+
+  await sqldb.queryAsync('sync_question_sharing_sets', {
+    new_question_sharing_sets: JSON.stringify(questionSharingSetsParam),
+  });
 }
