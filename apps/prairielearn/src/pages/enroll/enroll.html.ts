@@ -21,10 +21,6 @@ export function Enroll({
   courseInstances: CourseInstance[];
   resLocals: Record<string, any>;
 }) {
-  // Temporary for testing.
-  courseInstances.forEach((ci) => {
-    ci.instructor_access = false;
-  });
 
   return html`
     <!doctype html>
