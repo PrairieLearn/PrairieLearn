@@ -17,6 +17,7 @@ import * as syncCourseInstances from './fromDisk/courseInstances.js';
 import * as syncQuestions from './fromDisk/questions.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
+import { PartialSyncPlan, planPartialSync } from './partial.js';
 import { getInvalidRenames } from './sharing.js';
 
 interface SyncResultSharingError {
@@ -65,6 +66,7 @@ export async function syncDiskToSqlWithLock(
   courseDir: string,
   logger: Logger,
   courseData?: courseDB.CourseData,
+  changedFiles?: string[],
 ): Promise<SyncResults> {
   async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
     const start = performance.now();
@@ -77,10 +79,6 @@ export async function syncDiskToSqlWithLock(
     return result;
   }
 
-  logger.info('checking for changed files in ' + courseDir);
-  const changedFiles = await identifyChangedFiles(courseDir, 'HEAD~1', 'HEAD');
-  logger.info('changed files: ' + JSON.stringify(changedFiles, null, 2));
-
   logger.info('Loading info.json files from course repository');
 
   if (!courseData) {
@@ -88,6 +86,10 @@ export async function syncDiskToSqlWithLock(
       courseDB.loadFullCourse(courseId, courseDir),
     );
   }
+
+  const partialSyncPlan = changedFiles
+    ? planPartialSync(changedFiles, new Set(Object.keys(courseData.courseInstances)))
+    : null;
 
   const sharingConfigurationValid = await timed('Validated sharing configuration', () =>
     checkSharingConfigurationValid(courseId, courseData, logger),
@@ -102,34 +104,77 @@ export async function syncDiskToSqlWithLock(
   logger.info('Syncing info to database');
 
   await timed('Synced all course data', async () => {
-    await timed('Synced course info', () => syncCourseInfo.sync(courseData, courseId));
+    if (!partialSyncPlan || partialSyncPlan.syncCourse) {
+      await timed('Synced course info', () => syncCourseInfo.sync(courseData, courseId));
+    } else {
+      logger.info('Course info unchanged, skipping');
+    }
+
+    // We need the list of course instance IDs for assessment syncing, so we
+    // can't trivially skip this step even if no course instances have changed.
+    //
+    // If we really want to skip this step, we can always add separate code to
+    // fetch a list of all course instance IDs from the database. However, this
+    // is generally fast enough that we can run it unconditionally.
     const courseInstanceIds = await timed('Synced course instances', () =>
       syncCourseInstances.sync(courseId, courseData),
     );
-    await timed('Synced topics', () => syncTopics.sync(courseId, courseData));
-    const questionIds = await timed('Synced questions', () =>
-      syncQuestions.sync(courseId, courseData),
-    );
 
-    await timed('Synced tags', () => syncTags.sync(courseId, courseData, questionIds));
-    await timed('Synced assessment sets', () => syncAssessmentSets.sync(courseId, courseData));
-    await timed('Synced assessment modules', () =>
-      syncAssessmentModules.sync(courseId, courseData),
-    );
-    await timed('Synced all assessments', async () => {
-      // Ensure that a single course with a ton of course instances can't
-      // monopolize the database connection pool.
-      await async.eachLimit(
-        Object.entries(courseData.courseInstances),
-        3,
-        async ([ciid, courseInstanceData]) => {
-          const courseInstanceId = courseInstanceIds[ciid];
-          await timed(`Synced assessments for ${ciid}`, () =>
-            syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
-          );
-        },
+    // If either the course or the questions have changed, we need to sync topics,
+    // as a question could specify a topic that isn't listed in the course JSON file.
+    if (!partialSyncPlan || partialSyncPlan.syncCourse || partialSyncPlan.syncQuestions) {
+      await timed('Synced topics', () => syncTopics.sync(courseId, courseData));
+    } else {
+      logger.info('Course info and questions unchanged, skipping topics syncing');
+    }
+
+    // Similarly, a change to assessments could change the set of sets/modules we need
+    // to sync to the database since they might add a set that doesn't appear in the
+    // course JSON file.
+    if (
+      !partialSyncPlan ||
+      partialSyncPlan.syncCourse ||
+      partialSyncPlan.syncCourseInstanceAssessments.size > 0
+    ) {
+      await timed('Synced assessment sets', () => syncAssessmentSets.sync(courseId, courseData));
+      await timed('Synced assessment modules', () =>
+        syncAssessmentModules.sync(courseId, courseData),
       );
-    });
+    } else {
+      logger.info(
+        'Course info and assessments unchanged, skipping assessment sets/modules syncing',
+      );
+    }
+
+    if (!partialSyncPlan || partialSyncPlan.syncQuestions) {
+      const questionIds = await timed('Synced questions', () =>
+        syncQuestions.sync(courseId, courseData),
+      );
+      await timed('Synced tags', () => syncTags.sync(courseId, courseData, questionIds));
+    }
+
+    if (!partialSyncPlan || partialSyncPlan.syncCourseInstanceAssessments.size > 0) {
+      await timed('Synced all assessments', async () => {
+        // Ensure that a single course with a ton of course instances can't
+        // monopolize the database connection pool.
+        await async.eachLimit(
+          Object.entries(courseData.courseInstances),
+          3,
+          async ([ciid, courseInstanceData]) => {
+            const courseInstanceId = courseInstanceIds[ciid];
+            if (!partialSyncPlan || partialSyncPlan.syncCourseInstanceAssessments.has(ciid)) {
+              await timed(`Synced assessments for ${ciid}`, () =>
+                syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
+              );
+            } else {
+              logger.info(`Assessments for ${ciid} unchanged, skipping`);
+            }
+          },
+        );
+      });
+    } else {
+      logger.info('All assessments unchanged skipping');
+    }
   });
 
   if (config.devMode) {

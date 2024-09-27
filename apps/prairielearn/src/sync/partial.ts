@@ -1,6 +1,6 @@
 import path from 'node:path';
 
-interface PartialSyncPlan {
+export interface PartialSyncPlan {
   syncCourse: boolean;
   syncQuestions: boolean;
   /** Whether all course instances should be synced. */
@@ -27,7 +27,10 @@ export function extractCourseInstanceFromPath(courseInstances: Set<string>, file
   return null;
 }
 
-export function planPartialSync(changedFiles: string[], courseInstanceNames: Set<string>) {
+export function planPartialSync(
+  changedFiles: string[],
+  courseInstanceNames: Set<string>,
+): PartialSyncPlan {
   // We only care about JSON files in the syncing process.
   const changedJsonFiles = changedFiles.filter((changedFile) => changedFile.endsWith('.json'));
 
