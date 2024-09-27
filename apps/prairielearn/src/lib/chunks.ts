@@ -717,7 +717,8 @@ export async function updateChunksForCourse({
 }: UpdateChunksForCourseOptions): Promise<ChunksDiff> {
   let changedFiles: string[] = [];
   if (oldHash && newHash) {
-    changedFiles = await identifyChangedFiles(coursePath, oldHash, newHash);
+    const rawChangedFiles = await identifyChangedFiles(coursePath, oldHash, newHash);
+    changedFiles = Object.keys(rawChangedFiles);
   }
 
   const { updatedChunks, deletedChunks } = await diffChunks({

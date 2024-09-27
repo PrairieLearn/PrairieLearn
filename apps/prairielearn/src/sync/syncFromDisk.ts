@@ -4,6 +4,7 @@ import * as namedLocks from '@prairielearn/named-locks';
 
 import { chalk, chalkDim } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
+import { identifyChangedFiles } from '../lib/git.js';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
@@ -75,6 +76,10 @@ export async function syncDiskToSqlWithLock(
 
     return result;
   }
+
+  logger.info('checking for changed files in ' + courseDir);
+  const changedFiles = await identifyChangedFiles(courseDir, 'HEAD~1', 'HEAD');
+  logger.info('changed files: ' + JSON.stringify(changedFiles, null, 2));
 
   logger.info('Loading info.json files from course repository');
 

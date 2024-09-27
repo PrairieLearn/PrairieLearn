@@ -4,6 +4,10 @@ import { execa } from 'execa';
 
 import { contains } from '@prairielearn/path-utils';
 
+type GitChangeType = 'A' | 'M' | 'D';
+
+export type GitChangedFiles = Record<string, GitChangeType>;
+
 /**
  * Identifies the files that changes between two commits in a given course.
  *
@@ -16,7 +20,7 @@ export async function identifyChangedFiles(
   coursePath: string,
   oldHash: string,
   newHash: string,
-): Promise<string[]> {
+): Promise<GitChangedFiles> {
   // In some specific scenarios, the course directory and the root of the course
   // repository might be different. For example, the example course is usually
   // manually cloned in production environments, and then the course is added
@@ -26,32 +30,37 @@ export async function identifyChangedFiles(
   // this function are relative to the course directory, not the root of the
   // repository. To do this, we query git itself for the root of the repository,
   // construct an absolute path for each file, and then trim off the course path.
-  const { stdout: topLevelStdout } = await execa('git rev-parse --show-toplevel', {
+  const { stdout: topLevelStdout } = await execa('git', ['rev-parse', '--show-toplevel'], {
     cwd: coursePath,
   });
   const topLevel = topLevelStdout.trim();
 
-  const { stdout: diffStdout } = await execa(`git diff --name-only ${oldHash}..${newHash}`, {
-    cwd: coursePath,
-    // This defaults to 1MB of output, however, we've observed in the past that
-    // courses will go long periods of time without syncing, which in turn will
-    // result in a large number of changed files. The largest diff we've seen
-    // is 1.6MB of text; this new value was chosen to give us plenty of
-    // headroom.
-    maxBuffer: 10 * 1024 * 1024,
-  });
-  const changedFiles = diffStdout.trim().split('\n');
-
-  // Construct absolute path to all changed files.
-  const absoluteChangedFiles = changedFiles.map((changedFile) => path.join(topLevel, changedFile));
-
-  // Exclude any changed files that aren't in the course directory.
-  const courseChangedFiles = absoluteChangedFiles.filter((absoluteChangedFile) =>
-    contains(coursePath, absoluteChangedFile),
+  const { stdout: diffStdout } = await execa(
+    'git',
+    ['diff', '--name-only', `${oldHash}..${newHash}`],
+    {
+      cwd: coursePath,
+      // This defaults to 1MB of output, however, we've observed in the past that
+      // courses will go long periods of time without syncing, which in turn will
+      // result in a large number of changed files. The largest diff we've seen
+      // is 1.6MB of text; this new value was chosen to give us plenty of
+      // headroom.
+      maxBuffer: 10 * 1024 * 1024,
+    },
   );
 
-  // Convert all absolute paths back into relative paths.
-  return courseChangedFiles.map((absoluteChangedFile) =>
-    path.relative(coursePath, absoluteChangedFile),
-  );
+  const changedFiles: GitChangedFiles = {};
+  diffStdout
+    .trim()
+    .split('\n')
+    .forEach((f) => {
+      const [changeType, filePath] = f.split('\t');
+
+      const absolutePath = path.join(topLevel, filePath);
+      if (!contains(coursePath, absolutePath)) return;
+
+      changedFiles[filePath] = changeType as GitChangeType;
+    });
+
+  return changedFiles;
 }
