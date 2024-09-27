@@ -41,7 +41,7 @@ To refer to a question from another course, use the question id (qid) prefixed b
 
 ## Client and server files
 
-Questions that make use of `clientFilesQuestion`, `serverFilesQuestion`, and `serverFilesCourse` will work as expected. Using `clientFilesCourse` in a question is not supported at this time.
+Questions that make use of `clientFilesQuestion` and `serverFilesCourse` will work as expected. Using `clientFilesCourse` in a question is not supported at this time.
 
 If a sharing course attempts to share a question which accesses client or server files associated with a course instance or an assessment, the question will not work as expected because the consuming course can not use it within the context of the sharing course's course instance or assessment.
 

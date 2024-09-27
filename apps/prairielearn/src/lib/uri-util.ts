@@ -13,7 +13,7 @@ import { logger } from '@prairielearn/logger';
 export function encodePath(originalPath: string): string {
   try {
     return path.normalize(originalPath).split(path.sep).map(encodeURIComponent).join('/');
-  } catch (err) {
+  } catch {
     logger.error(`encodePath: returning empty string because failed to encode ${originalPath}`);
     return '';
   }

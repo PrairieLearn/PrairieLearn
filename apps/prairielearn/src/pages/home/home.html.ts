@@ -5,7 +5,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
-import { CourseInstanceSchema, CourseSchema } from '../../lib/db-types.js';
+import { CourseInstanceSchema, CourseSchema, Institution } from '../../lib/db-types.js';
 
 export const InstructorCourseSchema = z.object({
   id: CourseSchema.shape.id,
@@ -33,10 +33,12 @@ export function Home({
   resLocals,
   instructorCourses,
   studentCourses,
+  adminInstitutions,
 }: {
   resLocals: Record<string, any>;
   instructorCourses: InstructorCourse[];
   studentCourses: StudentCourse[];
+  adminInstitutions: Institution[];
 }) {
   const { authn_provider_name } = resLocals;
   return html`
@@ -54,7 +56,8 @@ export function Home({
           ${ActionsHeader()}
 
           <div id="content" class="container py-5">
-            ${DevModeCard()} ${InstructorCoursesCard({ instructorCourses })}
+            ${DevModeCard()} ${AdminInstitutionsCard({ adminInstitutions })}
+            ${InstructorCoursesCard({ instructorCourses })}
             ${StudentCoursesCard({
               studentCourses,
               hasInstructorCourses: instructorCourses.length > 0,
@@ -150,6 +153,29 @@ function DevModeCard() {
           for information on creating questions and assessments.
         </p>
       </div>
+    </div>
+  `;
+}
+
+function AdminInstitutionsCard({ adminInstitutions }: { adminInstitutions: Institution[] }) {
+  if (adminInstitutions.length === 0) return '';
+
+  return html`
+    <div class="card mb-4">
+      <div class="card-header bg-primary text-white">
+        <h2>Institutions with admin access</h2>
+      </div>
+      <ul class="list-group list-group-flush">
+        ${adminInstitutions.map(
+          (institution) => html`
+            <li class="list-group-item">
+              <a href="/pl/institution/${institution.id}/admin/courses">
+                ${institution.short_name}: ${institution.long_name}
+              </a>
+            </li>
+          `,
+        )}
+      </ul>
     </div>
   `;
 }

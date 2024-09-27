@@ -6,8 +6,7 @@ import { z } from 'zod';
 
 import { fetchInstanceHostname, fetchInstanceIdentity } from '@prairielearn/aws-imds';
 
-const AbstractConfigSchema = z.record(z.string(), z.unknown());
-type AbstractConfig = z.infer<typeof AbstractConfigSchema>;
+type AbstractConfig = Record<string, unknown>;
 
 interface ConfigSource {
   load: (existingConfig: AbstractConfig) => Promise<AbstractConfig>;
