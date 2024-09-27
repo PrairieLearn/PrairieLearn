@@ -221,12 +221,12 @@ function FeatureGrant({
 }) {
   return html`
     <div
-      class="list-group-item d-flex flex-row flex-nowrap align-items-center ${overridden
+      class="list-group-item d-flex flex-column flex-md-row flex-nowrap align-items-md-center ${overridden
         ? 'text-muted'
         : ''}"
     >
       <div>${FeatureGrantBreadcrumbs({ featureGrant })}</div>
-      <div class="ml-auto d-flex flex-row flex-nowrap">
+      <div class="ml-auto d-flex flex-row flex-nowrap flex-shrink-0">
         <form
           method="POST"
           class="mr-2"
