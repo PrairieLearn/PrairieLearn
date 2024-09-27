@@ -113,7 +113,6 @@ async function generateSubmissionEmbeddings({
   const result = await queryRows(
     sql.select_instance_questions_for_assessment_question,
     {
-      assessment_id: assessment_question.assessment_id,
       assessment_question_id: assessment_question.id,
     },
     InstanceQuestionSchema,
