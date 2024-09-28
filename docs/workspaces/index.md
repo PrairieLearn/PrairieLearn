@@ -225,11 +225,11 @@ If a file name appears in multiple locations, the following precedence takes eff
 
 PrairieLearn provides and maintains the following workspace images:
 
-- [desktop](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/desktop/)
-- [jupyterlab-python](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python/)
-- [rstudio](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/rstudio/)
-- [vscode-python](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-python/)
-- [xtermjs](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/xtermjs/)
+- [An Ubuntu 24.04 desktop](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/desktop/)
+- [JupyterLab with Python 3.11](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python/)
+- [RStudio with R version 4.4](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/rstudio/)
+- [VS Code with Python 3.10](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-python/)
+- [Terminal emulator based on xterm.js](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/xtermjs/)
 
 ## Custom workspace images
 

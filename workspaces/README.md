@@ -7,8 +7,8 @@ These docker containers may be modified as needed on a per-course basis.
 
 The following workspace images are maintained by PrairieLearn:
 
-- [desktop](./desktop/)
-- [jupyterlab-python](./jupyterlab-python/)
-- [rstudio](./rstudio/)
-- [vscode-python](./vscode-python/)
-- [xtermjs](./xtermjs/)
+- [An Ubuntu 24.04 desktop](./desktop/)
+- [JupyterLab with Python 3.11](./jupyterlab-python/)
+- [RStudio with R version 4.4](./rstudio/)
+- [VS Code with Python 3.10](./vscode-python/)
+- [Terminal emulator based on xterm.js](./xtermjs/)
