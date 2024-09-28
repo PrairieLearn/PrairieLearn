@@ -143,7 +143,10 @@ export async function syncDiskToSqlWithLock(
   // matches the current sync version number, we know we can do a partial sync.
   //
   // TODO: feature-flag partial sync so we can test it in production without
-  // risk of breaking random courses.
+  // risk of breaking random courses. See how bad it would be to change the
+  // function signature here to take a full Course object instead of just the
+  // ID and path. That would make it easier to get an institution ID to check
+  // feature flags against. Alternatively, just query for the institution ID here.
   const partialSyncPlan = options?.changedFiles
     ? planPartialSync(options?.changedFiles, new Set(Object.keys(courseData.courseInstances)))
     : null;
