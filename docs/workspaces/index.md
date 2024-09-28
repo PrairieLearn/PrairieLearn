@@ -221,6 +221,16 @@ If a file name appears in multiple locations, the following precedence takes eff
 
 - Files in the `workspace/` directory are considered last.
 
+## Maintained workspace images
+
+PrairieLearn provides and maintains the following workspace images:
+
+- [desktop](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/desktop/)
+- [jupyterlab-python](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python/)
+- [rstudio](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/rstudio/)
+- [vscode-python](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-python/)
+- [xtermjs](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/xtermjs/)
+
 ## Custom workspace images
 
 You can build custom workspace images if you want to use a specific browser-based editor or if you need to install specific dependencies for use by students.
