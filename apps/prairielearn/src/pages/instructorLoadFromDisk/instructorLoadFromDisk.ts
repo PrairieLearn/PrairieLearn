@@ -45,8 +45,6 @@ async function update(locals: Record<string, any>) {
           coursePath: courseDir,
           courseId: syncResult.courseId,
           courseData: syncResult.courseData,
-          oldHash: 'HEAD~1',
-          newHash: 'HEAD',
         });
         logChunkChangesToJob(chunkChanges, job);
       }

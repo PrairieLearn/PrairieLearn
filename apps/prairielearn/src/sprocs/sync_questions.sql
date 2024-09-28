@@ -1,9 +1,8 @@
 CREATE FUNCTION
     sync_questions(
         IN disk_questions_data JSONB[],
-        IN syncing_course_id bigint,
-        OUT name_to_id_map JSONB
-    )
+        IN syncing_course_id bigint
+    ) RETURNS void
 AS $$
 DECLARE
     missing_dest_qids TEXT;
@@ -88,18 +87,11 @@ BEGIN
         SET qid = src_qid, uuid = src_uuid, deleted_at = NULL
         FROM matched_rows
         WHERE dest.id = dest_id AND dest.course_id = syncing_course_id
-    ),
-    insert_unmatched_src_rows AS (
-        INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at)
-        SELECT syncing_course_id, src_qid, src_uuid, NULL
-        FROM matched_rows
-        WHERE dest_id IS NULL
-        RETURNING dest.qid AS src_qid, dest.id AS inserted_dest_id
     )
-    -- Make a map from QID to ID to return to the caller
-    SELECT COALESCE(jsonb_object_agg(src_qid, COALESCE(dest_id, inserted_dest_id)), '{}'::JSONB)
-    INTO name_to_id_map
-    FROM matched_rows LEFT JOIN insert_unmatched_src_rows USING (src_qid);
+    INSERT INTO questions AS dest (course_id, qid, uuid, deleted_at)
+    SELECT syncing_course_id, src_qid, src_uuid, NULL
+    FROM matched_rows
+    WHERE dest_id IS NULL;
 
     -- Internal consistency checks to ensure that dest (questions) and
     -- src (disk_questions) are in fact synchronized.

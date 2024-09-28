@@ -1,9 +1,7 @@
 import _ from 'lodash';
-import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { IdSchema } from '../../lib/db-types.js';
 import { CourseData, CourseInstance } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
@@ -34,10 +32,7 @@ function getParamsForCourseInstance(courseInstance: CourseInstance | null | unde
   };
 }
 
-export async function sync(
-  courseId: string,
-  courseData: CourseData,
-): Promise<Record<string, string>> {
+export async function sync(courseId: string, courseData: CourseData): Promise<void> {
   const courseInstanceParams = Object.entries(courseData.courseInstances).map(
     ([shortName, courseInstanceData]) => {
       const { courseInstance } = courseInstanceData;
@@ -51,11 +46,5 @@ export async function sync(
     },
   );
 
-  const result = await sqldb.callRow(
-    'sync_course_instances',
-    [courseInstanceParams, courseId],
-    z.record(z.string(), IdSchema),
-  );
-
-  return result;
+  await sqldb.callAsync('sync_course_instances', [courseInstanceParams, courseId]);
 }

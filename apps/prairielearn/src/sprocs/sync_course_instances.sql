@@ -1,9 +1,8 @@
 CREATE FUNCTION
     sync_course_instances(
         IN disk_course_instances_data JSONB[],
-        IN syncing_course_id bigint,
-        OUT name_to_id_map JSONB
-    )
+        IN syncing_course_id bigint
+    ) RETURNS void
 AS $$
 DECLARE
     missing_dest_short_names TEXT;
@@ -79,20 +78,13 @@ BEGIN
         SET short_name = src_short_name, uuid = src_uuid, deleted_at = NULL
         FROM matched_rows
         WHERE dest.id = dest_id AND dest.course_id = syncing_course_id
-    ),
-    insert_unmatched_src_rows AS (
-        -- UTC is used as a temporary timezone, which will be updated in following statements
-        INSERT INTO course_instances AS dest
-            (course_id, short_name, uuid, display_timezone, deleted_at)
-        SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL
-        FROM matched_rows
-        WHERE dest_id IS NULL
-        RETURNING dest.short_name AS src_short_name, dest.id AS inserted_dest_id
     )
-    -- Make a map from CIID to ID to return to the caller
-    SELECT COALESCE(jsonb_object_agg(src_short_name, COALESCE(dest_id, inserted_dest_id)), '{}'::JSONB)
-    INTO name_to_id_map
-    FROM matched_rows LEFT JOIN insert_unmatched_src_rows USING (src_short_name);
+    -- UTC is used as a temporary timezone, which will be updated in following statements
+    INSERT INTO course_instances AS dest
+        (course_id, short_name, uuid, display_timezone, deleted_at)
+    SELECT syncing_course_id, src_short_name, src_uuid, 'UTC', NULL
+    FROM matched_rows
+    WHERE dest_id IS NULL;
 
     -- Internal consistency checks to ensure that dest (course_instances) and
     -- src (disk_course_instances) are in fact synchronized.

@@ -1,10 +1,12 @@
 import async from 'async';
+import { z } from 'zod';
 
 import * as namedLocks from '@prairielearn/named-locks';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { chalk, chalkDim } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
-import { identifyChangedFiles } from '../lib/git.js';
+import { IdSchema } from '../lib/db-types.js';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
@@ -17,8 +19,10 @@ import * as syncCourseInstances from './fromDisk/courseInstances.js';
 import * as syncQuestions from './fromDisk/questions.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
-import { PartialSyncPlan, planPartialSync } from './partial.js';
+import { planPartialSync } from './partial.js';
 import { getInvalidRenames } from './sharing.js';
+
+const sql = loadSqlEquiv(import.meta.filename);
 
 interface SyncResultSharingError {
   status: 'sharing_error';
@@ -61,12 +65,58 @@ export async function checkSharingConfigurationValid(
   return true;
 }
 
+/**
+ * Returns a map from course instance short names to their corresponding database IDs.
+ */
+async function getCourseInstanceIdMap(courseId: string): Promise<Record<string, string>> {
+  const courseInstanceIds = await queryRows(
+    sql.select_course_instance_ids,
+    { course_id: courseId },
+    z.object({
+      short_name: z.string(),
+      id: IdSchema,
+    }),
+  );
+
+  const courseInstanceIdMap: Record<string, string> = {};
+  for (const { short_name, id } of courseInstanceIds) {
+    courseInstanceIdMap[short_name] = id;
+  }
+  return courseInstanceIdMap;
+}
+
+/**
+ * Returns a map from question QIDs to their corresponding database IDs.
+ */
+async function getQuestionIdMap(courseId: string): Promise<Record<string, string>> {
+  const questionIds = await queryRows(
+    sql.select_question_ids,
+    { course_id: courseId },
+    z.object({
+      qid: z.string(),
+      id: IdSchema,
+    }),
+  );
+
+  const questionIdMap: Record<string, string> = {};
+  for (const { qid, id } of questionIds) {
+    questionIdMap[qid] = id;
+  }
+  return questionIdMap;
+}
+
 export async function syncDiskToSqlWithLock(
   courseId: string,
   courseDir: string,
   logger: Logger,
-  courseData?: courseDB.CourseData,
-  changedFiles?: string[],
+  options?: {
+    courseData?: courseDB.CourseData;
+    /**
+     * If a list of changed files is provided, we can do a more efficient sync
+     * that only syncs the parts of the course that have changed.
+     */
+    changedFiles?: string[] | null;
+  },
 ): Promise<SyncResults> {
   async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
     const start = performance.now();
@@ -81,14 +131,21 @@ export async function syncDiskToSqlWithLock(
 
   logger.info('Loading info.json files from course repository');
 
-  if (!courseData) {
-    courseData = await timed('Loaded course data from disk', () =>
+  const courseData =
+    options?.courseData ??
+    (await timed('Loaded course data from disk', () =>
       courseDB.loadFullCourse(courseId, courseDir),
-    );
-  }
+    ));
 
-  const partialSyncPlan = changedFiles
-    ? planPartialSync(changedFiles, new Set(Object.keys(courseData.courseInstances)))
+  // TODO: we need to track some notion of a sync version number that we can
+  // increment whenever we make a change to the sync process that would
+  // necessitate a full sync. Whenever the version number stored for a course
+  // matches the current sync version number, we know we can do a partial sync.
+  //
+  // TODO: feature-flag partial sync so we can test it in production without
+  // risk of breaking random courses.
+  const partialSyncPlan = options?.changedFiles
+    ? planPartialSync(options?.changedFiles, new Set(Object.keys(courseData.courseInstances)))
     : null;
 
   const sharingConfigurationValid = await timed('Validated sharing configuration', () =>
@@ -116,9 +173,9 @@ export async function syncDiskToSqlWithLock(
     // If we really want to skip this step, we can always add separate code to
     // fetch a list of all course instance IDs from the database. However, this
     // is generally fast enough that we can run it unconditionally.
-    const courseInstanceIds = await timed('Synced course instances', () =>
-      syncCourseInstances.sync(courseId, courseData),
-    );
+    if (!partialSyncPlan || partialSyncPlan.syncCourseInstances) {
+      await timed('Synced course instances', () => syncCourseInstances.sync(courseId, courseData));
+    }
 
     // If either the course or the questions have changed, we need to sync topics,
     // as a question could specify a topic that isn't listed in the course JSON file.
@@ -147,13 +204,18 @@ export async function syncDiskToSqlWithLock(
     }
 
     if (!partialSyncPlan || partialSyncPlan.syncQuestions) {
-      const questionIds = await timed('Synced questions', () =>
-        syncQuestions.sync(courseId, courseData),
-      );
+      await timed('Synced questions', () => syncQuestions.sync(courseId, courseData));
+    }
+
+    const questionIds = await getQuestionIdMap(courseId);
+
+    if (!partialSyncPlan || partialSyncPlan.syncQuestions) {
       await timed('Synced tags', () => syncTags.sync(courseId, courseData, questionIds));
     }
 
     if (!partialSyncPlan || partialSyncPlan.syncCourseInstanceAssessments.size > 0) {
+      const courseInstanceIds = await getCourseInstanceIdMap(courseId);
+
       await timed('Synced all assessments', async () => {
         // Ensure that a single course with a ton of course instances can't
         // monopolize the database connection pool.

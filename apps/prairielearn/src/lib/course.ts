@@ -16,6 +16,7 @@ import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 import * as chunks from './chunks.js';
 import { config } from './config.js';
 import { IdSchema, User, UserSchema } from './db-types.js';
+import { identifyChangedFiles } from './git.js';
 import { createServerJob, ServerJobResult } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -160,8 +161,10 @@ export async function pullAndUpdateCourse({
         // hash next time.
         const endGitHash = await getCourseCommitHash(path);
 
+        const changedFiles = await identifyChangedFiles(path, startGitHash, endGitHash);
+
         job.info('Sync git repository to database');
-        const syncResult = await syncDiskToSqlWithLock(courseId, path, job);
+        const syncResult = await syncDiskToSqlWithLock(courseId, path, job, { changedFiles });
         if (syncResult.status === 'sharing_error') {
           if (startGitHash) {
             await job.exec('git', ['reset', '--hard', startGitHash], gitOptions);
@@ -175,8 +178,7 @@ export async function pullAndUpdateCourse({
             coursePath: path,
             courseId,
             courseData: syncResult.courseData,
-            oldHash: startGitHash,
-            newHash: endGitHash,
+            changedFiles,
           });
           chunks.logChunkChangesToJob(chunkChanges, job);
         }

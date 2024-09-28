@@ -378,7 +378,7 @@ interface DiffChunksOptions {
   coursePath: string;
   courseId: string;
   courseData: CourseData;
-  changedFiles: string[];
+  changedFiles: string[] | null;
 }
 
 interface ChunksDiff {
@@ -446,7 +446,13 @@ export async function diffChunks({
     }
   });
 
-  const changedCourseChunks = identifyChunksFromChangedFiles(changedFiles, courseData);
+  const changedCourseChunks = changedFiles
+    ? identifyChunksFromChangedFiles(changedFiles, courseData)
+    : null;
+
+  // If no list of changed files was provided, we'll assume that we need to
+  // sync all chunks.
+  const syncAllChunks = !changedFiles;
 
   // Now, let's compute the set of chunks that we need to update or delete.
   const updatedChunks: ChunkMetadata[] = [];
@@ -460,7 +466,10 @@ export async function diffChunks({
     'serverFilesCourse',
   ] as const) {
     const hasChunkDirectory = await fs.pathExists(path.join(coursePath, chunkType));
-    if (hasChunkDirectory && (!existingCourseChunks[chunkType] || changedCourseChunks[chunkType])) {
+    if (
+      hasChunkDirectory &&
+      (!existingCourseChunks[chunkType] || changedCourseChunks?.[chunkType] || syncAllChunks)
+    ) {
       updatedChunks.push({ type: chunkType });
     } else if (!hasChunkDirectory && existingCourseChunks[chunkType]) {
       deletedChunks.push({ type: chunkType });
@@ -469,7 +478,11 @@ export async function diffChunks({
 
   // Next: questions
   Object.keys(courseData.questions).forEach((qid) => {
-    if (!existingCourseChunks.questions.has(qid) || changedCourseChunks.questions.has(qid)) {
+    if (
+      !existingCourseChunks.questions.has(qid) ||
+      changedCourseChunks?.questions.has(qid) ||
+      syncAllChunks
+    ) {
       updatedChunks.push({
         type: 'question',
         questionName: qid,
@@ -497,7 +510,8 @@ export async function diffChunks({
       if (
         hasClientFilesCourseInstanceDirectory &&
         (!existingCourseChunks.courseInstances[ciid]?.clientFilesCourseInstance ||
-          changedCourseChunks.courseInstances[ciid]?.clientFilesCourseInstance)
+          changedCourseChunks?.courseInstances[ciid]?.clientFilesCourseInstance ||
+          syncAllChunks)
       ) {
         updatedChunks.push({
           type: 'clientFilesCourseInstance',
@@ -519,7 +533,8 @@ export async function diffChunks({
         if (
           hasClientFilesAssessmentDirectory &&
           (!existingCourseChunks.courseInstances[ciid]?.assessments?.has(tid) ||
-            changedCourseChunks.courseInstances[ciid]?.assessments?.has(tid))
+            changedCourseChunks?.courseInstances[ciid]?.assessments?.has(tid) ||
+            syncAllChunks)
         ) {
           updatedChunks.push({
             type: 'clientFilesAssessment',
@@ -704,28 +719,24 @@ interface UpdateChunksForCourseOptions {
   coursePath: string;
   courseId: string;
   courseData: CourseData;
-  oldHash?: string | null;
-  newHash?: string | null;
+  /**
+   * A list of files that changed since the last time chunks were generated.
+   * If this is `null`, all chunks will be regenerated.
+   */
+  changedFiles?: string[] | null;
 }
 
 export async function updateChunksForCourse({
   coursePath,
   courseId,
   courseData,
-  oldHash,
-  newHash,
+  changedFiles,
 }: UpdateChunksForCourseOptions): Promise<ChunksDiff> {
-  let changedFiles: string[] = [];
-  if (oldHash && newHash) {
-    const rawChangedFiles = await identifyChangedFiles(coursePath, oldHash, newHash);
-    changedFiles = Object.keys(rawChangedFiles);
-  }
-
   const { updatedChunks, deletedChunks } = await diffChunks({
     coursePath,
     courseId,
     courseData,
-    changedFiles,
+    changedFiles: changedFiles ?? null,
   });
 
   await createAndUploadChunks(coursePath, courseId, updatedChunks);

@@ -7,16 +7,20 @@ import { contains } from '@prairielearn/path-utils';
 /**
  * Identifies the files that changes between two commits in a given course.
  *
+ * If it's not possible to determine if there were any changes, returns null.
+ *
  * @param coursePath The course directory to diff
  * @param oldHash The old (previous) hash for the diff
  * @param newHash The new (current) hash for the diff
- * @returns List of changed files
+ * @returns List of changed files, or null if changed files can't be determined
  */
 export async function identifyChangedFiles(
   coursePath: string,
-  oldHash: string,
-  newHash: string,
-): Promise<string[]> {
+  oldHash: string | null,
+  newHash: string | null,
+): Promise<string[] | null> {
+  if (!oldHash || !newHash) return null;
+
   // In some specific scenarios, the course directory and the root of the course
   // repository might be different. For example, the example course is usually
   // manually cloned in production environments, and then the course is added

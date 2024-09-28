@@ -1,8 +1,5 @@
-import { z } from 'zod';
-
 import * as sqldb from '@prairielearn/postgres';
 
-import { IdSchema } from '../../lib/db-types.js';
 import { CourseData, Question } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
@@ -50,10 +47,7 @@ function getParamsForQuestion(q: Question | null | undefined) {
   };
 }
 
-export async function sync(
-  courseId: string,
-  courseData: CourseData,
-): Promise<Record<string, string>> {
+export async function sync(courseId: string, courseData: CourseData): Promise<void> {
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
     return JSON.stringify([
       qid,
@@ -64,11 +58,5 @@ export async function sync(
     ]);
   });
 
-  const result = await sqldb.callRow(
-    'sync_questions',
-    [questionParams, courseId],
-    z.record(z.string(), IdSchema),
-  );
-
-  return result;
+  await sqldb.callAsync('sync_questions', [questionParams, courseId]);
 }

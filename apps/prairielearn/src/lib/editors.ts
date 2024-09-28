@@ -29,6 +29,7 @@ import * as b64Util from './base64-util.js';
 import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
 import { config } from './config.js';
 import { Assessment, Course, CourseInstance, Question, User } from './db-types.js';
+import { identifyChangedFiles } from './git.js';
 import { EXAMPLE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
 import { ServerJob, ServerJobExecutor, createServerJob } from './server-jobs.js';
@@ -44,12 +45,12 @@ async function syncCourseFromDisk(
 ) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(
-    course.id,
-    course.path,
-    job,
+  const changedFiles = await identifyChangedFiles(course.path, startGitHash, endGitHash);
+
+  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(course.id, course.path, job, {
     courseData,
-  );
+    changedFiles,
+  });
 
   if (syncResult.status === 'sharing_error') {
     throw new Error('Sync completely failed due to invalid question sharing edit.');
@@ -60,8 +61,7 @@ async function syncCourseFromDisk(
       coursePath: course.path,
       courseId: course.id,
       courseData: syncResult.courseData,
-      oldHash: startGitHash,
-      newHash: endGitHash,
+      changedFiles,
     });
     logChunkChangesToJob(chunkChanges, job);
   }
