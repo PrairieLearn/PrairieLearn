@@ -346,7 +346,7 @@ export async function initExpress() {
 
       const workspace_id = match[1];
       const result = await sqldb.queryZeroOrOneRowAsync(
-        "SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';",
+        "SELECT hostname FROM workspaces WHERE id = $workspace_id;",
         { workspace_id },
       );
 
