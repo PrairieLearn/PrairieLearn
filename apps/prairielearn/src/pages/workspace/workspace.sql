@@ -2,13 +2,15 @@
 UPDATE workspaces AS w
 SET
   version = version + 1,
-  reset_at = now()
+  reset_at = now(),
+  state = 'running'
 WHERE
   w.id = $workspace_id;
 
 -- BLOCK update_workspace_rebooted_at_now
 UPDATE workspaces AS w
 SET
-  rebooted_at = now()
+  rebooted_at = now(),
+  state = 'running'
 WHERE
   w.id = $workspace_id;
