@@ -507,7 +507,7 @@ export async function fetchRetry(
     retryLeft?: number;
     sleepMs?: number;
   },
-  previousResults: any[] = [],
+  previousResults: unknown[] = [],
 ): Promise<unknown[]> {
   const fetchRetryOpts = {
     retryLeft: 5,
