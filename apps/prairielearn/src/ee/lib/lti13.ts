@@ -328,26 +328,27 @@ export async function getLineitems(instance: Lti13CombinedInstance) {
     throw new HttpStatusError(400, 'Lineitems not defined');
   }
   const token = await getAccessToken(instance.lti13_instance.id);
-  const lineitems = LineitemsSchema.parse(
-    await fetchRetry(instance.lti13_course_instance.lineitems_url, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-  );
+  const fetchArray = await fetchRetry(instance.lti13_course_instance.lineitems_url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
-  return lineitems;
+  const lineitems = LineitemsSchema.array().parse(fetchArray);
+
+  // Reduce paginated array of lineitem arrays to a single array
+  return lineitems.reduce((acc, item) => {
+    return acc.concat(item);
+  }, []);
 }
 
 export async function getLineitem(instance: Lti13CombinedInstance, lineitem_id_url: string) {
   const token = await getAccessToken(instance.lti13_instance.id);
-  const lineitem = LineitemSchema.parse(
-    await fetchRetry(lineitem_id_url, {
-      method: 'GET',
-      headers: { Authorization: `Bearer ${token}` },
-    }),
-  );
+  const fetchArray = await fetchRetry(lineitem_id_url, {
+    method: 'GET',
+    headers: { Authorization: `Bearer ${token}` },
+  });
 
-  return lineitem;
+  return LineitemSchema.parse(fetchArray[0]);
 }
 
 export async function syncLineitems(instance: Lti13CombinedInstance, job: ServerJob) {
@@ -413,16 +414,15 @@ export async function createAndLinkLineitem(
   );
 
   const token = await getAccessToken(instance.lti13_instance.id);
-  const item = LineitemSchema.parse(
-    await fetchRetry(instance.lti13_course_instance.lineitems_url, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-type': 'application/vnd.ims.lis.v2.lineitem+json',
-      },
-      body: JSON.stringify(createBody),
-    }),
-  );
+  const fetchArray = await fetchRetry(instance.lti13_course_instance.lineitems_url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-type': 'application/vnd.ims.lis.v2.lineitem+json',
+    },
+    body: JSON.stringify(createBody),
+  });
+  const item = LineitemSchema.parse(fetchArray[0]);
 
   job.info('Associating PrairieLearn assessment with the new assignment');
 
@@ -492,6 +492,14 @@ const STATUS_CODE_RESPONSE = {
   422: null,
 };
 
+/**
+ *
+ * @param input
+ * @param opts
+ * @param incomingfetchRetryOpts
+ * @param previousResults
+ * @returns Array of JSON responses from fetch
+ */
 export async function fetchRetry(
   input: RequestInfo | URL,
   opts?: RequestInit | undefined,
@@ -499,7 +507,8 @@ export async function fetchRetry(
     retryLeft?: number;
     sleepMs?: number;
   },
-) {
+  previousResults: any[] = [],
+): Promise<unknown[]> {
   const fetchRetryOpts = {
     retryLeft: 5,
     sleepMs: 1000,
@@ -517,28 +526,26 @@ export async function fetchRetry(
         data: {
           status: response.status,
           statusText: response.statusText,
-          body: response.text(),
+          body: await response.text(),
         },
       });
     }
 
+    const results = await response.json();
+
     const parsed = parseLinkHeader(response.headers.get('link')) ?? {};
     if ('next' in parsed) {
-      const results = await response.json();
-
-      if (Array.isArray(results)) {
-        return results.concat(await fetchRetry(parsed.next.url, opts, fetchRetryOpts));
-      }
+      return await fetchRetry(parsed.next.url, opts, fetchRetryOpts, [...previousResults, results]);
     }
 
-    return await response.json();
+    return [...previousResults, results];
   } catch (err) {
     fetchRetryOpts.retryLeft -= 1;
     if (fetchRetryOpts.retryLeft === 0) {
       throw err;
     }
     await sleep(fetchRetryOpts.sleepMs);
-    return await fetchRetry(input, opts, fetchRetryOpts);
+    return await fetchRetry(input, opts, fetchRetryOpts, previousResults);
   }
 }
 
@@ -572,6 +579,12 @@ const ContextMembershipSchema = z.object({
 });
 type ContextMembership = z.infer<typeof ContextMembershipSchema>;
 
+const ContextMembershipContainerSchema = z.object({
+  id: z.string(),
+  //context: z.object(),
+  members: ContextMembershipSchema.array(),
+});
+
 class Lti13ContextMembership {
   #memberships: Record<string, ContextMembership[]> = {};
 
@@ -596,7 +609,7 @@ class Lti13ContextMembership {
     }
 
     const token = await getAccessToken(lti13_instance.id);
-    const ltiMemberships = await fetchRetry(lti13_course_instance.context_memberships_url, {
+    const fetchArray = await fetchRetry(lti13_course_instance.context_memberships_url, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -604,7 +617,15 @@ class Lti13ContextMembership {
       },
     });
 
-    const filteredMemberships = ltiMemberships.members.filter((member: ContextMembership) => {
+    const containers = ContextMembershipContainerSchema.array().parse(fetchArray);
+
+    // Collect the members from the membership container paginated fetch responses
+    // https://www.imsglobal.org/spec/lti-nrps/v2p0/#membership-container-media-type
+    const ltiMemberships = containers.reduce((acc, container) => {
+      return acc.concat(container.members);
+    }, [] as ContextMembership[]);
+
+    const filteredMemberships = ltiMemberships.filter((member: ContextMembership) => {
       // Skip invalid cases
       if (
         member.roles.includes('http://purl.imsglobal.org/vocab/lti/system/person#TestUser') ||
