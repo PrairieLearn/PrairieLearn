@@ -190,7 +190,7 @@
       <p>What is the color of the sky?</p>
     </pl-question-panel>
 
-    <pl-multiple-choice answers-name="sky-color8">
+    <pl-multiple-choice answers-name="sky-color7">
       <pl-answer correct="true" feedback="Correct! The sky is indeed blue.">Blue</pl-answer>
       <pl-answer feedback="Incorrect. The sky is not pink.">Pink</pl-answer>
       <pl-answer feedback="Incorrect. The sky is not purple.">Purple</pl-answer>
@@ -217,7 +217,7 @@
       <p> What is the color of the sky? </p>
     </pl-question-panel>
 
-    <pl-multiple-choice answers-name="sky-color9" allow-blank="true">
+    <pl-multiple-choice answers-name="sky-color8" allow-blank="true" placeholder="10">
       <pl-answer correct="true" feedback="Correct! The sky is indeed blue.">Blue</pl-answer>
       <pl-answer>Pink</pl-answer>
       <pl-answer score=0.5>Purple</pl-answer>
@@ -246,7 +246,7 @@
 
     <p>
       The sky is
-      <pl-multiple-choice answers-name="sky-color10" display="dropdown" allow-blank="true" order="random" size="25">
+      <pl-multiple-choice answers-name="sky-color9" display="dropdown" allow-blank="true" order="random" size="25">
         <pl-answer correct="true" feedback="Correct! The sky is indeed blue.">Blue ($470nm$)</pl-answer>
         <pl-answer score="0.5">Purple ($400nm$)</pl-answer>
         <pl-answer feedback="Hint: The correct answer is a complementary color to this one." score="0.1">
@@ -258,5 +258,35 @@
       </pl-multiple-choice>.
       This is because of the way that light is scattered in the earth's atmosphere.
     </p>
+  </div>
+</div>
+
+<div class="card my-2">
+  <div class="card-header">
+    Part 10
+  </div>
+
+  <div class="card-body">
+
+    <pl-question-panel>
+      <p>
+        Here, the <code>pl-multiple-choice</code> element displays a different placeholder text. This is done  
+        by setting <code>placeholder="Colors"</code>. You can also have no placeholder by setting it as an empty
+        string, e.g. <code>placeholder=""</code>. If the options are larger than the placeholder text, you will
+        may want to set the <code>size</code> to a number large enough to span the options to avoid the text
+        wrapping inside of the dropdown such as <code>size="10"</code> in this example.
+      </p>
+      <p> What is the color of the sky? </p>
+    </pl-question-panel>
+
+    <pl-multiple-choice answers-name="sky-color10" display="dropdown" allow-blank="true" order="random" size="10" placeholder="Colors:">
+      <pl-answer correct="true" feedback="Correct! The sky is indeed blue.">Blue</pl-answer>
+      <pl-answer>Pink</pl-answer>
+      <pl-answer score=0.5>Purple</pl-answer>
+      <pl-answer feedback="Not quite" score=0.1>Orange</pl-answer>
+      <pl-answer>Yellow</pl-answer>
+      <pl-answer score=0.3>Brown</pl-answer>
+      <pl-answer score=0.2>Red</pl-answer>
+    </pl-multiple-choice>
   </div>
 </div>
