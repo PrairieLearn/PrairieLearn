@@ -493,11 +493,12 @@ const STATUS_CODE_RESPONSE = {
 };
 
 /**
+ * Make HTTP fetch requests with retries and pagination handling
  *
- * @param input
- * @param opts
- * @param incomingfetchRetryOpts
- * @param previousResults
+ * @param input URL to visit
+ * @param opts fetch options
+ * @param incomingfetchRetryOpts options specific to fetchRetry
+ * @param previousResults Used for paginated content
  * @returns Array of JSON responses from fetch
  */
 export async function fetchRetry(
@@ -581,7 +582,9 @@ type ContextMembership = z.infer<typeof ContextMembershipSchema>;
 
 const ContextMembershipContainerSchema = z.object({
   id: z.string(),
-  //context: z.object(),
+  context: z.object({
+    id: z.string(),
+  }),
   members: ContextMembershipSchema.array(),
 });
 
