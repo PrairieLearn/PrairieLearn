@@ -1,6 +1,7 @@
 import { OpenAI } from 'openai';
+import * as parse5 from 'parse5';
 
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, queryRow } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
@@ -49,19 +50,69 @@ ${context}
  *
  * @param client The OpenAI client to use.
  * @param prompt The user's question generation prompt.
+ * @param promptUserInput The user's indication of how to create student input boxes.
+ * @param mandatoryElementNames Elements that we must pull documentation for.
  * @param authnUserId The user's authenticated user ID.
  * @returns A string of all relevant context documents.
  */
-async function makeContext(client: OpenAI, prompt: string, authnUserId: string): Promise<string> {
+async function makeContext(
+  client: OpenAI,
+  prompt: string,
+  promptUserInput: string | undefined,
+  mandatoryElementNames: string[],
+  authnUserId: string,
+): Promise<string> {
   const embedding = await createEmbedding(client, prompt, openAiUserFromAuthn(authnUserId));
+
+  // Identify all elements that we are using *and* have documentation document chunks.
+  const mandatoryElements =
+    mandatoryElementNames.length > 0
+      ? await queryRows(
+          sql.select_documents_by_chunk_id,
+          {
+            doc_path: 'docs/elements.md',
+            chunk_ids: mandatoryElementNames,
+          },
+          QuestionGenerationContextEmbeddingSchema,
+        )
+      : [];
+
+  const numElements = Math.max(5 - mandatoryElements.length, 0);
 
   const docs = await queryRows(
     sql.select_nearby_documents,
-    { embedding: vectorToString(embedding), limit: 5 },
+    { embedding: vectorToString(embedding), limit: numElements },
     QuestionGenerationContextEmbeddingSchema,
   );
 
-  return docs.map((doc) => doc.doc_text).join('\n\n');
+  // If a prompt specifies how user input is handled, try to find documentation for those types of input
+  // and save as last doc. Regeneration prompts don't use this, so promptUserInput may be undefined.
+  if (promptUserInput !== undefined) {
+    const embeddingUserInput = await createEmbedding(
+      client,
+      promptUserInput,
+      openAiUserFromAuthn(authnUserId),
+    );
+
+    const elementDoc = await queryRow(
+      sql.select_nearby_documents_from_file,
+      {
+        embedding: vectorToString(embeddingUserInput),
+        doc_path: 'docs/elements.md',
+        limit: 1,
+      },
+      QuestionGenerationContextEmbeddingSchema,
+    );
+    if (numElements > 0 && !docs.some((doc) => doc.doc_text === elementDoc.doc_text)) {
+      // Override the last (least relevant) doc.
+      docs[numElements - 1] = elementDoc;
+    }
+  }
+
+  return docs
+    .concat(mandatoryElements)
+    .map((doc) => doc.doc_text)
+    .join('\n\n');
 }
 
 /**
@@ -103,15 +154,26 @@ function extractFromCompletion(
  * @param client The OpenAI client to use.
  * @param courseId The ID of the current course.
  * @param authnUserId The authenticated user's ID.
- * @param prompt The prompt for how to generate a question.
+ * @param promptGeneral The prompt for how to generate a question.
+ * @param promptUserInput The prompt for how to take user input.
+ * @param promptGrading The prompt for how to grade user input.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
  */
-export async function generateQuestion(
-  client: OpenAI,
-  courseId: string | undefined,
-  authnUserId: string,
-  prompt: string,
-): Promise<{
+export async function generateQuestion({
+  client,
+  courseId,
+  authnUserId,
+  promptGeneral,
+  promptUserInput,
+  promptGrading,
+}: {
+  client: OpenAI;
+  courseId: string | undefined;
+  authnUserId: string;
+  promptGeneral: string;
+  promptUserInput: string;
+  promptGrading: string;
+}): Promise<{
   jobSequenceId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
@@ -124,9 +186,15 @@ export async function generateQuestion(
   });
 
   const jobData = await serverJob.execute(async (job) => {
-    job.info(`prompt is ${prompt}`);
+    const userPrompt = `${promptGeneral}
+    
+    You should provide the following input methods for students to answer: ${promptUserInput}
+    
+    To calculate the right answer, you should: ${promptGrading}`;
 
-    const context = await makeContext(client, prompt, authnUserId);
+    job.info(`prompt is ${userPrompt}`);
+
+    const context = await makeContext(client, userPrompt, promptUserInput, [], authnUserId);
 
     const sysPrompt = `
 ${promptPreamble(context)}
@@ -143,7 +211,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       model: 'gpt-3.5-turbo',
       messages: [
         { role: 'system', content: sysPrompt },
-        { role: 'user', content: prompt },
+        { role: 'user', content: userPrompt },
       ],
       user: openAiUserFromAuthn(authnUserId),
     });
@@ -152,7 +220,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     const html = job?.data?.html;
 
     job.data['initialGenerationErrors'] = [];
-    job.data['prompt'] = prompt;
+    job.data['prompt'] = userPrompt;
     job.data['generation'] = completion.choices[0].message.content;
     job.data['context'] = context;
     job.data['completion'] = completion;
@@ -166,7 +234,7 @@ Keep in mind you are not just generating an example; you are generating an actua
           job,
           client,
           authnUserId,
-          prompt,
+          userPrompt,
           `Please fix the following issues: \n${errors.join('\n')}`,
           html,
           typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
@@ -179,7 +247,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         job,
         client,
         authnUserId,
-        prompt,
+        userPrompt,
         'Please generate a question.html file.',
         '',
         typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
@@ -197,8 +265,23 @@ Keep in mind you are not just generating an example; you are generating an actua
 }
 
 /**
- * Regenerates HTML and Python code for a question based on a prompt.
- * @param job The server job to do regeneration in.
+ * Gets all of the tag names in an HTML parse tree.
+ * @param ast The tree to use.
+ * @returns All tag names in the tree.
+ */
+function traverseForTagNames(ast: any): Set<string> {
+  const nodeNames = new Set<string>([ast.nodeName]);
+  if (ast.childNodes) {
+    for (const child of ast.childNodes) {
+      traverseForTagNames(child).forEach((name) => nodeNames.add(name));
+    }
+  }
+  return nodeNames;
+}
+
+/**
+ * Revises a question using the LLM based on user input.
+ *
  * @param client The OpenAI client to use.
  * @param courseId The ID of the current course.
  * @param authnUserId The authenticated user's ID.
@@ -222,7 +305,13 @@ async function regenInternal(
 ) {
   job.info(`prompt is ${revisionPrompt}`);
 
-  const context = await makeContext(client, originalPrompt, authnUserId);
+  let tags: string[] = [];
+  if (originalHTML) {
+    const ast = parse5.parseFragment(originalHTML);
+    tags = Array.from(traverseForTagNames(ast));
+  }
+
+  const context = await makeContext(client, originalPrompt, undefined, tags, authnUserId);
   if (saveInitialErrors) {
     job.data['context'] = context;
   }
@@ -277,7 +366,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   job.data['generation'] = completion.choices[0].message.content;
   job.data['completion'] = completion;
 
-  const html = job?.data?.html;
+  const html = job?.data?.html ?? originalHTML;
 
   if (saveInitialErrors) {
     job.data['initialGenerationErrors'] = [];
