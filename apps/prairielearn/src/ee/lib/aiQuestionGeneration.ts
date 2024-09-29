@@ -7,6 +7,7 @@ import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js'
 import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
+import { validateHTML } from './validateHTML.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -216,10 +217,44 @@ Keep in mind you are not just generating an example; you are generating an actua
     });
 
     extractFromCompletion(completion, job);
+    const html = job?.data?.html;
+
+    job.data['initialGenerationErrors'] = [];
     job.data['prompt'] = userPrompt;
     job.data['generation'] = completion.choices[0].message.content;
     job.data['context'] = context;
     job.data['completion'] = completion;
+
+    if (html && typeof html === 'string') {
+      const errors = validateHTML(html, false);
+      job.data['initialGenerationErrors'] = errors;
+      job.data['finalGenerationErrors'] = errors;
+      if (errors.length > 0) {
+        await regenInternal(
+          job,
+          client,
+          authnUserId,
+          userPrompt,
+          `Please fix the following issues: \n${errors.join('\n')}`,
+          html,
+          typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
+          0,
+          false,
+        );
+      }
+    } else {
+      await regenInternal(
+        job,
+        client,
+        authnUserId,
+        userPrompt,
+        'Please generate a question.html file.',
+        '',
+        typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
+        0,
+        false,
+      );
+    }
   });
 
   return {
@@ -242,6 +277,124 @@ function traverseForTagNames(ast: any): Set<string> {
     }
   }
   return nodeNames;
+}
+
+/**
+ * Revises a question using the LLM based on user input.
+ *
+ * @param client The OpenAI client to use.
+ * @param courseId The ID of the current course.
+ * @param authnUserId The authenticated user's ID.
+ * @param originalPrompt The prompt creating the original generation.
+ * @param revisionPrompt A prompt with user instructions on how to revise the question.
+ * @param originalHTML The question.html file to revise.
+ * @param originalPython The server.py file to revise.
+ * @param numRegens Number of times that regen could be called.
+ * @param saveInitialErrors Whether to save initial error checking results in the job data.
+ */
+async function regenInternal(
+  job: ServerJob,
+  client: OpenAI,
+  authnUserId: string,
+  originalPrompt: string,
+  revisionPrompt: string,
+  originalHTML: string,
+  originalPython: string | undefined,
+  numRegens: number,
+  saveInitialErrors: boolean,
+) {
+  job.info(`prompt is ${revisionPrompt}`);
+
+  let tags: string[] = [];
+  if (originalHTML) {
+    const ast = parse5.parseFragment(originalHTML);
+    tags = Array.from(traverseForTagNames(ast));
+  }
+
+  const context = await makeContext(client, originalPrompt, undefined, tags, authnUserId);
+  if (saveInitialErrors) {
+    job.data['context'] = context;
+  }
+
+  const sysPrompt = `
+${promptPreamble(context)}
+# Previous Generations
+
+A user previously used the assistant to generate a question with following prompt:
+
+${originalPrompt}
+
+You generated the following:
+
+${
+  originalHTML === undefined
+    ? ''
+    : `\`\`\`html
+${originalHTML}
+\`\`\``
+}
+
+${
+  originalPython === undefined
+    ? ''
+    : `\`\`\`python
+${originalPython}
+\`\`\``
+}
+
+# Prompt
+
+A user will now request your help in in revising the question that you generated. Respond in a friendly but concise way. Include \`question.html\` and \`server.py\` in Markdown code fences in your response, and tag each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization).
+
+Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.
+`;
+
+  job.info(`system prompt is: ${sysPrompt}`);
+
+  // TODO [very important]: normalize to prevent prompt injection attacks
+
+  const completion = await client.chat.completions.create({
+    model: 'gpt-3.5-turbo',
+    messages: [
+      { role: 'system', content: sysPrompt },
+      { role: 'user', content: revisionPrompt },
+    ],
+    user: openAiUserFromAuthn(authnUserId),
+  });
+
+  extractFromCompletion(completion, job);
+  job.data['generation'] = completion.choices[0].message.content;
+  job.data['completion'] = completion;
+
+  const html = job?.data?.html ?? originalHTML;
+
+  if (saveInitialErrors) {
+    job.data['initialGenerationErrors'] = [];
+  }
+  job.data['finalGenerationErrors'] = [];
+
+  if (html && typeof html === 'string') {
+    const errors = validateHTML(html, false);
+    if (saveInitialErrors) {
+      job.data['initialGenerationErrors'] = errors;
+    }
+    job.data['finalGenerationErrors'] = errors;
+    if (errors.length > 0 && numRegens > 0) {
+      const autoRevisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
+      job.data['autoRevisionPrompt'] = autoRevisionPrompt;
+      await regenInternal(
+        job,
+        client,
+        authnUserId,
+        originalPrompt,
+        autoRevisionPrompt,
+        html,
+        typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
+        numRegens - 1,
+        false,
+      );
+    }
+  }
 }
 
 /**
@@ -277,66 +430,20 @@ export async function regenerateQuestion(
   });
 
   const jobData = await serverJob.execute(async (job) => {
-    job.info(`prompt is ${revisionPrompt}`);
-
-    let tags: string[] = [];
-    if (originalHTML) {
-      const ast = parse5.parseFragment(originalHTML);
-      tags = Array.from(traverseForTagNames(ast));
-    }
-
-    const context = await makeContext(client, originalPrompt, undefined, tags, authnUserId);
-    const sysPrompt = `
-${promptPreamble(context)}
-# Previous Generations
-
-A user previously used the assistant to generate a question with following prompt:
-
-${originalPrompt}
-
-You generated the following:
-
-${
-  originalHTML === undefined
-    ? ''
-    : `\`\`\`html
-${originalHTML}
-\`\`\``
-}
-
-${
-  originalPython === undefined
-    ? ''
-    : `\`\`\`python
-${originalPython}
-\`\`\``
-}
-
-# Prompt
-
-A user will now request your help in in revising the question that you generated. Respond in a friendly but concise way. Include \`question.html\` and \`server.py\` in Markdown code fences in your response, and tag each code fence with the language (either \`html\` or \`python\`). Omit \`server.py\` if the question does not require it (for instance, if the question does not require randomization).
-
-Keep in mind you are not just generating an example; you are generating an actual question that the user will use directly.
-`;
-
-    job.info(`system prompt is: ${sysPrompt}`);
-
-    // TODO [very important]: normalize to prevent prompt injection attacks
-
-    const completion = await client.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        { role: 'system', content: sysPrompt },
-        { role: 'user', content: revisionPrompt },
-      ],
-      user: openAiUserFromAuthn(authnUserId),
-    });
-
-    extractFromCompletion(completion, job);
     job.data['prompt'] = revisionPrompt;
     job.data['originalPrompt'] = originalPrompt;
-    job.data['generation'] = completion.choices[0].message.content;
-    job.data['context'] = context;
+
+    await regenInternal(
+      job,
+      client,
+      authnUserId,
+      originalPrompt,
+      revisionPrompt,
+      originalHTML,
+      originalPython,
+      1,
+      true,
+    );
   });
 
   return {
