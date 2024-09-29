@@ -397,7 +397,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "hide-score-badge",
         "allow-blank",
         "size",
-        "placeholder"
+        "placeholder",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     # Before going to the trouble of preparing answers list, check for name duplication
@@ -417,7 +417,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     ):
         raise ValueError(
             f'"placeholder" attribute on "{name}" should only be set if display is "dropdown".'
-        )   
+        )
 
     if name in data["params"]:
         raise ValueError(f"Duplicate params variable name: {name}")
@@ -533,7 +533,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         placeholder = PLACEHOLDER_DEFAULT
         if pl.has_attrib(element, "placeholder"):
-            placeholder = pl.get_string_attrib(element, "placeholder")        
+            placeholder = pl.get_string_attrib(element, "placeholder")
 
         html_params = {
             "question": True,
