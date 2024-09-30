@@ -388,7 +388,7 @@ export interface Question {
   dependencies: Record<string, string>;
   sharingSets: string[];
   sharedPublicly: boolean;
-  sharedPubliclyWithSource: boolean;
+  sharedSourcePublicly: boolean;
 }
 
 export interface CourseInstanceData {
@@ -1049,9 +1049,9 @@ async function validateQuestion(
     }
   }
 
-  if (question.sharedPubliclyWithSource && question.sharedPublicly === false) {
+  if (question.sharedSourcePublicly && question.sharedPublicly === false) {
     warnings.push(
-      'Option "sharedPubliclyWithSource": true will override option "sharedPublicly": false',
+      'Option "sharedSourcePublicly": true will override option "sharedPublicly": false',
     );
   }
 
