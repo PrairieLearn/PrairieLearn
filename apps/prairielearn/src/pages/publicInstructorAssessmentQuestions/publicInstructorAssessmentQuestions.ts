@@ -28,6 +28,15 @@ async function selectAssessmentById(assessment_id: string): Promise<Assessment> 
 
 const BooleanSchema = z.boolean();
 
+async function checkAssessmentPublic(assessment_id: string): Promise<boolean> {
+  const isPublic = await queryRow(
+    sql.check_assessment_is_public,
+    { assessment_id },
+    BooleanSchema,
+  );
+  return isPublic;
+}
+
 async function checkCourseInstancePublic(course_instance_id: string): Promise<boolean> {
   const isPublic = await queryRow(
     sql.check_course_instance_is_public,
@@ -45,7 +54,8 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const isCourseInstancePublic = await checkCourseInstancePublic(res.locals.course_instance_id);
-    if (!isCourseInstancePublic) {
+    const isAssessmentPublic = await checkAssessmentPublic(res.locals.assessment_id);
+    if (!isCourseInstancePublic && !isAssessmentPublic) {
       throw new error.HttpStatusError(
         404,
         'The course instance that owns this assessment is not public.',

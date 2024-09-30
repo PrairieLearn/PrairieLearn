@@ -6,6 +6,14 @@ FROM
 where
   id = $assessment_id;
 
+-- BLOCK check_assessment_is_public
+SELECT
+  a.shared_publicly
+FROM
+  assessments AS a
+WHERE
+  a.id = $assessment_id;
+
 -- BLOCK check_course_instance_is_public
 SELECT
   ci.shared_publicly
