@@ -525,9 +525,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # https://www.unitconverters.net/typography/character-x-to-pixel-x.htm
             size = pl.get_integer_attrib(element, "size") * 8
 
-        placeholder = PLACEHOLDER_DEFAULT
-        if pl.has_attrib(element, "placeholder"):
-            placeholder = pl.get_string_attrib(element, "placeholder")
+        placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
 
         html_params = {
             "question": True,
