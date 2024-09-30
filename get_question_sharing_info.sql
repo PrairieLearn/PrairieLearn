@@ -5,6 +5,7 @@ COPY (
   FROM
     (
       SELECT
+        q.course_id,
         q.qid,
         q.shared_publicly,
         (
