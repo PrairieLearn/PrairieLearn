@@ -1,5 +1,3 @@
-**Question sharing is currently in beta.** If your course is hosted on the official PrairieLearn server, you may request that question sharing be turned on for your course. If you administer your own PrairieLearn server, you should _not_ use question sharing at this time. In the future, question sharing may be supported across PrairieLearn servers, so turning on question sharing on unofficial servers at this point in time may lead to naming conflicts in the future.
-
 # Question sharing
 
 In order to avoid instructors needing to copy question files in between courses, PrairieLearn provides a way for questions from one course to be used in assessments in other courses.
@@ -12,11 +10,13 @@ In order for another course to use questions from your course into their assessm
 
 Questions can either be shared publicly, so that anyone can preview the questions (but not the source code) and use them in their course, or you can share questions only to specific other courses using sharing sets.
 
+Any question that is marked with `"sharedPublicly": true` or `"sharedSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license.
+
 ## Sharing sets
 
 Access to shared questions is controlled through **sharing sets**. A sharing set is a named set of questions which you can share to another course all at once. The sharing set system exists so that course owners may differentially share different sets of their questions. For example, an instructor may want to share some questions only with other courses in their department, and other questions with anyone using PrairieLearn. Sharing sets are created by adding them to the [course configuration file](course.md#sharing-sets)
 
-## Sharing a sharing set with connection with another course
+## Sharing a sharing set with another course
 
 For security reasons, establishing the connection for one course to share questions with another course requires coordinated action by owners of the course sharing the questions (which we will refer to hereafter as the 'sharing course') and the course that is using the questions that are being shared ('which we will refer to hereafter as the 'consuming course')
 

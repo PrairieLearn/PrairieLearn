@@ -53,6 +53,7 @@ The `info.json` file for each question defines properties of the question. For e
   "title": "Newton's third law",
   "topic": "Forces",
   "tags": ["secret", "Fa18"],
+  "sharedPublicly": true,
   "type": "v3",
   "comment": "You can add comments to JSON files using this property."
 }
@@ -71,6 +72,8 @@ The `info.json` file for each question defines properties of the question. For e
 | `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                       |
 | `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)                                                |
 | `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                  |
+| `sharedPublicly`         | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                  |
+| `sharedPublicly`         | boolean | Whether the the source code of the question should be available                                                                                                        |
 
 For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoQuestion.json)
 
@@ -90,6 +93,17 @@ These dependencies are specified in the `info.json` file, and can be configured 
   }
 }
 ```
+
+### Question Sharing
+
+Any question that is marked with `"sharedPublicly": true` or `"sharedSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license.
+
+````json
+{
+  "sharingSets": [
+
+  ]
+}
 
 The different types of dependency properties available are summarized in this table:
 
@@ -124,7 +138,7 @@ The `question.html` is a template used to render the question to the student. A 
     suffix="$\rm m/s^2$"
   ></pl-number-input>
 </p>
-```
+````
 
 The `question.html` is regular HTML, with four special features:
 
