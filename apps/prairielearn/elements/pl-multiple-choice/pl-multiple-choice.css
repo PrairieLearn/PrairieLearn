@@ -18,7 +18,7 @@
 }
 
 .pl-multiple-choice-dropdown .ts-wrapper .ts-control .item {
-  min-width: var(--pl-multiple-choice-dropdown-width, 50px);
+  min-width: var(--pl-multiple-choice-dropdown-width, 220px);
 }
 
 .pl-multiple-choice-dropdown .ts-control {
