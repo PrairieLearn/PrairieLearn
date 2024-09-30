@@ -101,7 +101,7 @@ export async function getInvalidSharingSetRemovals(
   courseData: CourseData,
 ): Promise<Record<string, string[]>> {
   const sharedQuestions = await sqldb.queryRows(
-    sql.select_sharing_set_questions,
+    sql.select_question_sharing_sets,
     { course_id: courseId },
     z.object({
       id: IdSchema,
