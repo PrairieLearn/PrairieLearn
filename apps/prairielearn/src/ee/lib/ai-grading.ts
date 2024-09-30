@@ -40,6 +40,16 @@ const SubmissionVariantSchema = z.object({
   submission: SubmissionSchema,
 });
 const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
+// Current idea for rubric
+const RubricItemInfoSchema = z.object({
+  description: z.string(),
+  explanation: z.string(),
+  selected: z.boolean(),
+});
+const GPTRubricGradeSchema = z.object({
+  grade: z.array(RubricItemInfoSchema),
+  feedback: z.string(),
+});
 const GradedExampleSchema = z.object({
   submission_text: z.string(),
   score_perc: z.number(),
