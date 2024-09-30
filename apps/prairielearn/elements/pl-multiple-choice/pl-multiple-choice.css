@@ -18,8 +18,6 @@
 }
 
 .pl-multiple-choice-dropdown .ts-wrapper .ts-control .item {
-  /** reduced size from 220 to allow for smaller placeholders **/
-  /** https://github.com/PrairieLearn/PrairieLearn/issues/10473 **/
   min-width: var(--pl-multiple-choice-dropdown-width, 50px);
 }
 
