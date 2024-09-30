@@ -4,8 +4,6 @@ COPY (
     ss.name
   FROM
     sharing_sets AS ss
-  WHERE
-    ss.course_id = 2
 ) TO STDOUT
 With
   (FORMAT CSV, HEADER);

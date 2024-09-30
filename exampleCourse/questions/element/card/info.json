@@ -3,5 +3,6 @@
   "title": "Element pl-card: Display content within a card-styled component",
   "topic": "Element",
   "tags": ["tyang15", "balamut2"],
-  "type": "v3"
+  "type": "v3",
+  "sharedPublicly": true
 }

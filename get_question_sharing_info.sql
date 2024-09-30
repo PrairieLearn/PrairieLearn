@@ -19,8 +19,7 @@ COPY (
       FROM
         questions AS q
       WHERE
-        q.course_id = 2
-        AND q.deleted_at IS NULL
+        q.deleted_at IS NULL
       GROUP BY
         q.id
       ORDER BY

@@ -15,7 +15,7 @@ WITH
       JOIN questions AS q ON q.id = ssq.question_id
   )
 SELECT
-  c.id,
+  c.id AS course_id,
   c.short_name AS course_short_name,
   i.short_name AS institution_short_name,
   u.uid,
