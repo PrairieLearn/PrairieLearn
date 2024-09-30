@@ -2,7 +2,6 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { IdSchema } from '../../lib/db-types.js';
 import { CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -12,29 +11,40 @@ export async function sync(
   courseData: CourseData,
   questionIds: Record<string, any>,
 ) {
-  let courseSharingSets: string[] = [];
-  if (!infofile.hasErrors(courseData.course)) {
-    courseSharingSets = (courseData.course.data?.sharingSets ?? []).map((s) =>
-      JSON.stringify([s.name, s.description]),
-    );
+  if (infofile.hasErrors(courseData.course)) {
+    return;
   }
 
-  const newSharingSets = await sqldb.callRow(
-    'sync_course_sharing_sets',
-    [!infofile.hasErrors(courseData.course), courseSharingSets, courseId],
-    z.array(z.tuple([z.string(), IdSchema])),
+  const courseSharingSets = courseData.course.data?.sharingSets ?? [];
+
+  await sqldb.queryAsync(sql.sync_course_sharing_sets, {
+    course_id: courseId,
+    new_course_sharing_sets: JSON.stringify(courseSharingSets),
+  });
+
+  const newSharingSets = await sqldb.queryRows(
+    sql.select_course_sharing_sets,
+    { course_id: courseId },
+    z.object({
+      id: z.string(),
+      name: z.string(),
+    }),
   );
 
-  const sharingSetIdsByName = new Map(newSharingSets);
+  const sharingSetIdsByName = {};
+  for (const sharingSet of newSharingSets) {
+    sharingSetIdsByName[sharingSet.name] = sharingSet.id;
+  }
 
   const questionSharingSets: { question_id: string; sharing_set_id: string }[] = [];
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     if (infofile.hasErrors(question)) return;
     const dedupedQuestionSharingSetNames = new Set(question.data?.sharingSets ?? []);
-    const questionSharingSetIds = [...dedupedQuestionSharingSetNames].map((t) =>
-      sharingSetIdsByName.get(t),
+    const questionSharingSetIds = [...dedupedQuestionSharingSetNames].map(
+      (sharingSet) => sharingSetIdsByName[sharingSet],
     );
     questionSharingSetIds.forEach((sharingSetId) => {
+      if (!sharingSetId) return;
       questionSharingSets.push({
         question_id: questionIds[qid],
         sharing_set_id: sharingSetId,
