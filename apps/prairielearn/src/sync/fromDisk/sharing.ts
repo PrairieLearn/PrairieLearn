@@ -44,7 +44,6 @@ export async function sync(
       (sharingSet) => sharingSetIdsByName[sharingSet],
     );
     questionSharingSetIds.forEach((sharingSetId) => {
-      if (!sharingSetId) return;
       questionSharingSets.push({
         question_id: questionIds[qid],
         sharing_set_id: sharingSetId,
