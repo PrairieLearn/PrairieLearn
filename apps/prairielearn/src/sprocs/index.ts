@@ -84,7 +84,6 @@ export async function init() {
       'sync_course_tags.sql',
       'sync_question_tags.sql',
       'sync_course_sharing_sets.sql',
-      'sync_question_sharing_sets.sql',
       'sync_assessment_sets.sql',
       'sync_assessments.sql',
       'group_info.sql',
