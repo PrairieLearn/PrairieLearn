@@ -4,7 +4,7 @@ First, I want to say thank you again for being one of our Beta users of PrairieL
 
 We will be pushing some updates to the question sharing system soon that will require some action on your part to ensure your course continues to sync correctly.
 
-Specifically, the sharing configuration of questions will be specified in JSON files, rather than only being edited in the web user interface.
+Specifically, the sharing configuration of questions will be specified in JSON files to allow easier bulk editing of sharing information (rather than only being edited in the web user interface).
 
 As of now, we will not support un-sharing questions (we will in the future), so once the deployments happens, the sharing configuration you have in your JSON will need to match what you have done in the Web UI in order for the sync to succeed.
 
