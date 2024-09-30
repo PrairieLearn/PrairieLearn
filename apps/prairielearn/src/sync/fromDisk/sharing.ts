@@ -16,7 +16,6 @@ export async function sync(
   }
 
   const courseSharingSets = courseData.course.data?.sharingSets ?? [];
-
   await sqldb.queryAsync(sql.sync_course_sharing_sets, {
     course_id: courseId,
     new_course_sharing_sets: JSON.stringify(courseSharingSets),
@@ -30,7 +29,6 @@ export async function sync(
       name: z.string(),
     }),
   );
-
   const sharingSetIdsByName = {};
   for (const sharingSet of newSharingSets) {
     sharingSetIdsByName[sharingSet.name] = sharingSet.id;
