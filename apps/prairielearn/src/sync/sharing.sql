@@ -27,7 +27,7 @@ FROM
 WHERE
   ss.course_id = $course_id;
 
--- BLOCK select_sharing_set_questions
+-- BLOCK select_question_sharing_sets
 SELECT
   *
 FROM
@@ -54,6 +54,6 @@ FROM
       q.id
     ORDER BY
       q.qid
-  ) as f
+  ) AS qss
 WHERE
   sharing_sets IS NOT NULL;
