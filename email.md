@@ -19,8 +19,7 @@ In your `infoCourse.json`, you will need to list all of the sharing sets that yo
 ]
 ...
 
-In your `info.json` for each question, you will need to specify the sharing configuration for that question with the properties "sharingSets" and "publiclyShared", e.g.: 
-<br/>
+In your `info.json` for each question, you will need to specify the sharing configuration for that question with the properties "sharingSets" and "publiclyShared", e.g.:
 
 ...
 "sharingSets": [
@@ -29,7 +28,7 @@ In your `info.json` for each question, you will need to specify the sharing conf
 "publiclyShared": true,
 ...
 
-To help in this process, I have attached a python script which can be used to bulk-update the sharing info in the info.json files of your questions, as well as the list of the questions you currently have shared (publicly and through sharing sets). Please copy the files "insert_sharing_info.py", "question_sharing_info.csv", "sharing_sets.csv" into your course directory, and then run `python insert_sharing_info.py` in that directory.
+To help in this process, I have attached a python script which can be used to bulk-update the sharing info in the info.json files of your questions, as well as the list of the questions you currently have shared (publicly and through sharing sets). Please copy the files "insert_sharing_info.py", "question_sharing_info.csv", "sharing_sets.csv" into your course directory, and then run `python insert_sharing_info.py` in that directory. While this script will insert all the appropriate sharing configuration in your JSON files, it also may reformat them. You can feel free to re-run your usual JSON file formatter on them afterward.
 
 Starting now, you are able to add these properties to your JSON files, but they will be ignored on sync.
 

@@ -1,7 +1,13 @@
 import csv
 import json
 from os import path
+import glob
 
+sharing_sets_paths = glob.glob("./sharing_sets_*.csv")
+if len(sharing_sets_paths) < 1:
+    print("ERROR: Sharing sets file missing")
+    exit(1)
+sharing_sets_path = sharing_sets_paths[0]
 with open("./sharing_sets.csv", mode="r") as sharingSetsFile:
     csv_dict_reader = csv.DictReader(sharingSetsFile)
 
@@ -23,8 +29,12 @@ with open("./sharing_sets.csv", mode="r") as sharingSetsFile:
         infoCourseFile.write(json.dumps(infoCourse, indent="  "))
 
 
-
-with open("./question_sharing_info.csv", mode="r") as sharingInfoFile:
+question_sharing_info_paths = glob.glob("./question_sharing_info_*.csv")
+if len(question_sharing_info_paths) < 1:
+    print("ERROR: Question sharing info file missing")
+    exit(1)
+question_sharing_info_path = question_sharing_info_paths[0]
+with open(question_sharing_info_path, mode="r") as sharingInfoFile:
     csv_dict_reader = csv.DictReader(sharingInfoFile)
 
     for row in csv_dict_reader:
