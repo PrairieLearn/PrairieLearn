@@ -2,6 +2,8 @@
 
 As the PrairieLearn source code is publicly-available, it's possible to run PrairieLearn on your own infrastructure. Running a single instance of the PrairieLearn server may be appropriate for tens or hundreds of total users, and a number of universities have done this successfully.
 
+This documentation does not cover vital information for production usage such as database backups or high availability.
+
 ## Running in Production with Docker
 
 PrairieLearn can also be run in production mode in a Docker container [using Docker Compose](./docker-compose.md).
@@ -18,7 +20,7 @@ PrairieLearn can be configured by a `config.json` in the root of the repository.
 NODE_ENV=production node apps/prairielearn/dist/server.js --config /path/to/config.json
 ```
 
-The `config.json` file should contain appropriate overrides for the keys in [`lib/config.ts`](`https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.ts`). At a minimum, you'll probably want to update the various `postgres*` options to point it at your database.
+The `config.json` file should contain appropriate overrides for the keys in [`lib/config.ts`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.ts). At a minimum, you'll probably want to update the various `postgres*` options to point it at your database.
 
 ### Reverse Proxy
 
@@ -34,7 +36,7 @@ In `config.json` to configure your domain add:
 
 ### Authentication
 
-PrairieLearn currently has 4 ways to do user authentication. Read more at [authentication](./authentication.md).
+Read more in the [authentication documentation](./authentication.md).
 
 ### Admin User
 
