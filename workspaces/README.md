@@ -1,7 +1,7 @@
 ## PrairieLearn workspace images
 
-Within this directory are a set of docker containers that are intended to be run inside of workspaces.
-These docker containers may be modified as needed on a per-course basis.
+Within this directory are a set of Docker images that are intended to be run inside of workspaces.
+These Docker images may be modified as needed on a per-course basis.
 
 #### Maintained images
 
