@@ -3493,6 +3493,7 @@ __metadata:
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
+    "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.0"
     "@sa11y/format": "npm:^6.10.1"
     "@socket.io/redis-adapter": "npm:^8.3.0"
@@ -3857,6 +3858,17 @@ __metadata:
     socket.io: "npm:^4.7.5"
     typescript: "npm:^5.5.4"
     typescript-cp: "npm:^0.1.9"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/zod@workspace:^, @prairielearn/zod@workspace:packages/zod":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/zod@workspace:packages/zod"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/node": "npm:^20.16.2"
+    typescript: "npm:^5.5.4"
+    zod: "npm:^3.23.8"
   languageName: unknown
   linkType: soft
 

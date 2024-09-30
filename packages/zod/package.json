@@ -1,0 +1,24 @@
+{
+  "name": "@prairielearn/zod",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/zod"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch --preserveWatchOutput"
+  },
+  "devDependencies": {
+    "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^20.16.2",
+    "typescript": "^5.5.4"
+  },
+  "dependencies": {
+    "zod": "^3.23.8"
+  }
+}
