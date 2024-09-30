@@ -63,6 +63,13 @@ export function InstructorAssessmentQuestions({
       <body>
         ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
+          <button
+            class="btn btn-primary btn-sm"
+            onclick="window.location.href='${resLocals.urlPrefix}/instance_admin/TEST'"
+            title="Copy assessment"
+          >
+            <i class="fa fa-download" aria-hidden="true"></i> Copy this Assessment
+          </button>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               ${resLocals.assessment.title} ${resLocals.assessment.number}: Questions
@@ -102,15 +109,6 @@ function AssessmentQuestionsTable({
             <th>Topic</th>
             <th>Tags</th>
             <th>Other Assessments</th>
-            <th>  
-              <button
-                class="btn btn-primary btn-sm"
-                onclick="window.location.href='${urlPrefix}/instance_admin/TEST'"
-                title="Copy assessment"
-              >
-                <i class="fa fa-download" aria-hidden="true"></i> Copy this Assessment
-              </button>
-            </th>  
           </tr>
         </thead>
         <tbody>
