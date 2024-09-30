@@ -82,7 +82,7 @@ async function commitAndPullSharingCourse() {
   await execa('git', ['pull'], gitOptionsLive);
   const syncResult = await syncUtil.syncCourseData(sharingCourseLiveDir);
   assert.equal(syncResult.status, 'complete');
-  assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
+  assert.isFalse(syncResult.hadJsonErrorsOrWarnings);
 }
 
 async function ensureInvalidSharingOperationFailsToSync() {
