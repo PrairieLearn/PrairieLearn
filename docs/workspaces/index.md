@@ -225,11 +225,11 @@ If a file name appears in multiple locations, the following precedence takes eff
 
 PrairieLearn provides and maintains the following workspace images:
 
-- [An Ubuntu 24.04 desktop](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/desktop/)
-- [JupyterLab with Python 3.11](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python/)
-- [RStudio with R version 4.4](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/rstudio/)
-- [VS Code with Python 3.10](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-python/)
-- [Terminal emulator based on xterm.js](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/xtermjs/)
+- [prairielearn/workspace-desktop](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/desktop/): An Ubuntu 24.04 desktop
+- [prairielearn/workspace-jupyterlab-python](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python/): JupyterLab with Python 3.11
+- [prairielearn/workspace-rstudio](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/rstudio/): RStudio with R version 4.4
+- [prairielearn/workspace-vscode-python](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-python/): VS Code with Python 3.10
+- [prairielearn/workspace-xtermjs](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/xtermjs/): Terminal emulator based on xterm.js
 
 ## Custom workspace images
 
