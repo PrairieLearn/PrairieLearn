@@ -1994,8 +1994,7 @@ export async function initExpress() {
       next();
     },
   ]);
-  // TEST. Add link to a course's PublicCourseOverview in the CourseAdminSharing page. In a new row at the bottom of the Course sharing details table
-  app.use('/pl/public/course/:course_id(\\d+)/overview', [ // TEST, implement page later, called PublicCourseOverview
+  app.use('/pl/public/course/:course_id(\\d+)/overview', [
     function (req, res, next) {
       res.locals.course_id = req.params.course_id;
       res.locals.navbarType = 'public';
