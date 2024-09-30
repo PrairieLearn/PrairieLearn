@@ -14,7 +14,7 @@ Questions can either be shared publicly, so that anyone can preview the question
 
 ## Sharing sets
 
-Access to shared questions is controlled through **sharing sets**. A sharing set is a named set of questions which you can share to another course all at once. The sharing set system exists so that course owners may differentially share different sets of their questions. For example, an instructor may want to share some questions only with other courses in their department, and other questions with anyone using PrairieLearn. For security reasons, only course owners are allowed to edit sharing sets and sharing set permissions, and all sharing information is kept exclusively in the database, not in any of the JSON files that declare the course content. Sharing sets are edited from the 'Sharing' tab of the course administration page.
+Access to shared questions is controlled through **sharing sets**. A sharing set is a named set of questions which you can share to another course all at once. The sharing set system exists so that course owners may differentially share different sets of their questions. For example, an instructor may want to share some questions only with other courses in their department, and other questions with anyone using PrairieLearn. Sharing sets are created by adding them to the [course configuration file](course.md#sharing-sets)
 
 ## Sharing a sharing set with connection with another course
 

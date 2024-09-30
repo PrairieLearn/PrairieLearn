@@ -94,6 +94,16 @@ This file specifies basic information about the course:
       "color": "orange2",
       "description": "Answering requires estimating a quantity."
     }
+  ],
+  "sharingSets": [
+    {
+      "name": "python-exercises",
+      "description": "Python exercises for sharing"
+    },
+    {
+      "name": "final-exam",
+      "description": "Questions that can be used on a final exam"
+    }
   ]
 }
 ```
@@ -348,6 +358,36 @@ You can add more tags to your course by listing them in the `infoCourse.json` fi
 ```
 
 The tag order in `infoCourse.json` is the order in which the tags will be listed within PrairieLearn. If you want to change the order of your tags or standardized tags then you can re-list them in whatever order you like.
+
+## Sharing Sets
+
+Questions can be added to sharing sets to enable other courses to use your questions in their assessments. Sharing sets are designed for sharing questions only to specific courses, if you would like to make questions available for anyone to uses, you should make them publicly shared as explained on the [questions documentation page](question.md), or the [sharing documentation page](questionSharing.md).
+
+| Property      | Description                                                                                                                                                                                          |
+| ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `name`        | Brief descriptive name for the sharing set. You could say something about the type of questions you are grouping together, or about the type of course you would want to share the sharing set with. |
+| `description` | Additional explanation of what the sharing set is for, for human reference.                                                                                                                          |
+
+### Adding Sharing Sets
+
+You can add sharing sets to your course by listing them in the `infoCourse.json` file. For example:
+
+```json
+{
+  "sharingSets": [
+    {
+      "name": "python-exercises",
+      "description": "Python exercises for sharing"
+    },
+    {
+      "name": "final-exam",
+      "description": "Questions that can be used on a final exam"
+    }
+  ]
+}
+```
+
+At this time, sharing sets cannot be renamed or removed from `infoCourse.json` once they have been added, because deleting a sharing set shared to another course could result in breaking an assessment in another course.
 
 ## Timezone
 
