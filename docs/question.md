@@ -99,12 +99,11 @@ These dependencies are specified in the `info.json` file, and can be configured 
 
 Any question that is marked with `"sharedPublicly": true` or `"sharedSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license. Questions may be privately shared to individual courses using sharing sets, as explained on the [sharing documentation page](questionSharing.md). Sharing sets that a question belongs to are specified as a list of strings. These must match sharing sets that are declared in the [course configuration](course.md#adding-sharing-sets).
 
-````json
+```json
 {
-  "sharingSets": [
-    "python-exercises"
-  ]
+  "sharingSets": ["python-exercises"]
 }
+```
 
 The different types of dependency properties available are summarized in this table:
 
@@ -139,7 +138,7 @@ The `question.html` is a template used to render the question to the student. A 
     suffix="$\rm m/s^2$"
   ></pl-number-input>
 </p>
-````
+```
 
 The `question.html` is regular HTML, with four special features:
 
