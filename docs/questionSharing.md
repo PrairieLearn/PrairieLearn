@@ -8,13 +8,13 @@ In order for another course to use questions from your course into their assessm
 
 ## Two ways to share: Publicly or through "Sharing sets"
 
-Questions can either be shared publicly, so that anyone can preview the questions (but not the source code) and use them in their course, or you can share questions only to specific other courses using sharing sets.
+Questions can either be shared publicly, so that anyone can preview the questions and use them in their course, or you can share questions only to specific other courses using sharing sets.
 
 Any question that is marked with `"sharedPublicly": true` or `"sharedSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license.
 
 ## Sharing sets
 
-Access to shared questions is controlled through **sharing sets**. A sharing set is a named set of questions which you can share to another course all at once. The sharing set system exists so that course owners may differentially share different sets of their questions. For example, an instructor may want to share some questions only with other courses in their department, and other questions with anyone using PrairieLearn. Sharing sets are created by adding them to the [course configuration file](course.md#sharing-sets)
+Access to shared questions which are not shared publicly is controlled through **sharing sets**. A sharing set is a named set of questions which you can share to another course all at once. The sharing set system exists so that course owners may differentially share different sets of their questions. For example, an instructor may want to share some questions only with other courses in their department, and other questions with anyone using PrairieLearn. Sharing sets are created by adding them to the [course configuration file](course.md#sharing-sets)
 
 ## Sharing a sharing set with another course
 
@@ -51,17 +51,22 @@ Just as anyone with access to a question in your course can access any file in `
 
 ## Steps to share a question to a course, using a sharing set
 
+**Note:** Once a question is added to a sharing set, the question cannot be renamed, deleted, or removed from the sharing set because doing so could break the assessments of people who have used the shared question.
+
 1. On your course admin page, visit the 'sharing' tab
 2. Choose a sharing name for your course
-3. Create a sharing set
+3. Create a sharing set by adding it to your course's `infoCourse.json` file.
 4. Have the instructor or the course you would like to share your question with visit the 'sharing' tab on their course admin page and provide you with their course's sharing token
 5. Use the provided sharing token to add the other instructor's course as a consumer of the sharing set you created
-6. Visit the question settings page for the question you would like to share, and add it to the sharing set
+6. Add the sharing set to the `sharingSets` list in `info.json` file of the questions you would like to share
 7. The course you have shared the question with may now use it by referencing it in their assessments
 
 ## Steps to share a question publicly
 
+**Note:** Once a question is publicly shared, the question cannot be renamed, deleted, or un-publicly shared because doing so could break the assessments of people who have used the shared question. Sharing the source code of a question may be un-done.
+
 1. On your course admin page, visit the 'sharing' tab
 2. Choose a sharing name for your course
-3. Visit the question settings page for the question you would like to share, click the button to "Share publicly", and complete the confirmation dialog
-4. Anyone with a PrairieLearn account may preview your question, and any PrairieLearn course may now use it by referencing it in their assessments
+3. Add `"sharedPublicly": true` to the `info.json` file of questions you would like to share publicly
+4. Optionally, add `"sharedSourcePublicly": true` to the `info.json` file if you would like people to also be able to view and copy the source code of your question.
+5. Anyone with a PrairieLearn account may preview your question, and any PrairieLearn course may now use it by referencing it in their assessments
