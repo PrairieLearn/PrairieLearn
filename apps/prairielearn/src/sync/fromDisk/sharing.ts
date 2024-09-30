@@ -15,13 +15,12 @@ export async function sync(
     return;
   }
 
-  const courseSharingSets = courseData.course.data?.sharingSets ?? [];
   await sqldb.queryAsync(sql.sync_course_sharing_sets, {
     course_id: courseId,
-    new_course_sharing_sets: JSON.stringify(courseSharingSets),
+    new_course_sharing_sets: JSON.stringify(courseData.course.data?.sharingSets ?? []),
   });
 
-  const newSharingSets = await sqldb.queryRows(
+  const courseSharingSets = await sqldb.queryRows(
     sql.select_course_sharing_sets,
     { course_id: courseId },
     z.object({
@@ -30,7 +29,7 @@ export async function sync(
     }),
   );
   const sharingSetIdsByName = {};
-  for (const sharingSet of newSharingSets) {
+  for (const sharingSet of courseSharingSets) {
     sharingSetIdsByName[sharingSet.name] = sharingSet.id;
   }
 
