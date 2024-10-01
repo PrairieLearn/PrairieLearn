@@ -17,8 +17,8 @@ export type AuthzAccessRule = z.infer<typeof AuthzAccessRuleSchema>;
 export function StudentAccessRulesPopover({ accessRules }: { accessRules: AuthzAccessRule[] }) {
   return html`
     <button
-    type="button"
-      class="btn btn-xs"
+      type="button"
+      class="btn btn-xs btn-ghost"
       data-toggle="popover"
       data-container="body"
       data-html="true"
@@ -27,7 +27,7 @@ export function StudentAccessRulesPopover({ accessRules }: { accessRules: AuthzA
       aria-label="Access details"
     >
       <i class="fa fa-question-circle"></i>
-    </a>
+    </button>
   `;
 }
 
