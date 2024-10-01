@@ -11,6 +11,7 @@ export async function sync(
   const questionAuthorsParam: string[] = [];
   Object.entries(courseData.questions).forEach(([qid, question]) => {
     if (infofile.hasErrors(question)) return;
+    if (!question.data?.authors) return;
 
     if (question.data?.authors) {
       questionAuthorsParam.push(JSON.stringify([questionIds[qid], question.data.authors])); // TODO: map authors onto IDs instead?
