@@ -1,3 +1,4 @@
+import datetime
 import os
 from html import escape, unescape
 from typing import Any, Generator, Iterable, Iterator, Optional
@@ -6,9 +7,11 @@ import chevron
 import lxml.html
 import prairielearn as pl
 import pygments
+import pygments.formatter
 import pygments.formatters
 import pygments.lexer
 import pygments.lexers
+import pygments.style
 import pygments.util
 from code_utils import parse_highlight_lines
 from pygments.styles import STYLE_MAP, get_style_by_name
@@ -46,6 +49,9 @@ ANSI_COLORS = {
     "BrightWhite": "#feffff",
 }
 
+# Computing this is relatively expensive, so we'll do it once here and reuse it.
+ansi_color_tokens = color_tokens(ANSI_COLORS, ANSI_COLORS)
+
 
 class NoHighlightingLexer(pygments.lexer.Lexer):
     """
@@ -68,6 +74,12 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
     Subclass of the default HTML formatter to provide more flexibility
     with highlighted lines.
     """
+
+    def set_highlight_lines(self, hl_lines: Optional[list[int]]) -> None:
+        self.hl_lines.clear()
+        if hl_lines:
+            for line in hl_lines:
+                self.hl_lines.add(line)
 
     def _highlight_lines(
         self, tokensource: Iterable[tuple[int, str]]
@@ -93,23 +105,83 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
         return ""
 
 
+_lexer_cache: dict[str, Optional[pygments.lexer.Lexer]] = {}
+
+
 def get_lexer_by_name(name: str) -> Optional[pygments.lexer.Lexer]:
     """
     Tries to find a lexer by both its proper name and any aliases it has.
     """
     # Search by proper class/language names
     # This returns None if not found, and a class if found.
+
+    # Selecting and instantiating a lexer is actually reasonably expensive
+    # (on the order of ~5ms), with performance getting worse for language
+    # names later in the alphabet. We cache lexers to avoid this cost if
+    # `<pl-code>` is used multiple times in a question with the same language.
+    if name in _lexer_cache:
+        return _lexer_cache[name]
+
+    lexer_class_start = datetime.datetime.now()
     lexer_class = pygments.lexers.find_lexer_class(name)
+    lexer_class_end = datetime.datetime.now()
+    print(f"found lexer class in {lexer_class_end - lexer_class_start}")
     if lexer_class is not None:
         # Instantiate the class if we found it
-        return lexer_class()
+        _lexer_cache[name] = lexer_class()
     else:
+        print("trying aliases")
         try:
             # Search by language aliases
             # This throws an Exception if it's not found, and returns an instance if found.
-            return pygments.lexers.get_lexer_by_name(name)
+            _lexer_cache[name] = pygments.lexers.get_lexer_by_name(name)
         except pygments.util.ClassNotFound:
-            return None
+            _lexer_cache[name] = None
+
+    return _lexer_cache[name]
+
+
+_formatter_cache: dict[
+    tuple[type[pygments.style.Style], Optional[str]], HighlightingHtmlFormatter
+] = {}
+
+
+def get_formatter(
+    pygments_style: type[pygments.style.Style], highlight_lines_color: Optional[str]
+):
+    # Check cache first.
+    formatter = _formatter_cache.get((pygments_style, highlight_lines_color), None)
+    if formatter is not None:
+        return formatter
+
+    class CustomStyleWithAnsiColors(pygments_style):
+        style2_start = datetime.datetime.now()
+        styles = dict(pygments_style.styles)
+        styles.update(ansi_color_tokens)
+        style2_end = datetime.datetime.now()
+        print(f"got style 2 in {style2_end - style2_start}")
+
+        highlight_color = (
+            pygments_style.highlight_color or highlight_lines_color or "#b3d7ff"
+        )
+
+    formatter_opts = {
+        "style": CustomStyleWithAnsiColors,
+        "nobackground": True,
+        "noclasses": True,
+        # We'll unconditionally render the line numbers, but we'll hide them if
+        # they aren't specifically enabled. This means we only have to deal with
+        # one markup "shape" in our CSS, not two.
+        "linenos": "table",
+    }
+
+    formatter_start = datetime.datetime.now()
+    formatter = HighlightingHtmlFormatter(**formatter_opts)
+    formatter_end = datetime.datetime.now()
+
+    print(f"constructed formatter in {formatter_end - formatter_start}")
+    _formatter_cache[(pygments_style, highlight_lines_color)] = formatter
+    return formatter
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -164,6 +236,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
+    overall_start = datetime.datetime.now()
+
+    # def print_elapsed_time():
+    #     print(f"elapsed time: {datetime.datetime.now() - overall_start}")
+
+    # attrs_start = datetime.datetime.now()
     element = lxml.html.fragment_fromstring(element_html)
     language = pl.get_string_attrib(element, "language", LANGUAGE_DEFAULT)
     style = pl.get_string_attrib(element, "style", STYLE_DEFAULT)
@@ -189,6 +267,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if pl.get_boolean_attrib(element, "no-highlight", NO_HIGHLIGHT_DEFAULT):
         language = None
 
+    # attrs_end = datetime.datetime.now()
+    # print(f"got attributes in {attrs_end - attrs_start}")
+    # print_elapsed_time()
+
+    # src_start = datetime.datetime.now()
     if source_file_name is not None:
         if directory == "serverFilesCourse":
             base_path = data["options"]["server_files_course_path"]
@@ -216,39 +299,42 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         # which technically starts with a newline, but we probably
         # don't want a blank line at the start of the code block.
         code = pl.inner_html(element).removeprefix("\r").removeprefix("\n")
+    # src_end = datetime.datetime.now()
+    # print(f"got source in {src_end - src_start}")
+    # print_elapsed_time()
 
+    # lexer_start = datetime.datetime.now()
     lexer = NoHighlightingLexer() if language is None else get_lexer_by_name(language)
+    # lexer_end = datetime.datetime.now()
+    # print(f"got lexer in {lexer_end - lexer_start}")
+    # print_elapsed_time()
 
+    # style_start = datetime.datetime.now()
     pygments_style = get_style_by_name(style)
+    # style_end = datetime.datetime.now()
+    # print(f"got style in {style_end - style_start}")
+    # print_elapsed_time()
 
+    # formatter_start = datetime.datetime.now()
     background_color = pygments_style.background_color or "transparent"
     line_number_color = pygments_style.line_number_color
 
-    class CustomStyleWithAnsiColors(pygments_style):
-        styles = dict(pygments_style.styles)
-        styles.update(color_tokens(ANSI_COLORS, ANSI_COLORS))
-
-        highlight_color = (
-            pygments_style.highlight_color or highlight_lines_color or "#b3d7ff"
-        )
-
-    formatter_opts = {
-        "style": CustomStyleWithAnsiColors,
-        "nobackground": True,
-        "noclasses": True,
-        # We'll unconditionally render the line numbers, but we'll hide them if
-        # they aren't specifically enabled. This means we only have to deal with
-        # one markup "shape" in our CSS, not two.
-        "linenos": "table",
-    }
-
+    formatter = get_formatter(pygments_style, highlight_lines_color)
     if highlight_lines is not None:
-        formatter_opts["hl_lines"] = parse_highlight_lines(highlight_lines)
+        formatter.set_highlight_lines(parse_highlight_lines(highlight_lines))
+    else:
+        formatter.set_highlight_lines(None)
+    # formatter_end = datetime.datetime.now()
+    # print(f"got formatter in {formatter_end - formatter_start}")
+    # print_elapsed_time()
 
-    formatter = HighlightingHtmlFormatter(**formatter_opts)
-
+    # highlight_start = datetime.datetime.now()
     code = pygments.highlight(unescape(code), lexer, formatter)
+    # highlight_end = datetime.datetime.now()
+    # print(f"formatted code in {highlight_end - highlight_start}")
+    # print_elapsed_time()
 
+    # params_start = datetime.datetime.now()
     html_params = {
         "uuid": pl.get_uuid(),
         "code": code,
@@ -260,6 +346,26 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             element, "copy-code-button", COPY_CODE_BUTTON_DEFAULT
         ),
     }
+    # params_end = datetime.datetime.now()
+    # print(f"got params in {params_end - params_start}")
+    # print_elapsed_time()
 
-    with open("pl-code.mustache", "r", encoding="utf-8") as f:
-        return chevron.render(f, html_params).strip()
+    # with open("pl-code.mustache", "r", encoding="utf-8") as f:
+    #     return chevron.render(f, html_params).strip()
+    # read_start = datetime.datetime.now()
+    f = open("pl-code.mustache", "r", encoding="utf-8").read()
+    # read_end = datetime.datetime.now()
+    # print(f"read mustache in {read_end - read_start}")
+    # print_elapsed_time()
+
+    # html_start = datetime.datetime.now()
+    rendered_html = chevron.render(f, html_params).strip()
+    # html_end = datetime.datetime.now()
+    # print(f"rendered html in {html_end - html_start}")
+    # print_elapsed_time()
+
+    overall_end = datetime.datetime.now()
+    # print(f"overall time taken: {overall_end - overall_start}")
+    # print_elapsed_time()
+
+    return rendered_html

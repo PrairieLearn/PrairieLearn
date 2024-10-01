@@ -59,7 +59,9 @@ def get_source_definition(element: lxml.html.HtmlElement) -> str:
 
 
 def traverse_and_replace(
-    html: str, replace: Callable[[lxml.html.HtmlElement], ElementReplacement]
+    html: str,
+    replace: Callable[[lxml.html.HtmlElement], ElementReplacement],
+    should_recurse: Callable[[lxml.html.HtmlElement], bool],
 ) -> str:
     """
     Perform traversal and element replacement on HTML with the given replace function.
@@ -127,6 +129,9 @@ def traverse_and_replace(
                 result.append(f"<!--?{instruction}?-->")
                 if tail:
                     result.append(tail)
+            elif not should_recurse(new_elements):
+                # TODO: document optimization
+                result.append(lxml.html.tostring(new_elements, encoding="unicode"))
             else:
                 # Add opening tag and text
                 result.append(get_source_definition(new_elements))

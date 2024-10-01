@@ -79,12 +79,24 @@ import nltk
 import numpy
 import pint
 import prairielearn
+
+# import pygments
+# import pygments.formatters
+# import pygments.lexer
+# import pygments.lexers
+# import pygments.styles
+# import pygments.token
+# import pygments.util
+# import pygments_ansi_color
 import sklearn
 
 matplotlib.use("PDF")
 
 # Construct initial unit registry to create initial cache file.
 prairielearn.get_unit_registry()
+
+# list(pygments.lexers.get_all_lexers())
+# list(pygments.styles.get_all_styles())
 
 
 # We want to conditionally allow/block importing specific modules.

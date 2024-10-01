@@ -1,5 +1,6 @@
 import base64
 import copy
+import datetime
 import io
 import os
 import pathlib
@@ -77,6 +78,13 @@ def process(
     # `original_data` as needed.
     original_data = copy.deepcopy(data)
 
+    # We'll cache instantiated modules for two reasons:
+    # - This allows us to avoid re-reading/compiling/executing them if an element
+    #   is used multiple times.
+    # - This allows element code to maintain state across multiple calls, which is
+    #   useful if elements want to maintain a cache or other state.
+    mod_cache: dict[pathlib.Path, dict[str, Any]] = {}
+
     def process_element(
         element: lxml.html.HtmlElement,
     ) -> None | str | lxml.html.HtmlElement:
@@ -110,13 +118,17 @@ def process(
                 sys.path.insert(0, str(pathlib.Path(course_path) / "serverFilesCourse"))
             sys.path.insert(0, str(element_path))
 
-            mod = {}
-            with open(element_controller_path, encoding="utf-8") as inf:
-                # use compile to associate filename with code object, so the
-                # filename appears in the traceback if there is an error
-                # (https://stackoverflow.com/a/437857)
-                code = compile(inf.read(), element_controller_path, "exec")
-                exec(code, mod)
+            mod = mod_cache.get(element_controller_path, None)
+
+            if not mod:
+                mod = {}
+                with open(element_controller_path, encoding="utf-8") as inf:
+                    # use compile to associate filename with code object, so the
+                    # filename appears in the traceback if there is an error
+                    # (https://stackoverflow.com/a/437857)
+                    code = compile(inf.read(), element_controller_path, "exec")
+                    exec(code, mod)
+                mod_cache[element_controller_path] = mod
 
             if phase not in mod:
                 return None
@@ -130,16 +142,22 @@ def process(
             temp_tail = element.tail
             element.tail = None
 
+            call_start = datetime.datetime.now()
             element_value = mod[phase](lxml.html.tostring(element), data)
+            call_end = datetime.datetime.now()
+            print(f"called element function in {call_end - call_start}")
 
             # Restore the tail text.
             element.tail = temp_tail
 
+            chec_start = datetime.datetime.now()
             check_data(original_data, data, phase)
 
             # Clean up changes to `data` and `original_data` for the next iteration.
             restore_data(data)
             restore_data(original_data)
+            check_end = datetime.datetime.now()
+            print(f"checked data in {check_end - chec_start}")
 
             if phase == "render":
                 # TODO: validate that return value was a string?
@@ -164,10 +182,16 @@ def process(
     def process_element_return_none(element: lxml.html.HtmlElement) -> None:
         process_element(element)
 
+    def should_recurse(element: lxml.html.HtmlElement) -> bool:
+        return any(e.tag in elements for e in element.iter())
+
+    traverse_start = datetime.datetime.now()
     if phase == "render":
-        result = traverse_and_replace(html, process_element)
+        result = traverse_and_replace(html, process_element, should_recurse)
     else:
         traverse_and_execute(html, process_element_return_none)
+    traverse_end = datetime.datetime.now()
+    print(f"Time taken (traverse): {traverse_end - traverse_start}")
 
     if phase == "file":
         result = filelike_to_string(result)
