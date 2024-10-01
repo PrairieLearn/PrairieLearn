@@ -509,6 +509,7 @@ export const GradingJobSchema = z.object({
   grading_started_at: DateFromISOString.nullable(),
   grading_submitted_at: DateFromISOString.nullable(),
   id: IdSchema,
+  is_ai_graded: z.boolean(),
   manual_points: z.number().nullable(),
   manual_rubric_grading_id: IdSchema.nullable(),
   output: z.string().nullable(),
