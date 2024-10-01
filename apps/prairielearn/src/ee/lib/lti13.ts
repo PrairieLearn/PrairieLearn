@@ -508,7 +508,7 @@ export async function fetchRetry(
     const response = await fetch(input, opts);
 
     switch (response.status) {
-      // 422 Unprocessable Content, like POSTING a grade to a non-student
+      // 422 Unprocessable Entity, User not found in course or is not a student
       case 422:
         return response;
     }
@@ -753,7 +753,7 @@ export async function updateLti13Scores(
         userId,
       };
 
-      await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
+      const res = await fetchRetry(assessment.lti13_lineitem_id_url + '/scores', {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
@@ -761,6 +761,8 @@ export async function updateLti13Scores(
         },
         body: JSON.stringify(score),
       });
+
+      job.info(`\t${res.statusText}`);
     }
   }
 }
