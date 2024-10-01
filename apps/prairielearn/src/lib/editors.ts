@@ -482,8 +482,11 @@ export abstract class Editor {
     };
   }
 
-  getNamesForAdd(shortNames, longNames) {
-    function getNumberShortName(oldnames) {
+  getNamesForAdd(
+    shortNames: string[],
+    longNames: string[],
+  ): { shortName: string; longName: string } {
+    function getNumberShortName(oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         const found = oldname.match(new RegExp('^New_([0-9]+)$'));
@@ -497,7 +500,7 @@ export abstract class Editor {
       return number;
     }
 
-    function getNumberLongName(oldnames) {
+    function getNumberLongName(oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         if (!_.isString(oldname)) return;
