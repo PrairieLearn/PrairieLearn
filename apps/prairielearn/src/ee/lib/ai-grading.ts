@@ -285,6 +285,14 @@ export async function aiGrade({
       InstanceQuestionSchema,
     );
 
+    const rubric_id = await queryRow(
+      sql.select_rubric_for_grading,
+      {
+        assessment_question_id: assessment_question.id,
+      },
+      IdSchema.nullable(),
+    );
+
     job.info('Checking for embeddings for all submissions.');
     const newEmbeddingsCount = await generateSubmissionEmbeddings({
       course,

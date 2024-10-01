@@ -108,3 +108,11 @@ ORDER BY
   embedding <=> $embedding
 LIMIT
   $limit;
+
+-- BLOCK select_rubric_for_grading
+SELECT
+  manual_rubric_id
+FROM
+  assessment_questions
+WHERE
+  id = $assessment_question_id;
