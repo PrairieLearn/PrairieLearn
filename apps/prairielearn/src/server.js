@@ -345,12 +345,19 @@ export async function initExpress() {
       if (!match) throw new Error(`Could not match URL: ${req.url}`);
 
       const workspace_id = match[1];
-      const result = await sqldb.queryZeroOrOneRowAsync(
-        "SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';",
-        { workspace_id },
-      );
+      let result;
 
-      if (result.rows.length === 0) {
+      for (let i = 0; i < 10 && !(result?.rows?.length); i++) {
+        if (i) {
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+        }
+        result = await sqldb.queryZeroOrOneRowAsync(
+          "SELECT hostname FROM workspaces WHERE id = $workspace_id AND state = 'running';",
+          { workspace_id },
+        );
+      }
+
+      if (!(result?.rows?.length)) {
         // If updating this message, also update the message our Sentry
         // `beforeSend` handler.
         throw new error.HttpStatusError(404, 'Workspace is not running');
