@@ -1,22 +1,30 @@
 import { html } from '@prairielearn/html';
 
-import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import { AssessmentSet, AssessmentModule } from '../../lib/db-types.js';
 
 export function InstructorAssessmentSettings({
   resLocals,
+  origHash,
   tids,
   studentLink,
   infoAssessmentPath,
+  assessmentSets,
+  assessmentModules,
+  canEdit,
 }: {
   resLocals: Record<string, any>;
+  origHash: string;
   tids: string[];
   studentLink: string;
   infoAssessmentPath: string;
+  assessmentSets: AssessmentSet[];
+  assessmentModules: AssessmentModule[];
+  canEdit: boolean;
 }) {
   return html`
     <!doctype html>
@@ -45,7 +53,27 @@ export function InstructorAssessmentSettings({
               <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Settings</h1>
             </div>
             <div class="card-body">
-              <form>
+              <form name="edit-assessment-settings-form" method="POST">
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <input type="hidden" name="orig_hash" value="${origHash}" />
+                <div class="form-group">
+                  <label for="aid">AID</label>
+                  <input
+                    type="text"
+                    class="form-control text-monospace"
+                    id="aid"
+                    name="aid"
+                    value="${resLocals.assessment.tid}"
+                    pattern="[\\-A-Za-z0-9_\\/]+"
+                    data-other-values="${tids.join(',')}"
+                    ${canEdit ? '' : 'disabled'}
+                  />
+                  <small class="form-text text-muted">
+                    The unique identifier for this assessment. This may contain only letters,
+                    numbers, dashes, and underscores, with no spaces. You may use forward slashes to
+                    separate directories.
+                  </small>
+                </div>
                 <div class="form-group">
                   <label for="title">Title</label>
                   <input
@@ -54,7 +82,7 @@ export function InstructorAssessmentSettings({
                     id="title"
                     name="title"
                     value="${resLocals.assessment.title}"
-                    disabled
+                    ${canEdit ? '' : 'disabled'}
                   />
                   <small class="form-text text-muted"> The title of the assessment. </small>
                 </div>
@@ -74,15 +102,18 @@ export function InstructorAssessmentSettings({
                 </div>
                 <div class="form-group">
                   <label for="set">Set</label>
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="set"
-                    name="set"
-                    value="${resLocals.assessment_set.name} (${resLocals.assessment_set
-                      .abbreviation})"
-                    disabled
-                  />
+                  <select class="form-select" id="set" name="set" ${canEdit ? '' : 'disabled'}>
+                    ${assessmentSets.map(
+                      (set) => html`
+                        <option
+                          value="${set.name}"
+                          ${resLocals.assessment_set.name === set.name ? 'selected' : ''}
+                        >
+                          ${set.name}
+                        </option>
+                      `,
+                    )}
+                  </select>
                   <small class="form-text text-muted">
                     The
                     <a href="${resLocals.urlPrefix}/course_admin/sets">assessment set</a>
@@ -97,7 +128,7 @@ export function InstructorAssessmentSettings({
                     id="number"
                     name="number"
                     value="${resLocals.assessment.number}"
-                    disabled
+                    ${canEdit ? '' : 'disabled'}
                   />
                   <small class="form-text text-muted">
                     The number of the assessment within the set.
@@ -105,44 +136,26 @@ export function InstructorAssessmentSettings({
                 </div>
                 <div class="form-group">
                   <label for="module">Module</label>
-                  <input
-                    type="text"
-                    class="form-control"
+                  <select
+                    class="form-select"
                     id="module"
                     name="module"
-                    value="${resLocals.assessment_module
-                      ? resLocals.assessment_module.heading
-                      : ''}"
-                    disabled
-                  />
+                    ${canEdit ? '' : 'disabled'}
+                  >
+                    ${assessmentModules.map(
+                      (module) => html`
+                        <option
+                          value="${module.name}"
+                          ${resLocals.assessment_module.name === module.name ? 'selected' : ''}
+                        >
+                          ${module.name}
+                        </option>
+                      `,
+                    )}
+                  </select>
                   <small class="form-text text-muted">
                     The <a href="${resLocals.urlPrefix}/course_admin/modules">module</a> this
                     assessment belongs to.
-                  </small>
-                </div>
-                <div class="form-group">
-                  <label for="aid">AID</label>
-                  ${resLocals.authz_data.has_course_permission_edit &&
-                  !resLocals.course.example_course
-                    ? ChangeIdButton({
-                        label: 'AID',
-                        currentValue: resLocals.assessment.tid,
-                        otherValues: tids,
-                        csrfToken: resLocals.__csrf_token,
-                      })
-                    : ''}
-                  <input
-                    type="text"
-                    class="form-control"
-                    id="aid"
-                    name="aid"
-                    value="${resLocals.assessment.tid}"
-                    disabled
-                  />
-                  <small class="form-text text-muted">
-                    The unique identifier for this assessment. This may contain only letters,
-                    numbers, dashes, and underscores, with no spaces. You may use forward slashes to
-                    separate directories.
                   </small>
                 </div>
                 <div class="form-group">
@@ -181,9 +194,26 @@ export function InstructorAssessmentSettings({
                   </small>
                 </div>
                 ${resLocals.authz_data.has_course_permission_view
-                  ? resLocals.authz_data.has_course_permission_edit &&
-                    !resLocals.course.example_course
+                  ? canEdit
                     ? html`
+                        <div>
+                          <button
+                            id="save-button"
+                            type="submit"
+                            class="btn btn-primary mb-2"
+                            name="__action"
+                            value="update_assessment"
+                          >
+                            Save
+                          </button>
+                          <button
+                            type="button"
+                            class="btn btn-secondary mb-2"
+                            onclick="window.location.reload()"
+                          >
+                            Cancel
+                          </button>
+                        </div>
                         <a
                           data-testid="edit-assessment-configuration-link"
                           href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
@@ -205,7 +235,7 @@ export function InstructorAssessmentSettings({
                   : ''}
               </form>
             </div>
-            ${resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course
+            ${canEdit
               ? html`
                   <div class="card-footer d-flex flex-wrap align-items-center">
                     <form name="copy-assessment-form" class="mr-2" method="POST">
