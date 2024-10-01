@@ -484,12 +484,12 @@ export async function linkAssessment(
 */
 
 /**
- * Make HTTP fetch requests with retries and pagination handling
+ * Make HTTP fetch requests with retries
  *
  * @param input URL to visit
  * @param opts fetch options
  * @param incomingfetchRetryOpts options specific to fetchRetry
- * @returns Array of JSON responses from fetch
+ * @returns Node fetch response object
  */
 export async function fetchRetry(
   input: RequestInfo | URL,
@@ -533,6 +533,17 @@ export async function fetchRetry(
   }
 }
 
+/**
+ * Pagination wrapper around fetchRetry
+ *
+ * @param input
+ * @param opts
+ * @param incomingfetchRetryOpts
+ * @param input URL to visit
+ * @param opts fetch options
+ * @param incomingfetchRetryOpts options specific to fetchRetry
+ * @returns Array of JSON responses from fetch
+ */
 export async function fetchRetryPaginated(
   input: RequestInfo | URL,
   opts?: RequestInit | undefined,
