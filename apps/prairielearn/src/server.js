@@ -50,6 +50,7 @@ import { createSessionMiddleware } from '@prairielearn/session';
 import * as cron from './cron/index.js';
 import { validateLti13CourseInstance } from './ee/lib/lti13.js';
 import * as assets from './lib/assets.js';
+import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
@@ -477,6 +478,7 @@ export async function initExpress() {
 
   // More middlewares
   app.use(flashMiddleware());
+  app.use(canonicalLoggerMiddleware());
   app.use((req, res, next) => {
     // This is so that the `navbar` partial can access the flash messages. If
     // you want to add a flash message, you should import and use `flash`
