@@ -375,6 +375,7 @@ export async function aiGrade({
               // NEXT STEPS: rubrics
             },
             user_id,
+            true,
           );
           msg += `\nAI grades: ${grade_response.parsed.grade}`;
         } else if (grade_response.refusal) {

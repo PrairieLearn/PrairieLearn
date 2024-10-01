@@ -447,6 +447,7 @@ export async function updateInstanceQuestionScore(
   check_modified_at: string | null,
   score: InstanceQuestionScoreInput,
   authn_user_id: string,
+  is_ai_graded = false,
 ): Promise<{ grading_job_id: string | null; modified_at_conflict: boolean }> {
   return sqldb.runInTransactionAsync(async () => {
     const current_submission = await sqldb.queryRow(
@@ -599,6 +600,7 @@ export async function updateInstanceQuestionScore(
           feedback: score?.feedback,
           partial_scores: score?.partial_scores,
           manual_rubric_grading_id,
+          is_ai_graded,
         },
         IdSchema,
       );
