@@ -415,8 +415,13 @@ export abstract class Editor {
     return files;
   }
 
-  getNamesForCopy(oldShortName, shortNames, oldLongName, longNames) {
-    function getBaseShortName(oldname) {
+  getNamesForCopy(
+    oldShortName: string,
+    shortNames: string[],
+    oldLongName: string | null,
+    longNames: string[],
+  ): { shortName: string; longName: string } {
+    function getBaseShortName(oldname: string): string {
       const found = oldname.match(new RegExp('^(.*)_copy[0-9]+$'));
       if (found) {
         return found[1];
@@ -425,7 +430,7 @@ export abstract class Editor {
       }
     }
 
-    function getBaseLongName(oldname) {
+    function getBaseLongName(oldname: string | null): string {
       if (!_.isString(oldname)) return 'Unknown';
       debug(oldname);
       const found = oldname.match(new RegExp('^(.*) \\(copy [0-9]+\\)$'));
@@ -437,7 +442,7 @@ export abstract class Editor {
       }
     }
 
-    function getNumberShortName(basename, oldnames) {
+    function getNumberShortName(basename: string, oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         const found = oldname.match(new RegExp(`^${escapeRegExp(basename)}_copy([0-9]+)$`));
@@ -451,7 +456,7 @@ export abstract class Editor {
       return number;
     }
 
-    function getNumberLongName(basename, oldnames) {
+    function getNumberLongName(basename: string, oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         if (!_.isString(oldname)) return;
