@@ -3,7 +3,7 @@ import { setTimeout as sleep } from 'timers/promises';
 import { parseLinkHeader } from '@web3-storage/parse-link-header';
 import type { Request } from 'express';
 import _ from 'lodash';
-import fetch, { RequestInfo, RequestInit } from 'node-fetch';
+import fetch, { RequestInfo, RequestInit, Response } from 'node-fetch';
 import { Issuer, TokenSet } from 'openid-client';
 import { z } from 'zod';
 
@@ -328,27 +328,23 @@ export async function getLineitems(instance: Lti13CombinedInstance) {
     throw new HttpStatusError(400, 'Lineitems not defined');
   }
   const token = await getAccessToken(instance.lti13_instance.id);
-  const fetchArray = await fetchRetry(instance.lti13_course_instance.lineitems_url, {
+  const fetchArray = await fetchRetryPaginated(instance.lti13_course_instance.lineitems_url, {
     method: 'GET',
     headers: { Authorization: `Bearer ${token}` },
   });
 
   const lineitems = LineitemsSchema.array().parse(fetchArray);
-
-  // Reduce paginated array of lineitem arrays to a single array
-  return lineitems.reduce((acc, item) => {
-    return acc.concat(item);
-  }, []);
+  return lineitems.flat();
 }
 
 export async function getLineitem(instance: Lti13CombinedInstance, lineitem_id_url: string) {
   const token = await getAccessToken(instance.lti13_instance.id);
-  const fetchArray = await fetchRetry(lineitem_id_url, {
+  const fetchRes = await fetchRetry(lineitem_id_url, {
     method: 'GET',
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  return LineitemSchema.parse(fetchArray[0]);
+  return LineitemSchema.parse(await fetchRes.json());
 }
 
 export async function syncLineitems(instance: Lti13CombinedInstance, job: ServerJob) {
@@ -414,7 +410,7 @@ export async function createAndLinkLineitem(
   );
 
   const token = await getAccessToken(instance.lti13_instance.id);
-  const fetchArray = await fetchRetry(instance.lti13_course_instance.lineitems_url, {
+  const fetchRes = await fetchRetry(instance.lti13_course_instance.lineitems_url, {
     method: 'POST',
     headers: {
       Authorization: `Bearer ${token}`,
@@ -422,7 +418,7 @@ export async function createAndLinkLineitem(
     },
     body: JSON.stringify(createBody),
   });
-  const item = LineitemSchema.parse(fetchArray[0]);
+  const item = LineitemSchema.parse(await fetchRes.json());
 
   job.info('Associating PrairieLearn assessment with the new assignment');
 
@@ -487,18 +483,12 @@ export async function linkAssessment(
 // X-Rate-Limit-Remaining
 */
 
-const STATUS_CODE_RESPONSE = {
-  // 422 Unprocessable Content, like POSTING a grade to a non-student
-  422: null,
-};
-
 /**
  * Make HTTP fetch requests with retries and pagination handling
  *
  * @param input URL to visit
  * @param opts fetch options
  * @param incomingfetchRetryOpts options specific to fetchRetry
- * @param previousResults Used for paginated content
  * @returns Array of JSON responses from fetch
  */
 export async function fetchRetry(
@@ -508,8 +498,7 @@ export async function fetchRetry(
     retryLeft?: number;
     sleepMs?: number;
   },
-  previousResults: unknown[] = [],
-): Promise<unknown[]> {
+): Promise<Response> {
   const fetchRetryOpts = {
     retryLeft: 5,
     sleepMs: 1000,
@@ -518,8 +507,10 @@ export async function fetchRetry(
   try {
     const response = await fetch(input, opts);
 
-    if (response.status in STATUS_CODE_RESPONSE) {
-      return STATUS_CODE_RESPONSE[response.status];
+    switch (response.status) {
+      // 422 Unprocessable Content, like POSTING a grade to a non-student
+      case 422:
+        return response;
     }
 
     if (!response.ok) {
@@ -531,22 +522,34 @@ export async function fetchRetry(
         },
       });
     }
-
-    const results = await response.json();
-
-    const parsed = parseLinkHeader(response.headers.get('link')) ?? {};
-    if ('next' in parsed) {
-      return await fetchRetry(parsed.next.url, opts, fetchRetryOpts, [...previousResults, results]);
-    }
-
-    return [...previousResults, results];
+    return response;
   } catch (err) {
     fetchRetryOpts.retryLeft -= 1;
     if (fetchRetryOpts.retryLeft === 0) {
       throw err;
     }
     await sleep(fetchRetryOpts.sleepMs);
-    return await fetchRetry(input, opts, fetchRetryOpts, previousResults);
+    return await fetchRetry(input, opts, fetchRetryOpts);
+  }
+}
+
+export async function fetchRetryPaginated(
+  input: RequestInfo | URL,
+  opts?: RequestInit | undefined,
+): Promise<unknown[]> {
+  const output: unknown[] = [];
+
+  // eslint-disable-next-line no-constant-condition
+  while (true) {
+    const res = await fetchRetry(input, opts);
+    output.push(await res.json());
+
+    const parsed = parseLinkHeader(res.headers.get('link')) ?? {};
+    if ('next' in parsed) {
+      input = parsed.next.url;
+    } else {
+      return output;
+    }
   }
 }
 
@@ -575,8 +578,8 @@ type UsersWithLti13Sub = z.infer<typeof UsersWithLti13SubSchema>;
 const ContextMembershipSchema = z.object({
   user_id: z.string(),
   roles: z.string().array(), // https://www.imsglobal.org/spec/lti/v1p3#role-vocabularies
-  status: z.enum(['Active', 'Inactive']).optional(),
-  email: z.string(), // optional per spec but required for us
+  status: z.enum(['Active', 'Inactive', 'Deleted']).optional(),
+  email: z.string().optional(),
 });
 type ContextMembership = z.infer<typeof ContextMembershipSchema>;
 
@@ -595,6 +598,9 @@ class Lti13ContextMembership {
     // Turn array into an object for efficient lookups. We need to retain duplicates
     // so that we can detect and handle the case where two users have the same email.
     for (const member of memberships) {
+      if (member.email === undefined) {
+        continue;
+      }
       this.#memberships[member.email] ??= [];
       this.#memberships[member.email].push(member);
     }
@@ -612,7 +618,7 @@ class Lti13ContextMembership {
     }
 
     const token = await getAccessToken(lti13_instance.id);
-    const fetchArray = await fetchRetry(lti13_course_instance.context_memberships_url, {
+    const fetchArray = await fetchRetryPaginated(lti13_course_instance.context_memberships_url, {
       method: 'GET',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -621,12 +627,9 @@ class Lti13ContextMembership {
     });
 
     const containers = ContextMembershipContainerSchema.array().parse(fetchArray);
-
-    // Collect the members from the membership container paginated fetch responses
-    // https://www.imsglobal.org/spec/lti-nrps/v2p0/#membership-container-media-type
-    const ltiMemberships = containers.reduce((acc, container) => {
-      return acc.concat(container.members);
-    }, [] as ContextMembership[]);
+    const ltiMemberships = containers.flatMap((c) => {
+      return c.members;
+    });
 
     const filteredMemberships = ltiMemberships.filter((member: ContextMembership) => {
       // Skip invalid cases
@@ -640,9 +643,7 @@ class Lti13ContextMembership {
       return true;
     });
 
-    const memberships = ContextMembershipSchema.array().parse(filteredMemberships);
-
-    return new Lti13ContextMembership(memberships);
+    return new Lti13ContextMembership(filteredMemberships);
   }
 
   /**
