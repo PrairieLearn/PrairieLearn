@@ -347,7 +347,7 @@ export async function initExpress() {
       const workspace_id = match[1];
       let result;
 
-      for (let i = 0; i < 10 && !(result?.rows?.length); i++) {
+      for (let i = 0; i < 10 && !result?.rows?.length; i++) {
         if (i) {
           await new Promise((resolve) => setTimeout(resolve, 1000));
         }
@@ -357,7 +357,7 @@ export async function initExpress() {
         );
       }
 
-      if (!(result?.rows?.length)) {
+      if (!result?.rows?.length) {
         // If updating this message, also update the message our Sentry
         // `beforeSend` handler.
         throw new error.HttpStatusError(404, 'Workspace is not running');
