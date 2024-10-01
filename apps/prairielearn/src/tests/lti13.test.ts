@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
-import { fetchRetry, getAccessToken } from '../ee/lib/lti13.js';
+import { fetchRetry, fetchRetryPaginated, getAccessToken } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
 import { Lti13UserSchema } from '../lib/db-types.js';
 import { selectUserByUid } from '../models/user.js';
@@ -506,13 +506,11 @@ describe('fetchRetry()', async () => {
   step('should return the full list by iterating', async () => {
     apiCount = 0;
     await withServer(app, apiProviderPort, async () => {
-      const resultArray = await fetchRetry(baseUrl, {}, { sleepMs: 100 });
+      const resultArray = await fetchRetryPaginated(baseUrl, {}, { sleepMs: 100 });
       assert.equal(resultArray.length, 3);
       // Unwrap to one combined array
       const products = z.string().array().array().parse(resultArray);
-      const fullList = products.reduce((acc, result) => {
-        return acc.concat(result);
-      }, []);
+      const fullList = products.flat();
       assert.equal(fullList.length, 26);
       assert.equal(apiCount, 3);
     });
@@ -521,12 +519,12 @@ describe('fetchRetry()', async () => {
   step('should return the full list with a large limit', async () => {
     apiCount = 0;
     await withServer(app, apiProviderPort, async () => {
-      const resultArray = await fetchRetry(baseUrl + '?limit=100', {}, { sleepMs: 100 });
-      assert.equal(resultArray.length, 1);
-      const products = z.string().array().array().parse(resultArray);
-      const fullList = products.reduce((acc, result) => {
-        return acc.concat(result);
-      }, []);
+      const res = await fetchRetry(baseUrl + '?limit=100', {}, { sleepMs: 100 });
+      const products = z
+        .string()
+        .array()
+        .parse(await res.json());
+      const fullList = products.flat();
       assert.equal(fullList.length, 26);
       assert.equal(apiCount, 1);
     });
@@ -543,12 +541,14 @@ describe('fetchRetry()', async () => {
   step('should return the full list by iterating with intermittant 403s', async () => {
     apiCount = 0;
     await withServer(app, apiProviderPort, async () => {
-      const resultArray = await fetchRetry(baseUrl + '403oddAttempt', {}, { sleepMs: 100 });
+      const resultArray = await fetchRetryPaginated(
+        baseUrl + '403oddAttempt',
+        {},
+        { sleepMs: 100 },
+      );
       assert.equal(resultArray.length, 3);
       const products = z.string().array().array().parse(resultArray);
-      const fullList = products.reduce((acc, result) => {
-        return acc.concat(result);
-      }, []);
+      const fullList = products.flat();
       assert.equal(fullList.length, 26);
       assert.equal(apiCount, 6);
     });

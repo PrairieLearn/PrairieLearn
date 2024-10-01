@@ -536,12 +536,16 @@ export async function fetchRetry(
 export async function fetchRetryPaginated(
   input: RequestInfo | URL,
   opts?: RequestInit | undefined,
+  incomingfetchRetryOpts?: {
+    retryLeft?: number;
+    sleepMs?: number;
+  },
 ): Promise<unknown[]> {
   const output: unknown[] = [];
 
   // eslint-disable-next-line no-constant-condition
   while (true) {
-    const res = await fetchRetry(input, opts);
+    const res = await fetchRetry(input, opts, incomingfetchRetryOpts);
     output.push(await res.json());
 
     const parsed = parseLinkHeader(res.headers.get('link')) ?? {};
