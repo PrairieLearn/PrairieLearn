@@ -2047,7 +2047,7 @@ export async function initExpress() {
       },
       (
         await import(
-          './pages/publicInstructorAssessmentQuestions/publicInstructorAssessmentQuestions.js'
+          './pages/publicAssessmentQuestionsPreview/publicAssessmentQuestionsPreview.js'
         )
       ).default,
     ],
@@ -2061,7 +2061,7 @@ export async function initExpress() {
       res.locals.navbarType = 'public';
       next();
     },
-    (await import('./pages/publicInstructorAssessments/publicInstructorAssessments.js')).default,
+    (await import('./pages/publicAssessmentPreview/publicAssessmentPreview.js')).default,
   ]);
 
   // Client files for questions

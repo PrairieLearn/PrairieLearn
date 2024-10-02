@@ -15,7 +15,7 @@ import { selectCourseInstancesWithStaffAccess } from '../../models/course-instan
 import { selectPublicQuestionsForCourse } from '../../models/questions.js';
 
 
-import { AssessmentRowSchema } from '../publicInstructorAssessments/publicInstructorAssessments.html.js';
+import { AssessmentRowSchema } from '../publicAssessmentPreview/publicInstructorAssessments.html.js
 import { CourseInstanceAuthzRow } from './publicCourseOverview.html.js';
 import { publicCourseOverviewPage } from './publicCourseOverview.html.js';
 

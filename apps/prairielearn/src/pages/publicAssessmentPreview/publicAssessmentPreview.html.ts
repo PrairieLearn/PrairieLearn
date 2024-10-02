@@ -39,6 +39,12 @@ export function InstructorAssessments({
         ${Navbar({ resLocals })}
         
         <main id="content" class="container-fluid">
+          <form name="copy-course-instance-form" class="form-inline mr-2" method="POST">
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <button name="__action" value="copy_course_instance" class="btn btn-sm btn-primary">
+              <i class="fa fa-clone"></i> Make a copy of this course instance
+            </button>
+          </form>
           <div class="card mb-4">
             <div class="card-header bg-primary">
               <div class="row align-items-center justify-content-between">
