@@ -164,8 +164,13 @@ def process(
     def process_element_return_none(element: lxml.html.HtmlElement) -> None:
         process_element(element)
 
+    # We only need to recurse into a subtree if it contains any PrairieLearn elements.
+    # If it doesn't, we can skip the subtree entirely and save a small amount of time.
+    def should_recurse(element: lxml.html.HtmlElement) -> bool:
+        return any(e.tag in elements for e in element.iter())
+
     if phase == "render":
-        result = traverse_and_replace(html, process_element)
+        result = traverse_and_replace(html, process_element, should_recurse)
     else:
         traverse_and_execute(html, process_element_return_none)
 
