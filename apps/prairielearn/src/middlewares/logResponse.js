@@ -11,9 +11,12 @@ export default function (req, res, next) {
   // by the time the finish handler executes.
   const path = req.path;
 
+  const start = performance.now();
+
   if (req.method !== 'OPTIONS') {
     res.once('close', function () {
       logger.verbose('response', {
+        duration: performance.now() - start,
         response_id: res.locals.response_id,
         ip: req.ip,
         forwardedIP: req.headers['x-forwarded-for'],
