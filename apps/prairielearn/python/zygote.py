@@ -308,9 +308,9 @@ def worker_loop() -> None:
             if mod is None:
                 mod = {}
                 with open(file_path, encoding="utf-8") as inf:
-                    # use compile to associate filename with code object, so the
-                    # filename appears in the traceback if there is an error
-                    # (https://stackoverflow.com/a/437857)
+                    # Use `compile` to associate filename with code object, so the
+                    # filename appears in the traceback if there is an error:
+                    # https://stackoverflow.com/a/437857
                     code = compile(inf.read(), file_path, "exec")
                     exec(code, mod)
                     mod_cache[file_path] = mod
