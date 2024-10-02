@@ -63,13 +63,12 @@ export function InstructorAssessmentQuestions({
       <body>
         ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
-          <button
-            class="btn btn-primary btn-sm"
-            onclick="window.location.href='${resLocals.urlPrefix}/instance_admin/TEST'"
-            title="Copy assessment"
-          >
-            <i class="fa fa-download" aria-hidden="true"></i> Copy this Assessment
-          </button>
+          <form name="copy-assessment-form" class="form-inline mr-2" method="POST">
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <button name="__action" value="copy_assessment" class="btn btn-sm btn-primary">
+              <i class="fa fa-clone"></i> Copy this assessment
+            </button>
+          </form>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               ${resLocals.assessment.title} ${resLocals.assessment.number}: Questions
