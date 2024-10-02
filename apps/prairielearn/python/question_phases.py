@@ -118,7 +118,6 @@ def process(
             sys.path.insert(0, str(element_path))
 
             mod = mod_cache.get(element_controller_path, None)
-
             if mod is None:
                 mod = {}
                 with open(element_controller_path, encoding="utf-8") as inf:
