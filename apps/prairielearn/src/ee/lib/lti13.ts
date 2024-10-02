@@ -53,8 +53,8 @@ export const LineitemSchema = z.object({
   resourceId: z.string().optional(),
   resourceLinkId: z.string().optional(),
   tag: z.string().optional(),
-  startDateTime: z.string().datetime({ offset: true }).optional(),
-  endDateTime: z.string().datetime({ offset: true }).optional(),
+  startDateTime: DateFromISOString.optional(),
+  endDateTime: DateFromISOString.optional(),
   gradesReleased: z.boolean().optional(),
   'https://canvas.instructure.com/lti/submission_type': z
     .object({
