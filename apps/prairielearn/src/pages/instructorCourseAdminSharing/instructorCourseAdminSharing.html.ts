@@ -119,7 +119,6 @@ export function InstructorCourseAdminSharing({
   sharingToken,
   sharingSets,
   publicSharingLink,
-  publicOverviewLink,
   canChooseSharingName,
   resLocals,
 }: {
@@ -127,7 +126,6 @@ export function InstructorCourseAdminSharing({
   sharingToken: string;
   sharingSets: SharingSetRow[];
   publicSharingLink: string;
-  publicOverviewLink: string;
   canChooseSharingName: boolean;
   resLocals: Record<string, any>;
 }) {
@@ -213,19 +211,6 @@ export function InstructorCourseAdminSharing({
                       <span>Copy</span>
                     </button>
                   </td>
-                </tr>
-                <tr>
-                  <th>Public Overview Page</th>
-                  <td class="align-middle">
-                    <a href="${publicOverviewLink}" target="_blank">${publicOverviewLink}</a>
-                    <button
-                      class="btn btn-xs btn-secondary mx-2"
-                      onclick="navigator.clipboard.writeText('${publicOverviewLink}');"
-                    >
-                      <i class="fa fa-copy"></i>
-                      <span>Copy</span>
-                    </button>
-                  </td>        
                 </tr>
               </tbody>
             </table>

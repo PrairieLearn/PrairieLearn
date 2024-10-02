@@ -1994,15 +1994,6 @@ export async function initExpress() {
       next();
     },
   ]);
-  app.use('/pl/public/course/:course_id(\\d+)/overview', [
-    function (req, res, next) {
-      res.locals.course_id = req.params.course_id;
-      res.locals.navbarType = 'public';
-      res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
-      next();
-    },
-    (await import('./pages/publicCourseOverview/publicCourseOverview.js')).default,
-  ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview', [
     function (req, res, next) {
       res.locals.navPage = 'public_question';
@@ -2033,7 +2024,6 @@ export async function initExpress() {
       coreElements: false,
     }),
   );
-  // Public Assessments Page
   app.use(
     '/pl/public/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/questions',
     [
@@ -2052,17 +2042,6 @@ export async function initExpress() {
       ).default,
     ],
   );
-  // Public Course Instructor Assessments Page
-  app.use('/pl/public/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments', [
-    function (req, res, next) {
-      res.locals.course_instance_id = req.params.course_instance_id;
-      res.locals.navPage = 'public_assessments';
-      res.locals.navSubPage = 'assessments';
-      res.locals.navbarType = 'public';
-      next();
-    },
-    (await import('./pages/publicAssessmentPreview/publicAssessmentPreview.js')).default,
-  ]);
 
   // Client files for questions
   app.use(
