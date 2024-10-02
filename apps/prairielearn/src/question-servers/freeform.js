@@ -382,7 +382,6 @@ async function execPythonServer(codeCaller, phase, data, html, context) {
     `execPythonServer(): codeCaller.call(pythonFile=${pythonFile}, pythonFunction=${pythonFunction})`,
   );
   try {
-    console.trace('calling', type, directory, pythonFile, pythonFunction, pythonArgs);
     const { result, output } = await codeCaller.call(
       type,
       directory,
