@@ -154,6 +154,18 @@ export async function initExpress() {
     }),
   );
 
+  // Attach the flash middleware immediately after the session middleware so
+  // that all future handlers can write flash messages. This must come after
+  // the session middleware so that it can access the session.
+  app.use(flashMiddleware());
+  app.use((req, res, next) => {
+    // This is so that the `navbar` partial can access the flash messages. If
+    // you want to add a flash message, you should import and use `flash`
+    // directly from `@prairielearn/flash`.
+    res.locals.flash = flash;
+    next();
+  });
+
   // This middleware helps ensure that sessions remain alive (un-expired) as
   // long as users are somewhat frequently active. See the documentation for
   // `config.sessionStoreAutoExtendThrottleSeconds` for more information.
@@ -476,14 +488,6 @@ export async function initExpress() {
   });
 
   // More middlewares
-  app.use(flashMiddleware());
-  app.use((req, res, next) => {
-    // This is so that the `navbar` partial can access the flash messages. If
-    // you want to add a flash message, you should import and use `flash`
-    // directly from `@prairielearn/flash`.
-    res.locals.flash = flash;
-    next();
-  });
   app.use((await import('./middlewares/logResponse.js')).default); // defers to end of response
   app.use((await import('./middlewares/cors.js')).default);
   app.use((await import('./middlewares/content-security-policy.js')).default);
