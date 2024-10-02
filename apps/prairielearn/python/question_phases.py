@@ -117,16 +117,18 @@ def process(
                 sys.path.insert(0, str(pathlib.Path(course_path) / "serverFilesCourse"))
             sys.path.insert(0, str(element_path))
 
-            mod = mod_cache.get(element_controller_path, None)
+            mod = mod_cache.get(element_controller_path)
             if mod is None:
                 mod = {}
+
                 with open(element_controller_path, encoding="utf-8") as inf:
                     # Use `compile` to associate filename with code object, so the
                     # filename appears in the traceback if there is an error:
                     # https://stackoverflow.com/a/437857
                     code = compile(inf.read(), element_controller_path, "exec")
-                    exec(code, mod)
-                    mod_cache[element_controller_path] = mod
+
+                exec(code, mod)
+                mod_cache[element_controller_path] = mod
 
             if phase not in mod:
                 return None

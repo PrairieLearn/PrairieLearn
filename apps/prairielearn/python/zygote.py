@@ -304,16 +304,18 @@ def worker_loop() -> None:
 
             file_path = os.path.join(cwd, file + ".py")
 
-            mod = mod_cache.get(file_path, None)
+            mod = mod_cache.get(file_path)
             if mod is None:
                 mod = {}
+
                 with open(file_path, encoding="utf-8") as inf:
                     # Use `compile` to associate filename with code object, so the
                     # filename appears in the traceback if there is an error:
                     # https://stackoverflow.com/a/437857
                     code = compile(inf.read(), file_path, "exec")
-                    exec(code, mod)
-                    mod_cache[file_path] = mod
+
+                exec(code, mod)
+                mod_cache[file_path] = mod
 
             # check whether we have the desired fcn in the module
             if fcn in mod:
