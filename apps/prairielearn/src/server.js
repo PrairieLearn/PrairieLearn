@@ -2026,7 +2026,7 @@ export async function initExpress() {
   );
   // Public Assessments Page
   app.use(
-    '/pl/public/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/questions',
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
     [
       function (req, res, next) {  
         res.locals.course_instance_id = req.params.course_instance_id;
@@ -2044,7 +2044,7 @@ export async function initExpress() {
     ],
   );
   // Public Course Instructor Assessments Page
-  app.use('/pl/public/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments', [
+  app.use('/pl/public/course_instance/:course_instance_id(\\d+)/assessments', [
     function (req, res, next) {
       res.locals.course_instance_id = req.params.course_instance_id;
       res.locals.navPage = 'public_assessments';

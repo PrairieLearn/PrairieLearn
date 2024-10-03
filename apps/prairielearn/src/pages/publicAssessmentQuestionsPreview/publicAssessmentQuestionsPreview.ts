@@ -16,7 +16,7 @@ import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   InstructorAssessmentQuestions,
   AssessmentQuestionRowSchema,
-} from './publicInstructorAssessmentQuestions.html.js';
+} from './publicAssessmentQuestionsPreview.html.js';
 
 import { z } from 'zod';
 

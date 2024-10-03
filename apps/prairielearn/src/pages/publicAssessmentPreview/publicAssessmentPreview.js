@@ -13,7 +13,7 @@ import { IdSchema } from '../../lib/db-types.js';
 import { selectCourseById, selectCourseIdByInstanceId } from '../../models/course.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 
-import { AssessmentRowSchema, InstructorAssessments } from './publicInstructorAssessments.html.js';
+import { AssessmentRowSchema, InstructorAssessments } from './publicAssessmentPreview.html.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -25,6 +25,8 @@ router.get(
     res.locals.course = await selectCourseById(courseId);
     res.locals.course_instance = await selectCourseInstanceById(res.locals.course_instance_id);
     res.locals.urlPrefix = `/pl`;
+
+    console.log('course_id', res.locals.course.id); // TEST
 
     try {
       const isPublic = await new Promise((resolve, reject) => {

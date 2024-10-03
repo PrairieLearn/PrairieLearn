@@ -69,7 +69,7 @@ export function InstructorAssessments({
                       <tr id="row-${row.id}">
                         <td class="align-middle" style="width: 1%">
                           <a
-                            href="/pl/public/course_instance/${resLocals.course_instance_id}/instructor/assessment/${row.id}/questions"
+                            href="/pl/public/course_instance/${resLocals.course_instance_id}/assessment/${row.id}/questions"
                             class="badge color-${row.color} color-hover"
                           >
                             ${row.label}
@@ -77,7 +77,7 @@ export function InstructorAssessments({
                         </td>
                         <td class="align-middle">
                           <a
-                            href="/pl/public/course_instance/${resLocals.course_instance_id}/instructor/assessment/${row.id}/questions"
+                            href="/pl/public/course_instance/${resLocals.course_instance_id}/assessment/${row.id}/questions"
                             >${row.title}
                             ${row.group_work
                               ? html` <i class="fas fa-users" aria-hidden="true"></i> `
