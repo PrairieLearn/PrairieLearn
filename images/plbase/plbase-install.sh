@@ -70,7 +70,7 @@ dnf -y autoremove
 echo "setting up conda..."
 cd /
 arch=`uname -m`
-curl -LO https://github.com/conda-forge/miniforge/releases/tag/24.1.2-0/download/Miniforge3-Linux-${arch}.sh
+curl -LO https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Miniforge3-Linux-${arch}.sh
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 
 echo "installing Python packages..."
