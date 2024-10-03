@@ -410,7 +410,6 @@ onDocumentReady(() => {
       action === 'set_time_limit'
         ? row.date_formatted.match(/\(([^)]+)\)/)[1]
         : bsTable.bootstrapTable('getData')[0].date_formatted.match(/\(([^)]+)\)/)[1];
-    console.log(row);
     return html`
       <form name="set-time-limit-form" class="js-popover-form" method="POST">
         ${
