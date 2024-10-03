@@ -483,7 +483,6 @@ export async function initExpress() {
   // More middlewares
   app.use((await import('./middlewares/logResponse.js')).default); // defers to end of response
   app.use((await import('./middlewares/cors.js')).default);
-  //app.use((await import('./middlewares/content-security-policy.js')).default);
   app.use((await import('./middlewares/date.js')).default);
   app.use((await import('./middlewares/effectiveRequestChanged.js')).default);
 
@@ -496,6 +495,7 @@ export async function initExpress() {
     /\/pl\/shibcallback/,
     (await import('./pages/authCallbackShib/authCallbackShib.js')).default,
   );
+  app.use('/pl/lti', (await import('./pages/authCallbackLti/authCallbackLti.js')).default);
 
   if (isEnterprise()) {
     if (config.hasAzure) {
@@ -509,8 +509,6 @@ export async function initExpress() {
       (await import('./ee/auth/saml/router.js')).default,
     );
   }
-
-  app.use('/pl/lti', (await import('./pages/authCallbackLti/authCallbackLti.js')).default);
 
   app.use((await import('./middlewares/content-security-policy.js')).default);
 
