@@ -2025,7 +2025,7 @@ export async function initExpress() {
     }),
   );
   app.use(
-    '/pl/public/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/questions',
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
     [
       function (req, res, next) {  
         res.locals.course_instance_id = req.params.course_instance_id;
