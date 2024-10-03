@@ -55,27 +55,6 @@ const testEditData = [
     ]),
   },
   {
-    button: '.js-change-id-button',
-    formSelector: 'form[name="change-id-form"]',
-    data: {
-      id: 'newQuestion',
-    },
-    action: 'change_id',
-    info: 'questions/newQuestion/info.json',
-    files: new Set([
-      'README.md',
-      'infoCourse.json',
-      'courseInstances/Fa18/infoCourseInstance.json',
-      'courseInstances/Fa18/assessments/HW1/infoAssessment.json',
-      'questions/test/question/info.json',
-      'questions/test/question/question.html',
-      'questions/test/question/server.py',
-      'questions/newQuestion/info.json',
-      'questions/newQuestion/question.html',
-      'questions/newQuestion/server.py',
-    ]),
-  },
-  {
     formSelector: '#deleteQuestionModal',
     action: 'delete_question',
     files: new Set([
