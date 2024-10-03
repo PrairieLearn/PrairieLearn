@@ -657,7 +657,7 @@ export class AssessmentRenameEditor extends Editor {
     const newPath = path.join(basePath, this.tid_new);
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
-    await this.removeEmptyPrecedingSubfolders(basePath, this.course_instance.short_name);
+    await this.removeEmptyPrecedingSubfolders(basePath, this.assessment.tid);
 
     return {
       pathsToAdd: [oldPath, newPath],
