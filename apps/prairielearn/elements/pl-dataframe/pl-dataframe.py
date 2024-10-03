@@ -117,7 +117,6 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             f'Could not find "{varname}" in params. Please double check the parameter name is spelled correctly.'
         )
 
-    # Validate presentation type
     if presentation_type not in VALID_PRESENTATION_TYPES:
         raise ValueError(
             f'Invalid presentation type "{presentation_type}", must be one of {VALID_PRESENTATION_TYPES}.'
@@ -141,7 +140,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if num_digits is None:
         format_str = f"{{:{presentation_type}}}"
     else:
-        # This format string displays the desired number of digits, as given by the instructor
+        # This format string displays the specified number of digits
         format_str = f"{{:.{num_digits}{presentation_type}}}"
 
     # Get headers for all floating point columns and style them to use the desired number of digits.
