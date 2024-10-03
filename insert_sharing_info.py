@@ -6,7 +6,7 @@ from os import path
 sharing_sets_paths = glob.glob("./sharing_sets_*.csv")
 if len(sharing_sets_paths) > 0:
     sharing_sets_path = sharing_sets_paths[0]
-    with open("./sharing_sets.csv", mode="r") as sharingSetsFile:
+    with open(sharing_sets_path, mode="r") as sharingSetsFile:
         csv_dict_reader = csv.DictReader(sharingSetsFile)
 
         with open("infoCourse.json", mode="r+") as infoCourseFile:
