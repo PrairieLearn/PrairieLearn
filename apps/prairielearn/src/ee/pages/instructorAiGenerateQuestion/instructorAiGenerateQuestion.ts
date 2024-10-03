@@ -107,12 +107,14 @@ router.post(
     });
 
     if (req.body.__action === 'generate_question') {
-      const result = await generateQuestion(
+      const result = await generateQuestion({
         client,
-        res.locals.course.id,
-        res.locals.authn_user.user_id,
-        req.body.prompt,
-      );
+        courseId: res.locals.course.id,
+        authnUserId: res.locals.authn_user.user_id,
+        promptGeneral: req.body.prompt,
+        promptUserInput: req.body.prompt_user_input,
+        promptGrading: req.body.prompt_grading,
+      });
 
       if (result.htmlResult) {
         res.send(
