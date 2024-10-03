@@ -1994,15 +1994,6 @@ export async function initExpress() {
       next();
     },
   ]);
-  app.use('/pl/public/course/:course_id(\\d+)/overview', [
-    function (req, res, next) {
-      res.locals.course_id = req.params.course_id;
-      res.locals.navbarType = 'public';
-      res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
-      next();
-    },
-    (await import('./pages/publicCourseOverview/publicCourseOverview.js')).default,
-  ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview', [
     function (req, res, next) {
       res.locals.navPage = 'public_question';

@@ -46,10 +46,6 @@ router.get(
       `${res.locals.plainUrlPrefix}/public/course/${res.locals.course.id}/questions`,
       host,
     ).href;
-    const publicOverviewLink = new URL(
-      `${res.locals.plainUrlPrefix}/public/course/${res.locals.course.id}/overview`,
-      host,
-    ).href;
 
     const canChooseSharingName = await selectCanChooseSharingName(res.locals.course);
 
@@ -59,7 +55,6 @@ router.get(
         sharingToken: res.locals.course.sharing_token,
         sharingSets,
         publicSharingLink,
-        publicOverviewLink,
         canChooseSharingName,
         resLocals: res.locals,
       }),
