@@ -76,7 +76,7 @@ Checks that a student dict (`data`) has all correct key-value mappings with resp
 
 - `check_only_keys`: If true, grading will be done only based on checking all keys in student's dict and reference's dict match or not.
 
-- `check_only_values`: If true, grading will be done only based on checking all valeus in student's dict and reference's dict match or not.
+- `check_only_values`: If true, grading will be done only based on checking all values in student's dict and reference's dict match or not.
 
 - `entry_type_key`: If not None, requires that each key in the student's dictionary in solution be of this type.
 

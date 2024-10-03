@@ -387,7 +387,7 @@ class Feedback:
             check_values = False
             if check_only_values:
                 if len(ref.values()) != len(data.values()):
-                    return f"{name} has the wrong length for values--expected {len(ref.values())}, got {len(data.values())}"
+                    return f"{name} has the wrong length for values: expected {len(ref.values())}, got {len(data.values())}"
                 for value in data.values():
                     if value not in ref.values():
                         return bad(f"{name} contains an extra value: {value}")
