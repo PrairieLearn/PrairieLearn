@@ -49,10 +49,6 @@ ANSI_COLORS = {
 }
 
 
-# Computing this is relatively expensive, so we'll do it once here and reuse it.
-ansi_color_tokens = color_tokens(ANSI_COLORS, ANSI_COLORS)
-
-
 class NoHighlightingLexer(pygments.lexer.Lexer):
     """
     Dummy lexer for when syntax highlighting is not wanted, but we still
@@ -130,6 +126,12 @@ def get_lexer_by_name(name: str) -> Optional[pygments.lexer.Lexer]:
             return None
 
 
+# Computing this is relatively expensive, so we'll do it once here and reuse it.
+@cache
+def get_ansi_color_tokens():
+    return color_tokens(ANSI_COLORS, ANSI_COLORS)
+
+
 # Instantiating a style/formatter is also expensive, so we'll cache it as well.
 # Note that sharing an instance means we'll also share the `hl_lines` instance
 # member, so the caller must take care to set or clear it as needed before use.
@@ -139,7 +141,7 @@ def get_formatter(
 ):
     class CustomStyleWithAnsiColors(BaseStyle):
         styles = dict(BaseStyle.styles)
-        styles.update(ansi_color_tokens)
+        styles.update(get_ansi_color_tokens())
 
         highlight_color = (
             highlight_lines_color or BaseStyle.highlight_color or "#b3d7ff"
