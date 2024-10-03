@@ -4,13 +4,10 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 
 import { features } from '../../lib/features/index.js';
-import authnMiddleware from '../../middlewares/authn.js';
-import csrfToken from '../../middlewares/csrfToken.js';
 import lti13Auth from '../auth/lti13/lti13Auth.js';
 import { getInstitutionAuthenticationProviders } from '../lib/institution.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 import lti13Config from '../pages/lti13Config/lti13Config.js';
-import lti13CourseNavigation from '../pages/lti13CourseNavigation/lti13CourseNavigation.js';
 import lti13Jwks from '../pages/lti13Jwks/lti13Jwks.js';
 
 const router = Router({ mergeParams: true });
@@ -51,11 +48,5 @@ router.use(
 );
 
 router.use('/:lti13_instance_id/auth', lti13Auth);
-router.use(
-  '/:lti13_instance_id/course_navigation',
-  authnMiddleware, // authentication, set res.locals.authn_user
-  csrfToken,
-  lti13CourseNavigation,
-);
 
 export default router;

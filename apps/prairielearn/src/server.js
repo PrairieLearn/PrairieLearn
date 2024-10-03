@@ -607,6 +607,11 @@ export async function initExpress() {
 
   if (isEnterprise()) {
     app.use('/pl/terms', (await import('./ee/pages/terms/terms.js')).default);
+
+    // Routes for LTI 1.3 pages post-auth
+    app.use('/pl/lti13_instance/:lti13_instance_id/course_navigation', [
+      (await import('./ee/pages/lti13CourseNavigation/lti13CourseNavigation.js')).default,
+    ]);
   }
 
   // We deliberately omit the `authzCourseOrInstance` middleware here. The
