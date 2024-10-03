@@ -32,7 +32,7 @@ To help in this process, I have attached a python script which can be used to bu
 
 Starting now, you are able to add these properties to your JSON files, but they will be ignored on sync.
 
-Once we deploy the changes to question sharing on <insert date????>, the sharing info will be required in the JSON in order for syncing your course to succeed.
+Once we deploy the changes to question sharing on _14 October 2024_, the sharing info will be required in the JSON in order for syncing your course to succeed.
 
 Please let me know if you need any assistance with this.
 
