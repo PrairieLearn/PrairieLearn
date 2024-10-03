@@ -354,7 +354,7 @@ class Feedback:
             if check_only_values:
                 if len(ref.values()) != len(data.values()):
                     return bad(
-                        f"{name} has the wrong length for values--expected {len(ref.values())}, got {len(data.values())}"
+                        f"{name} has the wrong number of values: expected {len(ref.values())}, got {len(data.values())}"
                     )
 
             if len(ref) != len(data):  # this is default length of keys check
