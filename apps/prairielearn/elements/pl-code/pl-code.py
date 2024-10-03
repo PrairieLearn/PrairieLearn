@@ -130,6 +130,9 @@ def get_lexer_by_name(name: str) -> Optional[pygments.lexer.Lexer]:
             return None
 
 
+# Instantiating a style/formatter is also expensive, so we'll cache it as well.
+# Note that sharing an instance means we'll also share the `hl_lines` instance
+# member, so the caller must take care to set or clear it as needed before use.
 @cache
 def get_formatter(
     BaseStyle: type[pygments.style.Style], highlight_lines_color: Optional[str]
