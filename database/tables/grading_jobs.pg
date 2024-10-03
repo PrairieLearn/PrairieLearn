@@ -30,7 +30,6 @@ columns
 indexes
     grading_jobs_pkey: PRIMARY KEY (id) USING btree (id)
     grading_jobs_date_idx: USING btree (date)
-    grading_jobs_is_ai_graded_idx: USING btree (is_ai_graded)
     grading_jobs_submission_id_idx: USING btree (submission_id)
 
 foreign-key constraints
