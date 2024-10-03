@@ -71,7 +71,7 @@
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
     <button
-        class="badge text-danger badge-invalid btn btn-sm btn-secondary small border"
+        class="btn btn-xs btn-outline-dark text-danger"
         data-placement="auto"
         data-toggle="popover"
         data-html="true"
@@ -86,13 +86,14 @@
     {{#label}}<span>{{{label}}}</span>{{/label}}
     <button
         type="button"
-        class="badge text-dark badge-missing-input btn btn-sm btn-secondary small border"
+        class="btn btn-xs btn-outline-dark"
         data-placement="auto"
         data-toggle="popover"
         data-html="true"
-        title="Missing Input"
-        data-content="There is no submitted value for this field.  This may have happened because the question was changed by course staff after the answer was submitted."
-    > Missing Input <i class="fa fa-question-circle" aria-hidden="true"></i>
+        title="Missing input"
+        data-content="There is no submitted value for this field. This may have happened because the question was changed by course staff after the answer was submitted."
+    >
+        Missing input <i class="fa fa-question-circle" aria-hidden="true"></i>
     </button>
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 {{/missing_input}}
