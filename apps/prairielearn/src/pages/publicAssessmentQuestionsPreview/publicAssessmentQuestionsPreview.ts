@@ -60,20 +60,18 @@ router.get(
   asyncHandler(async (req, res) => {
     const isCourseInstancePublic = await checkCourseInstancePublic(res.locals.course_instance_id);
     const isAssessmentPublic = await checkAssessmentPublic(res.locals.assessment_id);
+    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
+    const course = await selectCourseById(courseId);
+    res.locals.course = course;
+
     if (!isCourseInstancePublic && !isAssessmentPublic) {
+      console.log('throwing 404 error'); // TEST
       throw new error.HttpStatusError(
         404,
         'The course instance that owns this assessment is not public.',
       );
     }
 
-    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
-    const course = await selectCourseById(courseId);
-
-
-
-    res.locals.course = course;
-    res.locals.urlPrefix = `/pl`;
     res.locals.assessment = await selectAssessmentById(res.locals.assessment_id);
     const questionRows = await queryRows(
       sql.questions,
