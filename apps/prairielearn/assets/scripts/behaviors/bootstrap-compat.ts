@@ -3,7 +3,7 @@ import { observe } from 'selector-observer';
 import { isBootstrapCompatEnabled, makeMigrator } from '../lib/bootstrap-compat-utils.js';
 
 if (isBootstrapCompatEnabled()) {
-  console.log('Enabling Bootstrap compatibility layer.');
+  // console.log('Enabling Bootstrap compatibility layer.');
 
   // The following list of attributes was compiled from the Bootstrap 4 docs:
   // https://getbootstrap.com/docs/4.6/components/carousel/
@@ -103,18 +103,18 @@ if (isBootstrapCompatEnabled()) {
     migrate(el) {
       el.classList.remove('text-white');
       el.classList.add('text-dark');
-      console.warn(
-        'Bootstrap 5 no longer provides sufficient contrast for white text on "info"-colored card headers. Please update your HTML.',
-        el,
-      );
+      // console.warn(
+      //   'Bootstrap 5 no longer provides sufficient contrast for white text on "info"-colored card headers. Please update your HTML.',
+      //   el,
+      // );
 
       el.querySelectorAll(':scope > .btn.btn-outline-light').forEach((button) => {
         button.classList.remove('btn-outline-light');
         button.classList.add('btn-outline-dark');
-        console.warn(
-          'Bootstrap 5 no longer provides sufficient contrast for white buttons on "info"-colored card headers. Please update your HTML.',
-          button,
-        );
+        // console.warn(
+        //   'Bootstrap 5 no longer provides sufficient contrast for white buttons on "info"-colored card headers. Please update your HTML.',
+        //   button,
+        // );
       });
     },
   });
@@ -273,7 +273,7 @@ if (isBootstrapCompatEnabled()) {
       label.classList.add('form-label');
       input.classList.add('form-control');
 
-      console.warn('Bootstrap 5 uses new markup for file inputs. Please update your HTML.', el);
+      // console.warn('Bootstrap 5 uses new markup for file inputs. Please update your HTML.', el);
     },
   });
 
@@ -302,10 +302,10 @@ if (isBootstrapCompatEnabled()) {
         ? 'input-group-prepend'
         : 'input-group-append';
 
-      console.warn(
-        `Bootstrap 5 no longer requires ${elementClass} elements to be wrapped in an input-group. Please update your HTML to remove the wrapping ${elementClass} element.`,
-        el,
-      );
+      // console.warn(
+      //   `Bootstrap 5 no longer requires ${elementClass} elements to be wrapped in an input-group. Please update your HTML to remove the wrapping ${elementClass} element.`,
+      //   el,
+      // );
     },
   });
 
@@ -345,7 +345,7 @@ if (isBootstrapCompatEnabled()) {
       );
 
       if (hasNonFlexDisplayClass) {
-        console.warn('Bootstrap 5 has deprecated .form-inline. Please update your HTML.', el);
+        // console.warn('Bootstrap 5 has deprecated .form-inline. Please update your HTML.', el);
         return;
       }
 
@@ -410,13 +410,13 @@ if (isBootstrapCompatEnabled()) {
       if (el.tagName === 'A' || el.tagName === 'BUTTON') {
         el.classList.add('btn', 'btn-xs', `btn-${color}`, 'fw-bold');
         el.classList.remove('badge');
-        console.warn(
-          'Bootstrap 5 no longer supports badge styles on <button> or <a>. Please update your HTML.',
-          el,
-        );
+        // console.warn(
+        //   'Bootstrap 5 no longer supports badge styles on <button> or <a>. Please update your HTML.',
+        //   el,
+        // );
       } else {
         el.classList.add(`text-bg-${color}`);
-        console.warn('Bootstrap 5 replaced .badge-* with .text-bg-*. Please update your HTML.', el);
+        // console.warn('Bootstrap 5 replaced .badge-* with .text-bg-*. Please update your HTML.', el);
       }
 
       // Restore the original `transition` value.
@@ -463,10 +463,10 @@ if (isBootstrapCompatEnabled()) {
         el.children[0].textContent === '×'
       ) {
         el.innerHTML = '';
-        console.warn(
-          'Bootstrap 5 no longer requires &times; in close buttons. Please update your HTML.',
-          el,
-        );
+        // console.warn(
+        //   'Bootstrap 5 no longer requires &times; in close buttons. Please update your HTML.',
+        //   el,
+        // );
       }
     },
   });
@@ -596,10 +596,10 @@ if (isBootstrapCompatEnabled()) {
     migrate(el) {
       if (!el.parentElement?.classList.contains('embed-responsive')) return;
 
-      console.warn(
-        'Bootstrap 5 no longer requires .embed-responsive-item. Please update your HTML.',
-        el,
-      );
+      // console.warn(
+      //   'Bootstrap 5 no longer requires .embed-responsive-item. Please update your HTML.',
+      //   el,
+      // );
     },
   });
 

@@ -72,9 +72,9 @@ function addClass(el: Element, newClass: string | string[], message: string) {
     }
   });
 
-  if (didAddClass) {
-    console.warn(message, el);
-  }
+  // if (didAddClass) {
+  //   console.warn(message, el);
+  // }
 }
 
 function migrateClass(el: Element, oldClass: string, newClass: string) {
@@ -82,10 +82,10 @@ function migrateClass(el: Element, oldClass: string, newClass: string) {
     el.classList.add(newClass);
 
     // TODO: customizable message?
-    console.warn(
-      `Bootstrap 5 replaced .${oldClass} with .${newClass}. Please update your HTML.`,
-      el,
-    );
+    // console.warn(
+    //   `Bootstrap 5 replaced .${oldClass} with .${newClass}. Please update your HTML.`,
+    //   el,
+    // );
   }
 }
 
@@ -94,9 +94,9 @@ function migrateAttribute(el: Element, oldAttribute: string, newAttribute: strin
     el.setAttribute(newAttribute, el.getAttribute(oldAttribute) as string);
 
     // TODO: customizable message?
-    console.warn(
-      `Bootstrap 5 replaced ${oldAttribute} with ${newAttribute}. Please update your HTML.`,
-      el,
-    );
+    // console.warn(
+    //   `Bootstrap 5 replaced ${oldAttribute} with ${newAttribute}. Please update your HTML.`,
+    //   el,
+    // );
   }
 }

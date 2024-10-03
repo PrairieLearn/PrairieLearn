@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
 
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
@@ -17,6 +18,7 @@ onDocumentReady(() => {
   const assessmentGroupWork = dataset.assessmentGroupWork === 'true';
   const assessmentMultipleInstance = dataset.assessmentMultipleInstance === 'true';
   const hasCourseInstancePermissionEdit = dataset.hasCourseInstancePermissionEdit === 'true';
+  const timezone = dataset.timezone ?? 'UTC';
 
   const bsTable = $('#usersTable').bootstrapTable({
     // TODO: If we can pick up the following change, we can drop the `icons` config here:
@@ -404,82 +406,167 @@ onDocumentReady(() => {
   function timeLimitEditPopoverContent(this: any) {
     const row = $(this).data('row');
     const action = row.action ? row.action : 'set_time_limit';
+    const abbrTimezone =
+      action === 'set_time_limit'
+        ? row.date_formatted.match(/\(([^)]+)\)/)[1]
+        : bsTable.bootstrapTable('getData')[0].date_formatted.match(/\(([^)]+)\)/)[1];
+    console.log(row);
     return html`
       <form name="set-time-limit-form" class="js-popover-form" method="POST">
+        ${
+          action === 'set_time_limit' && row.open === false
+            ? html`<div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="reopen_without_limit"
+                    id="reopen_without_limit"
+                    value="true"
+                    checked
+                  />
+                  <label class="form-check-label" for="reopen_without_limit">
+                    Re-open without time limit
+                  </label>
+                </div>
+                <div class="form-check">
+                  <input
+                    class="form-check-input"
+                    type="radio"
+                    name="reopen_without_limit"
+                    id="reopen_with_limit"
+                    value="false"
+                  />
+                  <label class="form-check-label" for="reopen_with_limit">
+                    Re-open with time limit
+                  </label>
+                </div> `
+            : ''
+        }
         <p>
           Total time limit: ${row.total_time}<br />
           Remaining time: ${row.time_remaining}
         </p>
         <input type="hidden" name="__action" value="${action}" />
         <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        ${row.assessment_instance_id
-          ? html`<input
-              type="hidden"
-              name="assessment_instance_id"
-              value="${row.assessment_instance_id}"
-            />`
-          : ''}
+        ${
+          row.assessment_instance_id
+            ? html`<input
+                type="hidden"
+                name="assessment_instance_id"
+                value="${row.assessment_instance_id}"
+              />`
+            : ''
+        }
+        <div class="time-limit-options" ${action === 'set_time_limit' && row.open === false ? html`style="display:none"` : ''}>
         <select
           class="custom-select select-time-limit"
           name="plus_minus"
           aria-label="Time limit options"
+          data-start-date="${row.date}"
+          data-total-time="${row.total_time}"
+          data-abbr-timezone="${abbrTimezone}"
           onchange="
-            $(this).parents('form').find('.time-limit-field').toggle(this.value !== 'unlimited' && this.value !== 'expire');
+            $(this).parents('form').find('.time-limit-field').toggle(this.value !== 'unlimited' && this.value !== 'expire' && this.value !== 'set_exact');
             $(this).parents('form').find('.reopen-closed-field').toggle(this.value !== '+1' && this.value !== '-1' && this.value !== 'expire');
+            $(this).parents('form').find('.date-picker').toggle(this.value === 'set_exact');
+            $(this).parents('form').find('.add').toggle(this.value === '+1');
+            $(this).parents('form').find('.subtract').toggle(this.value === '-1');
+            $(this).parents('form').find('.total-time').toggle(this.value === 'set_total');
+            $(this).parents('form').find('.remaining-time').toggle(this.value === 'set_rem');
             "
         >
-          ${row.time_remaining_sec !== null
-            ? row.has_open_instance
-              ? html`
-                  <option value="+1">Add to instances with time limit</option>
-                  <option value="-1">Subtract from instances with time limit</option>
-                `
-              : html`
-                  <option value="+1">Add</option>
-                  <option value="-1">Subtract</option>
-                `
-            : ''}
+          ${
+            row.time_remaining_sec !== null
+              ? row.has_open_instance
+                ? html`
+                    <option value="+1">Add to instances with time limit</option>
+                    <option value="-1">Subtract from instances with time limit</option>
+                  `
+                : html`
+                    <option value="+1">Add</option>
+                    <option value="-1">Subtract</option>
+                  `
+              : ''
+          }
           <option value="set_total">Set total time limit to</option>
           <option value="set_rem">Set remaining time to</option>
-          ${row.open || row.time_remaining_sec !== null
-            ? html`<option value="unlimited">Remove time limit</option>`
-            : ''}
-          ${row.open !== false && (row.time_remaining_sec === null || row.time_remaining_sec > 0)
-            ? html`<option value="expire">Expire time limit</option>`
-            : ''}
+          <option value="set_exact">Set exact closing time</option>
+          ${
+            row.open || row.time_remaining_sec !== null
+              ? html`<option value="unlimited">Remove time limit</option>`
+              : ''
+          }
+          ${
+            row.open !== false && (row.time_remaining_sec === null || row.time_remaining_sec > 0)
+              ? html`<option value="expire">Expire time limit</option>`
+              : ''
+          }
         </select>
-        <p class="form-inline">
-          <input
-            class="form-control time-limit-field"
-            type="number"
-            name="time_add"
-            aria-label="Time value"
-            style="width: 5em"
-            value="5"
-          />
-          <select class="custom-select time-limit-field" name="time_ref" aria-label="Time unit">
-            <option value="minutes">minutes</option>
-            ${row.time_remaining_sec !== null
-              ? html`<option value="percent">% total limit</option>`
-              : ''}
-          </select>
+        <small class="small form-text text-muted add">This will add time to the total time limit.</small>
+        <small class="small form-text text-muted subtract" style="display:none">This will subtract time from the total time limit.</small>
+        <small class="small form-text text-muted total-time" style="display:none">This will set the total time limit to the given amount.</small>
+        <small class="small form-text text-muted remaining-time" style="display:none">This will set the remaining time limit to the given amount.</small>
+        <small class="small form-text text-muted date-picker" style="display:none">This will set the exact closing time.</small>
+        <p class="form-inline time-limit-field">
+          <div class="input-group">
+            <input
+              class="form-control time-limit-field"
+              type="number"
+              name="time_add"
+              aria-label="Time value"
+              style="width: 5em"
+              value="5"
+            />
+            <span class="input-group-text time-limit-field">minutes</span>
+            </div>
+          <div class="input-group date-picker" style="display:none">
+          <input class="form-control date-picker" type="datetime-local" name="date"  style="display:none" value="${Temporal.Now.zonedDateTimeISO(timezone).toPlainDateTime().toString().slice(0, 16)}"/>
+          <span class="input-group-text date-picker" style="display:none">${abbrTimezone}</span>
+          </div>
+          ${
+            action === 'set_time_limit'
+              ? html`
+                  <div class="js-proposed-closing-time">
+                    Proposed closing time:
+                    ${Temporal.Instant.from(row.date)
+                      .toZonedDateTimeISO(timezone)
+                      .add({
+                        minutes:
+                          row.time_remaining === 'Open (no time limit)' ||
+                          row.time_remaining === 'Closed'
+                            ? 0
+                            : parseInt(row.total_time),
+                      })
+                      .add({ minutes: 5 })
+                      .toString()
+                      .slice(0, 16)
+                      .replace('T', ' ')}
+                    (${abbrTimezone})
+                  </div>
+                `
+              : ''
+          }
+          </div>
         </p>
-        ${row.has_closed_instance
-          ? html`
-              <div class="form-check mb-2 reopen-closed-field">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  name="reopen_closed"
-                  value="true"
-                  id="reopen_closed"
-                />
-                <label class="form-check-label" for="reopen_closed">
-                  Also re-open closed instances
-                </label>
-              </div>
-            `
-          : ''}
+        </div>
+        ${
+          row.has_closed_instance
+            ? html`
+                <div class="form-check mb-2 reopen-closed-field">
+                  <input
+                    class="form-check-input"
+                    type="checkbox"
+                    name="reopen_closed"
+                    value="true"
+                    id="reopen_closed"
+                  />
+                  <label class="form-check-label" for="reopen_closed">
+                    Also re-open closed instances
+                  </label>
+                </div>
+              `
+            : ''
+        }
         <div class="btn-toolbar pull-right">
           <button type="button" class="btn btn-secondary mr-2" data-dismiss="popover">
             Cancel
@@ -488,6 +575,62 @@ onDocumentReady(() => {
         </div>
       </form>
     `.toString();
+  }
+
+  on('click', 'input[name="reopen_without_limit"]', function () {
+    toggleTimeOptions();
+  });
+
+  function toggleTimeOptions() {
+    const radio = document.querySelector(
+      'input[name="reopen_without_limit"]:checked',
+    ) as HTMLInputElement;
+    if (radio?.value === 'true') {
+      $('.time-limit-options').hide();
+    } else {
+      $('.time-limit-options').show();
+    }
+  }
+
+  on('change', '.select-time-limit', function () {
+    setProposedClosingTime();
+  });
+
+  on('change', 'input[name="time_add"]', function () {
+    setProposedClosingTime();
+  });
+
+  function setProposedClosingTime() {
+    const timeDisplayElement = document.querySelector('.js-proposed-closing-time');
+    const timeAdd = (document.querySelector('input[name="time_add"]') as HTMLInputElement).value;
+    const plusMinus = (document.querySelector('select[name="plus_minus"]') as HTMLSelectElement)
+      .value;
+    const startDate = (document.querySelector('select[name="plus_minus"]') as HTMLInputElement)
+      .dataset.startDate;
+    const totalTime = (document.querySelector('select[name="plus_minus"]') as HTMLInputElement)
+      .dataset.totalTime;
+    const abbrTimezone = (document.querySelector('select[name="plus_minus"]') as HTMLInputElement)
+      .dataset.abbrTimezone;
+    if (!timeDisplayElement || !timeAdd || !totalTime || !startDate || !abbrTimezone) return;
+
+    let temporalDate = Temporal.Instant.from(startDate).toZonedDateTimeISO(timezone);
+    if (plusMinus === 'set_total') {
+      temporalDate = temporalDate.add({ minutes: parseInt(timeAdd) });
+    } else if (plusMinus === 'set_rem') {
+      temporalDate = Temporal.Now.zonedDateTimeISO(timezone).add({ minutes: parseInt(timeAdd) });
+    } else if (plusMinus === '+1') {
+      temporalDate = temporalDate
+        .add({ minutes: parseInt(totalTime) })
+        .add({ minutes: parseInt(timeAdd) });
+    } else if (plusMinus === '-1') {
+      temporalDate = temporalDate
+        .add({ minutes: parseInt(totalTime) })
+        .subtract({ minutes: parseInt(timeAdd) });
+    } else if (plusMinus === 'set_exact' || plusMinus === 'unlimited' || plusMinus === 'expire') {
+      timeDisplayElement.innerHTML = '';
+      return;
+    }
+    timeDisplayElement.innerHTML = `Proposed closing time: ${temporalDate.toString().slice(0, 16).replace('T', ' ')} (${abbrTimezone})`;
   }
 
   function scorebarFormatter(score: number | null) {
