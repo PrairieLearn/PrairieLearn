@@ -308,15 +308,15 @@ class Feedback:
         partial_keys=None,
         check_only_keys=False,
         check_only_values=False,
-        entry_type_key=None,
-        entry_type_value=None,
+        key_type=None,
+        value_type=None,
         accuracy_critical=False,
         report_failure=True,
     ):
         """
         Feedback.check_dict(name, ref, data)
 
-        Checks that a student dict (`data`) has all correct key-value mappings with respect to a reference dict (`ref`). It also verifies the length of keys in the student dictionary against the reference dictionary, and optionally, enforces homogeneous data types for keys (using `entry_type_key`), values (using `entry_type_value`), or both. Additionally, it can verify the presence of specific keys (using `partial_keys`) in the student dictionary, and can focus the comparison solely on keys (using `check_only_keys`), values (using `check_only_values`), or both.
+        Checks that a student dict (`data`) has all correct key-value mappings with respect to a reference dict (`ref`). It also verifies the length of keys in the student dictionary against the reference dictionary, and optionally, enforces homogeneous data types for keys (using `key_type`), values (using `value_type`), or both. Additionally, it can verify the presence of specific keys (using `partial_keys`) in the student dictionary, and can focus the comparison solely on keys (using `check_only_keys`), values (using `check_only_values`), or both.
 
         - ``name``: Name of the dictionary that is being checked. This will be used to give feedback.
         - ``ref``: Reference dictionary.
@@ -324,8 +324,8 @@ class Feedback:
         - ``partial_keys``: If not None, it takes a List of keys to check if these particular keys are present in the student's dict or not.
         - ``check_only_keys``: If true, grading will be done only based on checking all keys in student's dict and reference's dict match or not.
         - ``check_only_values``: If true, grading will be done only based on checking all values in student's dict and reference's dict match or not.
-        - ``entry_type_key``: If not None, requires that each key in the student's dictionary in solution be of this type.
-        - ``entry_type_value``: If not None, requires that each value in the student's dictionary in solution be of this type.
+        - ``key_type``: If not None, requires that each key in the student's dictionary in solution be of this type.
+        - ``value_type``: If not None, requires that each value in the student's dictionary in solution be of this type.
         - ``accuracy_critical``: If true, grading will halt on failure.
         - ``report_failure``: If true, feedback will be given on failure.
         """
@@ -362,18 +362,18 @@ class Feedback:
                     f"{name} has the wrong number of entries: expected {len(ref)}, got {len(data)}"
                 )
 
-        if entry_type_value is not None:
+        if value_type is not None:
             for value in data.values():
-                if not isinstance(value, entry_type_value):
+                if not isinstance(value, value_type):
                     return bad(
-                        f"{name} has the wrong type for value {value}, expected type {entry_type_value}"
+                        f"{name} has the wrong type for value {value}, expected type {value_type}"
                     )
 
-        if entry_type_key is not None:
+        if key_type is not None:
             for key in data.keys():
-                if not isinstance(key, entry_type_key):
+                if not isinstance(key, key_type):
                     return bad(
-                        f"{name} has the wrong type for key {key}, expected type {entry_type_key}"
+                        f"{name} has the wrong type for key {key}, expected type {key_type}"
                     )
 
         if check_only_keys or check_only_values:
