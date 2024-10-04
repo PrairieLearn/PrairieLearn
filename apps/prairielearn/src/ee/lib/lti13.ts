@@ -71,15 +71,20 @@ export type Lineitems = z.infer<typeof LineitemsSchema>;
 // Validate LTI 1.3
 // https://www.imsglobal.org/spec/lti/v1p3#required-message-claims
 export const Lti13ClaimSchema = z.object({
-  'https://purl.imsglobal.org/spec/lti/claim/message_type': z.literal('LtiResourceLinkRequest'),
+  'https://purl.imsglobal.org/spec/lti/claim/message_type': z.enum([
+    'LtiResourceLinkRequest',
+    'LtiDeepLinkingRequest',
+  ]),
   'https://purl.imsglobal.org/spec/lti/claim/version': z.literal('1.3.0'),
   'https://purl.imsglobal.org/spec/lti/claim/deployment_id': z.string(),
   'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': z.string(),
-  'https://purl.imsglobal.org/spec/lti/claim/resource_link': z.object({
-    id: z.string(),
-    description: z.string().nullish(),
-    title: z.string().nullish(),
-  }),
+  'https://purl.imsglobal.org/spec/lti/claim/resource_link': z
+    .object({
+      id: z.string(),
+      description: z.string().nullish(),
+      title: z.string().nullish(),
+    })
+    .optional(),
   // https://www.imsglobal.org/spec/security/v1p0/#tool-jwt
   // https://www.imsglobal.org/spec/security/v1p0/#id-token
   iss: z.string(),
