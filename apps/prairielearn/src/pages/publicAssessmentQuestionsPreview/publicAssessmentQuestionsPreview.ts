@@ -65,7 +65,6 @@ router.get(
     res.locals.course = course;
 
     if (!isCourseInstancePublic && !isAssessmentPublic) {
-      console.log('throwing 404 error'); // TEST
       throw new error.HttpStatusError(
         404,
         'The course instance that owns this assessment is not public.',
