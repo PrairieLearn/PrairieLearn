@@ -7,11 +7,7 @@ import * as error from '@prairielearn/error';
 import { html } from '@prairielearn/html';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
-import {
-  AssessmentSchema,
-  Lti13CourseInstanceSchema,
-  Lti13AssessmentsSchema,
-} from '../../../lib/db-types.js';
+import { AssessmentSchema, AssessmentSetSchema } from '../../../lib/db-types.js';
 import {
   Lti13Claim,
   validateLti13CourseInstance,
@@ -20,6 +16,15 @@ import {
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
+
+export const AssessmentRowSchema = AssessmentSchema.merge(
+  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
+).extend({
+  start_new_assessment_group: z.boolean(),
+  assessment_group_heading: AssessmentSetSchema.shape.heading,
+  label: z.string(),
+});
+type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
 router.use(
   asyncHandler(async (req, res, next) => {
@@ -48,6 +53,19 @@ router.get(
       },
       Lti13CombinedInstanceSchema,
     );
+
+    const assessments = await queryRows(
+      sql.select_assessments,
+      {
+        course_instance_id: res.locals.course_instance.id,
+        authz_data: res.locals.authz_data,
+        req_date: res.locals.req_date,
+        assessments_group_by: res.locals.course_instance.assessments_group_by,
+      },
+      AssessmentRowSchema,
+    );
+
+    console.log(assessments);
 
     console.log(lti13_instance, lti13_course_instance);
     console.log(req.session.lti13_claims);
