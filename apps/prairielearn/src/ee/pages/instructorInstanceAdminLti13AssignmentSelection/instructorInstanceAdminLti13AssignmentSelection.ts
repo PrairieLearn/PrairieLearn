@@ -37,6 +37,9 @@ router.get(
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
+    res.removeHeader('content-security-policy');
+    res.removeHeader('x-frame-options');
+
     const { lti13_instance, lti13_course_instance } = await queryRow(
       sql.select_lti13_instance,
       {
