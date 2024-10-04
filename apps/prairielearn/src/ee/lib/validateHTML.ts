@@ -4,6 +4,7 @@ type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
 type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
 
 const mustacheTemplateRegex = /^\{\{.*\}\}$/;
+const mustacheTemplateExtractorRegex = /\{\{((?:[^}]|\}[^}])*)\}\}/g;
 
 /**
  * Checks that the required attribute is an int (or mustache template) or adds an error to the provided list.
@@ -584,7 +585,14 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode, optimistic: boolea
  * @param optimistic True if tags outside the subset are allowed, else false.
  * @returns A list of human-readable render error messages, if any.
  */
-export function validateHTML(file: string, optimistic: boolean): string[] {
+export function validateHTML(file: string, optimistic: boolean, usesServerPy: boolean): string[] {
   const tree = parse5.parseFragment(file);
+  const templates = [...file.matchAll(mustacheTemplateExtractorRegex)];
+  if (!usesServerPy && templates.length > 0) {
+    console.log('fail');
+    return dfsCheckParseTree(tree, optimistic).concat([
+      `Create a server.py to generate the following: ${templates.map((x) => x[1]).join(', ')}`,
+    ]);
+  }
   return dfsCheckParseTree(tree, optimistic);
 }
