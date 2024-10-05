@@ -5,6 +5,7 @@ type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
 
 const mustacheTemplateRegex = /^\{\{.*\}\}$/;
 const mustacheTemplateExtractorRegex = /\{\{((?:[^}]|\}[^}])*)\}\}/g;
+const answersNameExtractorRegex = /answers-name="([^"]*)"/g;
 
 /**
  * Checks that the required attribute is an int (or mustache template) or adds an error to the provided list.
@@ -587,11 +588,12 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode, optimistic: boolea
  */
 export function validateHTML(file: string, optimistic: boolean, usesServerPy: boolean): string[] {
   const tree = parse5.parseFragment(file);
-  const templates = [...file.matchAll(mustacheTemplateExtractorRegex)];
+  const templates = [...file.matchAll(mustacheTemplateExtractorRegex)]
+    .map((x) => x[1])
+    .concat([...file.matchAll(answersNameExtractorRegex)].map((x) => `correct_answers.${x[1]}`));
   if (!usesServerPy && templates.length > 0) {
-    console.log('fail');
     return dfsCheckParseTree(tree, optimistic).concat([
-      `Create a server.py to generate the following: ${templates.map((x) => x[1]).join(', ')}`,
+      `Create a server.py to generate the following: ${templates.join(', ')}`,
     ]);
   }
   return dfsCheckParseTree(tree, optimistic);
