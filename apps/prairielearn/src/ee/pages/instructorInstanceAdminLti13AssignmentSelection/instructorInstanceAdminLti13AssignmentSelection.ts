@@ -13,18 +13,13 @@ import {
   validateLti13CourseInstance,
   Lti13CombinedInstanceSchema,
 } from '../../lib/lti13.js';
+import {
+  InstructorInstanceAdminLti13AssignmentSelection,
+  AssessmentRowSchema,
+} from './instructorInstanceAdminLti13AssignmentSelection.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
-
-export const AssessmentRowSchema = AssessmentSchema.merge(
-  AssessmentSetSchema.pick({ abbreviation: true, name: true, color: true }),
-).extend({
-  start_new_assessment_group: z.boolean(),
-  assessment_group_heading: AssessmentSetSchema.shape.heading,
-  label: z.string(),
-});
-type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
 
 router.use(
   asyncHandler(async (req, res, next) => {
@@ -101,12 +96,12 @@ router.get(
     ]);
 
     res.send(
-      html`
-        <form method="POST" action="${deep_link_return_url}">
-          <input type="hidden" name="JWT" value="${signed_jwt}" />
-          <input type="submit" value="Save" />
-        </form>
-      `.toString(),
+      InstructorInstanceAdminLti13AssignmentSelection({
+        resLocals: res.locals,
+        deep_link_return_url,
+        signed_jwt,
+        assessments,
+      }),
     );
   }),
 );
