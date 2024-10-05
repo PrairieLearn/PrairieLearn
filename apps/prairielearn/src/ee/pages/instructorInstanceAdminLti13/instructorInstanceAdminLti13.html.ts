@@ -245,10 +245,11 @@ export function InstructorInstanceAdminLti13({
                                       <button
                                         class="btn btn-info"
                                         hx-get="?lineitems"
-                                        hx-swap="afterend"
+                                        hx-target="next .line-items-inputs"
                                       >
                                         Pick from existing ${lms_name} assignments
                                       </button>
+                                      <div class="line-items-inputs"></div>
                                     </form>
                                   `,
                                   footer: html`<button
@@ -360,11 +361,34 @@ function lineItem(item: Lti13Assessments, timezone: string) {
 }
 
 export function LineitemsInputs(lineitems: Lineitems) {
+  const disclaimer = html`
+    <button class="btn btn-light btn-outline-dark" hx-get="?lineitems" hx-target="closest div">
+      Refresh <i class="fa fa-refresh" aria-hidden="true"></i>
+    </button>
+    <a
+      href="#assignmentinfo"
+      data-toggle="collapse"
+      area-expanded="false"
+      aria-controls="assignmentinfo"
+      >Why don't I see my assignment here?</a
+    >
+    <div class="collapse" id="assignmentinfo">
+      <p>
+        PrairieLearn can only poll for assignments in the LMS that are associated with PrairieLearn.
+      </p>
+      <p>
+        In Canvas, edit the assignment Submission Type to "External Tool" and set the External Tool
+        URL to the students' link to the assessment. (You can get this from the assessment
+        instructor settings page.) Then, return here and refresh the listing.
+      </p>
+    </div>
+  `;
   if (lineitems.length === 0) {
-    return html`<p>None found.</p>`.toString();
+    return html`
+      <p>None found.</p>
+      ${disclaimer}
+    `.toString();
   }
-  // TODO: Filter out assignments that are already linked? Re-linking will override the
-  // previous assignment link
   return html`
     ${lineitems.map(
       (lineitem) => html`
@@ -382,8 +406,7 @@ export function LineitemsInputs(lineitems: Lineitems) {
         </div>
       `,
     )}
-    <button name="__action" value="link_assessment" class="btn btn-primary">
-      Link assignments
-    </button>
+    <button name="__action" value="link_assessment" class="btn btn-primary">Link assignment</button>
+    ${disclaimer}
   `.toString();
 }
