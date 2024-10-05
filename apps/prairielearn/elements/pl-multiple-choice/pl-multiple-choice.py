@@ -56,6 +56,7 @@ FEEDBACK_DEFAULT = None
 HIDE_SCORE_BADGE_DEFAULT = False
 ALLOW_BLANK_DEFAULT = False
 SIZE_DEFAULT = None
+PLACEHOLDER_DEFAULT = "Select an option"
 SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
 
 MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME = "pl-multiple-choice.mustache"
@@ -396,18 +397,21 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "hide-score-badge",
         "allow-blank",
         "size",
+        "placeholder",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     # Before going to the trouble of preparing answers list, check for name duplication
     name = pl.get_string_attrib(element, "answers-name")
 
-    if (
-        pl.has_attrib(element, "size")
-        and get_display_type(element) is not DisplayType.DROPDOWN
-    ):
-        raise ValueError(
-            f'"size" attribute on "{name}" should only be set if display is "dropdown".'
-        )
+    if get_display_type(element) is not DisplayType.DROPDOWN:
+        if pl.has_attrib(element, "size"):
+            raise ValueError(
+                f'"size" attribute on "{name}" should only be set if display is "dropdown".'
+            )
+        if pl.has_attrib(element, "placeholder"):
+            raise ValueError(
+                f'"placeholder" attribute on "{name}" should only be set if display is "dropdown".'
+            )
 
     if name in data["params"]:
         raise ValueError(f"Duplicate params variable name: {name}")
@@ -521,12 +525,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # https://www.unitconverters.net/typography/character-x-to-pixel-x.htm
             size = pl.get_integer_attrib(element, "size") * 8
 
+        placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
+
         html_params = {
             "question": True,
             "inline": inline,
             "feedback": feedback,
             "radio": display_radio,
             "size": size,
+            "placeholder": placeholder,
             "uuid": pl.get_uuid(),
             "name": name,
             "editable": editable,

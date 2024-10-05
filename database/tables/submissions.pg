@@ -39,3 +39,4 @@ foreign-key constraints
 
 referenced by
     grading_jobs: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    submission_grading_context_embeddings: FOREIGN KEY (submission_id) REFERENCES submissions(id) ON UPDATE CASCADE ON DELETE CASCADE
