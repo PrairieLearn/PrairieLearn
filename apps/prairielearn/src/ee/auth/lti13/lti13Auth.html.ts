@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { NavbarIframe } from '../../../components/Navbar.html.js';
 import { LoadUserAuth } from '../../../lib/authn.js';
 import { Lti13Instance } from '../../../lib/db-types.js';
 
@@ -70,22 +71,7 @@ export const Lti13Iframe = ({
         </script>
       </head>
       <body>
-        <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
-          <div class="container-fluid">
-            <a
-              class="navbar-brand"
-              href="${resLocals.homeUrl}"
-              target="_blank"
-              aria-label="Homepage"
-            >
-              <span class="navbar-brand-label">PrairieLearn</span>
-              <span class="navbar-brand-hover-label">
-                Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
-              </span>
-            </a>
-            <span class="navbar-text">${resLocals.authn_user.name}</span>
-          </div>
-        </nav>
+        ${NavbarIframe({ resLocals })}
         <main>
           <a class="btn btn-primary btn-lg m-3" href="${target_url}" target="_blank"
             >Open PrairieLearn in a new window</a
