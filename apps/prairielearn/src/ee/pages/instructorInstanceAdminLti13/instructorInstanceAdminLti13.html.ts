@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
-import { html } from '@prairielearn/html';
+import { html, HtmlSafeString } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
@@ -42,8 +42,6 @@ export function InstructorInstanceAdminLti13({
   assessments: AssessmentRow[];
   lineitems: Lti13Assessments[];
 }): string {
-  const { urlPrefix } = resLocals;
-  const { assessments_group_by } = resLocals.course_instance;
   const lms_name = `${instance.lti13_instance.name}: ${instance.lti13_course_instance.context_label}`;
 
   return html`
@@ -99,235 +97,24 @@ export function InstructorInstanceAdminLti13({
                 </div>
                 <div class="col-10">
                   <h3 id="assessments">Linked Assessments</h3>
-                  <div class="table-responsive">
-                    <table class="table table-sm table-hover">
-                      <thead>
-                        <tr>
-                          <th colspan="2" scope="row">PrairieLearn Assessment</th>
-                          <th>Actions</th>
-                          <th>
-                            <form method="POST">
-                              <input type="hidden" name="__action" value="poll_lti13_assessments" />
-                              <input
-                                type="hidden"
-                                name="__csrf_token"
-                                value="${resLocals.__csrf_token}"
-                              />
-                              ${lms_name} Assignment
-                              <button class="btn btn-success btn-xs">Sync metadata</button>
-                            </form>
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        ${assessments.map((row) => {
-                          const lineitems_linked = lineitems.filter((item) => {
-                            return item.assessment_id === row.id;
-                          });
-                          return html`
-                            ${row.start_new_assessment_group
-                              ? html`
-                                  <tr>
-                                    <th colspan="5">
-                                      ${Modal({
-                                        id: `bulk-${row.assessment_set_id}-${row.assessment_module_id}`,
-                                        title: `${row.assessment_group_heading} ${assessments_group_by} Bulk Actions`,
-                                        body: html`<p>
-                                            These bulk actions work collectively on every assessment
-                                            in the group where the action makes sense.
-                                          </p>
-
-                                          <form method="POST">
-                                            <input
-                                              type="hidden"
-                                              name="__csrf_token"
-                                              value="${resLocals.__csrf_token}"
-                                            />
-
-                                            <input
-                                              type="hidden"
-                                              name="assessment_set_id"
-                                              value="${row.assessment_set_id}"
-                                            />
-                                            <input
-                                              type="hidden"
-                                              name="assessment_module_id"
-                                              value="${row.assessment_module_id}"
-                                            />
-
-                                            <button
-                                              class="btn btn-success"
-                                              name="__action"
-                                              value="bulk_create_assessments"
-                                              onClick="return confirm('Are you sure?');"
-                                            >
-                                              Create and link assignments in ${lms_name}
-                                            </button>
-                                            that aren't already linked.
-                                            <br />
-                                            <button
-                                              class="btn btn-med-light"
-                                              name="__action"
-                                              value="bulk_unlink_assessments"
-                                              onClick="return confirm('Are you sure?');"
-                                            >
-                                              Unlink assessments
-                                            </button>
-                                            that are linked.
-                                          </form>`,
-                                        footer: html`<button
-                                          type="button"
-                                          class="btn btn-secondary"
-                                          data-dismiss="modal"
-                                        >
-                                          Close
-                                        </button>`,
-                                      })}
-                                      ${row.assessment_group_heading}
-                                      <button
-                                        class="btn btn-sm btn-secondary ml-2"
-                                        type="button"
-                                        data-toggle="modal"
-                                        data-target="#bulk-${row.assessment_set_id}-${row.assessment_module_id}"
-                                      >
-                                        Bulk actions
-                                      </button>
-                                    </th>
-                                  </tr>
-                                `
-                              : ''}
-                            <tr id="row-${row.id}">
-                              <td class="align-middle" style="width: 1%">
-                                <span class="badge color-${row.color}">${row.label}</span>
-                              </td>
-                              <td class="align-middle">
-                                <a href="${urlPrefix}/assessment/${row.id}/"
-                                  >${row.title}
-                                  ${row.group_work
-                                    ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                                    : ''}</a
-                                >
-                              </td>
-                              <td>
-                                ${Modal({
-                                  body: html`
-                                    <p>Which ${lms_name} assignment should we link?</p>
-                                    <form method="POST">
-                                      <input
-                                        type="hidden"
-                                        name="__csrf_token"
-                                        value="${resLocals.__csrf_token}"
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="unsafe_assessment_id"
-                                        value="${row.id}"
-                                      />
-                                      <button
-                                        class="btn btn-success"
-                                        name="__action"
-                                        value="create_link_assessment"
-                                      >
-                                        Create a new assignment named ${row.label}: ${row.title}
-                                      </button>
-                                    </form>
-                                    <form method="POST">
-                                      <input
-                                        type="hidden"
-                                        name="__csrf_token"
-                                        value="${resLocals.__csrf_token}"
-                                      />
-                                      <input
-                                        type="hidden"
-                                        name="unsafe_assessment_id"
-                                        value="${row.id}"
-                                      />
-                                      <button
-                                        class="btn btn-info"
-                                        hx-get="?lineitems"
-                                        hx-target="next .line-items-inputs"
-                                      >
-                                        Pick from existing ${lms_name} assignments
-                                      </button>
-                                      <div class="line-items-inputs"></div>
-                                    </form>
-                                  `,
-                                  footer: html`<button
-                                    type="button"
-                                    class="btn btn-secondary"
-                                    data-dismiss="modal"
-                                  >
-                                    Close
-                                  </button>`,
-                                  id: `assignment-${row.id}`,
-                                  title: `Configure ${row.title} in ${lms_name}`,
-                                })}
-
-                                <form method="POST">
-                                  <input
-                                    type="hidden"
-                                    name="__csrf_token"
-                                    value="${resLocals.__csrf_token}"
-                                  />
-                                  <input
-                                    type="hidden"
-                                    name="unsafe_assessment_id"
-                                    value="${row.id}"
-                                  />
-                                  ${lineitems_linked.length === 0
-                                    ? html`
-                                        <button
-                                          class="btn btn-med-light"
-                                          type="button"
-                                          data-toggle="modal"
-                                          data-target="#assignment-${row.id}"
-                                        >
-                                          Link assignment
-                                        </button>
-                                      `
-                                    : html`
-                                        <button
-                                          class="btn btn-info"
-                                          name="__action"
-                                          value="send_grades"
-                                        >
-                                          Send grades
-                                        </button>
-                                        <span class="dropdown js-question-actions">
-                                          <button
-                                            type="button"
-                                            class="btn btn-xs btn-light dropdown-toggle"
-                                            data-toggle="dropdown"
-                                            aria-haspopup="true"
-                                            aria-expanded="false"
-                                          >
-                                            ...<span class="caret"></span>
-                                          </button>
-
-                                          <div class="dropdown-menu">
-                                            <button
-                                              class="dropdown-item"
-                                              name="__action"
-                                              value="unlink_assessment"
-                                            >
-                                              Unlink assignment
-                                            </button>
-                                          </div>
-                                        </span>
-                                      `}
-                                </form>
-                              </td>
-                              <td class="align-middle">
-                                ${lineitems_linked.map((i) =>
-                                  lineItem(i, resLocals.course_instance.display_timezone),
-                                )}
-                              </td>
-                            </tr>
-                          `;
-                        })}
-                      </tbody>
-                    </table>
-                  </div>
+                  ${instance.lti13_course_instance.context_memberships_url &&
+                  instance.lti13_course_instance.lineitems_url
+                    ? LinkedAssessments({
+                        resLocals,
+                        lms_name,
+                        assessments,
+                        lineitems,
+                      })
+                    : html`
+                        <p>
+                          PrairieLearn does not have enough LTI metadata to link assignments and do
+                          grade passback.
+                        </p>
+                        <p>
+                          To update our metadata, go back to the LMS and initiate a PrairieLearn
+                          connection via LTI as an instructor, then return here.
+                        </p>
+                      `}
 
                   <h3 id="connection">Connection to LMS</h3>
                   <form method="POST">
@@ -349,6 +136,211 @@ export function InstructorInstanceAdminLti13({
       </body>
     </html>
   `.toString();
+}
+
+function LinkedAssessments({
+  resLocals,
+  lms_name,
+  assessments,
+  lineitems,
+}: {
+  resLocals: Record<string, any>;
+  lms_name: string;
+  assessments: AssessmentRow[];
+  lineitems: Lti13Assessments[];
+}): HtmlSafeString {
+  const { urlPrefix } = resLocals;
+  const { assessments_group_by } = resLocals.course_instance;
+
+  return html` <div class="table-responsive">
+    <table class="table table-sm table-hover">
+      <thead>
+        <tr>
+          <th colspan="2" scope="row">PrairieLearn Assessment</th>
+          <th>Actions</th>
+          <th>
+            <form method="POST">
+              <input type="hidden" name="__action" value="poll_lti13_assessments" />
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+              ${lms_name} Assignment
+              <button class="btn btn-success btn-xs">Sync metadata</button>
+            </form>
+          </th>
+        </tr>
+      </thead>
+      <tbody>
+        ${assessments.map((row) => {
+          const lineitems_linked = lineitems.filter((item) => {
+            return item.assessment_id === row.id;
+          });
+          return html`
+            ${row.start_new_assessment_group
+              ? html`
+                  <tr>
+                    <th colspan="5">
+                      ${Modal({
+                        id: `bulk-${row.assessment_set_id}-${row.assessment_module_id}`,
+                        title: `${row.assessment_group_heading} ${assessments_group_by} Bulk Actions`,
+                        body: html`<p>
+                            These bulk actions work collectively on every assessment in the group
+                            where the action makes sense.
+                          </p>
+
+                          <form method="POST">
+                            <input
+                              type="hidden"
+                              name="__csrf_token"
+                              value="${resLocals.__csrf_token}"
+                            />
+
+                            <input
+                              type="hidden"
+                              name="assessment_set_id"
+                              value="${row.assessment_set_id}"
+                            />
+                            <input
+                              type="hidden"
+                              name="assessment_module_id"
+                              value="${row.assessment_module_id}"
+                            />
+
+                            <button
+                              class="btn btn-success"
+                              name="__action"
+                              value="bulk_create_assessments"
+                              onClick="return confirm('Are you sure?');"
+                            >
+                              Create and link assignments in ${lms_name}
+                            </button>
+                            that aren't already linked.
+                            <br />
+                            <button
+                              class="btn btn-med-light"
+                              name="__action"
+                              value="bulk_unlink_assessments"
+                              onClick="return confirm('Are you sure?');"
+                            >
+                              Unlink assessments
+                            </button>
+                            that are linked.
+                          </form>`,
+                        footer: html`<button
+                          type="button"
+                          class="btn btn-secondary"
+                          data-dismiss="modal"
+                        >
+                          Close
+                        </button>`,
+                      })}
+                      ${row.assessment_group_heading}
+                      <button
+                        class="btn btn-sm btn-secondary ml-2"
+                        type="button"
+                        data-toggle="modal"
+                        data-target="#bulk-${row.assessment_set_id}-${row.assessment_module_id}"
+                      >
+                        Bulk actions
+                      </button>
+                    </th>
+                  </tr>
+                `
+              : ''}
+            <tr id="row-${row.id}">
+              <td class="align-middle" style="width: 1%">
+                <span class="badge color-${row.color}">${row.label}</span>
+              </td>
+              <td class="align-middle">
+                <a href="${urlPrefix}/assessment/${row.id}/"
+                  >${row.title}
+                  ${row.group_work
+                    ? html` <i class="fas fa-users" aria-hidden="true"></i> `
+                    : ''}</a
+                >
+              </td>
+              <td>
+                ${Modal({
+                  body: html`
+                    <p>Which ${lms_name} assignment should we link?</p>
+                    <form method="POST">
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <input type="hidden" name="unsafe_assessment_id" value="${row.id}" />
+                      <button
+                        class="btn btn-success"
+                        name="__action"
+                        value="create_link_assessment"
+                      >
+                        Create a new assignment named ${row.label}: ${row.title}
+                      </button>
+                    </form>
+                    <form method="POST">
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <input type="hidden" name="unsafe_assessment_id" value="${row.id}" />
+                      <button
+                        class="btn btn-info"
+                        hx-get="?lineitems"
+                        hx-target="next .line-items-inputs"
+                      >
+                        Pick from existing ${lms_name} assignments
+                      </button>
+                      <div class="line-items-inputs"></div>
+                    </form>
+                  `,
+                  footer: html`<button type="button" class="btn btn-secondary" data-dismiss="modal">
+                    Close
+                  </button>`,
+                  id: `assignment-${row.id}`,
+                  title: `Configure ${row.title} in ${lms_name}`,
+                })}
+
+                <form method="POST">
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                  <input type="hidden" name="unsafe_assessment_id" value="${row.id}" />
+                  ${lineitems_linked.length === 0
+                    ? html`
+                        <button
+                          class="btn btn-med-light"
+                          type="button"
+                          data-toggle="modal"
+                          data-target="#assignment-${row.id}"
+                        >
+                          Link assignment
+                        </button>
+                      `
+                    : html`
+                        <button class="btn btn-info" name="__action" value="send_grades">
+                          Send grades
+                        </button>
+                        <span class="dropdown js-question-actions">
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-light dropdown-toggle"
+                            data-toggle="dropdown"
+                            aria-haspopup="true"
+                            aria-expanded="false"
+                          >
+                            ...<span class="caret"></span>
+                          </button>
+
+                          <div class="dropdown-menu">
+                            <button class="dropdown-item" name="__action" value="unlink_assessment">
+                              Unlink assignment
+                            </button>
+                          </div>
+                        </span>
+                      `}
+                </form>
+              </td>
+              <td class="align-middle">
+                ${lineitems_linked.map((i) =>
+                  lineItem(i, resLocals.course_instance.display_timezone),
+                )}
+              </td>
+            </tr>
+          `;
+        })}
+      </tbody>
+    </table>
+  </div>`;
 }
 
 function lineItem(item: Lti13Assessments, timezone: string) {
