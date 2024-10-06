@@ -339,6 +339,7 @@ export async function getLineitems(instance: Lti13CombinedInstance) {
   });
 
   const lineitems = LineitemsSchema.array().parse(fetchArray);
+  console.log(lineitems);
   return lineitems.flat();
 }
 
@@ -349,7 +350,9 @@ export async function getLineitem(instance: Lti13CombinedInstance, lineitem_id_u
     headers: { Authorization: `Bearer ${token}` },
   });
 
-  return LineitemSchema.parse(await fetchRes.json());
+  const lineitem = LineitemSchema.parse(await fetchRes.json());
+  console.log(lineitem);
+  return lineitem;
 }
 
 export async function syncLineitems(instance: Lti13CombinedInstance, job: ServerJob) {
