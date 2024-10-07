@@ -25,7 +25,8 @@ BEGIN
         uuid uuid,
         errors TEXT,
         warnings TEXT,
-        data JSONB
+        data JSONB,
+        shared_publicly BOOLEAN
     ) ON COMMIT DROP;
 
     INSERT INTO disk_course_instances (
@@ -33,13 +34,15 @@ BEGIN
         uuid,
         errors,
         warnings,
-        data
+        data,
+        shared_publicly
     ) SELECT
         entries->>0,
         (entries->>1)::uuid,
         entries->>2,
         entries->>3,
-        (entries->4)::JSONB
+        (entries->4)::JSONB,
+        (entries->>5)::boolean
     FROM UNNEST(disk_course_instances_data) AS entries;
 
     -- Synchronize the dest (course_instances) with the src
@@ -133,6 +136,7 @@ BEGIN
         assessments_group_by = (src.data->>'assessments_group_by')::enum_assessment_grouping,
         display_timezone = COALESCE(src.data->>'display_timezone', c.display_timezone),
         hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
+        shared_publicly = (src.data->>'shared_publicly')::boolean,
         sync_errors = NULL,
         sync_warnings = src.warnings
     FROM
@@ -190,6 +194,15 @@ BEGIN
             course_instance_id = syncing_course_instance_id
             AND number > JSONB_ARRAY_LENGTH(valid_course_instance.data->'access_rules');
     END LOOP;
+
+    -- Updated the shared_publicly flag for all course instances TEST
+    --UPDATE course_instances AS dest
+    --SET shared_publicly = src.shared_publicly
+    --FROM disk_course_instances AS src
+    --WHERE
+    --    dest.short_name = src.short_name
+    --    AND dest.deleted_at IS NULL
+    --    AND dest.course_id = syncing_course_id;
 
     -- Second pass: add errors where needed.
     UPDATE course_instances AS dest

@@ -84,6 +84,11 @@
           "institution": {
             "description": "The institution from which access is permitted.",
             "type": "string"
+          },
+          "sharedPublicly": {
+            "description": "If true, the course instance is shared publicly.",
+            "type": "boolean",
+            "default": true
           }
         }
       }

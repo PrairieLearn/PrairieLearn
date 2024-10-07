@@ -2024,6 +2024,7 @@ export async function initExpress() {
       coreElements: false,
     }),
   );
+  // Public Assessments Page
   app.use(
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
     [

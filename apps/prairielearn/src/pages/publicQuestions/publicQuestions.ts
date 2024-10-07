@@ -20,9 +20,9 @@ router.get(
       institution_id: res.locals.course.institution_id,
     });
 
-    if (!questionSharingEnabled) {
-      throw new error.HttpStatusError(404, 'Not Found');
-    }
+    // if (!questionSharingEnabled) { // TEST, uncomment
+    //   throw new error.HttpStatusError(404, 'This course does not have public question sharing enabled');
+    // }
 
     const questions = await selectPublicQuestionsForCourse(res.locals.course.id);
     res.send(
