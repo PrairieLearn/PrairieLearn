@@ -2043,7 +2043,7 @@ export async function initExpress() {
       ).default,
     ],
   );
-  // Public Course Instructor Assessments Page
+  // Public Course Assessments Page
   app.use('/pl/public/course_instance/:course_instance_id(\\d+)/assessments', [
     function (req, res, next) {
       res.locals.course_instance_id = req.params.course_instance_id;

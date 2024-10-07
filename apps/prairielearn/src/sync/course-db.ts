@@ -249,7 +249,7 @@ export interface CourseInstance {
   allowAccess: CourseInstanceAllowAccess[];
   allowIssueReporting: boolean;
   groupAssessmentsBy: 'Set' | 'Module';
-  sharedPublicly: boolean; // TEST
+  sharedPublicly: boolean;
 }
 
 export interface AssessmentAllowAccess {
