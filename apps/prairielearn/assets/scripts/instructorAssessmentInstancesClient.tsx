@@ -1,4 +1,6 @@
 import { on } from 'delegated-events';
+import { h, render } from 'preact';
+import { useState } from 'preact/hooks';
 
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
@@ -401,94 +403,113 @@ onDocumentReady(() => {
     bsTable.bootstrapTable('refresh', { silent: true });
   }
 
-  function timeLimitEditPopoverContent(this: any) {
-    const row = $(this).data('row');
-    const action = row.action ? row.action : 'set_time_limit';
-    return html`
-      <form name="set-time-limit-form" class="js-popover-form" method="POST">
-        <p>
-          Total time limit: ${row.total_time}<br />
-          Remaining time: ${row.time_remaining}
-        </p>
-        <input type="hidden" name="__action" value="${action}" />
-        <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-        ${row.assessment_instance_id
-          ? html`<input
-              type="hidden"
-              name="assessment_instance_id"
-              value="${row.assessment_instance_id}"
-            />`
-          : ''}
-        <select
-          class="custom-select select-time-limit"
-          name="plus_minus"
-          aria-label="Time limit options"
-          onchange="
-            $(this).parents('form').find('.time-limit-field').toggle(this.value !== 'unlimited' && this.value !== 'expire');
-            $(this).parents('form').find('.reopen-closed-field').toggle(this.value !== '+1' && this.value !== '-1' && this.value !== 'expire');
-            "
-        >
-          ${row.time_remaining_sec !== null
-            ? row.has_open_instance
-              ? html`
-                  <option value="+1">Add to instances with time limit</option>
-                  <option value="-1">Subtract from instances with time limit</option>
-                `
-              : html`
-                  <option value="+1">Add</option>
-                  <option value="-1">Subtract</option>
-                `
-            : ''}
-          <option value="set_total">Set total time limit to</option>
-          <option value="set_rem">Set remaining time to</option>
-          ${row.open || row.time_remaining_sec !== null
-            ? html`<option value="unlimited">Remove time limit</option>`
-            : ''}
-          ${row.open !== false && (row.time_remaining_sec === null || row.time_remaining_sec > 0)
-            ? html`<option value="expire">Expire time limit</option>`
-            : ''}
-        </select>
-        <p class="form-inline">
-          <input
-            class="form-control time-limit-field"
-            type="number"
-            name="time_add"
-            aria-label="Time value"
-            style="width: 5em"
-            value="5"
-          />
-          <select class="custom-select time-limit-field" name="time_ref" aria-label="Time unit">
-            <option value="minutes">minutes</option>
-            ${row.time_remaining_sec !== null
-              ? html`<option value="percent">% total limit</option>`
-              : ''}
-          </select>
-        </p>
-        ${row.has_closed_instance
-          ? html`
-              <div class="form-check mb-2 reopen-closed-field">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  name="reopen_closed"
-                  value="true"
-                  id="reopen_closed"
-                />
-                <label class="form-check-label" for="reopen_closed">
-                  Also re-open closed instances
-                </label>
-              </div>
-            `
-          : ''}
-        <div class="btn-toolbar pull-right">
-          <button type="button" class="btn btn-secondary mr-2" data-dismiss="popover">
-            Cancel
-          </button>
-          <button type="submit" class="btn btn-success">Set</button>
-        </div>
-      </form>
-    `.toString();
+  function TimeLimitEditPopover() {
+    const [count, setCount] = useState(0);
+
+    return (
+      <div>
+        <button onClick={() => setCount((count) => count + 1)}>Click me</button>
+        You clicked the button {count} times.
+      </div>
+    );
   }
+
+  function timeLimitEditPopoverContent(this: any) {
+    const div = document.createElement('div');
+
+    render(<TimeLimitEditPopover />, div);
+
+    return div;
+  }
+
+  // function timeLimitEditPopoverContent(this: any) {
+  //   const row = $(this).data('row');
+  //   const action = row.action ? row.action : 'set_time_limit';
+  //   return html`
+  //     <form name="set-time-limit-form" class="js-popover-form" method="POST">
+  //       <p>
+  //         Total time limit: ${row.total_time}<br />
+  //         Remaining time: ${row.time_remaining}
+  //       </p>
+  //       <input type="hidden" name="__action" value="${action}" />
+  //       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+  //       ${row.assessment_instance_id
+  //         ? html`<input
+  //             type="hidden"
+  //             name="assessment_instance_id"
+  //             value="${row.assessment_instance_id}"
+  //           />`
+  //         : ''}
+  //       <select
+  //         class="custom-select select-time-limit"
+  //         name="plus_minus"
+  //         aria-label="Time limit options"
+  //         onchange="
+  //           $(this).parents('form').find('.time-limit-field').toggle(this.value !== 'unlimited' && this.value !== 'expire');
+  //           $(this).parents('form').find('.reopen-closed-field').toggle(this.value !== '+1' && this.value !== '-1' && this.value !== 'expire');
+  //           "
+  //       >
+  //         ${row.time_remaining_sec !== null
+  //           ? row.has_open_instance
+  //             ? html`
+  //                 <option value="+1">Add to instances with time limit</option>
+  //                 <option value="-1">Subtract from instances with time limit</option>
+  //               `
+  //             : html`
+  //                 <option value="+1">Add</option>
+  //                 <option value="-1">Subtract</option>
+  //               `
+  //           : ''}
+  //         <option value="set_total">Set total time limit to</option>
+  //         <option value="set_rem">Set remaining time to</option>
+  //         ${row.open || row.time_remaining_sec !== null
+  //           ? html`<option value="unlimited">Remove time limit</option>`
+  //           : ''}
+  //         ${row.open !== false && (row.time_remaining_sec === null || row.time_remaining_sec > 0)
+  //           ? html`<option value="expire">Expire time limit</option>`
+  //           : ''}
+  //       </select>
+  //       <p class="form-inline">
+  //         <input
+  //           class="form-control time-limit-field"
+  //           type="number"
+  //           name="time_add"
+  //           aria-label="Time value"
+  //           style="width: 5em"
+  //           value="5"
+  //         />
+  //         <select class="custom-select time-limit-field" name="time_ref" aria-label="Time unit">
+  //           <option value="minutes">minutes</option>
+  //           ${row.time_remaining_sec !== null
+  //             ? html`<option value="percent">% total limit</option>`
+  //             : ''}
+  //         </select>
+  //       </p>
+  //       ${row.has_closed_instance
+  //         ? html`
+  //             <div class="form-check mb-2 reopen-closed-field">
+  //               <input
+  //                 class="form-check-input"
+  //                 type="checkbox"
+  //                 name="reopen_closed"
+  //                 value="true"
+  //                 id="reopen_closed"
+  //               />
+  //               <label class="form-check-label" for="reopen_closed">
+  //                 Also re-open closed instances
+  //               </label>
+  //             </div>
+  //           `
+  //         : ''}
+  //       <div class="btn-toolbar pull-right">
+  //         <button type="button" class="btn btn-secondary mr-2" data-dismiss="popover">
+  //           Cancel
+  //         </button>
+  //         <button type="submit" class="btn btn-success">Set</button>
+  //       </div>
+  //     </form>
+  //   `.toString();
+  // }
 
   function scorebarFormatter(score: number | null) {
     return Scorebar(score).toString();

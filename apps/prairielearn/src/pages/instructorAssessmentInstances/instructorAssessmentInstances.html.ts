@@ -33,7 +33,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
           rel="stylesheet"
         />
 
-        ${compiledScriptTag('instructorAssessmentInstancesClient.ts')}
+        ${compiledScriptTag('instructorAssessmentInstancesClient.tsx')}
       </head>
       <body>
         ${Navbar({ resLocals })}
