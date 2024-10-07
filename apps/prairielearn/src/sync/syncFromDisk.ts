@@ -155,15 +155,12 @@ export async function syncDiskToSqlWithLock(
   for (const courseInstanceKey in courseData.courseInstances) {
     const courseInstance = courseData.courseInstances[courseInstanceKey];
 
-    console.log(`Checking course instance ${courseInstanceKey}`); // TEST
     courseInstance.sharedPublicly = true; // TEST
-    courseData.courseInstances[courseInstanceKey].courseInstance.data.sharedPublicly =
-      courseInstance.sharedPublicly; // TEST, probably unncecessary once the course instances have sharedPublicly defined correctly. Make sure it's defined correctly
+    courseData.courseInstances[courseInstanceKey].courseInstance.data.sharedPublicly = courseInstance.sharedPublicly; // TEST, probably unncecessary once the course instances have sharedPublicly defined correctly. Make sure it's defined correctly
     if (courseInstance.sharedPublicly) {
       console.log(`Course instance ${courseInstanceKey} is shared publicly`); // TEST
       for (const assessmentKey in courseInstance.assessments) {
         const assessment = courseInstance.assessments[assessmentKey];
-        console.log(`Checking assessment ${assessmentKey}`); // TEST
         if (assessment.data && assessment.data.zones) {
           for (const zone of assessment.data.zones) {
             if (zone.questions) {

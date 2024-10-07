@@ -144,7 +144,7 @@ describe('Question Sharing', function () {
       },
     };
 
-    sharingCourseData.courseInstances['Fa19'].assessments['test'].sharedPublicly = true; // TEST, KEEP
+    sharingCourseData.courseInstances['Fa19'].assessments['test'].sharedPublicly = true;
 
     await syncUtil.writeCourseToDirectory(sharingCourseData, sharingCourseOriginDir);
 
@@ -591,27 +591,13 @@ describe('Question Sharing', function () {
     );
   });
   
-  describe('Test accessing page for a publicly shared assessment', function () { // TEST
-
+  describe('Test accessing page for a publicly shared assessment', function () {
     step('Successfully access publicly shared assessment page for the shared assessment', async () => {
-      // for (let courseInstanceId = 2; courseInstanceId < 3; courseInstanceId++) { // TEST, REMOVE THIS BLOCK
-      //   for (let sharedAssessmentId = 1; sharedAssessmentId < 31; sharedAssessmentId++) {
-      //     // TEST, attempt to access the publicly shared assessment 'test' from the 'Fa19' courseInstance
-      //     //const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${courseInstanceID}/assessment/${sharedAssessmentId}/questions`; // TEST, replace with the actual IDs
-      //     const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${courseInstanceId}/assessment/${sharedAssessmentId}/questions`; // TEST, replace with the actual IDs AND use baseURL
-      //     console.log('sharedAssessmentUrl:', sharedAssessmentUrl); // TEST
-      //     const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
-      //     if (sharedAssessmentPage.ok) {
-      //       console.log(`OK with courseInstanceId: ${courseInstanceId}, sharedAssessmentId: ${sharedAssessmentId}.`) // TEST
-      //     }
-      //   }
-      // } // TEST ABOVE
 
       const courseInstanceId = '2' // 'Fa19'
       const sharedAssessmentId = '24' // 'test'
-      const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${courseInstanceId}/assessment/${sharedAssessmentId}/questions`; // TEST, replace with the actual IDs AND use baseURL
+      const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${courseInstanceId}/assessment/${sharedAssessmentId}/questions`;
       const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
-      console.log('sharedAssessmentPage ok: ', sharedAssessmentPage.ok); // TEST, REMOVE
       
       assert(sharedAssessmentPage.ok);
     });

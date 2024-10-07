@@ -20,7 +20,6 @@ import {
 
 import { z } from 'zod';
 
-// Put in assessments.ts? // TEST
 async function selectAssessmentById(assessment_id: string): Promise<Assessment> {
   return await queryRow(
     sql.select_assessment_by_id,
