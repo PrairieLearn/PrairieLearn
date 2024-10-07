@@ -138,7 +138,7 @@ def get_ansi_color_tokens():
 @cache
 def get_formatter(
     BaseStyle: type[pygments.style.Style], highlight_lines_color: Optional[str]
-):
+) -> HighlightingHtmlFormatter:
     class CustomStyleWithAnsiColors(BaseStyle):
         styles = dict(BaseStyle.styles)
         styles.update(get_ansi_color_tokens())
