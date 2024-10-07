@@ -431,12 +431,11 @@ export async function loadFullCourse(
     );
 
     const sharedPublicly = courseInstance.data?.sharedPublicly ?? false; // TEST
-    console.log(`Shared publicly in course-db.ts: ${sharedPublicly}`); // TEST
 
     courseInstances[courseInstanceId] = {
       courseInstance,
       assessments,
-      sharedPublicly, // TODO: Implement sharedPublicly
+      sharedPublicly,
     };
   }
   return {
