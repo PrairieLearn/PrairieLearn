@@ -63,6 +63,7 @@ import * as lifecycleHooks from './lib/lifecycle-hooks.js';
 import * as load from './lib/load.js';
 import { LocalCache } from './lib/local-cache.js';
 import * as nodeMetrics from './lib/node-metrics.js';
+import * as logGarbageCollections from './lib/observability/log-garbage-collections.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import * as serverJobs from './lib/server-jobs.js';
 import { PostgresSessionStore } from './lib/session-store.js';
@@ -2688,6 +2689,7 @@ if (esMain(import.meta) && config.startServer) {
       async () => workspace.init(),
       async () => serverJobs.init(),
       async () => nodeMetrics.init(),
+      async () => logGarbageCollections.init(),
       // These should be the last things to start before we actually start taking
       // requests, as they may actually end up executing course code.
       async () => {
