@@ -27,7 +27,7 @@ export function AssessmentBadge({
   }
   if (publicURL) {
     // For public assessments, the URL prefix is different
-    urlPrefix = `${plainUrlPrefix}/public/course_instance/${course_instance_id}/instructor/assessment/${assessment.assessment_id}/questions`;
+    urlPrefix = `${plainUrlPrefix}/public/course_instance/${course_instance_id}/assessment/${assessment.assessment_id}/questions`;
   }
   if (urlPrefix === undefined) {
     // Construct the URL prefix with the appropriate course instance
