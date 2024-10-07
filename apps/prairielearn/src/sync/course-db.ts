@@ -249,7 +249,6 @@ export interface CourseInstance {
   allowAccess: CourseInstanceAllowAccess[];
   allowIssueReporting: boolean;
   groupAssessmentsBy: 'Set' | 'Module';
-  sharedPublicly: boolean; // TEST
 }
 
 export interface AssessmentAllowAccess {
@@ -393,7 +392,6 @@ export interface Question {
 }
 
 export interface CourseInstanceData {
-  sharedPublicly: boolean;
   courseInstance: InfoFile<CourseInstance>;
   assessments: Record<string, InfoFile<Assessment>>;
 }
@@ -430,13 +428,9 @@ export async function loadFullCourse(
       questions,
     );
 
-    const sharedPublicly = courseInstance.data?.sharedPublicly ?? false; // TEST
-    console.log(`Shared publicly in course-db.ts: ${sharedPublicly}`); // TEST
-
     courseInstances[courseInstanceId] = {
       courseInstance,
       assessments,
-      sharedPublicly, // TODO: Implement sharedPublicly
     };
   }
   return {
