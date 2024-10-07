@@ -591,10 +591,13 @@ export function validateHTML(file: string, optimistic: boolean, usesServerPy: bo
   const templates = [...file.matchAll(mustacheTemplateExtractorRegex)]
     .map((x) => x[1])
     .concat([...file.matchAll(answersNameExtractorRegex)].map((x) => `correct_answers.${x[1]}`));
+  const errors = dfsCheckParseTree(tree, optimistic);
+  
   if (!usesServerPy && templates.length > 0) {
-    return dfsCheckParseTree(tree, optimistic).concat([
-      `Create a server.py to generate the following: ${templates.join(', ')}`,
-    ]);
+    errors.push(
+      `Create a server.py file to generate the following: ${templates.join(', ')}`,
+    );
   }
-  return dfsCheckParseTree(tree, optimistic);
+  
+  return errors;
 }
