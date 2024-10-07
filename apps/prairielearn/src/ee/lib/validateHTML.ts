@@ -592,12 +592,10 @@ export function validateHTML(file: string, optimistic: boolean, usesServerPy: bo
     .map((x) => x[1])
     .concat([...file.matchAll(answersNameExtractorRegex)].map((x) => `correct_answers.${x[1]}`));
   const errors = dfsCheckParseTree(tree, optimistic);
-  
+
   if (!usesServerPy && templates.length > 0) {
-    errors.push(
-      `Create a server.py file to generate the following: ${templates.join(', ')}`,
-    );
+    errors.push(`Create a server.py file to generate the following: ${templates.join(', ')}`);
   }
-  
+
   return errors;
 }

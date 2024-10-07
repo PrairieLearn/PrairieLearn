@@ -226,7 +226,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data['completion'] = completion;
 
     if (html && typeof html === 'string') {
-      const errors = validateHTML(html, false,  !!job?.data?.python);
+      const errors = validateHTML(html, false, !!job?.data?.python);
       job.data['initialGenerationErrors'] = errors;
       job.data['finalGenerationErrors'] = errors;
       if (errors.length > 0) {
