@@ -144,8 +144,7 @@ describe('Question Sharing', function () {
       },
     };
 
-    // console.log(sharingCourseData.courseInstances['Fa19'].assessments);
-    sharingCourseData.courseInstances['Fa19'].assessments['test'].sharedPublicly = true; // TEST
+    sharingCourseData.courseInstances['Fa19'].assessments['test'].sharedPublicly = true;
 
     await syncUtil.writeCourseToDirectory(sharingCourseData, sharingCourseOriginDir);
 
@@ -590,5 +589,17 @@ describe('Question Sharing', function () {
         await ensureInvalidSharingOperationFailsToSync();
       },
     );
+  });
+  
+  describe('Test accessing page for a publicly shared assessment', function () {
+    step('Successfully access publicly shared assessment page for the shared assessment', async () => {
+
+      const courseInstanceId = '2' // 'Fa19'
+      const sharedAssessmentId = '24' // 'test'
+      const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${courseInstanceId}/assessment/${sharedAssessmentId}/questions`;
+      const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
+      
+      assert(sharedAssessmentPage.ok);
+    });
   });
 });

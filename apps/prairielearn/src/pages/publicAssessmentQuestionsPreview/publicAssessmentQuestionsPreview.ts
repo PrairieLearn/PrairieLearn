@@ -16,11 +16,10 @@ import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   InstructorAssessmentQuestions,
   AssessmentQuestionRowSchema,
-} from './publicInstructorAssessmentQuestions.html.js';
+} from './publicAssessmentQuestionsPreview.html.js';
 
 import { z } from 'zod';
 
-// Put in assessments.ts? // TEST
 async function selectAssessmentById(assessment_id: string): Promise<Assessment> {
   return await queryRow(
     sql.select_assessment_by_id,
@@ -60,6 +59,10 @@ router.get(
   asyncHandler(async (req, res) => {
     const isCourseInstancePublic = await checkCourseInstancePublic(res.locals.course_instance_id);
     const isAssessmentPublic = await checkAssessmentPublic(res.locals.assessment_id);
+    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
+    const course = await selectCourseById(courseId);
+    res.locals.course = course;
+
     if (!isCourseInstancePublic && !isAssessmentPublic) {
       throw new error.HttpStatusError(
         404,
@@ -67,13 +70,6 @@ router.get(
       );
     }
 
-    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
-    const course = await selectCourseById(courseId);
-
-
-
-    res.locals.course = course;
-    res.locals.urlPrefix = `/pl`;
     res.locals.assessment = await selectAssessmentById(res.locals.assessment_id);
     const questionRows = await queryRows(
       sql.questions,
