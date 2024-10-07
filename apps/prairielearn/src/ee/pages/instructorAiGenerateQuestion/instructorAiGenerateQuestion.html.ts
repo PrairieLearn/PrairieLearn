@@ -68,9 +68,9 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
                   <div class="form-text form-muted">
                     <em>
                       Example: A toy car is pushed off a table with height h at speed v0. Assume
-                      acceleration due to gravity as 9.81 m/s^2. H is a number with 1 decimal
-                      digit selected at random between 1 and 2 meters. V0 is a an integer between
-                      1 and 4 m/s. How long does it take for the car to reach the ground?
+                      acceleration due to gravity as 9.81 m/s^2. H is a number with 1 decimal digit
+                      selected at random between 1 and 2 meters. V0 is a an integer between 1 and 4
+                      m/s. How long does it take for the car to reach the ground?
                     </em>
                   </div>
                 </div>
@@ -86,8 +86,8 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
                   ></textarea>
                   <div class="form-text form-muted">
                     <em>
-                      Example: students should enter the solution using a decimal number. The
-                      answer should be in seconds.
+                      Example: students should enter the solution using a decimal number. The answer
+                      should be in seconds.
                     </em>
                   </div>
                 </div>
