@@ -100,18 +100,6 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
           <p>
             Confirmation: You selected PrairieLearn assessment <strong>${assessment.title}</strong>
           </p>
-          <form
-            id="LMSForm"
-            method="POST"
-            action="${deep_link_return_url}"
-            onSubmit="event.preventDefault();
-            console.log('Got to here');
-            document.getElementById('linkForm').submit();
-            document.getElementById('LMSForm').submit();"
-          >
-            <input type="hidden" name="JWT" value="${signed_jwt}" />
-            <input class="btn btn-success" type="submit" value="Update link in ${platform_name}" />
-          </form>
 
           <form id="linkForm" method="POST">
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
@@ -119,6 +107,19 @@ export function InstructorInstanceAdminLti13AssignmentConfirmation({
             <input type="hidden" name="unsafe_assessment_id" value="${assessment.id}" />
             <input type="hidden" name="unsafe_resourceId" value="${assessment.uuid}" />
             <input type="submit" value="Link form" />
+          </form>
+
+          <form id="LMSForm" method="POST" action="${deep_link_return_url}">
+            <input type="hidden" name="JWT" value="${signed_jwt}" />
+            <input
+              class="btn btn-success"
+              type="submit"
+              value="Update link in ${platform_name}"
+              onClick="event.preventDefault();
+              console.log('Got to here');
+              document.getElementById('linkForm').submit();
+              document.getElementById('LMSForm').submit();"
+            />
           </form>
         </main>
       </body>
