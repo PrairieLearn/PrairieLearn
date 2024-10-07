@@ -26,8 +26,6 @@ router.get(
     res.locals.course_instance = await selectCourseInstanceById(res.locals.course_instance_id);
     res.locals.urlPrefix = `/pl`;
 
-    console.log('course_id', res.locals.course.id); // TEST
-
     try {
       const isPublic = await new Promise((resolve, reject) => {
         sqldb.queryOneRow(

@@ -195,15 +195,6 @@ BEGIN
             AND number > JSONB_ARRAY_LENGTH(valid_course_instance.data->'access_rules');
     END LOOP;
 
-    -- Updated the shared_publicly flag for all course instances TEST
-    --UPDATE course_instances AS dest
-    --SET shared_publicly = src.shared_publicly
-    --FROM disk_course_instances AS src
-    --WHERE
-    --    dest.short_name = src.short_name
-    --    AND dest.deleted_at IS NULL
-    --    AND dest.course_id = syncing_course_id;
-
     -- Second pass: add errors where needed.
     UPDATE course_instances AS dest
     SET
