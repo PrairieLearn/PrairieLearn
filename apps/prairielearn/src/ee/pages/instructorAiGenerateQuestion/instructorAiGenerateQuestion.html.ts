@@ -63,7 +63,7 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
                   <label for="user-prompt-llm">
                     Please give a high-level overview of the question. What internal parameters need
                     to be generated and what information do we provide to students?
-                    <div>
+                    <div class="form-text form-muted">
                       <em>
                         Example: A toy car is pushed off a table with height h at speed v0. Assume
                         acceleration due to gravity as 9.81 m/s^2. H is a number with 1 decimal
@@ -73,10 +73,12 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
                     </div>
                   </label>
                   <textarea name="prompt" id="user-prompt-llm" class="form-control"></textarea>
+                </div>
+                <div class="form-group">
                   <label for="user-prompt-llm-user-input">
                     How should students input their solution? What choices or input boxes are they
                     given?
-                    <div>
+                    <div class="form-text form-muted">
                       <em>
                         Example: students should enter the solution using a decimal number. The
                         answer should be in seconds.
@@ -88,9 +90,11 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
                     id="user-prompt-llm-user-input"
                     class="form-control"
                   ></textarea>
+                </div>
+                <div class="form-group">
                   <label for="user-prompt-llm-grading">
                     How do we determine if a solution is correct/which answer choice is correct?
-                    <div>
+                    <div class="form-text form-muted">
                       <em>
                         Example: the answer is computed as sqrt(2 * h / g) where g = 9.81 m/s^2
                       </em>
