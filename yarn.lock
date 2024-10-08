@@ -3157,6 +3157,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@prairielearn/express-list-endpoints@workspace:packages/express-list-endpoints":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/express-list-endpoints@workspace:packages/express-list-endpoints"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/express-session": "npm:^1.18.0"
+    "@types/node": "npm:^20.16.2"
+    c8: "npm:^10.1.2"
+    chai: "npm:^5.1.1"
+    mocha: "npm:^10.7.3"
+    tsx: "npm:^4.19.0"
+    typescript: "npm:^5.5.4"
+  languageName: unknown
+  linkType: soft
+
 "@prairielearn/express-test-utils@workspace:^, @prairielearn/express-test-utils@workspace:packages/express-test-utils":
   version: 0.0.0-use.local
   resolution: "@prairielearn/express-test-utils@workspace:packages/express-test-utils"
