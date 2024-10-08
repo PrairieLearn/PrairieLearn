@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 import { HtmlValue, html, joinHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { AssessmentQuestionSchema, type User } from '../../../lib/db-types.js';
@@ -50,7 +50,7 @@ export function ManualGradingAssessment({
         ${compiledScriptTag('instructorAssessmentManualGradingAssessmentClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         ${resLocals.authz_data.has_course_instance_permission_edit
           ? GraderAssignmentModal({ courseStaff, csrfToken: resLocals.__csrf_token })
           : ''}
@@ -76,7 +76,11 @@ export function ManualGradingAssessment({
             </div>
 
             <div class="table-responsive">
-              <table id="instanceQuestionGradingTable" class="table table-sm table-hover">
+              <table
+                id="instanceQuestionGradingTable"
+                class="table table-sm table-hover"
+                aria-label="Questions for manual grading"
+              >
                 <thead>
                   <tr>
                     <th>Question</th>
@@ -173,7 +177,7 @@ function AssessmentQuestionRow({
                 ? html`
                     <button
                       type="button"
-                      class="btn btn-sm"
+                      class="btn btn-sm btn-ghost"
                       data-toggle="modal"
                       data-target="#grader-assignment-modal"
                       data-assessment-question-id="${question.id}"

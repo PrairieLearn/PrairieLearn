@@ -1,5 +1,17 @@
 # @prairielearn/browser-utils
 
+## 2.2.1
+
+### Patch Changes
+
+- 0fa45be: Remove stray `console.log` call
+
+## 2.2.0
+
+### Minor Changes
+
+- d7f1045: Add `trapFocus` and `focusFirstFocusbaleChild` functions
+
 ## 2.1.3
 
 ### Patch Changes

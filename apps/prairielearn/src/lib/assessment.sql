@@ -748,7 +748,7 @@ WITH
             ELSE (s.submitted_answer - '_files')
           END,
           'true_answer',
-          v.true_answer
+          s.true_answer
         ) AS data
       FROM
         grading_jobs AS gj

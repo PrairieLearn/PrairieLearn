@@ -145,8 +145,8 @@ export async function populateRubricData(locals: Record<string, any>): Promise<v
 
   // Render rubric items: description, explanation and grader note
   const mustache_data = {
-    correct_answers: locals.variant?.true_answer,
-    params: locals.variant?.params,
+    correct_answers: locals.submission?.true_answer ?? {},
+    params: locals.submission?.params ?? {},
     submitted_answers: locals.submission?.submitted_answer,
   };
 

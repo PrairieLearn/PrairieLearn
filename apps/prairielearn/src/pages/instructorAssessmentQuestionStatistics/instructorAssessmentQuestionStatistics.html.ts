@@ -2,10 +2,10 @@ import _ from 'lodash';
 import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -60,7 +60,7 @@ export function InstructorAssessmentQuestionStatistics({
         ${compiledScriptTag('instructorAssessmentQuestionStatisticsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           <h1 class="sr-only">
             ${resLocals.assessment_set.name} ${resLocals.assessment.number} Question Statistics
@@ -96,8 +96,8 @@ export function InstructorAssessmentQuestionStatistics({
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <h2>
                 ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question difficulty
+                vs discrimination
               </h2>
-              vs discrimination
               <div class="ml-auto">
                 <small>
                   <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
@@ -177,7 +177,10 @@ export function InstructorAssessmentQuestionStatistics({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover tablesorter">
+              <table
+                class="table table-sm table-hover tablesorter"
+                aria-label="Question statistics"
+              >
                 <thead>
                   <tr>
                     <th class="text-center">Question</th>
@@ -292,8 +295,8 @@ export function InstructorAssessmentQuestionStatistics({
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <h2>
                 ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Detailed question
+                statistics
               </h2>
-              statistics
               <div class="ml-auto">
                 <small>
                   <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
@@ -310,7 +313,10 @@ export function InstructorAssessmentQuestionStatistics({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover tablesorter table-bordered">
+              <table
+                class="table table-sm table-hover tablesorter table-bordered"
+                aria-label="Detailed question statistics"
+              >
                 <thead>
                   <tr>
                     <th class="text-center">Question</th>

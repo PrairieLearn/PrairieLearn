@@ -16,6 +16,8 @@ PrairieLearn presently provides the following templated **input field** elements
   representing asymptotic input.
 - [`pl-checkbox`](#pl-checkbox-element): Selecting **multiple options** from a
   list.
+- [`pl-excalidraw`](#pl-excalidraw-element): Draw a **vector diagram** using
+  [excalidraw](https://github.com/excalidraw/excalidraw).
 - [`pl-file-editor`](#pl-file-editor-element): Provide an in-browser code editor
   for writing and submitting code.
 - [`pl-file-upload`](#pl-file-upload-element): Provide a submission area
@@ -240,6 +242,46 @@ To compute `max-select`, we use a similar algorithm (note the different default 
 #### See also
 
 - [`pl-multiple-choice` for allowing only **one** correct choice](#pl-multiple-choice-element)
+
+---
+
+### `pl-excalidraw` element
+
+Draw a vector diagram using [excalidraw](https://github.com/excalidraw/excalidraw). Only manual grading is supported.
+
+![](elements/pl-excalidraw.png)
+
+**question.html**
+
+```html
+<p>Draw something else, with a starter diagram</p>
+
+<pl-excalidraw
+  gradable="true"
+  answers-name="vector"
+  source-file-name="starter.excalidraw"
+  directory="clientFilesQuestion"
+  width="100%"
+  height="600px"
+></pl-excalidraw>
+```
+
+#### Customizations
+
+| Attribute          | Type                                                                                             | Default | Description                                                                                                             |
+| ------------------ | ------------------------------------------------------------------------------------------------ | ------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `gradable`         | boolean                                                                                          | "true"  | Whether a diagram accepts input from the user.                                                                          |
+| `answers-name`     | string                                                                                           | -       | Unique name to identify the widget with. Drawing submissions are saved with this name. Required when `gradable` is set. |
+| `source-file-name` | string                                                                                           | -       | Optional file to load as the starter diagram.                                                                           |
+| `directory`        | `serverFilesCourse` or `clientFilesCourse` or `clientFilesQuestion` or `courseExtensions` or `.` | "."     | Directory where the `source-file-name` is loaded from. By default, it refers to the question directory `"."`.           |
+| `width`            | string                                                                                           | `100%`  | Width of the widget, compatible with the [CSS width][css-width-mdn] specification.                                      |
+| `height`           | string                                                                                           | `800px` | Height of the widget, compatible with the [CSS width][css-width-mdn] specification.                                     |
+
+[css-width-mdn]: https://developer.mozilla.org/en-US/docs/Web/CSS/width
+
+#### Example implementation
+
+[element/excalidraw]
 
 ---
 
@@ -646,20 +688,21 @@ generation if two (or more) choices are identical.
 
 #### Customizations
 
-| Attribute                    | Type                                         | Default  | Description                                                                                                                                                                                |
-| ---------------------------- | -------------------------------------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `answers-name`               | string                                       | —        | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                       |
-| `weight`                     | integer                                      | 1        | Weight to use when computing a weighted average score over elements.                                                                                                                       |
-| `display`                    | "block", "inline", or "dropdown"             | "block"  | Display option for the input field. Block and inline display answer choices as radio buttons, while dropdown presents option as a dropdown.                                                |
-| `number-answers`             | integer                                      | special  | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                                        |
-| `order`                      | "random", "ascend", "descend", or "fixed"    | "random" | Order to display answer choices. Fixed order displays choices in the same order as the original source file.                                                                               |
-| `hide-letter-keys`           | boolean                                      | false    | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                                         |
-| `all-of-the-above`           | "false", "random", "correct", "incorrect"    | "false"  | Add "All of the above" choice. See below for details.                                                                                                                                      |
-| `none-of-the-above`          | "false", "random", "correct", or "incorrect" | "false"  | Add "None of the above" choice. See below for details.                                                                                                                                     |
-| `all-of-the-above-feedback`  | string                                       | —        | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                                 |
-| `none-of-the-above-feedback` | string                                       | —        | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                                |
-| `allow-blank`                | boolean                                      | false    | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid.             |
-| `size`                       | integer                                      | -        | Manually set the size of the dropdown to a fixed width. The default behavior is to make the dropdown as wide as the widest option. Should only be used with `display` set to `"dropdown"`. |
+| Attribute                    | Type                                         | Default            | Description                                                                                                                                                                                |
+| ---------------------------- | -------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `answers-name`               | string                                       | —                  | Variable name to store data in. Note that this attribute has to be unique within a question, i.e., no value for this attribute should be repeated within a question.                       |
+| `weight`                     | integer                                      | 1                  | Weight to use when computing a weighted average score over elements.                                                                                                                       |
+| `display`                    | "block", "inline", or "dropdown"             | "block"            | Display option for the input field. Block and inline display answer choices as radio buttons, while dropdown presents option as a dropdown.                                                |
+| `number-answers`             | integer                                      | special            | The total number of answer choices to display. Defaults to displaying one correct answer and all incorrect answers.                                                                        |
+| `order`                      | "random", "ascend", "descend", or "fixed"    | "random"           | Order to display answer choices. Fixed order displays choices in the same order as the original source file.                                                                               |
+| `hide-letter-keys`           | boolean                                      | false              | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                                         |
+| `all-of-the-above`           | "false", "random", "correct", "incorrect"    | "false"            | Add "All of the above" choice. See below for details.                                                                                                                                      |
+| `none-of-the-above`          | "false", "random", "correct", or "incorrect" | "false"            | Add "None of the above" choice. See below for details.                                                                                                                                     |
+| `all-of-the-above-feedback`  | string                                       | —                  | Helper text to be displayed to the student next to the `all-of-the-above` option after question is graded if this option has been selected by the student.                                 |
+| `none-of-the-above-feedback` | string                                       | —                  | Helper text to be displayed to the student next to the `none-of-the-above` option after question is graded if this option has been selected by the student.                                |
+| `allow-blank`                | boolean                                      | false              | Whether or not an empty submission is allowed. If `allow-blank` is set to `true`, a submission that does not select any option will be marked as incorrect instead of invalid.             |
+| `size`                       | integer                                      | -                  | Manually set the size of the dropdown to a fixed width. The default behavior is to make the dropdown as wide as the widest option. Should only be used with `display` set to `"dropdown"`. |
+| `placeholder`                | string                                       | "Select an option" | String to be used as the placeholder text when `display` is set to `dropdown`. Will also accept an empty string as `placeholder=""`.                                                       |
 
 The attributes `none-of-the-above` and `all-of-the-above` can be set to one of these values:
 
@@ -842,9 +885,9 @@ Within the `pl-order-blocks` element, each element must either be a `pl-answer` 
 Different grading options are defined via the attribute `grading-method`:
 
 - `ordered`: in this method, the correct ordering of the blocks is defined by the ordering in which
-  the correct answers (defined in `pl-answer`) appear in the HTML file. There is no partial credit for this option.
-- `unordered`: in this method, if `n` is the total number of correct blocks, each correct block moved to the solution area is given `1/n` points, and each incorrect block moved to the solution area is subtracted by `1/n` points. The final score will be at least 0 (the student cannot earn a negative score by only moving incorrect answers). Note the ordering of the blocks does not matter. That is, any permutation of the answers within the solution area is accepted. There is partial credit for this option.
-- `ranking`: in this method, the `ranking` attribute of the `pl-answer` options are used to check answer ordering. Every answer block _X_ should have a `ranking` integer that is less than or equal to the answer block immediately below _X_. That is, the sequence of `ranking` integers of all the answer blocks should form a _nonstrictly increasing_ sequence. If `n` is the total number of answers, each correctly ordered answer is worth `1/n`, up to the first incorrectly ordered answer. There is partial credit for this option.
+  the correct answers (defined in `pl-answer`) appear in the HTML file.
+- `unordered`: in this method, if `n` is the total number of correct blocks, each correct block moved to the solution area is given `1/n` points, and each incorrect block moved to the solution area is subtracted by `1/n` points. The final score will be at least 0 (the student cannot earn a negative score by only moving incorrect answers). Note the ordering of the blocks does not matter. That is, any permutation of the answers within the solution area is accepted.
+- `ranking`: in this method, the `ranking` attribute of the `pl-answer` options are used to check answer ordering. Every answer block _X_ should have a `ranking` integer that is less than or equal to the answer block immediately below _X_. That is, the sequence of `ranking` integers of all the answer blocks should form a _nonstrictly increasing_ sequence. If `n` is the total number of answers, each correctly ordered answer is worth `1/n`, up to the first incorrectly ordered answer.
 - `dag`: in this method, the `depends` attibute of the `pl-answer` options are used to declare the directed acyclic graph relation between the blocks, and a correct answer is any topological sort of that directed acyclic graph. If `pl-block-group` elements are used to divide some blocks into groups, then a correct answer is a topological sort of the lines of the proof with the added condition that the lines of each group must be listed contiguously (as an example, this is useful for expressing a [proof by cases][demo/proofblocks] when the `dag` grader is used for mathematical proofs). Blocks inside a `pl-block-group` element may only depend or be depended on by blocks within the same `pl-block-group`, and `pl-blocks-group`s can be given their own `tag` and `depends` properties so that a block may depend on an entire group, or a group may depend on a block or group.
 - `external`: in this method, the blocks moved to the solution area will be saved in the file `user_code.py`, and the correctness of the code will be checked using the external grader. Depending on the external grader grading code logic, it may be possible to enable or disable partial credit. The attribute `correct` for `pl-answer` can still be used in conjunction with `min-incorrect` and `max-incorrect` for display purposes only, but not used for grading purposes. The attributes `ranking` and `indent` are not allowed for this grading method.
 
@@ -1199,18 +1242,19 @@ def generate(data):
 
 #### Customizations
 
-| Attribute               | Type          | Default  | Description                                                                                                                                            |
-| ----------------------- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `params-name`           | string        | —        | The name of the key in `data['params']` to get a value from.                                                                                           |
-| `show-header`           | boolean       | true     | Show the header row of a DataFrame.                                                                                                                    |
-| `show-index`            | boolean       | true     | Show the index column of a DataFrame. Will switch to 1-indexing if using the default index and `display-language` is "r".                              |
-| `show-dimensions`       | boolean       | true     | Show a footer with the dimensions of a DataFrame.                                                                                                      |
-| `show-dtype`            | boolean       | false    | Show the data types contained in each column of the DataFrame at the bottom of each column. Types used correspond to the `display-language` parameter. |
-| `display-language`      | "python", "r" | "python" | Language to use for displaying data types and indices.                                                                                                 |
-| `display-variable-name` | string        | "df"     | Variable name to display in code to recreate DataFrame.                                                                                                |
-| `show-python`           | boolean       | true     | Show code that can be used to recreate the DataFrame in Python in a separate tab.                                                                      |
-| `digits`                | integer       | -        | Number of digits to display for floating point entries.                                                                                                |
-| `width`                 | integer       | 500      | Max characters per line for displaying Python code.                                                                                                    |
+| Attribute               | Type          | Default  | Description                                                                                                                                                                                                                                                                                                                                                        |
+| ----------------------- | ------------- | -------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `params-name`           | string        | —        | The name of the key in `data['params']` to get a value from.                                                                                                                                                                                                                                                                                                       |
+| `show-header`           | boolean       | true     | Show the header row of a DataFrame.                                                                                                                                                                                                                                                                                                                                |
+| `show-index`            | boolean       | true     | Show the index column of a DataFrame. Will switch to 1-indexing if using the default index and `display-language` is "r".                                                                                                                                                                                                                                          |
+| `show-dimensions`       | boolean       | true     | Show a footer with the dimensions of a DataFrame.                                                                                                                                                                                                                                                                                                                  |
+| `show-dtype`            | boolean       | false    | Show the data types contained in each column of the DataFrame at the bottom of each column. Types used correspond to the `display-language` parameter.                                                                                                                                                                                                             |
+| `display-language`      | "python", "r" | "python" | Language to use for displaying data types and indices.                                                                                                                                                                                                                                                                                                             |
+| `display-variable-name` | string        | "df"     | Variable name to display in code to recreate DataFrame.                                                                                                                                                                                                                                                                                                            |
+| `show-python`           | boolean       | true     | Show code that can be used to recreate the DataFrame in Python in a separate tab.                                                                                                                                                                                                                                                                                  |
+| `digits`                | integer       | -        | Number of digits to display for floating point entries.                                                                                                                                                                                                                                                                                                            |
+| `width`                 | integer       | 500      | Max characters per line for displaying Python code.                                                                                                                                                                                                                                                                                                                |
+| `presentation-type`     | string        | `'g'`    | Floating point number display format. If `digits` is specified, formatted using `'{:.{digits}{presentation-type}}'`, otherwise `'{:{presentation-type}}'`. See [the Python documentation](https://docs.python.org/3/library/string.html#format-specification-mini-language) for more information on allowable presentation types for `float` and `Decimal` values. |
 
 #### Details
 
@@ -1433,10 +1477,7 @@ If `file()` does not return anything, it will be treated as if `file()` returned
 
 ### `pl-file-preview` element
 
-Provides an in-browser preview of pure-text or image files submitted by a student as part of an external grading system.
-Does not support other file types (e.g., PDF). Shows the submitted file in the corresponding submission panel.
-Used in conjunction with submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`.
-Commonly appears in the submission panel with companion `pl-external-grader-results` element.
+Provides an in-browser list of all files submitted by a student through submission elements like `pl-file-editor`, `pl-file-upload`, and `pl-rich-text-editor`, or through [workspaces](workspaces/index.md). A preview of each file's content is also displayed for text-only files (including source code), images, PDF files and Jupyter Notebooks. It is commonly used in the submission panel in conjunction with the `pl-external-grader-results` element, though it can also be used when manual or internal grading is used to grade files.
 
 #### Sample element
 
@@ -1455,6 +1496,7 @@ Commonly appears in the submission panel with companion `pl-external-grader-resu
 - [`pl-file-upload` to receive files as a submission](#pl-file-upload-element)
 - [`pl-external-grader-results` to include output from autograded code](#pl-external-grader-results-element)
 - [`pl-code` to display blocks of code with syntax highlighting](#pl-code-element)
+- [`pl-xss-safe` to display HTML or Markdown code provided by students](#pl-xss-safe-element)
 
 ---
 
@@ -2332,8 +2374,6 @@ def generate(data):
         {"tag": "false", "ans": "part"},
         {"tag": "false", "ans": "inverse"}
     ]
-
-    return data
 ```
 
 #### Customizations
@@ -2515,6 +2555,7 @@ that if there are many submitted answers, the page will load slowly.
 [element/drawinggallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [element/codedocumentation]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/codeDocumentation
 [element/dropdown]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/dropdown
+[element/excalidraw]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/excalidraw
 [element/figure]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/figure
 [element/filedownload]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileDownload
 [element/fileeditor]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/fileEditor

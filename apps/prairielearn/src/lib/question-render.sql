@@ -67,7 +67,6 @@ SELECT
   s.variant_id,
   s.manual_rubric_grading_id,
   to_jsonb(gj) AS grading_job,
-  grading_job_status (gj.id) AS grading_job_status,
   format_date_full_compact (
     s.date,
     coalesce(ci.display_timezone, c.display_timezone)
@@ -186,7 +185,6 @@ SELECT
   to_jsonb(ci) AS course_instance,
   to_jsonb(c) AS variant_course,
   to_jsonb(qc) AS question_course,
-  grading_job_status (lgj.id) AS grading_job_status,
   format_date_full_compact (
     s.date,
     coalesce(ci.display_timezone, c.display_timezone)

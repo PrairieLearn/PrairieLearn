@@ -53,7 +53,7 @@ app.get(
         instance_id: workspace_server_settings.instance_id,
       });
       db_status = 'ok';
-    } catch (_err) {
+    } catch {
       db_status = null;
     }
 
@@ -278,7 +278,7 @@ async function pruneStoppedContainers() {
     try {
       // Try to grab the container, but don't care if it doesn't exist
       container = await _getDockerContainerByLaunchUuid(ws.launch_uuid);
-    } catch (_err) {
+    } catch {
       // No container
       await sqldb.queryAsync(sql.clear_workspace_on_shutdown, {
         workspace_id: ws.id,
@@ -308,7 +308,7 @@ async function pruneRunawayContainers() {
   let running_workspaces;
   try {
     running_workspaces = await docker.listContainers({ all: true });
-  } catch (err) {
+  } catch {
     // Nothing to do
     return;
   }
@@ -508,7 +508,7 @@ function _checkServer(workspace) {
   const healthCheckInterval = config.workspaceHealthCheckIntervalSec * 1000;
   const healthCheckTimeout = config.workspaceHealthCheckTimeoutSec * 1000;
 
-  const startTime = new Date().getTime();
+  const startTime = performance.now();
   return new Promise((resolve, reject) => {
     function checkWorkspace() {
       fetch(
@@ -523,7 +523,7 @@ function _checkServer(workspace) {
         })
         .catch(() => {
           // Do nothing, because errors are expected while the container is launching.
-          const endTime = new Date().getTime();
+          const endTime = performance.now();
           if (endTime - startTime > startTimeout) {
             const { id, version, launch_uuid } = workspace;
             reject(
@@ -1029,7 +1029,7 @@ async function sendGradedFilesArchive(workspace_id, res) {
       const filePath = path.join(workspaceDir, file.path);
       archive.file(filePath, { name: file.path });
       debug(`Sending ${file.path}`);
-    } catch (err) {
+    } catch {
       logger.warn(`Graded file ${file.path} does not exist.`);
       continue;
     }

@@ -38,7 +38,7 @@ export function CourseRequestsTable({
             `}
       </div>
       <div class="table-responsive">
-        <table class="table table-sm">
+        <table class="table table-sm" aria-label="Course requests">
           <thead>
             <tr>
               <th>Created At</th>
@@ -145,7 +145,10 @@ export function CourseRequestsTable({
                       <tr>
                         <td colspan="${showAll ? 11 : 10}" class="p-0">
                           <div id="course-requests-job-list-${row.id}" class="collapse">
-                            <table class="table table-sm table-active mb-0">
+                            <table
+                              class="table table-sm table-active mb-0"
+                              aria-label="Course request jobs"
+                            >
                               <thead>
                                 <th>Number</th>
                                 <th>Start Date</th>

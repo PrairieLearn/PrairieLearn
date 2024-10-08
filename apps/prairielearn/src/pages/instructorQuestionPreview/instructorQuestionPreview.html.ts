@@ -1,8 +1,8 @@
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionContainer } from '../../components/QuestionContainer.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
@@ -35,7 +35,7 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
         ${unsafeHtml(resLocals.extraHeadersHtml)}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <div class="container-fluid">
           ${QuestionSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -52,7 +52,9 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
 
             <div class="col-lg-3 col-sm-12">
               <div class="card mb-4">
-                <div class="card-header bg-secondary text-white">Student view placeholder</div>
+                <div class="card-header bg-secondary text-white">
+                  <h2>Student view placeholder</h2>
+                </div>
                 <div class="card-body">
                   <div class="d-flex justify-content-center">
                     In student views this area is used for assessment and score info.
@@ -64,7 +66,6 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
                 course_instance: resLocals.course_instance,
                 question: resLocals.question,
                 variant: resLocals.variant,
-                user: resLocals.user,
                 authz_data: resLocals.authz_data,
                 question_is_shared: resLocals.question_is_shared,
                 questionContext: 'instructor',

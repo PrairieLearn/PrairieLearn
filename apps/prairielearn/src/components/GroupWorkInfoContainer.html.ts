@@ -151,7 +151,10 @@ function GroupRoleTable({
         </p>
 
         <form id="role-select-form" name="role-select-form" method="POST">
-          <table class="table table-bordered table-striped table-sm">
+          <table
+            class="table table-bordered table-striped table-sm"
+            aria-label="Group users and roles"
+          >
             <thead>
               <tr>
                 <th scope="col">User</th>
@@ -207,7 +210,10 @@ function GroupRoleTable({
         </form>
       </div>
       <div class="card-footer small">
-        <table class="table table-bordered table-striped table-sm w-auto">
+        <table
+          class="table table-bordered table-striped table-sm w-auto"
+          aria-label="Role requirements and restrictions"
+        >
           <thead>
             <tr>
               <th scope="col">Role</th>

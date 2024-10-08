@@ -5,9 +5,11 @@ import getPort from 'get-port';
 import * as jose from 'jose';
 import { step } from 'mocha-steps';
 import nodeJose from 'node-jose';
+import { z } from 'zod';
 
 import { queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
+import { fetchRetry, fetchRetryPaginated, getAccessToken } from '../ee/lib/lti13.js';
 import { config } from '../lib/config.js';
 import { Lti13UserSchema } from '../lib/db-types.js';
 import { selectUserByUid } from '../models/user.js';
@@ -36,6 +38,7 @@ async function withServer<T>(app: express.Express, port: number, fn: () => Promi
 
 describe('LTI 1.3', () => {
   let oidcProviderPort: number;
+  let keystore: nodeJose.JWK.KeyStore;
 
   before(async () => {
     config.isEnterprise = true;
@@ -47,6 +50,13 @@ describe('LTI 1.3', () => {
 
     // Allocate an available port for the OIDC provider.
     oidcProviderPort = await getPort();
+
+    keystore = nodeJose.JWK.createKeyStore();
+    await keystore.generate('RSA', 2048, {
+      alg: 'RS256',
+      use: 'sig',
+      kid: 'test',
+    });
   });
 
   after(async () => {
@@ -105,6 +115,7 @@ describe('LTI 1.3', () => {
             issuer: `http://localhost:${oidcProviderPort}`,
             authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
             jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
+            token_endpoint: `http://localhost:${oidcProviderPort}/token`,
           }),
           custom_fields: '{}',
           client_id: CLIENT_ID,
@@ -160,7 +171,7 @@ describe('LTI 1.3', () => {
       body: new URLSearchParams({
         iss: siteUrl,
         login_hint: 'fef15674-ae78-4763-b915-6fe3dbf42c67',
-        target_link_uri: `${siteUrl}//pl/lti13_instance/1/course_navigation`,
+        target_link_uri: `${siteUrl}/pl/lti13_instance/1/course_navigation`,
       }),
       redirect: 'manual',
     });
@@ -188,13 +199,7 @@ describe('LTI 1.3', () => {
     const nonce = redirectUrl.searchParams.get('nonce') as string;
     const state = redirectUrl.searchParams.get('state') as string;
 
-    const keystore = nodeJose.JWK.createKeyStore();
-    const key = await keystore.generate('RSA', 2048, {
-      alg: 'RS256',
-      use: 'sig',
-      kid: 'test',
-    });
-
+    const key = keystore.get('test');
     const joseKey = await jose.importJWK(key.toJSON(true) as any);
     const fakeIdToken = await new jose.SignJWT({
       nonce,
@@ -205,7 +210,7 @@ describe('LTI 1.3', () => {
       'https://purl.imsglobal.org/spec/lti/claim/deployment_id':
         '7fdce954-4c33-47c9-97b4-e435dbbed9bb',
       // This MUST match the value in the login request.
-      'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': `${siteUrl}//pl/lti13_instance/1/course_navigation`,
+      'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': `${siteUrl}/pl/lti13_instance/1/course_navigation`,
       'https://purl.imsglobal.org/spec/lti/claim/resource_link': {
         id: 'f6bc7a50-448c-4469-94f7-54d6ea882c2a',
         title: 'Test Course',
@@ -225,6 +230,17 @@ describe('LTI 1.3', () => {
       email: 'test-user@example.com',
       'https://purl.imsglobal.org/spec/lti/claim/custom': {
         uin: '123456789',
+      },
+      'https://purl.imsglobal.org/spec/lti-ags/claim/endpoint': {
+        scope: [
+          'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
+          'https://purl.imsglobal.org/spec/lti-ags/scope/score',
+        ],
+        errors: {
+          errors: {},
+        },
+        lineitems: `https://localhost:${oidcProviderPort}/api/lti/courses/1/line_items`,
+        validation_context: null,
       },
     })
       .setProtectedHeader({ alg: 'RS256' })
@@ -251,17 +267,13 @@ describe('LTI 1.3', () => {
           state,
           id_token: fakeIdToken,
         }),
-        redirect: 'manual',
       });
     });
 
-    // The page that we're being redirected to doesn't exist yet. Just assert
-    // that we were redirected to the right place.
-    assert.equal(finishLoginResponse.status, 302);
-    assert.equal(
-      finishLoginResponse.headers.get('location'),
-      `${siteUrl}//pl/lti13_instance/1/course_navigation`,
-    );
+    assert.equal(finishLoginResponse.status, 200);
+    // Inspect more into this response for output that is for Instructors vs for Students
+    // Setup link to a course instance (database modification)
+    // Confirm the redirect passes through to the course
 
     const repeatLoginTestNonce = await withServer(app, oidcProviderPort, async () => {
       return await fetchWithCookies(redirectUri, {
@@ -313,7 +325,7 @@ describe('LTI 1.3', () => {
           iss: siteUrl,
           // Missing required login_hint
           //login_hint: 'fef15674-ae78-4763-b915-6fe3dbf42c67',
-          target_link_uri: `${siteUrl}//pl/lti13_instance/1/course_navigation`,
+          target_link_uri: `${siteUrl}/pl/lti13_instance/1/course_navigation`,
         }),
         redirect: 'manual',
       },
@@ -326,7 +338,7 @@ describe('LTI 1.3', () => {
       body: new URLSearchParams({
         iss: siteUrl,
         login_hint: 'fef15674-ae78-4763-b915-6fe3dbf42c67',
-        target_link_uri: `${siteUrl}//pl/lti13_instance/1/course_navigation`,
+        target_link_uri: `${siteUrl}/pl/lti13_instance/1/course_navigation`,
       }),
       redirect: 'manual',
     });
@@ -353,5 +365,192 @@ describe('LTI 1.3', () => {
     });
 
     assert.equal(finishBadLoginResponse.status, 500);
+  });
+
+  step('request access token', async () => {
+    const ACCESS_TOKEN = '33679293-edd6-4415-af36-03113feb8447';
+
+    // Run a server to respond to token requests.
+    const app = express();
+    app.use(express.urlencoded({ extended: true }));
+
+    app.post('/token', async (req, res) => {
+      assert.equal(req.body.grant_type, 'client_credentials');
+      assert.equal(req.body.client_id, CLIENT_ID);
+      assert.equal(
+        req.body.client_assertion_type,
+        'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
+      );
+
+      // Decodes but does not validate
+      const jwt = JSON.parse(
+        Buffer.from(req.body.client_assertion.split('.')[1], 'base64').toString(),
+      );
+      assert.equal(jwt.iss, CLIENT_ID);
+      assert.property(jwt, 'jti');
+
+      res.send(
+        JSON.stringify({
+          access_token: ACCESS_TOKEN,
+          stenotype: 'bearer',
+          expires_in: 3600,
+          scope: req.body.scope,
+        }),
+      );
+    });
+
+    await withServer(app, oidcProviderPort, async () => {
+      const result = await getAccessToken('1');
+      assert.equal(result, ACCESS_TOKEN);
+    });
+  });
+});
+
+describe('fetchRetry()', async () => {
+  let apiProviderPort: number;
+  const app = express();
+  let baseUrl: string;
+
+  let apiCount: number;
+
+  // Thanks chatGPT
+  const products = [
+    'Apple',
+    'Banana',
+    'Cherry',
+    'Date',
+    'Eggplant',
+    'Fig',
+    'Grapes',
+    'Honeydew',
+    'Iceberg',
+    'Jackfruit',
+    'Kiwi',
+    'Lemon',
+    'Mango',
+    'Nectarine',
+    'Orange',
+    'Papaya',
+    'Quince',
+    'Raspberry',
+    'Strawberry',
+    'Tomato',
+    'Ugli fruit',
+    'Vanilla',
+    'Watermelon',
+    'Xigua',
+    'Yam',
+    'Zucchini',
+  ];
+
+  const productApi = (req, res) => {
+    const page = parseInt(req.query.page as string) || 1;
+    const limit = parseInt(req.query.limit as string) || 10;
+
+    const startIndex = (page - 1) * limit;
+    const endIndex = page * limit;
+    const totalPages = Math.ceil(products.length / limit);
+
+    // Base URL for links
+    const baseUrl = `${req.protocol}://${req.get('host')}${req.baseUrl}${req.path}`;
+
+    // Generate Link Header
+    const links: string[] = [];
+
+    if (page < totalPages) {
+      links.push(`<${baseUrl}?page=${page + 1}&limit=${limit}>; rel="next"`);
+    }
+    if (page > 1) {
+      links.push(`<${baseUrl}?page=${page - 1}&limit=${limit}>; rel="prev"`);
+    }
+    links.push(`<${baseUrl}?page=1&limit=${limit}>; rel="first"`);
+    links.push(`<${baseUrl}?page=${totalPages}&limit=${limit}>; rel="last"`);
+
+    res.set('Link', links.join(', '));
+
+    const returning = products.slice(startIndex, endIndex);
+    res.json(returning);
+  };
+
+  function respond403(res) {
+    console.warn('Throwing 403, attempt ' + apiCount);
+    res.status(403).json([]);
+  }
+
+  before(async () => {
+    apiProviderPort = await getPort();
+    baseUrl = `http://localhost:${apiProviderPort}/`;
+    // Run a server to respond to API requests.
+    app.use(express.urlencoded({ extended: true }));
+
+    app.use((req, res, next) => {
+      apiCount++;
+      next();
+    });
+
+    app.get('/403all', async (req, res) => {
+      respond403(res);
+    });
+
+    app.get('/403oddAttempt', async (req, res) => {
+      if (apiCount % 2 === 1) {
+        respond403(res);
+      } else {
+        productApi(req, res);
+      }
+    });
+
+    app.get('/', productApi);
+  });
+
+  step('should return the full list by iterating', async () => {
+    apiCount = 0;
+    await withServer(app, apiProviderPort, async () => {
+      const resultArray = await fetchRetryPaginated(baseUrl, {}, { sleepMs: 100 });
+      assert.equal(resultArray.length, 3);
+      // Unwrap to one combined array
+      const products = z.string().array().array().parse(resultArray);
+      const fullList = products.flat();
+      assert.equal(fullList.length, 26);
+      assert.equal(apiCount, 3);
+    });
+  });
+
+  step('should return the full list with a large limit', async () => {
+    apiCount = 0;
+    await withServer(app, apiProviderPort, async () => {
+      const res = await fetchRetry(baseUrl + '?limit=100', {}, { sleepMs: 100 });
+      const products = z
+        .string()
+        .array()
+        .parse(await res.json());
+      const fullList = products.flat();
+      assert.equal(fullList.length, 26);
+      assert.equal(apiCount, 1);
+    });
+  });
+
+  step('should throw an error on all 403s', async () => {
+    apiCount = 0;
+    await withServer(app, apiProviderPort, async () => {
+      await assert.isRejected(fetchRetry(baseUrl + '403all', {}, { sleepMs: 100 }), /fetch error/);
+      assert.equal(apiCount, 5);
+    });
+  });
+
+  step('should return the full list by iterating with intermittant 403s', async () => {
+    apiCount = 0;
+    await withServer(app, apiProviderPort, async () => {
+      const resultArray = await fetchRetryPaginated(
+        baseUrl + '403oddAttempt',
+        {},
+        { sleepMs: 100 },
+      );
+      assert.equal(resultArray.length, 3);
+      const products = z.string().array().array().parse(resultArray);
+      const fullList = products.flat();
+      assert.equal(fullList.length, 26);
+      assert.equal(apiCount, 6);
+    });
   });
 });

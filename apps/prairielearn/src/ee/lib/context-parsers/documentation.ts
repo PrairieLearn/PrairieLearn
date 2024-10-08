@@ -1,8 +1,17 @@
+import remarkGfm from 'remark-gfm';
 import remarkParse from 'remark-parse';
 import remarkStringify from 'remark-stringify';
 import { unified } from 'unified';
 
 const DEPRECATED_ELEMENTS = new Set(['pl-prairiedraw-figure', 'pl-threejs', 'pl-variable-score']);
+const ALLOWED_ELEMENTS = [
+  'pl-question-panel',
+  'pl-multiple-choice',
+  'pl-checkbox',
+  'pl-integer-input',
+  'pl-number-input',
+  'pl-string-input',
+];
 
 interface ElementSection {
   elementName: string;
@@ -12,6 +21,13 @@ interface ElementSection {
 export interface DocumentChunk {
   text: string;
   chunkId: string;
+}
+
+function stringify(content: any) {
+  return unified().use(remarkStringify).use(remarkGfm).stringify({
+    type: 'root',
+    children: content,
+  });
 }
 
 function extractElementSections(ast: any) {
@@ -110,7 +126,6 @@ function cleanElementSections(elementSections: ElementSection[]) {
       }
       return node;
     });
-
     return section;
   });
 
@@ -118,10 +133,66 @@ function cleanElementSections(elementSections: ElementSection[]) {
   return elementSections.filter((section) => !DEPRECATED_ELEMENTS.has(section.elementName));
 }
 
-export async function buildContextForElementDocs(rawMarkdown: string): Promise<DocumentChunk[]> {
-  const file = unified().use(remarkParse).parse(rawMarkdown);
+function writeOutTables(elementSections: ElementSection[]) {
+  elementSections.forEach((section) => {
+    section.content.forEach((node) => {
+      if (node.type === 'table') {
+        const firstRow = node.children[0];
+        if (
+          firstRow.children.length === 4 &&
+          firstRow.children[0].children[0].value === 'Attribute' &&
+          firstRow.children[1].children[0].value === 'Type' &&
+          firstRow.children[2].children[0].value === 'Default' &&
+          firstRow.children[3].children[0].value === 'Description'
+        ) {
+          const statements: any[] = [];
+          for (let rowIdx = 1; rowIdx < node.children.length; rowIdx++) {
+            const row = node.children[rowIdx];
+            const attribute = row.children[0];
+            const type = row.children[1];
+            const defaultValProcessed = stringify([row.children[2]]).trimEnd();
+            const defaultVal = row.children[2];
+            const description = row.children[3];
 
-  const elementSections = cleanElementSections(extractElementSections(file));
+            if (defaultValProcessed !== '-' && defaultValProcessed !== '—') {
+              statements.push(
+                attribute,
+                { type: 'text', value: ': of type ' },
+                type,
+                { type: 'text', value: ', default val: ' },
+                defaultVal,
+                { type: 'text', value: ', description: ' },
+                description,
+              );
+            } else {
+              statements.push(
+                attribute,
+                { type: 'text', value: ': of type ' },
+                type,
+                { type: 'text', value: ', description: ' },
+                description,
+              );
+            }
+
+            if (rowIdx < node.children.length - 1) {
+              statements.push({ type: 'text', value: '\n' });
+            }
+          }
+          node.type = 'paragraph';
+          node.children = statements;
+        }
+      }
+      return node;
+    });
+    return section;
+  });
+  return elementSections;
+}
+
+export async function buildContextForElementDocs(rawMarkdown: string): Promise<DocumentChunk[]> {
+  const file = unified().use(remarkParse).use(remarkGfm).parse(rawMarkdown);
+
+  const elementSections = writeOutTables(cleanElementSections(extractElementSections(file)));
 
   const contexts = elementSections.map((section) => {
     section.content.unshift({
@@ -129,10 +200,8 @@ export async function buildContextForElementDocs(rawMarkdown: string): Promise<D
       depth: 2,
       children: [{ type: 'text', value: section.elementName }],
     });
-    const markdown = unified().use(remarkStringify).stringify({
-      type: 'root',
-      children: section.content,
-    });
+
+    const markdown = stringify(section.content);
 
     return {
       chunkId: section.elementName,
@@ -140,5 +209,5 @@ export async function buildContextForElementDocs(rawMarkdown: string): Promise<D
     };
   });
 
-  return contexts;
+  return contexts.filter((x) => ALLOWED_ELEMENTS.includes(x.chunkId));
 }

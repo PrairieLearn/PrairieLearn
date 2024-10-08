@@ -74,7 +74,9 @@ export function QuestionContainer({
         : QuestionPanel({ resLocals, questionContext })}
 
       <div class="card mb-4 grading-block${showTrueAnswer ? '' : ' d-none'}">
-        <div class="card-header bg-secondary text-white">Correct answer</div>
+        <div class="card-header bg-secondary text-white">
+          <h2>Correct answer</h2>
+        </div>
         <div class="card-body answer-body">${showTrueAnswer ? unsafeHtml(answerHtml) : ''}</div>
       </div>
 
@@ -166,7 +168,10 @@ export function IssuePanel({
         ${issue.manually_reported ? 'Manually reported issue' : 'Issue'}
       </div>
 
-      <table class="table table-sm table-hover two-column-description">
+      <table
+        class="table table-sm table-hover two-column-description"
+        aria-label="Issue information"
+      >
         <tbody>
           ${showUserName
             ? html`
@@ -401,9 +406,8 @@ function QuestionFooterContent({
             ? html`
                 <button
                   type="button"
-                  class="btn btn-xs order-3"
+                  class="btn btn-xs btn-ghost mr-1"
                   data-toggle="popover"
-                  data-trigger="focus"
                   data-content="Your group role (${assessment_instance.user_group_roles}) is not allowed to submit this question."
                   aria-label="Submission blocked"
                 >
@@ -439,20 +443,19 @@ function QuestionFooterContent({
                     <small class="font-italic align-self-center">
                       Additional attempts available with new variants
                     </small>
-                    <a
-                      class="btn btn-xs align-self-center"
+                    <button
+                      type="button"
+                      class="btn btn-xs btn-ghost align-self-center ml-1"
                       data-toggle="popover"
-                      data-trigger="focus"
                       data-container="body"
                       data-html="true"
                       data-content="${escapeHtml(
                         NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
                       )}"
                       data-placement="auto"
-                      tabindex="0"
                     >
                       <i class="fa fa-question-circle" aria-hidden="true"></i>
-                    </a>
+                    </button>
                   `
                 : ''}
           ${AvailablePointsNotes({ questionContext, instance_question, assessment_question })}
@@ -522,18 +525,17 @@ function SubmitRateFooter({
             Can only be graded once every ${assessment_question.grade_rate_minutes}
             ${assessment_question.grade_rate_minutes > 1 ? 'minutes' : 'minute'}
           </small>
-          <a
-            class="btn btn-xs"
+          <button
+            type="button"
+            class="btn btn-xs btn-ghost"
             data-toggle="popover"
-            data-trigger="focus"
             data-container="body"
             data-html="true"
             data-content="${escapeHtml(popoverContent)}"
             data-placement="auto"
-            tabindex="0"
           >
             <i class="fa fa-question-circle" aria-hidden="true"></i>
-          </a>
+          </button>
         </span>
       </div>
     </div>

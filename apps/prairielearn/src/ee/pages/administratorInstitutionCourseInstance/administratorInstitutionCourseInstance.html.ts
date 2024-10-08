@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import {
   type Course,
@@ -35,9 +35,8 @@ export function AdministratorInstitutionCourseInstance({
         ${compiledScriptTag('administratorInstitutionCourseInstanceClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
-          ...resLocals,
-          institution,
+        ${Navbar({
+          resLocals: { ...resLocals, institution },
           navbarType: 'administrator_institution',
           navPage: 'administrator_institution',
           navSubPage: 'courses',
@@ -58,6 +57,10 @@ export function AdministratorInstitutionCourseInstance({
           </ol>
         </nav>
         <main id="content" class="container mb-4">
+          <p>
+            <a href="/pl/course_instance/${course_instance.id}/instructor">View as instructor</a>
+          </p>
+
           <h2 class="h4">Limits</h2>
           <form method="POST" class="mb-3">
             <div class="form-group">

@@ -4,7 +4,7 @@ import { html, HtmlSafeString } from '@prairielearn/html';
 import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets.js';
 import { type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
-import { QuestionsPageDataAnsified } from '../models/questions.js';
+import { QuestionsPageData } from '../models/questions.js';
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
@@ -35,7 +35,7 @@ export function QuestionsTable({
   plainUrlPrefix,
   __csrf_token,
 }: {
-  questions: QuestionsPageDataAnsified[];
+  questions: QuestionsPageData[];
   showAddQuestionButton?: boolean;
   showAiGenerateQuestionButton?: boolean;
   showSharingSets?: boolean;
@@ -73,6 +73,7 @@ export function QuestionsTable({
 
       <table
         id="questionsTable"
+        aria-label="Questions"
         data-data="${JSON.stringify(questions)}"
         data-classes="table table-sm table-hover table-bordered"
         data-thead-classes="thead-light"

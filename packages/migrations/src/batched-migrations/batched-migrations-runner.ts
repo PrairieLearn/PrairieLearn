@@ -195,7 +195,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
         // when we're shutting down.
         try {
           await sleep(sleepDurationMs, null, { ref: false, signal: this.abortController.signal });
-        } catch (err) {
+        } catch {
           // We don't care about errors here, they should only ever occur when
           // the AbortController is aborted. Continue to the next iteration of
           // the loop so we can shut down.

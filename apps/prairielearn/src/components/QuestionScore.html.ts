@@ -50,14 +50,18 @@ export function QuestionScorePanel({
   return html`
     <div class="card mb-4" id="question-score-panel">
       <div class="card-header bg-secondary text-white">
-        Question ${instance_question_info.question_number}
+        <h2>Question ${instance_question_info.question_number}</h2>
       </div>
-      <table class="table table-sm two-column-description-no-header">
+      <table class="table table-sm two-column-description-no-header" aria-label="Question score">
         <tbody>
-          <tr>
-            <td>Submission status:</td>
-            <td>${ExamQuestionStatus({ instance_question })}</td>
-          </tr>
+          ${assessment.type === 'Exam'
+            ? html`
+                <tr>
+                  <td>Submission status:</td>
+                  <td>${ExamQuestionStatus({ instance_question })}</td>
+                </tr>
+              `
+            : ''}
           ${assessment.allow_real_time_grading &&
           (assessment_question.max_auto_points || !assessment_question.max_manual_points)
             ? html`
@@ -252,7 +256,7 @@ export function ExamQuestionStatus({
   };
 }) {
   const badge_color = {
-    unanswered: 'danger',
+    unanswered: 'warning',
     invalid: 'danger',
     grading: 'default',
     saved: 'info',
@@ -269,18 +273,17 @@ export function ExamQuestionStatus({
 
       ${(instance_question.allow_grade_left_ms ?? 0) > 0
         ? html`
-            <a
+            <button
+              type="button"
               class="grade-rate-limit-popover btn btn-xs"
               data-toggle="popover"
-              data-trigger="focus"
               data-container="body"
               data-html="true"
               data-content="This question limits the rate of submissions. Further grade allowed ${instance_question.allow_grade_interval} (as of the loading of this page)."
               data-placement="auto"
-              tabindex="0"
             >
               <i class="fa fa-hourglass-half" aria-hidden="true"></i>
-            </a>
+            </button>
           `
         : ''}
     </span>
@@ -439,18 +442,16 @@ export function ExamQuestionAvailablePoints({
       ? formatPoints(pointsList[0])
       : html`${formatPoints(pointsList[0])},
           <span class="text-muted">${formatPointsOrList(pointsList.slice(1))}</span>`}
-    <a
-      tabindex="0"
+    <button
       type="button"
-      class="btn btn-xs js-available-points-popover"
+      class="btn btn-xs btn-ghost js-available-points-popover"
       data-toggle="popover"
-      data-trigger="focus"
       data-container="body"
       data-html="true"
       data-content="${escapeHtml(popoverContent)}"
       data-placement="auto"
     >
       <i class="fa fa-question-circle" aria-hidden="true"></i>
-    </a>
+    </button>
   `;
 }

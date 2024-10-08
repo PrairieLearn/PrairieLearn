@@ -275,25 +275,44 @@
           if (isExpanded) {
             $preview.addClass('show');
           }
+
           try {
-            var fileContents = this.b64DecodeUnicode(fileData);
-            if (!this.isBinary(fileContents)) {
-              $preview.find('code').text(fileContents);
+            if (this.isPdf(fileData)) {
+              const url = this.b64ToBlobUrl(fileData, { type: 'application/pdf' });
+              const $objectPreview = $(
+                `<div class="mt-2 embed-responsive embed-responsive-4by3">
+                   <iframe class="embed-responsive-item" src="${url}">
+                     PDF file cannot be displayed.
+                   </iframe>
+                 </div>`,
+              );
+              $objectPreview.find('iframe').on('load', () => {
+                URL.revokeObjectURL(url);
+              });
+              $preview.append($objectPreview);
             } else {
-              $preview.find('code').text('Binary file not previewed.');
+              var fileContents = this.b64DecodeUnicode(fileData);
+              if (!this.isBinary(fileContents)) {
+                $preview.find('code').text(fileContents);
+              } else {
+                $preview.find('code').text('Binary file not previewed.');
+              }
+              $codePreview.removeClass('d-none');
             }
-            $codePreview.removeClass('d-none');
-          } catch (e) {
+          } catch {
+            const url = this.b64ToBlobUrl(fileData);
             $imgPreview
               .on('load', () => {
                 $imgPreview.removeClass('d-none');
+                URL.revokeObjectURL(url);
               })
               .on('error', () => {
                 $error
                   .text('Content preview is not available for this type of file.')
                   .removeClass('d-none');
+                URL.revokeObjectURL(url);
               })
-              .attr('src', 'data:application/octet-stream;base64,' + fileData);
+              .attr('src', url);
           }
           $file.append($preview);
           $fileStatusContainer.append(
@@ -333,6 +352,21 @@
     }
 
     /**
+     * Checks if the given file contents should be interpreted as a PDF file.
+     * Using the magic numbers from the `file` utility command:
+     * https://github.com/file/file/blob/master/magic/Magdir/pdf
+     * The signatures are converted to base64 for comparison, to avoid issues
+     * with converting from base64 to binary.
+     */
+    isPdf(base64FileData) {
+      return (
+        base64FileData.match(/^JVBERi[0-3]/) || // "%PDF-"
+        base64FileData.match(/^CiVQREYt/) || // "\x0a%PDF-"
+        base64FileData.match(/^77u\/JVBERi[0-3]/) // "\xef\xbb\xbf%PDF-"
+      );
+    }
+
+    /**
      * To support unicode strings, we use a method from Mozilla to decode:
      * first we get the bytestream, then we percent-encode it, then we
      * decode that to the original string.
@@ -350,6 +384,20 @@
           })
           .join(''),
       );
+    }
+
+    b64ToBlobUrl(str, options = undefined) {
+      const blob = new Blob(
+        [
+          new Uint8Array(
+            atob(str)
+              .split('')
+              .map((c) => c.charCodeAt(0)),
+          ),
+        ],
+        options,
+      );
+      return URL.createObjectURL(blob);
     }
   }
 

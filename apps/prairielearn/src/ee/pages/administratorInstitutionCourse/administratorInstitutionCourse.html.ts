@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { type Institution, type Course, CourseInstanceSchema } from '../../../lib/db-types.js';
 
 export const CourseInstanceRowSchema = z.object({
@@ -33,9 +33,8 @@ export function AdministratorInstitutionCourse({
         })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar') %>", {
-          ...resLocals,
-          institution,
+        ${Navbar({
+          resLocals: { ...resLocals, institution },
           navbarType: 'administrator_institution',
           navPage: 'administrator_institution',
           navSubPage: 'courses',
@@ -51,6 +50,8 @@ export function AdministratorInstitutionCourse({
           </ol>
         </nav>
         <main id="content" class="container mb-4">
+          <p><a href="/pl/course/${course.id}">View as instructor</a></p>
+
           <h2 class="h4">Limits</h2>
           <form method="POST" class="mb-3">
             <div class="form-group">
@@ -130,7 +131,10 @@ export function AdministratorInstitutionCourse({
 
           <h2 class="h4">Course instances</h2>
           <div class="table-responsive">
-            <table class="table table-hover table-striped table-bordered table">
+            <table
+              class="table table-hover table-striped table-bordered table"
+              aria-label="Course instances"
+            >
               <thead>
                 <tr>
                   <th>Name</th>
