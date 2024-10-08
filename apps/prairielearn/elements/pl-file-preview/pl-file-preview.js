@@ -104,7 +104,7 @@
 
           const code = preview.querySelector('code');
           const img = preview.querySelector('img');
-          const object = preview.querySelector('object');
+          const iframe = preview.querySelector('iframe');
 
           fetch(path, { method: 'GET' })
             .then((result) => {
@@ -140,7 +140,7 @@
                     notebookPreview.classList.remove('d-none');
 
                     // Typeset any math that might be in the notebook.
-                    window.MathJax.typesetPromise();
+                    window.MathJax.typesetPromise([notebookPreview]);
                   });
                 } else {
                   code.textContent = text;
@@ -170,11 +170,11 @@
                 hideErrorMessage();
               } else if (type === 'application/pdf') {
                 const url = URL.createObjectURL(blob);
-                object.data = url;
-                object.onload = () => {
+                iframe.src = url;
+                iframe.onload = () => {
                   URL.revokeObjectURL(url);
                 };
-                object.closest('.embed-responsive').classList.remove('d-none');
+                iframe.closest('.embed-responsive').classList.remove('d-none');
                 hideErrorMessage();
               } else {
                 // We can't preview this file.

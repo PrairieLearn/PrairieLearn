@@ -5,7 +5,7 @@ import * as path from 'path';
 import * as async from 'async';
 // Use slim export, which relies on htmlparser2 instead of parse5. This provides
 // support for questions with legacy renderer.
-import * as cheerio from 'cheerio/lib/slim';
+import * as cheerio from 'cheerio/slim';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import _ from 'lodash';
@@ -18,6 +18,7 @@ import { logger } from '@prairielearn/logger';
 import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
 
 import * as assets from '../lib/assets.js';
+import { canonicalLogger } from '../lib/canonical-logger.js';
 import * as chunks from '../lib/chunks.js';
 import { withCodeCaller, FunctionMissingError } from '../lib/code-caller/index.js';
 import { config } from '../lib/config.js';
@@ -373,7 +374,7 @@ async function execPythonServer(codeCaller, phase, data, html, context) {
 
   try {
     await fs.access(fullFilename, fs.constants.R_OK);
-  } catch (err) {
+  } catch {
     // server.py does not exist
     return { result: defaultServerRet(phase, data, html, context), output: '' };
   }
@@ -409,7 +410,11 @@ async function execTemplate(htmlFilename, data) {
   let html = mustache.render(rawFile, data);
   html = markdown.processQuestion(html);
   const $ = cheerio.load(html, {
-    recognizeSelfClosing: true,
+    xml: {
+      // This is necessary for Cheerio to use `htmlparser2` instead of `parse5`.
+      xmlMode: false,
+      recognizeSelfClosing: true,
+    },
   });
   return { html, $ };
 }
@@ -783,7 +788,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
         }
       });
     });
-  } catch (err) {
+  } catch {
     // Black-hole any errors, they were (should have been) handled by course issues
   }
 
@@ -975,43 +980,51 @@ async function processQuestionServer(phase, codeCaller, data, html, fileData, co
  */
 async function processQuestion(phase, codeCaller, data, context) {
   const meter = metrics.getMeter('prairielearn');
-  return instrumentedWithMetrics(meter, `freeform.${phase}`, async () => {
-    if (phase === 'generate') {
-      return processQuestionServer(phase, codeCaller, data, '', Buffer.from(''), context);
-    } else {
-      const {
-        courseIssues,
-        data: htmlData,
-        html,
-        fileData,
-        renderedElementNames,
-      } = await processQuestionHtml(phase, codeCaller, data, context);
-      const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
-      if (hasFatalError) {
-        return {
+  return instrumentedWithMetrics(
+    meter,
+    `freeform.${phase}`,
+    async () => {
+      if (phase === 'generate') {
+        return processQuestionServer(phase, codeCaller, data, '', Buffer.from(''), context);
+      } else {
+        const {
           courseIssues,
-          data,
+          data: htmlData,
           html,
           fileData,
           renderedElementNames,
+        } = await processQuestionHtml(phase, codeCaller, data, context);
+        const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
+        if (hasFatalError) {
+          return {
+            courseIssues,
+            data,
+            html,
+            fileData,
+            renderedElementNames,
+          };
+        }
+        const {
+          courseIssues: serverCourseIssues,
+          data: serverData,
+          html: serverHtml,
+          fileData: serverFileData,
+        } = await processQuestionServer(phase, codeCaller, htmlData, html, fileData, context);
+        courseIssues.push(...serverCourseIssues);
+        return {
+          courseIssues,
+          data: serverData,
+          html: serverHtml,
+          fileData: serverFileData,
+          renderedElementNames,
         };
       }
-      const {
-        courseIssues: serverCourseIssues,
-        data: serverData,
-        html: serverHtml,
-        fileData: serverFileData,
-      } = await processQuestionServer(phase, codeCaller, htmlData, html, fileData, context);
-      courseIssues.push(...serverCourseIssues);
-      return {
-        courseIssues,
-        data: serverData,
-        html: serverHtml,
-        fileData: serverFileData,
-        renderedElementNames,
-      };
-    }
-  });
+    },
+    (duration) => {
+      canonicalLogger.increment(`freeform.${phase}.count`, 1);
+      canonicalLogger.increment(`freeform.${phase}.duration`, duration);
+    },
+  );
 }
 
 /**
@@ -1867,7 +1880,7 @@ async function getCacheKey(course, data, context) {
     const commitHash = await getOrUpdateCourseCommitHash(course);
     const dataHash = objectHash({ data, context }, { algorithm: 'sha1', encoding: 'base64' });
     return `question:${commitHash}-${dataHash}`;
-  } catch (err) {
+  } catch {
     return null;
   }
 }

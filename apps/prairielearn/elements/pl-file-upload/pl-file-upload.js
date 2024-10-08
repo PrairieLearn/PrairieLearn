@@ -278,15 +278,17 @@
 
           try {
             if (this.isPdf(fileData)) {
+              const url = this.b64ToBlobUrl(fileData, { type: 'application/pdf' });
               const $objectPreview = $(
                 `<div class="mt-2 embed-responsive embed-responsive-4by3">
-                   <object type="application/pdf" 
-                           class="embed-responsive-item" 
-                           data="data:application/pdf;base64,${fileData}">
+                   <iframe class="embed-responsive-item" src="${url}">
                      PDF file cannot be displayed.
-                   </object>
+                   </iframe>
                  </div>`,
               );
+              $objectPreview.find('iframe').on('load', () => {
+                URL.revokeObjectURL(url);
+              });
               $preview.append($objectPreview);
             } else {
               var fileContents = this.b64DecodeUnicode(fileData);
@@ -297,17 +299,20 @@
               }
               $codePreview.removeClass('d-none');
             }
-          } catch (e) {
+          } catch {
+            const url = this.b64ToBlobUrl(fileData);
             $imgPreview
               .on('load', () => {
                 $imgPreview.removeClass('d-none');
+                URL.revokeObjectURL(url);
               })
               .on('error', () => {
                 $error
                   .text('Content preview is not available for this type of file.')
                   .removeClass('d-none');
+                URL.revokeObjectURL(url);
               })
-              .attr('src', 'data:application/octet-stream;base64,' + fileData);
+              .attr('src', url);
           }
           $file.append($preview);
           $fileStatusContainer.append(
@@ -379,6 +384,20 @@
           })
           .join(''),
       );
+    }
+
+    b64ToBlobUrl(str, options = undefined) {
+      const blob = new Blob(
+        [
+          new Uint8Array(
+            atob(str)
+              .split('')
+              .map((c) => c.charCodeAt(0)),
+          ),
+        ],
+        options,
+      );
+      return URL.createObjectURL(blob);
     }
   }
 

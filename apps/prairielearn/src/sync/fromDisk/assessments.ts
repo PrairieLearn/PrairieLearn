@@ -9,10 +9,8 @@ import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { Assessment, CourseInstanceData } from '../course-db.js';
 import * as infofile from '../infofile.js';
-import { makePerformance } from '../performance.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-const perf = makePerformance('assessments');
 
 type AssessmentInfoFile = infofile.InfoFile<Assessment>;
 
@@ -66,7 +64,11 @@ function getParamsForAssessment(
     .map((accessRule, index) => {
       return {
         number: index + 1,
-        mode: _.has(accessRule, 'mode') ? accessRule.mode : null,
+        mode: _.has(accessRule, 'mode')
+          ? accessRule.mode
+          : _.has(accessRule, 'examUuid')
+            ? 'Exam'
+            : null,
         uids: _.has(accessRule, 'uids') ? accessRule.uids : null,
         start_date: _.has(accessRule, 'startDate') ? accessRule.startDate : null,
         end_date: _.has(accessRule, 'endDate') ? accessRule.endDate : null,
@@ -494,12 +496,10 @@ export async function sync(
     ]);
   });
 
-  perf.start('sproc:sync_assessments');
   await sqldb.callOneRowAsync('sync_assessments', [
     assessmentParams,
     courseId,
     courseInstanceId,
     config.checkSharingOnSync,
   ]);
-  perf.end('sproc:sync_assessments');
 }
