@@ -168,7 +168,7 @@ export async function syncDiskToSqlWithLock(
               for (const question of zone.questions) {
                 if (question.id) {
                   const infoJson = courseData.questions[question.id];
-                  if (!infoJson.data?.sharedPublicly) {
+                  if (!infoJson?.data?.sharedPublicly) {
                     /// put the question.id into an array of questions that throw errors?
                   }
 

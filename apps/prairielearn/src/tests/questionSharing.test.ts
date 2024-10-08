@@ -6,6 +6,7 @@ import fs from 'fs-extra';
 import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -590,16 +591,26 @@ describe('Question Sharing', function () {
       },
     );
   });
-  
-  describe('Test accessing page for a publicly shared assessment', function () {
-    step('Successfully access publicly shared assessment page for the shared assessment', async () => {
 
-      const courseInstanceId = '2' // 'Fa19'
-      const sharedAssessmentId = '24' // 'test'
-      const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${courseInstanceId}/assessment/${sharedAssessmentId}/questions`;
-      const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
-      
-      assert(sharedAssessmentPage.ok);
-    });
+  describe('Test accessing page for a publicly shared assessment', function () {
+    step(
+      'Successfully access publicly shared assessment page for the shared assessment',
+      async () => {
+        const courseInstanceId = await sqldb.queryRow(
+          sql.select_course_instance,
+          { short_name: 'Fa19', sharing_course_id: sharingCourse.id },
+          IdSchema,
+        );
+        const sharedAssessmentId = await sqldb.queryRow(
+          sql.select_assessment,
+          { tid: 'test', course_instance_id: courseInstanceId },
+          IdSchema,
+        );
+        const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${courseInstanceId}/assessment/${sharedAssessmentId}/questions`;
+        const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
+
+        assert(sharedAssessmentPage.ok);
+      },
+    );
   });
 });
