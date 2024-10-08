@@ -3,5 +3,6 @@
   "title": "Broken (missing) Submissions",
   "topic": "Algebra",
   "tags": ["nnytko2", "sp20", "v3"],
-  "type": "v3"
+  "type": "v3",
+  "sharingSets": ["final-exam", "python-exercises"]
 }

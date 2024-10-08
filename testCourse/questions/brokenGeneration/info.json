@@ -3,5 +3,7 @@
   "title": "Broken generation function",
   "topic": "Algebra",
   "tags": ["mwest", "fa18", "tpl101", "v3"],
-  "type": "v3"
+  "type": "v3",
+  "sharingSets": ["final-exam", "python-exercises"],
+  "sharedPublicly": false
 }
