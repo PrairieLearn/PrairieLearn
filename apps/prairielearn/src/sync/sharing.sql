@@ -53,30 +53,3 @@ WHERE
   AND ssa.sharing_sets IS NOT NULL
 ORDER BY
   q.qid;
-
-EXPLAIN
-WITH
-  sharing_sets_agg AS (
-    SELECT
-      ssq.question_id,
-      jsonb_agg(ss.name) AS sharing_sets
-    FROM
-      sharing_set_questions AS ssq
-      JOIN sharing_sets AS ss ON ss.id = ssq.sharing_set_id
-    GROUP BY
-      ssq.question_id
-  )
-SELECT
-  q.id,
-  q.qid,
-  q.shared_publicly,
-  ssa.sharing_sets
-FROM
-  questions AS q
-  LEFT JOIN sharing_sets_agg AS ssa ON ssa.question_id = q.id
-WHERE
-  q.course_id = 1
-  AND q.deleted_at IS NULL
-  AND ssa.sharing_sets IS NOT NULL
-ORDER BY
-  q.qid;
