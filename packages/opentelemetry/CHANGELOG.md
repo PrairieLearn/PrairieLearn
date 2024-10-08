@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 2.1.4
+
+### Patch Changes
+
+- ec01c81: Upgrade `@opentelemetry` dependencies
+
 ## 2.1.3
 
 ### Patch Changes
