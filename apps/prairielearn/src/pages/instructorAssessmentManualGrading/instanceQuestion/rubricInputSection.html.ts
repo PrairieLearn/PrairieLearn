@@ -12,22 +12,14 @@ export function RubricInputSection({
   if (!resLocals.rubric_data) return '';
   const rubric_data: RubricData = resLocals.rubric_data;
   const rubric_grading: RubricGradingData | null = resLocals.submission.rubric_grading;
+  const pointsRatio: number = !rubric_data.total_points
+    ? 0
+    : (rubric_data.replace_auto_points || !resLocals.assessment_question.max_manual_points
+        ? resLocals.assessment_question.max_points
+        : resLocals.assessment_question.max_manual_points) / rubric_data.total_points;
 
   return html`
-    <style>
-      .js-selectable-rubric-item-label {
-        border-color: rgba(0, 0, 0, 0);
-        border-width: 1px;
-        border-style: solid;
-      }
-      .js-selectable-rubric-item-label:has(input:checked) {
-        border-color: rgba(0, 0, 0, 0.125);
-        background-color: var(--light);
-      }
-      .js-selectable-rubric-item-label p {
-        margin-bottom: 0;
-      }
-    </style>
+    <input type="hidden" name="score_manual_adjust_points_ratio" value="${pointsRatio}" />
     ${rubric_data.rubric_items?.map(
       (item) => html`
         <div>
@@ -39,25 +31,21 @@ export function RubricInputSection({
               value="${item.id}"
               ${rubric_grading?.rubric_items?.[item.id]?.score ? 'checked' : ''}
               ${disable ? 'disabled' : ''}
-              data-rubric-item-points="${item.points}"
+              data-rubric-item-points="${item.points * pointsRatio}"
               data-key-binding="${item.key_binding}"
             />
             <span class="badge badge-info">${item.key_binding}</span>
             <span class="float-right text-${item.points >= 0 ? 'success' : 'danger'}">
               <strong>
                 <span class="js-manual-grading-points" data-testid="rubric-item-points">
-                  [${(item.points >= 0 ? '+' : '') + Math.round(item.points * 100) / 100}]
+                  [${(item.points >= 0 ? '+' : '') +
+                  Math.round(item.points * pointsRatio * 100) / 100}]
                 </span>
                 ${resLocals.assessment_question.max_points
                   ? html`
                       <span class="js-manual-grading-percentage">
                         [${(item.points >= 0 ? '+' : '') +
-                        Math.round(
-                          (item.points * 10000) /
-                            (resLocals.assessment_question.max_manual_points ||
-                              resLocals.assessment_question.max_points),
-                        ) /
-                          100}%]
+                        Math.round((item.points * 10000) / (rubric_data.total_points || 1)) / 100}%]
                       </span>
                     `
                   : ''}
@@ -104,7 +92,8 @@ export function RubricInputSection({
                 name="score_manual_adjust_points"
                 data-max-points="${resLocals.assessment_question.max_manual_points ||
                 resLocals.assessment_question.max_points}"
-                value="${Math.round((rubric_grading?.adjust_points ?? 0) * 100) / 100 || ''}"
+                value="${Math.round((rubric_grading?.adjust_points ?? 0) * pointsRatio * 100) /
+                  100 || ''}"
                 ${disable ? 'disabled' : ''}
               />
             </div>
@@ -122,8 +111,7 @@ export function RubricInputSection({
                       resLocals.assessment_question.max_points}"
                       value="${Math.round(
                         ((rubric_grading?.adjust_points || 0) * 10000) /
-                          (resLocals.assessment_question.max_manual_points ||
-                            resLocals.assessment_question.max_points),
+                          (rubric_data.total_points || 1),
                       ) / 100 || ''}"
                       ${disable ? 'disabled' : ''}
                     />

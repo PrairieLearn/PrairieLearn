@@ -114,6 +114,7 @@ const PostBodySchema = z.union([
         val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
       ),
     score_manual_adjust_points: z.coerce.number().nullish(),
+    score_manual_adjust_points_ratio: z.coerce.number().nullish(),
     use_score_perc: z.literal('on').optional(),
     score_manual_points: z.coerce.number().nullish(),
     score_manual_percent: z.coerce.number().nullish(),
@@ -136,6 +137,7 @@ const PostBodySchema = z.union([
       .enum(['true', 'false'])
       .optional()
       .transform((val) => val === 'true'),
+    total_points: z.coerce.number(),
     starting_points: z.coerce.number(),
     min_points: z.coerce.number(),
     max_extra_points: z.coerce.number(),
@@ -193,7 +195,9 @@ router.post(
             applied_rubric_items: body.rubric_item_selected_manual.map((id) => ({
               rubric_item_id: id,
             })),
-            adjust_points: body.score_manual_adjust_points || null,
+            // The adjust_points input on the form is based on the question points, not the rubric points, so adjust accordingly
+            adjust_points:
+              (body.score_manual_adjust_points || 0) / (body.score_manual_adjust_points_ratio || 1),
           }
         : undefined;
 
@@ -236,17 +240,18 @@ router.post(
       );
     } else if (body.__action === 'modify_rubric_settings') {
       try {
-        await manualGrading.updateAssessmentQuestionRubric(
-          res.locals.instance_question.assessment_question_id,
-          body.use_rubric,
-          body.replace_auto_points,
-          body.starting_points,
-          body.min_points,
-          body.max_extra_points,
-          Object.values(body.rubric_item), // rubric items
-          body.tag_for_manual_grading,
-          res.locals.authn_user.user_id,
-        );
+        await manualGrading.updateAssessmentQuestionRubric({
+          assessment_question_id: res.locals.instance_question.assessment_question_id,
+          use_rubric: body.use_rubric,
+          replace_auto_points: body.replace_auto_points,
+          total_points: body.total_points,
+          starting_points: body.starting_points,
+          min_points: body.min_points,
+          max_extra_points: body.max_extra_points,
+          rubric_items: Object.values(body.rubric_item), // rubric items
+          tag_for_manual_grading: body.tag_for_manual_grading,
+          authn_user_id: res.locals.authn_user.user_id,
+        });
         res.redirect(req.baseUrl + '/grading_rubric_panels');
       } catch (err) {
         res.status(500).send({ err: String(err) });
