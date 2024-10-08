@@ -15,7 +15,7 @@ FROM
   nqss
 ON CONFLICT (question_id, sharing_set_id) DO NOTHING;
 
---BLOCK sync_course_sharing_sets
+-- BLOCK sync_course_sharing_sets
 WITH
   ncss AS (
     SELECT
