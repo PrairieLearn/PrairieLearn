@@ -1,0 +1,19 @@
+{
+    "uuid": "5b9d3721-0214-4b31-8a94-3bbe0326536a",
+    "title": "Scratchpad - pgadmin - postgress",
+    "topic": "others",
+    "tags": [
+        "workspace"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "showCorrectAnswer": false,
+    "workspaceOptions": {
+        "image": "zacwarham/gittu:nine",
+        "port": 5050,
+        "args": "",
+        "rewriteUrl": false,
+        "home": "/var/lib/pgadmin",
+        "enableNetworking": true
+    }
+}
