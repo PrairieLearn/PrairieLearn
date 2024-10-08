@@ -18,6 +18,7 @@ import { logger } from '@prairielearn/logger';
 import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
 
 import * as assets from '../lib/assets.js';
+import { canonicalLogger } from '../lib/canonical-logger.js';
 import * as chunks from '../lib/chunks.js';
 import { withCodeCaller, FunctionMissingError } from '../lib/code-caller/index.js';
 import { config } from '../lib/config.js';
@@ -979,43 +980,51 @@ async function processQuestionServer(phase, codeCaller, data, html, fileData, co
  */
 async function processQuestion(phase, codeCaller, data, context) {
   const meter = metrics.getMeter('prairielearn');
-  return instrumentedWithMetrics(meter, `freeform.${phase}`, async () => {
-    if (phase === 'generate') {
-      return processQuestionServer(phase, codeCaller, data, '', Buffer.from(''), context);
-    } else {
-      const {
-        courseIssues,
-        data: htmlData,
-        html,
-        fileData,
-        renderedElementNames,
-      } = await processQuestionHtml(phase, codeCaller, data, context);
-      const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
-      if (hasFatalError) {
-        return {
+  return instrumentedWithMetrics(
+    meter,
+    `freeform.${phase}`,
+    async () => {
+      if (phase === 'generate') {
+        return processQuestionServer(phase, codeCaller, data, '', Buffer.from(''), context);
+      } else {
+        const {
           courseIssues,
-          data,
+          data: htmlData,
           html,
           fileData,
           renderedElementNames,
+        } = await processQuestionHtml(phase, codeCaller, data, context);
+        const hasFatalError = _.some(_.map(courseIssues, 'fatal'));
+        if (hasFatalError) {
+          return {
+            courseIssues,
+            data,
+            html,
+            fileData,
+            renderedElementNames,
+          };
+        }
+        const {
+          courseIssues: serverCourseIssues,
+          data: serverData,
+          html: serverHtml,
+          fileData: serverFileData,
+        } = await processQuestionServer(phase, codeCaller, htmlData, html, fileData, context);
+        courseIssues.push(...serverCourseIssues);
+        return {
+          courseIssues,
+          data: serverData,
+          html: serverHtml,
+          fileData: serverFileData,
+          renderedElementNames,
         };
       }
-      const {
-        courseIssues: serverCourseIssues,
-        data: serverData,
-        html: serverHtml,
-        fileData: serverFileData,
-      } = await processQuestionServer(phase, codeCaller, htmlData, html, fileData, context);
-      courseIssues.push(...serverCourseIssues);
-      return {
-        courseIssues,
-        data: serverData,
-        html: serverHtml,
-        fileData: serverFileData,
-        renderedElementNames,
-      };
-    }
-  });
+    },
+    (duration) => {
+      canonicalLogger.increment(`freeform.${phase}.count`, 1);
+      canonicalLogger.increment(`freeform.${phase}.duration`, duration);
+    },
+  );
 }
 
 /**

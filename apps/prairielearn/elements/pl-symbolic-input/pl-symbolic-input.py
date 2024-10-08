@@ -218,6 +218,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "raw_submitted_answer": raw_submitted_answer,
             display.value: True,
             "error": parse_error or missing_input,
+            "missing_input": missing_input,
         }
 
         if show_score and score is not None:

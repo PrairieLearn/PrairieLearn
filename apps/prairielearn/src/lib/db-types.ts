@@ -723,6 +723,7 @@ export const Lti13CourseInstanceSchema = z.object({
   id: IdSchema,
   lti13_instance_id: IdSchema,
   lineitems_url: z.string().nullable(),
+  context_memberships_url: z.string().nullable(),
 });
 export type Lti13CourseInstance = z.infer<typeof Lti13CourseInstanceSchema>;
 
@@ -941,6 +942,19 @@ export const StripeCheckoutSessionSchema = z.object({
   subject_user_id: IdSchema.nullable(),
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
+
+export const SubmissionGradingContextEmbeddingSchema = z.object({
+  id: IdSchema,
+  embedding: z.string(),
+  submission_id: IdSchema,
+  submission_text: z.string(),
+  created_at: DateFromISOString,
+  updated_at: DateFromISOString,
+  assessment_question_id: IdSchema,
+});
+export type SubmissionGradingContextEmbedding = z.infer<
+  typeof SubmissionGradingContextEmbeddingSchema
+>;
 
 export const SubmissionSchema = z.object({
   auth_user_id: IdSchema.nullable(),

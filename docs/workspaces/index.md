@@ -58,7 +58,7 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
   - `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
   - `port`: port number used by the workspace app inside the Docker image
   - `home`: home directory inside the Docker image -- this should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory
-  - `gradedFiles` (optional, default none): list of file paths (relative to the `home` path) that will be copied out of the workspace container for grading. Files can be in subdirectories, but the files must be explicitly listed (e.g. `dir/file.txt`) or use wildcards (e.g., `dir/*`). If a file is in a subdirectory, the relative path to the file will be reconstructed inside the autograder. Wildcards are allowed (e.g., you can specify `dir/*.c`) and will match any files in the workspace that match them. Paths with wildcards are considered optional. The following wildcards are supported:
+  - `gradedFiles` (optional, default none): list of file paths (relative to the `home` path) that will be copied out of the workspace container when saving a submission. These files can then be used for grading (either auto-grading or manual grading), previewed in the submission panel, and included in instructor submission downloads. Files can be in subdirectories, but the files must be explicitly listed (e.g. `dir/file.txt`) or use wildcards (e.g., `dir/*`). If a file is in a subdirectory, the relative path to the file will be reconstructed inside the autograder. Wildcards are allowed (e.g., you can specify `dir/*.c`) and will match any files in the workspace that match them. Paths with wildcards are considered optional. The following wildcards are supported:
     - `*` matches everything except path separators and hidden files (names starting with `.`).
     - `**` can be used to identify files in all subdirectories of the workspace (e.g., `**/*.py` will copy the files with `.py` extension in the home directory and in all its subdirectories).
     - `?` matches any single character except path separators.
@@ -220,6 +220,16 @@ If a file name appears in multiple locations, the following precedence takes eff
 - Files in the `workspaceTemplate/` directory are considered next;
 
 - Files in the `workspace/` directory are considered last.
+
+## Maintained workspace images
+
+PrairieLearn provides and maintains the following workspace images:
+
+- [`prairielearn/workspace-desktop`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/desktop/): An Ubuntu 24.04 desktop
+- [`prairielearn/workspace-jupyterlab-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/jupyterlab-python/): JupyterLab with Python 3.11
+- [`prairielearn/workspace-rstudio`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/rstudio/): RStudio with R version 4.4
+- [`prairielearn/workspace-vscode-python`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/vscode-python/): VS Code with Python 3.10
+- [`prairielearn/workspace-xtermjs`](https://github.com/PrairieLearn/PrairieLearn/tree/master/workspaces/xtermjs/): Terminal emulator based on xterm.js
 
 ## Custom workspace images
 

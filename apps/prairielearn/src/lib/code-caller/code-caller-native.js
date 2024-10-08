@@ -99,7 +99,7 @@ export class CodeCallerNative {
       // communication. This is incompatible with the default behavior of our
       // logger, which will only write to stdout. So, we allow a different
       // logging function to be provided.
-      errorLogger: logger.error,
+      errorLogger: logger.error.bind(logger),
     },
   ) {
     /** @type {CodeCallerState} */

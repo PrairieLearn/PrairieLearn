@@ -46,7 +46,10 @@ VALUES
 -- BLOCK update_lti13_course_instance
 UPDATE lti13_course_instances
 SET
-  (context_label, context_title, lineitems_url) = ($context_label, $context_title, $lineitems_url)
+  context_label = $context_label,
+  context_title = $context_title,
+  lineitems_url = $lineitems_url,
+  context_memberships_url = $context_memberships_url
 WHERE
   lti13_instance_id = $lti13_instance_id
   AND course_instance_id = $course_instance_id

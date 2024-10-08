@@ -509,7 +509,7 @@ function _checkServer(workspace) {
   const healthCheckInterval = config.workspaceHealthCheckIntervalSec * 1000;
   const healthCheckTimeout = config.workspaceHealthCheckTimeoutSec * 1000;
 
-  const startTime = new Date().getTime();
+  const startTime = performance.now();
   return new Promise((resolve, reject) => {
     function checkWorkspace() {
       fetch(
@@ -524,7 +524,7 @@ function _checkServer(workspace) {
         })
         .catch(() => {
           // Do nothing, because errors are expected while the container is launching.
-          const endTime = new Date().getTime();
+          const endTime = performance.now();
           if (endTime - startTime > startTimeout) {
             const { id, version, launch_uuid } = workspace;
             reject(
