@@ -1,6 +1,7 @@
 {
   "name": "@prairielearn/express-list-endpoints",
   "version": "1.0.0",
+  "license": "MIT",
   "type": "module",
   "main": "dist/index.js",
   "repository": {
