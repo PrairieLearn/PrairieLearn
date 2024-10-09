@@ -825,6 +825,11 @@ function NavbarInstructor({
 
 function NavbarPublic({ resLocals }: { resLocals: Record<string, any> }) {
   const { course, urlPrefix } = resLocals;
+
+  if (!course) {
+    return '';
+  }
+
   return html`
     <li class="nav-item btn-group">
       <a
