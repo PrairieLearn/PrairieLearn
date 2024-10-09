@@ -1,33 +1,30 @@
-import * as chai from 'chai';
+import { assert } from 'chai';
 import latestExpress from 'express';
+// @ts-expect-error -- This is an aliased package.
 import oldExpress from 'express-4-19-2';
-import mocha from 'mocha';
 
 import listEndpoints, { type Endpoint } from '../src/index.js';
 
-const before = mocha.before;
-const expect = chai.expect;
-
 function assertResult(endpoints: Endpoint[]) {
-  chai.assert.isArray(endpoints);
-  chai.assert.lengthOf(endpoints, 2);
+  assert.isArray(endpoints);
+  assert.lengthOf(endpoints, 2);
 
   endpoints.forEach((endpoint) => {
-    chai.assert.typeOf(endpoint, 'object');
+    assert.typeOf(endpoint, 'object');
 
-    chai.assert.typeOf(endpoint.path, 'string');
-    chai.assert.include(endpoint.path, '/');
+    assert.typeOf(endpoint.path, 'string');
+    assert.include(endpoint.path, '/');
 
-    chai.assert.isArray(endpoint.methods);
+    assert.isArray(endpoint.methods);
     endpoint.methods.forEach((method) => {
-      chai.assert.typeOf(method, 'string');
-      chai.assert.equal(method, method.toUpperCase());
-      chai.assert.notEqual(method, '_ALL');
+      assert.typeOf(method, 'string');
+      assert.equal(method, method.toUpperCase());
+      assert.notEqual(method, '_ALL');
     });
 
-    chai.assert.isArray(endpoint.middlewares);
+    assert.isArray(endpoint.middlewares);
     endpoint.middlewares.forEach((middleware) => {
-      chai.assert.typeOf(middleware, 'string');
+      assert.typeOf(middleware, 'string');
     });
   });
 }
@@ -35,7 +32,7 @@ function assertResult(endpoints: Endpoint[]) {
 const expressVersions = [
   {
     version: '4.19.2',
-    express: oldExpress,
+    express: oldExpress as typeof latestExpress,
   },
   {
     version: 'latest',
@@ -44,7 +41,7 @@ const expressVersions = [
 ];
 
 for (const { version, express } of expressVersions) {
-  describe('express-list-endpoints', () => {
+  describe(`express-list-endpoints, express@${version}`, () => {
     describe('when called with non configured app', () => {
       let endpoints: Endpoint[];
 
@@ -55,8 +52,8 @@ for (const { version, express } of expressVersions) {
       });
 
       it('should return an empty array', () => {
-        chai.assert.isArray(endpoints);
-        chai.assert.lengthOf(endpoints, 0);
+        assert.isArray(endpoints);
+        assert.lengthOf(endpoints, 0);
       });
     });
 
@@ -184,8 +181,8 @@ for (const { version, express } of expressVersions) {
         });
 
         it('should parse the endpoints correctly', () => {
-          expect(endpoints).to.have.length(1);
-          expect(endpoints[0].path).to.be.equal('/router/:id/friends');
+          assert.lengthOf(endpoints, 1);
+          assert.equal(endpoints[0].path, '/router/:id/friends');
         });
 
         describe('and also has a sub-router on the router', () => {
@@ -208,8 +205,8 @@ for (const { version, express } of expressVersions) {
           });
 
           it('should parse the endpoints correctly', () => {
-            chai.assert.lengthOf(endpoints, 1);
-            chai.assert.equal(endpoints[0].path, '/router/:postId/sub-router');
+            assert.lengthOf(endpoints, 1);
+            assert.equal(endpoints[0].path, '/router/:postId/sub-router');
           });
         });
       });
@@ -238,10 +235,10 @@ for (const { version, express } of expressVersions) {
         });
 
         it('should parse the endpoint correctly', () => {
-          chai.assert.lengthOf(endpoints, 3);
-          chai.assert.equal(endpoints[0].path, '/some_route');
-          chai.assert.equal(endpoints[1].path, '/some_other_router');
-          chai.assert.equal(endpoints[2].path, '/__last_route__');
+          assert.lengthOf(endpoints, 3);
+          assert.equal(endpoints[0].path, '/some_route');
+          assert.equal(endpoints[1].path, '/some_other_router');
+          assert.equal(endpoints[2].path, '/__last_route__');
         });
       });
 
@@ -267,10 +264,10 @@ for (const { version, express } of expressVersions) {
         });
 
         it('should parse the endpoint correctly', () => {
-          chai.assert.lengthOf(endpoints, 3);
-          chai.assert.equal(endpoints[0].path, '/some-route');
-          chai.assert.equal(endpoints[1].path, '/some-other-router');
-          chai.assert.equal(endpoints[2].path, '/--last-route--');
+          assert.lengthOf(endpoints, 3);
+          assert.equal(endpoints[0].path, '/some-route');
+          assert.equal(endpoints[1].path, '/some-other-router');
+          assert.equal(endpoints[2].path, '/--last-route--');
         });
       });
 
@@ -296,10 +293,10 @@ for (const { version, express } of expressVersions) {
         });
 
         it('should parse the endpoint correctly', () => {
-          chai.assert.lengthOf(endpoints, 3);
-          chai.assert.equal(endpoints[0].path, '/some.route');
-          chai.assert.equal(endpoints[1].path, '/some.other.router');
-          chai.assert.equal(endpoints[2].path, '/..last.route..');
+          assert.lengthOf(endpoints, 3);
+          assert.equal(endpoints[0].path, '/some.route');
+          assert.equal(endpoints[1].path, '/some.other.router');
+          assert.equal(endpoints[2].path, '/..last.route..');
         });
       });
 
@@ -325,10 +322,10 @@ for (const { version, express } of expressVersions) {
         });
 
         it('should parse the endpoint correctly', () => {
-          chai.assert.lengthOf(endpoints, 3);
-          chai.assert.equal(endpoints[0].path, '/s0m3_r.oute');
-          chai.assert.equal(endpoints[1].path, '/v1.0.0');
-          chai.assert.equal(endpoints[2].path, '/not_sure.what-1m.d01ng');
+          assert.lengthOf(endpoints, 3);
+          assert.equal(endpoints[0].path, '/s0m3_r.oute');
+          assert.equal(endpoints[1].path, '/v1.0.0');
+          assert.equal(endpoints[2].path, '/not_sure.what-1m.d01ng');
         });
       });
     });
@@ -350,10 +347,10 @@ for (const { version, express } of expressVersions) {
       });
 
       it('should retrieve the list of endpoints and its methods', () => {
-        chai.assert.lengthOf(endpoints, 1);
-        chai.assert.equal(endpoints[0].path, '/');
-        chai.assert.lengthOf(endpoints[0].methods, 1);
-        chai.assert.equal(endpoints[0].methods[0], 'GET');
+        assert.lengthOf(endpoints, 1);
+        assert.equal(endpoints[0].path, '/');
+        assert.lengthOf(endpoints[0].methods, 1);
+        assert.equal(endpoints[0].methods[0], 'GET');
       });
     });
 
@@ -375,9 +372,9 @@ for (const { version, express } of expressVersions) {
       });
 
       it('should retrieve the correct built path', () => {
-        expect(endpoints).to.have.length(2);
-        expect(endpoints[0].path).to.be.equal('/multi/level/my/path');
-        expect(endpoints[1].path).to.be.equal('/super/duper/multi/level/my/path');
+        assert.lengthOf(endpoints, 2);
+        assert.equal(endpoints[0].path, '/multi/level/my/path');
+        assert.equal(endpoints[1].path, '/super/duper/multi/level/my/path');
       });
 
       describe('with params', () => {
@@ -401,9 +398,9 @@ for (const { version, express } of expressVersions) {
         });
 
         it('should retrieve the correct built path', () => {
-          expect(endpoints).to.have.length(2);
-          expect(endpoints[0].path).to.be.equal('/multi/:multiId/level/:levelId/users/:id');
-          expect(endpoints[1].path).to.be.equal('/multi/:multiId/level/:levelId/super/users/:id');
+          assert.lengthOf(endpoints, 2);
+          assert.equal(endpoints[0].path, '/multi/:multiId/level/:levelId/users/:id');
+          assert.equal(endpoints[1].path, '/multi/:multiId/level/:levelId/super/users/:id');
         });
       });
 
@@ -424,8 +421,8 @@ for (const { version, express } of expressVersions) {
         });
 
         it('should retrieve the correct built path', () => {
-          expect(endpoints).to.have.length(1);
-          expect(endpoints[0].path).to.be.equal('/multi/level/super/users/:id/friends');
+          assert.lengthOf(endpoints, 1);
+          assert.equal(endpoints[0].path, '/multi/level/super/users/:id/friends');
         });
       });
     });
@@ -444,8 +441,8 @@ for (const { version, express } of expressVersions) {
       });
 
       it('should retrieve the correct built path', () => {
-        expect(endpoints).to.have.length(1);
-        expect(endpoints[0].path).to.be.equal('/users/:id');
+        assert.lengthOf(endpoints, 1);
+        assert.equal(endpoints[0].path, '/users/:id');
       });
     });
 
@@ -463,8 +460,8 @@ for (const { version, express } of expressVersions) {
       });
 
       it('should retrieve the correct built path', () => {
-        expect(endpoints).to.have.length(1);
-        expect(endpoints[0].path).to.be.equal('/users/:id/friends');
+        assert.lengthOf(endpoints, 1);
+        assert.equal(endpoints[0].path, '/users/:id/friends');
       });
     });
 
@@ -486,14 +483,14 @@ for (const { version, express } of expressVersions) {
       });
 
       it('should retrieve the correct built path', () => {
-        expect(endpoints).to.have.length(1);
-        expect(endpoints[0].path).to.be.equal('/test');
+        assert.lengthOf(endpoints, 1);
+        assert.equal(endpoints[0].path, '/test');
       });
 
       it('should retrieve the correct built methods', () => {
-        expect(endpoints[0].methods).to.have.length(2);
-        expect(endpoints[0].methods[0]).to.be.equal('POST');
-        expect(endpoints[0].methods[1]).to.be.equal('DELETE');
+        assert.lengthOf(endpoints[0].methods, 2);
+        assert.equal(endpoints[0].methods[0], 'POST');
+        assert.equal(endpoints[0].methods[1], 'DELETE');
       });
     });
 
@@ -514,16 +511,16 @@ for (const { version, express } of expressVersions) {
       });
 
       it('should retrieve the correct built path', () => {
-        expect(endpoints).to.have.length(1);
-        expect(endpoints[0].path).to.be.equal('/test');
-        expect(endpoints[0].methods[0]).to.be.equal('POST');
+        assert.lengthOf(endpoints, 1);
+        assert.equal(endpoints[0].path, '/test');
+        assert.lengthOf(endpoints[0].methods, 1);
+        assert.equal(endpoints[0].methods[0], 'POST');
       });
 
       it('should retrieve the correct middlewares', () => {
-        expect(endpoints).to.have.length(1);
-        expect(endpoints[0].middlewares).to.have.length(2);
-        expect(endpoints[0].middlewares[0]).to.equal('exampleMiddleware');
-        expect(endpoints[0].middlewares[1]).to.equal('anonymous');
+        assert.lengthOf(endpoints[0].middlewares, 2);
+        assert.equal(endpoints[0].middlewares[0], 'exampleMiddleware');
+        assert.equal(endpoints[0].middlewares[1], 'anonymous');
       });
     });
 
@@ -548,11 +545,11 @@ for (const { version, express } of expressVersions) {
       });
 
       it('should list routes correctly', () => {
-        expect(endpoints).to.have.length(4);
-        expect(endpoints[0].path).to.be.equal('/one');
-        expect(endpoints[0].methods[0]).to.be.equal('GET');
-        expect(endpoints[1].path).to.be.equal('/two');
-        expect(endpoints[1].methods[0]).to.be.equal('GET');
+        assert.lengthOf(endpoints, 4);
+        assert.equal(endpoints[0].path, '/one');
+        assert.equal(endpoints[0].methods[0], 'GET');
+        assert.equal(endpoints[1].path, '/two');
+        assert.equal(endpoints[1].methods[0], 'GET');
       });
     });
 
@@ -577,13 +574,13 @@ for (const { version, express } of expressVersions) {
       });
 
       it('should list routes correctly', () => {
-        expect(endpoints).to.have.length(2);
-        expect(endpoints[0].path).to.be.equal('/');
-        expect(endpoints[0].methods[0]).to.be.equal('GET');
-        expect(endpoints[0].middlewares[0]).to.be.equal('anonymous');
-        expect(endpoints[1].path).to.be.equal('/sub-app');
-        expect(endpoints[1].methods).to.have.length(0);
-        expect(endpoints[1].middlewares).to.have.length(0);
+        assert.lengthOf(endpoints, 2);
+        assert.equal(endpoints[0].path, '/');
+        assert.equal(endpoints[0].methods[0], 'GET');
+        assert.equal(endpoints[0].middlewares[0], 'anonymous');
+        assert.equal(endpoints[1].path, '/sub-app');
+        assert.lengthOf(endpoints[1].methods, 0);
+        assert.lengthOf(endpoints[1].middlewares, 0);
       });
     });
 
@@ -601,10 +598,10 @@ for (const { version, express } of expressVersions) {
       });
 
       it('should list routes correctly', () => {
-        expect(endpoints).to.have.length(1);
-        expect(endpoints[0].path).to.be.equal('/foo/:item_id/bar');
-        expect(endpoints[0].methods[0]).to.be.equal('GET');
-        expect(endpoints[0].middlewares[0]).to.be.equal('anonymous');
+        assert.lengthOf(endpoints, 1);
+        assert.equal(endpoints[0].path, '/foo/:item_id/bar');
+        assert.equal(endpoints[0].methods[0], 'GET');
+        assert.equal(endpoints[0].middlewares[0], 'anonymous');
       });
     });
 
@@ -622,10 +619,10 @@ for (const { version, express } of expressVersions) {
       });
 
       it('should list routes correctly', () => {
-        expect(endpoints).to.have.length(1);
-        expect(endpoints[0].path).to.be.equal('/foo/bar/:baz_id/:biz_id');
-        expect(endpoints[0].methods[0]).to.be.equal('GET');
-        expect(endpoints[0].middlewares[0]).to.be.equal('anonymous');
+        assert.lengthOf(endpoints, 1);
+        assert.equal(endpoints[0].path, '/foo/bar/:baz_id/:biz_id');
+        assert.equal(endpoints[0].methods[0], 'GET');
+        assert.equal(endpoints[0].middlewares[0], 'anonymous');
       });
     });
 
@@ -646,10 +643,10 @@ for (const { version, express } of expressVersions) {
       });
 
       it('should list routes correctly', () => {
-        expect(endpoints).to.have.length(1);
-        expect(endpoints[0].path).to.be.equal('/foo/bar/baz/:biz_id');
-        expect(endpoints[0].methods[0]).to.be.equal('GET');
-        expect(endpoints[0].middlewares[0]).to.be.equal('anonymous');
+        assert.lengthOf(endpoints, 1);
+        assert.equal(endpoints[0].path, '/foo/bar/baz/:biz_id');
+        assert.equal(endpoints[0].methods[0], 'GET');
+        assert.equal(endpoints[0].middlewares[0], 'anonymous');
       });
     });
   });
