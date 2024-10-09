@@ -145,7 +145,7 @@ describe('Question Sharing', function () {
       },
     };
 
-    sharingCourseData.courseInstances['Fa19'].assessments['test'].sharedPublicly = true;
+    sharingCourseData.courseInstances['Fa19'].assessments['test'].sharedSourcePublicly = true;
 
     await syncUtil.writeCourseToDirectory(sharingCourseData, sharingCourseOriginDir);
 

@@ -150,44 +150,44 @@ export async function syncDiskToSqlWithLock(
   );
 
   /*
-   * Check that all questions in publicly shared course instances are also shared publicly
+   * Check that all questions in publicly shared assessments are also shared publicly
    */
   for (const courseInstanceKey in courseData.courseInstances) {
     const courseInstance = courseData.courseInstances[courseInstanceKey];
-
-    courseInstance.sharedPublicly = true; // TEST
-    courseData.courseInstances[courseInstanceKey].courseInstance.data.sharedPublicly =
-      courseInstance.sharedPublicly; // TEST, probably unncecessary once the course instances have sharedPublicly defined correctly. Make sure it's defined correctly
-    if (courseInstance.sharedPublicly) {
-      console.log(`Course instance ${courseInstanceKey} is shared publicly`); // TEST
-      for (const assessmentKey in courseInstance.assessments) {
-        const assessment = courseInstance.assessments[assessmentKey];
-        if (assessment.data && assessment.data.zones) {
-          for (const zone of assessment.data.zones) {
-            if (zone.questions) {
-              for (const question of zone.questions) {
-                if (question.id) {
-                  const infoJson = courseData.questions[question.id];
-                  if (!infoJson?.data?.sharedPublicly) {
-                    /// put the question.id into an array of questions that throw errors?
-                  }
-
-                  const infoJsonPath = path.join(
-                    courseDir,
-                    'questions',
-                    question.id || '',
-                    'info.json',
-                  );
-
-                  await readQuestionInfoJson(infoJsonPath, question.id, courseInstanceKey);
-                }
-              }
-            }
+    for (const assessmentKey in courseInstance.assessments) {
+      const assessment = courseInstance.assessments[assessmentKey];
+      if (!assessment.sharedSourcePublicly) {
+        continue;
+      }
+      if (!(assessment.data && assessment.data.zones)) {
+        continue;
+      }
+      for (const zone of assessment.data.zones) {
+        if (!zone.questions) {
+          continue;
+        }
+        for (const question of zone.questions) {
+          if (!question.id) {
+            continue;
           }
+          const infoJson = courseData.questions[question.id];
+          if (!infoJson?.data?.sharedPublicly) {
+            /// put the question.id into an array of questions that throw errors? // TEST
+          }
+
+          const infoJsonPath = path.join(
+            courseDir,
+            'questions',
+            question.id || '',
+            'info.json',
+          );
+
+          await readQuestionInfoJson(infoJsonPath, question.id, courseInstanceKey);
         }
       }
     }
   }
+
   if (!sharingConfigurationValid) {
     return {
       status: 'sharing_error',
@@ -296,6 +296,7 @@ export async function syncOrCreateDiskToSql(
   return await syncDiskToSql(course.id, courseDir, logger);
 }
 
+// TEST, don't need to read the JSON, can get from courseData. REMOVE THIS FUNCTION?
 async function readQuestionInfoJson(
   infoJsonPath: string,
   questionId: string,

@@ -161,8 +161,8 @@
       "description": "Module that this assessment belongs to, as defined in infoCourse.json.",
       "type": "string"
     },
-    "sharedPublicly": {
-      "description": "If true, the assessment is shared publicly.",
+    "sharedSourcePublicly": {
+      "description": "If true, the assessment's source code is shared publicly.",
       "type": "boolean",
       "default": true
     }

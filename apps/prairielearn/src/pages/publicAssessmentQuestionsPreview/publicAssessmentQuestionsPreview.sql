@@ -8,20 +8,11 @@ where
 
 -- BLOCK check_assessment_is_public
 SELECT
-  a.shared_publicly
+  a.shared_source_publicly
 FROM
   assessments AS a
 WHERE
   a.id = $assessment_id;
-
--- BLOCK check_course_instance_is_public
-SELECT
-  ci.shared_publicly
-FROM
-  course_instances AS ci
-WHERE
-  ci.id = $course_instance_id;
-
 
 -- BLOCK questions
 SELECT

@@ -3,15 +3,10 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
-import * as sqldb from '@prairielearn/postgres';
 import { queryRow, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { Assessment, AssessmentSchema } from '../../lib/db-types.js';
-import { AssessmentCopyEditor } from '../../lib/editors.js';
-import { IdSchema } from '../../lib/db-types.js';
 import { selectCourseById, selectCourseIdByInstanceId } from '../../models/course.js';
-import { selectCourseInstanceById } from '../../models/course-instances.js';
 
 import {
   InstructorAssessmentQuestions,
