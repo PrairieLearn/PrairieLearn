@@ -8906,7 +8906,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"express-4-19-2@npm:express@4.19.2, express@npm:^4.19.2":
+"express-4-19-2@npm:express@4.19.2":
   version: 4.19.2
   resolution: "express@npm:4.19.2"
   dependencies:
@@ -8984,7 +8984,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"express@npm:^4.21.0":
+"express@npm:^4.19.2, express@npm:^4.21.0":
   version: 4.21.1
   resolution: "express@npm:4.21.1"
   dependencies:
@@ -14136,7 +14136,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"serve-static@npm:1.15.0, serve-static@npm:^1.14.1":
+"serve-static@npm:1.15.0":
   version: 1.15.0
   resolution: "serve-static@npm:1.15.0"
   dependencies:
@@ -14148,7 +14148,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"serve-static@npm:1.16.2":
+"serve-static@npm:1.16.2, serve-static@npm:^1.14.1":
   version: 1.16.2
   resolution: "serve-static@npm:1.16.2"
   dependencies:
