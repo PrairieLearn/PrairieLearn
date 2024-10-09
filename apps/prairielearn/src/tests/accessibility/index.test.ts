@@ -4,7 +4,7 @@ import { JSDOM } from 'jsdom';
 import { test } from 'mocha';
 import fetch from 'node-fetch';
 
-import expressListEndpoints from '@prairielearn/express-list-endpoints';
+import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
@@ -253,7 +253,7 @@ function shouldSkipPath(path) {
 }
 
 describe('accessibility', () => {
-  let endpoints: expressListEndpoints.Endpoint[] = [];
+  let endpoints: Endpoint[] = [];
   let routeParams: Record<string, any> = {};
   before('set up testing server', async function () {
     config.cronActive = false;
@@ -308,8 +308,8 @@ describe('accessibility', () => {
   test('All pages pass accessibility checks', async function () {
     this.timeout(240_000);
 
-    const missingParamsEndpoints: expressListEndpoints.Endpoint[] = [];
-    const failingEndpoints: [expressListEndpoints.Endpoint, any][] = [];
+    const missingParamsEndpoints: Endpoint[] = [];
+    const failingEndpoints: [Endpoint, any][] = [];
 
     for (const endpoint of endpoints) {
       if (shouldSkipPath(endpoint.path)) {
