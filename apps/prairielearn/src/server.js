@@ -488,6 +488,7 @@ export async function initExpress() {
   // More middlewares
   app.use((await import('./middlewares/logResponse.js')).default); // defers to end of response
   app.use((await import('./middlewares/cors.js')).default);
+  app.use((await import('./middlewares/content-security-policy.js')).default);
   app.use((await import('./middlewares/date.js')).default);
   app.use((await import('./middlewares/effectiveRequestChanged.js')).default);
 
@@ -500,7 +501,6 @@ export async function initExpress() {
     /\/pl\/shibcallback/,
     (await import('./pages/authCallbackShib/authCallbackShib.js')).default,
   );
-  app.use('/pl/lti', (await import('./pages/authCallbackLti/authCallbackLti.js')).default);
 
   if (isEnterprise()) {
     if (config.hasAzure) {
@@ -515,8 +515,7 @@ export async function initExpress() {
     );
   }
 
-  app.use((await import('./middlewares/content-security-policy.js')).default);
-
+  app.use('/pl/lti', (await import('./pages/authCallbackLti/authCallbackLti.js')).default);
   app.use('/pl/login', (await import('./pages/authLogin/authLogin.js')).default);
   if (config.devMode) {
     app.use('/pl/dev_login', (await import('./pages/authLoginDev/authLoginDev.js')).default);
@@ -612,11 +611,6 @@ export async function initExpress() {
 
   if (isEnterprise()) {
     app.use('/pl/terms', (await import('./ee/pages/terms/terms.js')).default);
-
-    // Routes for LTI 1.3 pages post-auth
-    app.use('/pl/lti13_instance/:lti13_instance_id/course_navigation', [
-      (await import('./ee/pages/lti13CourseNavigation/lti13CourseNavigation.js')).default,
-    ]);
   }
 
   // We deliberately omit the `authzCourseOrInstance` middleware here. The

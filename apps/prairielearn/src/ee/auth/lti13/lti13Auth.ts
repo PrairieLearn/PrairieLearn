@@ -34,6 +34,10 @@ router.post('/login', asyncHandler(launchFlow));
 router.post(
   '/callback',
   asyncHandler(async (req, res) => {
+    // Allow in an iframe
+    res.removeHeader('content-security-policy');
+    res.removeHeader('x-frame-options');
+
     const lti13_instance = await selectLti13Instance(req.params.lti13_instance_id);
 
     const lti13_claims = await authenticate(req, res);
