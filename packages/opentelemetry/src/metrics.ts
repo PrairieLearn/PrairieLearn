@@ -74,6 +74,7 @@ export async function instrumentedWithMetrics<T>(
   meter: Meter,
   name: string,
   fn: () => Promise<T> | T,
+  done?: (duration: number) => void,
 ): Promise<T> {
   const error = getCounter(meter, `${name}.error`, { valueType: ValueType.INT });
   const histogram = getHistogram(meter, `${name}.duration`, {
@@ -88,7 +89,9 @@ export async function instrumentedWithMetrics<T>(
     error.add(1);
     throw e;
   } finally {
-    histogram.record(performance.now() - start);
+    const duration = performance.now() - start;
+    histogram.record(duration);
+    done?.(duration);
   }
 }
 
