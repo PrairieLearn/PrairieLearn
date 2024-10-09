@@ -3790,7 +3790,7 @@ __metadata:
     "@types/uid-safe": "npm:^2.1.5"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
-    cookie: "npm:^0.6.0"
+    cookie: "npm:^0.7.0"
     cookie-signature: "npm:^1.2.1"
     express: "npm:^4.19.2"
     express-async-handler: "npm:^1.2.0"
@@ -7321,7 +7321,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cookie@npm:0.6.0, cookie@npm:^0.6.0":
+"cookie@npm:0.6.0":
   version: 0.6.0
   resolution: "cookie@npm:0.6.0"
   checksum: 10c0/f2318b31af7a31b4ddb4a678d024514df5e705f9be5909a192d7f116cfb6d45cbacf96a473fa733faa95050e7cff26e7832bb3ef94751592f1387b71c8956686
@@ -7332,6 +7332,13 @@ __metadata:
   version: 0.7.1
   resolution: "cookie@npm:0.7.1"
   checksum: 10c0/5de60c67a410e7c8dc8a46a4b72eb0fe925871d057c9a5d2c0e8145c4270a4f81076de83410c4d397179744b478e33cd80ccbcc457abf40a9409ad27dcd21dde
+  languageName: node
+  linkType: hard
+
+"cookie@npm:^0.7.0":
+  version: 0.7.2
+  resolution: "cookie@npm:0.7.2"
+  checksum: 10c0/9596e8ccdbf1a3a88ae02cf5ee80c1c50959423e1022e4e60b91dd87c622af1da309253d8abdb258fb5e3eacb4f08e579dc58b4897b8087574eee0fd35dfa5d2
   languageName: node
   linkType: hard
 
