@@ -188,7 +188,7 @@ export function Lti13CourseNavigationDone({
           <p>
             <a
               href="/pl/lti13_instance/${lti13_instance_id}/course_navigation"
-              class="btn btn-success"
+              class="btn btn-primary"
             >
               Continue to your course instance
             </a>
