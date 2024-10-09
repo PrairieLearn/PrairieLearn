@@ -13,6 +13,9 @@
     "dev": "tsc --watch --preserveWatchOutput",
     "test": "c8 mocha src/**/*.test.ts"
   },
+  "dependencies": {
+    "express": "*"
+  },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/express-session": "^1.18.0",

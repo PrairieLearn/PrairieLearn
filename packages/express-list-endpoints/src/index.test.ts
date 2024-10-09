@@ -1,42 +1,39 @@
-/* eslint-env mocha */
-const chai = require('chai');
-const express = require('express');
-const mocha = require('mocha');
+import * as chai from 'chai';
+import express from 'express';
+import mocha from 'mocha';
 
-const listEndpoints = require('../src/index');
+import listEndpoints, { type Endpoint } from '../src/index.js';
 
 const before = mocha.before;
 const expect = chai.expect;
 
-chai.should();
-
-function assertResult(endpoints) {
-  endpoints.should.be.an('array');
-  endpoints.should.have.length(2);
+function assertResult(endpoints: Endpoint[]) {
+  chai.assert.isArray(endpoints);
+  chai.assert.lengthOf(endpoints, 2);
 
   endpoints.forEach((endpoint) => {
-    endpoint.should.be.an('object');
+    chai.assert.typeOf(endpoint, 'object');
 
-    endpoint.path.should.be.a('string');
-    endpoint.path.should.contains('/');
+    chai.assert.typeOf(endpoint.path, 'string');
+    chai.assert.include(endpoint.path, '/');
 
-    endpoint.methods.should.be.an('array');
+    chai.assert.isArray(endpoint.methods);
     endpoint.methods.forEach((method) => {
-      method.should.be.a('string');
-      expect(method).to.be.equal(method.toUpperCase());
-      expect(method).to.not.be.equal('_ALL');
+      chai.assert.typeOf(method, 'string');
+      chai.assert.equal(method, method.toUpperCase());
+      chai.assert.notEqual(method, '_ALL');
     });
 
-    endpoint.middlewares.should.be.an('array');
+    chai.assert.isArray(endpoint.middlewares);
     endpoint.middlewares.forEach((middleware) => {
-      middleware.should.be.a('string');
+      chai.assert.typeOf(middleware, 'string');
     });
   });
 }
 
 describe('express-list-endpoints', () => {
   describe('when called with non configured app', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const app = express();
@@ -45,35 +42,35 @@ describe('express-list-endpoints', () => {
     });
 
     it('should return an empty array', () => {
-      endpoints.should.be.an('array');
-      endpoints.should.have.length(0);
+      chai.assert.isArray(endpoints);
+      chai.assert.lengthOf(endpoints, 0);
     });
   });
 
   describe('when called over an app', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const app = express();
 
       app
         .route('/')
-        .get((req, res) => {
+        .get((_req, res) => {
           res.end();
         })
-        .all((req, res) => {
+        .all((_req, res) => {
           res.end();
         })
-        .post((req, res) => {
+        .post((_req, res) => {
           res.end();
         });
 
       app
         .route('/testing')
-        .all((req, res) => {
+        .all((_req, res) => {
           res.end();
         })
-        .delete((req, res) => {
+        .delete((_req, res) => {
           res.end();
         });
 
@@ -86,29 +83,29 @@ describe('express-list-endpoints', () => {
   });
 
   describe('when called over a router', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const router = express.Router();
 
       router
         .route('/')
-        .get((req, res) => {
+        .get((_req, res) => {
           res.end();
         })
-        .all((req, res) => {
+        .all((_req, res) => {
           res.end();
         })
-        .post((req, res) => {
+        .post((_req, res) => {
           res.end();
         });
 
       router
         .route('/testing')
-        .all((req, res) => {
+        .all((_req, res) => {
           res.end();
         })
-        .delete((req, res) => {
+        .delete((_req, res) => {
           res.end();
         });
 
@@ -121,7 +118,7 @@ describe('express-list-endpoints', () => {
   });
 
   describe('when called over an app with mounted routers', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const app = express();
@@ -129,22 +126,22 @@ describe('express-list-endpoints', () => {
 
       app
         .route('/testing')
-        .all((req, res) => {
+        .all((_req, res) => {
           res.end();
         })
-        .delete((req, res) => {
+        .delete((_req, res) => {
           res.end();
         });
 
       router
         .route('/')
-        .get((req, res) => {
+        .get((_req, res) => {
           res.end();
         })
-        .all((req, res) => {
+        .all((_req, res) => {
           res.end();
         })
-        .post((req, res) => {
+        .post((_req, res) => {
           res.end();
         });
 
@@ -158,13 +155,13 @@ describe('express-list-endpoints', () => {
     });
 
     describe('and some of the routers has the option `mergeParams`', () => {
-      let endpoints;
+      let endpoints: Endpoint[];
 
       before(() => {
         const app = express();
         const router = express.Router({ mergeParams: true });
 
-        router.get('/:id/friends', (req, res) => {
+        router.get('/:id/friends', (_req, res) => {
           res.end();
         });
 
@@ -179,14 +176,14 @@ describe('express-list-endpoints', () => {
       });
 
       describe('and also has a sub-router on the router', () => {
-        let endpoints;
+        let endpoints: Endpoint[];
 
         before(() => {
           const app = express();
           const router = express.Router({ mergeParams: true });
           const subRouter = express.Router();
 
-          subRouter.get('/', (req, res) => {
+          subRouter.get('/', (_req, res) => {
             res.end();
           });
 
@@ -198,8 +195,8 @@ describe('express-list-endpoints', () => {
         });
 
         it('should parse the endpoints correctly', () => {
-          expect(endpoints).to.have.length(1);
-          expect(endpoints[0].path).to.be.equal('/router/:postId/sub-router');
+          chai.assert.lengthOf(endpoints, 1);
+          chai.assert.equal(endpoints[0].path, '/router/:postId/sub-router');
         });
       });
     });
@@ -207,20 +204,20 @@ describe('express-list-endpoints', () => {
 
   describe('when the defined routes', () => {
     describe('contains underscores', () => {
-      let endpoints;
+      let endpoints: Endpoint[];
 
       before(() => {
         const router = express.Router();
 
-        router.get('/some_route', (req, res) => {
+        router.get('/some_route', (_req, res) => {
           res.end();
         });
 
-        router.get('/some_other_router', (req, res) => {
+        router.get('/some_other_router', (_req, res) => {
           res.end();
         });
 
-        router.get('/__last_route__', (req, res) => {
+        router.get('/__last_route__', (_req, res) => {
           res.end();
         });
 
@@ -228,27 +225,28 @@ describe('express-list-endpoints', () => {
       });
 
       it('should parse the endpoint correctly', () => {
-        endpoints[0].path.should.be.equal('/some_route');
-        endpoints[1].path.should.be.equal('/some_other_router');
-        endpoints[2].path.should.be.equal('/__last_route__');
+        chai.assert.lengthOf(endpoints, 3);
+        chai.assert.equal(endpoints[0].path, '/some_route');
+        chai.assert.equal(endpoints[1].path, '/some_other_router');
+        chai.assert.equal(endpoints[2].path, '/__last_route__');
       });
     });
 
     describe('contains hyphens', () => {
-      let endpoints;
+      let endpoints: Endpoint[];
 
       before(() => {
         const router = express.Router();
 
-        router.get('/some-route', (req, res) => {
+        router.get('/some-route', (_req, res) => {
           res.end();
         });
 
-        router.get('/some-other-router', (req, res) => {
+        router.get('/some-other-router', (_req, res) => {
           res.end();
         });
 
-        router.get('/--last-route--', (req, res) => {
+        router.get('/--last-route--', (_req, res) => {
           res.end();
         });
 
@@ -256,27 +254,28 @@ describe('express-list-endpoints', () => {
       });
 
       it('should parse the endpoint correctly', () => {
-        endpoints[0].path.should.be.equal('/some-route');
-        endpoints[1].path.should.be.equal('/some-other-router');
-        endpoints[2].path.should.be.equal('/--last-route--');
+        chai.assert.lengthOf(endpoints, 3);
+        chai.assert.equal(endpoints[0].path, '/some-route');
+        chai.assert.equal(endpoints[1].path, '/some-other-router');
+        chai.assert.equal(endpoints[2].path, '/--last-route--');
       });
     });
 
     describe('contains dots', () => {
-      let endpoints;
+      let endpoints: Endpoint[];
 
       before(() => {
         const router = express.Router();
 
-        router.get('/some.route', (req, res) => {
+        router.get('/some.route', (_req, res) => {
           res.end();
         });
 
-        router.get('/some.other.router', (req, res) => {
+        router.get('/some.other.router', (_req, res) => {
           res.end();
         });
 
-        router.get('/..last.route..', (req, res) => {
+        router.get('/..last.route..', (_req, res) => {
           res.end();
         });
 
@@ -284,27 +283,28 @@ describe('express-list-endpoints', () => {
       });
 
       it('should parse the endpoint correctly', () => {
-        endpoints[0].path.should.be.equal('/some.route');
-        endpoints[1].path.should.be.equal('/some.other.router');
-        endpoints[2].path.should.be.equal('/..last.route..');
+        chai.assert.lengthOf(endpoints, 3);
+        chai.assert.equal(endpoints[0].path, '/some.route');
+        chai.assert.equal(endpoints[1].path, '/some.other.router');
+        chai.assert.equal(endpoints[2].path, '/..last.route..');
       });
     });
 
     describe('contains multiple different chars', () => {
-      let endpoints;
+      let endpoints: Endpoint[];
 
       before(() => {
         const router = express.Router();
 
-        router.get('/s0m3_r.oute', (req, res) => {
+        router.get('/s0m3_r.oute', (_req, res) => {
           res.end();
         });
 
-        router.get('/v1.0.0', (req, res) => {
+        router.get('/v1.0.0', (_req, res) => {
           res.end();
         });
 
-        router.get('/not_sure.what-1m.d01ng', (req, res) => {
+        router.get('/not_sure.what-1m.d01ng', (_req, res) => {
           res.end();
         });
 
@@ -312,21 +312,22 @@ describe('express-list-endpoints', () => {
       });
 
       it('should parse the endpoint correctly', () => {
-        endpoints[0].path.should.be.equal('/s0m3_r.oute');
-        endpoints[1].path.should.be.equal('/v1.0.0');
-        endpoints[2].path.should.be.equal('/not_sure.what-1m.d01ng');
+        chai.assert.lengthOf(endpoints, 3);
+        chai.assert.equal(endpoints[0].path, '/s0m3_r.oute');
+        chai.assert.equal(endpoints[1].path, '/v1.0.0');
+        chai.assert.equal(endpoints[2].path, '/not_sure.what-1m.d01ng');
       });
     });
   });
 
   describe('when called over a mounted router with only root path', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const app = express();
       const router = express.Router();
 
-      router.get('/', (req, res) => {
+      router.get('/', (_req, res) => {
         res.end();
       });
 
@@ -336,22 +337,21 @@ describe('express-list-endpoints', () => {
     });
 
     it('should retrieve the list of endpoints and its methods', () => {
-      expect(endpoints).to.have.length(1);
-      expect(endpoints[0]).to.have.own.property('path');
-      expect(endpoints[0]).to.have.own.property('methods');
-      expect(endpoints[0].path).to.be.equal('/');
-      expect(endpoints[0].methods[0]).to.be.equal('GET');
+      chai.assert.lengthOf(endpoints, 1);
+      chai.assert.equal(endpoints[0].path, '/');
+      chai.assert.lengthOf(endpoints[0].methods, 1);
+      chai.assert.equal(endpoints[0].methods[0], 'GET');
     });
   });
 
   describe('when called over a multi-level base route', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const app = express();
       const router = express.Router();
 
-      router.get('/my/path', (req, res) => {
+      router.get('/my/path', (_req, res) => {
         res.end();
       });
 
@@ -368,17 +368,17 @@ describe('express-list-endpoints', () => {
     });
 
     describe('with params', () => {
-      let endpoints;
+      let endpoints: Endpoint[];
 
       before(() => {
         const app = express();
         const router = express.Router();
 
-        router.get('/users/:id', (req, res) => {
+        router.get('/users/:id', (_req, res) => {
           res.end();
         });
 
-        router.get('/super/users/:id', (req, res) => {
+        router.get('/super/users/:id', (_req, res) => {
           res.end();
         });
 
@@ -395,13 +395,13 @@ describe('express-list-endpoints', () => {
     });
 
     describe('with params in middle of the pattern', () => {
-      let endpoints;
+      let endpoints: Endpoint[];
 
       before(() => {
         const app = express();
         const router = express.Router();
 
-        router.get('/super/users/:id/friends', (req, res) => {
+        router.get('/super/users/:id/friends', (_req, res) => {
           res.end();
         });
 
@@ -418,12 +418,12 @@ describe('express-list-endpoints', () => {
   });
 
   describe('when called over a route with params', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const app = express();
 
-      app.get('/users/:id', (req, res) => {
+      app.get('/users/:id', (_req, res) => {
         res.end();
       });
 
@@ -437,12 +437,12 @@ describe('express-list-endpoints', () => {
   });
 
   describe('when called over a route with params in middle of the pattern', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const app = express();
 
-      app.get('/users/:id/friends', (req, res) => {
+      app.get('/users/:id/friends', (_req, res) => {
         res.end();
       });
 
@@ -456,16 +456,16 @@ describe('express-list-endpoints', () => {
   });
 
   describe('when called over a route with multiple methods with "/" path defined', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const router = express.Router();
 
       router
-        .post('/test', (req, res) => {
+        .post('/test', (_req, res) => {
           res.end();
         })
-        .delete('/test', (req, res) => {
+        .delete('/test', (_req, res) => {
           res.end();
         });
 
@@ -485,7 +485,7 @@ describe('express-list-endpoints', () => {
   });
 
   describe('when called with middlewares', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const router = express.Router();
@@ -515,17 +515,17 @@ describe('express-list-endpoints', () => {
   });
 
   describe('when called with an array of paths', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const app = express();
       const router = express.Router();
 
-      app.get(['/one', '/two'], (req, res) => {
+      app.get(['/one', '/two'], (_req, res) => {
         res.end();
       });
 
-      router.get(['/one', '/two'], (req, res) => {
+      router.get(['/one', '/two'], (_req, res) => {
         res.end();
       });
 
@@ -544,17 +544,17 @@ describe('express-list-endpoints', () => {
   });
 
   describe('when called with an app with a mounted sub-app', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const app = express();
       const subApp = express();
 
-      app.get('/', (req, res) => {
+      app.get('/', (_req, res) => {
         res.end();
       });
 
-      subApp.get('/', (req, res) => {
+      subApp.get('/', (_req, res) => {
         res.end();
       });
 
@@ -575,12 +575,12 @@ describe('express-list-endpoints', () => {
   });
 
   describe('when called with route params with regexp', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const app = express();
 
-      app.get('/foo/:item_id(\\d+)/bar', (req, res) => {
+      app.get('/foo/:item_id(\\d+)/bar', (_req, res) => {
         res.end();
       });
 
@@ -596,12 +596,12 @@ describe('express-list-endpoints', () => {
   });
 
   describe('when called with a route with multiple params with regexp', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const app = express();
 
-      app.get('/foo/bar/:baz_id(\\d+)/:biz_id(\\d+)', (req, res) => {
+      app.get('/foo/bar/:baz_id(\\d+)/:biz_id(\\d+)', (_req, res) => {
         res.end();
       });
 
@@ -617,13 +617,13 @@ describe('express-list-endpoints', () => {
   });
 
   describe('supports regexp validators for params in subapp', () => {
-    let endpoints;
+    let endpoints: Endpoint[];
 
     before(() => {
       const app = express();
       const subApp = express.Router();
 
-      subApp.get('/baz/:biz_id(\\d+)', (req, res) => {
+      subApp.get('/baz/:biz_id(\\d+)', (_req, res) => {
         res.end();
       });
 

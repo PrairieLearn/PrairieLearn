@@ -1,14 +1,16 @@
-/**
- * @typedef {Object} Route
- * @property {Object} methods
- * @property {string | string[]} path
- * @property {any[]} stack
- *
- * @typedef {Object} Endpoint
- * @property {string} path Path name
- * @property {string[]} methods Methods handled
- * @property {string[]} middlewares Mounted middlewares
- */
+import type { Express, Router } from 'express';
+
+interface Route {
+  methods: object;
+  path: string | string[];
+  stack: any[];
+}
+
+export interface Endpoint {
+  path: string;
+  methods: string[];
+  middlewares: string[];
+}
 
 const regExpToParseExpressPathRegExp =
   /^\/\^\\\/(?:(:?[\w\\.-]*(?:\\\/:?[\w\\.-]*)*)|(\(\?:\([^)]+\)\)))\\\/.*/;
@@ -21,44 +23,39 @@ const STACK_ITEM_VALID_NAMES = ['router', 'bound dispatch', 'mounted_app'];
 
 /**
  * Returns all the verbs detected for the passed route
- * @param {Route} route
  */
-const getRouteMethods = function (route) {
+function getRouteMethods(route: Route) {
   let methods = Object.keys(route.methods);
 
   methods = methods.filter((method) => method !== '_all');
   methods = methods.map((method) => method.toUpperCase());
 
   return methods;
-};
+}
 
 /**
  * Returns the names (or anonymous) of all the middlewares attached to the
- * passed route
- * @param {Route} route
- * @returns {string[]}
+ * passed route.
  */
-const getRouteMiddlewares = function (route) {
+function getRouteMiddlewares(route: Route): string[] {
   return route.stack.map((item) => {
     return item.handle.name || 'anonymous';
   });
-};
+}
 
 /**
- * Returns true if found regexp related with express params
- * @param {string} expressPathRegExp
- * @returns {boolean}
+ * Returns true if found regexp related with express params.
  */
-const hasParams = function (expressPathRegExp) {
+function hasParams(expressPathRegExp: string): boolean {
   return regexpExpressParamRegexp.test(expressPathRegExp);
-};
+}
 
 /**
- * @param {Route} route Express route object to be parsed
- * @param {string} basePath The basePath the route is on
- * @return {Endpoint[]} Endpoints info
+ * @param route Express route object to be parsed
+ * @param basePath The basePath the route is on
+ * @return Endpoints info
  */
-const parseExpressRoute = function (route, basePath) {
+function parseExpressRoute(route: Route, basePath: string): Endpoint[] {
   const paths = [];
 
   if (Array.isArray(route.path)) {
@@ -67,12 +64,10 @@ const parseExpressRoute = function (route, basePath) {
     paths.push(route.path);
   }
 
-  /** @type {Endpoint[]} */
-  const endpoints = paths.map((path) => {
+  const endpoints: Endpoint[] = paths.map((path) => {
     const completePath = basePath && path === '/' ? basePath : `${basePath}${path}`;
 
-    /** @type {Endpoint} */
-    const endpoint = {
+    const endpoint: Endpoint = {
       path: completePath.replace(regexpExpressPathParamRegexp, '$1'),
       methods: getRouteMethods(route),
       middlewares: getRouteMiddlewares(route),
@@ -82,14 +77,9 @@ const parseExpressRoute = function (route, basePath) {
   });
 
   return endpoints;
-};
+}
 
-/**
- * @param {RegExp} expressPathRegExp
- * @param {any[]} params
- * @returns {string}
- */
-const parseExpressPath = function (expressPathRegExp, params) {
+function parseExpressPath(expressPathRegExp: RegExp, params: any[]): string {
   let parsedRegExp = expressPathRegExp.toString();
   let expressPathRegExpExec = regExpToParseExpressPathRegExp.exec(parsedRegExp);
   let paramIndex = 0;
@@ -107,18 +97,21 @@ const parseExpressPath = function (expressPathRegExp, params) {
     expressPathRegExpExec = regExpToParseExpressPathRegExp.exec(parsedRegExp);
   }
 
+  // TODO: can we do better than this?
+  if (!expressPathRegExpExec) {
+    throw new Error('Error parsing express path');
+  }
+
   const parsedPath = expressPathRegExpExec[1].replace(/\\\//g, '/');
 
   return parsedPath;
-};
+}
 
-/**
- * @param {import('express').Express | import('express').Router | any} app
- * @param {string} [basePath]
- * @param {Endpoint[]} [endpoints]
- * @returns {Endpoint[]}
- */
-const parseEndpoints = function (app, basePath, endpoints) {
+function parseEndpoints(
+  app: Express | Router | any,
+  basePath?: string,
+  endpoints?: Endpoint[],
+): Endpoint[] {
   const stack = app.stack || (app._router && app._router.stack);
 
   endpoints = endpoints || [];
@@ -139,18 +132,18 @@ const parseEndpoints = function (app, basePath, endpoints) {
   }
 
   return endpoints;
-};
+}
 
 /**
  * Ensures the path of the new endpoints isn't yet in the array.
  * If the path is already in the array merges the endpoints with the existing
  * one, if not, it adds them to the array.
  *
- * @param {Endpoint[]} currentEndpoints Array of current endpoints
- * @param {Endpoint[]} endpointsToAdd New endpoints to be added to the array
- * @returns {Endpoint[]} Updated endpoints array
+ * @param currentEndpoints Array of current endpoints
+ * @param endpointsToAdd New endpoints to be added to the array
+ * @returns Updated endpoints array
  */
-const addEndpoints = function (currentEndpoints, endpointsToAdd) {
+function addEndpoints(currentEndpoints: Endpoint[], endpointsToAdd: Endpoint[]): Endpoint[] {
   endpointsToAdd.forEach((newEndpoint) => {
     const existingEndpoint = currentEndpoints.find(
       (endpoint) => endpoint.path === newEndpoint.path,
@@ -168,15 +161,9 @@ const addEndpoints = function (currentEndpoints, endpointsToAdd) {
   });
 
   return currentEndpoints;
-};
+}
 
-/**
- * @param {any[]} stack
- * @param {string} basePath
- * @param {Endpoint[]} endpoints
- * @returns {Endpoint[]}
- */
-const parseStack = function (stack, basePath, endpoints) {
+function parseStack(stack: any[], basePath: string, endpoints: Endpoint[]): Endpoint[] {
   stack.forEach((stackItem) => {
     if (stackItem.route) {
       const newEndpoints = parseExpressRoute(stackItem.route, basePath);
@@ -206,17 +193,17 @@ const parseStack = function (stack, basePath, endpoints) {
   });
 
   return endpoints;
-};
+}
 
 /**
  * Returns an array of strings with all the detected endpoints
- * @param {import('express').Express | import('express').Router | any} app The express/router instance to get the endpoints from
- * @returns {Endpoint[]}
+ * @param app The express/router instance to get the endpoints from
+ * @returns The array of endpoints
  */
-const expressListEndpoints = function (app) {
+function expressListEndpoints(app: Express | Router | any): Endpoint[] {
   const endpoints = parseEndpoints(app);
 
   return endpoints;
-};
+}
 
-module.exports = expressListEndpoints;
+export default expressListEndpoints;
