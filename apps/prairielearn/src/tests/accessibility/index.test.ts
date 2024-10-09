@@ -1,10 +1,10 @@
 import { A11yError } from '@sa11y/format';
 import axe from 'axe-core';
-import expressListEndpoints from 'express-list-endpoints';
 import { JSDOM } from 'jsdom';
 import { test } from 'mocha';
 import fetch from 'node-fetch';
 
+import expressListEndpoints from '@prairielearn/express-list-endpoints';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
