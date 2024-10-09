@@ -78,29 +78,4 @@ router.get(
   }),
 );
 
-router.post(
-  '/',
-  asyncHandler(async (req, res) => {
-    if (req.body.__action === 'copy_assessment') {
-      const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id);
-      res.locals.course = await selectCourseById(courseId);
-      res.locals.course_instance = await selectCourseInstanceById(res.locals.course_instance_id);
-      res.locals.assessment = await selectAssessmentById(res.locals.assessment_id);
-
-      const editor = new AssessmentCopyEditor({
-        locals: res.locals,
-      });
-
-      const serverJob = await editor.prepareServerJob();
-      try {
-        await editor.executeWithServerJob(serverJob);
-      } catch {
-        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-        return;
-      }
-
-    }
-  }),
-);
-
 export default router;
