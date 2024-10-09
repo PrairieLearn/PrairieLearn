@@ -37,7 +37,7 @@ async function setLocals(req, res) {
   }
 
   if (
-    !res.locals.question.shared_publicly &&
+    !res.locals.question.shared_publicly ||
     res.locals.course.id !== res.locals.question.course_id
   ) {
     throw new error.HttpStatusError(404, 'Not Found');
@@ -52,7 +52,7 @@ router.post(
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
       const variant_id = await processSubmission(req, res);
       res.redirect(
-        `${res.locals.urlPrefix}/public/course/${res.locals.course.id}/question/${res.locals.question.id}/preview/?variant_id=${variant_id}`,
+        `${res.locals.urlPrefix}/question/${res.locals.question.id}/preview/?variant_id=${variant_id}`,
       );
     } else if (req.body.__action === 'report_issue') {
       // we currently don't report issues for public facing previews

@@ -830,7 +830,7 @@ function NavbarPublic({ resLocals }: { resLocals: Record<string, any> }) {
       <a
         class="nav-link"
         aria-label="Link to the course's public course overview page."
-        href="${urlPrefix}/public/course/${course.id}/overview"
+        href="${urlPrefix}/public/course/${course.id}/questions"
       >
         ${course?.short_name ?? ''}
       </a>

@@ -41,15 +41,6 @@ async function checkAssessmentPublic(assessment_id: string): Promise<boolean> {
   return isPublic;
 }
 
-async function checkCourseInstancePublic(course_instance_id: string): Promise<boolean> {
-  const isPublic = await queryRow(
-    sql.check_course_instance_is_public,
-    { course_instance_id },
-    BooleanSchema,
-  );
-  return isPublic;
-}
-
 const ansiUp = new AnsiUp();
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -57,16 +48,15 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const isCourseInstancePublic = await checkCourseInstancePublic(res.locals.course_instance_id);
     const isAssessmentPublic = await checkAssessmentPublic(res.locals.assessment_id);
     const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
     const course = await selectCourseById(courseId);
     res.locals.course = course;
 
-    if (!isCourseInstancePublic && !isAssessmentPublic) {
+    if (!isAssessmentPublic) {
       throw new error.HttpStatusError(
         404,
-        'The course instance that owns this assessment is not public.',
+        'This assessment is not public.',
       );
     }
 
@@ -92,23 +82,16 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'copy_assessment') {
-      // Get needed data
       const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id);
       res.locals.course = await selectCourseById(courseId);
       res.locals.course_instance = await selectCourseInstanceById(res.locals.course_instance_id);
       res.locals.assessment = await selectAssessmentById(res.locals.assessment_id);
 
-      res.locals.assessment.sharedPublicly = true; // TEST
-      res.locals.user = { id: 'test' }; // TEST
-      res.locals.authz_data = { authn_user: { user_id: 'test' } }; // TEST
-
       const editor = new AssessmentCopyEditor({
         locals: res.locals,
       });
 
-      console.log('before initiating serverJob'); // TEST
       const serverJob = await editor.prepareServerJob();
-      console.log('after initiating serverJob', serverJob); // TEST
       try {
         await editor.executeWithServerJob(serverJob);
       } catch {
@@ -116,26 +99,6 @@ router.post(
         return;
       }
 
-      console.log('serverJob', serverJob); // TEST
-
-      /*
-      const courseInstanceID = await sqldb.queryRow(
-        sql.select_course_instance_id_from_uuid,
-        { uuid: editor.uuid, course_id: res.locals.course.id },
-        IdSchema,
-      );
-      
-
-      flash(
-        'success',
-        'Assessment copied successfully. You are new viewing your copy of the assessment.',
-      );
-      res.redirect(
-        res.locals.plainUrlPrefix +
-          '/course_instance/' +
-          courseInstanceID +
-          '/instructor/instance_admin/settings',
-      ); */
     }
   }),
 );
