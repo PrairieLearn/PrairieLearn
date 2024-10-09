@@ -27,7 +27,7 @@ export function Lti13CourseNavigationInstructor({
         ${Navbar({ resLocals, navPage: 'lti13_course_navigation' })} ${TerminologyModal()}
         <script>
           $(() => {
-            $('#onepicker').one('change', () => {
+            $('#connect_course_instance').one('change', () => {
               $('#saveButton').prop('disabled', false);
             });
           });
@@ -87,9 +87,15 @@ export function Lti13CourseNavigationInstructor({
                 </ul>
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <label>Connect ${courseName} with:
-                  <div class="input-group">
-                    <select class="custom-select" id="onepicker" name="unsafe_course_instance_id">
+                  <div class="form-group">
+                    <label class="form-label" for="connect_course_instance">
+                      Connect ${courseName} with:
+                    </label>
+                    <select
+                      class="custom-select"
+                      id="connect_course_instance"
+                      name="unsafe_course_instance_id"
+                    >
                       <option value="" disabled selected>
                         Select an existing course instance...
                       </option>
@@ -108,7 +114,6 @@ export function Lti13CourseNavigationInstructor({
                         `;
                       })}
                     </select>
-                    </label>
                   </div>
                   <button class="btn btn-primary" id="saveButton" disabled>Save</button>
                 </form>
@@ -172,19 +177,18 @@ export function Lti13CourseNavigationDone({
             <strong>You're all set.</strong> Next time you or students click on the link in your
             LMS, they will be taken directly to your PrairieLearn course instance.
           </p>
-          <ul>
-            <li>
-              The course instance <code>allowAccess</code> rules still apply and may need to be
-              configured.
-            </li>
-          </ul>
+
+          <div class="alert alert-warning">
+            The course instance and assessment <code>allowAccess</code> rules still apply and may
+            need to be configured.
+          </div>
 
           <p>To change this connection, go to your course instance LTI 1.3 page.</p>
 
           <p>
             <a
               href="/pl/lti13_instance/${lti13_instance_id}/course_navigation"
-              class="btn btn-success"
+              class="btn btn-primary"
             >
               Continue to your course instance
             </a>
