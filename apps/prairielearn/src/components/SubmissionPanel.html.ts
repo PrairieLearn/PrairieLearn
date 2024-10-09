@@ -254,7 +254,7 @@ export function SubmissionPanel({
             : ''}"
           data-submission-id="${submission.id}"
           id="submission-${submission.id}-body"
-          ${submissionHtml === undefined && question.type === 'Freeform'
+          ${question.type === 'Freeform'
             ? html`
                 data-dynamic-render-url="${renderUrlPrefix}/variant/${variant_id}/submission/${submission.id}"
               `

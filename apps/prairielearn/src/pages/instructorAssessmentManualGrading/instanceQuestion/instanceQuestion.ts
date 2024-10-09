@@ -73,7 +73,7 @@ router.get(
 router.get(
   '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
+    const panels = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
       question_id: res.locals.question.id,
       instance_question_id: res.locals.instance_question.id,
@@ -81,11 +81,10 @@ router.get(
       user_id: res.locals.user.user_id,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'manual_grading',
-      csrfToken: null,
-      authorizedEdit: null,
-      renderScorePanels: false,
+      authorizedEdit: res.locals.authz_result.authorized_edit,
+      renderScorePanels: req.query.render_score_panels === 'true',
     });
-    res.send({ submissionPanel, extraHeadersHtml });
+    res.send(panels);
   }),
 );
 
