@@ -6,6 +6,22 @@ FROM
 where
   id = $course_id;
 
+-- BLOCK select_course_id_by_instance_id  
+SELECT 
+  course_id
+FROM
+  course_instances
+where
+  id = $course_instance_id;
+
+-- BLOCK select_all_course_instances_of_course_by_id
+SELECT
+  ci.id
+FROM
+  course_instances ci
+WHERE
+  ci.course_id = $course_id
+
 -- BLOCK update_course_commit_hash
 UPDATE pl_courses
 SET

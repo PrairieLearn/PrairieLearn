@@ -837,12 +837,17 @@ function NavbarInstructor({
 
 function NavbarPublic({ resLocals }: { resLocals: Record<string, any> }) {
   const { course, urlPrefix } = resLocals;
+
+  if (!course) {
+    return '';
+  }
+
   return html`
     <li class="nav-item btn-group">
       <a
         class="nav-link"
-        aria-label="Link to page showing all public questions for the course."
-        href="${urlPrefix}/questions"
+        aria-label="Link to the course's public course overview page."
+        href="${urlPrefix}/public/course/${course.id}/questions"
       >
         ${course?.short_name ?? ''}
       </a>
