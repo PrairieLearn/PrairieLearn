@@ -70,7 +70,6 @@ export function trapFocus(element: Element): FocusTrap {
   const previousActiveElement = document.activeElement ?? document.body;
 
   function keyDown(e: KeyboardEvent) {
-    console.log('handling keydown', e.key);
     if (e.key !== 'Tab') return;
 
     const focusable = focusableChildren(element);
