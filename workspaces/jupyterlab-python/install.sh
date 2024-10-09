@@ -31,12 +31,10 @@ chown root:root /usr/local/bin/pl-gosu-helper.sh
 chmod 0755 /usr/local/bin/pl-gosu-helper.sh
 
 # Install all Python dependencies.
-pip install uv
-uv pip install --system -r /requirements.txt
+pip install -r /requirements.txt
 
 # Clear various caches to minimize the final image size.
 apt-get clean
-uv cache clean
 pip cache purge
 
 # Suppress the opt-in dialog for announcements.
