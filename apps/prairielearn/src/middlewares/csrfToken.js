@@ -11,8 +11,6 @@ export default asyncHandler(async (req, res, next) => {
     url: req.originalUrl,
   };
 
-  console.log(req.originalUrl);
-
   if (res.locals.authn_user && res.locals.authn_user.user_id) {
     tokenData.authn_user_id = res.locals.authn_user.user_id;
   }
