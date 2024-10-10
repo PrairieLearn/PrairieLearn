@@ -1,4 +1,5 @@
-import { escapeHtml, html } from '@prairielearn/html';
+import { escapeHtml, html, HtmlValue, joinHtml } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import type {
   Assessment,
@@ -63,23 +64,31 @@ export function QuestionScorePanel({
               `
             : ''}
           ${assessment.type === 'Homework'
-            ? // Only show previous variants if the question allows multiple variants, or there are multiple variants (i.e., they were allowed at some point)
-              !question.single_variant ||
-              (instance_question_info.previous_variants?.length ?? 0) > 1
-              ? html`
-                  <tr>
-                    <td colspan="2" class="text-wrap">
-                      All variants:
-                      ${QuestionAwardedPoints({
-                        instanceQuestionId: instance_question.id,
-                        previousVariants: instance_question_info.previous_variants,
-                        currentVariantId: variant?.id,
-                        urlPrefix,
-                      })}
-                    </td>
-                  </tr>
-                `
-              : ''
+            ? html`
+                <tr>
+                  <td>Value:</td>
+                  <td>${QuestionValue({ instance_question, assessment_question })}</td>
+                </tr>
+                ${
+                  // Only show previous variants if the question allows multiple variants, or there are multiple variants (i.e., they were allowed at some point)
+                  !question.single_variant ||
+                  (instance_question_info.previous_variants?.length ?? 0) > 1
+                    ? html`
+                        <tr>
+                          <td colspan="2" class="text-wrap">
+                            All variants:
+                            ${QuestionAwardedPoints({
+                              instanceQuestionId: instance_question.id,
+                              previousVariants: instance_question_info.previous_variants,
+                              currentVariantId: variant?.id,
+                              urlPrefix,
+                            })}
+                          </td>
+                        </tr>
+                      `
+                    : ''
+                }
+              `
             : assessment_question.max_auto_points
               ? html`
                   <tr>
@@ -404,6 +413,96 @@ export function ExamQuestionAvailablePoints({
     <button
       type="button"
       class="btn btn-xs btn-ghost js-available-points-popover"
+      data-toggle="popover"
+      data-container="body"
+      data-html="true"
+      data-content="${escapeHtml(popoverContent)}"
+      data-placement="auto"
+    >
+      <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </button>
+  `;
+}
+
+function QuestionValue({
+  instance_question,
+  assessment_question,
+}: {
+  instance_question: InstanceQuestion;
+  assessment_question: AssessmentQuestion;
+}) {
+  const initAutoPoints =
+    (assessment_question.init_points ?? 0) - (assessment_question.max_manual_points ?? 0);
+
+  const currentAutoValue =
+    (instance_question.current_value ?? 0) - (assessment_question.max_manual_points ?? 0);
+
+  const bestCurrentScore = run(() => {
+    const variantPoints = instance_question.variants_points_list.at(-1);
+    if (variantPoints == null) return 0;
+    if (variantPoints < initAutoPoints) return (variantPoints / initAutoPoints) * 100;
+    return 0;
+  });
+
+  const popoverContent = run(() => {
+    const parts: HtmlValue[] = [
+      'This question awards partial credit if you continue getting closer to the correct answer.',
+    ];
+
+    if (bestCurrentScore === 0) {
+      parts.push(html`<hr />`);
+      parts.push(
+        `If you score 100% on your next submission, you will be awarded an additional ${formatPoints(currentAutoValue)} points.`,
+      );
+
+      parts.push(html`<hr />`);
+      parts.push(
+        html`If you score less than 100%, you will be awarded an additional
+          <code>${formatPoints(initAutoPoints)} * score / 100</code> points.`,
+      );
+    } else {
+      parts.push(html`<hr />`);
+
+      if (instance_question.some_perfect_submission) {
+        parts.push(
+          `Your highest submission score since your last 100% submission is ${formatPoints(bestCurrentScore)}%.`,
+        );
+      } else {
+        parts.push(`Your highest submission score so far is ${formatPoints(bestCurrentScore)}%.`);
+      }
+
+      // TODO: do we want to show the full formula, or just the number of points?
+      const perfectAdditionalPoints = (currentAutoValue * (100 - bestCurrentScore)) / 100;
+      parts.push(html`<hr />`);
+      parts.push(
+        `If you score 100% on your next submission, you will be awarded an additional ${formatPoints(perfectAdditionalPoints)} points.`,
+      );
+
+      parts.push(html`<hr />`);
+      parts.push(
+        html`If you score between ${formatPoints(bestCurrentScore)}% and 100%, you will be awarded
+          an additional
+          <code>
+            ${formatPoints(currentAutoValue)} * (score - ${formatPoints(bestCurrentScore)}) / 100
+          </code>
+          points.`,
+      );
+      parts.push(html`<hr />`);
+      parts.push(html`If you score less than 100%, you will not be awarded any additional points.`);
+    }
+
+    return joinHtml(parts);
+  });
+
+  // TODO: do we want to show `current_value` or `currentAutoValue` to the student?
+  // We currently show `current_value` on the assessment instance page, but when manual
+  // points are involved, showing `current_value` could be confusing, as the student can
+  // only actually earn `currentAutoValue` points.
+  return html`
+    ${instance_question.current_value}
+    <button
+      type="button"
+      class="btn btn-xs js-value-popover"
       data-toggle="popover"
       data-container="body"
       data-html="true"
