@@ -24,6 +24,8 @@ import {
   SubmissionGradingContextEmbedding,
   IdSchema,
   InstanceQuestion,
+  RubricItemSchema,
+  RubricItem,
 } from '../../lib/db-types.js';
 import * as manualGrading from '../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../lib/question-render.js';
@@ -40,6 +42,17 @@ const SubmissionVariantSchema = z.object({
   submission: SubmissionSchema,
 });
 const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
+// Current idea for rubric
+const RubricItemInfoSchema = z.object({
+  number: z.number(),
+  description: z.string(),
+  explanation: z.string(),
+  selected: z.boolean(),
+});
+const GPTRubricGradeSchema = z.object({
+  grade: z.array(RubricItemInfoSchema),
+  feedback: z.string(),
+});
 const GradedExampleSchema = z.object({
   submission_text: z.string(),
   score_perc: z.number(),
@@ -47,7 +60,7 @@ const GradedExampleSchema = z.object({
 });
 type GradedExample = z.infer<typeof GradedExampleSchema>;
 
-async function generateGPTPromptWithExamples({
+async function generateGPTPrompt({
   question_prompt,
   student_answer,
   example_submissions,
@@ -275,6 +288,18 @@ export async function aiGrade({
       InstanceQuestionSchema,
     );
 
+    const rubric_id = await queryOptionalRow(
+      sql.select_rubric_for_grading,
+      {
+        assessment_question_id: assessment_question.id,
+      },
+      IdSchema,
+    );
+    let rubric_info: RubricItem | null = null;
+    if (rubric_id) {
+      rubric_info = await queryRow(sql.select_rubric_item_info, { rubric_id }, RubricItemSchema);
+    }
+
     job.info('Checking for embeddings for all submissions.');
     const newEmbeddingsCount = await generateSubmissionEmbeddings({
       course,
@@ -344,7 +369,7 @@ export async function aiGrade({
       }
       msg += '\n';
 
-      const messages = await generateGPTPromptWithExamples({
+      const messages = await generateGPTPrompt({
         question_prompt,
         student_answer,
         example_submissions,
