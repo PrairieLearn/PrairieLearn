@@ -107,11 +107,12 @@ function getParamsForAssessment(
     return zone.questions.map((question) => {
       let alternatives: {
         qid: string;
-        maxPoints: number | number[];
+        maxPoints: number;
         points: number | number[];
-        maxAutoPoints: number | number[];
+        maxAutoPoints: number;
         autoPoints: number | number[];
         manualPoints: number;
+        manualPerc: number;
         forceMaxPoints: boolean;
         triesPerVariant: number;
         gradeRateMinutes: number;
@@ -133,6 +134,7 @@ function getParamsForAssessment(
             maxAutoPoints: alternative.maxAutoPoints ?? question.maxAutoPoints ?? null,
             autoPoints: alternative.autoPoints ?? question.autoPoints ?? null,
             manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
+            manualPerc: alternative.manualPerc ?? question.manualPerc ?? null,
             forceMaxPoints: _.has(alternative, 'forceMaxPoints')
               ? alternative.forceMaxPoints
               : _.has(question, 'forceMaxPoints')
@@ -160,6 +162,7 @@ function getParamsForAssessment(
             maxAutoPoints: question.maxAutoPoints ?? null,
             autoPoints: question.autoPoints ?? null,
             manualPoints: question.manualPoints ?? null,
+            manualPerc: question.manualPerc ?? null,
             forceMaxPoints: question.forceMaxPoints || false,
             triesPerVariant: question.triesPerVariant || 1,
             advanceScorePerc: question.advanceScorePerc,
@@ -171,36 +174,46 @@ function getParamsForAssessment(
       }
 
       const normalizedAlternatives = alternatives.map((alternative) => {
-        const hasSplitPoints =
+        if (
           alternative.autoPoints !== null ||
           alternative.maxAutoPoints !== null ||
-          alternative.manualPoints !== null;
-        const autoPoints = (hasSplitPoints ? alternative.autoPoints : alternative.points) ?? 0;
-        const manualPoints = (hasSplitPoints ? alternative.manualPoints : 0) ?? 0;
+          alternative.manualPoints !== null
+        ) {
+          // These are supported for backwards compatibility
+          if (Array.isArray(alternative.autoPoints)) {
+            alternative.points = alternative.autoPoints.map(
+              (p) => p + (alternative.manualPoints ?? 0),
+            );
+          } else {
+            alternative.points = (alternative.autoPoints ?? 0) + (alternative.manualPoints ?? 0);
+          }
+
+          if (alternative.maxAutoPoints !== null) {
+            alternative.maxPoints = alternative.maxAutoPoints + (alternative.manualPoints ?? 0);
+          }
+
+          const maxPoints =
+            alternative.maxPoints ??
+            (Array.isArray(alternative.points) ? alternative.points[0] : alternative.points);
+          // Compute manual percentage based on the ratio of manual points to maximum points.
+          // If maxPoints is 0, we assume the question is auto-graded only (manual percentage is 0%)
+          alternative.manualPerc = (100 * (alternative.manualPoints ?? 0)) / (maxPoints || 1);
+        }
 
         if (assessment.type === 'Exam') {
-          const pointsList = Array.isArray(autoPoints) ? autoPoints : [autoPoints];
+          const pointsList = Array.isArray(alternative.points)
+            ? alternative.points
+            : [alternative.points];
           const maxPoints = Math.max(...pointsList);
 
-          return {
-            ...alternative,
-            hasSplitPoints,
-            maxPoints,
-            initPoints: undefined,
-            pointsList: hasSplitPoints ? pointsList.map((p) => p + manualPoints) : pointsList,
-          };
+          return { ...alternative, maxPoints, initPoints: undefined, pointsList };
         } else if (assessment.type === 'Homework') {
-          const initPoints =
-            (Array.isArray(autoPoints) ? autoPoints[0] : autoPoints) + manualPoints;
-          const maxPoints = alternative.maxAutoPoints ?? alternative.maxPoints ?? autoPoints;
+          const initPoints = Array.isArray(alternative.points)
+            ? alternative.points[0]
+            : alternative.points;
+          const maxPoints = alternative.maxPoints ?? initPoints;
 
-          return {
-            ...alternative,
-            hasSplitPoints,
-            maxPoints,
-            initPoints,
-            pointsList: undefined,
-          };
+          return { ...alternative, maxPoints, initPoints, pointsList: undefined };
         } else {
           throw new Error(`Unknown assessment type: ${assessment.type}`);
         }
@@ -213,11 +226,10 @@ function getParamsForAssessment(
         const questionId = questionIds[alternative.qid];
         return {
           number: assessmentQuestionNumber,
-          has_split_points: alternative.hasSplitPoints,
           points_list: alternative.pointsList,
           init_points: alternative.initPoints,
           max_points: alternative.maxPoints,
-          manual_points: alternative.manualPoints,
+          manual_perc: alternative.manualPerc,
           force_max_points: alternative.forceMaxPoints,
           tries_per_variant: alternative.triesPerVariant,
           grade_rate_minutes: alternative.gradeRateMinutes,

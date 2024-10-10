@@ -264,6 +264,7 @@ interface QuestionAlternative {
   maxPoints: number;
   manualPoints: number;
   maxAutoPoints: number;
+  manualPerc: number;
   id: string;
   forceMaxPoints: boolean;
   triesPerVariant: number;
@@ -279,6 +280,7 @@ interface ZoneQuestion {
   maxPoints: number;
   manualPoints: number;
   maxAutoPoints: number;
+  manualPerc: number;
   id?: string;
   forceMaxPoints: boolean;
   alternatives?: QuestionAlternative[];
@@ -373,6 +375,7 @@ export interface Question {
   clientTemplates: string[];
   template: string;
   gradingMethod: 'Internal' | 'External' | 'Manual';
+  manualPerc: number;
   singleVariant: boolean;
   showCorrectAnswer: boolean;
   partialCredit: boolean;
@@ -1122,6 +1125,7 @@ async function validateAssessment(
         maxPoints: number;
         maxAutoPoints: number;
         manualPoints: number;
+        manualPerc: number;
       }[] = [];
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
@@ -1140,6 +1144,7 @@ async function validateAssessment(
             maxAutoPoints: alternative.maxAutoPoints ?? zoneQuestion.maxAutoPoints,
             autoPoints: alternative.autoPoints ?? zoneQuestion.autoPoints,
             manualPoints: alternative.manualPoints ?? zoneQuestion.manualPoints,
+            manualPerc: alternative.manualPerc ?? zoneQuestion.manualPerc,
           };
         });
       } else if (zoneQuestion.id) {
@@ -1151,6 +1156,7 @@ async function validateAssessment(
             maxAutoPoints: zoneQuestion.maxAutoPoints,
             autoPoints: zoneQuestion.autoPoints,
             manualPoints: zoneQuestion.manualPoints,
+            manualPerc: zoneQuestion.manualPerc,
           },
         ];
       } else {
@@ -1173,6 +1179,16 @@ async function validateAssessment(
         ) {
           errors.push(
             'Cannot specify "points" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
+          );
+        }
+        if (
+          alternative.manualPerc !== undefined &&
+          (alternative.autoPoints !== undefined ||
+            alternative.manualPoints !== undefined ||
+            alternative.maxAutoPoints !== undefined)
+        ) {
+          errors.push(
+            'Cannot specify "autoPoints", "manualPoints" or "maxAutoPoints" for a question if "manualPerc" is specified',
           );
         }
         if (assessment.type === 'Exam') {

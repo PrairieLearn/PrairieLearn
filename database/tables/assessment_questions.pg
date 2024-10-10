@@ -24,6 +24,7 @@ columns
     init_points: double precision
     last_submission_score_hist: double precision[]
     last_submission_score_variance: double precision
+    manual_perc: double precision
     manual_rubric_id: bigint
     max_auto_points: double precision
     max_manual_points: double precision
