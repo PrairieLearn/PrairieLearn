@@ -72,13 +72,14 @@ VALUES
 RETURNING
   *;
 
--- BLOCK select_closest_embeddings
+-- BLOCK select_closest_submission_info
 WITH
   latest_submissions AS (
     SELECT
       s.id AS s_id,
       iq.id AS iq_id,
       iq.score_perc AS iq_score_perc,
+      s.manual_rubric_grading_id AS s_manual_rubric_grading_id,
       ROW_NUMBER() OVER (
         PARTITION BY
           s.variant_id
@@ -97,6 +98,7 @@ WITH
   )
 SELECT
   emb.submission_text,
+  ls.s_manual_rubric_grading_id AS manual_rubric_grading_id,
   ls.iq_score_perc AS score_perc,
   ls.iq_id AS instance_question_id
 FROM
@@ -111,11 +113,12 @@ LIMIT
 
 -- BLOCK select_rubric_for_grading
 SELECT
-  manual_rubric_id
+  ri.*
 FROM
-  assessment_questions
+  assessment_questions aq
+  JOIN rubric_items ri ON aq.manual_rubric_id = ri.rubric_id
 WHERE
-  id = $assessment_question_id;
+  aq.id = $assessment_question_id;
 
 -- BLOCK select_rubric_item_info
 SELECT

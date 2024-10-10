@@ -43,20 +43,21 @@ const SubmissionVariantSchema = z.object({
 });
 const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
 // Current idea for rubric
-const RubricItemInfoSchema = z.object({
+const GPTRubricItemSchema = z.object({
   number: z.number(),
   description: z.string(),
   explanation: z.string(),
   selected: z.boolean(),
 });
 const GPTRubricGradeSchema = z.object({
-  grade: z.array(RubricItemInfoSchema),
+  grade: z.array(GPTRubricItemSchema),
   feedback: z.string(),
 });
 const GradedExampleSchema = z.object({
   submission_text: z.string(),
   score_perc: z.number(),
   instance_question_id: z.string(),
+  manual_rubric_grading_id: z.string().nullable(),
 });
 type GradedExample = z.infer<typeof GradedExampleSchema>;
 
@@ -64,10 +65,12 @@ async function generateGPTPrompt({
   question_prompt,
   student_answer,
   example_submissions,
+  rubric_items,
 }: {
   question_prompt: string;
   student_answer: string;
   example_submissions: GradedExample[];
+  rubric_items: RubricItem[];
 }): Promise<
   {
     role: 'system' | 'user';
@@ -80,11 +83,28 @@ async function generateGPTPrompt({
   }[] = [];
 
   // Instructions for grading
-  messages.push({
-    role: 'system',
-    content:
-      'You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. I will provide some example answers and their corresponding grades.',
-  });
+  if (rubric_items.length) {
+    // TODO: MODIFY THIS PROMPT TO ADD IN RUBRIC
+    let rubric_info = '';
+    for (const item of rubric_items) {
+      rubric_info += `number: ${item.number}\ndescription: ${item.description}\nexplanation: ${item.explanation}\n\n`;
+    }
+    messages.push({
+      role: 'system',
+      content:
+        'You are an instructor for a course, and you are grading assignments. You are provided several rubric items with the item number, item description (name), and item explanation. You must grade the assignment by using the rubric, by returning an array of these items, with an extra boolean parameter "selected" representing if the rubric item should be selected. You should also provide feedback on how to improve the answer. I will provide some example answers and their corresponding grades.',
+    });
+    messages.push({
+      role: 'system',
+      content: `Here is the rubric info:\n${rubric_info}`,
+    });
+  } else {
+    messages.push({
+      role: 'system',
+      content:
+        'You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. I will provide some example answers and their corresponding grades.',
+    });
+  }
 
   // Question prompt
   messages.push({
@@ -94,10 +114,14 @@ async function generateGPTPrompt({
 
   // Examples
   for (const example of example_submissions) {
-    messages.push({
-      role: 'user',
-      content: `Example answer: \n${example.submission_text} \nGrade to this example answer: \n${example.score_perc}`,
-    });
+    if (example.manual_rubric_grading_id) {
+      // Grade to this example answer: ...
+    } else {
+      messages.push({
+        role: 'user',
+        content: `Example answer: \n${example.submission_text} \nGrade to this example answer: \n${example.score_perc}`,
+      });
+    }
   }
 
   // Student answer
@@ -288,17 +312,13 @@ export async function aiGrade({
       InstanceQuestionSchema,
     );
 
-    const rubric_id = await queryOptionalRow(
+    const rubric_items = await queryRows(
       sql.select_rubric_for_grading,
       {
         assessment_question_id: assessment_question.id,
       },
-      IdSchema,
+      RubricItemSchema,
     );
-    let rubric_info: RubricItem | null = null;
-    if (rubric_id) {
-      rubric_info = await queryRow(sql.select_rubric_item_info, { rubric_id }, RubricItemSchema);
-    }
 
     job.info('Checking for embeddings for all submissions.');
     const newEmbeddingsCount = await generateSubmissionEmbeddings({
@@ -354,7 +374,7 @@ export async function aiGrade({
       const student_answer = submission_embedding.submission_text;
 
       const example_submissions = await queryRows(
-        sql.select_closest_embeddings,
+        sql.select_closest_submission_info,
         {
           submission_id: submission.id,
           assessment_question_id: assessment_question.id,
@@ -373,7 +393,21 @@ export async function aiGrade({
         question_prompt,
         student_answer,
         example_submissions,
+        rubric_items,
       });
+
+      // if (rubric_items.length) {
+      //   const completion = await openai.beta.chat.completions.parse({
+      //     messages,
+      //     model: 'gpt-4o-2024-08-06',
+      //     user: `course_${course.id}`,
+      //     response_format: zodResponseFormat(GPTRubricGradeSchema, 'grades'),
+      //   });
+      //   msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
+      //   const grade_response = completion.choices[0].message;
+      //   msg += `Raw ChatGPT response:\n${grade_response.content}`;
+      //   console.log(grade_response.parsed);
+      // }
 
       const completion = await openai.beta.chat.completions.parse({
         messages,
