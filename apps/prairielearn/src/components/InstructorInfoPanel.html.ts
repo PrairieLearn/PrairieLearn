@@ -234,6 +234,7 @@ function VariantInfo({
         <pre><code>${JSON.stringify(variant.true_answer, null, 2)}</code></pre>
       </details>
     </div>
+    <hr />
   `;
 }
 
@@ -261,7 +262,6 @@ function AssessmentInstanceInfo({
       : assessment_instance.date;
 
   return html`
-    <hr />
     <h3 class="card-title h5">Assessment Instance:</h3>
     <div class="d-flex flex-wrap">
       <div class="pr-1">AID:</div>
@@ -283,6 +283,7 @@ function AssessmentInstanceInfo({
     <div class="pb-2">
       <a href="${instructorUrlPrefix}/assessment_instance/${assessment_instance.id}">View log</a>
     </div>
+    <hr />
   `;
 }
 
@@ -311,7 +312,6 @@ function ManualGradingInfo({
   const manualGradingUrl = `${config.urlPrefix}/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}`;
 
   return html`
-    <hr />
     <h3 class="card-title h5">Manual Grading:</h3>
 
     <div class="d-flex flex-wrap">
