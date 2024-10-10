@@ -47,6 +47,8 @@ function getParamsForQuestion(q: Question | null | undefined) {
     workspace_url_rewrite: q.workspaceOptions && q.workspaceOptions.rewriteUrl,
     workspace_enable_networking: q.workspaceOptions && q.workspaceOptions.enableNetworking,
     workspace_environment: q.workspaceOptions?.environment ?? {},
+    shared_publicly: q.sharedPublicly || false,
+    shared_source_publicly: q.sharedSourcePublicly || false,
   };
 }
 

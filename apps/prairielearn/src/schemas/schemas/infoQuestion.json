@@ -264,7 +264,7 @@
       "description": "Whether this question is publicly shared.",
       "type": "boolean"
     },
-    "sharedPubliclyWithSource": {
+    "sharedSourcePublicly": {
       "description": "Whether this questions's source code is publicly shared.",
       "type": "boolean"
     }

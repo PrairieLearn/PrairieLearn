@@ -192,6 +192,11 @@ interface Tag {
   description?: string;
 }
 
+interface SharingSet {
+  name: string;
+  description?: string;
+}
+
 interface Topic {
   name: string;
   color: string;
@@ -222,6 +227,7 @@ interface Course {
   topics: Topic[];
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
+  sharingSets: SharingSet[];
 }
 
 interface CourseInstanceAllowAccess {
@@ -380,6 +386,9 @@ export interface Question {
   externalGradingOptions: QuestionExternalGradingOptions;
   workspaceOptions?: QuestionWorkspaceOptions;
   dependencies: Record<string, string>;
+  sharingSets: string[];
+  sharedPublicly: boolean;
+  sharedSourcePublicly: boolean;
 }
 
 export interface CourseInstanceData {
@@ -669,7 +678,7 @@ export async function loadCourseInfo(
    * @param entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
    */
   function getFieldWithoutDuplicates<
-    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules',
+    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
   >(fieldName: K, entryIdentifier: string, defaults?: Course[K] | undefined): Course[K] {
     const known = new Map();
     const duplicateEntryIds = new Set();
@@ -711,6 +720,8 @@ export async function loadCourseInfo(
   );
   const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
   const topics = getFieldWithoutDuplicates('topics', 'name');
+  const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
+
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
   const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
@@ -762,6 +773,7 @@ export async function loadCourseInfo(
     assessmentModules,
     tags,
     topics,
+    sharingSets,
     exampleCourse,
     options: {
       useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
