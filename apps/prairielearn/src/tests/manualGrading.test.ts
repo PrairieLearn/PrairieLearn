@@ -1027,8 +1027,8 @@ describe('Manual Grading', function () {
             __csrf_token: token,
             plus_minus: 'unlimited',
             time_add: '0',
-            time_ref: 'minutes',
             reopen_closed: 'on',
+            date: new Date().toISOString().slice(0, 10),
           }).toString(),
         });
         assert.equal(response.status, 200);

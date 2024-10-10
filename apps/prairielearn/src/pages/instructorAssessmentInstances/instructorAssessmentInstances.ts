@@ -2,6 +2,7 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
+import { formatDate } from '@prairielearn/formatter';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
@@ -111,20 +112,23 @@ router.post(
         assessment_instance_id: req.body.assessment_instance_id,
         assessment_id: res.locals.assessment.id,
         time_add: req.body.time_add,
-        time_ref: req.body.time_ref,
         base_time: 'date_limit',
         authn_user_id: res.locals.authz_data.authn_user.user_id,
+        exact_date: formatDate(new Date(), res.locals.course_instance.display_timezone),
       };
-      if (req.body.plus_minus === 'unlimited') {
+      if (req.body.plus_minus === 'unlimited' || req.body.reopen_without_limit === 'true') {
         params.base_time = 'null';
       } else if (req.body.plus_minus === 'expire') {
         params.base_time = 'current_date';
         params.time_add = 0;
-        params.time_ref = 'minutes';
       } else if (req.body.plus_minus === 'set_total') {
         params.base_time = 'start_date';
       } else if (req.body.plus_minus === 'set_rem') {
         params.base_time = 'current_date';
+      } else if (req.body.plus_minus === 'set_exact') {
+        params.base_time = 'exact_date';
+        params.time_add = 0;
+        params.exact_date = `${req.body.date} ${res.locals.course_instance.display_timezone}`;
       } else {
         params.time_add *= req.body.plus_minus;
       }
@@ -134,21 +138,24 @@ router.post(
       const params = {
         assessment_id: res.locals.assessment.id,
         time_add: req.body.time_add,
-        time_ref: req.body.time_ref,
         base_time: 'date_limit',
         reopen_closed: !!req.body.reopen_closed,
         authn_user_id: res.locals.authz_data.authn_user.user_id,
+        exact_date: formatDate(new Date(), res.locals.course_instance.display_timezone),
       };
       if (req.body.plus_minus === 'unlimited') {
         params.base_time = 'null';
       } else if (req.body.plus_minus === 'expire') {
         params.base_time = 'current_date';
         params.time_add = 0;
-        params.time_ref = 'minutes';
       } else if (req.body.plus_minus === 'set_total') {
         params.base_time = 'start_date';
       } else if (req.body.plus_minus === 'set_rem') {
         params.base_time = 'current_date';
+      } else if (req.body.plus_minus === 'set_exact') {
+        params.base_time = 'exact_date';
+        params.time_add = 0;
+        params.exact_date = `${req.body.date} ${res.locals.course_instance.display_timezone}`;
       } else {
         params.time_add *= req.body.plus_minus;
       }
