@@ -187,6 +187,7 @@
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@prairielearn/express-list-endpoints": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
     "@sa11y/format": "^6.10.1",
     "@types/archiver": "^6.0.2",
@@ -202,7 +203,6 @@
     "@types/crypto-js": "^4.2.2",
     "@types/dockerode": "^3.3.31",
     "@types/express": "^4.17.21",
-    "@types/express-list-endpoints": "^6.0.3",
     "@types/express-session": "^1.18.0",
     "@types/folder-hash": "^4.0.4",
     "@types/fs-extra": "^11.0.4",
@@ -242,7 +242,6 @@
     "c8": "^10.1.2",
     "chai": "^5.1.1",
     "chai-as-promised": "^8.0.0",
-    "express-list-endpoints": "^7.1.0",
     "get-port": "^7.1.0",
     "jsdom": "^25.0.0",
     "mocha": "^10.7.3",

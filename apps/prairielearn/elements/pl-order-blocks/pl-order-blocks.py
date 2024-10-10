@@ -468,9 +468,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             element, "solution-header", SOLUTION_HEADER_DEFAULT
         )
 
-        all_blocks = data["params"][answer_name]
-        student_previous_submission = data["submitted_answers"].get(answer_name, [])
+        # We aren't allowed to mutate the `data` object during render, so we'll
+        # make a deep copy of the submitted answer so we can update the `indent`
+        # to a value suitable for rendering.
+        student_previous_submission = deepcopy(
+            data["submitted_answers"].get(answer_name, [])
+        )
         submitted_block_ids = {block["uuid"] for block in student_previous_submission}
+
+        all_blocks = data["params"][answer_name]
         source_blocks = [
             block for block in all_blocks if block["uuid"] not in submitted_block_ids
         ]
@@ -499,14 +505,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             )
 
         if grading_method is GradingMethodType.UNORDERED:
-            help_text += "<br>Your answer ordering does not matter. "
+            help_text += "<p>Your answer ordering does not matter. </p>"
         elif grading_method is not GradingMethodType.EXTERNAL:
-            help_text += "<br>The ordering of your answer matters and is graded."
+            help_text += "<p>The ordering of your answer matters and is graded.</p>"
         else:
-            help_text += "<br>Your answer will be autograded; be sure to indent and order your answer properly."
+            help_text += "<p>Your answer will be autograded; be sure to indent and order your answer properly.</p>"
 
         if check_indentation:
-            help_text += "<br><b>Your answer should be indented. </b> Indent your tiles by dragging them horizontally in the answer area."
+            help_text += "<p><strong>Your answer should be indented.</strong> Indent your tiles by dragging them horizontally in the answer area.</p>"
+
+        help_text += "<p>Keyboard Controls: Arrows to navigate; Enter to select; Escape to deselect blocks.</p>"
 
         uuid = pl.get_uuid()
         html_params = {

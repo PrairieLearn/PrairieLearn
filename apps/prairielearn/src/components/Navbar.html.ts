@@ -1,5 +1,6 @@
 import { flash, type FlashMessageType } from '@prairielearn/flash';
 import { html, HtmlValue, unsafeHtml } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
 
@@ -262,9 +263,20 @@ function FlashMessages() {
     error: 'danger',
   } as const;
 
+  // We might fail to fetch flash messages if this ends up running before the
+  // flash middleware has run for this particular request. In that case, we
+  // just assume that there are no flash messages.
+  const flashMessages = run(() => {
+    try {
+      return flash(Object.keys(globalFlashColors) as FlashMessageType[]);
+    } catch {
+      return [];
+    }
+  });
+
   return html`
     <div class="mb-3">
-      ${flash(Object.keys(globalFlashColors) as FlashMessageType[]).map(
+      ${flashMessages.map(
         ({ type, message }) => html`
           <div
             class="alert alert-${globalFlashColors[
