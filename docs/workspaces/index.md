@@ -265,7 +265,7 @@ For example, the [example JupyterLab workspace](https://us.prairielearn.com/pl/c
 docker run -it --rm -p 8080:8080 --user 1001:1001 prairielearn/workspace-jupyterlab-python
 ```
 
-## What to Tell Students
+## What to tell students
 
 Instructors are strongly encouraged to allow students to get exposed to the PrairieLearn workspace environment, as well as specific workspaces to be used in a course, before any formal quizzes or exams. In particular, some workspaces may behave in ways that students need to be aware of. Instructors should provide students with instructions on:
 
@@ -274,3 +274,18 @@ Instructors are strongly encouraged to allow students to get exposed to the Prai
 - Workspace-specific instructions. Different workspace environments may include different instructions for saving files, compiling, testing, and otherwise using the environment, as well as different directory structures that may be relevant in some contexts. Additionally, some workspaces may require additional actions in specific cases. For example, in Jupyter workspaces, students may need to know how to interrupt or restart the kernel.
 
 - Expectations about workspace start times. In the worst case, a workspace may take several minutes as new machines are started and as images are pulled. This may be especially important in timed assessments, where the workspace starting time may affect the student's ability to complete their work.
+
+## Troubleshooting workspace loading
+
+A variety of issues can prevent a workspace from loading, including antivirus software, browser extensions, and network issues. If a workspace fails to load, the following steps may help you resolve the issue or provide more information to the PrairieLearn team:
+
+- **Wait**: Sometimes workspaces take a few minutes to start, especially if the workspace image is being pulled for the first time. Even once a workspace's state changes to running, slow networks may result in a blank page for some time as the workspace's client-side assets load.
+- **Try another browser**: Some browser extensions may interfere with workspace loading. If you have another browser installed, try loading the workspace in that browser. Also consider trying a private/incognito window, which will disable most extensions.
+- **Check the browser developer tools console tab**: Open the browser's developer tools and navigate to the "Console" tab. This may contain error messages that can help diagnose the issue.
+  - On Chrome, you can open the developer tools by opening the Chrome menu in the top right corner, selecting "More tools", and then "Developer tools".
+  - On Safari, you have to turn on the developer tools first. In the menu bar, click "Safari" -> "Settings" -> "Advanced" and check "Show features for web developers". You can then open the developer tools by selecting "Develop" -> "Show Web Inspector".
+  - On Firefox, you can open the developer tools by opening the Firefox menu in the top right corner, selecting "More tools", and then "Web Developer Tools".
+- **Check the browser developer tools network tab**: Using the steps above, open the developer tools and navigate to the "Network" tab. This tab will show all network requests made by the browser, including those made by the workspace. Look for requests that are taking a long time or failing. You may need to reload the page to see all requests. If you want to provide the PrairieLearn team with more information, you can save the network log to a HAR file and send it. _Note: The HAR file may contain sensitive information, so be careful when sharing it. Only share it with individuals that you trust._
+  - On Chrome, click the downward-facing arrow in the top left corner (it has a tooltip with the text "Export HAR..." when you hover over it) and save the HAR file.
+  - On Safari, click the "Export" button in the top right corner and save the HAR file.
+  - On Firefox, click the settings gear in the Network tab and select "Save all as HAR".
