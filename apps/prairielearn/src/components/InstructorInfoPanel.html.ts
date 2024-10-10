@@ -283,6 +283,7 @@ function AssessmentInstanceInfo({
     <div class="pb-2">
       <a href="${instructorUrlPrefix}/assessment_instance/${assessment_instance.id}">View log</a>
     </div>
+    <hr />
   `;
 }
 
