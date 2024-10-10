@@ -4,6 +4,9 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
+import { selectCourseById } from '../models/course.js';
 import { getEnrollmentForUserInCourseInstance } from '../models/enrollment.js';
 import { selectUserByUid } from '../models/user.js';
 
@@ -227,10 +230,21 @@ export async function addUserToGroup({
         course_instance_id: group.course_instance_id,
         user_id: user.user_id,
       }));
+
     // To be part of a group, the user needs to either be enrolled in the course
     // instance, or be an instructor
     if (!userIsStudent && !userIsInstructor) {
-      throw new GroupOperationError(`User ${uid} is not enrolled in this course.`);
+      // In the example course, any user with instructor access in any other
+      // course should have access and thus be allowed to be added to a group.
+      const course_instance = await selectCourseInstanceById(group.course_instance_id);
+      const course = course_instance ? await selectCourseById(course_instance.course_id) : null;
+      if (
+        !user ||
+        !course?.example_course ||
+        !(await userIsInstructorInAnyCourse({ user_id: user.user_id }))
+      ) {
+        throw new GroupOperationError(`User ${uid} is not enrolled in this course.`);
+      }
     }
 
     // This is technically susceptible to race conditions. That won't be an
