@@ -26,7 +26,7 @@ RUN find /etc/sudoers.d -type f -not -name README -delete && \
 USER root
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
-    apt-get install -y man-db unminimize \
+    apt-get install -y man-db unminimize && \
     yes | unminimize && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
