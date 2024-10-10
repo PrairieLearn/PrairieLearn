@@ -169,15 +169,15 @@ BEGIN
             institution
         )
         SELECT
-            ci.id AS course_instance_id,
+            ci.id,
             number,
             CASE
                 WHEN access_rule->'uids' = null::JSONB THEN NULL
                 ELSE jsonb_array_to_text_array(access_rule->'uids')
-            END AS uids,
-            input_date(access_rule->>'start_date', ci.display_timezone) AS start_date,
-            input_date(access_rule->>'end_date', ci.display_timezone) AS end_date,
-            access_rule->>'institution' AS institution
+            END,
+            input_date(access_rule->>'start_date', ci.display_timezone),
+            input_date(access_rule->>'end_date', ci.display_timezone),
+            access_rule->>'institution'
         FROM
             synced_course_instances AS ci,
             JSONB_ARRAY_ELEMENTS(ci.data->'access_rules') WITH ORDINALITY AS t(access_rule, number)

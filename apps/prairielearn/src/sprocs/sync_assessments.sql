@@ -458,10 +458,10 @@ BEGIN
                             can_view,
                             can_submit
                         ) SELECT
-                            new_assessment_question_id AS assessment_question_id,
-                            gr.id AS group_role_id,
-                            (gr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view'))) AS can_view,
-                            (gr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit'))) AS can_submit
+                            new_assessment_question_id,
+                            gr.id,
+                            (gr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view'))),
+                            (gr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
                         FROM group_roles AS gr
                         WHERE gr.assessment_id = new_assessment_id
                         ON CONFLICT (assessment_question_id, group_role_id)

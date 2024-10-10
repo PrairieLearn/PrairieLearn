@@ -6,8 +6,8 @@ AS $$
 BEGIN
     INSERT INTO question_tags (question_id, tag_id)
     SELECT
-        (question_tags_item->>0)::bigint AS question_id,
-        JSONB_ARRAY_ELEMENTS_TEXT(question_tags_item->1)::bigint AS tag_id
+        (question_tags_item->>0)::bigint,
+        JSONB_ARRAY_ELEMENTS_TEXT(question_tags_item->1)::bigint
     FROM UNNEST(new_question_tags) AS question_tags_item
     ON CONFLICT (question_id, tag_id) DO NOTHING;
 
