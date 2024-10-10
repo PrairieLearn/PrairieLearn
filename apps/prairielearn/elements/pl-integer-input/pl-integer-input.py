@@ -111,7 +111,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             placeholder = pl.get_string_attrib(element, "placeholder")
         else:
             placeholder = (
-                "integer" if base == BASE_DEFAULT else f"integer in base {base}"
+                "integer"
+                if base == BASE_DEFAULT or base == 0
+                else f"integer in base {base}"
             )
 
         html_params = {

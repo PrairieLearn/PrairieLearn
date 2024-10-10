@@ -158,6 +158,13 @@ def worker_loop() -> None:
     path_finder = ForbidModuleMetaPathFinder()
     sys.meta_path.insert(0, path_finder)
 
+    # We'll cache instantiated modules for two reasons:
+    # - This allows us to avoid re-reading/compiling/executing them if the same
+    #   element is used multiple times.
+    # - This allows element code to maintain state across multiple calls. This is useful
+    #   specifically for elements that want to maintain a cache of expensive-to-compute data.
+    mod_cache: dict[str, dict[str, Any]] = {}
+
     # file descriptor 3 is for output data
     with open(3, "w", encoding="utf-8") as outf:
         # Infinite loop where we wait for an input command, do it, and
@@ -295,14 +302,20 @@ def worker_loop() -> None:
 
                 continue
 
-            mod = {}
             file_path = os.path.join(cwd, file + ".py")
-            with open(file_path, encoding="utf-8") as inf:
-                # use compile to associate filename with code object, so the
-                # filename appears in the traceback if there is an error
-                # (https://stackoverflow.com/a/437857)
-                code = compile(inf.read(), file_path, "exec")
+
+            mod = mod_cache.get(file_path)
+            if mod is None:
+                mod = {}
+
+                with open(file_path, encoding="utf-8") as inf:
+                    # Use `compile` to associate filename with code object, so the
+                    # filename appears in the traceback if there is an error:
+                    # https://stackoverflow.com/a/437857
+                    code = compile(inf.read(), file_path, "exec")
+
                 exec(code, mod)
+                mod_cache[file_path] = mod
 
             # check whether we have the desired fcn in the module
             if fcn in mod:
