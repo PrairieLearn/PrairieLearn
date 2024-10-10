@@ -420,7 +420,8 @@ INSERT INTO
     manual_points,
     feedback,
     partial_scores,
-    manual_rubric_grading_id
+    manual_rubric_grading_id,
+    is_ai_graded
   )
 VALUES
   (
@@ -435,7 +436,8 @@ VALUES
     $manual_points,
     $feedback,
     $partial_scores,
-    $manual_rubric_grading_id
+    $manual_rubric_grading_id,
+    $is_ai_graded
   )
 RETURNING
   id;

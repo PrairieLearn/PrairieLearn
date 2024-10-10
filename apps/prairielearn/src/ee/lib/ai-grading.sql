@@ -74,21 +74,23 @@ RETURNING
 
 -- BLOCK select_closest_embeddings
 WITH
-  latest_submissions AS (
+  latest_grading_jobs AS (
     SELECT
       s.id AS s_id,
       iq.id AS iq_id,
       iq.score_perc AS iq_score_perc,
+      gj.is_ai_graded AS is_ai_graded,
       ROW_NUMBER() OVER (
         PARTITION BY
-          s.variant_id
+          iq.id
         ORDER BY
-          s.date DESC
+          gj.date DESC
       ) AS rn
     FROM
       instance_questions iq
       JOIN variants v ON iq.id = v.instance_question_id
       JOIN submissions s ON v.id = s.variant_id
+      JOIN grading_jobs gj ON s.id = gj.submission_id
     WHERE
       iq.assessment_question_id = $assessment_question_id
       AND NOT iq.requires_manual_grading
@@ -97,13 +99,14 @@ WITH
   )
 SELECT
   emb.submission_text,
-  ls.iq_score_perc AS score_perc,
-  ls.iq_id AS instance_question_id
+  lgj.iq_score_perc AS score_perc,
+  lgj.iq_id AS instance_question_id
 FROM
-  latest_submissions ls
-  JOIN submission_grading_context_embeddings AS emb ON (emb.submission_id = ls.s_id)
+  latest_grading_jobs lgj
+  JOIN submission_grading_context_embeddings AS emb ON (emb.submission_id = lgj.s_id)
 WHERE
-  ls.rn = 1
+  lgj.rn = 1
+  AND NOT lgj.is_ai_graded
 ORDER BY
   embedding <=> $embedding
 LIMIT
