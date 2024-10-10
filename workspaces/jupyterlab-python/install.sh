@@ -2,9 +2,6 @@
 
 set -ex
 
-# This script requires root.
-[ "$(id -u)" -eq 0 ] || exit 1
-
 # On PL, we want to standardize on using 1001:1001 for the user. We change
 # the "jovyan" account's default UID and GID here.
 USER_NAME=jovyan
@@ -20,22 +17,21 @@ for d in /home /tmp ; do
     find $d -group $OLD_GID -execdir chgrp -h $NEW_GID {} +
 done
 
-# Install dependencies and various libraries
+# Install dependencies and various libraries.
 apt-get update && apt-get -y upgrade
 apt-get -y install gosu gcc graphviz graphviz-dev
 
-# Test gosu and prepare the gosu helper.
-gosu jovyan true || exit 1
+# Prepare the gosu helper.
 mv /pl-gosu-helper.sh /usr/local/bin/
 chown root:root /usr/local/bin/pl-gosu-helper.sh
 chmod 0755 /usr/local/bin/pl-gosu-helper.sh
 
 # Install all Python dependencies.
-pip install -r /requirements.txt
+pip3 install -r /requirements.txt
 
 # Clear various caches to minimize the final image size.
 apt-get clean
-pip cache purge
+pip3 cache purge
 
 # Suppress the opt-in dialog for announcements.
 # https://stackoverflow.com/questions/75511508/how-to-stop-this-message-would-you-like-to-receive-official-jupyter-news
