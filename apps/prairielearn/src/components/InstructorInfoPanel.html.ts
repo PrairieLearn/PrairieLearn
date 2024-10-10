@@ -336,7 +336,6 @@ function ManualGradingInfo({
       : ''}
     ${questionContext !== 'manual_grading'
       ? html`
-          <hr />
           <div class="pb-2">
             <a href="${manualGradingUrl}">Grade</a>
           </div>
