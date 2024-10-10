@@ -279,7 +279,8 @@ Instructors are strongly encouraged to allow students to get exposed to the Prai
 
 A variety of issues can prevent a workspace from loading, including antivirus software, browser extensions, and network issues. If a workspace fails to load, the following steps may help you resolve the issue or provide more information to the PrairieLearn team:
 
-- **Wait**: Sometimes workspaces take a few minutes to start, especially if the workspace image is being pulled for the first time. Even once a workspace's state changes to running, slow networks may result in a blank page for some time as the workspace's client-side assets load.
+- **Wait**: Wait for the loading progress indicator to reach 100%. This may take a few minutes if the workspace image is being pulled to a specific host for the first time. Even once a workspace's state changes to running, slow networks may result in a blank page for some time as the workspace's client-side assets load.
+- **Reboot:** If the workspace still hasn't loaded after a few minutes, try rebooting the workspace by clicking the "Reboot" button in the top nav bar. As above, give the workspace several minutes to load.
 - **Try another browser**: Some browser extensions may interfere with workspace loading. If you have another browser installed, try loading the workspace in that browser. Also consider trying a private/incognito window, which will disable most extensions.
 - **Check the browser developer tools console tab**: Open the browser's developer tools and navigate to the "Console" tab. This may contain error messages that can help diagnose the issue.
   - On Chrome, you can open the developer tools by opening the Chrome menu in the top right corner, selecting "More tools", and then "Developer tools".
