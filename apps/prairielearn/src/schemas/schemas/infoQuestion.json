@@ -35,6 +35,14 @@
         "type": "string"
       }
     },
+    "authors": {
+      "description": "Contact information for those credited with having written the question.",
+      "type": "array",
+      "items": {
+        "description": "An author",
+        "type": "string"
+      }
+    },
     "clientFiles": {
       "description": "The list of question files accessible by the client (defaults to [\"client.js\"]).",
       "type": "array",

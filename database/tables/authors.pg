@@ -1,0 +1,10 @@
+columns
+    author_string: text
+    id: bigint not null default nextval('authors_id_seq'::regclass)
+
+indexes
+    authors_pkey: PRIMARY KEY (id) USING btree (id)
+    authors_author_string_key: UNIQUE (author_string) USING btree (author_string)
+
+referenced by
+    question_authors: FOREIGN KEY (author_id) REFERENCES authors(id) ON UPDATE CASCADE ON DELETE CASCADE
