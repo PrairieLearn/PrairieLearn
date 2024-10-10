@@ -30,15 +30,10 @@ export function QuestionContainer({
     question,
     issues,
     variant,
-    instance_question,
-    user,
     variantToken,
-    __csrf_token,
     questionJsonBase64,
-    urlPrefix,
     course_instance,
     authz_data,
-    authz_result,
     is_administrator,
     showTrueAnswer,
     showSubmissions,
@@ -52,14 +47,7 @@ export function QuestionContainer({
       class="question-container"
       data-grading-method="${question.grading_method}"
       data-variant-id="${variant.id}"
-      data-question-id="${question.id}"
-      data-instance-question-id="${instance_question?.id ?? ''}"
-      data-user-id="${user.user_id}"
       data-variant-token="${variantToken}"
-      data-url-prefix="${urlPrefix}"
-      data-question-context="${questionContext}"
-      data-csrf-token="${__csrf_token}"
-      data-authorized-edit="${authz_result?.authorized_edit !== false}"
     >
       ${question.type !== 'Freeform'
         ? html`<div hidden="true" class="question-data">${questionJsonBase64}</div>`
@@ -305,21 +293,27 @@ export function QuestionFooter({
   if (resLocals.question.type === 'Freeform') {
     return html`
       <div class="card-footer" id="question-panel-footer">
-        ${QuestionFooterContent({ resLocals, questionContext })}
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <div id="question-panel-footer-content">
+          ${QuestionFooterContent({ resLocals, questionContext })}
+        </div>
       </div>
     `;
   } else {
     return html`
       <div class="card-footer" id="question-panel-footer">
         <form class="question-form" name="question-form" method="POST">
-          ${QuestionFooterContent({ resLocals, questionContext })}
+          <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+          <div id="question-panel-footer-content">
+            ${QuestionFooterContent({ resLocals, questionContext })}
+          </div>
         </form>
       </div>
     `;
   }
 }
 
-function QuestionFooterContent({
+export function QuestionFooterContent({
   resLocals,
   questionContext,
 }: {
@@ -347,7 +341,6 @@ function QuestionFooterContent({
     assessment_question,
     instance_question_info,
     authz_result,
-    __csrf_token,
   } = resLocals;
 
   if (showTrueAnswer && questionContext === 'student_exam') {
@@ -423,7 +416,6 @@ function QuestionFooterContent({
                 <input type="hidden" name="postData" class="postData" />
                 <input type="hidden" name="__action" class="__action" />
               `}
-          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
           ${showNewVariantButton
             ? html`
                 <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ml-1">

@@ -8,9 +8,9 @@ import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
-import { QuestionFooter } from '../components/QuestionContainer.html.js';
+import { QuestionFooterContent } from '../components/QuestionContainer.html.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
-import { QuestionScorePanel } from '../components/QuestionScore.html.js';
+import { QuestionScorePanelBody } from '../components/QuestionScore.html.js';
 import {
   SubmissionPanel,
   SubmissionBasicSchema,
@@ -534,7 +534,6 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
  * @param  {string} param.user_id The id of the authenticated user, used to identify group roles
  * @param  {String}  param.urlPrefix URL prefix to be used when rendering
  * @param  {import('../components/QuestionContainer.types.js').QuestionContext} param.questionContext The rendering context of this question
- * @param  {String?} param.csrfToken CSRF token for this question page
  * @param  {boolean?} param.authorizedEdit If true the user is authorized to edit the submission
  * @param  {boolean} param.renderScorePanels If true, render all side panels, otherwise only the submission panel
  * @returns {Promise<SubmissionPanels>}
@@ -547,7 +546,6 @@ export async function renderPanelsForSubmission({
   user_id,
   urlPrefix,
   questionContext,
-  csrfToken,
   authorizedEdit,
   renderScorePanels,
 }) {
@@ -665,20 +663,14 @@ export async function renderPanelsForSubmission({
       ) {
         return;
       }
-      if (csrfToken == null) {
-        // This should not happen in this context
-        throw new Error('CSRF token not provided in a context where the score panel is rendered.');
-      }
 
-      panels.questionScorePanel = QuestionScorePanel({
+      panels.questionScorePanel = QuestionScorePanelBody({
         instance_question,
         assessment_question,
         assessment_instance,
         assessment,
         question,
         variant,
-        csrfToken,
-        authz_result: { authorized_edit: authorizedEdit },
         urlPrefix,
         instance_question_info: { question_number, previous_variants },
       }).toString();
@@ -701,14 +693,13 @@ export async function renderPanelsForSubmission({
       // Render the question panel footer
       if (!renderScorePanels) return;
 
-      panels.questionPanelFooter = QuestionFooter({
+      panels.questionPanelFooter = QuestionFooterContent({
         resLocals: {
           variant,
           question,
           assessment_question,
           instance_question,
           question_context: questionContext,
-          __csrf_token: csrfToken,
           authz_result: { authorized_edit: authorizedEdit },
           instance_question_info: { previous_variants },
           ...locals,
