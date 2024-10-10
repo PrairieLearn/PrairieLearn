@@ -63,7 +63,7 @@ export function StudentAssessmentInstance({
         ? 6
         : 2 + trailingColumnsCount
       : resLocals.has_auto_grading_question && resLocals.has_manual_grading_question
-        ? 5
+        ? 6
         : 1 + trailingColumnsCount;
   });
 
@@ -614,7 +614,7 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
             ? html`
                 <tr>
                   <th rowspan="2">Question</th>
-                  <th class="text-center" colspan="2">Auto-grading</th>
+                  <th class="text-center" colspan="3">Auto-grading</th>
                   <th class="text-center" rowspan="2">Manual grading points</th>
                   <th class="text-center" rowspan="2">Total points</th>
                 </tr>
