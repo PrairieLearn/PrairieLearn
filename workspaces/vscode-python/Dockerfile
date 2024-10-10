@@ -26,6 +26,7 @@ RUN find /etc/sudoers.d -type f -not -name README -delete && \
 USER root
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
+    apt-get install -y man-db unminimize \
     yes | unminimize && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
@@ -35,9 +36,7 @@ RUN apt-get update && \
     gosu curl git htop less nano unzip vim wget zip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
-    find /tmp -not -path /tmp -delete && \
-    # Test the gosu installation:
-    gosu nobody true
+    find /tmp -not -path /tmp -delete
 
 # Make sure to build using bash as the shell so that conda/mamba hooks will
 # work during installation.
