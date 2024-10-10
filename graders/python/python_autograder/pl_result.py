@@ -1,7 +1,7 @@
 import traceback
 import unittest
 
-from code_feedback import Feedback, GradingComplete
+from code_feedback import Feedback, GradingComplete, GradingTestFailed
 from pl_execute import UserCodeFailed
 from pl_helpers import DoNotRun, GradingSkipped, print_student_code
 
@@ -92,6 +92,10 @@ class PLTestResult(unittest.TestResult):
                 st_code=Feedback.test.student_code_abs_path,
                 ipynb_key=Feedback.test.ipynb_key,
             )
+        elif isinstance(err[1], GradingTestFailed):
+            # A general test failure has occurred
+            # It's assumed that test case feedback has already been given
+            self.results[-1]["points"] = 0
         else:
             tr_message = "".join(traceback.format_exception(*err))
 
