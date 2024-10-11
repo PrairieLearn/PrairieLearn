@@ -248,10 +248,10 @@ router.get(
   asyncHandler(async (req, res) => {
     const panels = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
-      question_id: res.locals.question.id,
-      instance_question_id: res.locals.instance_question.id,
+      question: res.locals.question,
+      instance_question: res.locals.instance_question,
       variant_id: req.params.variant_id,
-      user_id: res.locals.user.user_id,
+      user: res.locals.user.user_id,
       urlPrefix: res.locals.urlPrefix,
       questionContext: res.locals.question.type === 'Exam' ? 'student_exam' : 'student_homework',
       authorizedEdit: res.locals.authz_result.authorized_edit,

@@ -169,7 +169,6 @@ SELECT
   to_jsonb(lgj) AS grading_job,
   to_jsonb(s) AS submission,
   to_jsonb(v) AS variant,
-  to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
   qo.question_number,
   jsonb_build_object(
     'id',
