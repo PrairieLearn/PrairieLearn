@@ -3187,7 +3187,6 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/express": "npm:^4.17.21"
-    "@types/express-session": "npm:^1.18.0"
     "@types/node": "npm:^20.16.2"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
@@ -3538,7 +3537,6 @@ __metadata:
     "@types/d3": "npm:^7.4.3"
     "@types/dockerode": "npm:^3.3.31"
     "@types/express": "npm:^4.17.21"
-    "@types/express-session": "npm:^1.18.0"
     "@types/folder-hash": "npm:^4.0.4"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/jju": "npm:^1.4.5"
@@ -3617,7 +3615,6 @@ __metadata:
     execa: "npm:^9.3.1"
     express: "npm:^4.19.2"
     express-async-handler: "npm:^1.2.0"
-    express-session: "npm:^1.18.0"
     fabric: "npm:4.6.0-browser"
     fast-glob: "npm:^3.3.2"
     fast-json-stable-stringify: "npm:^2.1.0"
@@ -3790,7 +3787,7 @@ __metadata:
     "@types/uid-safe": "npm:^2.1.5"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.1"
-    cookie: "npm:^0.6.0"
+    cookie: "npm:^0.7.1"
     cookie-signature: "npm:^1.2.1"
     express: "npm:^4.19.2"
     express-async-handler: "npm:^1.2.0"
@@ -5273,15 +5270,6 @@ __metadata:
     "@types/range-parser": "npm:*"
     "@types/send": "npm:*"
   checksum: 10c0/08db6ffff07b5d53d852bb0a078ea5ee6dc3eb581d8c8fdf0d65f48c641db2830658074c797844e618b0933ce4ca2ddd08191f9d79b12eb2ec3d66f8551716ec
-  languageName: node
-  linkType: hard
-
-"@types/express-session@npm:^1.18.0":
-  version: 1.18.0
-  resolution: "@types/express-session@npm:1.18.0"
-  dependencies:
-    "@types/express": "npm:*"
-  checksum: 10c0/a41a1fcc4a433c71e2a7ffbac82bc7fb5ad436757a9d27fd30ae4656dee137d244f04de9ad756b566be136cf82f6a75e9ca55ac6c260396e74d1931021b09621
   languageName: node
   linkType: hard
 
@@ -7300,13 +7288,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cookie-signature@npm:1.0.7":
-  version: 1.0.7
-  resolution: "cookie-signature@npm:1.0.7"
-  checksum: 10c0/e7731ad2995ae2efeed6435ec1e22cdd21afef29d300c27281438b1eab2bae04ef0d1a203928c0afec2cee72aa36540b8747406ebe308ad23c8e8cc3c26c9c51
-  languageName: node
-  linkType: hard
-
 "cookie-signature@npm:^1.2.1":
   version: 1.2.1
   resolution: "cookie-signature@npm:1.2.1"
@@ -7321,14 +7302,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cookie@npm:0.6.0, cookie@npm:^0.6.0":
-  version: 0.6.0
-  resolution: "cookie@npm:0.6.0"
-  checksum: 10c0/f2318b31af7a31b4ddb4a678d024514df5e705f9be5909a192d7f116cfb6d45cbacf96a473fa733faa95050e7cff26e7832bb3ef94751592f1387b71c8956686
-  languageName: node
-  linkType: hard
-
-"cookie@npm:0.7.1":
+"cookie@npm:0.7.1, cookie@npm:^0.7.1":
   version: 0.7.1
   resolution: "cookie@npm:0.7.1"
   checksum: 10c0/5de60c67a410e7c8dc8a46a4b72eb0fe925871d057c9a5d2c0e8145c4270a4f81076de83410c4d397179744b478e33cd80ccbcc457abf40a9409ad27dcd21dde
@@ -8879,22 +8853,6 @@ __metadata:
   version: 1.2.0
   resolution: "express-async-handler@npm:1.2.0"
   checksum: 10c0/0c664965b86d8f6369883080bc7709266215c3c5d7e62ce7b00859e68293720bac409157d4f4ac8859b5fe59608f75b5038ce2b2f683fae356ff9f60874a1341
-  languageName: node
-  linkType: hard
-
-"express-session@npm:^1.18.0":
-  version: 1.18.0
-  resolution: "express-session@npm:1.18.0"
-  dependencies:
-    cookie: "npm:0.6.0"
-    cookie-signature: "npm:1.0.7"
-    debug: "npm:2.6.9"
-    depd: "npm:~2.0.0"
-    on-headers: "npm:~1.0.2"
-    parseurl: "npm:~1.3.3"
-    safe-buffer: "npm:5.2.1"
-    uid-safe: "npm:~2.1.5"
-  checksum: 10c0/5c3f1237f2789cf32f9cd668d3217c228916edfd3b5a686a894a80c7cca63f9ef66bb86a8457074b9b4cc4b2ee97e16781dd4e0cff7829b671ab0db5da0db638
   languageName: node
   linkType: hard
 
@@ -12417,7 +12375,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"on-headers@npm:^1.0.2, on-headers@npm:~1.0.2":
+"on-headers@npm:^1.0.2":
   version: 1.0.2
   resolution: "on-headers@npm:1.0.2"
   checksum: 10c0/f649e65c197bf31505a4c0444875db0258e198292f34b884d73c2f751e91792ef96bb5cf89aa0f4fecc2e4dc662461dda606b1274b0e564f539cae5d2f5fc32f
@@ -12773,9 +12731,9 @@ __metadata:
   linkType: hard
 
 "path-to-regexp@npm:^6.1.0, path-to-regexp@npm:^6.2.1":
-  version: 6.2.2
-  resolution: "path-to-regexp@npm:6.2.2"
-  checksum: 10c0/4b60852d3501fd05ca9dd08c70033d73844e5eca14e41f499f069afa8364f780f15c5098002f93bd42af8b3514de62ac6e82a53b5662de881d2b08c9ef21ea6b
+  version: 6.3.0
+  resolution: "path-to-regexp@npm:6.3.0"
+  checksum: 10c0/73b67f4638b41cde56254e6354e46ae3a2ebc08279583f6af3d96fe4664fc75788f74ed0d18ca44fa4a98491b69434f9eee73b97bb5314bd1b5adb700f5c18d6
   languageName: node
   linkType: hard
 
@@ -15102,7 +15060,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"uid-safe@npm:^2.1.5, uid-safe@npm:~2.1.5":
+"uid-safe@npm:^2.1.5":
   version: 2.1.5
   resolution: "uid-safe@npm:2.1.5"
   dependencies:
