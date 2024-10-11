@@ -120,10 +120,11 @@ FROM
 WHERE
   aq.id = $assessment_question_id;
 
--- BLOCK select_rubric_item_info
+-- BLOCK select_rubric_grading_items
 SELECT
-  *
+  ri.*
 FROM
-  rubric_items
+  rubric_grading_items rgi 
+  JOIN rubric_items ri ON rgi.rubric_item_id = ri.id
 WHERE
-  rubric_id = $rubric_id;
+  rgi.rubric_grading_id = $maunal_rubric_grading_id;
