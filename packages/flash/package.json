@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/flash",
-  "version": "2.0.5",
+  "version": "2.0.6",
   "type": "module",
   "main": "dist/index.js",
   "repository": {
@@ -19,7 +19,6 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/express-session": "^1.18.0",
     "@types/node": "^20.16.2",
     "c8": "^10.1.2",
     "chai": "^5.1.1",
