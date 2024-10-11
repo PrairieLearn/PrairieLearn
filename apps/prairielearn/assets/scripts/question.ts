@@ -27,8 +27,8 @@ onDocumentReady(() => {
   setupDynamicObjects();
   disableOnSubmit();
 
-  $<HTMLDivElement>('.js-submission-body.render-pending').on('show.bs.collapse', function () {
-    loadPendingSubmissionPanel.call(this, false).finally(() => {});
+  $<HTMLDivElement>('.js-submission-body.render-pending').on('show.bs.collapse', (e) => {
+    loadPendingSubmissionPanel(e.currentTarget, false);
   });
 
   const copyQuestionForm = document.querySelector<HTMLFormElement>('#copyQuestionModal form');
@@ -115,9 +115,7 @@ function handleStatusChange(socket: Socket, msg: StatusMessage) {
 }
 
 function fetchResults(socket: Socket, submissionId: string) {
-  const modal = $('#submissionInfoModal-' + submissionId);
-  const wasModalOpen = (modal.data('bs.modal') || {})._isShown;
-  modal.modal('hide');
+  $('#submissionInfoModal-' + submissionId).modal('hide');
 
   const submissionPanel = document.getElementById('submission-' + submissionId);
   if (!submissionPanel) return;
@@ -125,12 +123,7 @@ function fetchResults(socket: Socket, submissionId: string) {
   const submissionBody = submissionPanel.querySelector<HTMLDivElement>('.js-submission-body');
   if (!submissionBody) return;
 
-  loadPendingSubmissionPanel.call(submissionBody, true).finally(() => {
-    // Restore modal state if need be
-    if (wasModalOpen) {
-      $('#submissionInfoModal-' + submissionId).modal('show');
-    }
-  });
+  loadPendingSubmissionPanel(submissionBody, true);
 }
 
 function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
@@ -289,8 +282,8 @@ function setupDynamicObjects() {
   }
 }
 
-async function loadPendingSubmissionPanel(this: HTMLDivElement, includeScorePanels: boolean) {
-  const { submissionId, dynamicRenderUrl } = this.dataset;
+function loadPendingSubmissionPanel(panel: HTMLElement, includeScorePanels: boolean) {
+  const { submissionId, dynamicRenderUrl } = panel.dataset;
   if (submissionId == null || dynamicRenderUrl == null) return;
 
   const url = new URL(dynamicRenderUrl, window.location.origin);
@@ -299,7 +292,7 @@ async function loadPendingSubmissionPanel(this: HTMLDivElement, includeScorePane
     url.searchParams.set('render_score_panels', 'true');
   }
 
-  await fetch(url)
+  fetch(url)
     .then(async (response) => {
       // If the response is not a 200, delegate to the error handler (catch block)
       if (!response.ok) throw new Error('Failed to fetch submission');
