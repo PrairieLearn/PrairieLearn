@@ -49,8 +49,9 @@ const GPTRubricItemSchema = z.object({
   explanation: z.string(),
   selected: z.boolean(),
 });
+type GPTRubricItem = z.infer<typeof GPTRubricItemSchema>;
 const GPTRubricGradeSchema = z.object({
-  grade: z.array(GPTRubricItemSchema),
+  rubric_items: z.array(GPTRubricItemSchema),
   feedback: z.string(),
 });
 const GradedExampleSchema = z.object({
@@ -60,6 +61,23 @@ const GradedExampleSchema = z.object({
   manual_rubric_grading_id: z.string().nullable(),
 });
 type GradedExample = z.infer<typeof GradedExampleSchema>;
+
+const AppliedRubricItemSchema = z.object({
+  /** ID of the rubric item to be applied. */
+  rubric_item_id: IdSchema,
+  /** Score to be applied to the rubric item. Defaults to 1 (100%), i.e., uses the full points assigned to the rubric item. */
+  score: z.coerce.number().nullish(),
+});
+type AppliedRubricItem = z.infer<typeof AppliedRubricItemSchema>;
+function parseRubricItems({
+  rubric_items,
+  gpt_rubric_items,
+}: {
+  rubric_items: RubricItem[];
+  gpt_rubric_items: GPTRubricItem[];
+}): AppliedRubricItem[] {
+  return [];
+}
 
 async function generateGPTPrompt({
   question_prompt,
@@ -426,14 +444,18 @@ export async function aiGrade({
       //   msg += `Raw ChatGPT response:\n${grade_response.content}`;
       //   if (grade_response.parsed) {
       //     // TODO: MODIFY THIS
+      //   const manual_rubric_data = {
+      //   rubric_id: '',
+      //   applied_rubric_items: parseRubricItems(rubric_items, grade_response.parsed.rubric_items),
+      // };
       //     await manualGrading.updateInstanceQuestionScore(
       //       assessment_question.assessment_id,
       //       instance_question.id,
       //       submission.id,
       //       null, // modified_at
       //       {
-      //         score_perc: grade_response.parsed.grade,
       //         feedback: { manual: grade_response.parsed.feedback },
+      //         manual_rubric_data,
       //         // NEXT STEPS: rubrics
       //       },
       //       user_id,
