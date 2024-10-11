@@ -10,9 +10,9 @@
     "showCorrectAnswer": false,
     "workspaceOptions": {
         "image": "zacwarham/gittu:nine",
-        "port": 5050,
+        "port": 8080,
         "args": "",
-        "rewriteUrl": false,
+        "rewriteUrl": true,
         "home": "/var/lib/pgadmin",
         "enableNetworking": true
     }

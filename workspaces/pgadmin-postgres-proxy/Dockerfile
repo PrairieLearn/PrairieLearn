@@ -8,6 +8,15 @@ RUN groupadd -r postgres && useradd -r -g postgres -m -d /home/postgres postgres
     && chown -R postgres:postgres /home/postgres
 
 RUN apt-get update \
+  && apt-get install -y debian-keyring debian-archive-keyring apt-transport-https curl \
+  && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/gpg.key' | gpg --dearmor -o /usr/share/keyrings/caddy-stable-archive-keyring.gpg \
+  && curl -1sLf 'https://dl.cloudsmith.io/public/caddy/stable/debian.deb.txt' | tee /etc/apt/sources.list.d/caddy-stable.list \
+  && apt-get update \
+  && apt-get install caddy \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+
+RUN apt-get update \
   && apt-get install -y libpq-dev python3-pip python3-dev sudo \
   && DEBIAN_FRONTEND=noninteractive apt-get -yq install postgresql postgresql-contrib \
   && rm -rf /var/lib/apt/lists/* \
@@ -23,7 +32,7 @@ RUN apt-get update \
   && chmod 700 /var/lib/pgadmin \
   && mkdir /sql-scripts \
   && mkdir -p /var/run/postgresql && chown -R postgres:postgres /var/run/postgresql \
-  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* 
+  && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY database/imdb.sql database/world.sql database/mds.sql /sql-scripts/
 COPY pg_hba.conf postgresql.conf /etc/postgresql/14/main/
@@ -36,18 +45,18 @@ RUN service postgresql start \
     && cat /sql-scripts/mds.sql | psql -U postgres -d postgres \
     && service postgresql stop
 
-VOLUME /var/run/postgresql
-
-WORKDIR /
-COPY dockerentrypoint.sh /sbin/dockerentrypoint.sh
-RUN chmod 755 /sbin/dockerentrypoint.sh
-
+# I don't think this will work in production.
+# VOLUME /var/run/postgresql
 
 COPY install.sh pl-gosu-helper.sh /
 RUN /bin/bash /install.sh
 
+COPY dockerentrypoint.sh /sbin/dockerentrypoint.sh
+RUN chmod 755 /sbin/dockerentrypoint.sh
+COPY Caddyfile /caddy/
 
 USER postgres
+WORKDIR /
 
 # Expose the pgadmin port
 EXPOSE 5050
