@@ -61,7 +61,7 @@ check-dependencies:
 lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
-	@yarn prettier --check "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
+	@yarn prettier --write --check "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
 lint-python:
 	@python3 -m ruff check ./
 	@python3 -m ruff format --check ./
