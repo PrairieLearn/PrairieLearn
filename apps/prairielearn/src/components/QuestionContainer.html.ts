@@ -10,6 +10,7 @@ import type {
   Question,
   User,
 } from '../lib/db-types.js';
+import { getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 
 import { Modal } from './Modal.html.js';
@@ -341,12 +342,13 @@ function QuestionFooterContent({
     tryAgainUrl,
     question,
     variant,
-    assessment,
     instance_question,
-    assessment_instance,
     assessment_question,
     instance_question_info,
     authz_result,
+    group_config,
+    group_info,
+    user,
     __csrf_token,
   } = resLocals;
 
@@ -401,14 +403,15 @@ function QuestionFooterContent({
                 </button>
               `
             : ''}
-          ${assessment?.group_config?.has_roles &&
-          !instance_question?.group_role_permissions?.can_submit
+          ${group_config?.has_roles && !instance_question?.group_role_permissions?.can_submit
             ? html`
                 <button
                   type="button"
                   class="btn btn-xs btn-ghost mr-1"
                   data-toggle="popover"
-                  data-content="Your group role (${assessment_instance.user_group_roles}) is not allowed to submit this question."
+                  data-content="Your group role (${getRoleNamesForUser(group_info, user).join(
+                    ', ',
+                  )}) is not allowed to submit this question."
                   aria-label="Submission blocked"
                 >
                   <i class="fa fa-lock" aria-hidden="true"></i>

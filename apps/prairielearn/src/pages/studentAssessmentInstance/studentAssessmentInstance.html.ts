@@ -43,8 +43,17 @@ export function StudentAssessmentInstance({
       groupInfo: GroupInfo;
       userCanAssignRoles: boolean;
     }
-  | { groupConfig?: undefined; groupInfo?: undefined; userCanAssignRoles?: undefined }
+  | {
+      groupConfig?: undefined;
+      groupInfo?: undefined;
+      userCanAssignRoles?: undefined;
+    }
 )) {
+  const userGroupRoles =
+    groupInfo?.rolesInfo?.roleAssignments?.[resLocals.authz_data.user.uid]
+      ?.map((role) => role.role_name)
+      ?.join(', ') || 'None';
+
   // Keep this in sync with the `InstanceQuestionTableHeader` function below.
   const zoneTitleColspan = run(() => {
     const trailingColumnsCount =
@@ -253,7 +262,7 @@ export function StudentAssessmentInstance({
                       <td>
                         ${RowLabel({
                           instance_question,
-                          user_group_roles: resLocals.user_group_roles,
+                          userGroupRoles,
                           urlPrefix: resLocals.urlPrefix,
                           rowLabelText:
                             resLocals.assessment.type === 'Exam'
@@ -655,13 +664,13 @@ function ZoneInfoBadge({
 
 function RowLabel({
   instance_question,
-  user_group_roles,
+  userGroupRoles,
   rowLabelText,
   urlPrefix,
 }: {
   // TODO: better types?
   instance_question: any;
-  user_group_roles: string;
+  userGroupRoles: string | undefined;
   rowLabelText: string;
   urlPrefix: string;
 }) {
@@ -671,7 +680,7 @@ function RowLabel({
       ? 'A previous question must be completed before you can access this one.'
       : `You must score at least ${instance_question.prev_advance_score_perc}% on ${instance_question.prev_title} to unlock this question.`;
   } else if (!(instance_question.group_role_permissions?.can_view ?? true)) {
-    lockedPopoverText = `Your current group role (${user_group_roles}) restricts access to this question.`;
+    lockedPopoverText = `Your current group role (${userGroupRoles}) restricts access to this question.`;
   }
 
   return html`

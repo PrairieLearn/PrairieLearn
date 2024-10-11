@@ -206,7 +206,8 @@ SELECT
       submissions AS s2
     WHERE
       s2.variant_id = s.variant_id
-  ) AS submission_count
+  ) AS submission_count,
+  to_jsonb(gc) AS group_config
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
@@ -224,6 +225,7 @@ FROM
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
   LEFT JOIN users AS u ON (s.auth_user_id = u.user_id)
   LEFT JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
+  LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
 WHERE
   s.id = $submission_id
   AND q.id = $question_id

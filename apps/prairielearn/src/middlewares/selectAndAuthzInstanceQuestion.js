@@ -20,14 +20,14 @@ export async function selectAndAuthzInstanceQuestion(req, res) {
 
   Object.assign(res.locals, result.rows[0]);
   if (res.locals.assessment.group_work) {
-    res.locals.assessment.group_config = await getGroupConfig(res.locals.assessment.id);
-    res.locals.assessment_instance.group_info = await getGroupInfo(
+    res.locals.group_config = await getGroupConfig(res.locals.assessment.id);
+    res.locals.group_info = await getGroupInfo(
       res.locals.assessment_instance.group_id,
-      res.locals.assessment.group_config,
+      res.locals.group_config,
     );
-    if (res.locals.assessment.group_config.has_roles) {
+    if (res.locals.group_config.has_roles) {
       if (
-        !res.locals.assessment_instance.group_info.start &&
+        !res.locals.group_info.start &&
         !res.locals.authz_data.has_course_instance_permission_view
       ) {
         throw new error.HttpStatusError(
@@ -35,13 +35,7 @@ export async function selectAndAuthzInstanceQuestion(req, res) {
           'Group role assignments do not match required settings for this assessment. Questions cannot be viewed until the group role assignments are updated.',
         );
       }
-      res.locals.assessment_instance.user_group_roles = (
-        res.locals.assessment_instance.group_info.rolesInfo?.roleAssignments?.[
-          res.locals.authz_data.user.uid
-        ] || ['None']
-      )
-        .map((role) => role.role_name)
-        .join(', ');
+
       // Get the role permissions. If the authorized user has course instance
       // permission, then role restrictions don't apply.
       if (!res.locals.authz_data.has_course_instance_permission_view) {

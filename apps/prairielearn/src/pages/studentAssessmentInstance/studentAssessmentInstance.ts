@@ -315,10 +315,6 @@ router.get(
         res.locals.authz_data.has_course_instance_permission_edit);
 
     if (groupConfig.has_roles) {
-      res.locals.user_group_roles =
-        groupInfo.rolesInfo?.roleAssignments?.[res.locals.authz_data.user.uid]
-          ?.map((role) => role.role_name)
-          ?.join(', ') || 'None';
       // Get the role permissions. If the authorized user has course instance
       // permission, then role restrictions don't apply.
       if (!res.locals.authz_data.has_course_instance_permission_view) {
