@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
@@ -22,11 +24,53 @@ import { Scorebar } from '../../components/Scorebar.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentInstance, GroupConfig, InstanceQuestion } from '../../lib/db-types.js';
+import {
+  AssessmentInstance,
+  DateFromISOString,
+  GroupConfig,
+  IdSchema,
+  InstanceQuestion,
+  InstanceQuestionSchema,
+} from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { GroupInfo } from '../../lib/groups.js';
+import { getRoleNamesForUser, GroupInfo } from '../../lib/groups.js';
+import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
+
+export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
+  start_new_zone: z.boolean(),
+  zone_id: IdSchema,
+  zone_title: z.string().nullable(),
+  question_title: z.string(),
+  max_points: z.number().nullable(),
+  max_manual_points: z.number().nullable(),
+  max_auto_points: z.number().nullable(),
+  init_points: z.number().nullable(),
+  row_order: z.number(),
+  question_number: z.string(),
+  zone_max_points: z.number().nullable(),
+  zone_has_max_points: z.boolean(),
+  zone_best_questions: z.number().nullable(),
+  zone_has_best_questions: z.boolean(),
+  file_count: z.number(),
+  sequence_locked: z.boolean(),
+  prev_advance_score_perc: z.number().nullable(),
+  prev_title: z.string().nullable(),
+  prev_sequence_locked: z.boolean().nullable(),
+  allow_grade_left_ms: z.coerce.number(),
+  allow_grade_date: DateFromISOString.nullable(),
+  allow_grade_interval: z.string(),
+  previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
+  group_role_permissions: z
+    .object({
+      can_view: z.boolean(),
+      can_submit: z.boolean(),
+    })
+    .optional(),
+});
+export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
 export function StudentAssessmentInstance({
+  instance_questions,
   showTimeLimitExpiredModal,
   groupConfig,
   groupInfo,
@@ -34,6 +78,7 @@ export function StudentAssessmentInstance({
   userCanDeleteAssessmentInstance,
   resLocals,
 }: {
+  instance_questions: InstanceQuestionRow[];
   showTimeLimitExpiredModal: boolean;
   userCanDeleteAssessmentInstance: boolean;
   resLocals: Record<string, any>;
@@ -49,10 +94,9 @@ export function StudentAssessmentInstance({
       userCanAssignRoles?: undefined;
     }
 )) {
-  const userGroupRoles =
-    groupInfo?.rolesInfo?.roleAssignments?.[resLocals.authz_data.user.uid]
-      ?.map((role) => role.role_name)
-      ?.join(', ') || 'None';
+  const userGroupRoles = groupInfo
+    ? getRoleNamesForUser(groupInfo, resLocals.authz_data.user).join(', ')
+    : null;
 
   // Keep this in sync with the `InstanceQuestionTableHeader` function below.
   const zoneTitleColspan = run(() => {
@@ -101,7 +145,7 @@ export function StudentAssessmentInstance({
         ${Navbar({ resLocals, navPage: 'assessment_instance' })}
         ${resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
           ? ConfirmFinishModal({
-              instance_questions: resLocals.instance_questions,
+              instance_questions,
               csrfToken: resLocals.__csrf_token,
             })
           : ''}
@@ -231,7 +275,7 @@ export function StudentAssessmentInstance({
                 ${InstanceQuestionTableHeader({ resLocals })}
               </thead>
               <tbody>
-                ${resLocals.instance_questions.map(
+                ${instance_questions.map(
                   (instance_question) => html`
                     ${instance_question.start_new_zone && instance_question.zone_title
                       ? html`
@@ -284,11 +328,11 @@ export function StudentAssessmentInstance({
                                         resLocals.assessment_instance.open &&
                                         instance_question.open,
                                       currentWeight:
-                                        instance_question.points_list_original[
+                                        (instance_question.points_list_original as number[])[
                                           instance_question.number_attempts
-                                        ] - instance_question.max_manual_points,
-                                      pointsList: instance_question.points_list.map(
-                                        (p) => p - instance_question.max_manual_points,
+                                        ] - (instance_question.max_manual_points ?? 0),
+                                      pointsList: (instance_question.points_list as number[]).map(
+                                        (p) => p - (instance_question.max_manual_points ?? 0),
                                       ),
                                       highestSubmissionScore:
                                         instance_question.highest_submission_score,
@@ -670,7 +714,7 @@ function RowLabel({
 }: {
   // TODO: better types?
   instance_question: any;
-  userGroupRoles: string | undefined;
+  userGroupRoles: string | null;
   rowLabelText: string;
   urlPrefix: string;
 }) {

@@ -8,11 +8,19 @@ import { idsEqual } from '../lib/id.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const VariantWithScoreSchema = VariantSchema.extend({
-  instance_question_id: IdSchema, // Since only variants assigned to instance questions are returned, this is never null.
+// Currently, users of this type only care about these specific columns, so
+// we'll only select and return them. Variants can contain quite a bit of
+// data in `params` and such, so this reduces the amount of useless data that
+// flows over the wire.
+export const SimpleVariantWithScoreSchema = VariantSchema.pick({
+  id: true,
+  open: true,
+}).extend({
+  // Since only variants assigned to instance questions are returned, this is never null.
+  instance_question_id: IdSchema,
   max_submission_score: SubmissionSchema.shape.score.unwrap(),
 });
-export type VariantWithScore = z.infer<typeof VariantWithScoreSchema>;
+export type SimpleVariantWithScore = z.infer<typeof SimpleVariantWithScoreSchema>;
 
 export async function selectVariantById(variant_id: string): Promise<Variant | null> {
   return queryOptionalRow(sql.select_variant_by_id, { variant_id }, VariantSchema);
@@ -60,9 +68,10 @@ export async function selectVariantsByInstanceQuestion({
   return await queryRows(
     sql.select_variant_by_instance_question_id,
     { assessment_instance_id, instance_question_id },
-    VariantWithScoreSchema,
+    SimpleVariantWithScoreSchema,
   );
 }
+
 export async function validateVariantAgainstQuestion(
   unsafe_variant_id: string,
   question_id: string,
