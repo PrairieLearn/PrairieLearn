@@ -36,6 +36,8 @@ WITH
     FROM
       sharing_set_questions AS ssq
       JOIN sharing_sets AS ss ON ss.id = ssq.sharing_set_id
+    WHERE
+      ss.course_id = $course_id
     GROUP BY
       ssq.question_id
   )
