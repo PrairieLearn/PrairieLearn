@@ -1,3 +1,7 @@
+.pl-checkbox-answer :last-child {
+  margin-bottom: 0 !important;
+}
+
 .pl-checkbox-popover {
   width: 340px;
   max-width: 100%;

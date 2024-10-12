@@ -287,8 +287,6 @@ export async function aiGrade({
     job.info(`Found ${result.length} submissions to grade!`);
 
     let error_count = 0;
-    let output_count = 0;
-    let output: string | null = null;
 
     // Grade each instance question.
     for (const instance_question of result) {
@@ -387,17 +385,7 @@ export async function aiGrade({
         job.error(err);
         error_count++;
       }
-      output = (output == null ? '' : `${output}\n`) + msg;
-      output_count++;
-      if (output_count >= 5) {
-        job.info(output);
-        output = null;
-        output_count = 0;
-      }
-    }
-
-    if (output != null) {
-      job.info(output);
+      job.info(msg);
     }
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);
