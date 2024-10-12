@@ -44,6 +44,7 @@ export type SyncResults = SyncResultSharingError | SyncResultComplete;
 interface Logger {
   info: (msg: string) => void;
   verbose: (msg: string) => void;
+  error: (msg: string) => void;
 }
 
 export async function checkSharingConfigurationValid(
@@ -60,58 +61,48 @@ export async function checkSharingConfigurationValid(
   const sharedQuestions = await selectSharedQuestions(courseId);
   const invalidRenames = getInvalidRenames(sharedQuestions, courseData);
   if (invalidRenames.length > 0) {
-    logger.info(
-      chalk.red(
-        `✖ Course sync completely failed. The following questions are shared and cannot be renamed or deleted: ${invalidRenames.join(', ')}`,
-      ),
+    logger.error(
+      `✖ Course sync completely failed. The following questions are shared and cannot be renamed or deleted: ${invalidRenames.join(', ')}`,
     );
     sharingConfigurationValid = false;
   }
 
   const invalidPublicSharingRemovals = getInvalidPublicSharingRemovals(sharedQuestions, courseData);
   if (invalidPublicSharingRemovals.length > 0) {
-    logger.info(
-      chalk.red(
-        `✖ Course sync completely failed. The following questions are are publicly shared and cannot be unshared: ${invalidPublicSharingRemovals.join(', ')}`,
-      ),
+    logger.error(
+      `✖ Course sync completely failed. The following questions are are publicly shared and cannot be unshared: ${invalidPublicSharingRemovals.join(', ')}`,
     );
     sharingConfigurationValid = false;
   }
 
   const invalidSharingSetDeletions = await getInvalidSharingSetDeletions(courseId, courseData);
   if (invalidSharingSetDeletions.length > 0) {
-    logger.info(
-      chalk.red(
-        `✖ Course sync completely failed. The following sharing sets cannot be removed from 'infoCourse.json': ${invalidSharingSetDeletions.join(', ')}`,
-      ),
+    logger.error(
+      `✖ Course sync completely failed. The following sharing sets cannot be removed from 'infoCourse.json': ${invalidSharingSetDeletions.join(', ')}`,
     );
     sharingConfigurationValid = false;
   }
 
   const invalidSharingSetAdditions = getInvalidSharingSetAdditions(courseData);
   if (Object.keys(invalidSharingSetAdditions).length > 0) {
-    logger.info(
-      chalk.red(
-        `✖ Course sync completely failed. The following questions are being added to sharing sets which do not exist: ${Object.keys(
-          invalidSharingSetAdditions,
-        )
-          .map((key) => `${key}: ${JSON.stringify(invalidSharingSetAdditions[key])}`)
-          .join(', ')}`,
-      ),
+    logger.error(
+      `✖ Course sync completely failed. The following questions are being added to sharing sets which do not exist: ${Object.keys(
+        invalidSharingSetAdditions,
+      )
+        .map((key) => `${key}: ${JSON.stringify(invalidSharingSetAdditions[key])}`)
+        .join(', ')}`,
     );
     sharingConfigurationValid = false;
   }
 
   const invalidSharingSetRemovals = await getInvalidSharingSetRemovals(courseId, courseData);
   if (Object.keys(invalidSharingSetRemovals).length > 0) {
-    logger.info(
-      chalk.red(
-        `✖ Course sync completely failed. The following questions are not allowed to be removed from the listed sharing sets: ${Object.keys(
-          invalidSharingSetRemovals,
-        )
-          .map((key) => `${key}: ${JSON.stringify(invalidSharingSetRemovals[key])}`)
-          .join(', ')}`,
-      ),
+    logger.error(
+      `✖ Course sync completely failed. The following questions are not allowed to be removed from the listed sharing sets: ${Object.keys(
+        invalidSharingSetRemovals,
+      )
+        .map((key) => `${key}: ${JSON.stringify(invalidSharingSetRemovals[key])}`)
+        .join(', ')}`,
     );
     sharingConfigurationValid = false;
   }

@@ -444,6 +444,7 @@ export function getFakeLogger() {
     debug: () => {},
     info: () => {},
     warn: () => {},
+    error: () => {},
   };
 }
 
