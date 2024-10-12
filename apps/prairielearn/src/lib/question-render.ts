@@ -155,6 +155,20 @@ async function render(
   return data;
 }
 
+interface QuestionUrls {
+  questionUrl: string;
+  newVariantUrl: string;
+  tryAgainUrl: string;
+  reloadUrl: string;
+  clientFilesQuestionUrl: string;
+  calculationQuestionFileUrl: string;
+  calculationQuestionGeneratedFileUrl: string;
+  clientFilesCourseUrl: string;
+  clientFilesQuestionGeneratedFileUrl: string;
+  baseUrl: string;
+  workspaceUrl?: string;
+}
+
 /**
  * Internal helper function to generate URLs that are used to render
  * question panels.
@@ -170,47 +184,51 @@ export function buildQuestionUrls(
   variant: Variant,
   question: Question,
   instance_question: InstanceQuestion | null,
-): Record<string, string> {
-  const urls: Record<string, string> = {};
+): QuestionUrls {
+  let urls: QuestionUrls;
 
   if (!instance_question) {
     // instructor question pages
     const questionUrl = urlPrefix + '/question/' + question.id + '/';
-    urls.questionUrl = questionUrl;
-    urls.newVariantUrl = questionUrl + 'preview/';
-    urls.tryAgainUrl = questionUrl + 'preview/';
-    urls.reloadUrl = questionUrl + 'preview/' + '?variant_id=' + variant.id;
-    urls.clientFilesQuestionUrl = questionUrl + 'clientFilesQuestion';
 
-    // necessary for backward compatibility
-    urls.calculationQuestionFileUrl = questionUrl + 'file';
+    urls = {
+      questionUrl,
+      newVariantUrl: questionUrl + 'preview/',
+      tryAgainUrl: questionUrl + 'preview/',
+      reloadUrl: questionUrl + 'preview/' + '?variant_id=' + variant.id,
+      clientFilesQuestionUrl: questionUrl + 'clientFilesQuestion',
 
-    urls.calculationQuestionGeneratedFileUrl =
-      questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
+      // necessary for backward compatibility
+      calculationQuestionFileUrl: questionUrl + 'file',
 
-    urls.clientFilesCourseUrl = questionUrl + 'clientFilesCourse';
-    urls.clientFilesQuestionGeneratedFileUrl =
-      questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
-    urls.baseUrl = urlPrefix;
+      calculationQuestionGeneratedFileUrl:
+        questionUrl + 'generatedFilesQuestion/variant/' + variant.id,
+
+      clientFilesCourseUrl: questionUrl + 'clientFilesCourse',
+      clientFilesQuestionGeneratedFileUrl:
+        questionUrl + 'generatedFilesQuestion/variant/' + variant.id,
+      baseUrl: urlPrefix,
+    };
   } else {
     // student question pages
     const iqUrl = urlPrefix + '/instance_question/' + instance_question.id + '/';
-    urls.questionUrl = iqUrl;
-    urls.newVariantUrl = iqUrl;
-    urls.tryAgainUrl = iqUrl;
-    urls.reloadUrl = iqUrl + '?variant_id=' + variant.id;
-    urls.clientFilesQuestionUrl = iqUrl + 'clientFilesQuestion';
 
-    // necessary for backward compatibility
-    urls.calculationQuestionFileUrl = iqUrl + 'file';
+    urls = {
+      questionUrl: iqUrl,
+      newVariantUrl: iqUrl,
+      tryAgainUrl: iqUrl,
+      reloadUrl: iqUrl + '?variant_id=' + variant.id,
+      clientFilesQuestionUrl: iqUrl + 'clientFilesQuestion',
 
-    urls.calculationQuestionGeneratedFileUrl =
-      iqUrl + 'generatedFilesQuestion/variant/' + variant.id;
+      // necessary for backward compatibility
+      calculationQuestionFileUrl: iqUrl + 'file',
 
-    urls.clientFilesCourseUrl = iqUrl + 'clientFilesCourse';
-    urls.clientFilesQuestionGeneratedFileUrl =
-      iqUrl + 'generatedFilesQuestion/variant/' + variant.id;
-    urls.baseUrl = urlPrefix;
+      calculationQuestionGeneratedFileUrl: iqUrl + 'generatedFilesQuestion/variant/' + variant.id,
+
+      clientFilesCourseUrl: iqUrl + 'clientFilesCourse',
+      clientFilesQuestionGeneratedFileUrl: iqUrl + 'generatedFilesQuestion/variant/' + variant.id,
+      baseUrl: urlPrefix,
+    };
   }
 
   if (variant.workspace_id) {
@@ -244,23 +262,27 @@ function buildLocals({
   group_config?: GroupConfig | null;
   authz_result?: any;
 }) {
-  const locals: Record<string, any> = {};
+  const locals = {
+    showGradeButton: false,
+    showSaveButton: false,
+    disableGradeButton: false,
+    disableSaveButton: false,
+    showNewVariantButton: false,
+    showTryAgainButton: false,
+    showSubmissions: false,
+    showFeedback: false,
+    showTrueAnswer: false,
+    showGradingRequested: false,
+    allowAnswerEditing: false,
+    hasAttemptsOtherVariants: false,
+    variantAttemptsLeft: 0,
+    variantAttemptsTotal: 0,
+    submissions: [],
 
-  locals.showGradeButton = false;
-  locals.showSaveButton = false;
-  locals.disableGradeButton = false;
-  locals.disableSaveButton = false;
-  locals.showNewVariantButton = false;
-  locals.showTryAgainButton = false;
-  locals.showSubmissions = false;
-  locals.showFeedback = false;
-  locals.showTrueAnswer = false;
-  locals.showGradingRequested = false;
-  locals.allowAnswerEditing = false;
-  locals.hasAttemptsOtherVariants = false;
-  locals.variantAttemptsLeft = 0;
-  locals.variantAttemptsTotal = 0;
-  locals.submissions = [];
+    // Used for "auth" for external grading realtime results
+    // ID is coerced to a string so that it matches what we get back from the client
+    variantToken: generateSignedToken({ variantId: variant.id.toString() }, config.secretKey),
+  };
 
   if (!assessment || !assessment_instance || !assessment_question || !instance_question) {
     // instructor question pages
@@ -279,7 +301,7 @@ function buildLocals({
         // TODO: can get rid of the nullish coalescing if we mark `tries_per_variant` as `NOT NULL`.
         locals.variantAttemptsLeft =
           (assessment_question.tries_per_variant ?? 1) - variant.num_tries;
-        locals.variantAttemptsTotal = assessment_question.tries_per_variant;
+        locals.variantAttemptsTotal = assessment_question.tries_per_variant ?? 1;
       }
       // TODO: can get fir of the nullish coalescing if we mark `score_perc` as `NOT NULL`.
       if (question.single_variant && (instance_question.score_perc ?? 0) >= 100.0) {
@@ -319,10 +341,6 @@ function buildLocals({
       locals.showTrueAnswer = true;
     }
   }
-
-  // Used for "auth" for external grading realtime results
-  // ID is coerced to a string so that it matches what we get back from the client
-  locals.variantToken = generateSignedToken({ variantId: variant.id.toString() }, config.secretKey);
 
   if (variant.broken_at) {
     locals.showGradeButton = false;
@@ -639,12 +657,9 @@ export async function renderPanelsForSubmission({
     extraHeadersHtml: null,
   };
 
-  const locals: Record<string, any> = {};
-  setLocalsFromConfig(locals);
-  Object.assign(
-    locals,
-    buildQuestionUrls(urlPrefix, variant, question, instance_question),
-    buildLocals({
+  const locals = {
+    ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+    ...buildLocals({
       variant,
       question,
       instance_question,
@@ -654,7 +669,8 @@ export async function renderPanelsForSubmission({
       assessment_question,
       group_config,
     }),
-  );
+  };
+  setLocalsFromConfig(locals);
 
   await async.parallel([
     async () => {
@@ -675,6 +691,11 @@ export async function renderPanelsForSubmission({
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
       panels.extraHeadersHtml = htmls.extraHeadersHtml;
 
+      // TODO: This is looking for `locals.assessment_question`. Does this even exist here?
+      // Test this by making one submission to a manual graded question, grading that
+      // submission, then making a bunch more submissions, the clicking to expand that first
+      // submission. This should trigger an async load via this path. `console.log(locals)`
+      // to see what's going on.
       await manualGrading.populateRubricData(locals);
       await manualGrading.populateManualGradingData(submission);
 
