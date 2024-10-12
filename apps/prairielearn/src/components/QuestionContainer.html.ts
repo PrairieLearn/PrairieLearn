@@ -612,7 +612,8 @@ function QuestionPanel({
   const showCopyQuestionButton =
     question.type === 'Freeform' &&
     question_copy_targets != null &&
-    (course.template_course || (question.shared_source_publicly && questionContext === 'public')) &&
+    (course.template_course ||
+      (question.shared_publicly_with_source && questionContext === 'public')) &&
     questionContext !== 'manual_grading';
 
   return html`

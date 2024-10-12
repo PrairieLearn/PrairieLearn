@@ -2,4 +2,4 @@ ALTER TABLE sharing_sets
 ADD COLUMN IF NOT EXISTS description TEXT;
 
 ALTER TABLE questions
-RENAME COLUMN shared_publicly_with_source TO shared_source_publicly;
+ADD COLUMN shared_source_publicly BOOLEAN NOT NULL DEFAULT FALSE;
