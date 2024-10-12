@@ -1,4 +1,3 @@
-import type { Logger } from 'winston';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -6,6 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '../lib/db-types.js';
 
 import { CourseData } from './course-db.js';
+import type { Logger } from './syncFromDisk.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface SharedQuestion {

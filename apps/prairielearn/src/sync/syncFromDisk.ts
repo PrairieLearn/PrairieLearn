@@ -1,5 +1,4 @@
 import async from 'async';
-import type { Logger } from 'winston';
 
 import * as namedLocks from '@prairielearn/named-locks';
 
@@ -41,6 +40,12 @@ interface SyncResultComplete {
 }
 
 export type SyncResults = SyncResultSharingError | SyncResultComplete;
+
+export interface Logger {
+  info: (msg: string) => void;
+  verbose: (msg: string) => void;
+  error: (msg: string) => void;
+}
 
 export async function checkSharingConfigurationValid(
   courseId: string,
