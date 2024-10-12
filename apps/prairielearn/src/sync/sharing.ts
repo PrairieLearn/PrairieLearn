@@ -1,3 +1,4 @@
+import type { Logger } from 'winston';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -28,20 +29,29 @@ export async function selectSharedQuestions(courseId: string): Promise<SharedQue
 export function getInvalidRenames(
   sharedQuestions: SharedQuestion[],
   courseData: CourseData,
-): string[] {
+  logger: Logger,
+): boolean {
   const invalidRenames: string[] = [];
   sharedQuestions.forEach((question) => {
     if (!courseData.questions[question.qid]) {
       invalidRenames.push(question.qid);
     }
   });
-  return invalidRenames;
+
+  const existInvalidRenames = invalidRenames.length > 0;
+  if (existInvalidRenames) {
+    logger.error(
+      `✖ Course sync completely failed. The following questions are shared and cannot be renamed or deleted: ${invalidRenames.join(', ')}`,
+    );
+  }
+  return existInvalidRenames;
 }
 
-export function getInvalidPublicSharingRemovals(
+export function checkInvalidPublicSharingRemovals(
   sharedQuestions: SharedQuestion[],
   courseData: CourseData,
-): string[] {
+  logger: Logger,
+): boolean {
   const invalidUnshares: string[] = [];
   sharedQuestions.forEach((question) => {
     if (!question.shared_publicly) {
@@ -54,13 +64,21 @@ export function getInvalidPublicSharingRemovals(
       invalidUnshares.push(question.qid);
     }
   });
-  return invalidUnshares;
+
+  const existInvalidUnshares = invalidUnshares.length > 0;
+  if (existInvalidUnshares) {
+    logger.error(
+      `✖ Course sync completely failed. The following questions are are publicly shared and cannot be unshared: ${invalidUnshares.join(', ')}`,
+    );
+  }
+  return existInvalidUnshares;
 }
 
-export async function getInvalidSharingSetDeletions(
+export async function checkInvalidSharingSetDeletions(
   courseId: string,
   courseData: CourseData,
-): Promise<string[]> {
+  logger: Logger,
+): Promise<boolean> {
   const sharingSets = await sqldb.queryRows(
     sql.select_sharing_sets,
     { course_id: courseId },
@@ -74,10 +92,17 @@ export async function getInvalidSharingSetDeletions(
       invalidSharingSetDeletions.push(sharingSet);
     }
   });
-  return invalidSharingSetDeletions;
+
+  const existInvalidSharingSetDeletions = invalidSharingSetDeletions.length > 0;
+  if (existInvalidSharingSetDeletions) {
+    logger.error(
+      `✖ Course sync completely failed. The following sharing sets cannot be removed from 'infoCourse.json': ${invalidSharingSetDeletions.join(', ')}`,
+    );
+  }
+  return existInvalidSharingSetDeletions;
 }
 
-export function getInvalidSharingSetAdditions(courseData: CourseData): Record<string, string[]> {
+export function checkInvalidSharingSetAdditions(courseData: CourseData, logger: Logger): boolean {
   const invalidSharingSetAdditions: Record<string, string[]> = {};
   const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
 
@@ -93,13 +118,25 @@ export function getInvalidSharingSetAdditions(courseData: CourseData): Record<st
       }
     });
   }
-  return invalidSharingSetAdditions;
+
+  const existInvalidSharingSetAdditions = Object.keys(invalidSharingSetAdditions).length > 0;
+  if (existInvalidSharingSetAdditions) {
+    logger.error(
+      `✖ Course sync completely failed. The following questions are being added to sharing sets which do not exist: ${Object.keys(
+        invalidSharingSetAdditions,
+      )
+        .map((key) => `${key}: ${JSON.stringify(invalidSharingSetAdditions[key])}`)
+        .join(', ')}`,
+    );
+  }
+  return existInvalidSharingSetAdditions;
 }
 
-export async function getInvalidSharingSetRemovals(
+export async function checkInvalidSharingSetRemovals(
   courseId: string,
   courseData: CourseData,
-): Promise<Record<string, string[]>> {
+  logger: Logger,
+): Promise<boolean> {
   const sharedQuestions = await sqldb.queryRows(
     sql.select_question_sharing_sets,
     { course_id: courseId },
@@ -131,5 +168,17 @@ export async function getInvalidSharingSetRemovals(
       }
     });
   });
-  return invalidSharingSetRemovals;
+
+  const existInvalidSharingSetRemovals = Object.keys(invalidSharingSetRemovals).length > 0;
+  if (existInvalidSharingSetRemovals) {
+    logger.error(
+      `✖ Course sync completely failed. The following questions are not allowed to be removed from the listed sharing sets: ${Object.keys(
+        invalidSharingSetRemovals,
+      )
+        .map((key) => `${key}: ${JSON.stringify(invalidSharingSetRemovals[key])}`)
+        .join(', ')}`,
+    );
+  }
+
+  return existInvalidSharingSetRemovals;
 }

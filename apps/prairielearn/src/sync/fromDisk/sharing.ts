@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { IdSchema } from '../../lib/db-types.js';
 import { CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -24,7 +25,7 @@ export async function sync(
     sql.select_course_sharing_sets,
     { course_id: courseId },
     z.object({
-      id: z.string(),
+      id: IdSchema,
       name: z.string(),
     }),
   );
