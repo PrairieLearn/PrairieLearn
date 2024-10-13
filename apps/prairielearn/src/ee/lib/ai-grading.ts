@@ -46,10 +46,9 @@ const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
 const GPTRubricItemSchema = z.object({
   number: z.number(),
   description: z.string(),
-  explanation: z.string(),
+  // explanation: z.string(),
   selected: z.boolean(),
 });
-type GPTRubricItem = z.infer<typeof GPTRubricItemSchema>;
 const GPTRubricGradeSchema = z.object({
   rubric_items: z.array(GPTRubricItemSchema),
   feedback: z.string(),
@@ -74,9 +73,16 @@ function parseRubricItems({
   gpt_rubric_items,
 }: {
   rubric_items: RubricItem[];
-  gpt_rubric_items: GPTRubricItem[];
+  gpt_rubric_items: number[];
 }): AppliedRubricItem[] {
-  return [];
+  const output: AppliedRubricItem[] = [];
+
+  for (const rubric_item of rubric_items) {
+    if (gpt_rubric_items.includes(rubric_item.number)) {
+      output.push(AppliedRubricItemSchema.parse({ rubric_item_id: rubric_item.id }));
+    }
+  }
+  return output;
 }
 
 async function generateGPTPrompt({
@@ -109,7 +115,7 @@ async function generateGPTPrompt({
     messages.push({
       role: 'system',
       content:
-        'You are an instructor for a course, and you are grading assignments. You are provided several rubric items with the item number, item description (name), and item explanation. You must grade the assignment by using the rubric, by returning an array of these items, with an extra boolean parameter "selected" representing if the rubric item should be selected. You should also provide feedback on how to improve the answer. I will provide some example answers and their corresponding grades.',
+        'You are an instructor for a course, and you are grading assignments. You are provided several rubric items with the item number, item description (name), and item explanation. You must grade the assignment by using the rubric and returning an array of all rubric items, with an extra boolean parameter "selected" representing if the rubric item should be selected. You should always list all the rubric items, no matter if they are selected or not. You should also provide feedback on how to improve the answer. I will provide some example answers and their corresponding grades.',
     });
     messages.push({
       role: 'system',
@@ -141,7 +147,7 @@ async function generateGPTPrompt({
       );
       let rubric_grading_info = '';
       for (const item of rubric_grading_items) {
-        rubric_grading_info += `number: ${item.number}\ndescription: ${item.description}\nexplanation: ${item.explanation}\n\n`;
+        rubric_grading_info += `number: ${item.number}\n\n`;
       }
       messages.push({
         role: 'user',
@@ -427,88 +433,95 @@ export async function aiGrade({
         rubric_items,
       });
 
-      // const completion = await openai.beta.chat.completions.parse({
-      //   messages,
-      //   model: 'gpt-4o-2024-08-06',
-      //   user: `course_${course.id}`,
-      //   response_format: zodResponseFormat(GPTRubricGradeSchema, 'grades'),
-      // });
-      // msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
-      // const grade_response = completion.choices[0].message;
-      // msg += `Raw ChatGPT response:\n${grade_response.content}`;
-      // console.log(grade_response.parsed);
-
-      // try {
-      //   msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
-      //   const grade_response = completion.choices[0].message;
-      //   msg += `Raw ChatGPT response:\n${grade_response.content}`;
-      //   if (grade_response.parsed) {
-      //     // TODO: MODIFY THIS
-      //   const manual_rubric_data = {
-      //   rubric_id: '',
-      //   applied_rubric_items: parseRubricItems(rubric_items, grade_response.parsed.rubric_items),
-      // };
-      //     await manualGrading.updateInstanceQuestionScore(
-      //       assessment_question.assessment_id,
-      //       instance_question.id,
-      //       submission.id,
-      //       null, // modified_at
-      //       {
-      //         feedback: { manual: grade_response.parsed.feedback },
-      //         manual_rubric_data,
-      //         // NEXT STEPS: rubrics
-      //       },
-      //       user_id,
-      //     );
-      //     msg += `\nAI grades: ${grade_response.parsed.grade}`;
-      //   } else if (grade_response.refusal) {
-      //     job.error(`ERROR AI grading for ${instance_question.id}`);
-      //     job.error(grade_response.refusal);
-      //     error_count++;
-      //   }
-      // } catch (err) {
-      //   job.error(`ERROR AI grading for ${instance_question.id}`);
-      //   job.error(err);
-      //   error_count++;
-      // }
-      // job.info(msg);
-
-      const completion = await openai.beta.chat.completions.parse({
-        messages,
-        model: 'gpt-4o-2024-08-06',
-        user: `course_${course.id}`,
-        response_format: zodResponseFormat(GPTGradeSchema, 'grades'),
-      });
-
-      try {
+      if (rubric_items.length) {
+        const completion = await openai.beta.chat.completions.parse({
+          messages,
+          model: 'gpt-4o-2024-08-06',
+          user: `course_${course.id}`,
+          response_format: zodResponseFormat(GPTRubricGradeSchema, 'grades'),
+        });
+        try {
+          msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
+          const grade_response = completion.choices[0].message;
+          msg += `Raw ChatGPT response:\n${grade_response.content}`;
+          if (grade_response.parsed) {
+            // only care about the rubric numbers
+            const gpt_rubric_items: number[] = [];
+            for (const gpt_rubric_item of grade_response.parsed.rubric_items) {
+              if (gpt_rubric_item.selected) {
+                gpt_rubric_items.push(gpt_rubric_item.number);
+              }
+            }
+            const manual_rubric_data = {
+              rubric_id: rubric_items[0].rubric_id,
+              applied_rubric_items: parseRubricItems({
+                rubric_items,
+                gpt_rubric_items,
+              }),
+            };
+            await manualGrading.updateInstanceQuestionScore(
+              assessment_question.assessment_id,
+              instance_question.id,
+              submission.id,
+              null, // modified_at
+              {
+                feedback: { manual: grade_response.parsed.feedback },
+                manual_rubric_data,
+              },
+              user_id,
+            );
+            msg += `\nAI rubric items: ${gpt_rubric_items.toString()}`;
+          } else if (grade_response.refusal) {
+            job.error(`ERROR AI grading for ${instance_question.id}`);
+            job.error(grade_response.refusal);
+            error_count++;
+          }
+        } catch (err) {
+          job.error(`ERROR AI grading for ${instance_question.id}`);
+          job.error(err);
+          error_count++;
+        }
+        job.info(msg);
+      } else {
+        const completion = await openai.beta.chat.completions.parse({
+          messages,
+          model: 'gpt-4o-2024-08-06',
+          user: `course_${course.id}`,
+          response_format: zodResponseFormat(GPTGradeSchema, 'grades'),
+        });
         msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
         const grade_response = completion.choices[0].message;
         msg += `Raw ChatGPT response:\n${grade_response.content}`;
-        if (grade_response.parsed) {
-          await manualGrading.updateInstanceQuestionScore(
-            assessment_question.assessment_id,
-            instance_question.id,
-            submission.id,
-            null, // modified_at
-            {
-              score_perc: grade_response.parsed.grade,
-              feedback: { manual: grade_response.parsed.feedback },
-              // NEXT STEPS: rubrics
-            },
-            user_id,
-          );
-          msg += `\nAI grades: ${grade_response.parsed.grade}`;
-        } else if (grade_response.refusal) {
+        try {
+          msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
+          const grade_response = completion.choices[0].message;
+          msg += `Raw ChatGPT response:\n${grade_response.content}`;
+          if (grade_response.parsed) {
+            // await manualGrading.updateInstanceQuestionScore(
+            //   assessment_question.assessment_id,
+            //   instance_question.id,
+            //   submission.id,
+            //   null, // modified_at
+            //   {
+            //     score_perc: grade_response.parsed.grade,
+            //     feedback: { manual: grade_response.parsed.feedback },
+            //     // NEXT STEPS: rubrics
+            //   },
+            //   user_id,
+            // );
+            msg += `\nAI grades: ${grade_response.parsed.grade}`;
+          } else if (grade_response.refusal) {
+            job.error(`ERROR AI grading for ${instance_question.id}`);
+            job.error(grade_response.refusal);
+            error_count++;
+          }
+        } catch (err) {
           job.error(`ERROR AI grading for ${instance_question.id}`);
-          job.error(grade_response.refusal);
+          job.error(err);
           error_count++;
         }
-      } catch (err) {
-        job.error(`ERROR AI grading for ${instance_question.id}`);
-        job.error(err);
-        error_count++;
+        job.info(msg);
       }
-      job.info(msg);
     }
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);
