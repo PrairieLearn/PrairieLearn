@@ -489,26 +489,23 @@ export async function aiGrade({
           user: `course_${course.id}`,
           response_format: zodResponseFormat(GPTGradeSchema, 'grades'),
         });
-        msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
-        const grade_response = completion.choices[0].message;
-        msg += `Raw ChatGPT response:\n${grade_response.content}`;
         try {
           msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
           const grade_response = completion.choices[0].message;
           msg += `Raw ChatGPT response:\n${grade_response.content}`;
           if (grade_response.parsed) {
-            // await manualGrading.updateInstanceQuestionScore(
-            //   assessment_question.assessment_id,
-            //   instance_question.id,
-            //   submission.id,
-            //   null, // modified_at
-            //   {
-            //     score_perc: grade_response.parsed.grade,
-            //     feedback: { manual: grade_response.parsed.feedback },
-            //     // NEXT STEPS: rubrics
-            //   },
-            //   user_id,
-            // );
+            await manualGrading.updateInstanceQuestionScore(
+              assessment_question.assessment_id,
+              instance_question.id,
+              submission.id,
+              null, // modified_at
+              {
+                score_perc: grade_response.parsed.grade,
+                feedback: { manual: grade_response.parsed.feedback },
+                // NEXT STEPS: rubrics
+              },
+              user_id,
+            );
             msg += `\nAI grades: ${grade_response.parsed.grade}`;
           } else if (grade_response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
