@@ -32,6 +32,7 @@ RUN apt-get update \
   && chmod 700 /var/lib/pgadmin \
   && mkdir /sql-scripts \
   && mkdir -p /var/run/postgresql && chown -R postgres:postgres /var/run/postgresql \
+  && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
 COPY database/imdb.sql database/world.sql database/mds.sql /sql-scripts/
@@ -54,6 +55,10 @@ RUN /bin/bash /install.sh
 COPY dockerentrypoint.sh /sbin/dockerentrypoint.sh
 RUN chmod 755 /sbin/dockerentrypoint.sh
 COPY Caddyfile /caddy/
+
+# UNSAFE - for local debugging only
+# COPY Caddyfile.test_https /caddy/
+# COPY --chmod=0755 pl-unsafe-test.sh /caddy/
 
 USER postgres
 WORKDIR /

@@ -1,14 +1,14 @@
 {
-    debug
+    # debug
     admin off
     auto_https disable_redirects
     http_port 8080
 }
 
-http://* {
+:8080 {
     log {
         output stderr
-        level DEBUG
+        # level DEBUG
         format console
     }
     reverse_proxy localhost:5050 {
