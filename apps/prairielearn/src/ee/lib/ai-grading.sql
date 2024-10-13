@@ -124,7 +124,7 @@ WHERE
 SELECT
   ri.*
 FROM
-  rubric_grading_items rgi 
+  rubric_grading_items rgi
   JOIN rubric_items ri ON rgi.rubric_item_id = ri.id
 WHERE
   rgi.rubric_grading_id = $maunal_rubric_grading_id;
