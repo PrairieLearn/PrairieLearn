@@ -27,6 +27,11 @@ interface Topic {
   description: string;
 }
 
+interface SharingSet {
+  name: string;
+  description: string;
+}
+
 export interface AssessmentSet {
   abbreviation: string;
   name: string;
@@ -47,6 +52,7 @@ interface Course {
   options?: CourseOptions;
   tags: Tag[];
   topics: Topic[];
+  sharingSets?: SharingSet[];
   assessmentSets: AssessmentSet[];
   assessmentModules?: Module[];
 }
@@ -179,6 +185,11 @@ export interface Question {
   title: string;
   topic: string;
   tags?: string[];
+  sharingSets?: string[];
+  sharePublicly?: boolean;
+  sharedPublicly?: boolean;
+  shareSourcePublicly?: boolean;
+  sharedSourcePublicly?: boolean;
   clientFiles?: string[];
   clientTemplates?: string[];
   template?: string;
@@ -435,6 +446,7 @@ export function getFakeLogger() {
     debug: () => {},
     info: () => {},
     warn: () => {},
+    error: () => {},
   };
 }
 
