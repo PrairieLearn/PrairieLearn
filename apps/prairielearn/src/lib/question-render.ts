@@ -550,7 +550,7 @@ export async function getAndRenderVariant(
 
   if (locals.instance_question) {
     await manualGrading.populateRubricData(locals);
-    await async.each(locals.submissions, manualGrading.populateManualGradingData);
+    await async.eachSeries(locals.submissions, manualGrading.populateManualGradingData);
   }
 
   if (locals.question.type !== 'Freeform') {
@@ -691,12 +691,10 @@ export async function renderPanelsForSubmission({
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
       panels.extraHeadersHtml = htmls.extraHeadersHtml;
 
-      // TODO: This is looking for `locals.assessment_question`. Does this even exist here?
-      // Test this by making one submission to a manual graded question, grading that
-      // submission, then making a bunch more submissions, the clicking to expand that first
-      // submission. This should trigger an async load via this path. `console.log(locals)`
-      // to see what's going on.
-      await manualGrading.populateRubricData(locals);
+      const rubric_data = await manualGrading.buildRubricData({
+        assessment_question,
+        submission,
+      });
       await manualGrading.populateManualGradingData(submission);
 
       panels.submissionPanel = SubmissionPanel({
@@ -715,7 +713,7 @@ export async function renderPanelsForSubmission({
         },
         submissionHtml: htmls.submissionHtmls[0],
         submissionCount: submission_count,
-        rubric_data: locals.rubric_data,
+        rubric_data,
         expanded: true,
         urlPrefix,
       }).toString();
