@@ -8,7 +8,7 @@ In order for another course to use questions from your course into their assessm
 
 ## Two ways to share: Publicly or through "Sharing sets"
 
-Questions can either be shared publicly, so that anyone can preview the questions and use them in their course, or you can share questions only to specific other courses using sharing sets.
+Questions can either be shared publicly, so that anyone can preview the questions and use them in their course, or shared only to specific other courses using sharing sets.
 
 Any question that is marked with `"sharePublicly": true` or `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license.
 
