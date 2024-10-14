@@ -4,6 +4,7 @@ import * as namedLocks from '@prairielearn/named-locks';
 
 import { chalk, chalkDim } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
+import { ServerJobLogger } from '../lib/server-jobs.js';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
@@ -41,16 +42,10 @@ interface SyncResultComplete {
 
 export type SyncResults = SyncResultSharingError | SyncResultComplete;
 
-export interface Logger {
-  info: (msg: string) => void;
-  verbose: (msg: string) => void;
-  error: (msg: string) => void;
-}
-
 export async function checkSharingConfigurationValid(
   courseId: string,
   courseData: courseDB.CourseData,
-  logger: Logger,
+  logger: ServerJobLogger,
 ): Promise<boolean> {
   if (!config.checkSharingOnSync) {
     return true;
@@ -87,7 +82,7 @@ export async function checkSharingConfigurationValid(
 export async function syncDiskToSqlWithLock(
   courseId: string,
   courseDir: string,
-  logger: Logger,
+  logger: ServerJobLogger,
   courseData?: courseDB.CourseData,
 ): Promise<SyncResults> {
   async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
@@ -189,7 +184,7 @@ export async function syncDiskToSqlWithLock(
 export async function syncDiskToSql(
   course_id: string,
   courseDir: string,
-  logger: Logger,
+  logger: ServerJobLogger,
 ): Promise<SyncResults> {
   const lockName = getLockNameForCoursePath(courseDir);
   logger.verbose(chalkDim(`Trying lock ${lockName}`));
@@ -214,7 +209,7 @@ export async function syncDiskToSql(
 
 export async function syncOrCreateDiskToSql(
   courseDir: string,
-  logger: Logger,
+  logger: ServerJobLogger,
 ): Promise<SyncResults> {
   const course = await selectOrInsertCourseByPath(courseDir);
   return await syncDiskToSql(course.id, courseDir, logger);

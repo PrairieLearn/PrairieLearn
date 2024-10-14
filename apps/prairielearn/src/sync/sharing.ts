@@ -3,9 +3,9 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { IdSchema } from '../lib/db-types.js';
+import { ServerJobLogger } from '../lib/server-jobs.js';
 
 import { CourseData } from './course-db.js';
-import type { Logger } from './syncFromDisk.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface SharedQuestion {
@@ -29,7 +29,7 @@ export async function selectSharedQuestions(courseId: string): Promise<SharedQue
 export function getInvalidRenames(
   sharedQuestions: SharedQuestion[],
   courseData: CourseData,
-  logger: Logger,
+  logger: ServerJobLogger,
 ): boolean {
   const invalidRenames: string[] = [];
   sharedQuestions.forEach((question) => {
@@ -50,7 +50,7 @@ export function getInvalidRenames(
 export function checkInvalidPublicSharingRemovals(
   sharedQuestions: SharedQuestion[],
   courseData: CourseData,
-  logger: Logger,
+  logger: ServerJobLogger,
 ): boolean {
   const invalidUnshares: string[] = [];
   sharedQuestions.forEach((question) => {
@@ -77,7 +77,7 @@ export function checkInvalidPublicSharingRemovals(
 export async function checkInvalidSharingSetDeletions(
   courseId: string,
   courseData: CourseData,
-  logger: Logger,
+  logger: ServerJobLogger,
 ): Promise<boolean> {
   const sharingSets = await sqldb.queryRows(
     sql.select_sharing_sets,
@@ -102,7 +102,10 @@ export async function checkInvalidSharingSetDeletions(
   return existInvalidSharingSetDeletions;
 }
 
-export function checkInvalidSharingSetAdditions(courseData: CourseData, logger: Logger): boolean {
+export function checkInvalidSharingSetAdditions(
+  courseData: CourseData,
+  logger: ServerJobLogger,
+): boolean {
   const invalidSharingSetAdditions: Record<string, string[]> = {};
   const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
 
@@ -135,7 +138,7 @@ export function checkInvalidSharingSetAdditions(courseData: CourseData, logger: 
 export async function checkInvalidSharingSetRemovals(
   courseId: string,
   courseData: CourseData,
-  logger: Logger,
+  logger: ServerJobLogger,
 ): Promise<boolean> {
   const sharedQuestions = await sqldb.queryRows(
     sql.select_question_sharing_sets,
