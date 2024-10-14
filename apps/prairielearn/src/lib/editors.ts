@@ -415,8 +415,13 @@ export abstract class Editor {
     return files;
   }
 
-  getNamesForCopy(oldShortName, shortNames, oldLongName, longNames) {
-    function getBaseShortName(oldname) {
+  getNamesForCopy(
+    oldShortName: string,
+    shortNames: string[],
+    oldLongName: string | null,
+    longNames: string[],
+  ): { shortName: string; longName: string } {
+    function getBaseShortName(oldname: string): string {
       const found = oldname.match(new RegExp('^(.*)_copy[0-9]+$'));
       if (found) {
         return found[1];
@@ -425,7 +430,7 @@ export abstract class Editor {
       }
     }
 
-    function getBaseLongName(oldname) {
+    function getBaseLongName(oldname: string | null): string {
       if (!_.isString(oldname)) return 'Unknown';
       debug(oldname);
       const found = oldname.match(new RegExp('^(.*) \\(copy [0-9]+\\)$'));
@@ -437,7 +442,7 @@ export abstract class Editor {
       }
     }
 
-    function getNumberShortName(basename, oldnames) {
+    function getNumberShortName(basename: string, oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         const found = oldname.match(new RegExp(`^${escapeRegExp(basename)}_copy([0-9]+)$`));
@@ -451,7 +456,7 @@ export abstract class Editor {
       return number;
     }
 
-    function getNumberLongName(basename, oldnames) {
+    function getNumberLongName(basename: string, oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         if (!_.isString(oldname)) return;
@@ -477,8 +482,11 @@ export abstract class Editor {
     };
   }
 
-  getNamesForAdd(shortNames, longNames) {
-    function getNumberShortName(oldnames) {
+  getNamesForAdd(
+    shortNames: string[],
+    longNames: string[],
+  ): { shortName: string; longName: string } {
+    function getNumberShortName(oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         const found = oldname.match(new RegExp('^New_([0-9]+)$'));
@@ -492,7 +500,7 @@ export abstract class Editor {
       return number;
     }
 
-    function getNumberLongName(oldnames) {
+    function getNumberLongName(oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         if (!_.isString(oldname)) return;
@@ -649,7 +657,7 @@ export class AssessmentRenameEditor extends Editor {
     const newPath = path.join(basePath, this.tid_new);
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
-    await this.removeEmptyPrecedingSubfolders(basePath, this.course_instance.short_name);
+    await this.removeEmptyPrecedingSubfolders(basePath, this.assessment.tid);
 
     return {
       pathsToAdd: [oldPath, newPath],
@@ -1150,8 +1158,10 @@ export class QuestionCopyEditor extends Editor {
     // Even when copying a question within a course, we don't want to preserve
     // sharing settings because they cannot be undone
     delete infoJson['sharingSets'];
+    delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
-    delete infoJson['sharedPubliclyWithSource'];
+    delete infoJson['shareSourcePublicly'];
+    delete infoJson['sharedSourcePublicly'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1232,8 +1242,10 @@ export class QuestionTransferEditor extends Editor {
 
     // We do not want to preserve sharing settings when copying a question to another course
     delete infoJson['sharingSets'];
+    delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
-    delete infoJson['sharedPubliclyWithSource'];
+    delete infoJson['shareSourcePublicly'];
+    delete infoJson['sharedSourcePublicly'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
