@@ -328,7 +328,6 @@ function QuestionFooterContent({
   questionContext: QuestionContext;
 }) {
   const {
-    showTrueAnswer,
     showSaveButton,
     showGradeButton,
     disableSaveButton,
@@ -352,9 +351,10 @@ function QuestionFooterContent({
     __csrf_token,
   } = resLocals;
 
-  if (showTrueAnswer && questionContext === 'student_exam') {
+  if (questionContext === 'student_exam' && variantAttemptsLeft === 0) {
     return 'This question is complete and cannot be answered again.';
   }
+
   if (authz_result?.authorized_edit === false) {
     return html`<div class="alert alert-warning mt-2" role="alert">
       You are viewing the question instance of a different user and so are not authorized to save
