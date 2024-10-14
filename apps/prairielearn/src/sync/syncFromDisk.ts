@@ -126,7 +126,9 @@ export async function syncDiskToSqlWithLock(
       syncQuestions.sync(courseId, courseData),
     );
 
-    await timed('Synced sharing sets', () => syncSharingSets.sync(courseId, courseData, questionIds));
+    await timed('Synced sharing sets', () =>
+      syncSharingSets.sync(courseId, courseData, questionIds),
+    );
     await timed('Synced tags', () => syncTags.sync(courseId, courseData, questionIds));
     await timed('Synced assessment sets', () => syncAssessmentSets.sync(courseId, courseData));
     await timed('Synced assessment modules', () =>
