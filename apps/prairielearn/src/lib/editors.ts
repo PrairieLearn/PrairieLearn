@@ -912,14 +912,17 @@ export class QuestionAddEditor extends Editor {
   public readonly uuid: string;
 
   files?: Record<string, string>;
+  isDraft: boolean;
 
-  constructor(params: BaseEditorOptions & { files?: Record<string, string> }) {
+  constructor(params: BaseEditorOptions & { files?: Record<string, string>; isDraft?: boolean }) {
     super(params);
 
     this.description = 'Add question';
 
     this.uuid = uuidv4();
     this.files = params.files;
+
+    this.isDraft = typeof params.isDraft !== 'undefined' && params.isDraft;
   }
 
   async write() {
@@ -938,7 +941,10 @@ export class QuestionAddEditor extends Editor {
     debug('Generate qid and title');
     const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
     const qid = names.shortName;
-    const questionPath = path.join(questionsPath, qid);
+
+    const questionPath = this.isDraft
+      ? path.join(questionsPath, '__drafts__', qid)
+      : path.join(questionsPath, qid);
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
     const toPath = questionPath;
@@ -985,13 +991,14 @@ export class QuestionAddEditor extends Editor {
     debug('Write info.json with new title and uuid');
     infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
+    infoJson.draftVersion = 1;
     // The template question contains tags that shouldn't be copied to the new question.
     delete infoJson.tags;
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `add question ${qid}`,
+      commitMessage: `add question ${qid}${this.isDraft ? ' as draft' : ''}`,
     };
   }
 }
@@ -1039,13 +1046,24 @@ export class QuestionRenameEditor extends Editor {
     assert(this.question.qid, 'question.qid is required');
 
     debug('QuestionRenameEditor: write()');
-    const questionsPath = path.join(this.course.path, 'questions');
+
+    let questionsPath = path.join(this.course.path, 'questions');
+    if (this.question.draft_version) {
+      questionsPath = path.join(questionsPath, '__drafts__');
+    }
     const oldPath = path.join(questionsPath, this.question.qid);
     const newPath = path.join(questionsPath, this.qid_new);
 
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
+
+    if (this.question.draft_version) {
+      debug('Increment draft version');
+      const infoJson = await fs.readJson(path.join(newPath, 'info.json'));
+      infoJson.draftVersion++;
+      await fs.writeJson(path.join(newPath, 'info.json'), infoJson, { spaces: 4 });
+    }
 
     debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
     const result = await sqldb.queryAsync(sql.select_assessments_with_question, {
@@ -1143,7 +1161,9 @@ export class QuestionCopyEditor extends Editor {
     const qid = names.shortName;
     const questionPath = path.join(questionsPath, qid);
 
-    const fromPath = path.join(questionsPath, this.question.qid);
+    const fromPath = this.question.draft_version
+      ? path.join(questionsPath, '__drafts__', this.question.qid)
+      : path.join(questionsPath, this.question.qid);
     const toPath = questionPath;
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
@@ -1160,6 +1180,9 @@ export class QuestionCopyEditor extends Editor {
     delete infoJson['sharingSets'];
     delete infoJson['sharedPublicly'];
     delete infoJson['sharedPubliclyWithSource'];
+
+    //copying question implies not-draft (for now?)
+    delete infoJson['draftVersion'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1242,6 +1265,9 @@ export class QuestionTransferEditor extends Editor {
     delete infoJson['sharingSets'];
     delete infoJson['sharedPublicly'];
     delete infoJson['sharedPubliclyWithSource'];
+
+    //copying question implies not-draft (for now?)
+    delete infoJson['draftVersion'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {

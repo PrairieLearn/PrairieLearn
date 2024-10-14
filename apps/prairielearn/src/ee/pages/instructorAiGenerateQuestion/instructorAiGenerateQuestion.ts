@@ -114,6 +114,7 @@ router.post(
         promptGeneral: req.body.prompt,
         promptUserInput: req.body.prompt_user_input,
         promptGrading: req.body.prompt_grading,
+        saveLocals: res.locals,
       });
 
       if (result.htmlResult) {

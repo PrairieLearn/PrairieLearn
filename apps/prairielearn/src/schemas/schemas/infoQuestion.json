@@ -27,6 +27,10 @@
       "description": "The category of question (e.g., 'Vectors', 'Energy').",
       "type": "string"
     },
+    "draftVersion": {
+      "description": "The draft version number (not for final questions)",
+      "type": "integer"
+    },
     "tags": {
       "description": "Extra tags associated with the question (e.g., 'Exam Only', 'Broken').",
       "type": "array",

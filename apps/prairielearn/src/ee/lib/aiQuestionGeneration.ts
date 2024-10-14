@@ -4,6 +4,7 @@ import * as parse5 from 'parse5';
 import { loadSqlEquiv, queryRows, queryRow } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
+import { QuestionAddEditor } from '../../lib/editors.js';
 import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
@@ -166,6 +167,7 @@ export async function generateQuestion({
   promptGeneral,
   promptUserInput,
   promptGrading,
+  saveLocals,
 }: {
   client: OpenAI;
   courseId: string | undefined;
@@ -173,6 +175,7 @@ export async function generateQuestion({
   promptGeneral: string;
   promptUserInput: string;
   promptGrading: string;
+  saveLocals?: Record<string, any> | undefined;
 }): Promise<{
   jobSequenceId: string;
   htmlResult: string | undefined;
@@ -254,6 +257,28 @@ Keep in mind you are not just generating an example; you are generating an actua
         0,
         false,
       );
+    }
+
+    if (saveLocals) {
+      const files = {};
+
+      if (job?.data?.html) {
+        files['question.html'] = job?.data?.html;
+      }
+
+      if (job?.data?.python) {
+        files['server.py'] = job?.data?.python;
+      }
+
+      const editor = new QuestionAddEditor({
+        locals: saveLocals,
+        files,
+        isDraft: true,
+      });
+
+      const serverJob = await editor.prepareServerJob();
+
+      await editor.executeWithServerJob(serverJob);
     }
   });
 

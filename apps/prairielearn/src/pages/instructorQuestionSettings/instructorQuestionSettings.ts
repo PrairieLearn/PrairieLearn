@@ -217,6 +217,9 @@ router.post(
       if (!res.locals.authz_data.has_course_permission_own) {
         throw new error.HttpStatusError(403, 'Access denied (must be a course Owner)');
       }
+      if (typeof res.locals?.question?.draft_version !== 'undefined') {
+        throw new error.HttpStatusError(400, 'Cannot share a draft question. Undraft first.');
+      }
       await sqldb.queryAsync(sql.sharing_set_add, {
         course_id: res.locals.course.id,
         question_id: res.locals.question.id,
@@ -233,6 +236,9 @@ router.post(
       }
       if (!res.locals.authz_data.has_course_permission_own) {
         throw new error.HttpStatusError(403, 'Access denied (must be a course Owner)');
+      }
+      if (typeof res.locals?.question?.draft_version !== 'undefined') {
+        throw new error.HttpStatusError(400, 'Cannot share a draft question. Undraft first.');
       }
       await sqldb.queryAsync(sql.update_question_shared_publicly, {
         course_id: res.locals.course.id,
