@@ -3,6 +3,6 @@
   "title": "Element pl-order-blocks: Dragging blocks to form the solution of a problem",
   "topic": "Element",
   "type": "v3",
-  "sharedPublicly": true,
-  "sharedSourcePublicly": true
+  "sharePublicly": true,
+  "shareSourcePublicly": true
 }

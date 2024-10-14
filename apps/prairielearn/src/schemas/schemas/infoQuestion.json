@@ -243,7 +243,7 @@
           "type": "object"
         },
         "syncIgnore": {
-          "description": "(deprecated) The list of files or directories that will be excluded from sync.",
+          "description": "[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.",
           "type": "array",
           "items": {
             "description": "A single file or directory that will be excluded from sync.",
@@ -260,12 +260,20 @@
         "type": "string"
       }
     },
-    "sharedPublicly": {
+    "sharePublicly": {
       "description": "Whether this question is publicly shared.",
       "type": "boolean"
     },
-    "sharedSourcePublicly": {
+    "sharedPublicly": {
+      "description": "[DEPRECATED, DO NOT USE] Whether this question is publicly shared.",
+      "type": "boolean"
+    },
+    "shareSourcePublicly": {
       "description": "Whether this questions's source code is publicly shared.",
+      "type": "boolean"
+    },
+    "sharedSourcePublicly": {
+      "description": "[DEPRECATED, DO NOT USE] Whether this questions's source code is publicly shared.",
       "type": "boolean"
     }
   }

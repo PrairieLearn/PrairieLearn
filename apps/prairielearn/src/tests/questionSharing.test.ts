@@ -427,7 +427,7 @@ describe('Question Sharing', function () {
     });
 
     step('Publicly share a question', async () => {
-      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharedPublicly = true;
+      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = true;
       await fs.writeJSON(
         path.join(sharingCourseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
         sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
@@ -555,7 +555,7 @@ describe('Question Sharing', function () {
     });
 
     step('Unshare a publicly shared question, ensure live does not sync it', async () => {
-      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharedPublicly = false;
+      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = false;
       await fs.writeJSON(
         path.join(sharingCourseLiveDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
         sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
