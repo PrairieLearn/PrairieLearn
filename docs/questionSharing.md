@@ -10,7 +10,7 @@ In order for another course to use questions from your course into their assessm
 
 Questions can either be shared publicly, so that anyone can preview the questions and use them in their course, or you can share questions only to specific other courses using sharing sets.
 
-Any question that is marked with `"sharedPublicly": true` or `"sharedSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license.
+Any question that is marked with `"sharePublicly": true` or `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license.
 
 ## Sharing sets
 
@@ -67,6 +67,6 @@ Just as anyone with access to a question in your course can access any file in `
 
 1. On your course admin page, visit the 'sharing' tab
 2. Choose a sharing name for your course
-3. Add `"sharedPublicly": true` to the `info.json` file of questions you would like to share publicly
-4. Optionally, add `"sharedSourcePublicly": true` to the `info.json` file if you would like people to also be able to view and copy the source code of your question.
+3. Add `"sharePublicly": true` to the `info.json` file of questions you would like to share publicly
+4. Optionally, add `"shareSourcePublicly": true` to the `info.json` file if you would like people to also be able to view and copy the source code of your question.
 5. Anyone with a PrairieLearn account may preview your question, and any PrairieLearn course may now use it by referencing it in their assessments
