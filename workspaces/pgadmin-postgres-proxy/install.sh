@@ -7,7 +7,7 @@ set -ex
 
 # On PL, we want to standardize on using 1001:1001 for the user. We change
 # the "postgres" account's default UID and GID here.
-USER_NAME=postgres
+USER_NAME=1001
 GROUP_NAME=$(id -gn $USER_NAME)
 OLD_UID=$(id -u $USER_NAME)
 OLD_GID=$(id -g $USER_NAME)
@@ -25,7 +25,7 @@ apt-get update && apt-get -y upgrade
 apt-get -y install gosu gcc graphviz graphviz-dev
 
 # Test gosu and prepare the gosu helper.
-gosu postgres true || exit 1
+gosu 1001 true || exit 1
 mv /pl-gosu-helper.sh /usr/local/bin/
 chown root:root /usr/local/bin/pl-gosu-helper.sh
 chmod 0755 /usr/local/bin/pl-gosu-helper.sh
