@@ -387,7 +387,7 @@ You can add sharing sets to your course by listing them in the `infoCourse.json`
 }
 ```
 
-At this time, sharing sets cannot be renamed or removed from `infoCourse.json` once they have been added, because deleting a sharing set shared to another course could result in breaking an assessment in another course.
+At this time, sharing sets cannot be renamed or removed from `infoCourse.json` once they have been added, because deleting a sharing set shared to another course could break assessments in that course.
 
 ## Timezone
 
