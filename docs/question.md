@@ -53,7 +53,6 @@ The `info.json` file for each question defines properties of the question. For e
   "title": "Newton's third law",
   "topic": "Forces",
   "tags": ["secret", "Fa18"],
-  "sharePublicly": true,
   "type": "v3",
   "comment": "You can add comments to JSON files using this property."
 }
