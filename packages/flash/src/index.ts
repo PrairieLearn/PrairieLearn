@@ -62,11 +62,11 @@ interface FlashStorage {
 }
 
 function makeFlashStorage(req: Request): FlashStorage {
-  if (!req.session) {
+  const session = (req as any).session;
+
+  if (!session) {
     throw new Error('@prairielearn/flash requires session support');
   }
-
-  const session = req.session as any;
 
   return {
     add(type: FlashMessageType, message: string | HtmlSafeString) {
