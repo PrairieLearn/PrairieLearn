@@ -60,14 +60,7 @@ export function checkInvalidPublicSharingRemovals(
 
     // TODO: allow if question is not used in anyone else's assessments
     const questionData = courseData.questions[question.qid].data;
-    if (
-      !(
-        questionData?.sharePublicly ||
-        questionData?.sharedPublicly ||
-        questionData?.shareSourcePublicly ||
-        questionData?.sharedSourcePublicly
-      )
-    ) {
+    if (!(questionData?.sharePublicly || questionData?.sharedPublicly)) {
       invalidUnshares.push(question.qid);
     }
   });
