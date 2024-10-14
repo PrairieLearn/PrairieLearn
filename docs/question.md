@@ -72,8 +72,8 @@ The `info.json` file for each question defines properties of the question. For e
 | `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                       |
 | `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)                                                |
 | `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                  |
-| `sharePublicly`         | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                  |
-| `shareSourcePublicly`   | boolean | Whether the the source code of the question should be available                                                                                                        |
+| `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                  |
+| `shareSourcePublicly`    | boolean | Whether the the source code of the question should be available                                                                                                        |
 | `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                             |
 
 For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoQuestion.json)
