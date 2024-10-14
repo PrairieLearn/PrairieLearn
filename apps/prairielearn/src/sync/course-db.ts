@@ -1053,19 +1053,19 @@ async function validateQuestion(
 
   if ('sharedPublicly' in question) {
     if ('sharePublicly' in question) {
-      warnings.push('"sharedPublicly" is deprecated; use "sharePublicly" instead.');
-    } else {
       errors.push('Cannot specify both "sharedPublicly" and "sharePublicly" in one question.');
+    } else {
+      warnings.push('"sharedPublicly" is deprecated; use "sharePublicly" instead.');
     }
   }
 
   if ('sharedSourcePublicly' in question) {
     if ('shareSourcePublicly' in question) {
-      warnings.push('"sharedSourcePublicly" is deprecated; use "shareSourcePublicly" instead.');
-    } else {
       errors.push(
         'Cannot specify both "sharedSourcePublicly" and "shareSourcePublicly" in one question.',
       );
+    } else {
+      warnings.push('"sharedSourcePublicly" is deprecated; use "shareSourcePublicly" instead.');
     }
   }
 
