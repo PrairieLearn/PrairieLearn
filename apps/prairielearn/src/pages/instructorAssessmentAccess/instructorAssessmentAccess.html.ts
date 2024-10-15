@@ -108,8 +108,7 @@ export function InstructorAssessmentAccess({
                           ${access_rule.pt_exam_name
                             ? html`
                                 <a
-                                  href="${resLocals.config
-                                    .ptHost}/pt/course/${access_rule.pt_course_id}/staff/exam/${access_rule.pt_exam_id}"
+                                  href="${config.ptHost}/pt/course/${access_rule.pt_course_id}/staff/exam/${access_rule.pt_exam_id}"
                                 >
                                   ${access_rule.pt_course_name}: ${access_rule.pt_exam_name}
                                 </a>
