@@ -1031,7 +1031,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     this.label = text;
 
     if (text) {
-      this.gen_text(this.label, options);
+      this.gen_text(this.parse(this.label), options);
     }
 
     if (options.selectable) {
@@ -1040,6 +1040,9 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
         if (new_text !== null) {
           this.label = new_text;
           this.gen_text(this.parse(new_text), options);
+
+          // Fire an event to ensure that the text is updated in the submission data.
+          this.fire('modified');
         }
       });
     }
@@ -1531,6 +1534,7 @@ mechanicsObjects.byType['pl-text'] = class extends PLDrawingBaseElement {
     let textObj;
 
     if (options.latex) {
+      console.log('latex');
       textObj = new mechanicsObjects.LatexText(options.label, {
         left: options.left + options.offsetx,
         top: options.top + options.offsety,
@@ -1543,6 +1547,7 @@ mechanicsObjects.byType['pl-text'] = class extends PLDrawingBaseElement {
         scaleY: options.scaleY || 1,
       });
     } else {
+      console.log('non-latex');
       textObj = new fabric.Text(options.label, {
         left: options.left + options.offsetx,
         top: options.top + options.offsety,
