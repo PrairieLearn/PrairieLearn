@@ -54,4 +54,4 @@ You must configure your LMS to send user identifying claims. Anonymous logins ar
 
 ### Placements
 
-PrairieLearn recommends 'Course Navigation' placements, as described in the configuration JSON. More placements may be added in the future.
+PrairieLearn recommends "Course Navigation" placements, as described in the configuration JSON. More placements may be added in the future.

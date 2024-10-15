@@ -72,6 +72,9 @@ The `info.json` file for each question defines properties of the question. For e
 | `partialCredit`          | boolean | Whether the question will give partial points for fractional scores. (Optional; default: `true`)                                                                       |
 | `externalGradingOptions` | object  | Options for externally graded questions. See the [external grading docs](externalGrading.md). (Optional; default: none)                                                |
 | `dependencies`           | object  | External JavaScript or CSS dependencies to load. See below. (Optional; default: `{}`)                                                                                  |
+| `sharePublicly`          | boolean | Whether the question should be available for anyone to preview or use in their course                                                                                  |
+| `shareSourcePublicly`    | boolean | Whether the the source code of the question should be available                                                                                                        |
+| `sharingSets`            | array   | Sharing sets which the question belongs to                                                                                                                             |
 
 For details see the [format specification for question `info.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoQuestion.json)
 
@@ -89,6 +92,16 @@ These dependencies are specified in the `info.json` file, and can be configured 
     "clientFilesQuestionStyles": ["my-question-style.css"],
     "clientFilesCourseStyles": ["courseStylesheet1.css", "courseStylesheet2.css"]
   }
+}
+```
+
+### Question Sharing
+
+Any question that is marked with `"sharePublicly": true` or `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license. Questions may be privately shared to individual courses using sharing sets, as explained in the [sharing documentation](questionSharing.md). Sharing sets that a question belongs to are specified as a list of strings. These must match sharing sets that are declared in the [course configuration](course.md#adding-sharing-sets).
+
+```json
+{
+  "sharingSets": ["python-exercises"]
 }
 ```
 

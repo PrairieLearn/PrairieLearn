@@ -66,14 +66,6 @@ export function QuestionScorePanel({
                 </tr>
               `
             : ''}
-          ${assessment.allow_real_time_grading && manualPercentage < 100
-            ? html`
-                <tr>
-                  <td>Best submission:</td>
-                  <td>${ExamQuestionScore({ instance_question, assessment_question })}</td>
-                </tr>
-              `
-            : ''}
           ${assessment.type === 'Homework'
             ? // Only show previous variants if the question allows multiple variants, or there are multiple variants (i.e., they were allowed at some point)
               !question.single_variant ||
@@ -215,42 +207,6 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
         </div>
       </form>
     </div>
-  `;
-}
-
-export function ExamQuestionScore({
-  instance_question,
-  assessment_question,
-}: {
-  instance_question: InstanceQuestion;
-  assessment_question: Pick<
-    AssessmentQuestion,
-    'max_auto_points' | 'max_manual_points' | 'manual_perc' | 'max_points'
-  >;
-}) {
-  const statusWithScore = ['correct', 'incorrect', 'complete'] as InstanceQuestion['status'][];
-  const manualPercentage =
-    assessment_question.manual_perc ??
-    // Fallback for questions where manual_perc is not populated
-    ((assessment_question.max_manual_points ?? 0) / (assessment_question.max_points || 1)) * 100;
-  if (!statusWithScore.includes(instance_question.status) || manualPercentage >= 100) {
-    return html`<span class="align-middle">&mdash;</span>`;
-  }
-
-  const score = instance_question.highest_submission_score ?? 0;
-
-  return html`
-    <span class="align-middle">
-      <span
-        class="badge ${score >= 1
-          ? 'badge-success'
-          : score <= 0
-            ? 'badge-danger'
-            : 'badge-warning'}"
-      >
-        ${Math.floor(score * 100)}%
-      </span>
-    </span>
   `;
 }
 
