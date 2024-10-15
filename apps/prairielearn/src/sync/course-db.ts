@@ -344,7 +344,7 @@ export interface Assessment {
   canSubmit: string[];
   advanceScorePerc: number;
   gradeRateMinutes: number;
-  sharedSourcePublicly: boolean; // TESTING, needed for fromDisk/assessments.ts
+  shareSourcePublicly: boolean;
 }
 
 interface QuestionExternalGradingOptions {

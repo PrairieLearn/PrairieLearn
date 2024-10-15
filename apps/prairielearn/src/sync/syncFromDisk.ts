@@ -1,6 +1,3 @@
-import * as fs from 'fs';
-import * as path from 'path';
-
 import async from 'async';
 
 import * as namedLocks from '@prairielearn/named-locks';
@@ -28,6 +25,7 @@ import {
   checkInvalidPublicSharingRemovals,
   checkInvalidSharingSetDeletions,
   checkInvalidSharingSetAdditions,
+  checkInvalidSharedAssessments,
 } from './sharing.js';
 
 interface SyncResultSharingError {
@@ -73,12 +71,15 @@ export async function checkSharingConfigurationValid(
     logger,
   );
 
+  const existInvalidSharedAssessment = checkInvalidSharedAssessments(courseData, logger);
+
   const sharingConfigurationValid =
     !existInvalidRenames &&
     !existInvalidPublicSharingRemovals &&
     !existInvalidSharingSetDeletions &&
     !existInvalidSharingSetAdditions &&
-    !existInvalidSharingSetRemovals;
+    !existInvalidSharingSetRemovals &&
+    !existInvalidSharedAssessment;
   return sharingConfigurationValid;
 }
 
@@ -110,40 +111,6 @@ export async function syncDiskToSqlWithLock(
   const sharingConfigurationValid = await timed('Validated sharing configuration', () =>
     checkSharingConfigurationValid(courseId, courseData, logger),
   );
-
-  /*
-   * Check that all questions in publicly shared assessments are also shared publicly
-   */
-  for (const courseInstanceKey in courseData.courseInstances) {
-    const courseInstance = courseData.courseInstances[courseInstanceKey];
-    for (const assessmentKey in courseInstance.assessments) {
-      const assessment = courseInstance.assessments[assessmentKey];
-      if (!assessment.sharedSourcePublicly) {
-        continue;
-      }
-      if (!(assessment.data && assessment.data.zones)) {
-        continue;
-      }
-      for (const zone of assessment.data.zones) {
-        if (!zone.questions) {
-          continue;
-        }
-        for (const question of zone.questions) {
-          if (!question.id) {
-            continue;
-          }
-          const infoJson = courseData.questions[question.id];
-          if (!infoJson?.data?.sharedPublicly) {
-            /// put the question.id into an array of questions that throw errors? // TEST
-          }
-
-          const infoJsonPath = path.join(courseDir, 'questions', question.id || '', 'info.json');
-
-          await readQuestionInfoJson(infoJsonPath, question.id, courseInstanceKey);
-        }
-      }
-    }
-  }
 
   if (!sharingConfigurationValid) {
     return {
@@ -253,31 +220,4 @@ export async function syncOrCreateDiskToSql(
 ): Promise<SyncResults> {
   const course = await selectOrInsertCourseByPath(courseDir);
   return await syncDiskToSql(course.id, courseDir, logger);
-}
-
-// TEST, don't need to read the JSON, can get from courseData. REMOVE THIS FUNCTION?
-async function readQuestionInfoJson(
-  infoJsonPath: string,
-  questionId: string,
-  courseInstanceKey: string,
-) {
-  try {
-    // Check if the file exists
-    if (fs.existsSync(infoJsonPath)) {
-      // Read and parse the info.json file
-      const fileContent = fs.readFileSync(infoJsonPath, 'utf8');
-      const questionInfo = JSON.parse(fileContent);
-
-      // TEST, uncomment later. Unable to test other stuff since I can't make questions public yet (at least easily)
-      /*if (!questionInfo.sharedPublicly || questionInfo.sharedPublicly === undefined) {
-        throw new Error(`Question ${questionId} is not shared publicly in public course instance ${courseInstanceKey}. All questions in a public course instance must be shared publicly.`);
-      } else {
-        console.log(`Question ${questionId} is shared publicly in public course instance ${courseInstanceKey}. CONGRATS! TEST!`); // TEST
-       }*/
-    } else {
-      console.error(`Missing JSON file: ${infoJsonPath}`);
-    }
-  } catch (error) {
-    console.error(`Error reading or parsing JSON file: ${infoJsonPath}`, error);
-  }
 }
