@@ -583,6 +583,7 @@ describe('Question Sharing', function () {
     step(
       'Try adding question to sharing set that does not exist, ensure live does not sync it',
       async () => {
+        const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets || [];
         sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets?.push(
           'Fake Sharing Set Name',
         );
@@ -592,11 +593,20 @@ describe('Question Sharing', function () {
         );
 
         await ensureInvalidSharingOperationFailsToSync();
+
+        sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = saveSharingSets;
       },
     );
   });
 
-  describe('Test accessing page for a publicly shared assessment', function () {
+  describe('Test publicly sharing an assessment', function () {
+    step('Trying syncing an assessment containing a nonshared question', async () => {
+      // TODO: implement
+    });
+    step('Successfully sync a shared assessment with a shared question', async () => {
+      // TODO: implement
+    });
+
     step(
       'Successfully access publicly shared assessment page for the shared assessment',
       async () => {
