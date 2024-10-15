@@ -471,10 +471,9 @@ onDocumentReady(() => {
     }
 
     function proposedClosingTime() {
-      const startDate = row.date;
       const totalTime = Math.round(row.total_time_sec);
 
-      let temporalDate = Temporal.Instant.from(startDate).toZonedDateTimeISO(timezone);
+      let temporalDate = Temporal.Instant.from(row.date).toZonedDateTimeISO(timezone);
       if (form.action === 'set_total') {
         temporalDate = temporalDate.add({ minutes: form.time_add });
       } else if (form.action === 'set_rem') {
