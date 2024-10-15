@@ -3046,7 +3046,7 @@ __metadata:
     chai: "npm:^5.1.1"
     commander: "npm:^12.1.0"
     esbuild: "npm:^0.23.1"
-    express: "npm:^4.19.2"
+    express: "npm:^4.21.1"
     express-static-gzip: "npm:^2.1.7"
     fs-extra: "npm:^11.2.0"
     get-port: "npm:^7.1.0"
@@ -3613,7 +3613,7 @@ __metadata:
     ejs: "npm:^3.1.10"
     es-main: "npm:^1.3.0"
     execa: "npm:^9.3.1"
-    express: "npm:^4.19.2"
+    express: "npm:^4.21.1"
     express-async-handler: "npm:^1.2.0"
     fabric: "npm:4.6.0-browser"
     fast-glob: "npm:^3.3.2"
@@ -3789,7 +3789,7 @@ __metadata:
     chai: "npm:^5.1.1"
     cookie: "npm:^0.7.1"
     cookie-signature: "npm:^1.2.1"
-    express: "npm:^4.19.2"
+    express: "npm:^4.21.1"
     express-async-handler: "npm:^1.2.0"
     fetch-cookie: "npm:^3.0.1"
     mocha: "npm:^10.7.3"
@@ -3850,7 +3850,7 @@ __metadata:
     chai: "npm:^5.1.1"
     debug: "npm:^4.3.6"
     dockerode: "npm:^4.0.2"
-    express: "npm:^4.19.2"
+    express: "npm:^4.21.1"
     express-async-handler: "npm:^1.2.0"
     ioredis: "npm:^5.4.1"
     lodash: "npm:^4.17.21"
@@ -7302,17 +7302,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"cookie@npm:0.7.1, cookie@npm:^0.7.1":
+"cookie@npm:0.7.1":
   version: 0.7.1
   resolution: "cookie@npm:0.7.1"
   checksum: 10c0/5de60c67a410e7c8dc8a46a4b72eb0fe925871d057c9a5d2c0e8145c4270a4f81076de83410c4d397179744b478e33cd80ccbcc457abf40a9409ad27dcd21dde
   languageName: node
   linkType: hard
 
-"cookie@npm:~0.4.1":
-  version: 0.4.2
-  resolution: "cookie@npm:0.4.2"
-  checksum: 10c0/beab41fbd7c20175e3a2799ba948c1dcc71ef69f23fe14eeeff59fc09f50c517b0f77098db87dbb4c55da802f9d86ee86cdc1cd3efd87760341551838d53fca2
+"cookie@npm:^0.7.1, cookie@npm:~0.7.2":
+  version: 0.7.2
+  resolution: "cookie@npm:0.7.2"
+  checksum: 10c0/9596e8ccdbf1a3a88ae02cf5ee80c1c50959423e1022e4e60b91dd87c622af1da309253d8abdb258fb5e3eacb4f08e579dc58b4897b8087574eee0fd35dfa5d2
   languageName: node
   linkType: hard
 
@@ -8320,21 +8320,21 @@ __metadata:
   languageName: node
   linkType: hard
 
-"engine.io@npm:~6.5.2":
-  version: 6.5.5
-  resolution: "engine.io@npm:6.5.5"
+"engine.io@npm:~6.6.0":
+  version: 6.6.2
+  resolution: "engine.io@npm:6.6.2"
   dependencies:
     "@types/cookie": "npm:^0.4.1"
     "@types/cors": "npm:^2.8.12"
     "@types/node": "npm:>=10.0.0"
     accepts: "npm:~1.3.4"
     base64id: "npm:2.0.0"
-    cookie: "npm:~0.4.1"
+    cookie: "npm:~0.7.2"
     cors: "npm:~2.8.5"
     debug: "npm:~4.3.1"
     engine.io-parser: "npm:~5.2.1"
     ws: "npm:~8.17.1"
-  checksum: 10c0/b0994134917c5d3649fd7aea283492eaf092131e572a8d379c7c9081548b42cff756730b4641edd0d1598148dd3be253c4d634cea2ba5c59622d175d9e567469
+  checksum: 10c0/e9ac3cba49badb6905259df3b019fbcbe53e2a389c930fb9fbc10eebc8839554b189706206bba2509a4a3a7d78a32f7e027f73230f31662c7efd215276432dad
   languageName: node
   linkType: hard
 
@@ -8865,7 +8865,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"express@npm:^4.19.2, express@npm:^4.21.0":
+"express@npm:^4.21.0, express@npm:^4.21.1":
   version: 4.21.1
   resolution: "express@npm:4.21.1"
   dependencies:
@@ -14167,17 +14167,17 @@ __metadata:
   linkType: hard
 
 "socket.io@npm:^4.7.5":
-  version: 4.7.5
-  resolution: "socket.io@npm:4.7.5"
+  version: 4.8.0
+  resolution: "socket.io@npm:4.8.0"
   dependencies:
     accepts: "npm:~1.3.4"
     base64id: "npm:~2.0.0"
     cors: "npm:~2.8.5"
     debug: "npm:~4.3.2"
-    engine.io: "npm:~6.5.2"
+    engine.io: "npm:~6.6.0"
     socket.io-adapter: "npm:~2.5.2"
     socket.io-parser: "npm:~4.2.4"
-  checksum: 10c0/221a2cd25f6077d6672cb8b19921336e1acf06788d4bade74953dc96dbfd8b788a5f721b051341a34ee81ef8e1b2028d39ad5257516776400a3f8f3f01255c5e
+  checksum: 10c0/eab8a0da617f2583a0003883155f252f814c59324f4b174b5e940fcce2bd3a553ab9c6d7f128c7b515a537f776b1b4e34293b8324ec048c4b8df2bf8930ce8bf
   languageName: node
   linkType: hard
 
