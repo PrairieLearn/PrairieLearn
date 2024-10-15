@@ -1,2 +1,0 @@
-ALTER TABLE assessments
-ADD COLUMN shared_source_publicly BOOLEAN NOT NULL DEFAULT FALSE;

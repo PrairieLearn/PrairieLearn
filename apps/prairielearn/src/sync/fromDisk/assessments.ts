@@ -286,7 +286,7 @@ function getParamsForAssessment(
     groupRoles,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,
-    shared_source_publicly: assessment.sharedSourcePublicly ? true : false,
+    share_source_publicly: assessment.shareSourcePublicly ?? false,
   };
 }
 
