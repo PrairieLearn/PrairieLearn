@@ -41,11 +41,15 @@ export function QuestionScorePanel({
   csrfToken: string;
   urlPrefix: string;
 }) {
-  const hasAutoAndManualPoints =
-    assessment_question.max_auto_points &&
-    (assessment_question.max_manual_points ||
-      instance_question.manual_points ||
-      instance_question.requires_manual_grading);
+  const manualPercentage =
+    assessment_question.manual_perc ??
+    // Fallback for questions where manual_perc is not populated
+    ((assessment_question.max_manual_points ?? 0) / (assessment_question.max_points || 1)) * 100;
+  const hasManualGrading =
+    manualPercentage > 0 ||
+    instance_question.manual_points ||
+    instance_question.requires_manual_grading;
+  const hasAutoAndManualPoints = manualPercentage < 100 && hasManualGrading;
 
   return html`
     <div class="card mb-4" id="question-score-panel">
@@ -62,8 +66,7 @@ export function QuestionScorePanel({
                 </tr>
               `
             : ''}
-          ${assessment.allow_real_time_grading &&
-          (assessment_question.max_auto_points || !assessment_question.max_manual_points)
+          ${assessment.allow_real_time_grading && manualPercentage < 100
             ? html`
                 <tr>
                   <td>Best submission:</td>
@@ -148,7 +151,7 @@ export function QuestionScorePanel({
                 <tr>
                   <td colspan="2" class="text-right">
                     <small>
-                      ${!assessment_question.max_auto_points
+                      ${manualPercentage >= 100
                         ? 'Manually-graded question'
                         : 'Auto-graded question'}
                     </small>
@@ -220,13 +223,17 @@ export function ExamQuestionScore({
   assessment_question,
 }: {
   instance_question: InstanceQuestion;
-  assessment_question: Pick<AssessmentQuestion, 'max_auto_points' | 'max_manual_points'>;
+  assessment_question: Pick<
+    AssessmentQuestion,
+    'max_auto_points' | 'max_manual_points' | 'manual_perc' | 'max_points'
+  >;
 }) {
   const statusWithScore = ['correct', 'incorrect', 'complete'] as InstanceQuestion['status'][];
-  if (
-    !statusWithScore.includes(instance_question.status) ||
-    (!assessment_question.max_auto_points && assessment_question.max_manual_points)
-  ) {
+  const manualPercentage =
+    assessment_question.manual_perc ??
+    // Fallback for questions where manual_perc is not populated
+    ((assessment_question.max_manual_points ?? 0) / (assessment_question.max_points || 1)) * 100;
+  if (!statusWithScore.includes(instance_question.status) || manualPercentage >= 100) {
     return html`<span class="align-middle">&mdash;</span>`;
   }
 
