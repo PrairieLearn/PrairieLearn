@@ -21,7 +21,7 @@ import type { SubmissionForRender } from '../components/SubmissionPanel.html.js'
 import { selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
-import { config, setLocalsFromConfig } from './config.js';
+import { config } from './config.js';
 import {
   Assessment,
   AssessmentInstance,
@@ -658,6 +658,8 @@ export async function renderPanelsForSubmission({
   };
 
   const locals = {
+    urlPrefix,
+    plainUrlPrefix: config.urlPrefix,
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
     ...buildLocals({
       variant,
@@ -670,7 +672,6 @@ export async function renderPanelsForSubmission({
       group_config,
     }),
   };
-  setLocalsFromConfig(locals);
 
   await async.parallel([
     async () => {
