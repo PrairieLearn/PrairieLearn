@@ -600,5 +600,4 @@ export function setLocalsFromConfig(locals: Record<string, any>) {
   locals.plainUrlPrefix = config.urlPrefix;
   locals.navbarType = 'plain';
   locals.devMode = config.devMode;
-  locals.is_administrator = false;
 }
