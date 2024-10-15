@@ -300,6 +300,122 @@ class Feedback:
         return True
 
     @classmethod
+    def check_dict(
+        cls,
+        name,
+        ref,
+        data,
+        partial_keys=None,
+        check_only_keys=False,
+        check_only_values=False,
+        key_type=None,
+        value_type=None,
+        accuracy_critical=False,
+        report_failure=True,
+    ):
+        """
+        Feedback.check_dict(name, ref, data)
+
+        Checks that a student dict (`data`) has all correct key-value mappings with respect to a reference dict (`ref`). It also verifies the length of keys in the student dictionary against the reference dictionary, and optionally, enforces homogeneous data types for keys (using `key_type`), values (using `value_type`), or both. Additionally, it can verify the presence of specific keys (using `partial_keys`) in the student dictionary, and can focus the comparison solely on keys (using `check_only_keys`), values (using `check_only_values`), or both.
+
+        - ``name``: Name of the dictionary that is being checked. This will be used to give feedback.
+        - ``ref``: Reference dictionary.
+        - ``data``: Student dictionary to be checked.
+        - ``partial_keys``: If not None, it takes a List of keys to check if these particular keys are present in the student's dict or not.
+        - ``check_only_keys``: If true, grading will be done only based on checking all keys in student's dict and reference's dict match or not.
+        - ``check_only_values``: If true, grading will be done only based on checking all values in student's dict and reference's dict match or not.
+        - ``key_type``: If not None, requires that each key in the student's dictionary in solution be of this type.
+        - ``value_type``: If not None, requires that each value in the student's dictionary in solution be of this type.
+        - ``accuracy_critical``: If true, grading will halt on failure.
+        - ``report_failure``: If true, feedback will be given on failure.
+        """
+
+        def bad(msg):
+            if report_failure:
+                cls.add_feedback(msg)
+            if accuracy_critical:
+                cls.finish("")
+            else:
+                return False
+
+        if data is None:
+            return bad(f"{name} is None or not defined")
+
+        if not isinstance(data, dict):
+            return bad(f"{name} is not a dict")
+
+        if value_type is not None:
+            for value in data.values():
+                if not isinstance(value, value_type):
+                    return bad(
+                        f"{name} has the wrong type for value {value}, expected type {value_type}"
+                    )
+        if key_type is not None:
+            for key in data.keys():
+                if not isinstance(key, key_type):
+                    return bad(
+                        f"{name} has the wrong type for key {key}, expected type {key_type}"
+                    )
+
+        if partial_keys is None:
+            if check_only_values:
+                if len(ref.values()) != len(data.values()):
+                    return bad(
+                        f"{name} has the wrong number of values: expected {len(ref.values())}, got {len(data.values())}"
+                    )
+
+            if len(ref) != len(data):  # this is default length of keys check
+                return bad(
+                    f"{name} has the wrong number of entries: expected {len(ref)}, got {len(data)}"
+                )
+        check_partial_keys = partial_keys is not None and len(partial_keys) >= 1
+
+        if check_only_keys or check_only_values or check_partial_keys:
+            
+            partial_keys_valid = False
+            if partial_keys is not None and len(partial_keys) >= 1:
+                for partial_key in partial_keys:
+                    if partial_key not in data:
+                        return bad(f"{name} does not contain key {partial_key}")
+                partial_keys_valid =  True
+
+            check_keys = False
+            if check_only_keys:
+                for key in data.keys():
+                    if key not in ref.keys():
+                        return bad(f"{name} contains an extra key: {key}")
+                check_keys = True
+
+            check_values = False
+            if check_only_values:
+                if len(ref.values()) != len(data.values()):
+                    return f"{name} has the wrong length for values: expected {len(ref.values())}, got {len(data.values())}"
+                for value in data.values():
+                    if value not in ref.values():
+                        return bad(f"{name} contains an extra value: {value}")
+                check_values = True
+
+            if check_only_keys and check_only_values and check_partial_keys:
+                return check_keys and check_values and partial_keys_valid
+
+            if check_only_keys and check_only_values:
+                return check_keys and check_values
+
+            if check_only_values and check_partial_keys:
+                return check_values and partial_keys_valid
+            
+            if check_only_keys and check_partial_keys:
+                return check_keys and partial_keys_valid
+
+            return check_keys or check_values or check_partial_keys
+
+        # Check equality of both keys and values between reference dict and student's dict
+        if ref == data:  
+            return True
+
+        return bad(f"{name} has one or more key-value pairs that do not match")
+
+    @classmethod
     def check_tuple(
         cls,
         name,
