@@ -283,7 +283,6 @@ function AssessmentInstanceInfo({
     <div class="pb-2">
       <a href="${instructorUrlPrefix}/assessment_instance/${assessment_instance.id}">View log</a>
     </div>
-    <hr />
   `;
 }
 
@@ -312,6 +311,7 @@ function ManualGradingInfo({
   const manualGradingUrl = `${config.urlPrefix}/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}`;
 
   return html`
+    <hr />
     <h3 class="card-title h5">Manual Grading:</h3>
 
     <div class="d-flex flex-wrap">
