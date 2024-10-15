@@ -5,21 +5,21 @@ contain the root `toctree` directive. -->
 
 # Python Autograder documentation
 
-### *class* code_feedback.Feedback
+### _class_ code_feedback.Feedback
 
 Class to provide user feedback and correctness checking of various datatypes, including NumPy arrays, Matplotlib plots, and Pandas DataFrames.
 
-#### *classmethod* add_feedback(text)
+#### _classmethod_ add_feedback(text)
 
 Adds some text to the feedback output for the current test.
 
-#### *classmethod* call_user(f)
+#### _classmethod_ call_user(f)
 
 Attempts to call a student defined function, with any arbitrary arguments specified in `*args` and `**kwargs`. If the student code raises an exception, this will be caught and user feedback will be given.
 
 If the function call succeeds, the user return value will be returned from this function.
 
-#### *classmethod* check_dataframe(name, ref, data, subset_columns=[], check_values=True, allow_order_variance=True, display_input=False)
+#### _classmethod_ check_dataframe(name, ref, data, subset_columns=[], check_values=True, allow_order_variance=True, display_input=False)
 
 `check_dataframe`
 Checks and adds feedback regarding the correctness of
@@ -40,7 +40,7 @@ Parameters:
 - `allow_order_variance` = True, Boolean: Allow rows to appear in any order (so long as the dimensions and values are correct)
 - `display_input` = False, Boolean: Display the student’s answer in the feedback area.
 
-#### *classmethod* check_list(name, ref, data)
+#### _classmethod_ check_list(name, ref, data)
 
 Check that a student list has correct length with respect to a reference list. Can also check for a homogeneous data type for the list.
 
@@ -51,7 +51,7 @@ Check that a student list has correct length with respect to a reference list. C
 - `accuracy_critical`: If true, grading will halt on failure.
 - `report_failure`: If true, feedback will be given on failure.
 
-#### *classmethod* check_numpy_array_allclose(name, ref, data, accuracy_critical=False, rtol=1e-05, atol=1e-08, report_success=True, report_failure=True)
+#### _classmethod_ check_numpy_array_allclose(name, ref, data, accuracy_critical=False, rtol=1e-05, atol=1e-08, report_success=True, report_failure=True)
 
 Feedback.check_numpy_allclose(name, ref, data)
 
@@ -66,7 +66,7 @@ Check that a student NumPy array has similar values to a reference NumPy array. 
 - `accuracy_critical`: If true, grading will halt on failure.
 - `report_failure`: If true, feedback will be given on failure.
 
-#### *classmethod* check_numpy_array_features(name, ref, data)
+#### _classmethod_ check_numpy_array_features(name, ref, data)
 
 Check that a student NumPy array has the same shape and datatype as a reference solution NumPy array.
 
@@ -76,7 +76,7 @@ Check that a student NumPy array has the same shape and datatype as a reference 
 - `accuracy_critical`: If true, grading will halt on failure.
 - `report_failure`: If true, feedback will be given on failure.
 
-#### *classmethod* check_numpy_array_sanity(name, num_axes, data)
+#### _classmethod_ check_numpy_array_sanity(name, num_axes, data)
 
 Perform a sanity check on a NumPy array, making sure that it is in fact defined and has the correct dimensionality. If the checks fail then grading will automatically stop.
 
@@ -84,7 +84,7 @@ Perform a sanity check on a NumPy array, making sure that it is in fact defined 
 - `num_axes`: Number of axes that the array should have.
 - `data`: NumPy array to check.
 
-#### *classmethod* check_plot(name, ref, plot, check_axes_scale)
+#### _classmethod_ check_plot(name, ref, plot, check_axes_scale)
 
 Checks that a student plot has the same lines as a reference plot solution. Can optionally check the axis scales to ensure they are the same as the reference.
 
@@ -96,7 +96,7 @@ Checks that a student plot has the same lines as a reference plot solution. Can 
 - `report_failure`: If true, feedback will be given on failure.
 - `report_success`: If true, feedback will be given on success.
 
-#### *classmethod* check_scalar(name, ref, data)
+#### _classmethod_ check_scalar(name, ref, data)
 
 Check that a student scalar has correct value with respect to a reference scalar. This will mark a value as correct if it passes any of the following checks:
 
@@ -115,7 +115,7 @@ Or both, but then nothing would be graded :)
 - `report_failure`: If true, feedback will be given on failure.
 - `report_success`: If true, feedback will be given on success.
 
-#### *classmethod* check_tuple(name, ref, data)
+#### _classmethod_ check_tuple(name, ref, data)
 
 Check that a student tuple has correct length with respect to a reference tuple, and same values.
 
@@ -126,46 +126,46 @@ Check that a student tuple has correct length with respect to a reference tuple,
 - `report_failure`: If true, feedback will be given on failure.
 - `report_success`: If true, feedback will be given on success.
 
-#### *classmethod* finish(fb_text)
+#### _classmethod_ finish(fb_text)
 
 Complete grading immediately, additionally outputting the message in fb_text.
 
-#### *static* not_allowed(*args, **kwargs)
+#### _static_ not_allowed(\*args, \*\*kwargs)
 
 library_function = Feedback.not_allowed
 
 Used to hook into disallowed functions, raises an exception if
 the student tries to call it.
 
-#### *classmethod* set_score(percentage)
+#### _classmethod_ set_score(percentage)
 
 Set the score for the test case, should be a floating point value between 0 and 1.
 
 ---
 
-### *class* pl_unit_test.PLTestCase(methodName='runTest')
+### _class_ pl_unit_test.PLTestCase(methodName='runTest')
 
 Base class for test suites, using the Python unittest library.
 Handles automatic setup and teardown of testing logic.
 
 Methods here do not need to be overridden by test suites.
 
-#### *classmethod* get_total_points()
+#### _classmethod_ get_total_points()
 
 Get the total number of points awarded by this test suite, including
 cases where the test suite is run multiple times.
 
-#### *classmethod* setUpClass()
+#### _classmethod_ setUpClass()
 
 On start, run the user code and generate answer tuples.
 
-#### *classmethod* tearDownClass()
+#### _classmethod_ tearDownClass()
 
 Close all plots and increment the iteration number on test finish
 
 ---
 
-### *class* pl_unit_test.PLTestCaseWithPlot(methodName='runTest')
+### _class_ pl_unit_test.PLTestCaseWithPlot(methodName='runTest')
 
-Test suite that includes plot grading.  Will automatically check plots
+Test suite that includes plot grading. Will automatically check plots
 for appropriate labels.
