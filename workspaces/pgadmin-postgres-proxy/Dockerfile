@@ -41,7 +41,7 @@ COPY pg_hba.conf postgresql.conf /etc/postgresql/14/main/
 # copying pgpass servers.json didn't help with the pgadmin4 login, removing now, let students login using the localhost
 
 COPY servers.json pgpass /usr/local/lib/python3.10/dist-packages/pgadmin4/
-# RUN chown postgres:postgres /usr/local/lib/python3.10/dist-packages/pgadmin4/pgpass && chmod 600 /usr/local/lib/python3.10/dist-packages/pgadmin4/pgpass
+RUN chown postgres:postgres /usr/local/lib/python3.10/dist-packages/pgadmin4/pgpass && chmod 600 /usr/local/lib/python3.10/dist-packages/pgadmin4/pgpass
 
 # I don't think this will work in production.
 # VOLUME /var/run/postgresql
