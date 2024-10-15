@@ -599,5 +599,4 @@ export function setLocalsFromConfig(locals: Record<string, any>) {
   locals.urlPrefix = config.urlPrefix;
   locals.plainUrlPrefix = config.urlPrefix;
   locals.navbarType = 'plain';
-  locals.devMode = config.devMode;
 }

@@ -6,6 +6,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { redirectToTermsPageIfNeeded } from '../ee/lib/terms.js';
 import { clearCookie } from '../lib/cookie.js';
 
+import { config } from './config.js';
 import { InstitutionSchema, UserSchema } from './db-types.js';
 import { isEnterprise } from './license.js';
 import { HttpRedirect } from './redirect.js';
@@ -109,7 +110,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
   res.locals.authn_provider_name = authnParams.provider;
   res.locals.authn_is_administrator = selectedUser.is_administrator;
 
-  const defaultAccessType = res.locals.devMode ? 'active' : 'inactive';
+  const defaultAccessType = config.devMode ? 'active' : 'inactive';
   const accessType = req.cookies.pl2_access_as_administrator || defaultAccessType;
   res.locals.access_as_administrator = accessType === 'active';
   res.locals.is_administrator =

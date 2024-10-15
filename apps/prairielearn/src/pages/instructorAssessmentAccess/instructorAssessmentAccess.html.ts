@@ -5,6 +5,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { config } from '../../lib/config.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),
@@ -114,7 +115,7 @@ export function InstructorAssessmentAccess({
                                 </a>
                               `
                             : access_rule.exam_uuid
-                              ? resLocals.devMode
+                              ? config.devMode
                                 ? access_rule.exam_uuid
                                 : html`
                                     <span class="text-danger">
