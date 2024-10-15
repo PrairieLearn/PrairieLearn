@@ -42,17 +42,6 @@ const SubmissionVariantSchema = z.object({
   submission: SubmissionSchema,
 });
 const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
-// Current idea for rubric
-const GPTRubricItemSchema = z.object({
-  number: z.number(),
-  description: z.string(),
-  // explanation: z.string(),
-  selected: z.boolean(),
-});
-const GPTRubricGradeSchema = z.object({
-  rubric_items: z.array(GPTRubricItemSchema),
-  feedback: z.string(),
-});
 const GradedExampleSchema = z.object({
   submission_text: z.string(),
   score_perc: z.number(),
@@ -74,11 +63,7 @@ function parseRubricItems({
   gpt_rubric_items: number[];
 }): AppliedRubricItem[] {
   const output: AppliedRubricItem[] = [];
-
   for (const rubric_item_number of gpt_rubric_items) {
-    if (rubric_item_number >= rubric_items.length) {
-      throw 'LLM hallucination: extra rubric items detected in GPT response.';
-    }
     output.push(
       AppliedRubricItemSchema.parse({ rubric_item_id: rubric_items[rubric_item_number].id }),
     );
@@ -453,6 +438,19 @@ export async function aiGrade({
       });
 
       if (rubric_items.length) {
+        // dynamically generate the rubric schema based on the number of items
+        let GPTRubricItemSchema = z.object({});
+        for (let i = 0; i < rubric_items.length; i++) {
+          GPTRubricItemSchema = GPTRubricItemSchema.merge(
+            z.object({
+              [i]: z.object({ description: z.string(), selected: z.boolean() }),
+            }),
+          );
+        }
+        const GPTRubricGradeSchema = z.object({
+          rubric_items: GPTRubricItemSchema,
+          feedback: z.string(),
+        });
         const completion = await openai.beta.chat.completions.parse({
           messages,
           model: 'gpt-4o-2024-08-06',
@@ -466,9 +464,10 @@ export async function aiGrade({
           if (grade_response.parsed) {
             // only care about the rubric numbers
             const gpt_rubric_items: number[] = [];
-            for (const gpt_rubric_item of grade_response.parsed.rubric_items) {
-              if (gpt_rubric_item.selected) {
-                gpt_rubric_items.push(gpt_rubric_item.number);
+            for (let i = 0; i < rubric_items.length; i++) {
+              const item = grade_response.parsed.rubric_items[i];
+              if (item.selected) {
+                gpt_rubric_items.push(i);
               }
             }
             const manual_rubric_data = {
@@ -502,7 +501,9 @@ export async function aiGrade({
         }
         job.info(msg);
         if (warning) {
-          job.warn(`Warning:\n${warning}`);
+          job.warn(
+            `Warning:\n${warning}Warning: accuracy may be lower due to inconsistent rubrics.`,
+          );
         }
       } else {
         const completion = await openai.beta.chat.completions.parse({
@@ -541,7 +542,9 @@ export async function aiGrade({
         }
         job.info(msg);
         if (warning) {
-          job.warn(`Warning:\n${warning}`);
+          job.warn(
+            `Warning:\n${warning}Warning: accuracy may be lower due to inconsistent rubrics.`,
+          );
         }
       }
     }
