@@ -22,9 +22,13 @@ import { Scorebar } from '../../components/Scorebar.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentInstance, GroupConfig, InstanceQuestion } from '../../lib/db-types.js';
+import {
+  type AssessmentInstance,
+  type GroupConfig,
+  type InstanceQuestion,
+} from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { GroupInfo } from '../../lib/groups.js';
+import { type GroupInfo } from '../../lib/groups.js';
 
 export function StudentAssessmentInstance({
   showTimeLimitExpiredModal,

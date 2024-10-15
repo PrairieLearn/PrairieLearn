@@ -11,7 +11,7 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 import { selectCoursesWithEditAccess } from '../models/course.js';
 
 import { config } from './config.js';
-import { Course, Question } from './db-types.js';
+import { type Course, type Question } from './db-types.js';
 import { idsEqual } from './id.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

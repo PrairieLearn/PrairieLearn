@@ -1,6 +1,6 @@
-import { Server } from 'node:http';
+import { type Server } from 'node:http';
 
-import * as express from 'express';
+import type * as express from 'express';
 
 export interface WithServerContext {
   server: Server;
