@@ -39,18 +39,13 @@ COPY database/imdb.sql database/world.sql database/mds.sql /sql-scripts/
 COPY pg_hba.conf postgresql.conf /etc/postgresql/14/main/
 # copying pgpass servers.json didn't help with the pgadmin4 login, removing now, let students login using the localhost
 
-# Use the psql command to execute the SQL script, addin all startup databases
-RUN service postgresql start \
-    && cat /sql-scripts/imdb.sql | psql -U postgres -d postgres \
-    && cat /sql-scripts/world.sql | psql -U postgres -d postgres \
-    && cat /sql-scripts/mds.sql | psql -U postgres -d postgres \
-    && service postgresql stop
-
 # I don't think this will work in production.
 # VOLUME /var/run/postgresql
 
 COPY install.sh pl-gosu-helper.sh /
 RUN /bin/bash /install.sh
+COPY install-pg.sh pg-init.sh /
+RUN /bin/bash /install-pg.sh
 
 COPY dockerentrypoint.sh /sbin/dockerentrypoint.sh
 RUN chmod 755 /sbin/dockerentrypoint.sh

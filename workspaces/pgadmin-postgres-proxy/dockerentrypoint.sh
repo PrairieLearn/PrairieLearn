@@ -1,8 +1,9 @@
 #! /bin/bash
 
 echo "[run] starting Postgres"
-service postgresql start
-psql -U postgres -d postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+/usr/lib/postgresql/14/bin/pg_ctl -D /pgdata start
+echo "Waiting for postgres to start..."
+while ! pg_isready ; do sleep 1s ; done
 echo "[run] PostgreSQL started and configured"
 # copying pgpass servers.json didn't help with the pgadmin4 login, removing now, let students login using the localhost
 # python3 /usr/local/lib/python3.10/dist-packages/pgadmin4/setup.py load-servers "/etc/postgresql/14/main/servers.json"
