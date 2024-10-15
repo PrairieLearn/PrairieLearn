@@ -605,9 +605,7 @@ onDocumentReady(() => {
             form.action === 'set_rem' ||
             form.action === 'add' ||
             form.action === 'subtract') ? (
-            <p>
-              Proposed closing time: {proposedClosingTime()} {timezone}
-            </p>
+            <p>Proposed closing time: {proposedClosingTime()}</p>
           ) : null}
           <p>
             {row.has_closed_instance ? (
