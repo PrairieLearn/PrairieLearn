@@ -1031,7 +1031,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
     this.label = text;
 
     if (text) {
-      this.gen_text(this.parse(this.label), options);
+      this.gen_text(this.label, options);
     }
 
     if (options.selectable) {
@@ -1042,7 +1042,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
           this.gen_text(this.parse(new_text), options);
 
           // Fire an event to ensure that the text is updated in the submission data.
-          this.fire('modified');
+          // this.fire('modified');
         }
       });
     }
