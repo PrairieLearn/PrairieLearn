@@ -83,7 +83,7 @@ async function ensureImage() {
   } catch (e) {
     if (e.statusCode === 404) {
       logger.info('Image not found, pulling from registry');
-      const start = Date.now();
+      const start = performance.now();
       const ecr = new ECRClient(makeAwsClientConfig());
       const dockerAuth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
       const stream = await docker.createImage(dockerAuth, { fromImage: imageName });
@@ -91,7 +91,7 @@ async function ensureImage() {
         docker.modem.followProgress(
           stream,
           (err) => {
-            const elapsed = Math.round((Date.now() - start) / 1000);
+            const elapsed = Math.round((performance.now() - start) / 1000);
             if (err) {
               logger.error(`Error pulling image after ${elapsed} seconds`, err);
               reject(err);

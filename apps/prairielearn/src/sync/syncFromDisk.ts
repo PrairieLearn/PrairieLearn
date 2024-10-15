@@ -7,6 +7,7 @@ import * as namedLocks from '@prairielearn/named-locks';
 
 import { chalk, chalkDim } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
+import { ServerJobLogger } from '../lib/server-jobs.js';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
@@ -21,11 +22,12 @@ import * as syncSharingSets from './fromDisk/sharing.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import {
+  selectSharedQuestions,
   getInvalidRenames,
-  getInvalidSharingSetRemovals,
-  getInvalidPublicSharingRemovals,
-  getInvalidSharingSetDeletions,
-  getInvalidSharingSetAdditions,
+  checkInvalidSharingSetRemovals,
+  checkInvalidPublicSharingRemovals,
+  checkInvalidSharingSetDeletions,
+  checkInvalidSharingSetAdditions,
 } from './sharing.js';
 
 interface SyncResultSharingError {
@@ -43,87 +45,47 @@ interface SyncResultComplete {
 
 export type SyncResults = SyncResultSharingError | SyncResultComplete;
 
-interface Logger {
-  info: (msg: string) => void;
-  verbose: (msg: string) => void;
-}
-
 export async function checkSharingConfigurationValid(
   courseId: string,
   courseData: courseDB.CourseData,
-  logger: Logger,
+  logger: ServerJobLogger,
 ): Promise<boolean> {
   if (!config.checkSharingOnSync) {
     return true;
   }
 
-  let sharingConfigurationValid = true;
-  const invalidRenames = await getInvalidRenames(courseId, courseData);
-  // console.log('invalid renames', invalidRenames);
-  if (invalidRenames.length > 0) {
-    logger.info(
-      chalk.red(
-        `✖ Course sync completely failed. The following questions are shared and cannot be renamed or deleted: ${invalidRenames.join(', ')}`,
-      ),
-    );
-    sharingConfigurationValid = false;
-  }
+  const sharedQuestions = await selectSharedQuestions(courseId);
+  const existInvalidRenames = getInvalidRenames(sharedQuestions, courseData, logger);
+  const existInvalidPublicSharingRemovals = checkInvalidPublicSharingRemovals(
+    sharedQuestions,
+    courseData,
+    logger,
+  );
+  const existInvalidSharingSetDeletions = await checkInvalidSharingSetDeletions(
+    courseId,
+    courseData,
+    logger,
+  );
+  const existInvalidSharingSetAdditions = checkInvalidSharingSetAdditions(courseData, logger);
+  const existInvalidSharingSetRemovals = await checkInvalidSharingSetRemovals(
+    courseId,
+    courseData,
+    logger,
+  );
 
-  const invalidPublicSharingRemovals = await getInvalidPublicSharingRemovals(courseId, courseData);
-  if (invalidPublicSharingRemovals.length > 0) {
-    logger.info(
-      chalk.red(
-        `✖ Course sync completely failed. The following questions are are publicly shared and cannot be unshared: ${invalidPublicSharingRemovals.join(', ')}`,
-      ),
-    );
-    sharingConfigurationValid = false;
-  }
-
-  const invalidSharingSetDeletions = await getInvalidSharingSetDeletions(courseId, courseData);
-  if (invalidSharingSetDeletions.length > 0) {
-    logger.info(
-      chalk.red(
-        `✖ Course sync completely failed. The following sharing sets cannot be removed from 'infoCourse.json': ${invalidSharingSetDeletions.join(', ')}`,
-      ),
-    );
-    sharingConfigurationValid = false;
-  }
-
-  const invalidSharingSetAdditions = await getInvalidSharingSetAdditions(courseData);
-  if (Object.keys(invalidSharingSetAdditions).length > 0) {
-    logger.info(
-      chalk.red(
-        `✖ Course sync completely failed. The following questions are being added to sharing sets which do not exist: ${Object.keys(
-          invalidSharingSetAdditions,
-        )
-          .map((key) => `${key}: ${JSON.stringify(invalidSharingSetAdditions[key])}`)
-          .join(', ')}`,
-      ),
-    );
-    sharingConfigurationValid = false;
-  }
-
-  const invalidSharingSetRemovals = await getInvalidSharingSetRemovals(courseId, courseData);
-  if (Object.keys(invalidSharingSetRemovals).length > 0) {
-    logger.info(
-      chalk.red(
-        `✖ Course sync completely failed. The following questions are not allowed to be removed from the listed sharing sets: ${Object.keys(
-          invalidSharingSetRemovals,
-        )
-          .map((key) => `${key}: ${JSON.stringify(invalidSharingSetRemovals[key])}`)
-          .join(', ')}`,
-      ),
-    );
-    sharingConfigurationValid = false;
-  }
-
+  const sharingConfigurationValid =
+    !existInvalidRenames &&
+    !existInvalidPublicSharingRemovals &&
+    !existInvalidSharingSetDeletions &&
+    !existInvalidSharingSetAdditions &&
+    !existInvalidSharingSetRemovals;
   return sharingConfigurationValid;
 }
 
 export async function syncDiskToSqlWithLock(
   courseId: string,
   courseDir: string,
-  logger: Logger,
+  logger: ServerJobLogger,
   courseData?: courseDB.CourseData,
 ): Promise<SyncResults> {
   async function timed<T>(label: string, fn: () => Promise<T>): Promise<T> {
@@ -175,12 +137,7 @@ export async function syncDiskToSqlWithLock(
             /// put the question.id into an array of questions that throw errors? // TEST
           }
 
-          const infoJsonPath = path.join(
-            courseDir,
-            'questions',
-            question.id || '',
-            'info.json',
-          );
+          const infoJsonPath = path.join(courseDir, 'questions', question.id || '', 'info.json');
 
           await readQuestionInfoJson(infoJsonPath, question.id, courseInstanceKey);
         }
@@ -207,7 +164,9 @@ export async function syncDiskToSqlWithLock(
       syncQuestions.sync(courseId, courseData),
     );
 
-    await timed('Sync sharing sets', () => syncSharingSets.sync(courseId, courseData, questionIds));
+    await timed('Synced sharing sets', () =>
+      syncSharingSets.sync(courseId, courseData, questionIds),
+    );
     await timed('Synced tags', () => syncTags.sync(courseId, courseData, questionIds));
     await timed('Synced assessment sets', () => syncAssessmentSets.sync(courseId, courseData));
     await timed('Synced assessment modules', () =>
@@ -265,7 +224,7 @@ export async function syncDiskToSqlWithLock(
 export async function syncDiskToSql(
   course_id: string,
   courseDir: string,
-  logger: Logger,
+  logger: ServerJobLogger,
 ): Promise<SyncResults> {
   const lockName = getLockNameForCoursePath(courseDir);
   logger.verbose(chalkDim(`Trying lock ${lockName}`));
@@ -290,7 +249,7 @@ export async function syncDiskToSql(
 
 export async function syncOrCreateDiskToSql(
   courseDir: string,
-  logger: Logger,
+  logger: ServerJobLogger,
 ): Promise<SyncResults> {
   const course = await selectOrInsertCourseByPath(courseDir);
   return await syncDiskToSql(course.id, courseDir, logger);

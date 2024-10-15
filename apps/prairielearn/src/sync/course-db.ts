@@ -388,8 +388,9 @@ export interface Question {
   workspaceOptions?: QuestionWorkspaceOptions;
   dependencies: Record<string, string>;
   sharingSets: string[];
+  sharePublicly: boolean;
   sharedPublicly: boolean;
-  sharedPubliclyWithSource: boolean;
+  shareSourcePublicly: boolean;
 }
 
 export interface CourseInstanceData {
@@ -1050,10 +1051,12 @@ async function validateQuestion(
     }
   }
 
-  if (question.sharedPubliclyWithSource && question.sharedPublicly === false) {
-    warnings.push(
-      'Option "sharedPubliclyWithSource": true will override option "sharedPublicly": false',
-    );
+  if ('sharedPublicly' in question) {
+    if ('sharePublicly' in question) {
+      errors.push('Cannot specify both "sharedPublicly" and "sharePublicly" in one question.');
+    } else {
+      warnings.push('"sharedPublicly" is deprecated; use "sharePublicly" instead.');
+    }
   }
 
   return { warnings, errors };

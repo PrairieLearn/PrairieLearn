@@ -4,6 +4,7 @@ import { assert } from 'chai';
 import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -186,8 +187,9 @@ export interface Question {
   topic: string;
   tags?: string[];
   sharingSets?: string[];
+  sharePublicly?: boolean;
   sharedPublicly?: boolean;
-  sharedPubliclyWithSource?: boolean;
+  shareSourcePublicly?: boolean;
   clientFiles?: string[];
   clientTemplates?: string[];
   template?: string;
@@ -444,6 +446,7 @@ export function getFakeLogger() {
     debug: () => {},
     info: () => {},
     warn: () => {},
+    error: () => {},
   };
 }
 
@@ -506,6 +509,13 @@ export async function overwriteAndSyncCourseData(courseData: CourseData, courseD
 export async function dumpTable(tableName: string): Promise<Record<string, any>[]> {
   const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});
   return res.rows;
+}
+
+export async function dumpTableWithSchema<Schema extends z.ZodTypeAny>(
+  tableName: string,
+  schema: Schema,
+): Promise<z.infer<Schema>[]> {
+  return await sqldb.queryRows(`SELECT * FROM ${tableName};`, schema);
 }
 
 export async function captureDatabaseSnapshot() {

@@ -81,17 +81,19 @@ async function commitAndPullSharingCourse() {
   await execa('git', ['add', '-A'], gitOptionsOrigin);
   await execa('git', ['commit', '-m', 'Add sharing set'], gitOptionsOrigin);
   await execa('git', ['pull'], gitOptionsLive);
-  const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir);
-  assert(syncResults.status === 'complete' && !syncResults.hadJsonErrorsOrWarnings);
+  const syncResult = await syncUtil.syncCourseData(sharingCourseLiveDir);
+  assert.equal(syncResult.status, 'complete');
+  assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
 }
 
 async function ensureInvalidSharingOperationFailsToSync() {
   let syncResult = await syncUtil.syncCourseData(sharingCourseLiveDir);
-  assert(syncResult.status === 'sharing_error');
+  assert.equal(syncResult.status, 'sharing_error');
   await execa('git', ['clean', '-fdx'], gitOptionsLive);
   await execa('git', ['reset', '--hard', 'HEAD'], gitOptionsLive);
 
   syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourseLiveDir, logger);
+  assert.equal(syncResult.status, 'complete');
   assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
 }
 
@@ -251,13 +253,13 @@ describe('Question Sharing', function () {
 
     step('Fail if trying to set an invalid sharing name', async () => {
       let res = await setSharingName(sharingCourse.id, 'invalid@sharingname');
-      assert(res.status === 400);
+      assert.equal(res.status, 400);
 
       res = await setSharingName(sharingCourse.id, 'invalid / sharingname');
-      assert(res.status === 400);
+      assert.equal(res.status, 400);
 
       res = await setSharingName(sharingCourse.id, '');
-      assert(res.status === 400);
+      assert.equal(res.status, 400);
     });
 
     step('Set consuming course sharing name', async () => {
@@ -282,10 +284,10 @@ describe('Question Sharing', function () {
 
     step('Successfully change the sharing name when no questions have been shared', async () => {
       let res = await setSharingName(sharingCourse.id, 'Nothing shared yet');
-      assert(res.status === 200);
+      assert.equal(res.status, 200);
 
       res = await setSharingName(sharingCourse.id, SHARING_COURSE_SHARING_NAME);
-      assert(res.status === 200);
+      assert.equal(res.status, 200);
     });
 
     step('Generate and get sharing token for sharing course', async () => {
@@ -405,7 +407,7 @@ describe('Question Sharing', function () {
 
     step('Fail to change the sharing name when a question has been shared', async () => {
       const res = await setSharingName(sharingCourse.id, 'Question shared');
-      assert(res.status === 400);
+      assert.equal(res.status, 400);
     });
   });
 
@@ -428,7 +430,7 @@ describe('Question Sharing', function () {
     });
 
     step('Publicly share a question', async () => {
-      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharedPublicly = true;
+      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = true;
       await fs.writeJSON(
         path.join(sharingCourseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
         sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
@@ -478,8 +480,9 @@ describe('Question Sharing', function () {
       const questionTempPath = questionPath + '_temp';
       await fs.rename(questionPath, questionTempPath);
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
-      assert(
-        syncResult.status === 'sharing_error',
+      assert.equal(
+        syncResult.status,
+        'sharing_error',
         'sync should not complete when attempting sync after moving shared question',
       );
 
@@ -520,8 +523,9 @@ describe('Question Sharing', function () {
       const job_sequence_id = await syncSharingCourse(sharingCourse.id);
       await helperServer.waitForJobSequenceStatus(job_sequence_id, 'Error');
 
-      assert(
-        commitHash === (await getCourseCommitHash(sharingCourseLiveDir)),
+      assert.equal(
+        commitHash,
+        await getCourseCommitHash(sharingCourseLiveDir),
         'Commit hash of sharing course should not change when attempting to sync breaking change.',
       );
 
@@ -554,7 +558,7 @@ describe('Question Sharing', function () {
     });
 
     step('Unshare a publicly shared question, ensure live does not sync it', async () => {
-      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharedPublicly = false;
+      sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = false;
       await fs.writeJSON(
         path.join(sharingCourseLiveDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
         sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],

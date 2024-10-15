@@ -1,4 +1,3 @@
-import { isFuture, isValid, parseISO } from 'date-fns';
 import _ from 'lodash';
 import { z } from 'zod';
 
@@ -8,6 +7,7 @@ import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { Assessment, CourseInstanceData } from '../course-db.js';
+import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -324,22 +324,7 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
   // If there are no access rules, the course instance is not accessible.
   if (!courseInstance.allowAccess?.length) return false;
 
-  return courseInstance.allowAccess.some((accessRule) => {
-    if (!accessRule.endDate) return true;
-
-    // We don't have easy access to the course instance's timezone, so we'll
-    // just parse it in the machine's local timezone. This is fine, as we're
-    // only interesting in a rough signal of whether the end date is in the
-    // future. If we're off by up to a day, it's not a big deal.
-    //
-    // If the date is invalid, we'll treat it as though it's in the past and
-    // thus that it does not make the course instance accessible.
-    //
-    // `parseISO` is used instead of `new Date` for consistency with `course-db.ts`.
-    const parsedDate = parseISO(accessRule.endDate);
-    if (!isValid(parsedDate)) return false;
-    return isFuture(parsedDate);
-  });
+  return courseInstance.allowAccess.some(isAccessRuleAccessibleInFuture);
 }
 
 export async function sync(
