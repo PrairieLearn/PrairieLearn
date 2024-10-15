@@ -303,7 +303,7 @@ function buildLocals({
           (assessment_question.tries_per_variant ?? 1) - variant.num_tries;
         locals.variantAttemptsTotal = assessment_question.tries_per_variant ?? 1;
       }
-      // TODO: can get fir of the nullish coalescing if we mark `score_perc` as `NOT NULL`.
+      // TODO: can get rid of the nullish coalescing if we mark `score_perc` as `NOT NULL`.
       if (question.single_variant && (instance_question.score_perc ?? 0) >= 100.0) {
         locals.showTrueAnswer = true;
       }
