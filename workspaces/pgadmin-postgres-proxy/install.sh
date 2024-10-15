@@ -24,12 +24,10 @@ done
 apt-get update && apt-get -y upgrade
 apt-get -y install gosu gcc graphviz graphviz-dev
 
-# Test gosu and prepare the gosu helper.
-gosu postgres true || exit 1
+# Prepare the gosu helper.
 mv /pl-gosu-helper.sh /usr/local/bin/
 chown root:root /usr/local/bin/pl-gosu-helper.sh
 chmod 0755 /usr/local/bin/pl-gosu-helper.sh
-
 
 # Delete ourself.
 rm /install.sh
