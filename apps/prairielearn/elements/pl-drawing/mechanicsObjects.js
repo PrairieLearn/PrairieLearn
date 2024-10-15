@@ -1534,7 +1534,6 @@ mechanicsObjects.byType['pl-text'] = class extends PLDrawingBaseElement {
     let textObj;
 
     if (options.latex) {
-      console.log('latex');
       textObj = new mechanicsObjects.LatexText(options.label, {
         left: options.left + options.offsetx,
         top: options.top + options.offsety,
@@ -1547,7 +1546,6 @@ mechanicsObjects.byType['pl-text'] = class extends PLDrawingBaseElement {
         scaleY: options.scaleY || 1,
       });
     } else {
-      console.log('non-latex');
       textObj = new fabric.Text(options.label, {
         left: options.left + options.offsetx,
         top: options.top + options.offsety,
