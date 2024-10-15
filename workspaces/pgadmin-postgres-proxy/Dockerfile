@@ -45,6 +45,8 @@ COPY pg_hba.conf postgresql.conf /etc/postgresql/14/main/
 # I don't think this will work in production.
 # VOLUME /var/run/postgresql
 
+COPY install.sh pl-gosu-helper.sh /
+#RUN /bin/bash /install.sh
 
 COPY dockerentrypoint.sh /sbin/dockerentrypoint.sh
 RUN chmod 755 /sbin/dockerentrypoint.sh
