@@ -712,8 +712,7 @@ function RowLabel({
   rowLabelText,
   urlPrefix,
 }: {
-  // TODO: better types?
-  instance_question: any;
+  instance_question: InstanceQuestionRow;
   userGroupRoles: string | null;
   rowLabelText: string;
   urlPrefix: string;
