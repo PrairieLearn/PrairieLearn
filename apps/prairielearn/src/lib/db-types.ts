@@ -830,7 +830,7 @@ export const QuestionSchema = z.object({
   partial_credit: z.boolean().nullable(),
   qid: z.string().nullable(),
   shared_publicly: z.boolean(),
-  shared_publicly_with_source: z.boolean(),
+  share_source_publicly: z.boolean(),
   show_correct_answer: z.boolean().nullable(),
   single_variant: z.boolean().nullable(),
   sync_errors: z.string().nullable(),
