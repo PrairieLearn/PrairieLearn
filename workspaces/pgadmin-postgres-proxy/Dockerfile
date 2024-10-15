@@ -27,6 +27,7 @@ RUN apt-get update \
   && sed -i "s/DEFAULT_SERVER = '127.0.0.1'/DEFAULT_SERVER = '0.0.0.0'/" /usr/local/lib/python3.10/dist-packages/pgadmin4/config.py \
   && sed -i 's/SERVER_MODE = True/SERVER_MODE = False/g' /usr/local/lib/python3.10/dist-packages/pgadmin4/config.py \
   && sed -i 's/MASTER_PASSWORD_REQUIRED = True/MASTER_PASSWORD_REQUIRED = False/g' /usr/local/lib/python3.10/dist-packages/pgadmin4/config.py \
+  && sed -i "s|\"pg-14\": \"\"|\"pg-14\": \"/usr/lib/postgresql/14/bin\"|" /usr/local/lib/python3.10/dist-packages/pgadmin4/config.py \
   && mkdir -p /var/lib/pgadmin \
   && chown postgres:postgres /var/lib/pgadmin \
   && chmod 700 /var/lib/pgadmin \
@@ -38,6 +39,9 @@ RUN apt-get update \
 COPY database/imdb.sql database/world.sql database/mds.sql /sql-scripts/
 COPY pg_hba.conf postgresql.conf /etc/postgresql/14/main/
 # copying pgpass servers.json didn't help with the pgadmin4 login, removing now, let students login using the localhost
+
+COPY servers.json pgpass /usr/local/lib/python3.10/dist-packages/pgadmin4/
+# RUN chown postgres:postgres /usr/local/lib/python3.10/dist-packages/pgadmin4/pgpass && chmod 600 /usr/local/lib/python3.10/dist-packages/pgadmin4/pgpass
 
 # I don't think this will work in production.
 # VOLUME /var/run/postgresql
