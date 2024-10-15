@@ -159,7 +159,10 @@ router.post(
       } else if (req.body.action === 'set_exact') {
         params.base_time = 'exact_date';
         params.time_add = 0;
-        params.exact_date = `${req.body.date} ${res.locals.course_instance.display_timezone}`;
+        params.exact_date = Temporal.PlainDateTime.from(req.body.date)
+          .toZonedDateTime(res.locals.course_instance.display_timezone)
+          .toString({ timeZoneName: 'never' })
+          .replace('T', ' ');
       } else {
         params.time_add *= req.body.action;
       }
