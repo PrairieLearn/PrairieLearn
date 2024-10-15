@@ -1,9 +1,10 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
-import { h, render } from 'preact';
+import { h, render, Fragment } from 'preact';
 import React, { useState } from 'preact/hooks';
 
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
+import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { Scorebar } from '../../src/components/Scorebar.html.js';
@@ -11,13 +12,13 @@ import { AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInsta
 
 import { getPopoverTriggerForContainer } from './lib/popover.js';
 
-type TimeLimitPlusMinus =
+type TimeLimitAction =
   | 'set_total'
   | 'set_rem'
   | 'set_exact'
-  | '+1'
-  | '-1'
-  | 'unlimited'
+  | 'add'
+  | 'subtract'
+  | 'remove'
   | 'expire';
 
 onDocumentReady(() => {
@@ -96,7 +97,7 @@ onDocumentReady(() => {
           html: true,
           trigger: 'click',
           content: timeLimitEditPopoverContent,
-          customClass: 'popover-wide',
+          customClass: 'popover-narrow-fixed',
         })
         .on('show.bs.popover', function () {
           $(this).find('.select-time-limit').trigger('change');
@@ -414,30 +415,26 @@ onDocumentReady(() => {
     bsTable.bootstrapTable('refresh', { silent: true });
   }
 
-  function TimeLimitExplanation({ plusMinus }: { plusMinus: TimeLimitPlusMinus }) {
+  function TimeLimitExplanation({ action }: { action: TimeLimitAction }) {
     let explanation = '';
-    if (plusMinus === 'set_total') {
+    if (action === 'set_total') {
       explanation =
         'Updating the total time limit will set the given amount of time for the assessment based on when the assessment was started.';
-    } else if (plusMinus === 'set_rem') {
+    } else if (action === 'set_rem') {
       explanation =
         'Updating the time remaining will set the given amount of time for the assessment based on the current time.';
-    } else if (plusMinus === 'set_exact') {
+    } else if (action === 'set_exact') {
       explanation = 'This will set the exact closing time for the assessment.';
-    } else if (plusMinus === '+1') {
+    } else if (action === 'add') {
       explanation = 'This will add the given amount of time to the remaining time limit.';
-    } else if (plusMinus === '-1') {
+    } else if (action === 'subtract') {
       explanation = 'This will subtract the given amount of time from the remaining time limit.';
-    } else if (plusMinus === 'unlimited') {
+    } else if (action === 'remove') {
       explanation = 'This will remove the time limit and the assessment will remain open.';
-    } else if (plusMinus === 'expire') {
+    } else if (action === 'expire') {
       explanation = 'This will expire the time limit and the assessment will be closed.';
     }
-    return (
-      <small class="text-muted d-block" style="width:400px; max-width:90vw">
-        {explanation}
-      </small>
-    );
+    return <small class="form-text text-muted">{explanation}</small>;
   }
 
   function TimeLimitEditPopover({
@@ -450,22 +447,14 @@ onDocumentReady(() => {
       has_closed_instance: boolean;
       has_open_instance: boolean;
       total_time: string;
+      total_time_sec: number;
       time_remaining: string;
       time_remaining_sec: number;
       open: boolean;
     };
   }) {
-    // Because we need to update values on the Preact virtual DOM, we need to manage our
-    // form values as state. These can then be passed and used by the child components to
-    // display values or used for conditional rendering.
-    const [form, setForm] = useState<{
-      plus_minus: TimeLimitPlusMinus;
-      time_add: number;
-      date: string;
-      reopen_closed: boolean;
-      reopen_without_limit: boolean;
-    }>({
-      plus_minus: '+1',
+    const [form, setForm] = useState({
+      action: 'add' as TimeLimitAction,
       time_add: 5,
       date: Temporal.Now.zonedDateTimeISO(timezone).toPlainDateTime().toString().slice(0, 16),
       reopen_closed: false,
@@ -483,25 +472,22 @@ onDocumentReady(() => {
 
     function proposedClosingTime() {
       const startDate = row.date;
-      let totalTime = 0;
-      if (row.total_time !== 'Open (no time limit)' && row.total_time !== 'Closed') {
-        totalTime = parseFloat(row.total_time);
-      }
+      const totalTime = Math.round(row.total_time_sec);
 
       let temporalDate = Temporal.Instant.from(startDate).toZonedDateTimeISO(timezone);
-      if (form.plus_minus === 'set_total') {
+      if (form.action === 'set_total') {
         temporalDate = temporalDate.add({ minutes: form.time_add });
-      } else if (form.plus_minus === 'set_rem') {
+      } else if (form.action === 'set_rem') {
         temporalDate = Temporal.Now.zonedDateTimeISO(timezone).add({ minutes: form.time_add });
-      } else if (form.plus_minus === '+1') {
-        temporalDate = temporalDate.add({ minutes: totalTime }).add({ minutes: form.time_add });
-      } else if (form.plus_minus === '-1') {
+      } else if (form.action === 'add') {
+        temporalDate = temporalDate.add({ seconds: totalTime }).add({ minutes: form.time_add });
+      } else if (form.action === 'subtract') {
         temporalDate = temporalDate
-          .add({ minutes: totalTime })
+          .add({ seconds: totalTime })
           .subtract({ minutes: form.time_add });
       }
 
-      return temporalDate.toString().slice(0, 16).replace('T', ' ');
+      return formatDate(new Date(temporalDate.toInstant().toString()), timezone);
     }
 
     return (
@@ -553,37 +539,43 @@ onDocumentReady(() => {
             <p>
               <select
                 class="custom-select select-time-limit"
-                name="plus_minus"
+                name="action"
                 aria-label="Time limit options"
                 onChange={(e) =>
-                  updateFormState('plus_minus', e.currentTarget.value as TimeLimitPlusMinus)
+                  updateFormState('action', e.currentTarget.value as TimeLimitAction)
                 }
               >
-                {row.time_remaining_sec !== null
-                  ? row.has_open_instance
-                    ? [
-                        <option value="+1">Add to instances with time limit</option>,
-                        <option value="-1">Subtract from instances with time limit</option>,
-                      ]
-                    : [<option value="+1">Add</option>, <option value="-1">Subtract</option>]
-                  : null}
+                {row.time_remaining_sec !== null ? (
+                  row.has_open_instance ? (
+                    <>
+                      <option value="add">Add to instances with time limit</option>
+                      <option value="subtract">Subtract from instances with time limit</option>
+                    </>
+                  ) : (
+                    <>
+                      <option value="add">Add</option>
+                      <option value="subtract">Subtract</option>
+                    </>
+                  )
+                ) : null}
                 <option value="set_total">Set total time limit</option>
                 <option value="set_rem">Set remaining time</option>
                 <option value="set_exact">Set exact closing time</option>
-                {row.open && row.time_remaining !== 'Open (no time limit)' ? (
-                  <option value="unlimited">Remove time limit</option>
+                {row.action === 'set_time_limit_all' ||
+                (row.open && row.time_remaining) !== 'Open (no time limit)' ? (
+                  <option value="remove">Remove time limit</option>
                 ) : null}
                 {row.open && row.time_remaining !== 'Expired' ? (
                   <option value="expire">Expire time limit</option>
                 ) : null}
               </select>
-              <TimeLimitExplanation plusMinus={form.plus_minus} />
+              <TimeLimitExplanation action={form.action} />
             </p>
           ) : null}
           {showTimeLimitOptions &&
-          form.plus_minus !== 'set_exact' &&
-          form.plus_minus !== 'unlimited' &&
-          form.plus_minus !== 'expire' ? (
+          form.action !== 'set_exact' &&
+          form.action !== 'remove' &&
+          form.action !== 'expire' ? (
             <div class="input-group mb-2">
               <input
                 class="form-control time-limit-field"
@@ -596,7 +588,7 @@ onDocumentReady(() => {
               <span class="input-group-text time-limit-field">minutes</span>
             </div>
           ) : null}
-          {showTimeLimitOptions && form.plus_minus === 'set_exact' ? (
+          {showTimeLimitOptions && form.action === 'set_exact' ? (
             <div class="input-group date-picker mb-2">
               <input
                 class="form-control date-picker"
@@ -609,10 +601,10 @@ onDocumentReady(() => {
             </div>
           ) : null}
           {(row.open || !form.reopen_without_limit) &&
-          (form.plus_minus === 'set_total' ||
-            form.plus_minus === 'set_rem' ||
-            form.plus_minus === '+1' ||
-            form.plus_minus === '-1') ? (
+          (form.action === 'set_total' ||
+            form.action === 'set_rem' ||
+            form.action === 'add' ||
+            form.action === 'subtract') ? (
             <p>
               Proposed closing time: {proposedClosingTime()} {timezone}
             </p>
@@ -624,6 +616,7 @@ onDocumentReady(() => {
                   class="form-check-input"
                   type="checkbox"
                   name="reopen_closed"
+                  value="true"
                   checked={form.reopen_closed}
                   id="reopen_closed"
                   onChange={(e) => updateFormState('reopen_closed', e.currentTarget.checked)}

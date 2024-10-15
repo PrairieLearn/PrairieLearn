@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
@@ -116,21 +117,24 @@ router.post(
         authn_user_id: res.locals.authz_data.authn_user.user_id,
         exact_date: formatDate(new Date(), res.locals.course_instance.display_timezone),
       };
-      if (req.body.plus_minus === 'unlimited' || req.body.reopen_without_limit === 'true') {
+      if (req.body.action === 'unlimited' || req.body.reopen_without_limit === 'true') {
         params.base_time = 'null';
-      } else if (req.body.plus_minus === 'expire') {
+      } else if (req.body.action === 'expire') {
         params.base_time = 'current_date';
         params.time_add = 0;
-      } else if (req.body.plus_minus === 'set_total') {
+      } else if (req.body.action === 'set_total') {
         params.base_time = 'start_date';
-      } else if (req.body.plus_minus === 'set_rem') {
+      } else if (req.body.action === 'set_rem') {
         params.base_time = 'current_date';
-      } else if (req.body.plus_minus === 'set_exact') {
+      } else if (req.body.action === 'set_exact') {
         params.base_time = 'exact_date';
         params.time_add = 0;
-        params.exact_date = `${req.body.date} ${res.locals.course_instance.display_timezone}`;
-      } else {
-        params.time_add *= req.body.plus_minus;
+        params.exact_date = Temporal.PlainDateTime.from(req.body.date)
+          .toZonedDateTime(res.locals.course_instance.display_timezone)
+          .toString({ timeZoneName: 'never' })
+          .replace('T', ' ');
+      } else if (req.body.action === 'subtract') {
+        params.time_add *= -1;
       }
       await sqldb.queryAsync(sql.set_time_limit, params);
       res.send(JSON.stringify({}));
@@ -143,21 +147,21 @@ router.post(
         authn_user_id: res.locals.authz_data.authn_user.user_id,
         exact_date: formatDate(new Date(), res.locals.course_instance.display_timezone),
       };
-      if (req.body.plus_minus === 'unlimited') {
+      if (req.body.action === 'unlimited') {
         params.base_time = 'null';
-      } else if (req.body.plus_minus === 'expire') {
+      } else if (req.body.action === 'expire') {
         params.base_time = 'current_date';
         params.time_add = 0;
-      } else if (req.body.plus_minus === 'set_total') {
+      } else if (req.body.action === 'set_total') {
         params.base_time = 'start_date';
-      } else if (req.body.plus_minus === 'set_rem') {
+      } else if (req.body.action === 'set_rem') {
         params.base_time = 'current_date';
-      } else if (req.body.plus_minus === 'set_exact') {
+      } else if (req.body.action === 'set_exact') {
         params.base_time = 'exact_date';
         params.time_add = 0;
         params.exact_date = `${req.body.date} ${res.locals.course_instance.display_timezone}`;
       } else {
-        params.time_add *= req.body.plus_minus;
+        params.time_add *= req.body.action;
       }
       await sqldb.queryAsync(sql.set_time_limit_all, params);
       res.send(JSON.stringify({}));

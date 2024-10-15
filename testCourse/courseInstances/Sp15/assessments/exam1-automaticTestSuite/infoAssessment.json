@@ -7,7 +7,7 @@
   "module": "Module1",
   "allowAccess": [
     {
-      "mode": "Exam",
+      "mode": "Public",
       "credit": 100,
       "timeLimitMin": 50,
       "startDate": "1900-07-07T23:59:59",
