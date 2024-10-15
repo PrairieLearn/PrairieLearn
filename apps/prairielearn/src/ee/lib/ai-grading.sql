@@ -118,7 +118,10 @@ FROM
   assessment_questions aq
   JOIN rubric_items ri ON aq.manual_rubric_id = ri.rubric_id
 WHERE
-  aq.id = $assessment_question_id;
+  aq.id = $assessment_question_id
+  AND ri.deleted_at IS NULL
+ORDER BY
+  ri.number;
 
 -- BLOCK select_rubric_grading_items
 SELECT

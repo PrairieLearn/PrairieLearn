@@ -62,9 +62,7 @@ const GradedExampleSchema = z.object({
 type GradedExample = z.infer<typeof GradedExampleSchema>;
 
 const AppliedRubricItemSchema = z.object({
-  /** ID of the rubric item to be applied. */
   rubric_item_id: IdSchema,
-  /** Score to be applied to the rubric item. Defaults to 1 (100%), i.e., uses the full points assigned to the rubric item. */
   score: z.coerce.number().nullish(),
 });
 type AppliedRubricItem = z.infer<typeof AppliedRubricItemSchema>;
@@ -77,10 +75,13 @@ function parseRubricItems({
 }): AppliedRubricItem[] {
   const output: AppliedRubricItem[] = [];
 
-  for (const rubric_item of rubric_items) {
-    if (gpt_rubric_items.includes(rubric_item.number)) {
-      output.push(AppliedRubricItemSchema.parse({ rubric_item_id: rubric_item.id }));
+  for (const rubric_item_number of gpt_rubric_items) {
+    if (rubric_item_number >= rubric_items.length) {
+      throw 'LLM hallucination: extra rubric items detected in GPT response.';
     }
+    output.push(
+      AppliedRubricItemSchema.parse({ rubric_item_id: rubric_items[rubric_item_number].id }),
+    );
   }
   return output;
 }
@@ -95,16 +96,18 @@ async function generateGPTPrompt({
   student_answer: string;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
-}): Promise<
-  {
+}): Promise<{
+  messages: {
     role: 'system' | 'user';
     content: string;
-  }[]
-> {
+  }[];
+  warning: string;
+}> {
   const messages: {
     role: 'system' | 'user';
     content: string;
   }[] = [];
+  let warning = '';
 
   // Instructions for grading
   if (rubric_items.length) {
@@ -115,7 +118,7 @@ async function generateGPTPrompt({
     messages.push({
       role: 'system',
       content:
-        'You are an instructor for a course, and you are grading assignments. You are provided several rubric items with the item number, item description (name), and item explanation. You must grade the assignment by using the rubric and returning an array of all rubric items, with an extra boolean parameter "selected" representing if the rubric item should be selected. You should always list all the rubric items, no matter if they are selected or not. You should also provide feedback on how to improve the answer. I will provide some example answers and their corresponding grades.',
+        'You are an instructor for a course, and you are grading assignments. You are provided several rubric items with the item number, item description (name), and item explanation. You must grade the assignment by using the rubric and returning an array of all rubric items, with an extra boolean parameter "selected" representing if the rubric item should be selected. You should always list all the rubric items, no matter if they are selected or not. You should also provide feedback on how to improve the answer by incorporating information from the rubric. I will provide some example answers and their corresponding grades.',
     });
     messages.push({
       role: 'system',
@@ -146,14 +149,30 @@ async function generateGPTPrompt({
         RubricItemSchema,
       );
       let rubric_grading_info = '';
+      let curr_example_error = '';
       for (const item of rubric_grading_items) {
-        rubric_grading_info += `number: ${item.number}\n\n`;
+        rubric_grading_info += `number: ${item.number}\n`;
+        // warning when graded rubric item does not match current rubric item
+        if (
+          item.number >= rubric_items.length ||
+          rubric_items[item.number].rubric_id !== item.rubric_id
+        ) {
+          curr_example_error = `Instance question ${example.instance_question_id}: example rubric id is different from the current rubric id.\n`;
+        }
       }
+      warning += curr_example_error;
       messages.push({
         role: 'user',
         content: `Example answer: \n${example.submission_text} \nRubric items to this example answer: \n${rubric_grading_info}`,
       });
     } else {
+      if (rubric_items.length && !example.manual_rubric_grading_id) {
+        // warning when example is not graded on the rubric but there is a rubric in use
+        warning += `Instance question ${example.instance_question_id}: example is not graded on a rubric, but there is a rubric in use.\n`;
+      } else if (!rubric_items.length && example.manual_rubric_grading_id) {
+        // warning when example is graded on a rubric but there is no rubric in use
+        warning += `Instance question ${example.instance_question_id}: example is graded on a rubric, but there is not a rubric in use.\n`;
+      }
       messages.push({
         role: 'user',
         content: `Example answer: \n${example.submission_text} \nGrade to this example answer: \n${example.score_perc}`,
@@ -166,7 +185,7 @@ async function generateGPTPrompt({
     role: 'user',
     content: `Answer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
   });
-  return messages;
+  return { messages, warning };
 }
 
 async function generateSubmissionEmbeddings({
@@ -426,7 +445,7 @@ export async function aiGrade({
       }
       msg += '\n';
 
-      const messages = await generateGPTPrompt({
+      const { messages, warning } = await generateGPTPrompt({
         question_prompt,
         student_answer,
         example_submissions,
@@ -482,6 +501,9 @@ export async function aiGrade({
           error_count++;
         }
         job.info(msg);
+        if (warning) {
+          job.warn(`Warning:\n${warning}`);
+        }
       } else {
         const completion = await openai.beta.chat.completions.parse({
           messages,
@@ -518,6 +540,9 @@ export async function aiGrade({
           error_count++;
         }
         job.info(msg);
+        if (warning) {
+          job.warn(`Warning:\n${warning}`);
+        }
       }
     }
     if (error_count > 0) {
