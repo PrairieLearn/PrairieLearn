@@ -271,10 +271,6 @@
     "shareSourcePublicly": {
       "description": "Whether this questions's source code is publicly shared.",
       "type": "boolean"
-    },
-    "sharedSourcePublicly": {
-      "description": "[DEPRECATED, DO NOT USE] Whether this questions's source code is publicly shared.",
-      "type": "boolean"
     }
   }
 }

@@ -1161,7 +1161,6 @@ export class QuestionCopyEditor extends Editor {
     delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
-    delete infoJson['sharedSourcePublicly'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1245,7 +1244,6 @@ export class QuestionTransferEditor extends Editor {
     delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
-    delete infoJson['sharedSourcePublicly'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
