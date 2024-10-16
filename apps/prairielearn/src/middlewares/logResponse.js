@@ -1,6 +1,8 @@
 // @ts-check
 import { logger } from '@prairielearn/logger';
 
+import { canonicalLogger } from '../lib/canonical-logger.js';
+
 /**
  * @param {import('express').Request} req
  * @param {import('express').Response} res
@@ -11,9 +13,13 @@ export default function (req, res, next) {
   // by the time the finish handler executes.
   const path = req.path;
 
+  const start = performance.now();
+
   if (req.method !== 'OPTIONS') {
     res.once('close', function () {
       logger.verbose('response', {
+        ...canonicalLogger.data(),
+        duration: performance.now() - start,
         response_id: res.locals.response_id,
         ip: req.ip,
         forwardedIP: req.headers['x-forwarded-for'],

@@ -9,7 +9,7 @@ import { Navbar } from '../../components/Navbar.html.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { InstanceLogEntry } from '../../lib/assessment.js';
+import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentQuestionSchema, IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
@@ -171,7 +171,7 @@ export function InstructorAssessmentInstance({
                           ${resLocals.assessment_instance.client_fingerprint_id_change_count}
                           <button
                             type="button"
-                            class="btn btn-xs"
+                            class="btn btn-xs btn-ghost"
                             id="fingerprintDescriptionPopover"
                             data-toggle="popover"
                             data-container="body"
@@ -260,7 +260,7 @@ export function InstructorAssessmentInstance({
                           Included
                           <button
                             type="button"
-                            class="btn btn-xs"
+                            class="btn btn-xs btn-ghost"
                             data-toggle="popover"
                             data-container="body"
                             data-html="true"
@@ -274,7 +274,7 @@ export function InstructorAssessmentInstance({
                           Not included
                           <button
                             type="button"
-                            class="btn btn-xs"
+                            class="btn btn-xs btn-ghost"
                             data-toggle="popover"
                             data-container="body"
                             data-html="true"

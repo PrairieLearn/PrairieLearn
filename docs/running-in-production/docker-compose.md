@@ -1,5 +1,7 @@
 # Using Docker Compose
 
+This page documents the basic steps to use Docker Compose to run PrairieLearn. It does not cover vital information for production usage such as database backups or high availability.
+
 ## Getting started
 
 Follow the steps to [install PrairieLearn with local source code](../installingLocal.md). Then run this command in the root folder:
@@ -21,15 +23,15 @@ PrairieLearn can be configured by a `config.json` in the root of the repository.
   - ./config.json:/PrairieLearn/config.json
   ```
 
-The `config.json` file should contain appropriate overrides for the keys in [`lib/config.ts`](`https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.ts`). At a minimum, you'll probably want to update the various `postgres*` options to point it at your database.
+The `config.json` file should contain appropriate overrides for the keys in [`lib/config.ts`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/config.ts).
 
 ## Reverse Proxy
 
-For implementing a reverse proxy read more [here](./setup.md#reverse-proxy).
+Read more about implementing a reverse proxy in the [general setup documentation](./setup.md#reverse-proxy).
 
 ## Authentication
 
-PrairieLearn currently has 4 ways to do user authentication. Read more at [authentication](./authentication.md).
+Read more in the [authentication documentation](./authentication.md).
 
 ## Admin User
 

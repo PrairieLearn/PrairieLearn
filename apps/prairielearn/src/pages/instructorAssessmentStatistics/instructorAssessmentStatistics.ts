@@ -14,7 +14,7 @@ import {
   DurationStatSchema,
   InstructorAssessmentStatistics,
   UserScoreSchema,
-  Filenames,
+  type Filenames,
 } from './instructorAssessmentStatistics.html.js';
 
 const router = express.Router();

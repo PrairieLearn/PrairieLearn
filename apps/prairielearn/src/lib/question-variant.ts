@@ -11,7 +11,7 @@ import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
 import * as questionServers from '../question-servers/index.js';
 
-import { Course, IdSchema, Question, Variant, VariantSchema } from './db-types.js';
+import { type Course, IdSchema, type Question, type Variant, VariantSchema } from './db-types.js';
 import { idsEqual } from './id.js';
 import { writeCourseIssues } from './issues.js';
 

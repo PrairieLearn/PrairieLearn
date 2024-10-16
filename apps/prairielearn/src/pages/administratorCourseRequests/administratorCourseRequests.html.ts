@@ -3,8 +3,8 @@ import { html } from '@prairielearn/html';
 import { CourseRequestsTable } from '../../components/CourseRequestsTable.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
-import { CourseRequestRow } from '../../lib/course-request.js';
-import { Institution } from '../../lib/db-types.js';
+import { type CourseRequestRow } from '../../lib/course-request.js';
+import { type Institution } from '../../lib/db-types.js';
 
 export function AdministratorCourseRequests({
   rows,

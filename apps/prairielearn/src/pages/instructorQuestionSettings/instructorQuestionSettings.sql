@@ -85,25 +85,3 @@ FROM
   ) AS ssq ON ssq.sharing_set_id = ss.id
 WHERE
   ss.course_id = $course_id;
-
--- BLOCK sharing_set_add
-INSERT INTO
-  sharing_set_questions (question_id, sharing_set_id)
-SELECT
-  q.id,
-  ss.id
-FROM
-  sharing_sets AS ss
-  JOIN questions AS q ON q.course_id = ss.course_id
-WHERE
-  ss.course_id = $course_id
-  AND ss.id = $unsafe_sharing_set_id
-  AND q.id = $question_id;
-
--- BLOCK update_question_shared_publicly
-UPDATE questions
-SET
-  shared_publicly = TRUE
-WHERE
-  id = $question_id
-  AND course_id = $course_id;

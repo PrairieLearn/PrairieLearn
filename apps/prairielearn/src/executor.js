@@ -113,14 +113,19 @@ if (Number.isNaN(pingTimeoutMilliseconds)) {
   pingTimeoutMilliseconds = 60_000;
 }
 
-(async () => {
-  let codeCaller = new CodeCallerNative({
+async function prepareCodeCaller() {
+  const codeCaller = new CodeCallerNative({
     dropPrivileges: true,
     questionTimeoutMilliseconds,
     pingTimeoutMilliseconds,
     errorLogger: console.error,
   });
   await codeCaller.ensureChild();
+  return codeCaller;
+}
+
+(async () => {
+  let codeCaller = await prepareCodeCaller();
 
   // Our overall loop looks like this: read a line of input from stdin, spin
   // off a python worker to handle it, and write the results back to stdout.
@@ -140,8 +145,7 @@ if (Number.isNaN(pingTimeoutMilliseconds)) {
     console.log(JSON.stringify(rest));
     if (needsFullRestart) {
       codeCaller.done();
-      codeCaller = new CodeCallerNative();
-      await codeCaller.ensureChild();
+      codeCaller = await prepareCodeCaller();
     }
   }
 })().catch((err) => {
