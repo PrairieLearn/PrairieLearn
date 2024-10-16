@@ -372,14 +372,16 @@ potentially misleading error messages for large file uploads, we recommend not u
 
 #### Customizations
 
-| Attribute             | Type     | Default | description                                                                                                                                                                                                                                                       |
-| --------------------- | -------- | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `file-names`          | CSV list | ""      | List of files that must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.                                                                                                                               |
-| `optional-file-names` | CSV list | ""      | List of files that can be submitted, but are optional. Wildcards are supported (see below). Commas should be escaped with a backslash, reserved wildcard characters in file names should be escaped with double backslashes, and filenames cannot contain quotes. |
+| Attribute                | Type     | Default | description                                                                                                                                                                                                                                                   |
+| ------------------------ | -------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `file-names`             | CSV list | ""      | List of files that must be submitted. Commas in a filename should be escaped with a backslash, and filenames cannot contain quotes.                                                                                                                           |
+| `optional-file-names`    | CSV list | ""      | List of files that can be submitted, but are optional. Commas should be escaped with a backslash, and filenames cannot contain quotes.                                                                                                                        |
+| `file-patterns`          | CSV list | ""      | List of file name patterns (see below) that must be submitted. For each pattern, exactly one matching file must be uploaded. Commas and special pattern character should be escaped with a backslash, and filenames cannot contain quotes.                    |
+| `optional-file-patterns` | CSV list | ""      | List of file name patterns (see below) that can be submitted, but are optional. For each pattern, any number of matching files can be uploaded. Commas and special pattern character should be escaped with a backslash, and filenames cannot contain quotes. |
 
-#### Supported wildcards
+#### Supported wildcard patterns
 
-Only `optional-file-names` supports a number of wildcards to allow a range of file names. Note that the use of wildcards enables multiple files to be uploaded for each wildcard pattern, all of which will be included in the submission.
+The `file-patterns` and `optional-file-patterns` attributes support a number of wildcards to allow a range of file names:
 
 - The `?` placeholder allows a single wildcard character. For example, `solution?.txt` allows
   files like "solution1.txt", "solution2.txt", and so on, but not "solution10.txt".
@@ -392,6 +394,10 @@ Only `optional-file-names` supports a number of wildcards to allow a range of fi
   allows "file*5.txt", but not "file_x.txt", while `file*[a-z].txt`allows the "file_x.txt" and 
 not "file_5.txt". Ranges can also be combined. For example,`file\_[0-9a-z]` allows any alphanumeric
   character.
+
+Uploaded files that match a required name in `file-names` are always assigned to this category. Next, files that match a required pattern in `file-patterns` are assigned to that pattern. Any remaining uploaded files are only accepted if they match either a name in `optional-file-names` or a pattern in `optional-file-patterns`.
+
+Note that the same pattern in `file-patterns` can be repeated, for example `*.py,*.py` allows exactly two Python files to be uploaded. However, patterns should not overlap (e.g. `*.py,solution.*`) as files that match both patterns might be assigned to one of them arbitrarily, and this can be confusing for students and lead to unintended behavior.
 
 #### Example implementations
 
