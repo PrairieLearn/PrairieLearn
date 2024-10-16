@@ -13,7 +13,7 @@ import { compiledScriptTag } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import { CourseWithPermissions } from '../../models/course.js';
+import { type CourseWithPermissions } from '../../models/course.js';
 
 export const SelectedAssessmentsSchema = z.object({
   short_name: z.string(),

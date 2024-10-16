@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
+import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';

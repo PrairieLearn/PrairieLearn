@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { AssessmentSet } from '../../lib/db-types.js';
+import { type AssessmentSet } from '../../lib/db-types.js';
 
 export function InstructorCourseAdminSets({
   resLocals,

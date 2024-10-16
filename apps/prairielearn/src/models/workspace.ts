@@ -1,6 +1,6 @@
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { IdSchema, Workspace, WorkspaceSchema } from '../lib/db-types.js';
+import { IdSchema, type Workspace, WorkspaceSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
