@@ -371,6 +371,7 @@ export interface Question {
   tags: string[];
   clientFiles: string[];
   clientTemplates: string[];
+  draftVersion: number | undefined;
   template: string;
   gradingMethod: 'Internal' | 'External' | 'Manual';
   singleVariant: boolean;
