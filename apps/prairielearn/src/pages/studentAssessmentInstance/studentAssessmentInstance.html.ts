@@ -55,7 +55,7 @@ export function StudentAssessmentInstance({
     if (question.status === 'saved') {
       if (question.allow_grade_left_ms > 0) {
         suspendedSavedAnswers++;
-      } else if (question.max_auto_points) {
+      } else if (question.max_auto_points || !question.max_manual_points) {
         // Note that we exclude questions that are not auto-graded from the count.
         // This count is used to determine whether the "Grade X saved answers"
         // button should be enabled, and clicking that button won't do any good for
