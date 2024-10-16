@@ -39,6 +39,7 @@ const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   max_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
   max_auto_points: z.number().nullable(),
+  manual_perc: z.number().nullable(),
   init_points: z.number().nullable(),
   row_order: z.number(),
   question_number: z.string(),
