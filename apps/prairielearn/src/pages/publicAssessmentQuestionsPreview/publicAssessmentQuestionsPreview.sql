@@ -14,7 +14,22 @@ FROM
 WHERE
   a.id = $assessment_id;
 
--- BLOCK questions
+-- BLOCK select_assessment_questions
+WITH
+  issue_count AS (
+    SELECT
+      q.id AS question_id,
+      count(*) AS open_issue_count
+    FROM
+      issues AS i
+      JOIN questions AS q ON (q.id = i.question_id)
+    WHERE
+      i.assessment_id = $assessment_id
+      AND i.course_caused
+      AND i.open
+    GROUP BY
+      q.id
+  )
 SELECT
   aq.*,
   q.qid,
@@ -51,6 +66,7 @@ SELECT
     ) IS NULL
   ) AS start_new_alternative_group,
   assessments_format_for_question (q.id, ci.id, a.id) AS other_assessments,
+  coalesce(ic.open_issue_count, 0) AS open_issue_count,
   z.max_points AS zone_max_points,
   (z.max_points IS NOT NULL) AS zone_has_max_points,
   z.best_questions AS zone_best_questions,
@@ -70,6 +86,7 @@ FROM
   JOIN topics AS top ON (top.id = q.topic_id)
   JOIN assessments AS a ON (a.id = aq.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
+  LEFT JOIN issue_count AS ic ON (ic.question_id = q.id)
   LEFT JOIN pl_courses AS c ON (q.course_id = c.id)
 WHERE
   a.id = $assessment_id

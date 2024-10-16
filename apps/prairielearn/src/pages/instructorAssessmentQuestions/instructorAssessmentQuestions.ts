@@ -4,12 +4,10 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 
+import { AssessmentQuestionRowSchema } from '../../models/questions.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
-import {
-  InstructorAssessmentQuestions,
-  AssessmentQuestionRowSchema,
-} from './instructorAssessmentQuestions.html.js';
+import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
