@@ -141,7 +141,7 @@
             this.addWarningMessage(
               `Combined file size of new file and existing files (<strong>${
                 Math.round((existingFileSize + file.size) / 1024 / 10.24) / 100
-              } MB</strong>) and is greater than maximum file size of ${this.maxFileSizeMB} MB.`,
+              } MB</strong>) is greater than maximum file size of ${this.maxFileSizeMB} MB.`,
             );
             return;
           }
@@ -215,7 +215,7 @@
      * Saves or updates the given file.
      * @param  {String} name     Name of the file
      * @param  {Number} size     Size of the file in bytes
-     * @param  {Date} date     Date when the file was uploaded (null if file is downloaded)
+     * @param  {Date|null} date     Date when the file was uploaded (null if file is downloaded)
      * @param  {String} contents The file's base64-encoded contents
      */
     saveSubmittedFile(name, size, date, contents) {
@@ -439,7 +439,7 @@
           $deleteUpload.on('click', () => this.deleteUploadedFile(fileName));
           $fileButtons.append($deleteUpload);
           $fileButtons.append(
-            `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-toggle="collapse" data-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}"><span class="file-preview-icon fa fa-angle-down"></span></button></div>`,
+            `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-toggle="collapse" data-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}"><span class="file-preview-icon fa fa-angle-down"></span></button>`,
           );
           $fileStatusContainer.append($fileButtons);
         }
