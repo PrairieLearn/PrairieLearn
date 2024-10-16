@@ -157,16 +157,6 @@
             return;
           }
 
-          // Special case: if a file was accepted via a required regex, remove that regex from the unmatched list to ensure it is not re-used
-          if (!this.requiredFilesLowerCase.includes(fileNameLowerCase)) {
-            const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex((f) =>
-              new RegExp(f[0], 'i').test(fileNameLowerCase),
-            );
-            if (matchingRegex >= 0) {
-              this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
-            }
-          }
-
           this.addFileFromBlob(acceptedFileName, file.size, file, false);
         },
       });
@@ -201,6 +191,7 @@
         // Store the file as base-64 encoded data
         var base64FileData = dataUrl.substring(commaSplitIdx + 1);
         this.saveSubmittedFile(name, size, isFromDownload ? null : new Date(), base64FileData);
+        this.refreshRequiredRegex();
         this.renderFileList();
 
         if (!isFromDownload) {
@@ -263,7 +254,15 @@
         this.files.splice(idx, 1);
       }
 
-      // Recompute which regexes are matched by remaining files
+      this.refreshRequiredRegex();
+      this.syncFilesToHiddenInput();
+      this.renderFileList();
+    }
+
+    /**
+     * Recomputes which required regex patterns are "filled" with uploaded files (and therefore no longer displayed)
+     */
+    refreshRequiredRegex() {
       this.requiredFilesUnmatchedRegex = this.requiredFilesRegex.slice();
       this.files.forEach((n) => {
         if (this.requiredFiles.includes(n.name)) return;
@@ -274,9 +273,6 @@
           this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
         }
       });
-
-      this.syncFilesToHiddenInput();
-      this.renderFileList();
     }
 
     /**
