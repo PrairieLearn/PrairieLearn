@@ -328,10 +328,10 @@ export function StudentAssessmentInstance({
                                         resLocals.assessment_instance.open &&
                                         instance_question.open,
                                       currentWeight:
-                                        (instance_question.points_list_original as number[])[
+                                        (instance_question.points_list_original?.[
                                           instance_question.number_attempts
-                                        ] - (instance_question.max_manual_points ?? 0),
-                                      pointsList: (instance_question.points_list as number[]).map(
+                                        ] ?? 0) - (instance_question.max_manual_points ?? 0),
+                                      pointsList: instance_question.points_list?.map(
                                         (p) => p - (instance_question.max_manual_points ?? 0),
                                       ),
                                       highestSubmissionScore:
