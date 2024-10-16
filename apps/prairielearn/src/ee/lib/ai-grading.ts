@@ -168,6 +168,10 @@ async function generateGPTPrompt({
     role: 'user',
     content: `Answer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
   });
+
+  if (warning) {
+    warning = `Warning:\n${warning}Warning: accuracy may be lower due to inconsistent rubrics.`;
+  }
   return { messages, warning };
 }
 
@@ -524,9 +528,7 @@ export async function aiGrade({
         }
         job.info(msg);
         if (warning) {
-          job.warn(
-            `Warning:\n${warning}Warning: accuracy may be lower due to inconsistent rubrics.`,
-          );
+          job.warn(warning);
         }
         rubric_items = new_rubric_items;
       } else {
@@ -566,9 +568,7 @@ export async function aiGrade({
         }
         job.info(msg);
         if (warning) {
-          job.warn(
-            `Warning:\n${warning}Warning: accuracy may be lower due to inconsistent rubrics.`,
-          );
+          job.warn(warning);
         }
       }
     }
