@@ -5,12 +5,14 @@ import { config } from '../lib/config.js';
 import type {
   AssessmentQuestion,
   CourseInstance,
+  GroupConfig,
   InstanceQuestion,
   Issue,
   Question,
   User,
+  Variant,
 } from '../lib/db-types.js';
-import { getRoleNamesForUser } from '../lib/groups.js';
+import { getRoleNamesForUser, type GroupInfo } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 
 import { Modal } from './Modal.html.js';
@@ -295,11 +297,39 @@ export function QuestionTitle({
   }
 }
 
+interface QuestionFooterResLocals {
+  showSaveButton: boolean;
+  showGradeButton: boolean;
+  disableSaveButton: boolean;
+  disableGradeButton: boolean;
+  showNewVariantButton: boolean;
+  showTryAgainButton: boolean;
+  hasAttemptsOtherVariants: boolean;
+  variantAttemptsLeft: number;
+  variantAttemptsTotal: number;
+  newVariantUrl: string;
+  tryAgainUrl: string;
+  question: Question;
+  variant: Variant;
+  instance_question: (InstanceQuestion & { allow_grade_left_ms?: number }) | null;
+  assessment_question: AssessmentQuestion | null;
+  instance_question_info: Record<string, any>;
+  authz_result: Record<string, any>;
+  group_config: GroupConfig | null;
+  group_info: GroupInfo | null;
+  group_role_permissions: {
+    can_view: boolean;
+    can_submit: boolean;
+  } | null;
+  user: User;
+  __csrf_token: string;
+}
+
 export function QuestionFooter({
   resLocals,
   questionContext,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: QuestionFooterResLocals;
   questionContext: QuestionContext;
 }) {
   if (questionContext === 'manual_grading') return '';
@@ -324,7 +354,7 @@ function QuestionFooterContent({
   resLocals,
   questionContext,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: QuestionFooterResLocals;
   questionContext: QuestionContext;
 }) {
   const {
@@ -404,7 +434,7 @@ function QuestionFooterContent({
                 </button>
               `
             : ''}
-          ${group_config?.has_roles && !group_role_permissions?.can_submit
+          ${group_config?.has_roles && !group_role_permissions?.can_submit && group_info
             ? html`
                 <button
                   type="button"
@@ -486,7 +516,7 @@ function SubmitRateFooter({
   questionContext: QuestionContext;
   showGradeButton: boolean;
   disableGradeButton: boolean;
-  assessment_question: AssessmentQuestion;
+  assessment_question: AssessmentQuestion | null;
   allowGradeLeftMs: number;
 }) {
   if (!showGradeButton || !assessment_question?.grade_rate_minutes) return '';
@@ -574,10 +604,10 @@ function AvailablePointsNotes({
   assessment_question,
 }: {
   questionContext: QuestionContext;
-  instance_question: InstanceQuestion;
-  assessment_question: AssessmentQuestion;
+  instance_question: InstanceQuestion | null;
+  assessment_question: AssessmentQuestion | null;
 }) {
-  if (questionContext !== 'student_exam' || !instance_question.points_list) return '';
+  if (questionContext !== 'student_exam' || !instance_question?.points_list) return '';
 
   const roundedPoints = instance_question.points_list.map((p: number) => Math.round(p * 100) / 100);
   const maxManualPoints = assessment_question?.max_manual_points ?? 0;
@@ -644,7 +674,11 @@ function QuestionPanel({
           : ''}
       </div>
       <div class="card-body question-body">${unsafeHtml(questionHtml)}</div>
-      ${QuestionFooter({ resLocals, questionContext })}
+      ${QuestionFooter({
+        // TODO: propagate more precise types upwards.
+        resLocals: resLocals as any,
+        questionContext,
+      })}
     </div>
   `;
 }

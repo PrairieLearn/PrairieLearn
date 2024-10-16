@@ -18,6 +18,7 @@ import {
   SubmissionDetailedSchema,
 } from '../components/SubmissionPanel.html.js';
 import type { SubmissionForRender } from '../components/SubmissionPanel.html.js';
+import { selectUserById } from '../models/user.js';
 import { selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -48,7 +49,7 @@ import {
   type Variant,
   VariantSchema,
 } from './db-types.js';
-import { getQuestionGroupPermissions, getUserRoles } from './groups.js';
+import { getGroupInfo, getQuestionGroupPermissions, getUserRoles } from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import type { SubmissionPanels } from './question-render.types.js';
@@ -770,17 +771,32 @@ export async function renderPanelsForSubmission({
       // Render the question panel footer
       if (!renderScorePanels) return;
 
+      if (csrfToken == null) {
+        // This should not happen in this context
+        throw new Error('CSRF token not provided in a context where the score panel is rendered.');
+      }
+
+      const group_info = await run(async () => {
+        if (!assessment_instance?.group_id || !group_config) return null;
+
+        return await getGroupInfo(assessment_instance?.group_id, group_config);
+      });
+
+      const user = await selectUserById(user_id);
+
       panels.questionPanelFooter = QuestionFooter({
         resLocals: {
           variant,
           question,
           assessment_question,
           instance_question,
-          question_context: questionContext,
           __csrf_token: csrfToken,
           authz_result: { authorized_edit: authorizedEdit },
           instance_question_info: { previous_variants },
+          group_config,
+          group_info,
           group_role_permissions,
+          user,
           ...locals,
         },
         questionContext,
