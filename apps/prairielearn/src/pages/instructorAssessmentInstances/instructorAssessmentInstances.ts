@@ -115,7 +115,7 @@ router.post(
         time_add: req.body.time_add,
         base_time: 'date_limit',
         authn_user_id: res.locals.authz_data.authn_user.user_id,
-        exact_date: formatDate(new Date(), res.locals.course_instance.display_timezone),
+        exact_date: new Date(),
       };
       if (req.body.action === 'unlimited' || req.body.reopen_without_limit === 'true') {
         params.base_time = 'null';
@@ -129,10 +129,11 @@ router.post(
       } else if (req.body.action === 'set_exact') {
         params.base_time = 'exact_date';
         params.time_add = 0;
-        params.exact_date = Temporal.PlainDateTime.from(req.body.date)
-          .toZonedDateTime(res.locals.course_instance.display_timezone)
-          .toString({ timeZoneName: 'never' })
-          .replace('T', ' ');
+        params.exact_date = new Date(
+          Temporal.PlainDateTime.from(req.body.date).toZonedDateTime(
+            res.locals.course_instance.display_timezone,
+          ).epochMilliseconds,
+        );
       } else if (req.body.action === 'subtract') {
         params.time_add *= -1;
       }
@@ -145,7 +146,7 @@ router.post(
         base_time: 'date_limit',
         reopen_closed: !!req.body.reopen_closed,
         authn_user_id: res.locals.authz_data.authn_user.user_id,
-        exact_date: formatDate(new Date(), res.locals.course_instance.display_timezone),
+        exact_date: new Date(),
       };
       if (req.body.action === 'unlimited') {
         params.base_time = 'null';
@@ -159,12 +160,13 @@ router.post(
       } else if (req.body.action === 'set_exact') {
         params.base_time = 'exact_date';
         params.time_add = 0;
-        params.exact_date = Temporal.PlainDateTime.from(req.body.date)
-          .toZonedDateTime(res.locals.course_instance.display_timezone)
-          .toString({ timeZoneName: 'never' })
-          .replace('T', ' ');
-      } else {
-        params.time_add *= req.body.action;
+        params.exact_date = new Date(
+          Temporal.PlainDateTime.from(req.body.date).toZonedDateTime(
+            res.locals.course_instance.display_timezone,
+          ).epochMilliseconds,
+        );
+      } else if (req.body.action === 'subtract') {
+        params.time_add *= -1;
       }
       await sqldb.queryAsync(sql.set_time_limit_all, params);
       res.send(JSON.stringify({}));

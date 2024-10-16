@@ -432,7 +432,8 @@ onDocumentReady(() => {
     } else if (action === 'remove') {
       explanation = 'This will remove the time limit and the assessment will remain open.';
     } else if (action === 'expire') {
-      explanation = 'This will expire the time limit and the assessment will be closed.';
+      explanation =
+        'This will expire the time limit and students will be unable to submit any further answers.';
     }
     return <small class="form-text text-muted">{explanation}</small>;
   }
@@ -473,167 +474,161 @@ onDocumentReady(() => {
     function proposedClosingTime() {
       const totalTime = Math.round(row.total_time_sec);
 
-      let temporalDate = Temporal.Instant.from(row.date).toZonedDateTimeISO(timezone);
+      let startDate = Temporal.Instant.from(row.date).toZonedDateTimeISO(timezone);
       if (form.action === 'set_total') {
-        temporalDate = temporalDate.add({ minutes: form.time_add });
+        startDate = startDate.add({ minutes: form.time_add });
       } else if (form.action === 'set_rem') {
-        temporalDate = Temporal.Now.zonedDateTimeISO(timezone).add({ minutes: form.time_add });
+        startDate = Temporal.Now.zonedDateTimeISO(timezone).add({ minutes: form.time_add });
       } else if (form.action === 'add') {
-        temporalDate = temporalDate.add({ seconds: totalTime }).add({ minutes: form.time_add });
+        startDate = startDate.add({ seconds: totalTime }).add({ minutes: form.time_add });
       } else if (form.action === 'subtract') {
-        temporalDate = temporalDate
-          .add({ seconds: totalTime })
-          .subtract({ minutes: form.time_add });
+        startDate = startDate.add({ seconds: totalTime }).subtract({ minutes: form.time_add });
       }
 
-      return formatDate(new Date(temporalDate.toInstant().toString()), timezone);
+      return formatDate(new Date(startDate.epochMilliseconds), timezone);
     }
 
     return (
-      <div>
-        <form name="set-time-limit-form" class="js-popover-form" method="POST">
-          <input type="hidden" name="__action" value={row.action ?? 'set_time_limit'} />
-          <input type="hidden" name="__csrf_token" value={csrfToken} />
-          {row.assessment_instance_id ? (
-            <input type="hidden" name="assessment_instance_id" value={row.assessment_instance_id} />
-          ) : null}
-          {row.action !== 'set_time_limit_all' && !row.open ? (
-            <div>
-              <div class="form-check">
-                <input
-                  class="form-check-input"
-                  type="radio"
-                  name="reopen_without_limit"
-                  id="reopen_without_limit"
-                  value="true"
-                  checked={form.reopen_without_limit}
-                  onClick={() => updateFormState('reopen_without_limit', true)}
-                />
-                <label class="form-check-label" for="reopen_without_limit">
-                  Re-open without time limit
-                </label>
-              </div>
-              <div class="form-check">
-                <input
-                  class="form-check-input"
-                  type="radio"
-                  name="reopen_without_limit"
-                  id="reopen_with_limit"
-                  value="false"
-                  checked={!form.reopen_without_limit}
-                  onClick={() => updateFormState('reopen_without_limit', false)}
-                />
-                <label class="form-check-label" for="reopen_with_limit">
-                  Re-open with time limit
-                </label>
-              </div>
-            </div>
-          ) : null}
-          <p>
-            Total time limit: {row.total_time}
-            <br />
-            Remaining time: {row.time_remaining}
-          </p>
-          {showTimeLimitOptions ? (
-            <p>
-              <select
-                class="custom-select select-time-limit"
-                name="action"
-                aria-label="Time limit options"
-                onChange={(e) =>
-                  updateFormState('action', e.currentTarget.value as TimeLimitAction)
-                }
-              >
-                {row.time_remaining_sec !== null ? (
-                  row.has_open_instance ? (
-                    <>
-                      <option value="add">Add to instances with time limit</option>
-                      <option value="subtract">Subtract from instances with time limit</option>
-                    </>
-                  ) : (
-                    <>
-                      <option value="add">Add</option>
-                      <option value="subtract">Subtract</option>
-                    </>
-                  )
-                ) : null}
-                <option value="set_total">Set total time limit</option>
-                <option value="set_rem">Set remaining time</option>
-                <option value="set_exact">Set exact closing time</option>
-                {row.action === 'set_time_limit_all' ||
-                (row.open && row.time_remaining) !== 'Open (no time limit)' ? (
-                  <option value="remove">Remove time limit</option>
-                ) : null}
-                {row.open && row.time_remaining !== 'Expired' ? (
-                  <option value="expire">Expire time limit</option>
-                ) : null}
-              </select>
-              <TimeLimitExplanation action={form.action} />
-            </p>
-          ) : null}
-          {showTimeLimitOptions &&
-          form.action !== 'set_exact' &&
-          form.action !== 'remove' &&
-          form.action !== 'expire' ? (
-            <div class="input-group mb-2">
+      <form name="set-time-limit-form" class="js-popover-form" method="POST">
+        <input type="hidden" name="__action" value={row.action ?? 'set_time_limit'} />
+        <input type="hidden" name="__csrf_token" value={csrfToken} />
+        {row.assessment_instance_id ? (
+          <input type="hidden" name="assessment_instance_id" value={row.assessment_instance_id} />
+        ) : null}
+        {row.action !== 'set_time_limit_all' && !row.open ? (
+          <div>
+            <div class="form-check">
               <input
-                class="form-control time-limit-field"
-                type="number"
-                name="time_add"
-                aria-label="Time value"
-                value={form.time_add}
-                onChange={(e) => updateFormState('time_add', parseFloat(e.currentTarget.value))}
+                class="form-check-input"
+                type="radio"
+                name="reopen_without_limit"
+                id="reopen_without_limit"
+                value="true"
+                checked={form.reopen_without_limit}
+                onClick={() => updateFormState('reopen_without_limit', true)}
               />
-              <span class="input-group-text time-limit-field">minutes</span>
+              <label class="form-check-label" for="reopen_without_limit">
+                Re-open without time limit
+              </label>
             </div>
-          ) : null}
-          {showTimeLimitOptions && form.action === 'set_exact' ? (
-            <div class="input-group date-picker mb-2">
+            <div class="form-check">
               <input
-                class="form-control date-picker"
-                type="datetime-local"
-                name="date"
-                value={form.date}
-                onChange={(e) => updateFormState('date', e.currentTarget.value)}
+                class="form-check-input"
+                type="radio"
+                name="reopen_without_limit"
+                id="reopen_with_limit"
+                value="false"
+                checked={!form.reopen_without_limit}
+                onClick={() => updateFormState('reopen_without_limit', false)}
               />
-              <span class="input-group-text date-picker">{timezone}</span>
+              <label class="form-check-label" for="reopen_with_limit">
+                Re-open with time limit
+              </label>
             </div>
-          ) : null}
-          {(row.open || !form.reopen_without_limit) &&
-          (form.action === 'set_total' ||
-            form.action === 'set_rem' ||
-            form.action === 'add' ||
-            form.action === 'subtract') ? (
-            <p>Proposed closing time: {proposedClosingTime()}</p>
-          ) : null}
-          <p>
-            {row.has_closed_instance ? (
-              <div class="form-check">
-                <input
-                  class="form-check-input"
-                  type="checkbox"
-                  name="reopen_closed"
-                  value="true"
-                  checked={form.reopen_closed}
-                  id="reopen_closed"
-                  onChange={(e) => updateFormState('reopen_closed', e.currentTarget.checked)}
-                />
-                <label class="form-check-label" for="reopen_closed">
-                  Also re-open closed instances
-                </label>
-              </div>
-            ) : null}
-          </p>
-          <div class="btn-toolbar">
-            <button type="button" class="btn btn-secondary mr-2" data-dismiss="popover">
-              Cancel
-            </button>
-            <button type="submit" class="btn btn-primary">
-              Set
-            </button>
           </div>
-        </form>
-      </div>
+        ) : null}
+        <p>
+          Total time limit: {row.total_time}
+          <br />
+          Remaining time: {row.time_remaining}
+        </p>
+        {showTimeLimitOptions ? (
+          <p>
+            <select
+              class="custom-select select-time-limit"
+              name="action"
+              aria-label="Time limit options"
+              onChange={(e) => updateFormState('action', e.currentTarget.value as TimeLimitAction)}
+            >
+              {row.time_remaining_sec !== null ? (
+                row.has_open_instance ? (
+                  <>
+                    <option value="add">Add to instances with time limit</option>
+                    <option value="subtract">Subtract from instances with time limit</option>
+                  </>
+                ) : (
+                  <>
+                    <option value="add">Add</option>
+                    <option value="subtract">Subtract</option>
+                  </>
+                )
+              ) : null}
+              <option value="set_total">Set total time limit</option>
+              <option value="set_rem">Set remaining time</option>
+              <option value="set_exact">Set exact closing time</option>
+              {row.action === 'set_time_limit_all' ||
+              (row.open && row.time_remaining) !== 'Open (no time limit)' ? (
+                <option value="remove">Remove time limit</option>
+              ) : null}
+              {row.open && row.time_remaining !== 'Expired' ? (
+                <option value="expire">Expire time limit</option>
+              ) : null}
+            </select>
+            <TimeLimitExplanation action={form.action} />
+          </p>
+        ) : null}
+        {showTimeLimitOptions &&
+        form.action !== 'set_exact' &&
+        form.action !== 'remove' &&
+        form.action !== 'expire' ? (
+          <div class="input-group mb-2">
+            <input
+              class="form-control time-limit-field"
+              type="number"
+              name="time_add"
+              aria-label="Time value"
+              value={form.time_add}
+              onChange={(e) => updateFormState('time_add', parseFloat(e.currentTarget.value))}
+            />
+            <span class="input-group-text time-limit-field">minutes</span>
+          </div>
+        ) : null}
+        {showTimeLimitOptions && form.action === 'set_exact' ? (
+          <div class="input-group date-picker mb-2">
+            <input
+              class="form-control date-picker"
+              type="datetime-local"
+              name="date"
+              value={form.date}
+              onChange={(e) => updateFormState('date', e.currentTarget.value)}
+            />
+            <span class="input-group-text date-picker">{timezone}</span>
+          </div>
+        ) : null}
+        {(row.open || !form.reopen_without_limit) &&
+        (form.action === 'set_total' ||
+          form.action === 'set_rem' ||
+          form.action === 'add' ||
+          form.action === 'subtract') ? (
+          <p>Proposed closing time: {proposedClosingTime()}</p>
+        ) : null}
+        <p>
+          {row.has_closed_instance ? (
+            <div class="form-check">
+              <input
+                class="form-check-input"
+                type="checkbox"
+                name="reopen_closed"
+                value="true"
+                checked={form.reopen_closed}
+                id="reopen_closed"
+                onChange={(e) => updateFormState('reopen_closed', e.currentTarget.checked)}
+              />
+              <label class="form-check-label" for="reopen_closed">
+                Also re-open closed instances
+              </label>
+            </div>
+          ) : null}
+        </p>
+        <div class="btn-toolbar">
+          <button type="button" class="btn btn-secondary mr-2" data-dismiss="popover">
+            Cancel
+          </button>
+          <button type="submit" class="btn btn-primary">
+            Set
+          </button>
+        </div>
+      </form>
     );
   }
 

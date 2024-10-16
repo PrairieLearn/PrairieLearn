@@ -1028,7 +1028,6 @@ describe('Manual Grading', function () {
             action: 'unlimited',
             time_add: '0',
             reopen_closed: 'on',
-            date: new Date().toISOString().slice(0, 10),
           }).toString(),
         });
         assert.equal(response.status, 200);
