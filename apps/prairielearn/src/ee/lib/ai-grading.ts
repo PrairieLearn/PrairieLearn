@@ -24,7 +24,7 @@ import {
   type SubmissionGradingContextEmbedding,
   IdSchema,
   RubricItemSchema,
-  RubricItem,
+  type RubricItem,
   type InstanceQuestion,
 } from '../../lib/db-types.js';
 import * as manualGrading from '../../lib/manualGrading.js';
