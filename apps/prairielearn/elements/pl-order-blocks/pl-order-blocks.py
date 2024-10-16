@@ -468,9 +468,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             element, "solution-header", SOLUTION_HEADER_DEFAULT
         )
 
-        all_blocks = data["params"][answer_name]
-        student_previous_submission = data["submitted_answers"].get(answer_name, [])
+        # We aren't allowed to mutate the `data` object during render, so we'll
+        # make a deep copy of the submitted answer so we can update the `indent`
+        # to a value suitable for rendering.
+        student_previous_submission = deepcopy(
+            data["submitted_answers"].get(answer_name, [])
+        )
         submitted_block_ids = {block["uuid"] for block in student_previous_submission}
+
+        all_blocks = data["params"][answer_name]
         source_blocks = [
             block for block in all_blocks if block["uuid"] not in submitted_block_ids
         ]
@@ -506,7 +512,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             help_text += "<p>Your answer will be autograded; be sure to indent and order your answer properly.</p>"
 
         if check_indentation:
+<<<<<<< HEAD
             help_text += "<p><b>Your answer should be indented. </b> Indent your tiles by dragging them horizontally in the answer area.</p>"
+=======
+            help_text += "<p><strong>Your answer should be indented.</strong> Indent your tiles by dragging them horizontally in the answer area.</p>"
+>>>>>>> PrairieLearn/master
 
         help_text += "<p>Keyboard Controls: Arrows to navigate; Enter to select; Escape to deselect blocks.</p>"
 

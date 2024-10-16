@@ -238,16 +238,18 @@ onDocumentReady(() => {
             },
             {
               field: 'group_roles',
-              title: html` Roles
+              title: html`
+                Roles
                 <button
-                  class="btn btn-xs"
+                  class="btn btn-xs btn-ghost"
                   type="button"
                   title="Show roles help"
                   data-toggle="modal"
                   data-target="#role-help"
                 >
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
-                </button>`,
+                </button>
+              `,
               sortable: true,
               class: 'text-center align-middle text-wrap',
               formatter: uniqueListFormatter,
@@ -274,16 +276,18 @@ onDocumentReady(() => {
             },
             {
               field: 'role',
-              title: html` Role
+              title: html`
+                Role
                 <button
-                  class="btn btn-xs"
+                  class="btn btn-xs btn-ghost"
                   type="button"
                   title="Show roles help"
                   data-toggle="modal"
                   data-target="#role-help"
                 >
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
-                </button>`,
+                </button>
+              `,
               sortable: true,
               class: 'text-center align-middle text-nowrap',
               switchable: true,
@@ -315,16 +319,18 @@ onDocumentReady(() => {
       },
       {
         field: 'duration',
-        title: html` Duration
+        title: html`
+          Duration
           <button
-            class="btn btn-xs"
+            class="btn btn-xs btn-ghost"
             type="button"
             title="Show duration help"
             data-toggle="modal"
             data-target="#duration-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
-          </button>`,
+          </button>
+        `,
         sortable: true,
         sortName: 'duration_secs',
         class: 'text-center align-middle text-nowrap',
@@ -332,16 +338,18 @@ onDocumentReady(() => {
       },
       {
         field: 'time_remaining',
-        title: html` Remaining
+        title: html`
+          Remaining
           <button
-            class="btn btn-xs"
+            class="btn btn-xs btn-ghost"
             type="button"
             title="Show remaining time help"
             data-toggle="modal"
             data-target="#time-remaining-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
-          </button>`,
+          </button>
+        `,
         sortable: true,
         sortName: 'time_remaining_sec',
         sorter: timeRemainingLimitSorter,
@@ -361,16 +369,18 @@ onDocumentReady(() => {
       },
       {
         field: 'client_fingerprint_id_change_count',
-        title: html` Fingerprint Changes
+        title: html`
+          Fingerprint Changes
           <button
-            class="btn btn-xs"
+            class="btn btn-xs btn-ghost"
             type="button"
             title="Show fingerprint changes help"
             data-toggle="modal"
             data-target="#fingerprint-changes-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
-          </button>`,
+          </button>
+        `,
         class: 'text-center align-middle',
         // Hidden for groupwork by default, as it is not as relevant in that context
         visible: !assessmentGroupWork,
