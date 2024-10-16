@@ -133,7 +133,7 @@ async function generateGPTPrompt({
         },
         RubricItemSchema,
       );
-      // warning when graded rubric item does not match current rubric item
+      // Warning when graded rubric item does not match current rubric item
       if (
         rubric_grading_items.length &&
         rubric_grading_items[0].rubric_id !== rubric_items[0].rubric_id
@@ -150,10 +150,10 @@ async function generateGPTPrompt({
       });
     } else {
       if (rubric_items.length && !example.manual_rubric_grading_id) {
-        // warning when example is not graded on the rubric but there is a rubric in use
+        // Warning when example is not graded on the rubric but there is a rubric in use
         warning += `Instance question ${example.instance_question_id}: example is not graded on a rubric, but there is a rubric in use.\n`;
       } else if (!rubric_items.length && example.manual_rubric_grading_id) {
-        // warning when example is graded on a rubric but there is no rubric in use
+        // Warning when example is graded on a rubric but there is no rubric in use
         warning += `Instance question ${example.instance_question_id}: example is graded on a rubric, but there is not a rubric in use.\n`;
       }
       messages.push({
@@ -269,7 +269,7 @@ async function ensureSubmissionEmbedding({
     { submission_id },
     SubmissionGradingContextEmbeddingSchema,
   );
-  // if the submission embedding already exists, return the embedding
+  // If the submission embedding already exists, return the embedding
   if (submission_embedding) {
     return submission_embedding;
   }
@@ -294,7 +294,7 @@ async function ensureSubmissionEmbedding({
   $('script').remove();
   const student_answer = $.html();
   const embedding = await createEmbedding(openai, student_answer, `course_${course.id}`);
-  // insert new embedding into the table and return the new embedding
+  // Insert new embedding into the table and return the new embedding
   const new_submission_embedding = await queryRow(
     sql.create_embedding_for_submission,
     {
@@ -341,7 +341,7 @@ export async function aiGrade({
   authn_user_id: string;
   user_id: string;
 }): Promise<string> {
-  // if OpenAI API Key and Organization are not provided, throw error
+  // If OpenAI API Key and Organization are not provided, throw error
   if (!config.openAiApiKey || !config.openAiOrganization) {
     throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
   }
@@ -392,7 +392,7 @@ export async function aiGrade({
     );
     let new_rubric_items = rubric_items;
 
-    // Grade each instance question.
+    // Grade each instance question
     for (const instance_question of result) {
       const { variant, submission } = await queryRow(
         sql.select_last_variant_and_submission,
@@ -402,7 +402,7 @@ export async function aiGrade({
 
       const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
 
-      // get question html
+      // Get question html
       const questionModule = questionServers.getModule(question.type);
       const render_question_results = await questionModule.render(
         { question: true, submissions: false, answer: false },
@@ -456,7 +456,7 @@ export async function aiGrade({
       });
 
       if (rubric_items.length) {
-        // dynamically generate the rubric schema based on the number of items
+        // Dynamically generate the rubric schema based on the number of items
         let GPTRubricItemSchema = z.object({});
         for (let i = 0; i < rubric_items.length; i++) {
           GPTRubricItemSchema = GPTRubricItemSchema.merge(
@@ -480,7 +480,7 @@ export async function aiGrade({
           const grade_response = completion.choices[0].message;
           msg += `Raw ChatGPT response:\n${grade_response.content}`;
           if (grade_response.parsed) {
-            // only care about the rubric numbers
+            // Only care about the rubric numbers
             const gpt_rubric_items: number[] = [];
             for (let i = 0; i < rubric_items.length; i++) {
               const item = grade_response.parsed.rubric_items[i];
@@ -551,7 +551,6 @@ export async function aiGrade({
               {
                 score_perc: grade_response.parsed.grade,
                 feedback: { manual: grade_response.parsed.feedback },
-                // NEXT STEPS: rubrics
               },
               user_id,
             );
