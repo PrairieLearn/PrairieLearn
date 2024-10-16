@@ -306,6 +306,22 @@ async function ensureSubmissionEmbedding({
   return new_submission_embedding;
 }
 
+function validateRubric(old_rubric_items: RubricItem[], new_rubric_items: RubricItem[]): void {
+  if (old_rubric_items.length !== new_rubric_items.length) {
+    throw new Error('rubric modified between trieval and grade insertion');
+  }
+  for (let i = 0; i < old_rubric_items.length; i++) {
+    const old_item = old_rubric_items[i];
+    const new_item = new_rubric_items[i];
+    if (
+      old_item.description !== new_item.description ||
+      old_item.explanation !== new_item.explanation
+    ) {
+      throw new Error('rubric modified between trieval and grade insertion');
+    }
+  }
+}
+
 export async function aiGrade({
   course,
   course_instance_id,
@@ -353,14 +369,6 @@ export async function aiGrade({
       InstanceQuestionSchema,
     );
 
-    const rubric_items = await queryRows(
-      sql.select_rubric_for_grading,
-      {
-        assessment_question_id: assessment_question.id,
-      },
-      RubricItemSchema,
-    );
-
     job.info('Checking for embeddings for all submissions.');
     const newEmbeddingsCount = await generateSubmissionEmbeddings({
       course,
@@ -373,6 +381,14 @@ export async function aiGrade({
     job.info(`Found ${result.length} submissions to grade!`);
 
     let error_count = 0;
+    let rubric_items = await queryRows(
+      sql.select_rubric_for_grading,
+      {
+        assessment_question_id: assessment_question.id,
+      },
+      RubricItemSchema,
+    );
+    let new_rubric_items = rubric_items;
 
     // Grade each instance question.
     for (const instance_question of result) {
@@ -477,6 +493,15 @@ export async function aiGrade({
                 gpt_rubric_items,
               }),
             };
+            new_rubric_items = await queryRows(
+              sql.select_rubric_for_grading,
+              {
+                assessment_question_id: assessment_question.id,
+              },
+              RubricItemSchema,
+            );
+            // Check if rubric items has been modified
+            validateRubric(rubric_items, new_rubric_items);
             await manualGrading.updateInstanceQuestionScore(
               assessment_question.assessment_id,
               instance_question.id,
@@ -505,6 +530,7 @@ export async function aiGrade({
             `Warning:\n${warning}Warning: accuracy may be lower due to inconsistent rubrics.`,
           );
         }
+        rubric_items = new_rubric_items;
       } else {
         const completion = await openai.beta.chat.completions.parse({
           messages,
