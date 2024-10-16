@@ -3,10 +3,10 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { queryRow, queryRows, loadSqlEquiv } from '@prairielearn/postgres';
+import { queryRow, loadSqlEquiv } from '@prairielearn/postgres';
 
-import { Assessment, AssessmentSchema } from '../../lib/db-types.js';
-import { AssessmentQuestionRowSchema } from '../../models/questions.js';
+import { Assessment, AssessmentSchema } from '../../lib/db-types.js'; 
+import { selectAssessmentQuestions } from '../../models/questions.js';
 import { selectCourseById, selectCourseIdByInstanceId } from '../../models/course.js';
 
 import { InstructorAssessmentQuestions } from './publicAssessmentQuestionsPreview.html.js';
@@ -41,24 +41,19 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const isAssessmentPublic = await checkAssessmentPublic(res.locals.assessment_id);
+    let isAssessmentPublic = await checkAssessmentPublic(res.locals.assessment_id); // TEST, make const
     const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
     const course = await selectCourseById(courseId);
     res.locals.course = course;
+
+    isAssessmentPublic = true; // TEST, remove
 
     if (!isAssessmentPublic) {
       throw new error.HttpStatusError(404, 'This assessment is not public.');
     }
 
     res.locals.assessment = await selectAssessmentById(res.locals.assessment_id);
-    const questionRows = await queryRows(
-      sql.select_assessment_questions,
-      {
-        assessment_id: res.locals.assessment.id,
-        course_id: res.locals.course.id,
-      },
-      AssessmentQuestionRowSchema,
-    );
+    const questionRows = await selectAssessmentQuestions(res.locals.assessment_id, courseId);
     
     const questions = questionRows.map((row) => {
       if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);

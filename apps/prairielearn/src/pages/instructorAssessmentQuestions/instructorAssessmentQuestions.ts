@@ -2,27 +2,18 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 
-import { AssessmentQuestionRowSchema } from '../../models/questions.js';
+import { selectAssessmentQuestions } from '../../models/questions.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
 import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';
 
 const router = express.Router();
-const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const questions = await queryRows(
-      sql.questions,
-      {
-        assessment_id: res.locals.assessment.id,
-        course_id: res.locals.course.id,
-      },
-      AssessmentQuestionRowSchema,
-    );
+    const questions = await selectAssessmentQuestions(res.locals.assessment.id, res.locals.course.id);
     res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions }));
   }),
 );

@@ -70,6 +70,22 @@ export async function selectPublicQuestionsForCourse(
   return rows;
 }
 
+export async function selectAssessmentQuestions(
+  assessment_id: string,
+  course_id: string,
+): Promise<QuestionsPageData[]> {
+  const rows = await sqldb.queryRows(
+    sql.select_assessment_questions,
+    {
+      assessment_id,
+      course_id,
+    },
+    AssessmentQuestionRowSchema,
+  );
+
+  return rows;
+}
+
 export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   alternative_group_number_choose: AlternativeGroupSchema.shape.number_choose,
   alternative_group_number: AlternativeGroupSchema.shape.number,
