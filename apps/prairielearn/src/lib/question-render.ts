@@ -537,7 +537,7 @@ export async function getAndRenderVariant(
   //
   // We'll only load the data that will be needed for this specific page render.
   // The checks here should match those in `components/QuestionContainer.html.ts`.
-  const loadExtraData = locals.devMode || locals.authz_data.has_course_permission_view;
+  const loadExtraData = config.devMode || locals.authz_data.has_course_permission_view;
   locals.issues = await sqldb.queryRows(
     sql.select_issues,
     {
