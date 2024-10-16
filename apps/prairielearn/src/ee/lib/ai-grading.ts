@@ -133,19 +133,17 @@ async function generateGPTPrompt({
         },
         RubricItemSchema,
       );
+      // warning when graded rubric item does not match current rubric item
+      if (
+        rubric_grading_items.length &&
+        rubric_grading_items[0].rubric_id !== rubric_items[0].rubric_id
+      ) {
+        warning += `Instance question ${example.instance_question_id}: example rubric id is different from the current rubric id.\n`;
+      }
       let rubric_grading_info = '';
-      let curr_example_error = '';
       for (const item of rubric_grading_items) {
         rubric_grading_info += `number: ${item.number}\n`;
-        // warning when graded rubric item does not match current rubric item
-        if (
-          item.number >= rubric_items.length ||
-          rubric_items[item.number].rubric_id !== item.rubric_id
-        ) {
-          curr_example_error = `Instance question ${example.instance_question_id}: example rubric id is different from the current rubric id.\n`;
-        }
       }
-      warning += curr_example_error;
       messages.push({
         role: 'user',
         content: `Example answer: \n${example.submission_text} \nRubric items to this example answer: \n${rubric_grading_info}`,
