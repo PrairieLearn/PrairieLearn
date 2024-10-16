@@ -16,7 +16,7 @@ import {
   setUser,
   parseInstanceQuestionId,
   saveOrGrade,
-  User,
+  type User,
   assertAlert,
 } from './helperClient.js';
 import * as helperServer from './helperServer.js';

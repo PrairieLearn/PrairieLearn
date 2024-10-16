@@ -3,8 +3,8 @@ import { setTimeout as sleep } from 'timers/promises';
 import { parseLinkHeader } from '@web3-storage/parse-link-header';
 import type { Request } from 'express';
 import _ from 'lodash';
-import fetch, { RequestInfo, RequestInit, Response } from 'node-fetch';
-import { Issuer, TokenSet } from 'openid-client';
+import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-fetch';
+import { Issuer, type TokenSet } from 'openid-client';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -25,7 +25,7 @@ import {
   UserSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { ServerJob } from '../../lib/server-jobs.js';
+import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
 import { getInstitutionAuthenticationProviders } from './institution.js';
@@ -727,6 +727,7 @@ export async function updateLti13Scores(
   );
 
   const memberships = await Lti13ContextMembership.loadForInstance(instance);
+  const timestamp = new Date();
 
   for (const assessment_instance of assessment_instances) {
     for (const user of assessment_instance.users) {
@@ -744,7 +745,7 @@ export async function updateLti13Scores(
        https://canvas.instructure.com/doc/api/score.html#method.lti/ims/scores.create
       */
       const score: Lti13Score = {
-        timestamp: assessment_instance.modified_at,
+        timestamp,
         startedAt: assessment_instance.date,
         scoreGiven: assessment_instance.score_perc,
         scoreMaximum: 100,
@@ -763,6 +764,9 @@ export async function updateLti13Scores(
       });
 
       job.info(`\t${res.statusText}`);
+      if (!res.ok) {
+        job.warn(`\t${await res.text()}`);
+      }
     }
   }
 }

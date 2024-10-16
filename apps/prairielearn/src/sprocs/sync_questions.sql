@@ -146,6 +146,8 @@ BEGIN
         show_correct_answer = (src.data->>'show_correct_answer')::boolean,
         template_directory = src.data->>'template_directory',
         topic_id = aggregates.topic_id,
+        shared_publicly = (src.data->>'shared_publicly')::boolean,
+        share_source_publicly = (src.data->>'share_source_publicly')::boolean,
         external_grading_enabled = (src.data->>'external_grading_enabled')::boolean,
         external_grading_image = src.data->>'external_grading_image',
         external_grading_files = jsonb_array_to_text_array(src.data->'external_grading_files'),
