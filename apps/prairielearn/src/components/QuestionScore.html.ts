@@ -529,7 +529,7 @@ function QuestionValue({
           points.`,
       );
       parts.push(html`<hr />`);
-      parts.push(html`If you score less than 100%, you will not be awarded any additional points.`);
+      parts.push(html`If you score less than ${formatPoints(bestCurrentScore)}%, you will not be awarded any additional points.`);
     }
 
     return joinHtml(parts);
