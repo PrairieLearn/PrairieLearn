@@ -1,7 +1,7 @@
-import { Request, Response, NextFunction } from 'express';
+import { type Request, type Response, type NextFunction } from 'express';
 import { z } from 'zod';
 
-import { FeatureOverrides } from './manager.js';
+import { type FeatureOverrides } from './manager.js';
 
 import { features } from './index.js';
 

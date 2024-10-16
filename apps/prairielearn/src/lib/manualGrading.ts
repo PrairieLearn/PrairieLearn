@@ -12,7 +12,7 @@ import {
   IdSchema,
   RubricGradingItemSchema,
   RubricGradingSchema,
-  RubricItem,
+  type RubricItem,
   RubricItemSchema,
   RubricSchema,
   Submission,

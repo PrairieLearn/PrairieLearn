@@ -8,7 +8,11 @@ import fs from 'fs-extra';
 import _ from 'lodash';
 import yargs from 'yargs';
 
-import { describeDatabase, formatDatabaseDescription, DatabaseDescription } from '../describe.js';
+import {
+  describeDatabase,
+  formatDatabaseDescription,
+  type DatabaseDescription,
+} from '../describe.js';
 
 const args = yargs(process.argv.slice(2))
   .usage('Usage: $0 <database name> [options]')

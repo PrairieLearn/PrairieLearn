@@ -25,15 +25,15 @@ import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPo
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
-  AssessmentInstance,
+  type AssessmentInstance,
   DateFromISOString,
-  GroupConfig,
+  type GroupConfig,
   IdSchema,
-  InstanceQuestion,
+  type InstanceQuestion,
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { getRoleNamesForUser, GroupInfo } from '../../lib/groups.js';
+import { getRoleNamesForUser, type GroupInfo } from '../../lib/groups.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({

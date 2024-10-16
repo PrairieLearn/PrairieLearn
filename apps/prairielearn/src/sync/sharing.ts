@@ -3,9 +3,9 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { IdSchema } from '../lib/db-types.js';
-import { ServerJobLogger } from '../lib/server-jobs.js';
+import { type ServerJobLogger } from '../lib/server-jobs.js';
 
-import { CourseData } from './course-db.js';
+import { type CourseData } from './course-db.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface SharedQuestion {

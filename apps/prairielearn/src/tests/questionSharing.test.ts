@@ -10,7 +10,7 @@ import * as tmp from 'tmp';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { Course, IdSchema } from '../lib/db-types.js';
+import { type Course, IdSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';

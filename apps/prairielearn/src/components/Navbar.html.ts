@@ -1,5 +1,5 @@
 import { flash, type FlashMessageType } from '@prairielearn/flash';
-import { html, HtmlValue, unsafeHtml } from '@prairielearn/html';
+import { html, type HtmlValue, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
