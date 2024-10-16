@@ -224,7 +224,7 @@
      * Saves or updates the given file.
      * @param  {String} name     Name of the file
      * @param  {Number} size     Size of the file in bytes
-     * @param  {Date} date     Date when the file was uploaded (null if file is downloaded)
+     * @param  {Date|null} date     Date when the file was uploaded (null if file is downloaded)
      * @param  {String} contents The file's base64-encoded contents
      */
     saveSubmittedFile(name, size, date, contents) {
