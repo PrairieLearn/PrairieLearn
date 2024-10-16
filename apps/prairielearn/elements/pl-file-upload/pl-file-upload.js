@@ -141,7 +141,7 @@
             this.addWarningMessage(
               `Combined file size of new file and existing files (<strong>${
                 Math.round((existingFileSize + file.size) / 1024 / 10.24) / 100
-              } MB</strong>) and is greater than maximum file size of ${this.maxFileSizeMB} MB.`,
+              } MB</strong>) is greater than maximum file size of ${this.maxFileSizeMB} MB.`,
             );
             return;
           }
