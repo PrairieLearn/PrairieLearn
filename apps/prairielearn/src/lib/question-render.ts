@@ -9,7 +9,7 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
 import { QuestionFooter } from '../components/QuestionContainer.html.js';
-import { QuestionContext } from '../components/QuestionContainer.types.js';
+import { type QuestionContext } from '../components/QuestionContainer.types.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
 import { QuestionScorePanel } from '../components/QuestionScore.html.js';
 import {
@@ -23,29 +23,29 @@ import * as questionServers from '../question-servers/index.js';
 
 import { config } from './config.js';
 import {
-  Assessment,
-  AssessmentInstance,
+  type Assessment,
+  type AssessmentInstance,
   AssessmentInstanceSchema,
-  AssessmentQuestion,
+  type AssessmentQuestion,
   AssessmentQuestionSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  Course,
+  type Course,
   CourseInstanceSchema,
   CourseSchema,
   DateFromISOString,
   GradingJobSchema,
-  GroupConfig,
+  type GroupConfig,
   GroupConfigSchema,
   IdSchema,
-  InstanceQuestion,
+  type InstanceQuestion,
   InstanceQuestionSchema,
   IssueSchema,
-  Question,
+  type Question,
   QuestionSchema,
-  Submission,
+  type Submission,
   SubmissionSchema,
-  Variant,
+  type Variant,
   VariantSchema,
 } from './db-types.js';
 import { getQuestionGroupPermissions, getUserRoles } from './groups.js';

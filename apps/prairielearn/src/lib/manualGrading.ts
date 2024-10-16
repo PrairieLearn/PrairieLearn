@@ -7,7 +7,7 @@ import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  AssessmentQuestion,
+  type AssessmentQuestion,
   AssessmentQuestionSchema,
   IdSchema,
   RubricGradingItemSchema,
@@ -15,7 +15,7 @@ import {
   type RubricItem,
   RubricItemSchema,
   RubricSchema,
-  Submission,
+  type Submission,
 } from './db-types.js';
 import { idsEqual } from './id.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
