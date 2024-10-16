@@ -347,6 +347,7 @@ function QuestionFooterContent({
     authz_result,
     group_config,
     group_info,
+    group_role_permissions,
     user,
     __csrf_token,
   } = resLocals;
@@ -403,7 +404,7 @@ function QuestionFooterContent({
                 </button>
               `
             : ''}
-          ${group_config?.has_roles && !instance_question?.group_role_permissions?.can_submit
+          ${group_config?.has_roles && !group_role_permissions?.can_submit
             ? html`
                 <button
                   type="button"

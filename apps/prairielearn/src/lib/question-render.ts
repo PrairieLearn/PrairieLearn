@@ -442,6 +442,7 @@ export async function getAndRenderVariant(
     assessment_instance,
     assessment_question,
     group_config,
+    group_role_permissions,
     authz_result,
   } = locals;
 
@@ -452,7 +453,7 @@ export async function getAndRenderVariant(
     variant,
     question,
     instance_question,
-    group_role_permissions: instance_question?.group_role_permissions,
+    group_role_permissions,
     assessment,
     assessment_instance,
     assessment_question,
@@ -779,6 +780,7 @@ export async function renderPanelsForSubmission({
           __csrf_token: csrfToken,
           authz_result: { authorized_edit: authorizedEdit },
           instance_question_info: { previous_variants },
+          group_role_permissions,
           ...locals,
         },
         questionContext,

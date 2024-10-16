@@ -39,12 +39,12 @@ export async function selectAndAuthzInstanceQuestion(req, res) {
       // Get the role permissions. If the authorized user has course instance
       // permission, then role restrictions don't apply.
       if (!res.locals.authz_data.has_course_instance_permission_view) {
-        res.locals.instance_question.group_role_permissions = await getQuestionGroupPermissions(
+        res.locals.group_role_permissions = await getQuestionGroupPermissions(
           res.locals.instance_question.id,
           res.locals.assessment_instance.group_id,
           res.locals.authz_data.user.user_id,
         );
-        if (!res.locals.instance_question.group_role_permissions.can_view) {
+        if (!res.locals.group_role_permissions.can_view) {
           throw new error.HttpStatusError(
             400,
             'Your current group role does not give you permission to see this question.',
