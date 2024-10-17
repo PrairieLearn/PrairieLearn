@@ -59,12 +59,6 @@ COPY Caddyfile /caddy/
 # COPY Caddyfile.test_https /caddy/
 # COPY --chmod=0755 pl-unsafe-test.sh /caddy/
 
-COPY pgadmin4.db.tar.xz /home/postgres/.pgadmin/
-RUN cd /home/postgres/.pgadmin \
-  && tar -xf pgadmin4.db.tar.xz \
-  && rm pgadmin4.db.tar.xz \
-  && chown -R postgres:postgres /home/postgres
-
 USER postgres
 WORKDIR /
 
