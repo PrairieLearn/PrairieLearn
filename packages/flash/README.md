@@ -4,7 +4,7 @@ Adds support for flash messages to Express applications.
 
 ## Usage
 
-`req.session` must exist; [`express-session`](https://www.npmjs.com/package/express-session) is the most common way to use sessions in Express.
+`req.session` must exist. In PrairieLearn, this is provided by the [`@prairielearn/session`](../session/README.md) package. In other applications, [`express-session`](https://www.npmjs.com/package/express-session) is a common way to implement sessions in Express applications.
 
 ```ts
 import express from 'express';

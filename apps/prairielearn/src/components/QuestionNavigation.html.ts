@@ -1,4 +1,4 @@
-import { HtmlValue, html } from '@prairielearn/html';
+import { type HtmlValue, html } from '@prairielearn/html';
 
 export function QuestionNavSideGroup({
   urlPrefix,

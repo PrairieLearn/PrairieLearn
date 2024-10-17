@@ -11,7 +11,10 @@ import * as sqldb from '@prairielearn/postgres';
 import { getGroupConfig } from '../../lib/groups.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
-import { InstructorAssessmentDownloads, Filenames } from './instructorAssessmentDownloads.html.js';
+import {
+  InstructorAssessmentDownloads,
+  type Filenames,
+} from './instructorAssessmentDownloads.html.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
