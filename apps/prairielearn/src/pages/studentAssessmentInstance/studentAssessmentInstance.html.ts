@@ -49,6 +49,22 @@ export function StudentAssessmentInstance({
     }
   | { groupConfig?: undefined; groupInfo?: undefined; userCanAssignRoles?: undefined }
 )) {
+  let savedAnswers = 0;
+  let suspendedSavedAnswers = 0;
+  resLocals.instance_questions.forEach((question) => {
+    if (question.status === 'saved') {
+      if (question.allow_grade_left_ms > 0) {
+        suspendedSavedAnswers++;
+      } else if (question.max_auto_points || !question.max_manual_points) {
+        // Note that we exclude questions that are not auto-graded from the count.
+        // This count is used to determine whether the "Grade X saved answers"
+        // button should be enabled, and clicking that button won't do any good for
+        // manually-graded questions.
+        savedAnswers++;
+      }
+    }
+  });
+
   // Keep this in sync with the `InstanceQuestionTableHeader` function below.
   const zoneTitleColspan = run(() => {
     const trailingColumnsCount =
@@ -268,26 +284,31 @@ export function StudentAssessmentInstance({
                       ${resLocals.assessment.type === 'Exam'
                         ? html`
                             <td class="text-center">
-                              ${ExamQuestionStatus({ instance_question })}
+                              ${ExamQuestionStatus({
+                                instance_question,
+                                assessment_question: instance_question, // Required fields are in instance_question
+                              })}
                             </td>
                             ${resLocals.has_auto_grading_question &&
                             resLocals.assessment.allow_real_time_grading
                               ? html`
                                   <td class="text-center">
-                                    ${ExamQuestionAvailablePoints({
-                                      open:
-                                        resLocals.assessment_instance.open &&
-                                        instance_question.open,
-                                      currentWeight:
-                                        instance_question.points_list_original[
-                                          instance_question.number_attempts
-                                        ] - instance_question.max_manual_points,
-                                      pointsList: instance_question.points_list.map(
-                                        (p) => p - instance_question.max_manual_points,
-                                      ),
-                                      highestSubmissionScore:
-                                        instance_question.highest_submission_score,
-                                    })}
+                                    ${instance_question.max_auto_points
+                                      ? ExamQuestionAvailablePoints({
+                                          open:
+                                            resLocals.assessment_instance.open &&
+                                            instance_question.open,
+                                          currentWeight:
+                                            instance_question.points_list_original[
+                                              instance_question.number_attempts
+                                            ] - instance_question.max_manual_points,
+                                          pointsList: instance_question.points_list.map(
+                                            (p) => p - instance_question.max_manual_points,
+                                          ),
+                                          highestSubmissionScore:
+                                            instance_question.highest_submission_score,
+                                        })
+                                      : html`&mdash;`}
                                   </td>
                                 `
                               : ''}
@@ -402,15 +423,15 @@ export function StudentAssessmentInstance({
                               name="__csrf_token"
                               value="${resLocals.__csrf_token}"
                             />
-                            ${resLocals.savedAnswers > 0
+                            ${savedAnswers > 0
                               ? html`
                                   <button
                                     type="submit"
                                     class="btn btn-info my-2"
                                     ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
                                   >
-                                    Grade ${resLocals.savedAnswers} saved
-                                    ${resLocals.savedAnswers !== 1 ? 'answers' : 'answer'}
+                                    Grade ${savedAnswers} saved
+                                    ${savedAnswers !== 1 ? 'answers' : 'answer'}
                                   </button>
                                 `
                               : html`
@@ -420,17 +441,17 @@ export function StudentAssessmentInstance({
                                 `}
                           </form>
                           <ul class="my-1">
-                            ${resLocals.suspendedSavedAnswers > 1
+                            ${suspendedSavedAnswers > 1
                               ? html`
                                   <li>
-                                    There are ${resLocals.suspendedSavedAnswers} saved answers that
-                                    cannot be graded yet because their grade rate has not been
-                                    reached. They are marked with the
+                                    There are ${suspendedSavedAnswers} saved answers that cannot be
+                                    graded yet because their grade rate has not been reached. They
+                                    are marked with the
                                     <i class="fa fa-hourglass-half"></i> icon above. Reload this
                                     page to update this information.
                                   </li>
                                 `
-                              : resLocals.suspendedSavedAnswers === 1
+                              : suspendedSavedAnswers === 1
                                 ? html`
                                     <li>
                                       There is one saved answer that cannot be graded yet because
