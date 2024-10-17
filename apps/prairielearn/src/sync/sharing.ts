@@ -198,14 +198,8 @@ export function checkInvalidSharedAssessments(
       if (!assessment?.data?.shareSourcePublicly) {
         continue;
       }
-      if (!(assessment.data && assessment.data.zones)) {
-        continue;
-      }
-      for (const zone of assessment.data.zones) {
-        if (!zone.questions) {
-          continue;
-        }
-        for (const question of zone.questions) {
+      for (const zone of assessment?.data?.zones ?? []) {
+        for (const question of zone.questions ?? []) {
           if (!question.id) {
             continue;
           }
