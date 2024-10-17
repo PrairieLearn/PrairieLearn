@@ -342,14 +342,19 @@ export function StudentAssessmentInstance({
                             ${resLocals.has_auto_grading_question
                               ? html`
                                   <td class="text-center">
-                                    ${formatPoints(
+                                    ${run(() => {
+                                      if (!instance_question.max_auto_points) return html`&mdash;`;
+
                                       // Compute the current "auto" value by subtracting the manual points.
                                       // We use this because `current_value` doesn't account for manual points.
                                       // We don't want to mislead the student into thinking that they can earn
                                       // more points than they actually can.
-                                      (instance_question.current_value ?? 0) -
-                                        (instance_question.max_manual_points ?? 0),
-                                    )}
+                                      const currentAutoValue =
+                                        (instance_question.current_value ?? 0) -
+                                        (instance_question.max_manual_points ?? 0);
+
+                                      return formatPoints(currentAutoValue);
+                                    })}
                                   </td>
                                   <td class="text-center">
                                     ${QuestionVariantHistory({

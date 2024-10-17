@@ -65,10 +65,14 @@ export function QuestionScorePanel({
             : ''}
           ${assessment.type === 'Homework'
             ? html`
-                <tr>
-                  <td>Value:</td>
-                  <td>${QuestionValue({ instance_question, assessment_question })}</td>
-                </tr>
+                ${assessment_question.max_auto_points
+                  ? html`
+                      <tr>
+                        <td>Value:</td>
+                        <td>${QuestionValue({ instance_question, assessment_question })}</td>
+                      </tr>
+                    `
+                  : ''}
                 ${
                   // Only show previous variants if the question allows multiple variants, or there are multiple variants (i.e., they were allowed at some point)
                   !question.single_variant ||
