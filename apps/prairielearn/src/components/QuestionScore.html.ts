@@ -57,8 +57,8 @@ export function QuestionScorePanel({
           ${assessment.type === 'Exam'
             ? html`
                 <tr>
-                  <td>Submission status:</td>
-                  <td>${ExamQuestionStatus({ instance_question })}</td>
+                  <td>Status:</td>
+                  <td>${ExamQuestionStatus({ instance_question, assessment_question })}</td>
                 </tr>
               `
             : ''}
@@ -208,12 +208,33 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
 
 export function ExamQuestionStatus({
   instance_question,
+  assessment_question,
 }: {
   instance_question: InstanceQuestion & {
     allow_grade_left_ms?: number;
     allow_grade_interval?: string;
   };
+  assessment_question: Pick<AssessmentQuestion, 'max_auto_points' | 'max_manual_points'>;
 }) {
+  // Special case: if this is a manually graded question in the "saved" state,
+  // we want to differentiate it from saved auto-graded questions which can
+  // be graded immediately. We'll use a green badge so that student can drive
+  // towards all status badges being green.
+  //
+  // TODO: can we safely look at the assessment question for exams? What about
+  // the guarantee that an Exam-type assessment won't change after it's created?
+  if (
+    instance_question.status === 'saved' &&
+    !assessment_question.max_auto_points &&
+    assessment_question.max_manual_points
+  ) {
+    return html`
+      <span class="align-middle">
+        <span class="badge badge-success">saved for manual grading</span>
+      </span>
+    `;
+  }
+
   const badge_color = {
     unanswered: 'warning',
     invalid: 'danger',
@@ -332,6 +353,17 @@ export function InstanceQuestionPoints({
   const pointsPending =
     (['saved', 'grading'].includes(instance_question.status ?? '') && component !== 'manual') ||
     (instance_question.requires_manual_grading && component !== 'auto');
+
+  // Special case: if this is a manually-graded question in the saved state, don't show
+  // a "pending" badge for auto points, since there aren't any pending auto points.
+  if (
+    instance_question.status === 'saved' &&
+    component === 'auto' &&
+    !assessment_question.max_auto_points &&
+    assessment_question.max_manual_points
+  ) {
+    return html`&mdash;`;
+  }
 
   return html`
     <span class="text-nowrap">
