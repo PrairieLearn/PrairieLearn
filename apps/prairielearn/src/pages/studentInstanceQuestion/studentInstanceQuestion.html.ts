@@ -14,6 +14,7 @@ import { QuestionContainer, QuestionTitle } from '../../components/QuestionConta
 import { QuestionNavSideGroup } from '../../components/QuestionNavigation.html.js';
 import { QuestionScorePanel } from '../../components/QuestionScore.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
+import { getRoleNamesForUser } from '../../lib/groups.js';
 
 export function StudentInstanceQuestion({
   resLocals,
@@ -165,7 +166,9 @@ export function StudentInstanceQuestion({
                 prevGroupRolePermissions: resLocals.prev_instance_question_role_permissions,
                 nextGroupRolePermissions: resLocals.next_instance_question_role_permissions,
                 advanceScorePerc: resLocals.instance_question_info.advance_score_perc,
-                userGroupRoles: resLocals.assessment_instance.user_group_roles,
+                userGroupRoles: resLocals.group_info
+                  ? getRoleNamesForUser(resLocals.group_info, resLocals.user).join(', ')
+                  : null,
               })}
               ${resLocals.assessment.allow_personal_notes
                 ? PersonalNotesPanel({

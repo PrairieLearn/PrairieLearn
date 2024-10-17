@@ -1,3 +1,5 @@
+import { z } from 'zod';
+
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
@@ -24,13 +26,51 @@ import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.ht
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentInstance,
+  DateFromISOString,
   type GroupConfig,
+  IdSchema,
   type InstanceQuestion,
+  InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { type GroupInfo } from '../../lib/groups.js';
+import { getRoleNamesForUser, type GroupInfo } from '../../lib/groups.js';
+import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
+
+export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
+  start_new_zone: z.boolean(),
+  zone_id: IdSchema,
+  zone_title: z.string().nullable(),
+  question_title: z.string(),
+  max_points: z.number().nullable(),
+  max_manual_points: z.number().nullable(),
+  max_auto_points: z.number().nullable(),
+  init_points: z.number().nullable(),
+  row_order: z.number(),
+  question_number: z.string(),
+  zone_max_points: z.number().nullable(),
+  zone_has_max_points: z.boolean(),
+  zone_best_questions: z.number().nullable(),
+  zone_has_best_questions: z.boolean(),
+  file_count: z.number(),
+  sequence_locked: z.boolean(),
+  prev_advance_score_perc: z.number().nullable(),
+  prev_title: z.string().nullable(),
+  prev_sequence_locked: z.boolean().nullable(),
+  allow_grade_left_ms: z.coerce.number(),
+  allow_grade_date: DateFromISOString.nullable(),
+  allow_grade_interval: z.string(),
+  previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
+  group_role_permissions: z
+    .object({
+      can_view: z.boolean(),
+      can_submit: z.boolean(),
+    })
+    .optional(),
+});
+export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
 export function StudentAssessmentInstance({
+  instance_questions,
   showTimeLimitExpiredModal,
   groupConfig,
   groupInfo,
@@ -38,6 +78,7 @@ export function StudentAssessmentInstance({
   userCanDeleteAssessmentInstance,
   resLocals,
 }: {
+  instance_questions: InstanceQuestionRow[];
   showTimeLimitExpiredModal: boolean;
   userCanDeleteAssessmentInstance: boolean;
   resLocals: Record<string, any>;
@@ -47,11 +88,15 @@ export function StudentAssessmentInstance({
       groupInfo: GroupInfo;
       userCanAssignRoles: boolean;
     }
-  | { groupConfig?: undefined; groupInfo?: undefined; userCanAssignRoles?: undefined }
+  | {
+      groupConfig?: undefined;
+      groupInfo?: undefined;
+      userCanAssignRoles?: undefined;
+    }
 )) {
   let savedAnswers = 0;
   let suspendedSavedAnswers = 0;
-  resLocals.instance_questions.forEach((question) => {
+  instance_questions.forEach((question) => {
     if (question.status === 'saved') {
       if (question.allow_grade_left_ms > 0) {
         suspendedSavedAnswers++;
@@ -87,6 +132,10 @@ export function StudentAssessmentInstance({
         : 1 + trailingColumnsCount;
   });
 
+  const userGroupRoles = groupInfo
+    ? getRoleNamesForUser(groupInfo, resLocals.authz_data.user).join(', ')
+    : null;
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -112,7 +161,7 @@ export function StudentAssessmentInstance({
         ${Navbar({ resLocals, navPage: 'assessment_instance' })}
         ${resLocals.assessment.type === 'Exam' && resLocals.authz_result.authorized_edit
           ? ConfirmFinishModal({
-              instance_questions: resLocals.instance_questions,
+              instance_questions,
               csrfToken: resLocals.__csrf_token,
             })
           : ''}
@@ -242,7 +291,7 @@ export function StudentAssessmentInstance({
                 ${InstanceQuestionTableHeader({ resLocals })}
               </thead>
               <tbody>
-                ${resLocals.instance_questions.map(
+                ${instance_questions.map(
                   (instance_question) => html`
                     ${instance_question.start_new_zone && instance_question.zone_title
                       ? html`
@@ -273,7 +322,7 @@ export function StudentAssessmentInstance({
                       <td>
                         ${RowLabel({
                           instance_question,
-                          user_group_roles: resLocals.user_group_roles,
+                          userGroupRoles,
                           urlPrefix: resLocals.urlPrefix,
                           rowLabelText:
                             resLocals.assessment.type === 'Exam'
@@ -299,11 +348,11 @@ export function StudentAssessmentInstance({
                                             resLocals.assessment_instance.open &&
                                             instance_question.open,
                                           currentWeight:
-                                            instance_question.points_list_original[
+                                            (instance_question.points_list_original?.[
                                               instance_question.number_attempts
-                                            ] - instance_question.max_manual_points,
-                                          pointsList: instance_question.points_list.map(
-                                            (p) => p - instance_question.max_manual_points,
+                                            ] ?? 0) - (instance_question.max_manual_points ?? 0),
+                                          pointsList: instance_question.points_list?.map(
+                                            (p) => p - (instance_question.max_manual_points ?? 0),
                                           ),
                                           highestSubmissionScore:
                                             instance_question.highest_submission_score,
@@ -679,13 +728,12 @@ function ZoneInfoBadge({
 
 function RowLabel({
   instance_question,
-  user_group_roles,
+  userGroupRoles,
   rowLabelText,
   urlPrefix,
 }: {
-  // TODO: better types?
-  instance_question: any;
-  user_group_roles: string;
+  instance_question: InstanceQuestionRow;
+  userGroupRoles: string | null;
   rowLabelText: string;
   urlPrefix: string;
 }) {
@@ -695,7 +743,7 @@ function RowLabel({
       ? 'A previous question must be completed before you can access this one.'
       : `You must score at least ${instance_question.prev_advance_score_perc}% on ${instance_question.prev_title} to unlock this question.`;
   } else if (!(instance_question.group_role_permissions?.can_view ?? true)) {
-    lockedPopoverText = `Your current group role (${user_group_roles}) restricts access to this question.`;
+    lockedPopoverText = `Your current group role (${userGroupRoles}) restricts access to this question.`;
   }
 
   return html`
