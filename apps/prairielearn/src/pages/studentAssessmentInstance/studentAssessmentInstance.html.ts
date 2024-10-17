@@ -22,9 +22,13 @@ import { Scorebar } from '../../components/Scorebar.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentInstance, GroupConfig, InstanceQuestion } from '../../lib/db-types.js';
+import {
+  type AssessmentInstance,
+  type GroupConfig,
+  type InstanceQuestion,
+} from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { GroupInfo } from '../../lib/groups.js';
+import { type GroupInfo } from '../../lib/groups.js';
 
 export function StudentAssessmentInstance({
   showTimeLimitExpiredModal,
@@ -45,6 +49,22 @@ export function StudentAssessmentInstance({
     }
   | { groupConfig?: undefined; groupInfo?: undefined; userCanAssignRoles?: undefined }
 )) {
+  let savedAnswers = 0;
+  let suspendedSavedAnswers = 0;
+  resLocals.instance_questions.forEach((question) => {
+    if (question.status === 'saved') {
+      if (question.allow_grade_left_ms > 0) {
+        suspendedSavedAnswers++;
+      } else if (question.max_auto_points || !question.max_manual_points) {
+        // Note that we exclude questions that are not auto-graded from the count.
+        // This count is used to determine whether the "Grade X saved answers"
+        // button should be enabled, and clicking that button won't do any good for
+        // manually-graded questions.
+        savedAnswers++;
+      }
+    }
+  });
+
   // Keep this in sync with the `InstanceQuestionTableHeader` function below.
   const zoneTitleColspan = run(() => {
     const trailingColumnsCount =
@@ -264,26 +284,31 @@ export function StudentAssessmentInstance({
                       ${resLocals.assessment.type === 'Exam'
                         ? html`
                             <td class="text-center">
-                              ${ExamQuestionStatus({ instance_question })}
+                              ${ExamQuestionStatus({
+                                instance_question,
+                                assessment_question: instance_question, // Required fields are in instance_question
+                              })}
                             </td>
                             ${resLocals.has_auto_grading_question &&
                             resLocals.assessment.allow_real_time_grading
                               ? html`
                                   <td class="text-center">
-                                    ${ExamQuestionAvailablePoints({
-                                      open:
-                                        resLocals.assessment_instance.open &&
-                                        instance_question.open,
-                                      currentWeight:
-                                        instance_question.points_list_original[
-                                          instance_question.number_attempts
-                                        ] - instance_question.max_manual_points,
-                                      pointsList: instance_question.points_list.map(
-                                        (p) => p - instance_question.max_manual_points,
-                                      ),
-                                      highestSubmissionScore:
-                                        instance_question.highest_submission_score,
-                                    })}
+                                    ${instance_question.max_auto_points
+                                      ? ExamQuestionAvailablePoints({
+                                          open:
+                                            resLocals.assessment_instance.open &&
+                                            instance_question.open,
+                                          currentWeight:
+                                            instance_question.points_list_original[
+                                              instance_question.number_attempts
+                                            ] - instance_question.max_manual_points,
+                                          pointsList: instance_question.points_list.map(
+                                            (p) => p - instance_question.max_manual_points,
+                                          ),
+                                          highestSubmissionScore:
+                                            instance_question.highest_submission_score,
+                                        })
+                                      : html`&mdash;`}
                                   </td>
                                 `
                               : ''}
@@ -398,15 +423,15 @@ export function StudentAssessmentInstance({
                               name="__csrf_token"
                               value="${resLocals.__csrf_token}"
                             />
-                            ${resLocals.savedAnswers > 0
+                            ${savedAnswers > 0
                               ? html`
                                   <button
                                     type="submit"
                                     class="btn btn-info my-2"
                                     ${!resLocals.authz_result.authorized_edit ? 'disabled' : ''}
                                   >
-                                    Grade ${resLocals.savedAnswers} saved
-                                    ${resLocals.savedAnswers !== 1 ? 'answers' : 'answer'}
+                                    Grade ${savedAnswers} saved
+                                    ${savedAnswers !== 1 ? 'answers' : 'answer'}
                                   </button>
                                 `
                               : html`
@@ -416,17 +441,17 @@ export function StudentAssessmentInstance({
                                 `}
                           </form>
                           <ul class="my-1">
-                            ${resLocals.suspendedSavedAnswers > 1
+                            ${suspendedSavedAnswers > 1
                               ? html`
                                   <li>
-                                    There are ${resLocals.suspendedSavedAnswers} saved answers that
-                                    cannot be graded yet because their grade rate has not been
-                                    reached. They are marked with the
+                                    There are ${suspendedSavedAnswers} saved answers that cannot be
+                                    graded yet because their grade rate has not been reached. They
+                                    are marked with the
                                     <i class="fa fa-hourglass-half"></i> icon above. Reload this
                                     page to update this information.
                                   </li>
                                 `
-                              : resLocals.suspendedSavedAnswers === 1
+                              : suspendedSavedAnswers === 1
                                 ? html`
                                     <li>
                                       There is one saved answer that cannot be graded yet because
@@ -442,11 +467,10 @@ export function StudentAssessmentInstance({
                               the question page.
                             </li>
                             <li>
-                              Look at <strong>Submission status</strong> to confirm that each
-                              question has been graded. Questions with
-                              <strong>Available points</strong> can be attempted again for more
-                              points. Attempting questions again will never reduce the points you
-                              already have.
+                              Look at <strong>Status</strong> to confirm that each question has been
+                              graded. Questions with <strong>Available points</strong> can be
+                              attempted again for more points. Attempting questions again will never
+                              reduce the points you already have.
                             </li>
                             ${resLocals.authz_result.password != null ||
                             !resLocals.authz_result.show_closed_assessment
@@ -592,7 +616,7 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
             ? html`
                 <tr>
                   <th rowspan="2">Question</th>
-                  <th class="text-center" rowspan="2">Submission status</th>
+                  <th class="text-center" rowspan="2">Status</th>
                   <th class="text-center" colspan="2">Auto-grading</th>
                   <th class="text-center" rowspan="2">Manual grading points</th>
                   <th class="text-center" rowspan="2">Total points</th>
@@ -604,7 +628,7 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
             : html`
                 <tr>
                   <th>Question</th>
-                  <th class="text-center">Submission status</th>
+                  <th class="text-center">Status</th>
                   ${trailingColumns}
                 </tr>
               `}

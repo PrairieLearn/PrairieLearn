@@ -5,7 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
-import { CourseData, CourseInstance } from '../course-db.js';
+import { type CourseData, type CourseInstance } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
