@@ -125,10 +125,6 @@
                     import('dompurify'),
                     import('notebookjs'),
                   ]).then(async ([Marked]) => {
-                    // Showdown has a small bug that doesn't allow it to be loaded dynamically.
-                    // This PR will fix it: https://github.com/showdownjs/showdown/pull/1017
-                    // Since the PR could take two weeks or two months, let's used Marked for now
-                    // and get this feature deployed.
                     nb.markdown = Marked.marked.parse;
 
                     nb.sanitizer = (code) =>

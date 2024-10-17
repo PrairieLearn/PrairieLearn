@@ -1,5 +1,5 @@
 /* eslint-env browser,jquery */
-/* global ace, showdown, MathJax, DOMPurify */
+/* global ace, MathJax, DOMPurify */
 
 window.PLFileEditor = function (uuid, options) {
   var elementId = '#file-editor-' + uuid;
@@ -292,12 +292,13 @@ window.PLFileEditor.prototype.b64EncodeUnicode = function (str) {
 window.PLFileEditor.prototype.preview = {
   html: (value) => value,
   markdown: (() => {
-    let markdownRenderer = new showdown.Converter({
-      literalMidWordUnderscores: true,
-      literalMidWordAsterisks: true,
-    });
-
-    return async (value) => markdownRenderer.makeHtml(value);
+    let marked = null;
+    return async (value) => {
+      if (marked == null) {
+        marked = (await import('marked')).marked;
+      }
+      return await marked.parse(value);
+    };
   })(),
   dot: (() => {
     let vizPromise = null;
