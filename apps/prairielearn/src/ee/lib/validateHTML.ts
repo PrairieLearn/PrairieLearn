@@ -141,7 +141,6 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): strin
  */
 function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
   const errors: string[] = [];
-  let usedAnswersName = false;
   let displayDropdown = false;
   let usedAllOfTheAbove = false;
   let usedNoneOfTheAbove = false;
@@ -155,7 +154,6 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
       const val = attr.value;
       switch (key) {
         case 'answers-name':
-          usedAnswersName = true;
           break;
         case 'weight':
           assertInt('pl-multiple-choice', key, val, errors);
@@ -211,9 +209,7 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
       }
     }
   }
-  if (!usedAnswersName) {
-    errors.push('pl-multiple-choice: answers-name is a required attribute.');
-  }
+
   if (!usedAllOfTheAbove && usedAllOfTheAboveFeedback) {
     errors.push(
       'pl-multiple-choice: if using all-of-the-above-feedback, you must also use all-of-the-above.',
@@ -493,7 +489,6 @@ function checkStringInput(ast: DocumentFragment | ChildNode): string[] {
  */
 function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
   const errors: string[] = [];
-  let usedAnswersName = false;
   let usedPartialCredit = true;
   let usedPartialCreditMethod = false;
   if ('attrs' in ast) {
@@ -502,7 +497,6 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
       const val = attr.value;
       switch (key) {
         case 'answers-name':
-          usedAnswersName = true;
           break;
         case 'weight':
         case 'number-answers':
@@ -538,9 +532,7 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
       }
     }
   }
-  if (!usedAnswersName) {
-    errors.push('pl-checkbox: answers-name is a required attribute.');
-  }
+  
   if (usedPartialCreditMethod && !usedPartialCredit) {
     errors.push(
       'pl-checkbox: if partial-credit-method is set, then partial-credit must be set to true.',
