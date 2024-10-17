@@ -132,7 +132,6 @@ export async function initExpress() {
   // all pages including the error page (which we could jump to at
   // any point.
   app.use((req, res, next) => {
-    res.locals.config = config;
     setLocalsFromConfig(res.locals);
     next();
   });

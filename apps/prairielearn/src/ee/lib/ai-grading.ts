@@ -18,12 +18,12 @@ import {
   SubmissionGradingContextEmbeddingSchema,
   SubmissionSchema,
   VariantSchema,
-  Question,
-  Course,
-  AssessmentQuestion,
-  SubmissionGradingContextEmbedding,
+  type Course,
+  type Question,
+  type AssessmentQuestion,
+  type SubmissionGradingContextEmbedding,
   IdSchema,
-  InstanceQuestion,
+  type InstanceQuestion,
 } from '../../lib/db-types.js';
 import * as manualGrading from '../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../lib/question-render.js';

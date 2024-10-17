@@ -217,7 +217,7 @@ export function AuthLogin({
     service,
     resLocals,
     children: html`
-      ${resLocals.devMode
+      ${config.devMode
         ? html`
             ${DevModeBypass()}
             <hr />

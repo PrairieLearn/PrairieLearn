@@ -88,6 +88,8 @@ module.exports = {
     '@prairielearn/aws-client-mandatory-config': 'error',
     '@prairielearn/aws-client-shared-config': 'error',
 
+    '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
+
     // Replaces the standard `no-unused-vars` rule.
     '@typescript-eslint/no-unused-vars': [
       'error',
