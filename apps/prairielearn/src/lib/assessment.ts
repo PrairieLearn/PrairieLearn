@@ -172,6 +172,7 @@ export async function updateAssessmentInstance(
  * if needed.
  *
  * @param assessment_instance_id - The assessment instance to grade.
+ * @param user_id - The current effective user.
  * @param authn_user_id - The current authenticated user.
  * @param requireOpen - Whether to enforce that the assessment instance is open before grading.
  * @param close - Whether to close the assessment instance after grading.
@@ -179,6 +180,7 @@ export async function updateAssessmentInstance(
  */
 export async function gradeAssessmentInstance(
   assessment_instance_id: string,
+  user_id: string | null,
   authn_user_id: string | null,
   requireOpen: boolean,
   close: boolean,
@@ -229,6 +231,7 @@ export async function gradeAssessmentInstance(
       check_submission_id,
       row.question,
       row.variant_course,
+      user_id,
       authn_user_id,
       overrideGradeRate,
     );
@@ -312,6 +315,7 @@ export async function gradeAllAssessmentInstances(
       const requireOpen = true;
       await gradeAssessmentInstance(
         row.assessment_instance_id,
+        user_id,
         authn_user_id,
         requireOpen,
         close,

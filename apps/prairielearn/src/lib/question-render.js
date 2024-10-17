@@ -137,9 +137,10 @@ async function render(
 
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
+  const user_id = locals.user ?? locals.user.user_id ?? null;
   // locals.authn_user may not be populated when rendering a panel
-  const user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
-  await writeCourseIssues(courseIssues, variant, user_id, studentMessage, courseData);
+  const authn_user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
+  await writeCourseIssues(courseIssues, variant, user_id, authn_user_id, studentMessage, courseData);
   return data;
 }
 
@@ -582,9 +583,9 @@ export async function renderPanelsForSubmission({
     variant.instance_question_id == null || assessment_instance == null
       ? null
       : await selectVariantsByInstanceQuestion({
-          assessment_instance_id: assessment_instance.id,
-          instance_question_id: variant.instance_question_id,
-        });
+        assessment_instance_id: assessment_instance.id,
+        instance_question_id: variant.instance_question_id,
+      });
 
   /** @type {SubmissionPanels} */
   const panels = {
