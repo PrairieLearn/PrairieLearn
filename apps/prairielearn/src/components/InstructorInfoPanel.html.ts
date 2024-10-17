@@ -234,6 +234,7 @@ function VariantInfo({
         <pre><code>${JSON.stringify(variant.true_answer, null, 2)}</code></pre>
       </details>
     </div>
+    <hr />
   `;
 }
 
@@ -261,7 +262,6 @@ function AssessmentInstanceInfo({
       : assessment_instance.date;
 
   return html`
-    <hr />
     <h3 class="card-title h5">Assessment Instance:</h3>
     <div class="d-flex flex-wrap">
       <div class="pr-1">AID:</div>
