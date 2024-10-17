@@ -86,7 +86,7 @@ export function QuestionScorePanel({
                         <tr>
                           <td colspan="2" class="text-wrap">
                             All variants:
-                            ${QuestionAwardedPoints({
+                            ${QuestionVariantHistory({
                               instanceQuestionId: instance_question.id,
                               previousVariants: instance_question_info.previous_variants,
                               currentVariantId: variant?.id,
@@ -299,7 +299,7 @@ export function ExamQuestionStatus({
   `;
 }
 
-export function QuestionAwardedPoints({
+export function QuestionVariantHistory({
   instanceQuestionId,
   previousVariants,
   currentVariantId,
@@ -512,7 +512,6 @@ function QuestionValue({
         parts.push(`Your highest submission score so far is ${formatPoints(bestCurrentScore)}%.`);
       }
 
-      // TODO: do we want to show the full formula, or just the number of points?
       const perfectAdditionalPoints = (currentAutoValue * (100 - bestCurrentScore)) / 100;
       parts.push(html`<hr />`);
       parts.push(
@@ -540,7 +539,7 @@ function QuestionValue({
   // points are involved, showing `current_value` could be confusing, as the student can
   // only actually earn `currentAutoValue` points.
   return html`
-    ${instance_question.current_value}
+    ${currentAutoValue}
     <button
       type="button"
       class="btn btn-xs js-value-popover"
