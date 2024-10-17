@@ -39,12 +39,15 @@ export interface ServerJobResult {
   data: Record<string, any>;
 }
 
-export interface ServerJob {
-  fail(msg: string): never;
+export interface ServerJobLogger {
   error(msg: string): void;
   warn(msg: string): void;
   info(msg: string): void;
   verbose(msg: string): void;
+}
+
+export interface ServerJob extends ServerJobLogger {
+  fail(msg: string): never;
   exec(file: string, args?: string[], options?: ServerJobExecOptions): Promise<ServerJobResult>;
   data: Record<string, unknown>;
 }

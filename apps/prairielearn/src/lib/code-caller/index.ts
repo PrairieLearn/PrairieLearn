@@ -11,7 +11,7 @@ import * as Sentry from '@prairielearn/sentry';
 
 import * as chunks from '../chunks.js';
 import { config } from '../config.js';
-import { Course } from '../db-types.js';
+import { type Course } from '../db-types.js';
 import * as load from '../load.js';
 
 import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container.js';
