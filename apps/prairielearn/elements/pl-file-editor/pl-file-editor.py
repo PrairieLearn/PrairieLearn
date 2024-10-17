@@ -1,7 +1,7 @@
 import base64
 import hashlib
 import os
-
+import xml.etree.ElementTree as ET
 import chevron
 import lxml.html
 import prairielearn as pl
@@ -21,6 +21,33 @@ DIRECTORY_DEFAULT = "."
 NORMALIZE_TO_ASCII_DEFAULT = False
 ALLOW_BLANK_DEFAULT = False
 
+def categorize_options(element: lxml.html.HtmlElement, data: pl.QuestionData) -> tuple[bool, list[list[int]], str]:
+    hasRange = False
+    file_contents = []
+    range_list = []
+    line = 0 # keeps track of what line in the editor we are in
+
+    for child in element:
+        child_html = pl.inner_html(child)
+        if child_html[-1] != "\n":
+            child_html += "\n"
+        file_contents.append(child_html)
+        new_lines = child_html.count("\n")    
+        
+        if child.tag in ["static"]:
+            startRow = line 
+            endRow = line + max(0, new_lines - 1)
+            range_list.append([startRow, endRow])
+
+        if child_html[-1] != "\n":
+           line += 1    
+
+        line += new_lines
+    
+    if len(range_list) != 0:
+        hasRange = True
+
+    return hasRange, range_list, "".join(file_contents)
 
 def get_answer_name(file_name: str) -> str:
     return "_file_editor_{0}".format(
@@ -59,7 +86,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     data["params"]["_required_file_names"].append(file_name)
 
     if source_file_name is not None:
-        if element.text is not None and not str(element.text).isspace():
+        if (element.text is not None and not str(element.text).isspace()) or ("<static>" in element_html or "<editable" in element_html):
             raise Exception(
                 'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
             )
@@ -117,6 +144,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "question": True,
     }
 
+    ranges = []
+    hasRanges = False
+
     if source_file_name is not None:
         if directory == "serverFilesCourse":
             directory = data["options"]["server_files_course_path"]
@@ -130,6 +160,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     else:
         text_display = "" if element.text is None else str(element.text)
 
+    html_params["range_flag"] = str(hasRanges)
+    html_params["ranges"] = ranges
     html_params["original_file_contents"] = base64.b64encode(
         text_display.encode("UTF-8").strip()
     ).decode()
