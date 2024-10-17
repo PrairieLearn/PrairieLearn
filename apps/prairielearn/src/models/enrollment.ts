@@ -11,11 +11,11 @@ import {
   checkPotentialEnterpriseEnrollment,
 } from '../ee/models/enrollment.js';
 import {
-  Course,
-  CourseInstance,
-  Enrollment,
+  type Course,
+  type CourseInstance,
+  type Enrollment,
   EnrollmentSchema,
-  Institution,
+  type Institution,
 } from '../lib/db-types.js';
 import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';

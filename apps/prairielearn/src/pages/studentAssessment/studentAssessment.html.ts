@@ -4,8 +4,8 @@ import { html } from '@prairielearn/html';
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
-import { Assessment, GroupConfig, User } from '../../lib/db-types.js';
-import { GroupInfo } from '../../lib/groups.js';
+import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
+import { type GroupInfo } from '../../lib/groups.js';
 
 export function StudentAssessment({
   resLocals,

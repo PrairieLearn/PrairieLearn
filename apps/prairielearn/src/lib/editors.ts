@@ -28,10 +28,16 @@ import * as syncFromDisk from '../sync/syncFromDisk.js';
 import * as b64Util from './base64-util.js';
 import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
 import { config } from './config.js';
-import { Assessment, Course, CourseInstance, Question, User } from './db-types.js';
+import {
+  type Assessment,
+  type Course,
+  type CourseInstance,
+  type Question,
+  type User,
+} from './db-types.js';
 import { EXAMPLE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
-import { ServerJob, ServerJobExecutor, createServerJob } from './server-jobs.js';
+import { type ServerJob, type ServerJobExecutor, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
@@ -1180,8 +1186,9 @@ export class QuestionCopyEditor extends Editor {
     // Even when copying a question within a course, we don't want to preserve
     // sharing settings because they cannot be undone
     delete infoJson['sharingSets'];
+    delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
-    delete infoJson['sharedPubliclyWithSource'];
+    delete infoJson['shareSourcePublicly'];
 
     //copying question implies not-draft (for now?)
     delete infoJson['draftVersion'];
@@ -1265,8 +1272,9 @@ export class QuestionTransferEditor extends Editor {
 
     // We do not want to preserve sharing settings when copying a question to another course
     delete infoJson['sharingSets'];
+    delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
-    delete infoJson['sharedPubliclyWithSource'];
+    delete infoJson['shareSourcePublicly'];
 
     //copying question implies not-draft (for now?)
     delete infoJson['draftVersion'];

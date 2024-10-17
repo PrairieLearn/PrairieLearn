@@ -1,11 +1,11 @@
-import { OpenAI } from 'openai';
+import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 
 import { loadSqlEquiv, queryRows, queryRow } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { QuestionAddEditor } from '../../lib/editors.js';
-import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
+import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
 import { validateHTML } from './validateHTML.js';

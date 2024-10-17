@@ -192,6 +192,11 @@ interface Tag {
   description?: string;
 }
 
+interface SharingSet {
+  name: string;
+  description?: string;
+}
+
 interface Topic {
   name: string;
   color: string;
@@ -222,6 +227,7 @@ interface Course {
   topics: Topic[];
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
+  sharingSets: SharingSet[];
 }
 
 interface CourseInstanceAllowAccess {
@@ -381,6 +387,10 @@ export interface Question {
   externalGradingOptions: QuestionExternalGradingOptions;
   workspaceOptions?: QuestionWorkspaceOptions;
   dependencies: Record<string, string>;
+  sharingSets: string[];
+  sharePublicly: boolean;
+  sharedPublicly: boolean;
+  shareSourcePublicly: boolean;
 }
 
 export interface CourseInstanceData {
@@ -670,7 +680,7 @@ export async function loadCourseInfo(
    * @param entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
    */
   function getFieldWithoutDuplicates<
-    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules',
+    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
   >(fieldName: K, entryIdentifier: string, defaults?: Course[K] | undefined): Course[K] {
     const known = new Map();
     const duplicateEntryIds = new Set();
@@ -712,6 +722,8 @@ export async function loadCourseInfo(
   );
   const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
   const topics = getFieldWithoutDuplicates('topics', 'name');
+  const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
+
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
   const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
@@ -763,6 +775,7 @@ export async function loadCourseInfo(
     assessmentModules,
     tags,
     topics,
+    sharingSets,
     exampleCourse,
     options: {
       useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
@@ -1035,6 +1048,14 @@ async function validateQuestion(
         `External grading timeout value of ${question.externalGradingOptions.timeout} seconds exceeds the maximum value and has been limited to ${config.externalGradingMaximumTimeout} seconds.`,
       );
       question.externalGradingOptions.timeout = config.externalGradingMaximumTimeout;
+    }
+  }
+
+  if ('sharedPublicly' in question) {
+    if ('sharePublicly' in question) {
+      errors.push('Cannot specify both "sharedPublicly" and "sharePublicly" in one question.');
+    } else {
+      warnings.push('"sharedPublicly" is deprecated; use "sharePublicly" instead.');
     }
   }
 
