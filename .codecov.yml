@@ -4,6 +4,8 @@
 comment:
   # Only post a comment if code/coverage changed.
   require_changes: true
+  # Only post a comment if the bundle size has changed.
+  require_bundle_changes: true
   # Only post a comment if a base and head commit are both present.
   require_base: true
   require_head: true
