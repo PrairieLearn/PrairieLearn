@@ -8,9 +8,9 @@ import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
-import { QuestionFooter } from '../components/QuestionContainer.html.js';
+import { QuestionFooterContent } from '../components/QuestionContainer.html.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
-import { QuestionScorePanel } from '../components/QuestionScore.html.js';
+import { QuestionScorePanelBody } from '../components/QuestionScore.html.js';
 import {
   SubmissionPanel,
   SubmissionBasicSchema,
@@ -27,12 +27,10 @@ import {
   AssessmentSetSchema,
   CourseInstanceSchema,
   CourseSchema,
-  DateFromISOString,
   GradingJobSchema,
   IdSchema,
   InstanceQuestionSchema,
   IssueSchema,
-  QuestionSchema,
   SubmissionSchema,
   VariantSchema,
 } from './db-types.js';
@@ -69,16 +67,10 @@ const SubmissionInfoSchema = z.object({
   grading_job: GradingJobSchema.nullable(),
   submission: SubmissionSchema,
   variant: VariantSchema,
-  instance_question: InstanceQuestionSchema.extend({
-    allow_grade_left_ms: z.coerce.number(),
-    allow_grade_date: DateFromISOString.nullable(),
-    allow_grade_interval: z.string(),
-  }).nullable(),
   next_instance_question: z.object({
     id: IdSchema.nullable(),
     sequence_locked: z.boolean().nullable(),
   }),
-  question: QuestionSchema,
   assessment_question: AssessmentQuestionSchema.nullable(),
   assessment_instance: AssessmentInstanceSchema.nullable(),
   assessment: AssessmentSchema.nullable(),
@@ -527,33 +519,36 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
  * set, also the side panels for score, navigation and the question footer.
  *
  * @param {Object} param
- * @param  {string} param.submission_id The id of the submission
- * @param  {string} param.question_id The id of the question (for authorization check)
- * @param  {string | null} param.instance_question_id The id of the instance question (for authorization check)
- * @param  {string | null} param.variant_id The id of the variant (for authorization check)
- * @param  {string} param.user_id The id of the authenticated user, used to identify group roles
- * @param  {String}  param.urlPrefix URL prefix to be used when rendering
- * @param  {import('../components/QuestionContainer.types.js').QuestionContext} param.questionContext The rendering context of this question
- * @param  {String?} param.csrfToken CSRF token for this question page
- * @param  {boolean?} param.authorizedEdit If true the user is authorized to edit the submission
- * @param  {boolean} param.renderScorePanels If true, render all side panels, otherwise only the submission panel
+ * @param {string} param.submission_id The id of the submission
+ * @param {import('./db-types.js').Question} param.question The question object
+ * @param {import('./db-types.js').InstanceQuestion | null} param.instance_question The instance question (for authorization check)
+ * @param {string | null} param.variant_id The id of the variant (for authorization check)
+ * @param {import('./db-types.js').User} param.user The authorized user, used to identify group roles
+ * @param {String}  param.urlPrefix URL prefix to be used when rendering
+ * @param {import('../components/QuestionContainer.types.js').QuestionContext} param.questionContext The rendering context of this question
+ * @param {boolean?} param.authorizedEdit If true the user is authorized to edit the submission
+ * @param {boolean} param.renderScorePanels If true, render all side panels, otherwise only the submission panel
  * @returns {Promise<SubmissionPanels>}
  */
 export async function renderPanelsForSubmission({
   submission_id,
-  question_id,
-  instance_question_id,
+  question,
+  instance_question,
   variant_id,
-  user_id,
+  user,
   urlPrefix,
   questionContext,
-  csrfToken,
   authorizedEdit,
   renderScorePanels,
 }) {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
-    { submission_id, question_id, instance_question_id, variant_id },
+    {
+      submission_id,
+      question_id: question.id,
+      instance_question_id: instance_question?.id,
+      variant_id,
+    },
     SubmissionInfoSchema,
   );
   if (submissionInfo == null) throw new error.HttpStatusError(404, 'Not found');
@@ -561,9 +556,7 @@ export async function renderPanelsForSubmission({
   const {
     variant,
     submission,
-    instance_question,
     next_instance_question,
-    question,
     assessment_question,
     assessment_instance,
     assessment,
@@ -665,20 +658,14 @@ export async function renderPanelsForSubmission({
       ) {
         return;
       }
-      if (csrfToken == null) {
-        // This should not happen in this context
-        throw new Error('CSRF token not provided in a context where the score panel is rendered.');
-      }
 
-      panels.questionScorePanel = QuestionScorePanel({
+      panels.questionScorePanel = QuestionScorePanelBody({
         instance_question,
         assessment_question,
         assessment_instance,
         assessment,
         question,
         variant,
-        csrfToken,
-        authz_result: { authorized_edit: authorizedEdit },
         urlPrefix,
         instance_question_info: { question_number, previous_variants },
       }).toString();
@@ -701,14 +688,13 @@ export async function renderPanelsForSubmission({
       // Render the question panel footer
       if (!renderScorePanels) return;
 
-      panels.questionPanelFooter = QuestionFooter({
+      panels.questionPanelFooter = QuestionFooterContent({
         resLocals: {
           variant,
           question,
           assessment_question,
           instance_question,
           question_context: questionContext,
-          __csrf_token: csrfToken,
           authz_result: { authorized_edit: authorizedEdit },
           instance_question_info: { previous_variants },
           ...locals,
@@ -735,10 +721,10 @@ export async function renderPanelsForSubmission({
           groupRolePermissions = await getQuestionGroupPermissions(
             next_instance_question.id,
             assessment_instance.group_id,
-            user_id,
+            user.user_id,
           );
           userGroupRoles =
-            (await getUserRoles(assessment_instance.group_id, user_id))
+            (await getUserRoles(assessment_instance.group_id, user.user_id))
               .map((role) => role.role_name)
               .join(', ') || 'None';
         }

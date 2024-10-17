@@ -27,7 +27,9 @@ onDocumentReady(() => {
   setupDynamicObjects();
   disableOnSubmit();
 
-  $('.js-submission-body.render-pending').on('show.bs.collapse', loadPendingSubmissionPanel);
+  $<HTMLDivElement>('.js-submission-body.render-pending').on('show.bs.collapse', (e) => {
+    loadPendingSubmissionPanel(e.currentTarget, false);
+  });
 
   const copyQuestionForm = document.querySelector<HTMLFormElement>('#copyQuestionModal form');
   if (copyQuestionForm) {
@@ -113,58 +115,15 @@ function handleStatusChange(socket: Socket, msg: StatusMessage) {
 }
 
 function fetchResults(socket: Socket, submissionId: string) {
-  const questionContainer = document.querySelector<HTMLElement>('.question-container');
+  $('#submissionInfoModal-' + submissionId).modal('hide');
 
-  if (!questionContainer) return;
+  const submissionPanel = document.getElementById('submission-' + submissionId);
+  if (!submissionPanel) return;
 
-  const {
-    variantId,
-    questionId,
-    instanceQuestionId,
-    userId,
-    variantToken,
-    urlPrefix,
-    questionContext,
-    csrfToken,
-    authorizedEdit,
-  } = questionContainer.dataset;
+  const submissionBody = submissionPanel.querySelector<HTMLDivElement>('.js-submission-body');
+  if (!submissionBody) return;
 
-  const modal = $('#submissionInfoModal-' + submissionId);
-  const wasModalOpen = (modal.data('bs.modal') || {})._isShown;
-  modal.modal('hide');
-
-  socket.emit(
-    'getResults',
-    {
-      question_id: questionId,
-      instance_question_id: instanceQuestionId === '' ? null : instanceQuestionId,
-      variant_id: variantId,
-      user_id: userId,
-      variant_token: variantToken,
-      submission_id: submissionId,
-      url_prefix: urlPrefix,
-      question_context: questionContext,
-      csrf_token: csrfToken,
-      // Indicates whether submissions are allowed, either because
-      // the instance question is part of the current user's
-      // assessment instance (authorized_edit==true) or because the
-      // question is open in preview mode (authz_result==undefined)
-      authorized_edit: authorizedEdit === 'true',
-    },
-    function (msg: SubmissionPanels | null) {
-      // We're done with the socket for this incarnation of the page
-      socket.close();
-      if (msg) {
-        updateDynamicPanels(msg, submissionId);
-      } else {
-        console.error(`Error retrieving results for submission ${submissionId}`);
-      }
-      // Restore modal state if need be
-      if (wasModalOpen) {
-        $('#submissionInfoModal-' + submissionId).modal('show');
-      }
-    },
-  );
+  loadPendingSubmissionPanel(submissionBody, true);
 }
 
 function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
@@ -240,7 +199,7 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     mathjaxTypeset();
   }
   if (msg.questionScorePanel) {
-    const questionScorePanel = document.getElementById('question-score-panel');
+    const questionScorePanel = document.getElementById('question-score-panel-body');
     if (questionScorePanel) {
       questionScorePanel.outerHTML = msg.questionScorePanel;
     }
@@ -252,7 +211,7 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     }
   }
   if (msg.questionPanelFooter) {
-    const questionPanelFooter = document.getElementById('question-panel-footer');
+    const questionPanelFooter = document.getElementById('question-panel-footer-content');
     if (questionPanelFooter) {
       questionPanelFooter.outerHTML = msg.questionPanelFooter;
     }
@@ -323,11 +282,17 @@ function setupDynamicObjects() {
   }
 }
 
-function loadPendingSubmissionPanel(this: HTMLDivElement) {
-  const { submissionId, dynamicRenderUrl } = this.dataset;
+function loadPendingSubmissionPanel(panel: HTMLElement, includeScorePanels: boolean) {
+  const { submissionId, dynamicRenderUrl } = panel.dataset;
   if (submissionId == null || dynamicRenderUrl == null) return;
 
-  fetch(dynamicRenderUrl)
+  const url = new URL(dynamicRenderUrl, window.location.origin);
+
+  if (includeScorePanels) {
+    url.searchParams.set('render_score_panels', 'true');
+  }
+
+  fetch(url)
     .then(async (response) => {
       // If the response is not a 200, delegate to the error handler (catch block)
       if (!response.ok) throw new Error('Failed to fetch submission');
