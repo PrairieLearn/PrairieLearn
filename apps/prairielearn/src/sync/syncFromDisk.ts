@@ -25,6 +25,7 @@ import {
   checkInvalidPublicSharingRemovals,
   checkInvalidSharingSetDeletions,
   checkInvalidSharingSetAdditions,
+  checkInvalidSharedAssessments,
 } from './sharing.js';
 
 interface SyncResultSharingError {
@@ -70,12 +71,15 @@ export async function checkSharingConfigurationValid(
     logger,
   );
 
+  const existInvalidSharedAssessment = checkInvalidSharedAssessments(courseData, logger);
+
   const sharingConfigurationValid =
     !existInvalidRenames &&
     !existInvalidPublicSharingRemovals &&
     !existInvalidSharingSetDeletions &&
     !existInvalidSharingSetAdditions &&
-    !existInvalidSharingSetRemovals;
+    !existInvalidSharingSetRemovals &&
+    !existInvalidSharedAssessment;
   return sharingConfigurationValid;
 }
 
@@ -107,6 +111,7 @@ export async function syncDiskToSqlWithLock(
   const sharingConfigurationValid = await timed('Validated sharing configuration', () =>
     checkSharingConfigurationValid(courseId, courseData, logger),
   );
+
   if (!sharingConfigurationValid) {
     return {
       status: 'sharing_error',
