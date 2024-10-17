@@ -206,6 +206,26 @@ router.post(
       } catch {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
+    } else if (req.body.__action === 'sharing_set_add') {
+      const questionSharingEnabled = await features.enabledFromLocals(
+        'question-sharing',
+        res.locals,
+      );
+      if (!questionSharingEnabled) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+      if (!res.locals.authz_data.has_course_permission_own) {
+        throw new error.HttpStatusError(403, 'Access denied (must be a course Owner)');
+      }
+      if (typeof res.locals?.question?.draft_version !== 'undefined') {
+        throw new error.HttpStatusError(400, 'Cannot share a draft question. Undraft first.');
+      }
+      await sqldb.queryAsync(sql.sharing_set_add, {
+        course_id: res.locals.course.id,
+        question_id: res.locals.question.id,
+        unsafe_sharing_set_id: req.body.unsafe_sharing_set_id,
+      });
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

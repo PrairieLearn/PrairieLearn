@@ -814,6 +814,7 @@ export const QuestionSchema = z.object({
   deleted_at: DateFromISOString.nullable(),
   dependencies: z.any(),
   directory: z.string().nullable(),
+  draft_version: z.number().nullable(),
   external_grading_enable_networking: z.boolean().nullable(),
   external_grading_enabled: z.boolean().nullable(),
   external_grading_entrypoint: z.string().nullable(),
