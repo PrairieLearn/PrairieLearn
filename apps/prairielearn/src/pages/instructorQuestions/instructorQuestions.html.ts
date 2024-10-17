@@ -5,7 +5,7 @@ import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type CourseInstance } from '../../lib/db-types.js';
-import { QuestionsPageData } from '../../models/questions.js';
+import { type QuestionsPageData } from '../../models/questions.js';
 
 export const QuestionsPage = ({
   questions,

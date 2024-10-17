@@ -11,7 +11,7 @@ import {
   IdSchema,
   RubricGradingItemSchema,
   RubricGradingSchema,
-  RubricItem,
+  type RubricItem,
   RubricItemSchema,
   RubricSchema,
 } from './db-types.js';

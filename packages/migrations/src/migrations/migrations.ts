@@ -8,7 +8,7 @@ import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  MigrationFile,
+  type MigrationFile,
   parseAnnotations,
   readAndValidateMigrationsFromDirectories,
   sortMigrationFiles,
