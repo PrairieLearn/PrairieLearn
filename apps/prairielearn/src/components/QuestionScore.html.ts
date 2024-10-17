@@ -57,7 +57,7 @@ export function QuestionScorePanel({
           ${assessment.type === 'Exam'
             ? html`
                 <tr>
-                  <td>Submission status:</td>
+                  <td>Status:</td>
                   <td>${ExamQuestionStatus({ instance_question })}</td>
                 </tr>
               `

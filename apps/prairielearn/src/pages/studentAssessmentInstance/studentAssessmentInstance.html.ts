@@ -446,11 +446,10 @@ export function StudentAssessmentInstance({
                               the question page.
                             </li>
                             <li>
-                              Look at <strong>Submission status</strong> to confirm that each
-                              question has been graded. Questions with
-                              <strong>Available points</strong> can be attempted again for more
-                              points. Attempting questions again will never reduce the points you
-                              already have.
+                              Look at <strong>Status</strong> to confirm that each question has been
+                              graded. Questions with <strong>Available points</strong> can be
+                              attempted again for more points. Attempting questions again will never
+                              reduce the points you already have.
                             </li>
                             ${resLocals.authz_result.password != null ||
                             !resLocals.authz_result.show_closed_assessment
@@ -596,7 +595,7 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
             ? html`
                 <tr>
                   <th rowspan="2">Question</th>
-                  <th class="text-center" rowspan="2">Submission status</th>
+                  <th class="text-center" rowspan="2">Status</th>
                   <th class="text-center" colspan="2">Auto-grading</th>
                   <th class="text-center" rowspan="2">Manual grading points</th>
                   <th class="text-center" rowspan="2">Total points</th>
@@ -608,7 +607,7 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
             : html`
                 <tr>
                   <th>Question</th>
-                  <th class="text-center">Submission status</th>
+                  <th class="text-center">Status</th>
                   ${trailingColumns}
                 </tr>
               `}
