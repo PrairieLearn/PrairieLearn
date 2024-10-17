@@ -225,6 +225,7 @@ function VariantInfo({
     typeof variant.date === 'string' ? DateFromISOString.parse(variant.date) : variant.date;
 
   return html`
+    <h3 class="card-title h5">Variant</h3>
     ${questionContext !== 'public'
       ? html`
           <div class="d-flex flex-wrap">
@@ -237,7 +238,7 @@ function VariantInfo({
           </div>
         `
       : ''}
-    <div class="d-flex flex-wrap mt-2">
+    <div class="d-flex flex-wrap">
       <details class="pr-1">
         <summary>Show/Hide answer</summary>
         <pre class="mt-2 mb-0"><code>${JSON.stringify(variant.true_answer, null, 2)}</code></pre>
@@ -270,7 +271,7 @@ function AssessmentInstanceInfo({
       : assessment_instance.date;
 
   return html`
-    <h3 class="card-title h5">Assessment Instance</h3>
+    <h3 class="card-title h5">Assessment instance</h3>
     <div class="d-flex flex-wrap">
       <div class="pr-1">AID:</div>
       <div>
@@ -319,7 +320,7 @@ function ManualGradingInfo({
   const manualGradingUrl = `${config.urlPrefix}/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}`;
 
   return html`
-    <h3 class="card-title h5">Manual Grading</h3>
+    <h3 class="card-title h5">Manual grading</h3>
 
     <div class="d-flex flex-wrap">
       <div class="pr-1">Status:</div>
