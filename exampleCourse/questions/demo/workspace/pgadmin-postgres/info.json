@@ -14,7 +14,7 @@
         "port": 8080,
         "args": "",
         "rewriteUrl": true,
-        "home": "/home/postgres",
+        "home": "/home/postgres/workspace",
         "enableNetworking": true
     }
 }
