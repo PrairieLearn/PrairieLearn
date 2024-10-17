@@ -1,4 +1,4 @@
-import { escapeHtml, html, HtmlValue, joinHtml } from '@prairielearn/html';
+import { escapeHtml, html, type HtmlValue, joinHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import type {
@@ -487,7 +487,10 @@ function QuestionValue({
           points.`,
       );
       parts.push(html`<hr />`);
-      parts.push(html`If you score less than ${formatPoints(bestCurrentScore)}%, you will not be awarded any additional points.`);
+      parts.push(
+        html`If you score less than ${formatPoints(bestCurrentScore)}%, you will not be awarded any
+        additional points.`,
+      );
     }
 
     return joinHtml(parts);
