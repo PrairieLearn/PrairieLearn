@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { StripeCheckoutSession } from '../../../../lib/db-types.js';
+import { type StripeCheckoutSession } from '../../../../lib/db-types.js';
 import { type Purchase } from '../purchases.js';
 import { formatStripePrice } from '../stripe.js';
 

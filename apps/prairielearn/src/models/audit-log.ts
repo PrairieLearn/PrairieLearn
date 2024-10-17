@@ -1,6 +1,6 @@
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
-import { AuditLog, AuditLogSchema } from '../lib/db-types.js';
+import { type AuditLog, AuditLogSchema } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

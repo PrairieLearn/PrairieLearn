@@ -58,7 +58,7 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
   - `image`: Docker Hub image serving the IDE and containing the desired compilers, debuggers, etc.
   - `port`: port number used by the workspace app inside the Docker image
   - `home`: home directory inside the Docker image -- this should match the running user's home directory specified by the image maintainer and can't be used (for example) to switch the running user or their home directory
-  - `gradedFiles` (optional, default none): list of file paths (relative to the `home` path) that will be copied out of the workspace container for grading. Files can be in subdirectories, but the files must be explicitly listed (e.g. `dir/file.txt`) or use wildcards (e.g., `dir/*`). If a file is in a subdirectory, the relative path to the file will be reconstructed inside the autograder. Wildcards are allowed (e.g., you can specify `dir/*.c`) and will match any files in the workspace that match them. Paths with wildcards are considered optional. The following wildcards are supported:
+  - `gradedFiles` (optional, default none): list of file paths (relative to the `home` path) that will be copied out of the workspace container when saving a submission. These files can then be used for grading (either auto-grading or manual grading), previewed in the submission panel, and included in instructor submission downloads. Files can be in subdirectories, but the files must be explicitly listed (e.g. `dir/file.txt`) or use wildcards (e.g., `dir/*`). If a file is in a subdirectory, the relative path to the file will be reconstructed inside the autograder. Wildcards are allowed (e.g., you can specify `dir/*.c`) and will match any files in the workspace that match them. Paths with wildcards are considered optional. The following wildcards are supported:
     - `*` matches everything except path separators and hidden files (names starting with `.`).
     - `**` can be used to identify files in all subdirectories of the workspace (e.g., `**/*.py` will copy the files with `.py` extension in the home directory and in all its subdirectories).
     - `?` matches any single character except path separators.
@@ -265,7 +265,7 @@ For example, the [example JupyterLab workspace](https://us.prairielearn.com/pl/c
 docker run -it --rm -p 8080:8080 --user 1001:1001 prairielearn/workspace-jupyterlab-python
 ```
 
-## What to Tell Students
+## What to tell students
 
 Instructors are strongly encouraged to allow students to get exposed to the PrairieLearn workspace environment, as well as specific workspaces to be used in a course, before any formal quizzes or exams. In particular, some workspaces may behave in ways that students need to be aware of. Instructors should provide students with instructions on:
 
@@ -274,3 +274,19 @@ Instructors are strongly encouraged to allow students to get exposed to the Prai
 - Workspace-specific instructions. Different workspace environments may include different instructions for saving files, compiling, testing, and otherwise using the environment, as well as different directory structures that may be relevant in some contexts. Additionally, some workspaces may require additional actions in specific cases. For example, in Jupyter workspaces, students may need to know how to interrupt or restart the kernel.
 
 - Expectations about workspace start times. In the worst case, a workspace may take several minutes as new machines are started and as images are pulled. This may be especially important in timed assessments, where the workspace starting time may affect the student's ability to complete their work.
+
+## Troubleshooting workspace loading
+
+A variety of issues can prevent a workspace from loading, including antivirus software, browser extensions, and network issues. If a workspace fails to load, the following steps may help you resolve the issue or provide more information to the PrairieLearn team:
+
+- **Wait**: Wait for the loading progress indicator to reach 100%. This may take a few minutes if the workspace image is being pulled to a specific host for the first time. Even once a workspace's state changes to running, slow networks may result in a blank page for some time as the workspace's client-side assets load.
+- **Reboot:** If the workspace still hasn't loaded after a few minutes, try rebooting the workspace by clicking the "Reboot" button in the top nav bar. As above, give the workspace several minutes to load.
+- **Try another browser**: Some browser extensions may interfere with workspace loading. If you have another browser installed, try loading the workspace in that browser. Also consider trying a private/incognito window, which will disable most extensions.
+- **Check the browser developer tools console tab**: Open the browser's developer tools and navigate to the "Console" tab. This may contain error messages that can help diagnose the issue.
+  - On Chrome or Edge, you can open the developer tools by opening the three-dots menu in the top right corner, selecting "More tools", and then "Developer tools".
+  - On Safari, you have to turn on the developer tools first. In the menu bar, click "Safari" -> "Settings" -> "Advanced" and check "Show features for web developers". You can then open the developer tools by selecting "Develop" -> "Show Web Inspector".
+  - On Firefox, you can open the developer tools by opening the Firefox menu in the top right corner, selecting "More tools", and then "Web Developer Tools".
+- **Check the browser developer tools network tab**: Using the steps above, open the developer tools and navigate to the "Network" tab. This tab will show all network requests made by the browser, including those made by the workspace. Look for requests that are taking a long time or failing. You may need to reload the page to see all requests. If you want to provide the PrairieLearn team with more information, you can save the network log to a HAR file and send it. _Note: The HAR file may contain sensitive information, so be careful when sharing it. Only share it with individuals that you trust._
+  - On Chrome or Edge, click the downward-facing arrow on the Network tab menu bar (it has a tooltip with the text "Export HAR..." when you hover over it) and save the HAR file.
+  - On Safari, click the "Export" button in the top right corner and save the HAR file.
+  - On Firefox, click the settings gear in the Network tab and select "Save all as HAR".

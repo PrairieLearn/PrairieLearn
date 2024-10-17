@@ -50,6 +50,7 @@ import { createSessionMiddleware } from '@prairielearn/session';
 import * as cron from './cron/index.js';
 import { validateLti13CourseInstance } from './ee/lib/lti13.js';
 import * as assets from './lib/assets.js';
+import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
@@ -131,7 +132,6 @@ export async function initExpress() {
   // all pages including the error page (which we could jump to at
   // any point.
   app.use((req, res, next) => {
-    res.locals.config = config;
     setLocalsFromConfig(res.locals);
     next();
   });
@@ -479,6 +479,10 @@ export async function initExpress() {
     });
     next();
   });
+
+  // This makes a `CanonicalLogger` instance available throughout this request
+  // via AsyncLocalStorage.
+  app.use(canonicalLoggerMiddleware());
 
   // More middlewares
   app.use((await import('./middlewares/logResponse.js')).default); // defers to end of response

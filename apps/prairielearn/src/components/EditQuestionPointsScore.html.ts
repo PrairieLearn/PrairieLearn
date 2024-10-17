@@ -1,6 +1,6 @@
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { AssessmentQuestion, InstanceQuestion } from '../lib/db-types.js';
+import { type AssessmentQuestion, type InstanceQuestion } from '../lib/db-types.js';
 
 type EditableField = 'points' | 'auto_points' | 'manual_points' | 'score_perc';
 

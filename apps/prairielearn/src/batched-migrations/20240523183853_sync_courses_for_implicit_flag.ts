@@ -2,7 +2,7 @@ import { makeBatchedMigration } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
 import { queryOneRowAsync, queryRows } from '@prairielearn/postgres';
 
-import { Course, CourseSchema } from '../lib/db-types.js';
+import { type Course, CourseSchema } from '../lib/db-types.js';
 import { createServerJob } from '../lib/server-jobs.js';
 import { getLockNameForCoursePath } from '../models/course.js';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
