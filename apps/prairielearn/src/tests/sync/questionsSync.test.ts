@@ -151,6 +151,32 @@ describe('Question syncing', () => {
     );
   });
 
+  it('syncs entrypoint as an array', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions[util.QUESTION_ID].externalGradingOptions = {
+      image: 'docker-image',
+      entrypoint: ['entrypoint', 'second argument'],
+    };
+    await util.writeAndSyncCourseData(courseData);
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.equal(syncedQuestion?.external_grading_entrypoint, "entrypoint 'second argument'");
+  });
+
+  it('syncs workspace args as an array', async () => {
+    const courseData = util.getCourseData();
+    courseData.questions[util.QUESTION_ID].workspaceOptions = {
+      image: 'docker-image',
+      port: 8080,
+      home: '/home/user',
+      args: ['first', 'second argument'],
+    };
+    await util.writeAndSyncCourseData(courseData);
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
+    assert.equal(syncedQuestion?.workspace_args, "first 'second argument'");
+  });
+
   it('allows the same UUID to be used in different courses', async () => {
     // We'll just sync the same course from two different directories.
     // Since courses are identified by directory, this will create two
