@@ -99,7 +99,7 @@ function ListGroup(children: HtmlValue[]) {
 
   return html`
     <div class="list-group list-group-flush">
-      ${filteredChildren.map((child) => html`<div class="list-group-item">${child}</div>`)}
+      ${filteredChildren.map((child) => html`<div class="list-group-item py-3">${child}</div>`)}
     </div>
   `;
 }
