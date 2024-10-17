@@ -532,7 +532,7 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
       }
     }
   }
-  
+
   if (usedPartialCreditMethod && !usedPartialCredit) {
     errors.push(
       'pl-checkbox: if partial-credit-method is set, then partial-credit must be set to true.',

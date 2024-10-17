@@ -35,6 +35,8 @@ import { ServerJob, ServerJobExecutor, createServerJob } from './server-jobs.js'
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
+const draftDirExtractor =
+  /^(?<prefix>.*)\/__drafts__\/(?<questionDir>[^/]*)\/(?<questionFilePath>.*)$/g;
 
 async function syncCourseFromDisk(
   course: Course,
@@ -1679,6 +1681,26 @@ export class FileModifyEditor extends Editor {
 
     debug('write file');
     await fs.writeFile(this.filePath, b64Util.b64DecodeUnicode(this.editContents));
+
+    const draftPathDecomposition = this.filePath.match(draftDirExtractor);
+
+    if (draftPathDecomposition.groups) {
+      debug('Edit draft version');
+      const infoJsonPath = path.join(
+        draftPathDecomposition.groups.prefix,
+        '__drafts__',
+        draftPathDecomposition.groups.questionDir,
+        'info.json',
+      );
+      const infoJson = await fs.readJson(infoJsonPath);
+      infoJson.draftVersion++;
+      await fs.writeJson(infoJsonPath, infoJson, { spaces: 4 });
+
+      return {
+        pathsToAdd: [this.filePath, infoJsonPath],
+        commitMessage: this.description,
+      };
+    }
 
     return {
       pathsToAdd: [this.filePath],
