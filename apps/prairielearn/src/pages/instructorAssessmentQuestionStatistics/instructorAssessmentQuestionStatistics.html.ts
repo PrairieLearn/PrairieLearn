@@ -23,6 +23,7 @@ import { formatFloat } from '../../lib/format.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
+  manual_perc: z.number(), // Fallback is computed in the query, so this is not nullable in this context
   course_short_name: CourseSchema.shape.short_name,
   course_instance_short_name: CourseInstanceSchema.shape.short_name,
   assessment_label: z.string(),
@@ -209,9 +210,7 @@ export function InstructorAssessmentQuestionStatistics({
                           ${Scorebar(row.discrimination ? Math.round(row.discrimination) : null)}
                         </td>
                         <td class="text-center">
-                          ${(row.max_auto_points ?? 0) > 0 ||
-                          row.max_manual_points === 0 ||
-                          (row.average_number_submissions ?? 0) > 0
+                          ${row.manual_perc < 100 || (row.average_number_submissions ?? 0) > 0
                             ? formatFloat(row.average_number_submissions)
                             : html`&mdash;`}
                         </td>
@@ -349,7 +348,7 @@ export function InstructorAssessmentQuestionStatistics({
                         <td class="text-center">${formatFloat(row.median_question_score, 1)}</td>
                         <td class="text-center">${formatFloat(row.question_score_variance, 1)}</td>
                         <td class="text-center">${formatFloat(row.discrimination, 1)}</td>
-                        ${(row.max_auto_points ?? 0) > 0 || row.max_manual_points === 0
+                        ${row.manual_perc < 100
                           ? html`
                               <td class="text-center">
                                 ${formatFloat(row.some_submission_perc, 1)}

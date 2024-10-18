@@ -323,7 +323,7 @@ function SubmissionStatusBadge({
         }
       } else {
         const manualPoints = instance_question.manual_points ?? 0;
-        const manual_percentage = assessment_question?.max_points
+        const manualScoreDisplay = assessment_question?.max_points
           ? Math.floor(
               (manualPoints * 100) /
                 (assessment_question.max_manual_points || assessment_question.max_points),
@@ -338,7 +338,7 @@ function SubmissionStatusBadge({
               ? 'badge-success'
               : 'badge-warning';
         manualGradingBadge = html`
-          <span class="badge ${badgeType}">manual grading: ${manual_percentage}</span><br />
+          <span class="badge ${badgeType}">manual grading: ${manualScoreDisplay}</span><br />
         `;
       }
     }

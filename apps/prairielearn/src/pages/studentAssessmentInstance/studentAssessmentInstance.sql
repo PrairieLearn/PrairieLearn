@@ -17,7 +17,11 @@ SELECT
   aq.max_manual_points,
   aq.max_auto_points,
   aq.init_points,
-  aq.manual_perc,
+  COALESCE(
+    aq.manual_perc,
+    -- This is a fallback for questions where manual percentage is not populated
+    100 * aq.max_manual_points / COALESCE(NULLIF(aq.max_points, 0), 1)
+  ) AS manual_perc,
   qo.row_order,
   qo.question_number,
   z.max_points AS zone_max_points,

@@ -392,9 +392,7 @@ BEGIN
                     -- point, these values will be dynamically computed from the
                     -- question's max_points and manual_perc, using the
                     -- question's manual_perc if the assessment question does
-                    -- not set it explicitly. This will allow the question to be
-                    -- changed (even if it is shared from a different course)
-                    -- without requiring an update of the assessment itself.
+                    -- not set it explicitly.
                     computed_manual_points := ROUND((assessment_question->>'max_points')::numeric * computed_manual_perc::numeric / 100, 2);
                     computed_max_auto_points := ROUND((assessment_question->>'max_points')::numeric - computed_manual_points::numeric, 2);
 

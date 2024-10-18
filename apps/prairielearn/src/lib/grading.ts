@@ -37,7 +37,7 @@ const NextAllowedGradeSchema = z.object({
 
 const VariantForSubmissionSchema = VariantSchema.extend({
   assessment_instance_id: z.string().nullable(),
-  max_manual_points: z.number().nullable(),
+  manual_perc: z.number(),
   instance_question_open: z.boolean().nullable(),
   assessment_instance_open: z.boolean().nullable(),
 });
@@ -144,7 +144,7 @@ export async function insertSubmission({
         assessment_instance_id: variant.assessment_instance_id,
         delta,
         status: gradable ? 'saved' : 'invalid',
-        requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
+        requires_manual_grading: variant.manual_perc > 0,
       });
       await sqldb.callAsync('instance_questions_calculate_stats', [variant.instance_question_id]);
     }
