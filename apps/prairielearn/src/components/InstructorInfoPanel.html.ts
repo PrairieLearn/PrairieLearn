@@ -244,7 +244,6 @@ function VariantInfo({
         <pre class="mt-2 mb-0"><code>${JSON.stringify(variant.true_answer, null, 2)}</code></pre>
       </details>
     </div>
-    <hr />
   `;
 }
 
