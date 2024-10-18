@@ -115,6 +115,7 @@ async function makeVariant(
  * @param question - The question for the variant.
  * @param variant_course - The course for the variant.
  * @param authn_user_id - The current authenticated user.
+ * @param user_id - The current effective user.
  */
 export async function getDynamicFile(
   filename: string,
@@ -122,6 +123,7 @@ export async function getDynamicFile(
   question: Question,
   variant_course: Course,
   authn_user_id: string,
+  user_id: string,
 ): Promise<Buffer> {
   const question_course = await getQuestionCourse(question, variant_course);
   const questionModule = questionServers.getModule(question.type);
@@ -137,7 +139,14 @@ export async function getDynamicFile(
 
   const studentMessage = 'Error creating file: ' + filename;
   const courseData = { variant, question, course: variant_course };
-  await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
+  await writeCourseIssues(
+    courseIssues,
+    variant,
+    user_id,
+    authn_user_id,
+    studentMessage,
+    courseData,
+  );
   return fileData;
 }
 
@@ -309,7 +318,14 @@ async function makeAndInsertVariant(
 
   const studentMessage = 'Error creating question variant';
   const courseData = { variant, question, course: variant_course };
-  await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
+  await writeCourseIssues(
+    courseIssues,
+    variant,
+    user_id,
+    authn_user_id,
+    studentMessage,
+    courseData,
+  );
   return variant;
 }
 

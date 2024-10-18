@@ -47,6 +47,7 @@ type TestType = 'correct' | 'incorrect' | 'invalid';
  * @param question - The question for the variant.
  * @param variant_course - The course for the variant.
  * @param test_type - The type of test to run.
+ * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
  * @returns The submission ID.
  */
@@ -55,6 +56,7 @@ async function createTestSubmission(
   question: Question,
   variant_course: Course,
   test_type: TestType,
+  user_id: string,
   authn_user_id: string,
 ): Promise<string> {
   const questionModule = questionServers.getModule(question.type);
@@ -73,7 +75,14 @@ async function createTestSubmission(
 
   const studentMessage = 'Error creating test submission';
   const courseData = { variant, question, course: variant_course };
-  await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
+  await writeCourseIssues(
+    courseIssues,
+    variant,
+    user_id,
+    authn_user_id,
+    studentMessage,
+    courseData,
+  );
 
   if (hasFatalIssue) data.gradable = false;
 
@@ -173,6 +182,7 @@ function compareSubmissions(expected_submission: Submission, test_submission: Su
  * @param question - The question for the variant.
  * @param course - The course for the variant.
  * @param test_type - The type of test to run.
+ * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
  */
 async function testVariant(
@@ -181,18 +191,21 @@ async function testVariant(
   course: Course,
   test_type: TestType,
   authn_user_id: string,
+  user_id: string,
 ): Promise<{ expected_submission: Submission; test_submission: Submission }> {
   const expected_submission_id = await createTestSubmission(
     variant,
     question,
     course,
     test_type,
+    user_id,
     authn_user_id,
   );
   const expected_submission = await selectSubmission(expected_submission_id);
 
   const submission_data = {
     variant_id: variant.id,
+    user_id,
     auth_user_id: authn_user_id,
     submitted_answer: expected_submission.raw_submitted_answer || {},
   };
@@ -202,7 +215,15 @@ async function testVariant(
     question,
     course,
   );
-  await gradeVariant(updated_variant, test_submission_id, question, course, authn_user_id, true);
+  await gradeVariant(
+    updated_variant,
+    test_submission_id,
+    question,
+    course,
+    user_id,
+    authn_user_id,
+    true,
+  );
   const test_submission = await selectSubmission(test_submission_id);
 
   const courseIssues = compareSubmissions(expected_submission, test_submission);
@@ -214,7 +235,14 @@ async function testVariant(
     expected_submission,
     test_submission,
   };
-  await writeCourseIssues(courseIssues, variant, authn_user_id, studentMessage, courseData);
+  await writeCourseIssues(
+    courseIssues,
+    variant,
+    user_id,
+    authn_user_id,
+    studentMessage,
+    courseData,
+  );
   return { expected_submission, test_submission };
 }
 
@@ -232,6 +260,7 @@ async function testQuestion(
   variant_course: Course,
   test_type: TestType,
   authn_user_id: string,
+  user_id: string,
 ): Promise<TestQuestionResults> {
   let generateDuration;
   let renderDuration;
@@ -288,6 +317,7 @@ async function testQuestion(
         variant_course,
         test_type,
         authn_user_id,
+        user_id,
       ));
     } finally {
       const gradeEnd = Date.now();
@@ -310,6 +340,7 @@ async function testQuestion(
  * @param course - The course for the variant.
  * @param test_type - The type of test to run.
  * @param authn_user_id - The currently authenticated user.
+ * @param user_id - The current effective user.
  */
 async function runTest(
   logger: ServerJob,
@@ -319,6 +350,7 @@ async function runTest(
   course: Course,
   test_type: TestType,
   authn_user_id: string,
+  user_id: string,
 ): Promise<{ success: boolean; stats: TestResultStats }> {
   logger.verbose('Testing ' + question.qid);
   const { variant, expected_submission, test_submission, stats } = await testQuestion(
@@ -327,6 +359,7 @@ async function runTest(
     course,
     test_type,
     authn_user_id,
+    user_id,
   );
 
   if (showDetails) {
@@ -382,6 +415,7 @@ async function runTest(
  * @param question - The question for the variant.
  * @param course_instance - The course instance for the variant; may be null for instructor questions
  * @param course - The course for the variant.
+ * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
  * @return The job sequence ID.
  */
@@ -391,6 +425,7 @@ export async function startTestQuestion(
   question: Question,
   course_instance: CourseInstance | null,
   course: Course,
+  user_id: string,
   authn_user_id: string,
 ): Promise<string> {
   let success = true;
@@ -398,7 +433,7 @@ export async function startTestQuestion(
 
   const serverJob = await createServerJob({
     courseId: course.id,
-    userId: String(authn_user_id),
+    userId: String(user_id),
     authnUserId: String(authn_user_id),
     type: 'test_question',
     description: 'Test ' + question.qid,
@@ -418,6 +453,7 @@ export async function startTestQuestion(
         course,
         type,
         authn_user_id,
+        user_id,
       );
       success = success && result.success;
       if (result.stats) {
