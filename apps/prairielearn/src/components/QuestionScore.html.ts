@@ -65,16 +65,25 @@ export function QuestionScorePanel({
             : ''}
           ${assessment.type === 'Homework'
             ? html`
-                ${assessment_question.max_auto_points
-                  ? html`
-                      <tr>
-                        <td>Value:</td>
-                        <td>${QuestionValue({ instance_question, assessment_question })}</td>
-                      </tr>
-                    `
-                  : ''}
                 ${
-                  // Only show previous variants if the question allows multiple variants, or there are multiple variants (i.e., they were allowed at some point)
+                  // This condition covers two cases:
+                  // - A purely manually-graded question
+                  // - A question with no points at all
+                  // In both cases, we opt not to display the value, since it
+                  // would not be possible to immediately earn any points with
+                  // the next submission.
+                  assessment_question.max_auto_points
+                    ? html`
+                        <tr>
+                          <td>Value:</td>
+                          <td>${QuestionValue({ instance_question, assessment_question })}</td>
+                        </tr>
+                      `
+                    : ''
+                }
+                ${
+                  // Only show previous variants if the question allows multiple variants,
+                  // or there are multiple variants (i.e., they were allowed at some point)
                   !question.single_variant ||
                   (instance_question_info.previous_variants?.length ?? 0) > 1
                     ? html`
@@ -411,20 +420,17 @@ export function ExamQuestionAvailablePoints({
       You have ${pointsList.length} remaining attempt${pointsList.length !== 1 ? 's' : ''} for this
       question.
     </p>
-    <hr />
     <p>
       If you score 100% on your next submission, then you will be awarded an additional
       ${formatPoints(pointsList[0])} points.
     </p>
-    <hr />
     ${bestScore > 0
       ? html`
           <p>
             If you score less than ${bestScore}% on your next submission, then you will be awarded
             no additional points, but you will keep any awarded points that you already have.
           </p>
-          <hr />
-          <p>
+          <p class="mb-0">
             If you score between ${bestScore}% and 100% on your next submission, then you will be
             awarded an additional
             <code>(${formatPoints(currentWeight)} * (score - ${bestScore})/100)</code>
@@ -432,7 +438,7 @@ export function ExamQuestionAvailablePoints({
           </p>
         `
       : html`
-          <p>
+          <p class="mb-0">
             If you score less than 100% on your next submission, then you will be awarded an
             additional
             <code>(${formatPoints(currentWeight)} * score / 100)</code>
@@ -482,60 +488,73 @@ function QuestionValue({
 
   const popoverContent = run(() => {
     const parts: HtmlValue[] = [
-      'This question awards partial credit if you continue getting closer to the correct answer.',
+      html`
+        <p>
+          This question awards partial credit if you continue getting closer to the correct answer.
+        </p>
+      `,
     ];
 
     if (bestCurrentScore === 0) {
-      parts.push(html`<hr />`);
-      parts.push(
-        `If you score 100% on your next submission, you will be awarded an additional ${formatPoints(currentAutoValue)} points.`,
-      );
+      const pluralizedPoints = currentAutoValue === 1 ? 'point' : 'points';
+      parts.push(html`
+        <p>
+          If you score 100% on your next submission, you will be awarded an additional
+          ${formatPoints(currentAutoValue)} ${pluralizedPoints}.
+        </p>
+      `);
 
-      parts.push(html`<hr />`);
-      parts.push(
-        html`If you score less than 100%, you will be awarded an additional
-          <code>${formatPoints(initAutoPoints)} * score / 100</code> points.`,
-      );
+      parts.push(html`
+        <p class="mb-0">
+          If you score less than 100% on your next submission, you will be awarded an additional
+          <code>${formatPoints(initAutoPoints)} * score / 100</code> points.
+        </p>
+      `);
     } else {
-      parts.push(html`<hr />`);
-
       if (instance_question.some_perfect_submission) {
-        parts.push(
-          `Your highest submission score since your last 100% submission is ${formatPoints(bestCurrentScore)}%.`,
-        );
+        parts.push(html`
+          <p>
+            Your highest submission score since your last 100% submission is
+            ${formatPoints(bestCurrentScore)}%.
+          </p>
+        `);
       } else {
-        parts.push(`Your highest submission score so far is ${formatPoints(bestCurrentScore)}%.`);
+        parts.push(
+          html`<p>Your highest submission score so far is ${formatPoints(bestCurrentScore)}%.</p>`,
+        );
       }
 
       const perfectAdditionalPoints = (currentAutoValue * (100 - bestCurrentScore)) / 100;
-      parts.push(html`<hr />`);
-      parts.push(
-        `If you score 100% on your next submission, you will be awarded an additional ${formatPoints(perfectAdditionalPoints)} points.`,
-      );
+      const pluralizedPoints = perfectAdditionalPoints === 1 ? 'point' : 'points';
+      parts.push(html`
+        <p>
+          If you score 100% on your next submission, you will be awarded an additional
+          ${formatPoints(perfectAdditionalPoints)} ${pluralizedPoints}.
+        </p>
+      `);
 
-      parts.push(html`<hr />`);
       parts.push(
-        html`If you score between ${formatPoints(bestCurrentScore)}% and 100%, you will be awarded
-          an additional
+        html`<p>
+          If you score between ${formatPoints(bestCurrentScore)}% and 100% on your next submission,
+          you will be awarded an additional
           <code>
             ${formatPoints(currentAutoValue)} * (score - ${formatPoints(bestCurrentScore)}) / 100
           </code>
-          points.`,
+          points.
+        </p>`,
       );
-      parts.push(html`<hr />`);
-      parts.push(
-        html`If you score less than ${formatPoints(bestCurrentScore)}%, you will not be awarded any
-        additional points.`,
-      );
+
+      parts.push(html`
+        <p class="mb-0">
+          If you score less than ${formatPoints(bestCurrentScore)}% on your next submission, you
+          will not be awarded any additional points for that submission.
+        </p>
+      `);
     }
 
     return joinHtml(parts);
   });
 
-  // TODO: do we want to show `current_value` or `currentAutoValue` to the student?
-  // We currently show `current_value` on the assessment instance page, but when manual
-  // points are involved, showing `current_value` could be confusing, as the student can
-  // only actually earn `currentAutoValue` points.
   return html`
     ${currentAutoValue}
     <button
