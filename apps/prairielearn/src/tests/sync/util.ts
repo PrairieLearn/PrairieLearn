@@ -4,7 +4,7 @@ import { assert } from 'chai';
 import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import { z } from 'zod';
+import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -189,7 +189,6 @@ export interface Question {
   sharePublicly?: boolean;
   sharedPublicly?: boolean;
   shareSourcePublicly?: boolean;
-  sharedSourcePublicly?: boolean;
   clientFiles?: string[];
   clientTemplates?: string[];
   template?: string;

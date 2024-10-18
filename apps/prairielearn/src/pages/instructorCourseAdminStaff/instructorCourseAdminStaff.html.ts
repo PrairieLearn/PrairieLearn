@@ -6,11 +6,11 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import {
-  CourseInstance,
+  type CourseInstance,
   CourseInstanceSchema,
   CourseInstancePermissionSchema,
   CoursePermissionSchema,
-  User,
+  type User,
   UserSchema,
 } from '../../lib/db-types.js';
 

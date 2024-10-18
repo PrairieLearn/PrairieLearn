@@ -1,9 +1,9 @@
-import { z } from 'zod';
+import { type z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryOptionalRow, queryRows } from '@prairielearn/postgres';
 
-import { IdSchema, SubmissionSchema, Variant, VariantSchema } from '../lib/db-types.js';
+import { IdSchema, SubmissionSchema, type Variant, VariantSchema } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
 const sql = loadSqlEquiv(import.meta.url);

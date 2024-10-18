@@ -1040,6 +1040,9 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
         if (new_text !== null) {
           this.label = new_text;
           this.gen_text(this.parse(new_text), options);
+
+          // Fire an event to ensure that the text is updated in the submission data.
+          this.fire('modified');
         }
       });
     }

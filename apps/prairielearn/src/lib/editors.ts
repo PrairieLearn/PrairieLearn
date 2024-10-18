@@ -28,10 +28,16 @@ import * as syncFromDisk from '../sync/syncFromDisk.js';
 import * as b64Util from './base64-util.js';
 import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
 import { config } from './config.js';
-import { Assessment, Course, CourseInstance, Question, User } from './db-types.js';
+import {
+  type Assessment,
+  type Course,
+  type CourseInstance,
+  type Question,
+  type User,
+} from './db-types.js';
 import { EXAMPLE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
-import { ServerJob, ServerJobExecutor, createServerJob } from './server-jobs.js';
+import { type ServerJob, type ServerJobExecutor, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
@@ -1161,7 +1167,6 @@ export class QuestionCopyEditor extends Editor {
     delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
-    delete infoJson['sharedSourcePublicly'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1245,7 +1250,6 @@ export class QuestionTransferEditor extends Editor {
     delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
-    delete infoJson['sharedSourcePublicly'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {

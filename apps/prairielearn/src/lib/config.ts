@@ -595,10 +595,7 @@ export async function loadConfig(paths: string[]) {
 }
 
 export function setLocalsFromConfig(locals: Record<string, any>) {
-  locals.homeUrl = config.homeUrl;
   locals.urlPrefix = config.urlPrefix;
   locals.plainUrlPrefix = config.urlPrefix;
   locals.navbarType = 'plain';
-  locals.devMode = config.devMode;
-  locals.is_administrator = false;
 }

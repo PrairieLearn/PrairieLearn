@@ -1,7 +1,7 @@
 import { differenceInMilliseconds } from 'date-fns';
 import { z } from 'zod';
 
-import { HtmlValue, html, unsafeHtml } from '@prairielearn/html';
+import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
 import { config } from '../lib/config.js';
 import {

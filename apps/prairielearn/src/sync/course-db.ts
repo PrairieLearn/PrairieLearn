@@ -390,7 +390,6 @@ export interface Question {
   sharePublicly: boolean;
   sharedPublicly: boolean;
   shareSourcePublicly: boolean;
-  sharedSourcePublicly: boolean;
 }
 
 export interface CourseInstanceData {
@@ -1056,16 +1055,6 @@ async function validateQuestion(
       errors.push('Cannot specify both "sharedPublicly" and "sharePublicly" in one question.');
     } else {
       warnings.push('"sharedPublicly" is deprecated; use "sharePublicly" instead.');
-    }
-  }
-
-  if ('sharedSourcePublicly' in question) {
-    if ('shareSourcePublicly' in question) {
-      errors.push(
-        'Cannot specify both "sharedSourcePublicly" and "shareSourcePublicly" in one question.',
-      );
-    } else {
-      warnings.push('"sharedSourcePublicly" is deprecated; use "shareSourcePublicly" instead.');
     }
   }
 
