@@ -29,7 +29,7 @@ DECLARE
     bad_assessments text;
     new_group_role_names text[];
     new_group_role_name text;
-    question_grading_method enum_grading_method;
+    computed_manual_perc double precision;
     computed_manual_points double precision;
     computed_max_auto_points double precision;
 BEGIN
@@ -365,23 +365,6 @@ BEGIN
 
                 -- Insert an assessment question for each question in this alternative group
                 FOR assessment_question IN SELECT * FROM JSONB_ARRAY_ELEMENTS(alternative_group->'questions') LOOP
-                    IF (assessment_question->>'has_split_points')::boolean THEN
-                        computed_manual_points := (assessment_question->>'manual_points')::double precision;
-                        computed_max_auto_points := (assessment_question->>'max_points')::double precision;
-                    ELSE
-                        SELECT grading_method INTO question_grading_method
-                        FROM questions q
-                        WHERE q.id = (assessment_question->>'question_id')::bigint;
-
-                        IF FOUND AND question_grading_method = 'Manual' THEN
-                            computed_manual_points := (assessment_question->>'max_points')::double precision;
-                            computed_max_auto_points := 0;
-                        ELSE
-                            computed_manual_points := 0;
-                            computed_max_auto_points := (assessment_question->>'max_points')::double precision;
-                        END IF;
-                    END IF;
-
                     IF (assessment_question->>'question_id')::bigint IS NULL THEN
                         -- During local dev, if a shared question is not present we can insert dummy values
                         -- into the questions table to enable sync success. This code should never
@@ -396,9 +379,27 @@ BEGIN
                         new_question_id := (assessment_question->>'question_id')::bigint;
                     END IF;
 
+                    computed_manual_perc := (assessment_question->>'manual_perc')::double precision;
+                    IF computed_manual_perc IS NULL THEN
+                        SELECT COALESCE(manual_perc, CASE WHEN grading_method = 'Manual' THEN 100 ELSE 0 END)
+                        INTO computed_manual_perc
+                        FROM questions q
+                        WHERE q.id = new_question_id;
+                    END IF;
+                    -- The values of max_manual_points and max_auto_points are
+                    -- currently saved in the assessment question, but they are
+                    -- expected to be deprecated in the near future. At that
+                    -- point, these values will be dynamically computed from the
+                    -- question's max_points and manual_perc, using the
+                    -- question's manual_perc if the assessment question does
+                    -- not set it explicitly.
+                    computed_manual_points := ROUND((assessment_question->>'max_points')::numeric * computed_manual_perc::numeric / 100, 2);
+                    computed_max_auto_points := ROUND((assessment_question->>'max_points')::numeric - computed_manual_points::numeric, 2);
+
                     INSERT INTO assessment_questions AS aq (
                         number,
                         max_points,
+                        manual_perc,
                         max_manual_points,
                         max_auto_points,
                         init_points,
@@ -415,7 +416,8 @@ BEGIN
                         effective_advance_score_perc
                     ) VALUES (
                         (assessment_question->>'number')::integer,
-                        COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
+                        (assessment_question->>'max_points')::double precision,
+                        (assessment_question->>'manual_perc')::double precision,
                         COALESCE(computed_manual_points, 0),
                         COALESCE(computed_max_auto_points, 0),
                         (assessment_question->>'init_points')::double precision,
@@ -434,6 +436,7 @@ BEGIN
                     SET
                         number = EXCLUDED.number,
                         max_points = EXCLUDED.max_points,
+                        manual_perc = EXCLUDED.manual_perc,
                         max_manual_points = EXCLUDED.max_manual_points,
                         max_auto_points = EXCLUDED.max_auto_points,
                         points_list = EXCLUDED.points_list,
