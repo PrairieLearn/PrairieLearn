@@ -26,6 +26,20 @@ THE SOFTWARE.
 
 
 class GradingComplete(Exception):
+    """
+    A general exception to mark that grading has completed early.
+    All future test cases are skipped.
+    """
+
+    pass
+
+
+class GradingTestFailed(Exception):
+    """
+    A general exception to mark that some failure of the current
+    test case has occurred.  Future test cases will still be executed.
+    """
+
     pass
 
 
@@ -100,6 +114,17 @@ class Feedback:
         """
         cls.add_feedback(fb_text)
         raise GradingComplete()
+
+    @classmethod
+    def finish_test(cls, fb_text):
+        """
+        Feedback.finish(fb_text)
+
+        Complete grading the current test case immediately, additionally
+        outputting the message in fb_text.
+        """
+        cls.add_feedback(fb_text)
+        raise GradingTestFailed()
 
     @staticmethod
     def not_allowed(*args, **kwargs):
@@ -440,7 +465,7 @@ class Feedback:
         return True
 
     @classmethod
-    def call_user(cls, f, *args, **kwargs):
+    def call_user(cls, f, stop_on_exception=False, *args, **kwargs):
         """
         Feedback.call_user(f)
 
@@ -475,7 +500,10 @@ class Feedback:
                     "callable."
                 )
 
-            raise GradingComplete()
+            if stop_on_exception:
+                raise GradingComplete()
+            else:
+                raise GradingTestFailed()
 
     @classmethod
     def check_plot(
