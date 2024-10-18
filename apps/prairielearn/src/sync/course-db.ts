@@ -1235,24 +1235,12 @@ async function validateAssessment(
           }
 
           if (!courseInstanceExpired) {
-            if (
-              alternative.points !== undefined &&
-              alternative.points === 0 &&
-              alternative.maxPoints !== undefined &&
-              alternative.maxPoints > 0
-            ) {
-              warnings.push('Specifying "points": 0 when "maxPoints" > 0 is probably a mistake');
+            if (alternative.points === 0 && alternative.maxPoints > 0) {
+              errors.push('Cannot specify "points": 0 when "maxPoints" > 0');
             }
 
-            if (
-              alternative.autoPoints !== undefined &&
-              alternative.autoPoints === 0 &&
-              alternative.maxAutoPoints !== undefined &&
-              alternative.maxAutoPoints > 0
-            ) {
-              warnings.push(
-                'Specifying "autoPoints": 0 when "maxAutoPoints" > 0 is probably a mistake',
-              );
+            if (alternative.autoPoints === 0 && alternative.maxAutoPoints > 0) {
+              errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
             }
           }
         }

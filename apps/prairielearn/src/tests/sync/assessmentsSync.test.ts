@@ -1738,10 +1738,7 @@ describe('Assessment syncing', () => {
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('fail');
-    assert.match(
-      syncedAssessment?.sync_warnings,
-      /Specifying "points": 0 when "maxPoints" > 0 is probably a mistake/,
-    );
+    assert.match(syncedAssessment?.sync_errors, /Cannot specify "points": 0 when "maxPoints" > 0/);
   });
 
   it('records a warning if a question has zero autoPoints and non-zero maxAutoPoints on a Homework-type assessment', async () => {
@@ -1761,8 +1758,8 @@ describe('Assessment syncing', () => {
     await util.writeAndSyncCourseData(courseData);
     const syncedAssessment = await findSyncedAssessment('fail');
     assert.match(
-      syncedAssessment?.sync_warnings,
-      /Specifying "autoPoints": 0 when "maxAutoPoints" > 0 is probably a mistake/,
+      syncedAssessment?.sync_errors,
+      /Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0/,
     );
   });
 
