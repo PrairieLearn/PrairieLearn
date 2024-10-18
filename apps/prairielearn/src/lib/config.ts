@@ -525,6 +525,13 @@ const ConfigSchema = z.object({
    */
   checkSharingOnSync: z.boolean().default(false),
   /**
+   * Determines if institution names in course instance access rules should be
+   * validated at sync time. This defaults to false in dev mode where institutions
+   * are not set up, but should be enabled in production to help instructors
+   * catch misconfigured access rules.
+   */
+  checkInstitutionsOnSync: z.boolean().default(false),
+  /**
    * A Stripe secret key to be used for billing. Only useful for enterprise
    * installations. See https://stripe.com/docs/keys.
    */
@@ -588,10 +595,7 @@ export async function loadConfig(paths: string[]) {
 }
 
 export function setLocalsFromConfig(locals: Record<string, any>) {
-  locals.homeUrl = config.homeUrl;
   locals.urlPrefix = config.urlPrefix;
   locals.plainUrlPrefix = config.urlPrefix;
   locals.navbarType = 'plain';
-  locals.devMode = config.devMode;
-  locals.is_administrator = false;
 }

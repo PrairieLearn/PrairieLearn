@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { User } from '../lib/db-types.js';
+import { type User } from '../lib/db-types.js';
 
 import { HeadContents } from './HeadContents.html.js';
 import { Navbar } from './Navbar.html.js';
