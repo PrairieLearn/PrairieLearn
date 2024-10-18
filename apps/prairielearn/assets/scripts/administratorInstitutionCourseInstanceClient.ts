@@ -1,5 +1,8 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+// TODO: remove after testing.
+import './lib/morphdom';
+
 onDocumentReady(() => {
   document.querySelectorAll('.js-plan').forEach((plan) => {
     const enabledCheckbox = plan.querySelector<HTMLInputElement>('.js-plan-enabled');
