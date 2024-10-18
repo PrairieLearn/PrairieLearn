@@ -88,7 +88,7 @@ FROM
   LEFT JOIN instance_questions iq ON (v.instance_question_id = iq.id)
   LEFT JOIN assessment_instances ai ON (iq.assessment_instance_id = ai.id)
   LEFT JOIN assessment_questions aq ON (iq.assessment_question_id = aq.id)
-  LEFT JOIN questions q ON (aq.question_id = q.id);
+  JOIN questions q ON (v.question_id = q.id);
 
 -- BLOCK select_and_update_last_access
 WITH
