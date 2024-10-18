@@ -55,6 +55,7 @@ const AppliedRubricItemSchema = z.object({
   score: z.coerce.number().nullish(),
 });
 type AppliedRubricItem = z.infer<typeof AppliedRubricItemSchema>;
+
 function parseRubricItems({
   rubric_items,
   gpt_rubric_items,
