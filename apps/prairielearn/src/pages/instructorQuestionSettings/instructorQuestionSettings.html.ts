@@ -183,7 +183,7 @@ export function InstructorQuestionSettings({
                       <h2 class="h4">Sharing</h2>
                       <div data-testid="shared-with">
                         ${QuestionSharing({
-                          questionSharedPublicly: resLocals.question.shared_publicly,
+                          sharePublicly: resLocals.question.shared_publicly,
                           sharingSetsIn,
                         })}
                       </div>
@@ -403,13 +403,13 @@ function QuestionTestsForm({
 }
 
 function QuestionSharing({
-  questionSharedPublicly,
+  sharePublicly,
   sharingSetsIn,
 }: {
-  questionSharedPublicly: boolean;
+  sharePublicly: boolean;
   sharingSetsIn: SharingSetRow[];
 }) {
-  if (questionSharedPublicly) {
+  if (sharePublicly) {
     return html`
       <p>
         <span class="badge color-green3 mr-1">Public</span>
