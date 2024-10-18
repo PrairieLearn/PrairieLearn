@@ -11,7 +11,7 @@ import type {
 } from '../lib/db-types.js';
 import { formatPoints, formatPointsOrList } from '../lib/format.js';
 import { idsEqual } from '../lib/id.js';
-import type { VariantWithScore } from '../models/variant.js';
+import type { SimpleVariantWithScore } from '../models/variant.js';
 
 export function QuestionScorePanel({
   instance_question,
@@ -36,7 +36,7 @@ export function QuestionScorePanel({
   variant?: Variant;
   instance_question_info: {
     question_number: string | null;
-    previous_variants: VariantWithScore[] | null;
+    previous_variants: SimpleVariantWithScore[] | null;
   };
   authz_result?: { authorized_edit: boolean | null };
   csrfToken: string;
@@ -299,7 +299,7 @@ export function QuestionVariantHistory({
   urlPrefix,
 }: {
   instanceQuestionId: string;
-  previousVariants?: VariantWithScore[] | null;
+  previousVariants?: SimpleVariantWithScore[] | null;
   currentVariantId?: string;
   urlPrefix: string;
 }) {
