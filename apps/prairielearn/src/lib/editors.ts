@@ -22,28 +22,50 @@ import {
   updateCourseCommitHash,
   getOrUpdateCourseCommitHash,
 } from '../models/course.js';
+import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import * as b64Util from './base64-util.js';
 import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
 import { config } from './config.js';
-import { Assessment, Course, CourseInstance, Question, User } from './db-types.js';
+import {
+  type Assessment,
+  type Course,
+  type CourseInstance,
+  type Question,
+  type User,
+} from './db-types.js';
 import { EXAMPLE_COURSE_PATH } from './paths.js';
-import { ServerJob, ServerJobExecutor, createServerJob } from './server-jobs.js';
+import { formatJsonWithPrettier } from './prettier.js';
+import { type ServerJob, type ServerJobExecutor, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
 
-async function syncCourseFromDisk(course: Course, startGitHash: string, job: ServerJob) {
+async function syncCourseFromDisk(
+  course: Course,
+  startGitHash: string,
+  job: ServerJob,
+  courseData?: courseDB.CourseData,
+) {
   const endGitHash = await getCourseCommitHash(course.path);
 
-  const result = await syncFromDisk.syncDiskToSqlWithLock(course.id, course.path, job);
+  const syncResult = await syncFromDisk.syncDiskToSqlWithLock(
+    course.id,
+    course.path,
+    job,
+    courseData,
+  );
+
+  if (syncResult.status === 'sharing_error') {
+    throw new Error('Sync completely failed due to invalid question sharing edit.');
+  }
 
   if (config.chunksGenerator) {
     const chunkChanges = await updateChunksForCourse({
       coursePath: course.path,
       courseId: course.id,
-      courseData: result.courseData,
+      courseData: syncResult.courseData,
       oldHash: startGitHash,
       newHash: endGitHash,
     });
@@ -52,20 +74,21 @@ async function syncCourseFromDisk(course: Course, startGitHash: string, job: Ser
 
   await updateCourseCommitHash(course);
 
-  if (result.hadJsonErrors) {
+  if (syncResult.hadJsonErrors) {
     throw new Error('One or more JSON files contained errors and were unable to be synced');
   }
 }
 
-export async function cleanAndResetRepository(
+async function cleanAndResetRepository(
   course: Course,
+  revision: string,
   env: NodeJS.ProcessEnv,
   job: ServerJob,
 ) {
   job.info('Clean local files not in remote git repository');
   await job.exec('git', ['clean', '-fdx'], { cwd: course.path, env });
   job.info('Reset state to remote git repository');
-  await job.exec('git', ['reset', '--hard', `origin/${course.branch}`], {
+  await job.exec('git', ['reset', '--hard', revision], {
     cwd: course.path,
     env,
   });
@@ -198,7 +221,7 @@ export abstract class Editor {
           env: gitEnv,
         });
 
-        await cleanAndResetRepository(this.course, gitEnv, job);
+        await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
 
         const writeAndCommitChanges = async () => {
           job.data.saveAttempted = true;
@@ -231,8 +254,28 @@ export abstract class Editor {
           );
         };
 
+        let courseData: courseDB.CourseData | undefined;
         try {
           await writeAndCommitChanges();
+
+          await cleanAndResetRepository(this.course, 'HEAD', gitEnv, job);
+          // Before pushing the changes, ensure that we don't allow someone
+          // to put their course into an invalid state by deleting a shared
+          // question or otherwise breaking the invariants we rely upon for
+          // question sharing.
+          const possibleCourseData = await courseDB.loadFullCourse(
+            this.course.id,
+            this.course.path,
+          );
+          const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
+            this.course.id,
+            possibleCourseData,
+            logger,
+          );
+          if (!sharingConfigurationValid) {
+            await cleanAndResetRepository(this.course, startGitHash, gitEnv, job);
+            throw new Error('Invalid sharing operation, reverted to last known good state.');
+          }
 
           try {
             job.info('Push changes to remote git repository');
@@ -241,7 +284,18 @@ export abstract class Editor {
               env: gitEnv,
             });
             job.data.saveSucceeded = true;
-          } catch (err) {
+
+            // If we were able to push the change to GitHub, we can safely
+            // use the course data that we already loaded from disk because
+            // we can be sure that there weren't any further changes to the
+            // files on disk. This helps keep syncing fast by avoiding loading
+            // all course JSON files twice.
+            //
+            // If pushing fails, we'll need to incorporate the latest changes
+            // from the remote repository, so we'll have to load the latest
+            // course data from disk after we do so.
+            courseData = possibleCourseData;
+          } catch {
             job.info('Failed to push changes to remote git repository');
             job.info('Pulling changes from remote git repository and trying again');
 
@@ -253,28 +307,32 @@ export abstract class Editor {
 
             // This will both discard the commit we made locally and also pull
             // in any new changes from the remote.
-            await cleanAndResetRepository(this.course, gitEnv, job);
+            await cleanAndResetRepository(this.course, `origin/${this.course.branch}`, gitEnv, job);
 
             await writeAndCommitChanges();
 
-            job.info('Push changes to remote git repository');
-            await job.exec('git', ['push'], {
-              cwd: this.course.path,
-              env: gitEnv,
-            });
-            job.data.saveSucceeded = true;
+            try {
+              job.info('Push changes to remote git repository');
+              await job.exec('git', ['push'], {
+                cwd: this.course.path,
+                env: gitEnv,
+              });
+              job.data.saveSucceeded = true;
+            } finally {
+              // Clean up to remove any empty directories that might have been
+              // left behind by operations like renames. This will also ensure
+              // that we get back to a good state if the changes couldn't be
+              // pushed to the remote.
+              await cleanAndResetRepository(
+                this.course,
+                `origin/${this.course.branch}`,
+                gitEnv,
+                job,
+              );
+            }
           }
         } finally {
-          // Whether or not we error, we'll do a clean and reset.
-          //
-          // If pushing succeeded, the clean will remove any empty directories
-          // that might have been left behind by operations like renames.
-          //
-          // If pushing (or anything before pushing) failed, the reset will get
-          // us back to a known good state.
-          await cleanAndResetRepository(this.course, gitEnv, job);
-
-          // Similarly, whether or not we error, we'll a course sync.
+          // Whether or not we error, we'll sync the course.
           //
           // If pushing succeeded, then we will be syncing the changes made
           // by this edit.
@@ -283,7 +341,7 @@ export abstract class Editor {
           // syncing the changes we pulled from the remote git repository.
           job.info('Sync changes from disk');
           job.data.syncAttempted = true;
-          await syncCourseFromDisk(this.course, startGitHash, job);
+          await syncCourseFromDisk(this.course, startGitHash, job, courseData);
           job.data.syncSucceeded = true;
         }
       });
@@ -363,8 +421,13 @@ export abstract class Editor {
     return files;
   }
 
-  getNamesForCopy(oldShortName, shortNames, oldLongName, longNames) {
-    function getBaseShortName(oldname) {
+  getNamesForCopy(
+    oldShortName: string,
+    shortNames: string[],
+    oldLongName: string | null,
+    longNames: string[],
+  ): { shortName: string; longName: string } {
+    function getBaseShortName(oldname: string): string {
       const found = oldname.match(new RegExp('^(.*)_copy[0-9]+$'));
       if (found) {
         return found[1];
@@ -373,7 +436,7 @@ export abstract class Editor {
       }
     }
 
-    function getBaseLongName(oldname) {
+    function getBaseLongName(oldname: string | null): string {
       if (!_.isString(oldname)) return 'Unknown';
       debug(oldname);
       const found = oldname.match(new RegExp('^(.*) \\(copy [0-9]+\\)$'));
@@ -385,7 +448,7 @@ export abstract class Editor {
       }
     }
 
-    function getNumberShortName(basename, oldnames) {
+    function getNumberShortName(basename: string, oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         const found = oldname.match(new RegExp(`^${escapeRegExp(basename)}_copy([0-9]+)$`));
@@ -399,7 +462,7 @@ export abstract class Editor {
       return number;
     }
 
-    function getNumberLongName(basename, oldnames) {
+    function getNumberLongName(basename: string, oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         if (!_.isString(oldname)) return;
@@ -425,8 +488,11 @@ export abstract class Editor {
     };
   }
 
-  getNamesForAdd(shortNames, longNames) {
-    function getNumberShortName(oldnames) {
+  getNamesForAdd(
+    shortNames: string[],
+    longNames: string[],
+  ): { shortName: string; longName: string } {
+    function getNumberShortName(oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         const found = oldname.match(new RegExp('^New_([0-9]+)$'));
@@ -440,7 +506,7 @@ export abstract class Editor {
       return number;
     }
 
-    function getNumberLongName(oldnames) {
+    function getNumberLongName(oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         if (!_.isString(oldname)) return;
@@ -597,7 +663,7 @@ export class AssessmentRenameEditor extends Editor {
     const newPath = path.join(basePath, this.tid_new);
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
-    await this.removeEmptyPrecedingSubfolders(basePath, this.course_instance.short_name);
+    await this.removeEmptyPrecedingSubfolders(basePath, this.assessment.tid);
 
     return {
       pathsToAdd: [oldPath, newPath],
@@ -1033,7 +1099,8 @@ export class QuestionRenameEditor extends Editor {
         logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
       }
       debug(`Write ${infoPath}`);
-      await fs.writeJson(infoPath, infoJson, { spaces: 4 });
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+      await fs.writeFile(infoPath, formattedJson);
     }
 
     return {
@@ -1097,8 +1164,9 @@ export class QuestionCopyEditor extends Editor {
     // Even when copying a question within a course, we don't want to preserve
     // sharing settings because they cannot be undone
     delete infoJson['sharingSets'];
+    delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
-    delete infoJson['sharedPubliclyWithSource'];
+    delete infoJson['shareSourcePublicly'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1179,8 +1247,9 @@ export class QuestionTransferEditor extends Editor {
 
     // We do not want to preserve sharing settings when copying a question to another course
     delete infoJson['sharingSets'];
+    delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
-    delete infoJson['sharedPubliclyWithSource'];
+    delete infoJson['shareSourcePublicly'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {

@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
-import { Job } from '../../../lib/db-types.js';
+import { Navbar } from '../../../components/Navbar.html.js';
+import { type Job } from '../../../lib/db-types.js';
 
 export function InstructorAiGenerateJob({
   resLocals,
@@ -18,11 +18,7 @@ export function InstructorAiGenerateJob({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
-          navPage: 'course_admin',
-          navSubPage: 'questions',
-          ...resLocals,
-        })}
+        ${Navbar({ navPage: 'course_admin', navSubPage: 'questions', resLocals })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">Generation Job Results</div>
@@ -37,6 +33,18 @@ export function InstructorAiGenerateJob({
               <pre class="bg-dark text-white rounded p-3">${job.data['generation']}</pre>
               <h2 class="card-title">Context Documents</h2>
               <pre class="bg-dark text-white rounded p-3">${job.data['context']}</pre>
+              ${job.data?.initialGenerationErrors
+                ? html`<h2 class="card-title">Initial Generation Errors</h2>
+                    <pre class="bg-dark text-white rounded p-3">
+${job.data['initialGenerationErrors'].join('\n')}</pre
+                    >`
+                : ''}
+              ${job.data?.finalGenerationErrors
+                ? html`<h2 class="card-title">Final Generation Errors</h2>
+                    <pre class="bg-dark text-white rounded p-3">
+${job.data['finalGenerationErrors'].join('\n')}</pre
+                    >`
+                : ''}
             </div>
           </div>
         </main>

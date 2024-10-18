@@ -1,9 +1,10 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Modal } from '../../../components/Modal.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { config } from '../../../lib/config.js';
-import { Course, CourseInstance } from '../../../lib/db-types.js';
+import { type Course, type CourseInstance } from '../../../lib/db-types.js';
 
 export function Lti13CourseNavigationInstructor({
   courseName,
@@ -23,54 +24,14 @@ export function Lti13CourseNavigationInstructor({
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'lti13_course_navigation',
-        })}
+        ${Navbar({ resLocals, navPage: 'lti13_course_navigation' })} ${TerminologyModal()}
         <script>
           $(() => {
-            $('#onepicker').one('change', () => {
+            $('#connect_course_instance').one('change', () => {
               $('#saveButton').prop('disabled', false);
             });
           });
         </script>
-
-        <div class="modal" tabindex="-1" role="dialog" id="PLterminology">
-          <div class="modal-dialog" role="document">
-            <div class="modal-content">
-              <div class="modal-header">
-                <h5 class="modal-title" id="exampleModalLabel">Understanding PrairieLearn</h5>
-                <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                  <span aria-hidden="true">&times;</span>
-                </button>
-              </div>
-              <div class="modal-body">
-                <p>
-                  PrairieLearn defines a <strong>course</strong> as a collection of questions and
-                  course instances. It is the overarching umbrella that spans multiple runnings of
-                  the course with students. Things that live across multiple semesters live at the
-                  course level.
-                </p>
-
-                <p>
-                  A <strong>course instance</strong> is the running of an edition of a course that
-                  has assessments, enrollments, grades, etc. Like a semester or quarter.
-                </p>
-
-                <p class="font-italic">
-                  Example: A course might be MATH 101 and have a course instance MATH 101 Fall 2023.
-                </p>
-
-                <p>
-                  For more, see the
-                  <a href="https://prairielearn.readthedocs.io/" target="_blank"
-                    >PrairieLearn User Guide</a
-                  >
-                </p>
-              </div>
-            </div>
-          </div>
-        </div>
 
         <main id="content" class="container mb-4">
           <h1>Welcome to PrairieLearn</h1>
@@ -83,7 +44,7 @@ export function Lti13CourseNavigationInstructor({
               type="button"
               class="btn btn-sm btn-info"
               data-toggle="modal"
-              data-target="#PLterminology"
+              data-target="#terminology-modal"
             >
               New here? Learn about our terminology
             </button>
@@ -126,9 +87,15 @@ export function Lti13CourseNavigationInstructor({
                 </ul>
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                  <label>Connect ${courseName} with:
-                  <div class="input-group">
-                    <select class="custom-select" id="onepicker" name="unsafe_course_instance_id">
+                  <div class="form-group">
+                    <label class="form-label" for="connect_course_instance">
+                      Connect ${courseName} with:
+                    </label>
+                    <select
+                      class="custom-select"
+                      id="connect_course_instance"
+                      name="unsafe_course_instance_id"
+                    >
                       <option value="" disabled selected>
                         Select an existing course instance...
                       </option>
@@ -147,7 +114,6 @@ export function Lti13CourseNavigationInstructor({
                         `;
                       })}
                     </select>
-                    </label>
                   </div>
                   <button class="btn btn-primary" id="saveButton" disabled>Save</button>
                 </form>
@@ -172,10 +138,7 @@ export function Lti13CourseNavigationNotReady({
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'lti13_course_navigation',
-        })}
+        ${Navbar({ resLocals, navPage: 'lti13_course_navigation' })}
         <main id="content" class="container mb-4">
           <h1 class="h1">Welcome to PrairieLearn</h1>
           <h2 class="h2">... but your course isn't ready yet!</h2>
@@ -206,10 +169,7 @@ export function Lti13CourseNavigationDone({
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 - Course' })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../../../pages/partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'lti13_course_navigation',
-        })}
+        ${Navbar({ resLocals, navPage: 'lti13_course_navigation' })}
         <main id="content" class="container mb-4">
           <h1 class="h1">Welcome to PrairieLearn</h1>
 
@@ -217,19 +177,18 @@ export function Lti13CourseNavigationDone({
             <strong>You're all set.</strong> Next time you or students click on the link in your
             LMS, they will be taken directly to your PrairieLearn course instance.
           </p>
-          <ul>
-            <li>
-              The course instance <code>allowAccess</code> rules still apply and may need to be
-              configured.
-            </li>
-          </ul>
+
+          <div class="alert alert-warning">
+            The course instance and assessment <code>allowAccess</code> rules still apply and may
+            need to be configured.
+          </div>
 
           <p>To change this connection, go to your course instance LTI 1.3 page.</p>
 
           <p>
             <a
               href="/pl/lti13_instance/${lti13_instance_id}/course_navigation"
-              class="btn btn-success"
+              class="btn btn-primary"
             >
               Continue to your course instance
             </a>
@@ -238,4 +197,32 @@ export function Lti13CourseNavigationDone({
       </body>
     </html>
   `.toString();
+}
+
+function TerminologyModal() {
+  return Modal({
+    id: 'terminology-modal',
+    title: 'Understanding PrairieLearn',
+    body: html`
+      <p>
+        PrairieLearn defines a <strong>course</strong> as a collection of questions and course
+        instances. It is the overarching umbrella that spans multiple runnings of the course with
+        students. Things that live across multiple semesters live at the course level.
+      </p>
+
+      <p>
+        A <strong>course instance</strong> is the running of an edition of a course that has
+        assessments, enrollments, grades, etc. Like a semester or quarter.
+      </p>
+
+      <p class="font-italic">
+        Example: A course might be MATH 101 and have a course instance MATH 101 Fall 2023.
+      </p>
+
+      <p>
+        For more, see the
+        <a href="https://prairielearn.readthedocs.io/" target="_blank">PrairieLearn User Guide</a>
+      </p>
+    `,
+  });
 }

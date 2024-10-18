@@ -13,7 +13,7 @@ import { selectCourseInstancesWithStaffAccess } from '../../models/course-instan
 
 import {
   InstructorCourseAdminInstances,
-  CourseInstanceAuthzRow,
+  type CourseInstanceAuthzRow,
 } from './instructorCourseAdminInstances.html.js';
 
 const router = express.Router();
@@ -63,7 +63,7 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-      } catch (err) {
+      } catch {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         return;
       }

@@ -5,7 +5,7 @@ import { callbackify } from 'node:util';
 import debugfn from 'debug';
 import _ from 'lodash';
 import multipipe from 'multipipe';
-import pg, { QueryResult } from 'pg';
+import pg, { type QueryResult } from 'pg';
 import Cursor from 'pg-cursor';
 import { DatabaseError } from 'pg-protocol';
 import { z } from 'zod';
@@ -61,7 +61,7 @@ function debugParams(params: QueryParams): string {
   let s;
   try {
     s = JSON.stringify(params);
-  } catch (err) {
+  } catch {
     s = 'CANNOT JSON STRINGIFY';
   }
   return debugString(s);

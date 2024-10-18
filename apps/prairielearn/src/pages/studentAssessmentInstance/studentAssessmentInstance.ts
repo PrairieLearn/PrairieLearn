@@ -39,6 +39,7 @@ const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   max_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
   max_auto_points: z.number().nullable(),
+  manual_perc: z.number(),
   init_points: z.number().nullable(),
   row_order: z.number(),
   question_number: z.string(),
@@ -269,28 +270,16 @@ router.get(
     }
 
     res.locals.has_manual_grading_question = res.locals.instance_questions?.some(
-      (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
+      (q) => q.manual_perc > 0 || q.manual_points || q.requires_manual_grading,
     );
     res.locals.has_auto_grading_question = res.locals.instance_questions?.some(
-      (q) => q.max_auto_points || q.auto_points || !q.max_points,
+      (q) => q.manual_perc < 100 || q.auto_points || !q.max_points,
     );
     const assessment_text_templated = assessment.renderText(
       res.locals.assessment,
       res.locals.urlPrefix,
     );
     res.locals.assessment_text_templated = assessment_text_templated;
-
-    res.locals.savedAnswers = 0;
-    res.locals.suspendedSavedAnswers = 0;
-    res.locals.instance_questions.forEach((question) => {
-      if (question.status === 'saved') {
-        if (question.allow_grade_left_ms > 0) {
-          res.locals.suspendedSavedAnswers++;
-        } else {
-          res.locals.savedAnswers++;
-        }
-      }
-    });
 
     const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
 

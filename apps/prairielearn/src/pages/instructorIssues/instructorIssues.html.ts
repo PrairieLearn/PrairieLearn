@@ -3,11 +3,11 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { html, joinHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { Pager } from '../../components/Pager.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
@@ -84,7 +84,7 @@ export function InstructorIssues({
         ${HeadContents({ resLocals })} ${compiledStylesheetTag('instructorIssues.css')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseSyncErrorsAndWarnings({ authz_data, course, urlPrefix })}
           ${authz_data.has_course_permission_edit
@@ -261,15 +261,15 @@ function IssueRow({
                   (<a href="${questionPreviewUrl}?variant_seed=${issue.variant_seed}"
                     >instructor view</a
                   >)
-                  <a
-                    tabindex="0"
+                  <button
+                    type="button"
                     class="badge badge-warning badge-sm"
                     data-toggle="tooltip"
                     data-html="true"
                     title="This issue was raised in course instance <strong>${issue.course_instance_short_name}</strong>. You do not have student data access for ${issue.course_instance_short_name}, so you can't view some of the issue details. Student data access can be granted by a course owner on the Staff page."
                   >
                     No student data access
-                  </a>
+                  </button>
                 `}
         </div>
         <p class="mb-0">${getFormattedMessage(issue)}</p>
@@ -362,7 +362,7 @@ function FilterHelpModal() {
         Issues can be filtered and searched in a variety of ways. Filtering is done with the
         following set of qualifiers.
       </p>
-      <table class="table table-bordered">
+      <table class="table table-bordered" aria-label="Filtering qualifiers">
         <thead>
           <th>Qualifier</th>
           <th>Explanation</th>

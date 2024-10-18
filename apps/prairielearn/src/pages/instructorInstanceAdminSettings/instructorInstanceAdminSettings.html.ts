@@ -1,9 +1,9 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 
@@ -31,7 +31,7 @@ export function InstructorInstanceAdminSettings({
         </style>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container">
           ${CourseInstanceSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -43,7 +43,10 @@ export function InstructorInstanceAdminSettings({
             <div class="card-header bg-primary text-white d-flex">
               <h1>Course instance ${resLocals.course_instance.short_name}</h1>
             </div>
-            <table class="table table-sm table-hover two-column-description">
+            <table
+              class="table table-sm table-hover two-column-description"
+              aria-label="Course instance settings"
+            >
               <tbody>
                 <tr>
                   <th>Long Name</th>

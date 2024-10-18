@@ -1,12 +1,11 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
-import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
@@ -14,8 +13,7 @@ import { compiledScriptTag } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import { isEnterprise } from '../../lib/license.js';
-import { CourseWithPermissions } from '../../models/course.js';
+import { type CourseWithPermissions } from '../../models/course.js';
 
 export const SelectedAssessmentsSchema = z.object({
   short_name: z.string(),
@@ -49,9 +47,10 @@ export function InstructorQuestionSettings({
   assessmentsWithQuestion,
   sharingEnabled,
   sharingSetsIn,
-  sharingSetsOther,
   editableCourses,
   infoPath,
+  origHash,
+  canEdit,
 }: {
   resLocals: Record<string, any>;
   questionTestPath: string;
@@ -61,14 +60,14 @@ export function InstructorQuestionSettings({
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
   sharingSetsIn: SharingSetRow[];
-  sharingSetsOther: SharingSetRow[];
   editableCourses: CourseWithPermissions[];
   infoPath: string;
+  origHash: string;
+  canEdit: boolean;
 }) {
   // Only show assessments on which this question is used when viewing the question
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
-
   return html`
     <!doctype html>
     <html lang="en">
@@ -82,7 +81,7 @@ export function InstructorQuestionSettings({
         </style>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container">
           ${QuestionSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -95,7 +94,9 @@ export function InstructorQuestionSettings({
               <h1>Question Settings</h1>
             </div>
             <div class="card-body">
-              <form>
+              <form name="edit-question-settings-form" method="POST">
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <input type="hidden" name="orig_hash" value="${origHash}" />
                 <div class="form-group">
                   <h2 class="h4">General</h2>
                   <label for="title">Title</label>
@@ -105,7 +106,7 @@ export function InstructorQuestionSettings({
                     id="title"
                     name="title"
                     value="${resLocals.question.title}"
-                    disabled
+                    ${canEdit ? '' : 'disabled'}
                   />
                   <small class="form-text text-muted">
                     The title of the question (e.g., "Add two numbers").
@@ -113,15 +114,6 @@ export function InstructorQuestionSettings({
                 </div>
                 <div class="form-group">
                   <label for="qid">QID</label>
-                  ${resLocals.authz_data.has_course_permission_edit &&
-                  !resLocals.course.example_course
-                    ? ChangeIdButton({
-                        label: 'QID',
-                        currentValue: resLocals.question.qid,
-                        otherValues: qids,
-                        csrfToken: resLocals.__csrf_token,
-                      })
-                    : ''}
                   ${questionGHLink
                     ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`
                     : ''}
@@ -131,15 +123,22 @@ export function InstructorQuestionSettings({
                     id="qid"
                     name="qid"
                     value="${resLocals.question.qid}"
-                    disabled
+                    pattern="[\\-A-Za-z0-9_\\/]+"
+                    data-other-values="${qids.join(',')}"
+                    ${canEdit ? '' : 'disabled'}
                   />
                   <small class="form-text text-muted">
-                    This is a unique identifier for the question. (e.g., "addNumbers")
+                    This is a unique identifier for the question, e.g. "addNumbers". Use only
+                    letters, numbers, dashes, and underscores, with no spaces. You may use forward
+                    slashes to separate directories.
                   </small>
                 </div>
 
                 <div class="table-responsive card mb-3">
-                  <table class="table two-column-description">
+                  <table
+                    class="table two-column-description"
+                    aria-label="Question topic, tags, and assessments"
+                  >
                     <tr>
                       <th class="border-top-0">Topic</th>
                       <td class="border-top-0">${TopicBadge(resLocals.topic)}</td>
@@ -156,6 +155,26 @@ export function InstructorQuestionSettings({
                       : ''}
                   </table>
                 </div>
+                ${canEdit
+                  ? html`
+                      <button
+                        id="save-button"
+                        type="submit"
+                        class="btn btn-primary mb-2"
+                        name="__action"
+                        value="update_question"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-secondary mb-2"
+                        onclick="window.location.reload()"
+                      >
+                        Cancel
+                      </button>
+                    `
+                  : ''}
               </form>
               ${sharingEnabled
                 ? html`
@@ -166,10 +185,6 @@ export function InstructorQuestionSettings({
                         ${QuestionSharing({
                           questionSharedPublicly: resLocals.question.shared_publicly,
                           sharingSetsIn,
-                          hasCoursePermissionOwn: resLocals.authz_data.has_course_permission_own,
-                          sharingSetsOther,
-                          csrfToken: resLocals.__csrf_token,
-                          qid: resLocals.question.qid,
                         })}
                       </div>
                     </div>
@@ -192,8 +207,7 @@ export function InstructorQuestionSettings({
                   `
                 : ''}
               ${resLocals.authz_data.has_course_permission_view
-                ? resLocals.authz_data.has_course_permission_edit &&
-                  !resLocals.course.example_course
+                ? canEdit
                   ? html`
                       <hr />
                       <a
@@ -211,14 +225,14 @@ export function InstructorQuestionSettings({
                         href="${resLocals.urlPrefix}/question/${resLocals.question
                           .id}/file_view/${infoPath}"
                       >
-                        View course configuration
+                        View question configuration
                       </a>
                       in <code>info.json</code>
                     `
                 : ''}
             </div>
             ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) ||
-            (resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course)
+            canEdit
               ? html`
                   <div class="card-footer">
                       ${
@@ -250,8 +264,7 @@ export function InstructorQuestionSettings({
                           : ''
                       }
                       ${
-                        resLocals.authz_data.has_course_permission_edit &&
-                        !resLocals.course.example_course
+                        canEdit
                           ? html`
                               <button
                                 class="btn btn-sm btn-primary"
@@ -314,41 +327,6 @@ function CopyForm({
       </div>
     </form>
   `;
-}
-
-function PubliclyShareModal({ csrfToken, qid }: { csrfToken: string; qid: string }) {
-  return Modal({
-    id: 'publiclyShareModal',
-    title: 'Confirm Publicly Share Question',
-    body: html`
-      <p>Are you sure you want to publicly share this question?</p>
-      <p>
-        Once this question is publicly shared, anyone will be able to view it or use it as a part of
-        their course. This operation cannot be undone.
-      </p>
-      ${isEnterprise()
-        ? html`
-            <p>
-              You retain full ownership of all shared content as described in the
-              <a href="https://www.prairielearn.com/legal/terms#2-user-content" target="_blank"
-                >Terms of Service</a
-              >. To allow PrairieLearn to share your content to other users you agree to the
-              <a
-                href="https://www.prairielearn.com/legal/terms#3-user-content-license-grant"
-                target="_blank"
-                >User Content License Grant</a
-              >.
-            </p>
-          `
-        : ''}
-    `,
-    footer: html`
-      <input type="hidden" name="__action" value="share_publicly" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      <button class="btn btn-primary" type="submit">Publicly Share "${qid}"</button>
-    `,
-  });
 }
 
 function DeleteQuestionModal({
@@ -427,17 +405,9 @@ function QuestionTestsForm({
 function QuestionSharing({
   questionSharedPublicly,
   sharingSetsIn,
-  hasCoursePermissionOwn,
-  sharingSetsOther,
-  csrfToken,
-  qid,
 }: {
   questionSharedPublicly: boolean;
   sharingSetsIn: SharingSetRow[];
-  hasCoursePermissionOwn: boolean;
-  sharingSetsOther: SharingSetRow[];
-  csrfToken: string;
-  qid: string;
 }) {
   if (questionSharedPublicly) {
     return html`
@@ -462,55 +432,6 @@ function QuestionSharing({
             })}
           </p>
         `}
-    ${hasCoursePermissionOwn
-      ? html`
-          ${sharingSetsOther.length > 0
-            ? html`
-                <form name="sharing-set-add" method="POST" class="d-inline">
-                  <input type="hidden" name="__action" value="sharing_set_add" />
-                  <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                  <div class="btn-group btn-group-sm" role="group">
-                    <button
-                      id="addSharingSet"
-                      type="button"
-                      class="btn btn-sm btn-outline-dark dropdown-toggle"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Add...
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="addSharingSet">
-                      ${sharingSetsOther.map(function (sharing_set) {
-                        return html`
-                          <button
-                            class="dropdown-item"
-                            name="unsafe_sharing_set_id"
-                            value="${sharing_set.id}"
-                          >
-                            ${sharing_set.name}
-                          </button>
-                        `;
-                      })}
-                    </div>
-                  </div>
-                </form>
-              `
-            : ''}
-          <button
-            class="btn btn-sm btn-outline-primary"
-            type="button"
-            data-toggle="modal"
-            data-target="#publiclyShareModal"
-          >
-            Share Publicly
-          </button>
-          ${PubliclyShareModal({
-            csrfToken,
-            qid,
-          })}
-        `
-      : ''}
   `;
 }
 

@@ -1,18 +1,21 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import {
   compiledScriptTag,
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
-import { User } from '../../lib/db-types.js';
+import { type User } from '../../lib/db-types.js';
 
-import { CourseAssessmentRow, InstructorGradebookData } from './instructorGradebook.types.js';
+import {
+  type CourseAssessmentRow,
+  type InstructorGradebookData,
+} from './instructorGradebook.types.js';
 
 export function InstructorGradebook({
   resLocals,
@@ -63,7 +66,7 @@ export function InstructorGradebook({
         )}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${CourseInstanceSyncErrorsAndWarnings({
             authz_data,
@@ -82,7 +85,7 @@ export function InstructorGradebook({
                   <div class="card-header bg-primary text-white">
                     <h1>Gradebook</h1>
                   </div>
-                  <table id="gradebook-table"></table>
+                  <table id="gradebook-table" aria-label="Gradebook"></table>
 
                   <div class="spinning-wheel card-body spinner-border">
                     <span class="sr-only">Loading...</span>

@@ -99,7 +99,7 @@ export class CodeCallerNative {
       // communication. This is incompatible with the default behavior of our
       // logger, which will only write to stdout. So, we allow a different
       // logging function to be provided.
-      errorLogger: logger.error,
+      errorLogger: logger.error.bind(logger),
     },
   ) {
     /** @type {CodeCallerState} */
@@ -135,6 +135,10 @@ export class CodeCallerNative {
     this._checkState();
 
     this.debug('exit constructor()');
+  }
+
+  getCoursePath() {
+    return this.coursePath;
   }
 
   /**
@@ -577,7 +581,7 @@ export class CodeCallerNative {
     try {
       const data = JSON.parse(this.outputRestart);
       return data.exited === true;
-    } catch (e) {
+    } catch {
       return false;
     }
   }

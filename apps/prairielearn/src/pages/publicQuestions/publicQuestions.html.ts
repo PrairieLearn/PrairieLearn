@@ -1,9 +1,9 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
-import { QuestionsPageData } from '../../models/questions.js';
+import { type QuestionsPageData } from '../../models/questions.js';
 
 export const QuestionsPage = ({
   questions,
@@ -26,7 +26,7 @@ export const QuestionsPage = ({
       </head>
 
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${resLocals.course.sharing_name
             ? QuestionsTable({

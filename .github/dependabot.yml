@@ -25,6 +25,9 @@ updates:
       interval: monthly
     rebase-strategy: disabled
     ignore:
+      # We're still waiting for the following PR to be released:
+      # https://github.com/twbs/bootstrap/pull/38725
+      - dependency-name: 'bootstrap'
       # Recent versions of `bootstrap-table` broke behavior we rely on:
       # https://github.com/wenzhixin/bootstrap-table/issues/6745
       - dependency-name: 'bootstrap-table'
@@ -32,7 +35,7 @@ updates:
       # https://github.com/PrairieLearn/PrairieLearn/pull/6835
       - dependency-name: 'fabric'
       # Recent versions of `threejs` don't include the pre-bundled file we rely on.
-      - dependency-name: 'threejs'
+      - dependency-name: 'three'
     groups:
       # Many OpenTelemetry packages are still pre-v1, so updates frequently won't
       # be considered patch/minor updates. We always want to bump these all
@@ -54,6 +57,7 @@ updates:
       - '/graders/python'
       - '/images/plbase'
       - '/workspaces/jupyterlab-python'
+      - '/workspaces/vscode-python'
     schedule:
       interval: monthly
     rebase-strategy: disabled

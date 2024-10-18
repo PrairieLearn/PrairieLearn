@@ -53,7 +53,7 @@ $(function () {
 
   function setMessage(message: string) {
     console.log('message', message);
-    messageBadge.innerHTML = message;
+    messageBadge.textContent = message;
     if (message) {
       stateBadge.classList.add('badge-prepend');
     } else {
@@ -79,7 +79,7 @@ $(function () {
         showStoppedFrame();
       }
     }
-    stateBadge.innerHTML = state;
+    stateBadge.textContent = state;
 
     previousState = state;
   }

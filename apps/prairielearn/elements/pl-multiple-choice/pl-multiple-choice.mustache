@@ -4,10 +4,11 @@
 {{#inline}}
 <span>
 {{/inline}}
+    <span role="group" aria-label="Multiple choice options">
     {{#answers}}
         <div class="form-check {{#inline}}form-check-inline d-inline-flex{{/inline}}{{^inline}}d-flex{{/inline}} align-items-center py-1 gap-2">
             <input
-                class="form-check-input mt-0"
+                class="form-check-input mt-0 flex-shrink-0"
                 type="radio"
                 name="{{name}}"
                 value="{{key}}"
@@ -18,7 +19,7 @@
 
             <label class="form-check-label d-flex align-items-center" for="{{name}}-{{key}}">
                 {{^hide_letter_keys}}<div class="pl-multiple-choice-key-label">({{key}})</div>{{/hide_letter_keys}}
-                <div class="ml-1 mr-1">{{{html}}}</div>
+                <div class="ml-1 mr-1 pl-multiple-choice-answer">{{{html}}}</div>
             </label>
 
             {{#display_feedback}}
@@ -40,6 +41,7 @@
             {{/display_score_badge}}
         </div>
     {{/answers}}
+    </span>
 
 {{#display_score_badge}}
     {{#correct}}
@@ -71,8 +73,9 @@
         id="pl-multiple-choice-select-{{uuid}}"
         class="d-inline-flex"
         {{^editable}}disabled{{/editable}}
+        aria-label="Multiple choice options"
     >
-        <option value="" disabled selected data-content="Select an option"></option>
+        <option value="" disabled selected data-content="{{placeholder}}"></option>
         {{#answers}}
             <option
                 value="{{key}}"
@@ -107,19 +110,17 @@
 {{#submission}}
 {{#parse_error}}
 <span>
-    <a
-        href="javascript:void(0);"
-        role="button"
+    <button
+        type="button"
         class="badge text-danger badge-invalid btn btn-sm btn-secondary small border"
         data-placement="auto"
-        data-trigger="focus"
         data-toggle="popover"
         data-html="true"
         title="Format Error"
-        tabindex="0"
         data-content="{{parse_error}}"
-    > Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
-    </a>
+    >
+        Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+    </button>
 </span>
 {{/parse_error}}
 {{^parse_error}}

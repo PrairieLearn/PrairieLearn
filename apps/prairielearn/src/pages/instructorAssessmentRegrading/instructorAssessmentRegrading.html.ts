@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { JobStatus } from '../../components/JobStatus.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
 
@@ -30,7 +30,7 @@ export function InstructorAssessmentRegrading({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -83,7 +83,7 @@ export function InstructorAssessmentRegrading({
               : ''}
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover">
+              <table class="table table-sm table-hover" aria-label="Regrading job history">
                 <thead>
                   <tr>
                     <th>Number</th>

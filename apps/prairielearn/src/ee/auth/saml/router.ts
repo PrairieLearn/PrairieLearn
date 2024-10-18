@@ -136,7 +136,7 @@ router.get(
       throw new HttpStatusError(404, 'Institution does not support SAML authentication');
     }
 
-    const metadata = await util.promisify(strategy.generateServiceProviderMetadata)(
+    const metadata = await util.promisify(strategy.generateServiceProviderMetadata.bind(strategy))(
       req,
       samlProvider.public_key,
       samlProvider.public_key,

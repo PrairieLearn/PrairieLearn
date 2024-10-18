@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
 import { Scorebar } from '../../src/components/Scorebar.html.js';
-import { User } from '../../src/lib/db-types.js';
+import { type User } from '../../src/lib/db-types.js';
 import { formatPoints } from '../../src/lib/format.js';
 import type {
   InstanceQuestionRow,
@@ -19,7 +19,7 @@ onDocumentReady(() => {
     instancesUrl,
     groupWork,
     maxAutoPoints,
-    botGradingEnabled,
+    aiGradingEnabled,
     courseStaff,
     csrfToken,
   } = decodeData<InstanceQuestionTableData>('instance-question-table-data');
@@ -55,22 +55,22 @@ onDocumentReady(() => {
     autoRefresh: true,
     autoRefreshStatus: false,
     autoRefreshInterval: 30,
-    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'botGrade'],
+    buttonsOrder: ['columns', 'refresh', 'autoRefresh', 'showStudentInfo', 'status', 'aiGrade'],
     theadClasses: 'thead-light',
     stickyHeader: true,
     filterControl: true,
     rowStyle: (row) => (row.requires_manual_grading ? {} : { classes: 'text-muted bg-light' }),
     buttons: {
-      botGrade: {
-        text: 'Bot Grade All',
+      aiGrade: {
+        text: 'AI Grade All',
         icon: 'fa-pen',
-        render: botGradingEnabled,
+        render: aiGradingEnabled,
         attributes: {
-          id: 'js-bot-grade-button',
-          title: 'Bot grade all instances',
+          id: 'js-ai-grade-button',
+          title: 'AI grade all instances',
         },
         event: () => {
-          const form = document.getElementById('bot-grading') as HTMLFormElement;
+          const form = document.getElementById('ai-grading') as HTMLFormElement;
           form?.submit();
         },
       },
@@ -298,7 +298,7 @@ async function pointsFormEventListener(this: HTMLFormElement, event: SubmitEvent
     $('#grading-conflict-modal')
       .find('a.conflict-details-link')
       .attr('href', data.conflict_details_url);
-    $('#grading-conflict-modal').modal({});
+    $('#grading-conflict-modal').modal('show');
   }
 }
 

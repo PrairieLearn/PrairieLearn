@@ -1,9 +1,9 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import {
   AuthzAccessRuleSchema,
@@ -52,17 +52,14 @@ export function StudentAssessments({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: 'assessments',
-        })}
+        ${Navbar({ resLocals, navPage: 'assessments' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
               <h1>Assessments</h1>
             </div>
 
-            <table class="table table-sm table-hover">
+            <table class="table table-sm table-hover" aria-label="Assessments">
               <thead>
                 <tr>
                   <th style="width: 1%"><span class="sr-only">Label</span></th>
@@ -111,8 +108,6 @@ export function StudentAssessments({
                           : 'Assessment closed.'}
                         ${StudentAccessRulesPopover({
                           accessRules: row.access_rules,
-                          assessmentSetName: row.assessment_set_name,
-                          assessmentNumber: row.assessment_number,
                         })}
                       </td>
                       <td class="text-center align-middle">
@@ -143,7 +138,7 @@ export function StudentAssessments({
 function AssessmentScore(row: StudentAssessmentsRow) {
   if (row.assessment_instance_id == null) return 'Not started';
   if (!row.show_closed_assessment_score) return 'Score not shown';
-  return Scorebar(row.assessment_instance_score_perc);
+  return Scorebar(row.assessment_instance_score_perc, { classes: 'mx-auto' });
 }
 
 function NewInstanceButton({ urlPrefix, row }: { urlPrefix: string; row: StudentAssessmentsRow }) {

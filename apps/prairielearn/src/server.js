@@ -34,7 +34,7 @@ import yargsParser from 'yargs-parser';
 
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
-import { flashMiddleware, flash } from '@prairielearn/flash';
+import { flashMiddleware } from '@prairielearn/flash';
 import { logger, addFileLogging } from '@prairielearn/logger';
 import * as migrations from '@prairielearn/migrations';
 import {
@@ -50,6 +50,7 @@ import { createSessionMiddleware } from '@prairielearn/session';
 import * as cron from './cron/index.js';
 import { validateLti13CourseInstance } from './ee/lib/lti13.js';
 import * as assets from './lib/assets.js';
+import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
@@ -112,7 +113,6 @@ function enterpriseOnlyMiddleware(load) {
 export async function initExpress() {
   const app = express();
   app.set('views', path.join(import.meta.dirname, 'pages'));
-  app.set('view engine', 'ejs');
   app.set('trust proxy', config.trustProxy);
 
   // These should come first so that we get instrumentation on all our requests.
@@ -132,7 +132,6 @@ export async function initExpress() {
   // all pages including the error page (which we could jump to at
   // any point.
   app.use((req, res, next) => {
-    res.locals.config = config;
     setLocalsFromConfig(res.locals);
     next();
   });
@@ -154,6 +153,11 @@ export async function initExpress() {
       },
     }),
   );
+
+  // Attach the flash middleware immediately after the session middleware so
+  // that all future handlers can write flash messages. This must come after
+  // the session middleware so that it can access the session.
+  app.use(flashMiddleware());
 
   // This middleware helps ensure that sessions remain alive (un-expired) as
   // long as users are somewhat frequently active. See the documentation for
@@ -476,15 +480,11 @@ export async function initExpress() {
     next();
   });
 
+  // This makes a `CanonicalLogger` instance available throughout this request
+  // via AsyncLocalStorage.
+  app.use(canonicalLoggerMiddleware());
+
   // More middlewares
-  app.use(flashMiddleware());
-  app.use((req, res, next) => {
-    // This is so that the `navbar` partial can access the flash messages. If
-    // you want to add a flash message, you should import and use `flash`
-    // directly from `@prairielearn/flash`.
-    res.locals.flash = flash;
-    next();
-  });
   app.use((await import('./middlewares/logResponse.js')).default); // defers to end of response
   app.use((await import('./middlewares/cors.js')).default);
   app.use((await import('./middlewares/content-security-policy.js')).default);
@@ -1133,6 +1133,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)',
     (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
+    (await import('./middlewares/authzHasCoursePreview.js')).default,
   );
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/question\/[0-9]+)\/?$/,
@@ -1267,6 +1268,13 @@ export async function initExpress() {
       next();
     },
     (await import('./pages/instructorCourseAdminSets/instructorCourseAdminSets.js')).default,
+  ]);
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/modules', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'modules';
+      next();
+    },
+    (await import('./pages/instructorCourseAdminModules/instructorCourseAdminModules.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/instances', [
     function (req, res, next) {
@@ -1817,6 +1825,13 @@ export async function initExpress() {
     },
     (await import('./pages/instructorCourseAdminSets/instructorCourseAdminSets.js')).default,
   ]);
+  app.use('/pl/course/:course_id(\\d+)/course_admin/modules', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'modules';
+      next();
+    },
+    (await import('./pages/instructorCourseAdminModules/instructorCourseAdminModules.js')).default,
+  ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/instances', [
     function (req, res, next) {
       res.locals.navSubPage = 'instances';
@@ -2330,8 +2345,10 @@ if (esMain(import.meta) && config.startServer) {
             },
 
             // We have our own OpenTelemetry setup, so ensure Sentry doesn't
-            // try to set that up for itself.
-            skipOpenTelemetrySetup: true,
+            // try to set that up for itself, but only if OpenTelemetry is
+            // enabled. Otherwise, allow Sentry to install its own stuff so
+            // that request isolation works correctly.
+            skipOpenTelemetrySetup: config.openTelemetryEnabled,
 
             beforeSend: (event) => {
               // This will be necessary until we can consume the following change:
@@ -2350,6 +2367,30 @@ if (esMain(import.meta) && config.startServer) {
               return event;
             },
           });
+        }
+
+        // Start capturing profiling information as soon as possible.
+        if (config.pyroscopeEnabled) {
+          if (
+            !config.pyroscopeServerAddress ||
+            !config.pyroscopeBasicAuthUser ||
+            !config.pyroscopeBasicAuthPassword
+          ) {
+            throw new Error('Pyroscope configuration is incomplete');
+          }
+
+          const Pyroscope = await import('@pyroscope/nodejs');
+          Pyroscope.init({
+            appName: 'prairielearn',
+            serverAddress: config.pyroscopeServerAddress,
+            basicAuthUser: config.pyroscopeBasicAuthUser,
+            basicAuthPassword: config.pyroscopeBasicAuthPassword,
+            tags: {
+              instanceId: config.instanceId,
+              ...config.pyroscopeTags,
+            },
+          });
+          Pyroscope.start();
         }
 
         if (config.logFilename) {
@@ -2490,44 +2531,62 @@ if (esMain(import.meta) && config.startServer) {
           opentelemetry.createObservableValueGauges(
             meter,
             `postgres.pool.${name}.total`,
-            {
-              valueType: opentelemetry.ValueType.INT,
-              interval: 1000,
-            },
+            { valueType: opentelemetry.ValueType.INT, interval: 1000 },
             () => pool.totalCount,
           );
 
           opentelemetry.createObservableValueGauges(
             meter,
             `postgres.pool.${name}.idle`,
-            {
-              valueType: opentelemetry.ValueType.INT,
-              interval: 1000,
-            },
+            { valueType: opentelemetry.ValueType.INT, interval: 1000 },
             () => pool.idleCount,
           );
 
           opentelemetry.createObservableValueGauges(
             meter,
             `postgres.pool.${name}.waiting`,
-            {
-              valueType: opentelemetry.ValueType.INT,
-              interval: 1000,
-            },
+            { valueType: opentelemetry.ValueType.INT, interval: 1000 },
             () => pool.waitingCount,
           );
 
           const queryCounter = opentelemetry.getObservableCounter(
             meter,
             `postgres.pool.${name}.query.count`,
-            {
-              valueType: opentelemetry.ValueType.INT,
-            },
+            { valueType: opentelemetry.ValueType.INT },
           );
           queryCounter.addCallback((observableResult) => {
             observableResult.observe(pool.queryCount);
           });
         });
+      },
+      async () => {
+        // Collect metrics on our code callers.
+        const meter = opentelemetry.metrics.getMeter('prairielearn');
+
+        opentelemetry.createObservableValueGauges(
+          meter,
+          'code-caller.pool.size',
+          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+          () => codeCaller.getMetrics().size,
+        );
+        opentelemetry.createObservableValueGauges(
+          meter,
+          'code-caller.pool.available',
+          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+          () => codeCaller.getMetrics().available,
+        );
+        opentelemetry.createObservableValueGauges(
+          meter,
+          'code-caller.pool.borrowed',
+          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+          () => codeCaller.getMetrics().borrowed,
+        );
+        opentelemetry.createObservableValueGauges(
+          meter,
+          'code-caller.pool.pending',
+          { valueType: opentelemetry.ValueType.INT, interval: 1000 },
+          () => codeCaller.getMetrics().pending,
+        );
       },
       async () => {
         // We create and activate a random DB schema name

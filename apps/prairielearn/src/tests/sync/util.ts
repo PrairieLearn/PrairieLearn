@@ -4,6 +4,7 @@ import { assert } from 'chai';
 import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
+import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -23,6 +24,11 @@ interface Tag {
 interface Topic {
   name: string;
   color: string;
+  description: string;
+}
+
+interface SharingSet {
+  name: string;
   description: string;
 }
 
@@ -46,6 +52,7 @@ interface Course {
   options?: CourseOptions;
   tags: Tag[];
   topics: Topic[];
+  sharingSets?: SharingSet[];
   assessmentSets: AssessmentSet[];
   assessmentModules?: Module[];
 }
@@ -178,6 +185,10 @@ export interface Question {
   title: string;
   topic: string;
   tags?: string[];
+  sharingSets?: string[];
+  sharePublicly?: boolean;
+  sharedPublicly?: boolean;
+  shareSourcePublicly?: boolean;
   clientFiles?: string[];
   clientTemplates?: string[];
   template?: string;
@@ -367,11 +378,10 @@ const questions: Record<string, Question> = {
     tags: ['workspace'],
     type: 'v3',
     workspaceOptions: {
-      image: 'prairielearn/workspace-vscode',
+      image: 'prairielearn/workspace-vscode-python',
       port: 8080,
-      home: '/home/coder',
-      args: '--auth none',
-      gradedFiles: ['animal.h', 'animal.c'],
+      home: '/home/coder/workspace',
+      gradedFiles: ['fibonacci.py'],
     },
   },
 };
@@ -435,6 +445,7 @@ export function getFakeLogger() {
     debug: () => {},
     info: () => {},
     warn: () => {},
+    error: () => {},
   };
 }
 
@@ -497,6 +508,13 @@ export async function overwriteAndSyncCourseData(courseData: CourseData, courseD
 export async function dumpTable(tableName: string): Promise<Record<string, any>[]> {
   const res = await sqldb.queryAsync(`SELECT * FROM ${tableName};`, {});
   return res.rows;
+}
+
+export async function dumpTableWithSchema<Schema extends z.ZodTypeAny>(
+  tableName: string,
+  schema: Schema,
+): Promise<z.infer<Schema>[]> {
+  return await sqldb.queryRows(`SELECT * FROM ${tableName};`, schema);
 }
 
 export async function captureDatabaseSnapshot() {

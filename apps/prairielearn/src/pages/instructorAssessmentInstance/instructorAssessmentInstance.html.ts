@@ -1,15 +1,15 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { InstanceLogEntry } from '../../lib/assessment.js';
+import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentQuestionSchema, IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
@@ -94,10 +94,7 @@ export function InstructorAssessmentInstance({
           )}"></script>
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", {
-          ...resLocals,
-          navPage: '',
-        })}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           <h1 class="sr-only">
             ${resLocals.assessment_instance_label} instance for
@@ -126,7 +123,10 @@ export function InstructorAssessmentInstance({
               </h2>
             </div>
 
-            <table class="table table-sm table-hover two-column-description">
+            <table
+              class="table table-sm table-hover two-column-description"
+              aria-label="Assessment instance summary"
+            >
               <tbody>
                 ${resLocals.instance_group
                   ? html`
@@ -169,18 +169,19 @@ export function InstructorAssessmentInstance({
                         <th>Fingerprint Changes</th>
                         <td colspan="2">
                           ${resLocals.assessment_instance.client_fingerprint_id_change_count}
-                          <a
-                            tabindex="0"
-                            class="btn btn-xs"
-                            role="button"
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-ghost"
                             id="fingerprintDescriptionPopover"
                             data-toggle="popover"
                             data-container="body"
                             data-html="false"
                             title="Client Fingerprint Changes"
-                            data-content="Client fingerprints are a record of a user's IP address, user agent and sesssion. These attributes are tracked while a user is accessing an assessment. This value indicates the amount of times that those attributes changed as the student accessed the assessment, while the assessment was active. Some changes may naturally occur during an assessment, such as if a student changes network connections or browsers. However, a high number of changes in an exam-like environment could be an indication of multiple people accessing the same assessment simultaneously, which may suggest an academic integrity issue. Accesses taking place after the assessment has been closed are not counted, as they typically indicate scenarios where a student is reviewing their results, which may happen outside of a controlled environment."
-                            ><i class="fa fa-question-circle"></i
-                          ></a>
+                            aria-label="Client Fingerprint Changes"
+                            data-content="Client fingerprints are a record of a user's IP address, user agent and session. These attributes are tracked while a user is accessing an assessment. This value indicates the amount of times that those attributes changed as the student accessed the assessment, while the assessment was active. Some changes may naturally occur during an assessment, such as if a student changes network connections or browsers. However, a high number of changes in an exam-like environment could be an indication of multiple people accessing the same assessment simultaneously, which may suggest an academic integrity issue. Accesses taking place after the assessment has been closed are not counted, as they typically indicate scenarios where a student is reviewing their results, which may happen outside of a controlled environment."
+                          >
+                            <i class="fa fa-question-circle"></i>
+                          </button>
                         </td>
                       </tr>
                     `
@@ -208,6 +209,7 @@ export function InstructorAssessmentInstance({
                             data-html="true"
                             data-placement="auto"
                             title="Change total points"
+                            aria-label="Change total points"
                             data-content="${escapeHtml(
                               EditTotalPointsForm({
                                 resLocals,
@@ -237,6 +239,7 @@ export function InstructorAssessmentInstance({
                             data-html="true"
                             data-placement="auto"
                             title="Change total percentage score"
+                            aria-label="Change total percentage score"
                             data-content="${escapeHtml(
                               EditTotalScorePercForm({
                                 resLocals,
@@ -255,31 +258,31 @@ export function InstructorAssessmentInstance({
                     ${resLocals.assessment_instance.include_in_statistics
                       ? html`
                           Included
-                          <a
-                            tabindex="0"
-                            class="btn btn-xs"
-                            role="button"
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-ghost"
                             data-toggle="popover"
                             data-container="body"
                             data-html="true"
                             title="Included in statistics"
                             data-content="This assessment is included in the calculation of assessment and question statistics"
-                            ><i class="fa fa-question-circle"></i
-                          ></a>
+                          >
+                            <i class="fa fa-question-circle"></i>
+                          </button>
                         `
                       : html`
                           Not included
-                          <a
-                            tabindex="0"
-                            class="btn btn-xs"
-                            role="button"
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-ghost"
                             data-toggle="popover"
                             data-container="body"
                             data-html="true"
                             title="Not included in statistics"
                             data-content="This assessment is not included in the calculation of assessment and question statistics because it was created by a course staff member"
-                            ><i class="fa fa-question-circle"></i
-                          ></a>
+                          >
+                            <i class="fa fa-question-circle"></i>
+                          </button>
                         `}
                   </td>
                 </tr>
@@ -305,7 +308,11 @@ export function InstructorAssessmentInstance({
               </h2>
             </div>
 
-            <table id="instanceQuestionList" class="table table-sm table-hover">
+            <table
+              id="instanceQuestionList"
+              class="table table-sm table-hover"
+              aria-label="Assessment instance questions"
+            >
               <thead>
                 <tr>
                   <th>Student question</th>
@@ -472,7 +479,11 @@ export function InstructorAssessmentInstance({
                   : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
               </h2>
             </div>
-            <table id="instanceQuestionStatsTable" class="table table-sm table-hover tablesorter">
+            <table
+              id="instanceQuestionStatsTable"
+              class="table table-sm table-hover tablesorter"
+              aria-label="Assessment instance statistics"
+            >
               <thead>
                 <tr>
                   <th>Instructor question</th>
@@ -543,7 +554,11 @@ export function InstructorAssessmentInstance({
               </small>
             </div>
 
-            <table id="logTable" class="table table-sm table-hover tablesorter">
+            <table
+              id="logTable"
+              class="table table-sm table-hover tablesorter"
+              aria-label="Assessment instance log"
+            >
               <thead>
                 <tr>
                   <th>Time</th>
@@ -560,17 +575,16 @@ export function InstructorAssessmentInstance({
                   return html`
                     <tr>
                       <td class="text-nowrap">${row.formatted_date}</td>
-                      <td>${row.auth_user_uid ?? html`$mdash;`}</td>
+                      <td>${row.auth_user_uid ?? html`&mdash;`}</td>
                       ${resLocals.instance_user
                         ? row.client_fingerprint && row.client_fingerprint_number !== null
                           ? html`
                               <td>
-                                <a
-                                  tabindex="0"
+                                <button
+                                  type="button"
                                   class="badge color-${FINGERPRINT_COLORS[
                                     row.client_fingerprint_number % 6
                                   ]} color-hover"
-                                  role="button"
                                   id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
                                   data-toggle="popover"
                                   data-container="body"
@@ -593,7 +607,7 @@ export function InstructorAssessmentInstance({
                                   `)}"
                                 >
                                   ${row.client_fingerprint_number}
-                                </a>
+                                </button>
                               </td>
                             `
                           : html`<td>&mdash;</td>`
@@ -691,6 +705,7 @@ function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) 
             class="form-control"
             name="points"
             value="${resLocals.assessment_instance.points}"
+            aria-label="Total points"
           />
           <span class="input-group-addon">/${resLocals.assessment_instance.max_points}</span>
         </div>
@@ -725,6 +740,7 @@ function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> 
             class="form-control"
             name="score_perc"
             value="${resLocals.assessment_instance.score_perc}"
+            aria-label="Total score percentage"
           />
           <span class="input-group-addon">%</span>
         </div>

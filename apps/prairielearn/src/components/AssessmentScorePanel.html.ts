@@ -19,9 +19,11 @@ export function AssessmentScorePanel({
   return html`
     <div class="card mb-4" id="assessment-score-panel">
       <div class="card-header bg-secondary">
-        <a class="text-white" href="${urlPrefix}/assessment_instance/${assessment_instance.id}/">
-          ${assessment_set.name} ${assessment.number}
-        </a>
+        <h2>
+          <a class="text-white" href="${urlPrefix}/assessment_instance/${assessment_instance.id}/">
+            ${assessment_set.name} ${assessment.number}
+          </a>
+        </h2>
       </div>
       <div class="card-body">
         <div class="d-flex justify-content-center">
@@ -33,7 +35,7 @@ export function AssessmentScorePanel({
           </a>
         </div>
       </div>
-      <table class="table table-sm">
+      <table class="table table-sm" aria-label="Assessment score">
         <tbody>
           <tr>
             <td>Total points:</td>

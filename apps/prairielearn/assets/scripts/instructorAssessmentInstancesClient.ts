@@ -4,7 +4,7 @@ import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-u
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { Scorebar } from '../../src/components/Scorebar.html.js';
-import { AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
+import { type AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 import { getPopoverTriggerForContainer } from './lib/popover.js';
 
@@ -238,16 +238,18 @@ onDocumentReady(() => {
             },
             {
               field: 'group_roles',
-              title: html` Roles
+              title: html`
+                Roles
                 <button
-                  class="btn btn-xs"
+                  class="btn btn-xs btn-ghost"
                   type="button"
                   title="Show roles help"
                   data-toggle="modal"
                   data-target="#role-help"
                 >
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
-                </button>`,
+                </button>
+              `,
               sortable: true,
               class: 'text-center align-middle text-wrap',
               formatter: uniqueListFormatter,
@@ -274,16 +276,18 @@ onDocumentReady(() => {
             },
             {
               field: 'role',
-              title: html` Role
+              title: html`
+                Role
                 <button
-                  class="btn btn-xs"
+                  class="btn btn-xs btn-ghost"
                   type="button"
                   title="Show roles help"
                   data-toggle="modal"
                   data-target="#role-help"
                 >
                   <i class="bi-question-circle-fill" aria-hidden="true"></i>
-                </button>`,
+                </button>
+              `,
               sortable: true,
               class: 'text-center align-middle text-nowrap',
               switchable: true,
@@ -315,16 +319,18 @@ onDocumentReady(() => {
       },
       {
         field: 'duration',
-        title: html` Duration
+        title: html`
+          Duration
           <button
-            class="btn btn-xs"
+            class="btn btn-xs btn-ghost"
             type="button"
             title="Show duration help"
             data-toggle="modal"
             data-target="#duration-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
-          </button>`,
+          </button>
+        `,
         sortable: true,
         sortName: 'duration_secs',
         class: 'text-center align-middle text-nowrap',
@@ -332,16 +338,18 @@ onDocumentReady(() => {
       },
       {
         field: 'time_remaining',
-        title: html` Remaining
+        title: html`
+          Remaining
           <button
-            class="btn btn-xs"
+            class="btn btn-xs btn-ghost"
             type="button"
             title="Show remaining time help"
             data-toggle="modal"
             data-target="#time-remaining-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
-          </button>`,
+          </button>
+        `,
         sortable: true,
         sortName: 'time_remaining_sec',
         sorter: timeRemainingLimitSorter,
@@ -361,16 +369,18 @@ onDocumentReady(() => {
       },
       {
         field: 'client_fingerprint_id_change_count',
-        title: html` Fingerprint Changes
+        title: html`
+          Fingerprint Changes
           <button
-            class="btn btn-xs"
+            class="btn btn-xs btn-ghost"
             type="button"
             title="Show fingerprint changes help"
             data-toggle="modal"
             data-target="#fingerprint-changes-help"
           >
             <i class="bi-question-circle-fill" aria-hidden="true"></i>
-          </button>`,
+          </button>
+        `,
         class: 'text-center align-middle',
         // Hidden for groupwork by default, as it is not as relevant in that context
         visible: !assessmentGroupWork,
@@ -410,8 +420,9 @@ onDocumentReady(() => {
             />`
           : ''}
         <select
-          class="custom-select select-time-limit"
+          class="custom-select select-time-limit mb-3"
           name="plus_minus"
+          aria-label="Time limit options"
           onchange="
             $(this).parents('form').find('.time-limit-field').toggle(this.value !== 'unlimited' && this.value !== 'expire');
             $(this).parents('form').find('.reopen-closed-field').toggle(this.value !== '+1' && this.value !== '-1' && this.value !== 'expire');
@@ -437,21 +448,16 @@ onDocumentReady(() => {
             ? html`<option value="expire">Expire time limit</option>`
             : ''}
         </select>
-        <p class="form-inline">
+        <div class="input-group mb-3 time-limit-field">
           <input
-            class="form-control time-limit-field"
+            class="form-control"
             type="number"
             name="time_add"
-            style="width: 5em"
+            aria-label="Time value"
             value="5"
           />
-          <select class="custom-select time-limit-field" name="time_ref">
-            <option value="minutes">minutes</option>
-            ${row.time_remaining_sec !== null
-              ? html`<option value="percent">% total limit</option>`
-              : ''}
-          </select>
-        </p>
+          <span class="input-group-text">minutes</span>
+        </div>
         ${row.has_closed_instance
           ? html`
               <div class="form-check mb-2 reopen-closed-field">
@@ -500,6 +506,7 @@ onDocumentReady(() => {
         <button
           class="btn btn-secondary btn-xs ml-1 time-limit-edit-button"
           id="row${row.assessment_instance_id}PopoverTimeLimit"
+          aria-label="Change time limit"
           data-row="${JSON.stringify(row)}"
           data-placement="bottom"
           data-boundary="window"
@@ -530,14 +537,13 @@ onDocumentReady(() => {
     rowA: AssessmentInstanceRow,
     rowB: AssessmentInstanceRow,
   ) {
-    let nameA: string | null, nameB: string | null, idA, idB;
-    if (assessmentGroupWork) {
-      (nameA = rowA.group_name), (nameB = rowB.group_name);
-      (idA = rowA.group_id ?? ''), (idB = rowB.group_id ?? '');
-    } else {
-      (nameA = rowA.uid), (nameB = rowB.uid);
-      (idA = rowA.user_id ?? ''), (idB = rowB.user_id ?? '');
-    }
+    const nameKey = assessmentGroupWork ? 'group_name' : 'uid';
+    const idKey = assessmentGroupWork ? 'group_id' : 'user_id';
+
+    const nameA = rowA[nameKey];
+    const nameB = rowB[nameKey];
+    const idA = rowA[idKey] ?? '';
+    const idB = rowB[idKey] ?? '';
 
     // Compare first by UID/group name, then user/group ID, then
     // instance number, then by instance ID.

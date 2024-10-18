@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import { URL } from 'url';
 import { callbackify } from 'util';
 
-import { Router, type Request, Response, NextFunction } from 'express';
+import { Router, type Request, type Response, type NextFunction } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Issuer, Strategy, type TokenSet } from 'openid-client';
 import * as passport from 'passport';
@@ -22,7 +22,7 @@ import { Lti13Test } from './lti13Auth.html.js';
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
-const StateTest = '-StateTest';
+const STATE_TEST = '-StateTest';
 
 //
 // Express routes
@@ -45,6 +45,8 @@ router.post(
 
     const ltiClaim = new Lti13Claim(req);
 
+    const inStateTest = req.body.state.endsWith(STATE_TEST);
+
     // UID checking
     let uid: string;
     if (!lti13_instance.uid_attribute) {
@@ -56,7 +58,7 @@ router.post(
       // Reasonable default is "email"
       // Points back to OIDC Standard Claims https://openid.net/specs/openid-connect-core-1_0.html#StandardClaims
       uid = ltiClaim.get(lti13_instance.uid_attribute);
-      if (!uid) {
+      if (!uid && !inStateTest) {
         // Canvas Student View does not include a uid but has a deterministic role, nicer error message
         if (ltiClaim.isRoleTestUser()) {
           throw new HttpStatusError(
@@ -79,7 +81,7 @@ router.post(
       // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
       // Might look like ["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]
       uin = ltiClaim.get(lti13_instance.uin_attribute);
-      if (!uin) {
+      if (!uin && !inStateTest) {
         throw new HttpStatusError(
           500,
           `Missing UIN data from LTI 1.3 login (claim ${lti13_instance.uin_attribute} missing or empty)`,
@@ -115,7 +117,7 @@ router.post(
       institution_id: lti13_instance.institution_id,
     };
 
-    if (req.body.state.endsWith(StateTest)) {
+    if (inStateTest) {
       res.end(
         Lti13Test({
           lti13_claims,
@@ -208,7 +210,7 @@ async function launchFlow(req: Request, res: Response, next: NextFunction) {
   // Generate our own OIDC state, use it to toggle if testing is happening
   let state = crypto.randomBytes(28).toString('hex');
   if ('test' in parameters) {
-    state = state.concat(StateTest);
+    state = state.concat(STATE_TEST);
   }
 
   const myPassport = await setupPassport(req.params.lti13_instance_id);

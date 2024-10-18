@@ -3,11 +3,8 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { IdSchema } from '../../lib/db-types.js';
-import { CourseData, Question } from '../course-db.js';
+import { type CourseData, type Question } from '../course-db.js';
 import * as infofile from '../infofile.js';
-import { makePerformance } from '../performance.js';
-
-const perf = makePerformance('questions');
 
 function getParamsForQuestion(q: Question | null | undefined) {
   if (!q) return null;
@@ -51,6 +48,8 @@ function getParamsForQuestion(q: Question | null | undefined) {
     workspace_url_rewrite: q.workspaceOptions && q.workspaceOptions.rewriteUrl,
     workspace_enable_networking: q.workspaceOptions && q.workspaceOptions.enableNetworking,
     workspace_environment: q.workspaceOptions?.environment ?? {},
+    shared_publicly: q.sharePublicly ?? q.sharedPublicly ?? false,
+    share_source_publicly: q.shareSourcePublicly ?? false,
   };
 }
 
@@ -68,13 +67,11 @@ export async function sync(
     ]);
   });
 
-  perf.start('sproc:sync_questions');
   const result = await sqldb.callRow(
     'sync_questions',
     [questionParams, courseId],
     z.record(z.string(), IdSchema),
   );
-  perf.end('sproc:sync_questions');
 
   return result;
 }

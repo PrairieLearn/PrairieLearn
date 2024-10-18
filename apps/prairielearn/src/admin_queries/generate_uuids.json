@@ -1,0 +1,10 @@
+{
+  "description": "Generate random UUIDs for use in info files",
+  "params": [
+    {
+      "name": "count",
+      "description": "Number of UUIDs to generate (integer)",
+      "default": "5"
+    }
+  ]
+}

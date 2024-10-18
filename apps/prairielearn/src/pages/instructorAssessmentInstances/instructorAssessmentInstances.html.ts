@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 
@@ -35,28 +35,8 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
 
         ${compiledScriptTag('instructorAssessmentInstancesClient.ts')}
       </head>
-      <style>
-        .sticky-column {
-          position: sticky;
-          left: 0;
-          background: white;
-          background-clip: padding-box;
-          box-shadow: inset -1px 0 #dee2e6;
-        }
-        .table-hover tbody tr:hover td.sticky-column {
-          color: #212529;
-          background-color: #efefef;
-        }
-        .fixed-table-toolbar {
-          padding: 0 1em 0 1em;
-        }
-        .fixed-table-toolbar div.pagination,
-        .fixed-table-toolbar div.pagination-detail {
-          margin: 0 1em 0 0 !important;
-        }
-      </style>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${AssessmentSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
@@ -157,6 +137,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
 
             <table
               id="usersTable"
+              aria-label="Assessment instances"
               data-unique-id="assessment_instance_id"
               data-classes="table table-sm table-hover table-bordered"
               data-show-button-text="true"
@@ -237,7 +218,7 @@ function FingerprintChangesHelpModal() {
     title: 'Client Fingerprints',
     body: html`
       <p>
-        Client fingerprints are a record of a user's IP address, user agent and sesssion. These
+        Client fingerprints are a record of a user's IP address, user agent and session. These
         attributes are tracked while a user is accessing an assessment. This value indicates the
         amount of times that those attributes changed as the student accessed the assessment, while
         the assessment was active. Some changes may naturally occur during an assessment, such as if

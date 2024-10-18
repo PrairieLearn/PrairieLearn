@@ -26,33 +26,42 @@ function LoginPageContainer({
 }) {
   return html`
     <!doctype html>
-    <html lang="en" class="bg-dark">
+    <html lang="en">
       <head>
         ${HeadContents({ resLocals })}
         <style>
           html,
           body {
-            height: 100%;
-            background-color: #e9ecef;
+            min-height: 100vh;
           }
+
           .login-container-wrapper {
             width: 100%;
             height: 100%;
           }
+
           .login-container {
             background-color: white;
             padding: 20px;
             height: 100%;
           }
+
           .login-methods > :not(:last-child) {
             margin-bottom: 0.5rem;
           }
+
           @media (min-width: 576px) {
+            html,
+            body {
+              background-color: var(--bs-dark, #212529);
+            }
+
             .login-container-wrapper {
               max-width: 500px;
               margin: auto;
               height: auto;
             }
+
             .login-container {
               border-radius: 5px;
               box-shadow:
@@ -62,10 +71,12 @@ function LoginPageContainer({
               margin: 20px;
             }
           }
+
           .subheader {
             font-weight: 300;
             font-size: 1.2rem;
           }
+
           .btn .social-icon {
             position: absolute;
             left: 7px;
@@ -74,28 +85,34 @@ function LoginPageContainer({
             bottom: 0;
             margin: auto;
           }
+
           .btn-shib {
             background-color: ${config.shibLinkColors.normal.background};
             border-color: ${config.shibLinkColors.normal.border};
             color: ${config.shibLinkColors.normal.text};
           }
+
           .btn-shib:hover {
             background-color: ${config.shibLinkColors.hover.background};
             border-color: ${config.shibLinkColors.hover.border};
             color: ${config.shibLinkColors.hover.text};
           }
+
           .btn-shib:focus {
             box-shadow: 0 0 0 0.2rem ${config.shibLinkColors.focus.shadow};
           }
+
           .btn-shib:active {
             background-color: ${config.shibLinkColors.active.background};
             border-color: ${config.shibLinkColors.active.border};
             color: ${config.shibLinkColors.active.text};
           }
+
           .institution-header {
             overflow: hidden;
             text-align: center;
           }
+
           .institution-header:before,
           .institution-header:after {
             background-color: #000;
@@ -106,17 +123,19 @@ function LoginPageContainer({
             vertical-align: middle;
             width: 50%;
           }
+
           .institution-header:before {
             right: 0.5em;
             margin-left: -50%;
           }
+
           .institution-header:after {
             left: 0.5em;
             margin-right: -50%;
           }
         </style>
       </head>
-      <body class="d-flex flex-column bg-dark">
+      <body class="d-flex flex-column">
         <main class="login-container-wrapper">
           <div class="login-container">
             <div>
@@ -198,7 +217,7 @@ export function AuthLogin({
     service,
     resLocals,
     children: html`
-      ${resLocals.devMode
+      ${config.devMode
         ? html`
             ${DevModeBypass()}
             <hr />

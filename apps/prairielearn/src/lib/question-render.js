@@ -29,7 +29,6 @@ import {
   CourseSchema,
   DateFromISOString,
   GradingJobSchema,
-  GradingJobStatusSchema,
   IdSchema,
   InstanceQuestionSchema,
   IssueSchema,
@@ -41,6 +40,9 @@ import { getGroupConfig, getQuestionGroupPermissions, getUserRoles } from './gro
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { getQuestionCourse, ensureVariant } from './question-variant.js';
+
+/** @import { SubmissionPanels } from './question-render.types.js'  */
+/** @import { SubmissionForRender } from '../components/SubmissionPanel.html.js' */
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -84,7 +86,6 @@ const SubmissionInfoSchema = z.object({
   course_instance: CourseInstanceSchema.nullable(),
   variant_course: CourseSchema,
   question_course: CourseSchema,
-  grading_job_status: GradingJobStatusSchema.nullable(),
   formatted_date: z.string(),
   user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
@@ -92,19 +93,6 @@ const SubmissionInfoSchema = z.object({
   question_number: z.string().nullable(),
 });
 
-/**
- * @typedef {Object} SubmissionPanels
- * @property {string?} submissionPanel
- * @property {string?} scorePanel
- * @property {string?} extraHeadersHtml
- * @property {string?} [answerPanel]
- * @property {string?} [questionScorePanel]
- * @property {string?} [assessmentScorePanel]
- * @property {string?} [questionPanelFooter]
- * @property {string?} [questionNavNextButton]
- */
-
-/** @typedef {import('../components/SubmissionPanel.html.js').SubmissionForRender} SubmissionForRender */
 /**
  * To improve performance, we'll only render at most three submissions on page
  * load. If the user requests more, we'll render them on the fly.
@@ -495,7 +483,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
   //
   // We'll only load the data that will be needed for this specific page render.
   // The checks here should match those in `components/QuestionContainer.html.ts`.
-  const loadExtraData = locals.devMode || locals.authz_data.has_course_permission_view;
+  const loadExtraData = config.devMode || locals.authz_data.has_course_permission_view;
   locals.issues = await sqldb.queryRows(
     sql.select_issues,
     {
@@ -587,7 +575,6 @@ export async function renderPanelsForSubmission({
     submission_index,
     submission_count,
     grading_job,
-    grading_job_status,
     formatted_date,
     user_uid,
     question_number,
@@ -603,7 +590,6 @@ export async function renderPanelsForSubmission({
   /** @type {SubmissionPanels} */
   const panels = {
     submissionPanel: null,
-    scorePanel: null,
     extraHeadersHtml: null,
   };
 
@@ -655,7 +641,6 @@ export async function renderPanelsForSubmission({
         submission: {
           ...submission,
           grading_job,
-          grading_job_status,
           formatted_date,
           user_uid,
           submission_number: submission_index,

@@ -1,6 +1,6 @@
 import { html } from '@prairielearn/html';
 
-import { StripeCheckoutSession } from '../../../../lib/db-types.js';
+import { type StripeCheckoutSession } from '../../../../lib/db-types.js';
 import { type Purchase } from '../purchases.js';
 import { formatStripePrice } from '../stripe.js';
 
@@ -21,7 +21,7 @@ export function UserSettingsPurchasesCard({ purchases }: { purchases: Purchase[]
 function PurchaseTable({ purchases }: { purchases: Purchase[] }) {
   return html`
     <div class="table-responsive">
-      <table class="table">
+      <table class="table" aria-label="Purchases">
         <thead>
           <tr>
             <th>ID</th>

@@ -2,10 +2,10 @@ import _ from 'lodash';
 import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderEjs } from '@prairielearn/html-ejs';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
+import { Navbar } from '../../components/Navbar.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -23,6 +23,7 @@ import { formatFloat } from '../../lib/format.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
+  manual_perc: z.number(), // Fallback is computed in the query, so this is not nullable in this context
   course_short_name: CourseSchema.shape.short_name,
   course_instance_short_name: CourseInstanceSchema.shape.short_name,
   assessment_label: z.string(),
@@ -60,7 +61,7 @@ export function InstructorAssessmentQuestionStatistics({
         ${compiledScriptTag('instructorAssessmentQuestionStatisticsClient.ts')}
       </head>
       <body>
-        ${renderEjs(import.meta.url, "<%- include('../partials/navbar'); %>", resLocals)}
+        ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           <h1 class="sr-only">
             ${resLocals.assessment_set.name} ${resLocals.assessment.number} Question Statistics
@@ -96,8 +97,8 @@ export function InstructorAssessmentQuestionStatistics({
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <h2>
                 ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Question difficulty
+                vs discrimination
               </h2>
-              vs discrimination
               <div class="ml-auto">
                 <small>
                   <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
@@ -177,7 +178,10 @@ export function InstructorAssessmentQuestionStatistics({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover tablesorter">
+              <table
+                class="table table-sm table-hover tablesorter"
+                aria-label="Question statistics"
+              >
                 <thead>
                   <tr>
                     <th class="text-center">Question</th>
@@ -206,9 +210,7 @@ export function InstructorAssessmentQuestionStatistics({
                           ${Scorebar(row.discrimination ? Math.round(row.discrimination) : null)}
                         </td>
                         <td class="text-center">
-                          ${(row.max_auto_points ?? 0) > 0 ||
-                          row.max_manual_points === 0 ||
-                          (row.average_number_submissions ?? 0) > 0
+                          ${row.manual_perc < 100 || (row.average_number_submissions ?? 0) > 0
                             ? formatFloat(row.average_number_submissions)
                             : html`&mdash;`}
                         </td>
@@ -292,8 +294,8 @@ export function InstructorAssessmentQuestionStatistics({
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <h2>
                 ${resLocals.assessment_set.name} ${resLocals.assessment.number}: Detailed question
+                statistics
               </h2>
-              statistics
               <div class="ml-auto">
                 <small>
                   <span class="text-light mr-2">Last calculated: ${statsLastUpdated}</span>
@@ -310,7 +312,10 @@ export function InstructorAssessmentQuestionStatistics({
             </div>
 
             <div class="table-responsive">
-              <table class="table table-sm table-hover tablesorter table-bordered">
+              <table
+                class="table table-sm table-hover tablesorter table-bordered"
+                aria-label="Detailed question statistics"
+              >
                 <thead>
                   <tr>
                     <th class="text-center">Question</th>
@@ -343,7 +348,7 @@ export function InstructorAssessmentQuestionStatistics({
                         <td class="text-center">${formatFloat(row.median_question_score, 1)}</td>
                         <td class="text-center">${formatFloat(row.question_score_variance, 1)}</td>
                         <td class="text-center">${formatFloat(row.discrimination, 1)}</td>
-                        ${(row.max_auto_points ?? 0) > 0 || row.max_manual_points === 0
+                        ${row.manual_perc < 100
                           ? html`
                               <td class="text-center">
                                 ${formatFloat(row.some_submission_perc, 1)}
