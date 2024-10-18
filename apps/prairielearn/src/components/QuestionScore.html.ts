@@ -257,7 +257,7 @@ export function ExamQuestionStatus({
   //
   // TODO: can we safely look at the assessment question for exams? What about
   // the guarantee that an Exam-type assessment won't change after it's created?
-  if (instance_question.status === 'saved' && manualPercentage > 0) {
+  if (instance_question.status === 'saved' && manualPercentage >= 100) {
     return html`
       <span class="align-middle">
         <span class="badge badge-success">saved for manual grading</span>
@@ -390,7 +390,7 @@ export function InstanceQuestionPoints({
 
   // Special case: if this is a manually-graded question in the saved state, don't show
   // a "pending" badge for auto points, since there aren't any pending auto points.
-  if (instance_question.status === 'saved' && component === 'auto' && manualPercentage > 0) {
+  if (instance_question.status === 'saved' && component === 'auto' && manualPercentage >= 100) {
     return html`&mdash;`;
   }
 
