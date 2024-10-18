@@ -11,9 +11,11 @@ import byline from 'byline';
 import Docker from 'dockerode';
 import { execa } from 'execa';
 import fs from 'fs-extra';
+import * as shlex from 'shlex';
 import * as tmp from 'tmp-promise';
 
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { sanitizeObject } from '@prairielearn/sanitize';
@@ -403,10 +405,17 @@ async function initFiles(context: Context) {
     logger.info('Unzipping files');
     await execa('tar', ['-xf', jobArchiveFile.path, '-C', jobDirectory.path]);
 
-    logger.info('Making entrypoint executable');
-    await execa('chmod', ['+x', path.join(jobDirectory.path, entrypoint.slice(6))]).catch(() => {
-      logger.error('Could not make file executable; continuing execution anyways');
-    });
+    const entrypointFirstToken = shlex.split(entrypoint)[0];
+    if (path.isAbsolute(entrypointFirstToken) && contains('/grade', entrypointFirstToken, false)) {
+      // Mark the entrypoint as executable if it lives in the mounted volume.
+      logger.info('Making entrypoint executable');
+      await execa('chmod', [
+        '+x',
+        path.resolve(jobDirectory.path, path.relative('/grade', entrypointFirstToken)),
+      ]).catch(() => {
+        logger.error('Could not make file executable; continuing execution anyways');
+      });
+    }
 
     return jobDirectory;
   } finally {
@@ -480,7 +489,7 @@ async function runJob(
           },
         ],
       },
-      Entrypoint: entrypoint.split(' '),
+      Entrypoint: shlex.split(entrypoint),
     });
 
     const stream = await container.attach({
