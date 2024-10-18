@@ -54,7 +54,7 @@ FROM
 WHERE
   q.course_id = $course_id
   AND q.deleted_at IS NULL
-  AND q.draft_version IS NULL
+  AND q.is_draft IS FALSE
 GROUP BY
   q.id,
   top.id,
@@ -89,7 +89,7 @@ FROM
 WHERE
   q.course_id = $course_id
   AND q.deleted_at IS NULL
-  AND q.draft_version IS NULL
+  AND q.is_draft IS FALSE
   AND q.shared_publicly
 GROUP BY
   q.id,

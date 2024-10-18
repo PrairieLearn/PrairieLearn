@@ -41,8 +41,6 @@ import { type ServerJob, type ServerJobExecutor, createServerJob } from './serve
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
-const draftDirExtractor =
-  /^(?<prefix>.*)\/__drafts__\/(?<questionDir>[^/]*)\/(?<questionFilePath>.*)$/g;
 
 async function syncCourseFromDisk(
   course: Course,
@@ -921,8 +919,9 @@ export class QuestionAddEditor extends Editor {
 
   files?: Record<string, string>;
   isDraft: boolean;
+  draftId?: number;
 
-  constructor(params: BaseEditorOptions & { files?: Record<string, string>; isDraft?: boolean }) {
+  constructor(params: BaseEditorOptions & { files?: Record<string, string>; draftId?: number }) {
     super(params);
 
     this.description = 'Add question';
@@ -930,7 +929,8 @@ export class QuestionAddEditor extends Editor {
     this.uuid = uuidv4();
     this.files = params.files;
 
-    this.isDraft = typeof params.isDraft !== 'undefined' && params.isDraft;
+    this.isDraft = typeof params.draftId !== 'undefined' && params.draftId >= 0;
+    this.draftId = params.draftId;
   }
 
   async write() {
@@ -948,7 +948,7 @@ export class QuestionAddEditor extends Editor {
 
     debug('Generate qid and title');
     const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
-    const qid = names.shortName;
+    const qid = this.isDraft ? `draft_${this.draftId}` : names.shortName;
 
     const questionPath = this.isDraft
       ? path.join(questionsPath, '__drafts__', qid)
@@ -999,7 +999,6 @@ export class QuestionAddEditor extends Editor {
     debug('Write info.json with new title and uuid');
     infoJson.title = names.longName;
     infoJson.uuid = this.uuid;
-    infoJson.draftVersion = 1;
     // The template question contains tags that shouldn't be copied to the new question.
     delete infoJson.tags;
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
@@ -1056,7 +1055,7 @@ export class QuestionRenameEditor extends Editor {
     debug('QuestionRenameEditor: write()');
 
     let questionsPath = path.join(this.course.path, 'questions');
-    if (this.question.draft_version) {
+    if (this.question.is_draft) {
       questionsPath = path.join(questionsPath, '__drafts__');
     }
     const oldPath = path.join(questionsPath, this.question.qid);
@@ -1065,13 +1064,6 @@ export class QuestionRenameEditor extends Editor {
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
-
-    if (this.question.draft_version) {
-      debug('Increment draft version');
-      const infoJson = await fs.readJson(path.join(newPath, 'info.json'));
-      infoJson.draftVersion++;
-      await fs.writeJson(path.join(newPath, 'info.json'), infoJson, { spaces: 4 });
-    }
 
     debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
     const result = await sqldb.queryAsync(sql.select_assessments_with_question, {
@@ -1169,7 +1161,7 @@ export class QuestionCopyEditor extends Editor {
     const qid = names.shortName;
     const questionPath = path.join(questionsPath, qid);
 
-    const fromPath = this.question.draft_version
+    const fromPath = this.question.is_draft
       ? path.join(questionsPath, '__drafts__', this.question.qid)
       : path.join(questionsPath, this.question.qid);
     const toPath = questionPath;
@@ -1190,8 +1182,6 @@ export class QuestionCopyEditor extends Editor {
     delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
 
-    //copying question implies not-draft (for now?)
-    delete infoJson['draftVersion'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1276,8 +1266,6 @@ export class QuestionTransferEditor extends Editor {
     delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
 
-    //copying question implies not-draft (for now?)
-    delete infoJson['draftVersion'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1689,26 +1677,6 @@ export class FileModifyEditor extends Editor {
 
     debug('write file');
     await fs.writeFile(this.filePath, b64Util.b64DecodeUnicode(this.editContents));
-
-    const draftPathDecomposition = this.filePath.match(draftDirExtractor);
-
-    if (draftPathDecomposition.groups) {
-      debug('Edit draft version');
-      const infoJsonPath = path.join(
-        draftPathDecomposition.groups.prefix,
-        '__drafts__',
-        draftPathDecomposition.groups.questionDir,
-        'info.json',
-      );
-      const infoJson = await fs.readJson(infoJsonPath);
-      infoJson.draftVersion++;
-      await fs.writeJson(infoJsonPath, infoJson, { spaces: 4 });
-
-      return {
-        pathsToAdd: [this.filePath, infoJsonPath],
-        commitMessage: this.description,
-      };
-    }
 
     return {
       pathsToAdd: [this.filePath],

@@ -377,9 +377,9 @@ export interface Question {
   tags: string[];
   clientFiles: string[];
   clientTemplates: string[];
-  draftVersion: number | undefined;
   template: string;
   gradingMethod: 'Internal' | 'External' | 'Manual';
+  isDraft: boolean;
   singleVariant: boolean;
   showCorrectAnswer: boolean;
   partialCredit: boolean;
@@ -877,6 +877,12 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
         tolerateMissing: recursive,
       });
       if (info) {
+        if (info.data && 'clientFiles' in info.data) {
+          //it's a draft if it's of the form .../__drafts__/question/info.json
+          //only Questions have property isDraft or clientFiles
+          const pathSplit = infoFilePath.split(path.sep);
+          info.data['isDraft'] = pathSplit[pathSplit.length - 3] === '__drafts__';
+        }
         infoFiles[path.join(relativeDir, dir)] = info;
       } else if (recursive) {
         try {

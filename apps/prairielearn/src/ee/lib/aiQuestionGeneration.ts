@@ -1,5 +1,6 @@
 import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
+import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows, queryRow } from '@prairielearn/postgres';
 
@@ -270,15 +271,26 @@ Keep in mind you are not just generating an example; you are generating an actua
         files['server.py'] = job?.data?.python;
       }
 
+      const draftId = await queryRow(sql.update_draft_number, { course_id: courseId }, z.number());
+
       const editor = new QuestionAddEditor({
         locals: saveLocals,
         files,
-        isDraft: true,
+        draftId,
       });
 
       const serverJob = await editor.prepareServerJob();
-
       await editor.executeWithServerJob(serverJob);
+
+      await queryRows(
+        sql.insert_draft_info,
+        {
+          qid: `draft_${draftId}`,
+          course_id: courseId,
+          creator_id: authnUserId,
+        },
+        z.any(),
+      );
     }
   });
 

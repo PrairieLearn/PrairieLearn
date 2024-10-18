@@ -217,7 +217,7 @@ router.post(
       if (!res.locals.authz_data.has_course_permission_own) {
         throw new error.HttpStatusError(403, 'Access denied (must be a course Owner)');
       }
-      if (typeof res.locals?.question?.draft_version !== 'undefined') {
+      if (res.locals?.question?.is_draft) {
         throw new error.HttpStatusError(400, 'Cannot share a draft question. Undraft first.');
       }
       await sqldb.queryAsync(sql.sharing_set_add, {

@@ -26,7 +26,7 @@ function getParamsForQuestion(q: Question | null | undefined) {
     template_directory: q.template,
     options: q.options,
     client_files: q.clientFiles || [],
-    draft_version: q.draftVersion,
+    is_draft: q.isDraft || false,
     topic: q.topic,
     grading_method: q.gradingMethod || 'Internal',
     single_variant: !!q.singleVariant,
@@ -58,6 +58,7 @@ export async function sync(
   courseData: CourseData,
 ): Promise<Record<string, string>> {
   const questionParams = Object.entries(courseData.questions).map(([qid, question]) => {
+    
     return JSON.stringify([
       qid,
       question.uuid,

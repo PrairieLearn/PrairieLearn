@@ -1,2 +1,12 @@
 ALTER TABLE questions
-ADD COLUMN IF NOT EXISTS draft_version integer;
+ADD COLUMN IF NOT EXISTS is_draft boolean NOT NULL DEFAULT (false);
+
+ALTER TABLE pl_courses
+ADD COLUMN IF NOT EXISTS draft_number integer NOT NULL DEFAULT (0);
+
+CREATE TABLE IF NOT EXISTS questions_draft_metadata (
+  id bigint NOT NULL PRIMARY KEY,
+  draft_created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  draft_created_by BIGINT REFERENCES users ON DELETE SET NULL ON UPDATE CASCADE,
+  draft_updated_by BIGINT REFERENCES users ON DELETE SET NULL ON UPDATE CASCADE
+)
