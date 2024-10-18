@@ -1,7 +1,7 @@
 import { html, escapeHtml } from '@prairielearn/html';
 
-import { CourseRequestRow } from '../lib/course-request.js';
-import { Institution } from '../lib/db-types.js';
+import { type CourseRequestRow } from '../lib/course-request.js';
+import { type Institution } from '../lib/db-types.js';
 
 import { JobStatus } from './JobStatus.html.js';
 

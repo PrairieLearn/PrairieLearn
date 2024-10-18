@@ -65,7 +65,7 @@ async function update(locals: Record<string, any>) {
 router.get(
   '/',
   asyncHandler(async (req, res, next) => {
-    if (!res.locals.devMode) return next();
+    if (!config.devMode) return next();
     const jobSequenceId = await update(res.locals);
     res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
   }),

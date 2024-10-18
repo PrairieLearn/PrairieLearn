@@ -132,7 +132,6 @@ export async function initExpress() {
   // all pages including the error page (which we could jump to at
   // any point.
   app.use((req, res, next) => {
-    res.locals.config = config;
     setLocalsFromConfig(res.locals);
     next();
   });
@@ -1272,7 +1271,7 @@ export async function initExpress() {
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/modules', [
     function (req, res, next) {
-      res.locals.navSubPage = 'moduls';
+      res.locals.navSubPage = 'modules';
       next();
     },
     (await import('./pages/instructorCourseAdminModules/instructorCourseAdminModules.js')).default,

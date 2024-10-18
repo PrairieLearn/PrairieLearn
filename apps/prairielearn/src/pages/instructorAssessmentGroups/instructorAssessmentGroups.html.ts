@@ -7,7 +7,7 @@ import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
-import { GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
+import { type GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,

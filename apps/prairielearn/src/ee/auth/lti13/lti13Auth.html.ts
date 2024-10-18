@@ -2,8 +2,8 @@ import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { NavbarIframe } from '../../../components/Navbar.html.js';
-import { LoadUserAuth } from '../../../lib/authn.js';
-import { Lti13Instance } from '../../../lib/db-types.js';
+import { type LoadUserAuth } from '../../../lib/authn.js';
+import { type Lti13Instance } from '../../../lib/db-types.js';
 
 export const Lti13Test = ({
   resLocals,
