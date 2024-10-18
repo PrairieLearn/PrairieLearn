@@ -6,6 +6,7 @@ import fs from 'fs-extra';
 import { step } from 'mocha-steps';
 import fetch from 'node-fetch';
 import * as tmp from 'tmp';
+import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -145,6 +146,8 @@ describe('Question Sharing', function () {
         topic: 'TOPIC HERE',
       },
     };
+
+    sharingCourseData.courseInstances['Fa19'].assessments['test'].sharedSourcePublicly = true;
 
     await syncUtil.writeCourseToDirectory(sharingCourseData, sharingCourseOriginDir);
 
@@ -580,6 +583,7 @@ describe('Question Sharing', function () {
     step(
       'Try adding question to sharing set that does not exist, ensure live does not sync it',
       async () => {
+        const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets || [];
         sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets?.push(
           'Fake Sharing Set Name',
         );
@@ -589,6 +593,37 @@ describe('Question Sharing', function () {
         );
 
         await ensureInvalidSharingOperationFailsToSync();
+
+        sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = saveSharingSets;
+      },
+    );
+  });
+
+  describe('Test publicly sharing an assessment', function () {
+    step('Trying syncing an assessment containing a nonshared question', async () => {
+      // TODO: implement
+    });
+    step('Successfully sync a shared assessment with a shared question', async () => {
+      // TODO: implement
+    });
+
+    step(
+      'Successfully access publicly shared assessment page for the shared assessment',
+      async () => {
+        const courseInstanceId = await sqldb.queryRow(
+          sql.select_course_instance,
+          { short_name: 'Fa19', sharing_course_id: sharingCourse.id },
+          IdSchema,
+        );
+        const sharedAssessmentId = await sqldb.queryRow(
+          sql.select_assessment,
+          { tid: 'test', course_instance_id: courseInstanceId },
+          IdSchema,
+        );
+        const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${courseInstanceId}/assessment/${sharedAssessmentId}/questions`;
+        const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
+
+        assert(sharedAssessmentPage.ok);
       },
     );
   });
