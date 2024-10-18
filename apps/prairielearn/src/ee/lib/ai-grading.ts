@@ -96,7 +96,7 @@ async function generateGPTPrompt({
   let warning = '';
 
   // Instructions for grading
-  if (rubric_items.length) {
+  if (rubric_items.length > 0) {
     let rubric_info = '';
     for (const item of rubric_items) {
       rubric_info += `number: ${item.number}\ndescription: ${item.description}\nexplanation: ${item.explanation}\n\n`;
