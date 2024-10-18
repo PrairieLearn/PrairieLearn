@@ -1,0 +1,22 @@
+{
+  "uuid": "5adad037-da78-43b6-bfe6-fd57c2da8452",
+  "title": "Workspace demo: JupyterLab Postgres",
+  "topic": "Workspace",
+  "tags": ["ZacWarham", "echuber2"],
+  "type": "v3",
+  "singleVariant": true,
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-jupyterlab-postgres",
+    "port": 8080,
+    "home": "/home/jovyan",
+    "rewriteUrl": false,
+    "gradedFiles": ["Workbook.ipynb"]
+  },
+  "gradingMethod": "External",
+  "externalGradingOptions": {
+    "enabled": true,
+    "image": "prairielearn/grader-python",
+    "entrypoint": "/python_autograder/run.sh",
+    "timeout": 20
+  }
+}
