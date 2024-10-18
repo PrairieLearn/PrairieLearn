@@ -9,15 +9,15 @@ import * as sqldb from '@prairielearn/postgres';
 import * as questionServers from '../question-servers/index.js';
 
 import {
-  Course,
+  type Course,
   DateFromISOString,
   GradingJobSchema,
   IdSchema,
   IntervalSchema,
-  Question,
-  Submission,
+  type Question,
+  type Submission,
   SubmissionSchema,
-  Variant,
+  type Variant,
   VariantSchema,
 } from './db-types.js';
 import * as externalGrader from './externalGrader.js';

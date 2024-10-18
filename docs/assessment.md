@@ -586,7 +586,6 @@ Compared to the normal assessment, there are a number of differences:
 - A warning explaining that real-time grading has been disabled is shown
 - Total points is listed as a number, not as an "X/Y" score
 - The percentage bar is not displayed
-- The "Best submission" column is renamed to "Submission status"
 - The "Available points" column has been removed
 - The "Awarded points" column has been renamed to "Points" and only shows the max points
 
