@@ -13,11 +13,11 @@ columns
     external_grading_timeout: integer
     grading_method: enum_grading_method not null default 'Internal'::enum_grading_method
     id: bigint not null default nextval('questions_id_seq'::regclass)
+    is_draft: boolean not null default false
     number: integer
     options: jsonb
     partial_credit: boolean default true
     qid: text
-    share_publicly: boolean not null default false
     share_source_publicly: boolean not null default false
     shared_publicly: boolean not null default false
     show_correct_answer: boolean default true

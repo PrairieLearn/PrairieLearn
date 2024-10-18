@@ -1,0 +1,12 @@
+columns
+    draft_created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
+    draft_created_by: bigint
+    draft_updated_by: bigint
+    id: bigint not null
+
+indexes
+    questions_draft_metadata_pkey: PRIMARY KEY (id) USING btree (id)
+
+foreign-key constraints
+    questions_draft_metadata_draft_created_by_fkey: FOREIGN KEY (draft_created_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
+    questions_draft_metadata_draft_updated_by_fkey: FOREIGN KEY (draft_updated_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
