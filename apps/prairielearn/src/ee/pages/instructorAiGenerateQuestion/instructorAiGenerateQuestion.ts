@@ -3,11 +3,11 @@ import asyncHandler from 'express-async-handler';
 import { OpenAI } from 'openai';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { QuestionSchema } from '../../../lib/db-types.js';
-import { QuestionAddEditor } from '../../../lib/editors.js';
+import { QuestionAddEditor, QuestionDeleteEditor } from '../../../lib/editors.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
@@ -194,6 +194,21 @@ router.post(
       );
 
       res.redirect(res.locals.urlPrefix + '/question/' + qid + '/settings');
+    } else if (req.body.__action === 'delete_drafts') {
+      const questions = await queryRows(
+        sql.select_all_drafts,
+        { course_id: res.locals.course.id.toString() },
+        QuestionSchema,
+      );
+
+      for (const question of questions) {
+        const locals = res.locals;
+        locals['question'] = question;
+        const editor = new QuestionDeleteEditor({ locals });
+        const serverJob = await editor.prepareServerJob();
+        await editor.executeWithServerJob(serverJob);
+      }
+      res.send(AiGeneratePage({ resLocals: res.locals }));
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
