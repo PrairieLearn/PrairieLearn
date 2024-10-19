@@ -11,7 +11,7 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { type Course, IdSchema } from '../lib/db-types.js';
+import { AssessmentSchema, type Course, IdSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
@@ -21,6 +21,7 @@ import * as helperServer from './helperServer.js';
 import { makeMockLogger } from './mockLogger.js';
 import * as syncUtil from './sync/util.js';
 import { getCsrfToken } from './utils/csrf.js';
+import { courseDataHasErrors } from '../sync/course-db.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const { logger } = makeMockLogger();
@@ -600,12 +601,49 @@ describe('Question Sharing', function () {
   });
 
   describe('Test publicly sharing an assessment', function () {
-    step('Trying syncing an assessment containing a nonshared question', async () => {
-      // TODO: implement
-    });
-    step('Successfully sync a shared assessment with a shared question', async () => {
-      // TODO: implement
-    });
+  
+    step(
+      'Fail to sync a shared assessment containing a nonshared question',
+      async () => {
+        // Set sharedPublicly as false for the nonshared question
+        sharingCourseData.questions[SHARING_QUESTION_QID].sharedPublicly = false;
+  
+        await fs.writeJSON(
+          path.join(sharingCourseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
+          sharingCourseData.questions[SHARING_QUESTION_QID],
+        );
+
+        // Attempt to sync the assessment
+        try {
+          const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
+          console.log('SYNC RESULT', JSON.stringify(syncResult, null, 2)); // TEST
+          assert.fail('Sync should have failed due to nonshared question');
+        } catch (error) {
+          console.log('ERROR', error.message); // TEST
+          assert(error.message.includes('nonshared question'), 'Expected sync to fail due to nonshared question');
+        }
+      },
+    );
+  
+    step(
+      'Successfully sync a shared assessment with a shared question',
+      async () => {
+        // Set up the assessment with a shared question (make the unshared question shared)
+        sharingCourseData.questions[SHARING_QUESTION_QID].sharedPublicly = true;
+
+        await fs.writeJSON(
+          path.join(sharingCourseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
+          sharingCourseData.questions[SHARING_QUESTION_QID],
+        );
+  
+        // Sync the assessment
+        const syncResult = await syncFromDisk.syncOrCreateDiskToSql(consumingCourse.path, logger);
+        if (syncResult.status !== 'complete' || syncResult?.hadJsonErrorsOrWarnings) {
+          throw new Error('Errors or warnings found during sync of consuming course');
+        }
+
+      },
+    );
 
     step(
       'Successfully access publicly shared assessment page for the shared assessment',

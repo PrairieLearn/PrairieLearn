@@ -190,7 +190,7 @@ export function checkInvalidSharedAssessments(
   courseData: CourseData,
   logger: ServerJobLogger,
 ): boolean {
-  const invalidSharedAssessments: string[] = [];
+  const invalidSharedAssessments = new Set<string>();
   for (const courseInstanceKey in courseData.courseInstances) {
     const courseInstance = courseData.courseInstances[courseInstanceKey];
     for (const tid in courseInstance.assessments) {
@@ -205,7 +205,7 @@ export function checkInvalidSharedAssessments(
           }
           const infoJson = courseData.questions[question.id];
           if (!infoJson?.data?.sharedPublicly) {
-            invalidSharedAssessments.push(tid);
+            invalidSharedAssessments.add(tid);
             continue;
           }
         }
@@ -213,10 +213,10 @@ export function checkInvalidSharedAssessments(
     }
   }
 
-  const existInvalidSharedAssessment = invalidSharedAssessments.length > 0;
+  const existInvalidSharedAssessment = invalidSharedAssessments.size > 0;
   if (existInvalidSharedAssessment) {
     logger.error(
-      `✖ Course sync completely failed. The following assessments have their source publicly shared, but contain questions which are not publicly shared: ${invalidSharedAssessments.join(', ')}`,
+      `✖ Course sync completely failed. The following assessments have their source publicly shared, but contain questions which are not publicly shared: ${Array.from(invalidSharedAssessments).join(', ')}`,
     );
   }
   return existInvalidSharedAssessment;
