@@ -311,8 +311,8 @@ class Feedback:
         ref,
         data,
         partial_keys=None,
-        check_only_keys=False,
-        check_only_values=False,
+        check_keys=False,
+        check_values=False,
         key_type=None,
         value_type=None,
         accuracy_critical=False,
@@ -363,7 +363,7 @@ class Feedback:
                     )
 
         if partial_keys is None:
-            if check_only_values:
+            if check_values:
                 if len(ref.values()) != len(data.values()):
                     return bad(
                         f"{name} has the wrong number of values: expected {len(ref.values())}, got {len(data.values())}"
@@ -375,7 +375,7 @@ class Feedback:
                 )
         check_partial_keys = partial_keys is not None and len(partial_keys) >= 1
 
-        if check_only_keys or check_only_values or check_partial_keys:
+        if check_keys or check_values or check_partial_keys:
             partial_keys_valid = False
             if partial_keys is not None and len(partial_keys) >= 1:
                 for partial_key in partial_keys:
@@ -383,35 +383,35 @@ class Feedback:
                         return bad(f"{name} does not contain key {partial_key}")
                 partial_keys_valid = True
 
-            check_keys = False
-            if check_only_keys:
+            keys_valid = False
+            if check_keys:
                 for key in data.keys():
                     if key not in ref.keys():
                         return bad(f"{name} contains an extra key: {key}")
-                check_keys = True
+                keys_valid = True
 
-            check_values = False
-            if check_only_values:
+            values_valid = False
+            if check_values:
                 if len(ref.values()) != len(data.values()):
                     return f"{name} has the wrong length for values: expected {len(ref.values())}, got {len(data.values())}"
                 for value in data.values():
                     if value not in ref.values():
                         return bad(f"{name} contains an extra value: {value}")
-                check_values = True
+                values_valid = True
 
-            if check_only_keys and check_only_values and check_partial_keys:
-                return check_keys and check_values and partial_keys_valid
+            if check_keys and check_values and check_partial_keys:
+                return keys_valid and values_valid and partial_keys_valid
 
-            if check_only_keys and check_only_values:
-                return check_keys and check_values
+            if check_keys and check_values:
+                return keys_valid and values_valid
 
-            if check_only_values and check_partial_keys:
-                return check_values and partial_keys_valid
+            if check_values and check_partial_keys:
+                return values_valid and partial_keys_valid
 
-            if check_only_keys and check_partial_keys:
-                return check_keys and partial_keys_valid
+            if check_keys and check_partial_keys:
+                return keys_valid and partial_keys_valid
 
-            return check_keys or check_values or check_partial_keys
+            return keys_valid or values_valid or check_partial_keys
 
         # Check equality of both keys and values between reference dict and student's dict
         if ref == data:
