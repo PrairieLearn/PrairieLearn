@@ -49,26 +49,26 @@ class ErrorCodes:
         return None
 
     def keysLengthMismatch(self, ref, data):
-        """return bad(f"{name} has the wrong number of entries, expected {len(ref)}, got {len(data)}")"""
-        return f"{self.NAME} has the wrong number of entries, expected {len(ref)}, got {len(data)}"
+        """return bad(f"{name} has the wrong number of entries: expected {len(ref)}, got {len(data)}")"""
+        return f"{self.NAME} has the wrong number of entries: expected {len(ref)}, got {len(data)}"
 
     def ValueTypeError(self, student_dict, value_type):
         """return bad(f"{name} has the wrong type for value {value}")"""
         for value in student_dict.values():
             if not isinstance(value, value_type):
-                return f"{self.NAME} has the wrong type for value {value}, expecting type {value_type}"
+                return f"{self.NAME} has the wrong type for value {value}, expected type {value_type}"
         return None
 
     def KeyTypeError(self, student_dict, key_type):
         """return bad(f"{name} has the wrong type for key {key}")"""
         for key in student_dict.keys():
             if not isinstance(key, key_type):
-                return f"{self.NAME} has the wrong type for key {key}, expecting type {key_type}"
+                return f"{self.NAME} has the wrong type for key {key}, expected type {key_type}"
         return None
 
     def valuesLengthMismatch(self, ref: dict, data: dict):
-        """return f"{name} has the wrong length for values--expected {len(ref.values())}, got {len(data.values())}" """
-        return f"{self.NAME} has the wrong length for values--expected {len(ref.values())}, got {len(data.values())}"
+        """return f"{name} has the wrong number of values: expected {len(ref.values())}, got {len(data.values())}" """
+        return f"{self.NAME} has the wrong number of values: expected {len(ref.values())}, got {len(data.values())}"
 
     def extraValue(self, ref, data):
         """return bad(f"{name} contains an extra value: {value}")"""
@@ -78,8 +78,8 @@ class ErrorCodes:
         return None
 
     def incorrect_dicts(self):
-        """return bad(f"{name} is incorrect as one (or more) key-value pairs do not match")"""
-        return f"{self.NAME} is incorrect as one (or more) key-value pairs do not match"
+        """return bad(f"{name} has one or more key-value pairs that do not match")"""
+        return f"{self.NAME} has one or more key-value pairs that do not match"
 
 
 NAME = "test_check_dict"
