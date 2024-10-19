@@ -1,6 +1,6 @@
-import { Server } from 'node:http';
+import { type Server } from 'node:http';
 
-import * as express from 'express';
+import { type Express } from 'express';
 
 export interface WithServerContext {
   server: Server;
@@ -8,10 +8,7 @@ export interface WithServerContext {
   url: string;
 }
 
-export async function withServer(
-  app: express.Express,
-  fn: (ctx: WithServerContext) => Promise<void>,
-) {
+export async function withServer(app: Express, fn: (ctx: WithServerContext) => Promise<void>) {
   const server = app.listen();
 
   await new Promise<void>((resolve, reject) => {

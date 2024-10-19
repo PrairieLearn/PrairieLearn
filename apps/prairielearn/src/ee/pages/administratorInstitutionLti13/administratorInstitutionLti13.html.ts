@@ -6,7 +6,7 @@ import { Navbar } from '../../../components/Navbar.html.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
 
-import { LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
+import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
 export function AdministratorInstitutionLti13({
   institution,

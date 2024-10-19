@@ -1,10 +1,10 @@
-import { OpenAI } from 'openai';
+import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 
 import { loadSqlEquiv, queryRows, queryRow } from '@prairielearn/postgres';
 
 import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
-import { ServerJob, createServerJob } from '../../lib/server-jobs.js';
+import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
 import { validateHTML } from './validateHTML.js';
@@ -226,7 +226,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data['completion'] = completion;
 
     if (html && typeof html === 'string') {
-      const errors = validateHTML(html, false);
+      const errors = validateHTML(html, false, !!job?.data?.python);
       job.data['initialGenerationErrors'] = errors;
       job.data['finalGenerationErrors'] = errors;
       if (errors.length > 0) {
@@ -366,7 +366,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   job.data['generation'] = completion.choices[0].message.content;
   job.data['completion'] = completion;
 
-  const html = job?.data?.html ?? originalHTML;
+  const html = job?.data?.html || originalHTML;
 
   if (saveInitialErrors) {
     job.data['initialGenerationErrors'] = [];
@@ -374,7 +374,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   job.data['finalGenerationErrors'] = [];
 
   if (html && typeof html === 'string') {
-    const errors = validateHTML(html, false);
+    const errors = validateHTML(html, false, !!job?.data?.python);
     if (saveInitialErrors) {
       job.data['initialGenerationErrors'] = errors;
     }

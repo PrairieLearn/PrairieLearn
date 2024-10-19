@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 
 import { EditQuestionPointsScoreButton } from '../../src/components/EditQuestionPointsScore.html.js';
 import { Scorebar } from '../../src/components/Scorebar.html.js';
-import { User } from '../../src/lib/db-types.js';
+import { type User } from '../../src/lib/db-types.js';
 import { formatPoints } from '../../src/lib/format.js';
 import type {
   InstanceQuestionRow,
