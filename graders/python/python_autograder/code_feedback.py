@@ -349,6 +349,7 @@ class Feedback:
         if not isinstance(data, dict):
             return bad(f"{name} is not a dict")
 
+        # First, do all data type and partial keys checks.
         if value_type is not None:
             for value in data.values():
                 if not isinstance(value, value_type):
@@ -375,45 +376,33 @@ class Feedback:
                 )
         check_partial_keys = partial_keys is not None and len(partial_keys) >= 1
 
+        # If any special checks enabled, do those
         if check_keys or check_values or check_partial_keys:
-            partial_keys_valid = False
-            if partial_keys is not None and len(partial_keys) >= 1:
+            # First, check for partial keys
+            if check_partial_keys:
                 for partial_key in partial_keys:
                     if partial_key not in data:
                         return bad(f"{name} does not contain key {partial_key}")
-                partial_keys_valid = True
 
-            keys_valid = False
+            # Next, check that all keys are valid
             if check_keys:
                 for key in data.keys():
                     if key not in ref.keys():
                         return bad(f"{name} contains an extra key: {key}")
-                keys_valid = True
 
-            values_valid = False
+            # Finally, check all values are valid
             if check_values:
                 if len(ref.values()) != len(data.values()):
                     return f"{name} has the wrong length for values: expected {len(ref.values())}, got {len(data.values())}"
                 for value in data.values():
                     if value not in ref.values():
                         return bad(f"{name} contains an extra value: {value}")
-                values_valid = True
 
-            if check_keys and check_values and check_partial_keys:
-                return keys_valid and values_valid and partial_keys_valid
+            # If all checks passed and we got to the end, return True
+            return True
 
-            if check_keys and check_values:
-                return keys_valid and values_valid
-
-            if check_values and check_partial_keys:
-                return values_valid and partial_keys_valid
-
-            if check_keys and check_partial_keys:
-                return keys_valid and partial_keys_valid
-
-            return keys_valid or values_valid or check_partial_keys
-
-        # Check equality of both keys and values between reference dict and student's dict
+        # Otherwise, check equality of both keys and values between reference
+        # dict and student's dict
         if ref == data:
             return True
 
