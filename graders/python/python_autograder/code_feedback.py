@@ -376,13 +376,12 @@ class Feedback:
         check_partial_keys = partial_keys is not None and len(partial_keys) >= 1
 
         if check_only_keys or check_only_values or check_partial_keys:
-            
             partial_keys_valid = False
             if partial_keys is not None and len(partial_keys) >= 1:
                 for partial_key in partial_keys:
                     if partial_key not in data:
                         return bad(f"{name} does not contain key {partial_key}")
-                partial_keys_valid =  True
+                partial_keys_valid = True
 
             check_keys = False
             if check_only_keys:
@@ -408,14 +407,14 @@ class Feedback:
 
             if check_only_values and check_partial_keys:
                 return check_values and partial_keys_valid
-            
+
             if check_only_keys and check_partial_keys:
                 return check_keys and partial_keys_valid
 
             return check_keys or check_values or check_partial_keys
 
         # Check equality of both keys and values between reference dict and student's dict
-        if ref == data:  
+        if ref == data:
             return True
 
         return bad(f"{name} has one or more key-value pairs that do not match")
