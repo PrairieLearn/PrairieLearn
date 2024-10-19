@@ -327,8 +327,8 @@ class Feedback:
         - ``ref``: Reference dictionary.
         - ``data``: Student dictionary to be checked.
         - ``partial_keys``: If not None, it takes a List of keys to check if these particular keys are present in the student's dict or not.
-        - ``check_only_keys``: If true, grading will be done only based on checking all keys in student's dict and reference's dict match or not.
-        - ``check_only_values``: If true, grading will be done only based on checking all values in student's dict and reference's dict match or not.
+        - ``check_keys``: If true, grading will be done only based on checking all keys in student's dict and reference's dict match or not.
+        - ``check_values``: If true, grading will be done only based on checking all values in student's dict and reference's dict match or not.
         - ``key_type``: If not None, requires that each key in the student's dictionary in solution be of this type.
         - ``value_type``: If not None, requires that each value in the student's dictionary in solution be of this type.
         - ``accuracy_critical``: If true, grading will halt on failure.

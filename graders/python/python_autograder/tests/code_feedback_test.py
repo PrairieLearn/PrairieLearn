@@ -8,9 +8,9 @@ Testing Feedback.check_dict(name, ref, data) with all possible parameters
 
 Checks that a student dict (`data`) has all correct key-value mappings with respect to a reference dict (`ref`).
 It also verifies the length of keys in the student dictionary against the reference dictionary, and optionally,
-enforces homogeneous data types for keys (using `entry_type_key`), values (using `entry_type_value`), or both.
+enforces homogeneous data types for keys (using `key_type`), values (using `value_type`), or both.
 Additionally, it can verify the presence of specific keys (using `partial_keys`) in the student dictionary, and
-can focus the comparison solely on keys (using `check_only_keys`), values (using `check_only_values`), or both.
+can focus the comparison solely on keys (using `check_keys`), values (using `check_values`), or both.
 """
 
 
@@ -52,18 +52,18 @@ class ErrorCodes:
         """return bad(f"{name} has the wrong number of entries, expected {len(ref)}, got {len(data)}")"""
         return f"{self.NAME} has the wrong number of entries, expected {len(ref)}, got {len(data)}"
 
-    def ValueTypeError(self, student_dict, entry_type_value):
+    def ValueTypeError(self, student_dict, value_type):
         """return bad(f"{name} has the wrong type for value {value}")"""
         for value in student_dict.values():
-            if not isinstance(value, entry_type_value):
-                return f"{self.NAME} has the wrong type for value {value}, expecting type {entry_type_value}"
+            if not isinstance(value, value_type):
+                return f"{self.NAME} has the wrong type for value {value}, expecting type {value_type}"
         return None
 
-    def KeyTypeError(self, student_dict, entry_type_key):
+    def KeyTypeError(self, student_dict, key_type):
         """return bad(f"{name} has the wrong type for key {key}")"""
         for key in student_dict.keys():
-            if not isinstance(key, entry_type_key):
-                return f"{self.NAME} has the wrong type for key {key}, expecting type {entry_type_key}"
+            if not isinstance(key, key_type):
+                return f"{self.NAME} has the wrong type for key {key}, expecting type {key_type}"
         return None
 
     def valuesLengthMismatch(self, ref: dict, data: dict):
@@ -113,7 +113,7 @@ def test_check_dict_correct_check_only_1(mock_file, mock_add_feedback):
     ref_dict = {"a": 1, "b": 2, "c": 3}
     student_dict = {"a": 1, "b": 2, "c": 3}
     assert Feedback.check_dict(
-        NAME, ref_dict, student_dict, check_only_keys=True, check_only_values=True
+        NAME, ref_dict, student_dict, check_keys=True, check_values=True
     )
     mock_add_feedback.assert_not_called()
 
@@ -398,11 +398,11 @@ def test_check_dict_with_partial_key_missing(mock_file, mock_add_feedback):
 
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
-def test_check_dict_check_only_keys(mock_file, mock_add_feedback):
+def test_check_dict_check_keys(mock_file, mock_add_feedback):
     """Test when only keys are compared and they match."""
     ref_dict = {"a": 1, "b": 2, "c": 3}
     student_dict = {"a": 10, "b": 20, "c": 30}
-    assert Feedback.check_dict(NAME, ref_dict, student_dict, check_only_keys=True)
+    assert Feedback.check_dict(NAME, ref_dict, student_dict, check_keys=True)
     mock_add_feedback.assert_not_called()
 
 
@@ -412,13 +412,11 @@ def test_check_dict_check_only_keys(mock_file, mock_add_feedback):
 
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
-def test_check_dict_check_only_values(mock_file, mock_add_feedback):
+def test_check_dict_check_values(mock_file, mock_add_feedback):
     """Test when only values are compared and they match."""
     ref_dict = {"a": 1, "b": 2, "c": 3}
     student_dict = {"x": 1, "y": 2, "z": 3}
-    assert Feedback.check_dict(
-        "test_dict", ref_dict, student_dict, check_only_values=True
-    )
+    assert Feedback.check_dict("test_dict", ref_dict, student_dict, check_values=True)
     mock_add_feedback.assert_not_called()
 
 
@@ -432,9 +430,9 @@ def test_check_dict_wrong_key_type(mock_file, mock_add_feedback):
     """Test when keys are of the wrong type."""
     ref_dict = {"a": 1, "b": 2, "c": 3}
     student_dict = {1: 1, "b": 2, "c": 3}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict, entry_type_key=str)
+    assert not Feedback.check_dict(NAME, ref_dict, student_dict, key_type=str)
     mock_add_feedback.assert_called_with(
-        errorCodes.KeyTypeError(student_dict, entry_type_key=str)
+        errorCodes.KeyTypeError(student_dict, key_type=str)
     )
 
 
@@ -445,9 +443,9 @@ def test_check_dict_wrong_key_type1(mock_file, mock_add_feedback):
     """Test when only keys are compared and they match."""
     ref_dict = {"1": 1, "2": 2, "3": 3}
     student_dict = {1: 10, 2: 20, 3: 30}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict, entry_type_key=str)
+    assert not Feedback.check_dict(NAME, ref_dict, student_dict, key_type=str)
     mock_add_feedback.assert_called_with(
-        errorCodes.KeyTypeError(student_dict, entry_type_key=str)
+        errorCodes.KeyTypeError(student_dict, key_type=str)
     )
 
 
@@ -459,10 +457,10 @@ def test_check_dict_wrong_key_type1_only_keys(mock_file, mock_add_feedback):
     ref_dict = {"1": 1, "2": 2, "3": 3}
     student_dict = {1: 10, 2: 20, 3: 30}
     assert not Feedback.check_dict(
-        NAME, ref_dict, student_dict, check_only_keys=True, entry_type_key=str
+        NAME, ref_dict, student_dict, check_keys=True, key_type=str
     )
     mock_add_feedback.assert_called_with(
-        errorCodes.KeyTypeError(student_dict, entry_type_key=str)
+        errorCodes.KeyTypeError(student_dict, key_type=str)
     )
 
 
@@ -474,7 +472,7 @@ def test_check_dict_wrong_key_type1_only_values_extra(mock_file, mock_add_feedba
     ref_dict = {"1": 1, "2": 2, "3": 3}
     student_dict = {1: 10, 2: 20, 3: 30}
     assert not Feedback.check_dict(
-        NAME, ref_dict, student_dict, check_only_values=True, entry_type_key=int
+        NAME, ref_dict, student_dict, check_values=True, key_type=int
     )
     mock_add_feedback.assert_called_with(errorCodes.extraValue(ref_dict, student_dict))
 
@@ -487,7 +485,7 @@ def test_check_dict_wrong_key_type1_only_values_length(mock_file, mock_add_feedb
     ref_dict = {"1": 1, "2": 2, "3": 3, "4": 4}
     student_dict = {1: 10, 2: 20, 3: 30}
     assert not Feedback.check_dict(
-        NAME, ref_dict, student_dict, check_only_values=True, entry_type_key=int
+        NAME, ref_dict, student_dict, check_values=True, key_type=int
     )
     mock_add_feedback.assert_called_with(
         errorCodes.valuesLengthMismatch(ref_dict, student_dict)
@@ -505,9 +503,9 @@ def test_check_dict_wrong_key_type1_only_values_only_keys(mock_file, mock_add_fe
         NAME,
         ref_dict,
         student_dict,
-        check_only_keys=True,
-        check_only_values=True,
-        entry_type_key=int,
+        check_keys=True,
+        check_values=True,
+        key_type=int,
     )
     mock_add_feedback.assert_called_with(
         errorCodes.valuesLengthMismatch(ref_dict, student_dict)
@@ -517,13 +515,13 @@ def test_check_dict_wrong_key_type1_only_values_only_keys(mock_file, mock_add_fe
 # KeyTypeError
 @patch("code_feedback.Feedback.add_feedback")
 @patch("builtins.open", new_callable=mock_open)
-def test_check_dict_check_only_keys2(mock_file, mock_add_feedback):
+def test_check_dict_check_keys2(mock_file, mock_add_feedback):
     """Test when only keys are compared and they match."""
     ref_dict = {"1": 1, "2": 2, 3: 3}
     student_dict = {"1": 1, "2": 2, 3: 3}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict, entry_type_key=str)
+    assert not Feedback.check_dict(NAME, ref_dict, student_dict, key_type=str)
     mock_add_feedback.assert_called_with(
-        errorCodes.KeyTypeError(student_dict, entry_type_key=str)
+        errorCodes.KeyTypeError(student_dict, key_type=str)
     )
 
 
@@ -537,9 +535,9 @@ def test_check_dict_wrong_value_type(mock_file, mock_add_feedback):
     """Test when values are of the wrong type."""
     ref_dict = {"a": 1, "b": 2, "c": 3}
     student_dict = {"a": 1, "b": "2", "c": 3}
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict, entry_type_value=int)
+    assert not Feedback.check_dict(NAME, ref_dict, student_dict, value_type=int)
     mock_add_feedback.assert_called_with(
-        errorCodes.ValueTypeError(student_dict, entry_type_value=int)
+        errorCodes.ValueTypeError(student_dict, value_type=int)
     )
 
 
@@ -553,9 +551,9 @@ def test_check_dict_with_type_mismatch(mock_file, mock_add_feedback):
         "b": 100,
         "c": ["1", "2", "3"],
     }  # Key 'c' still has the value of type
-    assert not Feedback.check_dict(NAME, ref_dict, student_dict, entry_type_value=int)
+    assert not Feedback.check_dict(NAME, ref_dict, student_dict, value_type=int)
     mock_add_feedback.assert_called_with(
-        errorCodes.ValueTypeError(student_dict, entry_type_value=int)
+        errorCodes.ValueTypeError(student_dict, value_type=int)
     )
 
 
@@ -564,13 +562,13 @@ def test_check_dict_with_type_mismatch(mock_file, mock_add_feedback):
 def test_check_dict_wrong_value_type1_only_values(mock_file, mock_add_feedback):
     """
     This will pass the type check on the values.
-    but will fail at the check_only_values because values are different among both the dicts
+    but will fail at the check_values because values are different among both the dicts
     Error Expected: extraValue
     """
     ref_dict = {"a": 1, "b": "string", "c": [1, 2, 3]}
     student_dict = {"a": 1, "b": 100, "c": 43}
     assert not Feedback.check_dict(
-        NAME, ref_dict, student_dict, check_only_values=True, entry_type_value=int
+        NAME, ref_dict, student_dict, check_values=True, value_type=int
     )
     mock_add_feedback.assert_called_with(errorCodes.extraValue(ref_dict, student_dict))
 
