@@ -107,6 +107,7 @@ export function checkInvalidSharingSetAdditions(
   logger: ServerJobLogger,
 ): boolean {
   const invalidSharingSetAdditions: Record<string, string[]> = {};
+  const draftQuestionsWithSharingSets: string[] = [];
   const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
 
   for (const qid in courseData.questions) {
@@ -120,6 +121,9 @@ export function checkInvalidSharingSetAdditions(
         invalidSharingSetAdditions[qid].push(sharingSet);
       }
     });
+    if (question.data?.isDraft && questionSharingSets.length > 0) {
+      draftQuestionsWithSharingSets.push(qid);
+    }
   }
 
   const existInvalidSharingSetAdditions = Object.keys(invalidSharingSetAdditions).length > 0;
@@ -132,7 +136,15 @@ export function checkInvalidSharingSetAdditions(
         .join(', ')}`,
     );
   }
-  return existInvalidSharingSetAdditions;
+
+  const existDraftQuestionsWithSharingSets = draftQuestionsWithSharingSets.length > 0;
+  if (existDraftQuestionsWithSharingSets) {
+    logger.error(
+      `✖ Course sync completely failed. The following questions are being added to sharing sets, but are drafts: ${draftQuestionsWithSharingSets.join(', ')}`,
+    );
+  }
+
+  return existInvalidSharingSetAdditions || existDraftQuestionsWithSharingSets;
 }
 
 export async function checkInvalidSharingSetRemovals(

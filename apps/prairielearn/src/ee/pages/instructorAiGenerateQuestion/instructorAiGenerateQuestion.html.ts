@@ -119,6 +119,11 @@ export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }
               </div>
             </div>
           </div>
+          <form class="" name="sync-context-form" method="POST">
+            <input type="hidden" name="__action" value="delete_drafts" />
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <button class="btn btn-primary">Delete All Draft Questions for Course</button>
+          </form>
         </main>
       </body>
       <script>

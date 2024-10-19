@@ -918,14 +918,19 @@ export class QuestionAddEditor extends Editor {
   public readonly uuid: string;
 
   files?: Record<string, string>;
+  isDraft: boolean;
+  draftId?: number;
 
-  constructor(params: BaseEditorOptions & { files?: Record<string, string> }) {
+  constructor(params: BaseEditorOptions & { files?: Record<string, string>; draftId?: number }) {
     super(params);
 
     this.description = 'Add question';
 
     this.uuid = uuidv4();
     this.files = params.files;
+
+    this.isDraft = typeof params.draftId !== 'undefined' && params.draftId >= 0;
+    this.draftId = params.draftId;
   }
 
   async write() {
@@ -943,8 +948,11 @@ export class QuestionAddEditor extends Editor {
 
     debug('Generate qid and title');
     const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
-    const qid = names.shortName;
-    const questionPath = path.join(questionsPath, qid);
+    const qid = this.isDraft ? `draft_${this.draftId}` : names.shortName;
+
+    const questionPath = this.isDraft
+      ? path.join(questionsPath, '__drafts__', qid)
+      : path.join(questionsPath, qid);
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
     const toPath = questionPath;
@@ -997,7 +1005,7 @@ export class QuestionAddEditor extends Editor {
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `add question ${qid}`,
+      commitMessage: `add question ${qid}${this.isDraft ? ' as draft' : ''}`,
     };
   }
 }
@@ -1045,7 +1053,11 @@ export class QuestionRenameEditor extends Editor {
     assert(this.question.qid, 'question.qid is required');
 
     debug('QuestionRenameEditor: write()');
-    const questionsPath = path.join(this.course.path, 'questions');
+
+    let questionsPath = path.join(this.course.path, 'questions');
+    if (this.question.is_draft) {
+      questionsPath = path.join(questionsPath, '__drafts__');
+    }
     const oldPath = path.join(questionsPath, this.question.qid);
     const newPath = path.join(questionsPath, this.qid_new);
 
@@ -1149,7 +1161,9 @@ export class QuestionCopyEditor extends Editor {
     const qid = names.shortName;
     const questionPath = path.join(questionsPath, qid);
 
-    const fromPath = path.join(questionsPath, this.question.qid);
+    const fromPath = this.question.is_draft
+      ? path.join(questionsPath, '__drafts__', this.question.qid)
+      : path.join(questionsPath, this.question.qid);
     const toPath = questionPath;
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
@@ -1167,6 +1181,7 @@ export class QuestionCopyEditor extends Editor {
     delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
+
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1250,6 +1265,7 @@ export class QuestionTransferEditor extends Editor {
     delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
+
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
