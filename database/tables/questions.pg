@@ -18,6 +18,7 @@ columns
     options: jsonb
     partial_credit: boolean default true
     qid: text
+    share_publicly: boolean not null default false
     share_source_publicly: boolean not null default false
     shared_publicly: boolean not null default false
     show_correct_answer: boolean default true
