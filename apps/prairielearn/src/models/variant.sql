@@ -56,7 +56,9 @@ WITH
       v.id
   )
 SELECT
-  v.*,
+  v.id,
+  v.instance_question_id,
+  v.open,
   COALESCE(vmss.max_submission_score, 0) AS max_submission_score
 FROM
   instance_questions AS iq
