@@ -166,7 +166,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     a_sub_parsed = int(a_sub)
                 else:
                     a_sub_parsed = pl.from_json(a_sub)
-                a_sub = (
+                a_sub_display = (
                     numpy.base_repr(a_sub_parsed, base)
                     if base > 0
                     else data["raw_submitted_answers"].get(name, str(a_sub_parsed))
@@ -174,10 +174,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             except ValueError:
                 # If the submitted answer is not a valid integer, use the raw
                 # submitted answer
-                a_sub = data["raw_submitted_answers"].get(name, a_sub)
+                a_sub_display = data["raw_submitted_answers"].get(name, a_sub)
 
             html_params["suffix"] = suffix
-            html_params["a_sub"] = a_sub
+            html_params["a_sub"] = a_sub_display
 
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
