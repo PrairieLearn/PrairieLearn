@@ -58,13 +58,13 @@ type AppliedRubricItem = z.infer<typeof AppliedRubricItemSchema>;
 
 function parseRubricItems({
   rubric_items,
-  gpt_rubric_items,
+  gptRubricItems,
 }: {
   rubric_items: RubricItem[];
-  gpt_rubric_items: number[];
+  gptRubricItems: number[];
 }): AppliedRubricItem[] {
   const output: AppliedRubricItem[] = [];
-  for (const rubric_item_number of gpt_rubric_items) {
+  for (const rubric_item_number of gptRubricItems) {
     output.push(
       AppliedRubricItemSchema.parse({ rubric_item_id: rubric_items[rubric_item_number].id }),
     );
@@ -73,12 +73,12 @@ function parseRubricItems({
 }
 
 async function generateGPTPrompt({
-  question_prompt,
+  questionPrompt,
   student_answer,
   example_submissions,
   rubric_items,
 }: {
-  question_prompt: string;
+  questionPrompt: string;
   student_answer: string;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
@@ -121,12 +121,12 @@ async function generateGPTPrompt({
   // Question prompt
   messages.push({
     role: 'user',
-    content: `Question: \n${question_prompt}`,
+    content: `Question: \n${questionPrompt}`,
   });
 
   // Examples
   for (const example of example_submissions) {
-    if (rubric_items.length && example.manual_rubric_grading_id) {
+    if (rubric_items.length > 0 && example.manual_rubric_grading_id) {
       const rubric_grading_items = await queryRows(
         sql.select_rubric_grading_items,
         {
@@ -136,7 +136,7 @@ async function generateGPTPrompt({
       );
       // Warning when graded rubric item does not match current rubric item
       if (
-        rubric_grading_items.length &&
+        rubric_grading_items.length > 0 &&
         rubric_grading_items[0].rubric_id !== rubric_items[0].rubric_id
       ) {
         warning += `Instance question ${example.instance_question_id}: example rubric id is different from the current rubric id.\n`;
@@ -150,10 +150,10 @@ async function generateGPTPrompt({
         content: `Example answer: \n${example.submission_text} \nRubric items to this example answer: \n${rubric_grading_info}`,
       });
     } else {
-      if (rubric_items.length && !example.manual_rubric_grading_id) {
+      if (rubric_items.length > 0 && !example.manual_rubric_grading_id) {
         // Warning when example is not graded on the rubric but there is a rubric in use
         warning += `Instance question ${example.instance_question_id}: example is not graded on a rubric, but there is a rubric in use.\n`;
-      } else if (!rubric_items.length && example.manual_rubric_grading_id) {
+      } else if (rubric_items.length === 0 && example.manual_rubric_grading_id) {
         // Warning when example is graded on a rubric but there is no rubric in use
         warning += `Instance question ${example.instance_question_id}: example is graded on a rubric, but there is not a rubric in use.\n`;
       }
@@ -311,7 +311,7 @@ async function ensureSubmissionEmbedding({
 
 function validateRubric(old_rubric_items: RubricItem[], new_rubric_items: RubricItem[]): void {
   if (old_rubric_items.length !== new_rubric_items.length) {
-    throw new Error('rubric modified between trieval and grade insertion');
+    throw new Error('rubric modified between rubric retrieval and grade insertion');
   }
   for (let i = 0; i < old_rubric_items.length; i++) {
     const old_item = old_rubric_items[i];
@@ -320,7 +320,7 @@ function validateRubric(old_rubric_items: RubricItem[], new_rubric_items: Rubric
       old_item.description !== new_item.description ||
       old_item.explanation !== new_item.explanation
     ) {
-      throw new Error('rubric modified between trieval and grade insertion');
+      throw new Error('rubric modified between rubric retrieval and grade insertion');
     }
   }
 }
@@ -414,14 +414,14 @@ export async function aiGrade({
         question_course,
         urls,
       );
-      if (render_question_results.courseIssues.length) {
+      if (render_question_results.courseIssues.length > 0) {
         job.info(render_question_results.courseIssues.toString());
         job.error('Error occurred');
         job.fail('Errors occurred while AI grading, see output for details');
       }
       const $ = cheerio.load(render_question_results.data.questionHtml, null, false);
       $('script').remove();
-      const question_prompt = $.html();
+      const questionPrompt = $.html();
 
       const submission_embedding = await ensureSubmissionEmbedding({
         submission_id: submission.id,
@@ -450,13 +450,13 @@ export async function aiGrade({
       msg += '\n';
 
       const { messages, warning } = await generateGPTPrompt({
-        question_prompt,
+        questionPrompt,
         student_answer,
         example_submissions,
         rubric_items,
       });
 
-      if (rubric_items.length) {
+      if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the number of items
         let GPTRubricItemSchema = z.object({});
         for (let i = 0; i < rubric_items.length; i++) {
@@ -482,18 +482,18 @@ export async function aiGrade({
           msg += `Raw ChatGPT response:\n${grade_response.content}`;
           if (grade_response.parsed) {
             // Only care about the rubric numbers
-            const gpt_rubric_items: number[] = [];
+            const gptRubricItems: number[] = [];
             for (let i = 0; i < rubric_items.length; i++) {
               const item = grade_response.parsed.rubric_items[i];
               if (item.selected) {
-                gpt_rubric_items.push(i);
+                gptRubricItems.push(i);
               }
             }
             const manual_rubric_data = {
               rubric_id: rubric_items[0].rubric_id,
               applied_rubric_items: parseRubricItems({
                 rubric_items,
-                gpt_rubric_items,
+                gptRubricItems,
               }),
             };
             new_rubric_items = await queryRows(
@@ -516,7 +516,7 @@ export async function aiGrade({
               },
               user_id,
             );
-            msg += `\nAI rubric items: ${gpt_rubric_items.toString()}`;
+            msg += `\nAI rubric items: ${gptRubricItems.toString()}`;
           } else if (grade_response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
             job.error(grade_response.refusal);
