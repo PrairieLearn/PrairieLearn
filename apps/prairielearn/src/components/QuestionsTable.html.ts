@@ -1,10 +1,10 @@
 import { EncodedData } from '@prairielearn/browser-utils';
-import { html, HtmlSafeString } from '@prairielearn/html';
+import { html, type HtmlSafeString } from '@prairielearn/html';
 
 import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets.js';
 import { type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
-import { QuestionsPageData } from '../models/questions.js';
+import { type QuestionsPageData } from '../models/questions.js';
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'

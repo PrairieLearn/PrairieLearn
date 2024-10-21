@@ -4,7 +4,7 @@ import { assert } from 'chai';
 import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import { z } from 'zod';
+import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -24,6 +24,11 @@ interface Tag {
 interface Topic {
   name: string;
   color: string;
+  description: string;
+}
+
+interface SharingSet {
+  name: string;
   description: string;
 }
 
@@ -47,6 +52,7 @@ interface Course {
   options?: CourseOptions;
   tags: Tag[];
   topics: Topic[];
+  sharingSets?: SharingSet[];
   assessmentSets: AssessmentSet[];
   assessmentModules?: Module[];
 }
@@ -179,6 +185,10 @@ export interface Question {
   title: string;
   topic: string;
   tags?: string[];
+  sharingSets?: string[];
+  sharePublicly?: boolean;
+  sharedPublicly?: boolean;
+  shareSourcePublicly?: boolean;
   clientFiles?: string[];
   clientTemplates?: string[];
   template?: string;
@@ -435,6 +445,7 @@ export function getFakeLogger() {
     debug: () => {},
     info: () => {},
     warn: () => {},
+    error: () => {},
   };
 }
 

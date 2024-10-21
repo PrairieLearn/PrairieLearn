@@ -1,13 +1,13 @@
 import http from 'node:http';
 import path from 'path';
 
-import esbuild, { Metafile } from 'esbuild';
+import esbuild, { type Metafile } from 'esbuild';
 import type { RequestHandler } from 'express';
 import expressStaticGzip from 'express-static-gzip';
 import fs from 'fs-extra';
 import { globby } from 'globby';
 
-import { html, HtmlSafeString } from '@prairielearn/html';
+import { html, type HtmlSafeString } from '@prairielearn/html';
 
 const DEFAULT_OPTIONS = {
   dev: process.env.NODE_ENV !== 'production',

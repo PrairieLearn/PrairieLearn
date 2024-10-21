@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
+import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
@@ -13,31 +13,6 @@ export const SharingSetRowSchema = z.object({
   shared_with: z.string().array(),
 });
 type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
-
-function AddSharingSetPopover({ csrfToken }: { csrfToken: string }) {
-  return html`
-    <form name="sharing-set-create" method="POST">
-      <input type="hidden" name="__action" value="sharing_set_create" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-
-      <div class="form-group">
-        <label for="sharing_set_name">Sharing set name</label>
-        <input
-          class="form-control form-control-sm"
-          type="text"
-          name="sharing_set_name"
-          id="sharing_set_name"
-          required
-        />
-      </div>
-
-      <div class="text-right mt-4">
-        <button type="button" class="btn btn-secondary" data-dismiss="popover">Cancel</button>
-        <button type="submit" class="btn btn-primary">Create Sharing Set</button>
-      </div>
-    </form>
-  `;
-}
 
 function AddCourseToSharingSetPopover({
   sharing_set,
@@ -244,27 +219,6 @@ export function InstructorCourseAdminSharing({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <h2>Sharing Sets</h2>
-              ${isCourseOwner
-                ? html`
-                    <button
-                      type="button"
-                      class="btn btn-light btn-sm ml-auto"
-                      data-toggle="popover"
-                      data-container="body"
-                      data-html="true"
-                      data-placement="auto"
-                      title="Create Sharing Set"
-                      data-content="${escapeHtml(
-                        AddSharingSetPopover({
-                          csrfToken: resLocals.__csrf_token,
-                        }),
-                      )}"
-                    >
-                      <i class="fas fa-plus" aria-hidden="true"></i>
-                      <span class="d-none d-sm-inline">Create Sharing Set</span>
-                    </button>
-                  `
-                : ''}
             </div>
             <table class="table table-sm table-hover table-striped" aria-label="Sharing sets">
               <thead>

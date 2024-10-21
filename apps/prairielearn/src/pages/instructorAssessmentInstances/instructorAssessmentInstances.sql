@@ -164,7 +164,7 @@ WITH
               WHEN $base_time = 'current_date' THEN current_timestamp
               ELSE ai.date_limit
             END
-          ) + (make_interval(mins => $time_add))
+          ) + make_interval(mins => $time_add)
         )
       END,
       modified_at = now()
@@ -176,7 +176,7 @@ WITH
       AND ai.assessment_id = $assessment_id
       AND (
         ai.date_limit IS NOT NULL
-        OR ($base_time != 'date_limit')
+        OR $base_time != 'date_limit'
       )
     RETURNING
       ai.open,

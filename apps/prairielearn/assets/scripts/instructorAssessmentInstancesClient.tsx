@@ -8,7 +8,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { Scorebar } from '../../src/components/Scorebar.html.js';
-import { AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
+import { type AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 import { getPopoverTriggerForContainer } from './lib/popover.js';
 
