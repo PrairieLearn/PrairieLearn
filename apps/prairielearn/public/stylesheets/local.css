@@ -126,6 +126,11 @@ mjx-container {
   max-width: min(800px, 90vw);
 }
 
+.popover-narrow-fixed {
+  width: 400px;
+  max-width: 90vw;
+}
+
 /**
  * Identical to the variables for `btn-light`, except with a transparent
  * background and border in the default state. This style is useful for

@@ -33,7 +33,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
           rel="stylesheet"
         />
 
-        ${compiledScriptTag('instructorAssessmentInstancesClient.ts')}
+        ${compiledScriptTag('instructorAssessmentInstancesClient.tsx')}
       </head>
       <body>
         ${Navbar({ resLocals })}
@@ -169,6 +169,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
               data-csrf-token="${resLocals.__csrf_token}"
               data-has-course-instance-permission-edit="${resLocals.authz_data
                 .has_course_instance_permission_edit}"
+              data-timezone="${resLocals.course_instance.display_timezone}"
             ></table>
 
             <div class="spinning-wheel card-body spinner-border">

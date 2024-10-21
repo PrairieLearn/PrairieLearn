@@ -109,6 +109,7 @@ WITH
       auto_close = FALSE,
       date_limit = CASE
         WHEN $base_time = 'null' THEN NULL
+        WHEN $base_time = 'exact_date' THEN $exact_date
         ELSE GREATEST(
           current_timestamp,
           (
@@ -154,6 +155,7 @@ WITH
       auto_close = FALSE,
       date_limit = CASE
         WHEN $base_time = 'null' THEN NULL
+        WHEN $base_time = 'exact_date' THEN $exact_date
         ELSE GREATEST(
           current_timestamp,
           (

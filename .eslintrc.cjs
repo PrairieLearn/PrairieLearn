@@ -27,7 +27,14 @@ module.exports = {
     'plugin:@typescript-eslint/strict',
     'prettier',
   ],
-  plugins: ['@typescript-eslint', 'no-floating-promise', 'no-only-tests', 'mocha', '@prairielearn'],
+  plugins: [
+    '@typescript-eslint',
+    'no-floating-promise',
+    'no-only-tests',
+    'mocha',
+    'react',
+    '@prairielearn',
+  ],
   parserOptions: {
     ecmaVersion: 13,
   },
@@ -144,6 +151,15 @@ module.exports = {
       env: {
         browser: true,
         jquery: true,
+      },
+      settings: {
+        react: {
+          pragma: 'h',
+        },
+      },
+      rules: {
+        'react/jsx-uses-react': 'error',
+        'react/jsx-uses-vars': 'error',
       },
     },
   ],
