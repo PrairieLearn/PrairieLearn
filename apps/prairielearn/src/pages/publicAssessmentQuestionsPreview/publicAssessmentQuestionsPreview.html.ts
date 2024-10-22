@@ -2,13 +2,12 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
-import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
-import { AssessmentQuestionRow } from '../../models/questions.js';
+import { type AssessmentQuestionRow } from '../../models/questions.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,
@@ -22,7 +21,6 @@ export function InstructorAssessmentQuestions({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })}
-
       </head>
       <body>
         ${Navbar({ resLocals })}

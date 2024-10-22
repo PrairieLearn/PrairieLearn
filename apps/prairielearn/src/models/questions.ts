@@ -20,8 +20,8 @@ const QuestionsPageDataSchema = z.object({
   title: z.string(),
   sync_errors: z.string().nullable().optional(),
   sync_warnings: z.string().nullable().optional(),
-  sync_errors_ansified: z.string().nullable().optional(),  // Added property, TEST
-  sync_warnings_ansified: z.string().nullable().optional(),  // Added property, TEST
+  sync_errors_ansified: z.string().nullable().optional(), // Added property, TEST
+  sync_warnings_ansified: z.string().nullable().optional(), // Added property, TEST
   grading_method: z.string(),
   external_grading_image: z.string().nullable(),
   display_type: z.string(),
@@ -75,7 +75,7 @@ export async function selectPublicQuestionsForCourse(
 export async function selectAssessmentQuestions(
   assessment_id: string,
   course_id: string,
-): Promise<QuestionsPageData[]> {
+): Promise<AssessmentQuestionRow[]> {
   const rows = await sqldb.queryRows(
     sql.select_assessment_questions,
     {
