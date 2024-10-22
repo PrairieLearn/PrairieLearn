@@ -3,7 +3,7 @@
 import _ from 'lodash';
 
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
-import { html } from '@prairielearn/html';
+import { html, joinHtml } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../../src/components/AssessmentBadge.html.js';
 import { SyncProblemButton } from '../../../src/components/SyncProblemButton.html.js';
@@ -35,6 +35,7 @@ onDocumentReady(() => {
       _.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name),
     );
     sharing_sets['Public'] = 'Public';
+    sharing_sets['Public source'] = 'Public source';
     return sharing_sets;
   };
 
@@ -56,7 +57,12 @@ onDocumentReady(() => {
         output: question.sync_warnings,
       });
     }
+
+    // We only want to show the sharing name prefix for publicly-shared questions.
+    // Those that only have their source shared publicly (and thus that are not
+    // available to be imported by other courses) won't show the prefix.
     const prefix = qidPrefix && question.shared_publicly ? qidPrefix : '';
+
     text += html`
       <a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">
         ${prefix}${question.qid}
@@ -83,15 +89,19 @@ onDocumentReady(() => {
   };
 
   window.sharingSetFormatter = function (sharing_sets, question) {
-    return (
-      (question.shared_publicly ? html`<span class="badge color-green3">Public</span> ` : '') +
-      (question.share_source_publicly
-        ? html`<span class="badge color-green3">Public source</span>`
-        : '') +
-      _.map(question.sharing_sets ?? [], (sharing_set) =>
-        html`<span class="badge color-gray1">${sharing_set.name}</span>`.toString(),
-      ).join(' ')
+    const items = [];
+    if (question.shared_publicly) {
+      items.push(html`<span class="badge color-green3">Public</span>`);
+    }
+    if (question.share_source_publicly) {
+      items.push(html`<span class="badge color-green3">Public source</span>`);
+    }
+    items.push(
+      ...(question.sharing_sets ?? []).map(
+        (sharing_set) => html`<span class="badge color-gray1">${sharing_set.name}</span>`,
+      ),
     );
+    return joinHtml(items, ' ').toString();
   };
 
   window.versionFormatter = function (version, question) {
