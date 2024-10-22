@@ -36,6 +36,7 @@ import * as questionServers from '../../question-servers/index.js';
 import { createEmbedding, vectorToString } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+const OPEN_AI_MODEL = 'gpt-4o-2024-08-06';
 
 const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -74,12 +75,12 @@ function parseRubricItems({
 
 async function generateGPTPrompt({
   questionPrompt,
-  student_answer,
+  submission_text,
   example_submissions,
   rubric_items,
 }: {
   questionPrompt: string;
-  student_answer: string;
+  submission_text: string;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
 }): Promise<{
@@ -167,7 +168,7 @@ async function generateGPTPrompt({
   // Student answer
   messages.push({
     role: 'user',
-    content: `Answer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
+    content: `Answer: \n${submission_text} \nHow would you grade this? Please return the json object.`,
   });
 
   if (warning) {
@@ -235,13 +236,13 @@ async function generateSubmissionEmbeddings({
     );
     const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
     $('script').remove();
-    const student_answer = $.html();
-    const embedding = await createEmbedding(openai, student_answer, `course_${course.id}`);
+    const submission_text = $.html();
+    const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
 
     await queryOneRowAsync(sql.create_embedding_for_submission, {
       embedding: vectorToString(embedding),
       submission_id: submission.id,
-      submission_text: student_answer,
+      submission_text,
       assessment_question_id: assessment_question.id,
     });
 
@@ -293,15 +294,15 @@ async function ensureSubmissionEmbedding({
   );
   const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
   $('script').remove();
-  const student_answer = $.html();
-  const embedding = await createEmbedding(openai, student_answer, `course_${course.id}`);
+  const submission_text = $.html();
+  const embedding = await createEmbedding(openai, submission_text, `course_${course.id}`);
   // Insert new embedding into the table and return the new embedding
   const new_submission_embedding = await queryRow(
     sql.create_embedding_for_submission,
     {
       embedding: vectorToString(embedding),
       submission_id: submission.id,
-      submission_text: student_answer,
+      submission_text,
       assessment_question_id: instance_question.assessment_question_id,
     },
     SubmissionGradingContextEmbeddingSchema,
@@ -431,7 +432,7 @@ export async function aiGrade({
         urlPrefix,
         openai,
       });
-      const student_answer = submission_embedding.submission_text;
+      const submission_text = submission_embedding.submission_text;
 
       const example_submissions = await queryRows(
         sql.select_closest_submission_info,
@@ -451,7 +452,7 @@ export async function aiGrade({
 
       const { messages, warning } = await generateGPTPrompt({
         questionPrompt,
-        student_answer,
+        submission_text,
         example_submissions,
         rubric_items,
       });
@@ -472,7 +473,7 @@ export async function aiGrade({
         });
         const completion = await openai.beta.chat.completions.parse({
           messages,
-          model: 'gpt-4o-2024-08-06',
+          model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
           response_format: zodResponseFormat(GPTRubricGradeSchema, 'grades'),
         });
@@ -535,7 +536,7 @@ export async function aiGrade({
       } else {
         const completion = await openai.beta.chat.completions.parse({
           messages,
-          model: 'gpt-4o-2024-08-06',
+          model: OPEN_AI_MODEL,
           user: `course_${course.id}`,
           response_format: zodResponseFormat(GPTGradeSchema, 'grades'),
         });
