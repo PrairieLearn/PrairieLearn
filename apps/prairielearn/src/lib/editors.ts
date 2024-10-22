@@ -587,10 +587,7 @@ export class AssessmentCopyEditor extends Editor {
     debug('Read infoAssessment.json');
     const infoJson = await fs.readJson(path.join(assessmentPath, 'infoAssessment.json'));
 
-    debug('Remove shareSourcePublicly property if it exists');
-    if (infoJson.hasOwnProperty('shareSourcePublicly')) {
-      delete infoJson.shareSourcePublicly;
-    }
+    delete infoJson['shareSourcePublicly'];
 
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;

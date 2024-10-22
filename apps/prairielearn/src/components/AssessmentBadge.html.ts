@@ -19,7 +19,6 @@ export function AssessmentBadge({
     }
   | { urlPrefix?: undefined; plainUrlPrefix: string; course_instance_id: string }
 )) {
-
   if (hideLink) {
     return html`
       <span class="badge color-${assessment.color} color-hover">${assessment.label}</span>
@@ -32,7 +31,7 @@ export function AssessmentBadge({
   if (urlPrefix === undefined) {
     // Construct the URL prefix with the appropriate course instance
     urlPrefix = `${plainUrlPrefix}/course_instance/${course_instance_id}/instructor/assessment/${assessment.assessment_id}`;
-  } 
+  }
 
   return html`
     <a

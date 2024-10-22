@@ -42,9 +42,9 @@ export async function selectCourseById(course_id: string): Promise<Course> {
 
 export async function selectCourseIdByInstanceId(course_instance_id: string): Promise<string> {
   return await queryRow(
-    sql.select_course_id_by_instance_id, 
-    { 
-      course_instance_id, 
+    sql.select_course_id_by_instance_id,
+    {
+      course_instance_id,
     },
     IdSchema,
   );
