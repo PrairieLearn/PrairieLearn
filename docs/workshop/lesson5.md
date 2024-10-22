@@ -46,7 +46,7 @@ In this example, ask students to add a vector providing the position and directi
 
 #### Example 4:
 
-Add a shape to the drawing canvas, and ask students to mark the centroid using a point (`pl-point`). You can use the pre-defined shapes `pl-circle`, `pl-triangle`, `pl-rectanle` or create a polygon using `pl-polygon`.
+Add a shape to the drawing canvas, and ask students to mark the centroid using a point (`pl-point`). You can use the pre-defined shapes `pl-circle`, `pl-triangle`, `pl-rectangle` or create a polygon using `pl-polygon`.
 
 **PrairieLearn implementation:**
 
