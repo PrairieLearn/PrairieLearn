@@ -5,6 +5,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
+import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { AssessmentQuestionRow } from '../../models/questions.js';
@@ -118,41 +119,6 @@ function AssessmentQuestionsTable({
                         `}
                     ${question.title}
                   </a>
-                </td>
-                <td>
-                  ${question.sync_errors
-                    ? html`
-                        <button
-                          class="btn btn-xs mr-1 js-sync-popover"
-                          data-toggle="popover"
-                          data-trigger="hover"
-                          data-container="body"
-                          data-html="true"
-                          data-title="Sync Errors"
-                          data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_errors_ansified}</pre>'
-                        >
-                          <i class="fa fa-times text-danger" aria-hidden="true"></i>
-                        </button>
-                      `
-                    : question.sync_warnings
-                      ? html`
-                          <button
-                            class="btn btn-xs mr-1 js-sync-popover"
-                            data-toggle="popover"
-                            data-trigger="hover"
-                            data-container="body"
-                            data-html="true"
-                            data-title="Sync Warnings"
-                            data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_warnings_ansified}</pre>'
-                          >
-                            <i
-                              class="fa fa-exclamation-triangle text-warning"
-                              aria-hidden="true"
-                            ></i>
-                          </button>
-                        `
-                      : ''}
-                  ${question.display_name}
                 </td>
                 <td>${TopicBadge(question.topic)}</td>
                 <td>${TagBadgeList(question.tags)}</td>
