@@ -1228,10 +1228,21 @@ async function validateAssessment(
               'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
             );
           }
+
           if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
             errors.push(
               'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment',
             );
+          }
+
+          if (!courseInstanceExpired) {
+            if (alternative.points === 0 && alternative.maxPoints > 0) {
+              errors.push('Cannot specify "points": 0 when "maxPoints" > 0');
+            }
+
+            if (alternative.autoPoints === 0 && alternative.maxAutoPoints > 0) {
+              errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
+            }
           }
         }
       });

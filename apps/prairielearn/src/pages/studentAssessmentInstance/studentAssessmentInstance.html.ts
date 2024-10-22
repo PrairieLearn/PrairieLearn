@@ -16,7 +16,7 @@ import {
   ExamQuestionAvailablePoints,
   ExamQuestionStatus,
   InstanceQuestionPoints,
-  QuestionAwardedPoints,
+  QuestionVariantHistory,
 } from '../../components/QuestionScore.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
@@ -363,12 +363,22 @@ export function StudentAssessmentInstance({
                             ${resLocals.has_auto_grading_question
                               ? html`
                                   <td class="text-center">
-                                    <span class="badge badge-primary">
-                                      ${formatPoints(instance_question.current_value)}
-                                    </span>
+                                    ${run(() => {
+                                      if (!instance_question.max_auto_points) return html`&mdash;`;
+
+                                      // Compute the current "auto" value by subtracting the manual points.
+                                      // We use this because `current_value` doesn't account for manual points.
+                                      // We don't want to mislead the student into thinking that they can earn
+                                      // more points than they actually can.
+                                      const currentAutoValue =
+                                        (instance_question.current_value ?? 0) -
+                                        (instance_question.max_manual_points ?? 0);
+
+                                      return formatPoints(currentAutoValue);
+                                    })}
                                   </td>
                                   <td class="text-center">
-                                    ${QuestionAwardedPoints({
+                                    ${QuestionVariantHistory({
                                       urlPrefix: resLocals.urlPrefix,
                                       instanceQuestionId: instance_question.id,
                                       previousVariants: instance_question.previous_variants,
