@@ -56,9 +56,10 @@ onDocumentReady(() => {
         output: question.sync_warnings,
       });
     }
+    const prefix = qidPrefix && question.shared_publicly ? qidPrefix : '';
     text += html`
       <a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">
-        ${qidPrefix}${question.qid}
+        ${prefix}${question.qid}
       </a>
     `;
     if (question.open_issue_count > 0) {
@@ -84,6 +85,9 @@ onDocumentReady(() => {
   window.sharingSetFormatter = function (sharing_sets, question) {
     return (
       (question.shared_publicly ? html`<span class="badge color-green3">Public</span> ` : '') +
+      (question.share_source_publicly
+        ? html`<span class="badge color-green3">Public source</span>`
+        : '') +
       _.map(question.sharing_sets ?? [], (sharing_set) =>
         html`<span class="badge color-gray1">${sharing_set.name}</span>`.toString(),
       ).join(' ')

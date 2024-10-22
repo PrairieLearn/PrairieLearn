@@ -188,7 +188,7 @@ function QuestionInfo({
       ? html`
           <div class="d-flex flex-wrap">
             <div class="pr-1">Shared As:</div>
-            ${question.shared_publicly
+            ${question.shared_publicly || question.share_source_publicly
               ? html`
                   <div>
                     <a href="${publicPreviewUrl}">${sharingQid}</a>
