@@ -213,6 +213,7 @@ export function checkInvalidSharedAssessments(
     }
   }
 
+  console.log('invalid shared assessments: ', invalidSharedAssessments);
   const existInvalidSharedAssessment = invalidSharedAssessments.size > 0;
   if (existInvalidSharedAssessment) {
     logger.error(
