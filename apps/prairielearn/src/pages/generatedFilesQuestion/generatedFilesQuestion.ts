@@ -48,7 +48,8 @@ export default function (options = { publicEndpoint: false }) {
         variant,
         res.locals.question,
         res.locals.course,
-        res.locals.user.user_id,
+        // res.locals.user.user_id is not always available during shared question preview.
+        res.locals.user ? res.locals.user.user_id : res.locals.authn_user,
         res.locals.authn_user.user_id,
       );
       res.attachment(filename);

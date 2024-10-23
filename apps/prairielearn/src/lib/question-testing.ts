@@ -339,8 +339,8 @@ async function testQuestion(
  * @param question - The question for the variant.
  * @param course - The course for the variant.
  * @param test_type - The type of test to run.
- * @param authn_user_id - The currently authenticated user.
  * @param user_id - The current effective user.
+ * @param authn_user_id - The currently authenticated user.
  */
 async function runTest(
   logger: ServerJob,
@@ -349,8 +349,8 @@ async function runTest(
   course_instance: CourseInstance | null,
   course: Course,
   test_type: TestType,
-  authn_user_id: string,
   user_id: string,
+  authn_user_id: string,
 ): Promise<{ success: boolean; stats: TestResultStats }> {
   logger.verbose('Testing ' + question.qid);
   const { variant, expected_submission, test_submission, stats } = await testQuestion(
@@ -452,8 +452,8 @@ export async function startTestQuestion(
         course_instance,
         course,
         type,
-        authn_user_id,
         user_id,
+        authn_user_id,
       );
       success = success && result.success;
       if (result.stats) {

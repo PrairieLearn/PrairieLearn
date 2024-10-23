@@ -137,7 +137,7 @@ async function render(
 
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
-  const user_id = locals.user ?? locals.user.user_id ?? null;
+  const user_id = locals.user && locals.user.user_id ? locals.user.user_id : null;
   // locals.authn_user may not be populated when rendering a panel
   const authn_user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
   await writeCourseIssues(courseIssues, variant, user_id, authn_user_id, studentMessage, courseData);

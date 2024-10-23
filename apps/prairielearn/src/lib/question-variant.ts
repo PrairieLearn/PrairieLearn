@@ -114,16 +114,16 @@ async function makeVariant(
  * @param variant - The variant.
  * @param question - The question for the variant.
  * @param variant_course - The course for the variant.
- * @param authn_user_id - The current authenticated user.
  * @param user_id - The current effective user.
+ * @param authn_user_id - The current authenticated user.
  */
 export async function getDynamicFile(
   filename: string,
   variant: Variant,
   question: Question,
   variant_course: Course,
-  authn_user_id: string,
   user_id: string,
+  authn_user_id: string,
 ): Promise<Buffer> {
   const question_course = await getQuestionCourse(question, variant_course);
   const questionModule = questionServers.getModule(question.type);
