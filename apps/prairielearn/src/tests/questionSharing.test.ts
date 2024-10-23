@@ -597,6 +597,13 @@ describe('Question Sharing', function () {
   });
 
   describe('Test publicly sharing an assessment', function () {
+    before('alter config to check sharing on sync', () => {
+      config.checkSharingOnSync = true;
+    });
+    after('reset config', () => {
+      config.checkSharingOnSync = false;
+    });
+
     step('Fail to sync a shared assessment containing a nonshared question', async () => {
       sharingCourseData.courseInstances['Fa19'].assessments['test'].shareSourcePublicly = true;
       sharingCourseData.courseInstances['Fa19'].assessments['test'].zones = [
