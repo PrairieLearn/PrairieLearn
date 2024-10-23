@@ -117,6 +117,26 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
         return None
 
 
+# We want to initialize the Faker seed, but only if faker is loaded
+class FakerInitializeMetaPathFinder(MetaPathFinder):
+    def __init__(self, seed: int) -> None:
+        self.seed = seed
+
+    def find_spec(
+        self,
+        fullname: str,
+        path: Sequence[str] | None,
+        target: types.ModuleType | None = None,
+    ):
+        if fullname == "faker" or fullname.startswith("faker."):
+            # Once this initialization is done we no longer need this meta path finder
+            sys.meta_path.remove(self)
+            from faker import Faker
+
+            Faker.seed(self.seed)
+        return None
+
+
 # This function tries to convert a python object to valid JSON. If an exception
 # is raised, this function prints the object and re-raises the exception. This is
 # helpful because the object - which contains something that cannot be converted
@@ -137,6 +157,13 @@ def worker_loop() -> None:
 
     path_finder = ForbidModuleMetaPathFinder()
     sys.meta_path.insert(0, path_finder)
+
+    # We'll cache instantiated modules for two reasons:
+    # - This allows us to avoid re-reading/compiling/executing them if the same
+    #   element is used multiple times.
+    # - This allows element code to maintain state across multiple calls. This is useful
+    #   specifically for elements that want to maintain a cache of expensive-to-compute data.
+    mod_cache: dict[str, dict[str, Any]] = {}
 
     # file descriptor 3 is for output data
     with open(3, "w", encoding="utf-8") as outf:
@@ -235,6 +262,7 @@ def worker_loop() -> None:
                 variant_seed = args[-1].get("variant_seed", None)
                 random.seed(variant_seed)
                 numpy.random.seed(variant_seed)
+                sys.meta_path.insert(0, FakerInitializeMetaPathFinder(variant_seed))
                 seeded = True
 
             # reset and then set up the path
@@ -274,14 +302,20 @@ def worker_loop() -> None:
 
                 continue
 
-            mod = {}
             file_path = os.path.join(cwd, file + ".py")
-            with open(file_path, encoding="utf-8") as inf:
-                # use compile to associate filename with code object, so the
-                # filename appears in the traceback if there is an error
-                # (https://stackoverflow.com/a/437857)
-                code = compile(inf.read(), file_path, "exec")
+
+            mod = mod_cache.get(file_path)
+            if mod is None:
+                mod = {}
+
+                with open(file_path, encoding="utf-8") as inf:
+                    # Use `compile` to associate filename with code object, so the
+                    # filename appears in the traceback if there is an error:
+                    # https://stackoverflow.com/a/437857
+                    code = compile(inf.read(), file_path, "exec")
+
                 exec(code, mod)
+                mod_cache[file_path] = mod
 
             # check whether we have the desired fcn in the module
             if fcn in mod:

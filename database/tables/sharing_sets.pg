@@ -1,5 +1,6 @@
 columns
     course_id: bigint not null
+    description: text
     id: bigint not null default nextval('sharing_sets_id_seq'::regclass)
     name: text not null
 

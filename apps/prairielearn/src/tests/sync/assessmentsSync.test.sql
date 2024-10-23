@@ -70,17 +70,28 @@ WITH
     WHERE
       assessment_questions.assessment_id = assessment.id
       AND questions.id = assessment_questions.question_id
+  ),
+  group_roles_data AS (
+    SELECT
+      coalesce(jsonb_agg(to_jsonb(gr)), '[]'::jsonb) AS group_roles
+    FROM
+      group_roles AS gr,
+      assessment
+    WHERE
+      gr.assessment_id = assessment.id
   )
 SELECT
   assessment,
   zones,
   alternative_groups,
-  assessment_questions
+  assessment_questions,
+  group_roles
 FROM
   assessment_data,
   zones_data,
   alternative_groups_data,
-  assessment_questions_data;
+  assessment_questions_data,
+  group_roles_data;
 
 -- BLOCK insert_pt_exam
 INSERT INTO

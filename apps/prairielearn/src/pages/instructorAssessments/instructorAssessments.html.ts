@@ -1,19 +1,19 @@
-import { AnsiUp } from 'ansi_up';
 import { z } from 'zod';
 
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
-import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { IssueBadge } from '../../components/IssueBadge.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
 
-import { StatsUpdateData } from './instructorAssessments.types.js';
+import { type StatsUpdateData } from './instructorAssessments.types.js';
 
 export const AssessmentStatsRowSchema = AssessmentSchema.extend({
   needs_statistics_update: z.boolean().optional(),
@@ -29,8 +29,6 @@ export const AssessmentRowSchema = AssessmentStatsRowSchema.merge(
   open_issue_count: z.coerce.number(),
 });
 type AssessmentRow = z.infer<typeof AssessmentRowSchema>;
-
-const ansiUp = new AnsiUp();
 
 export function InstructorAssessments({
   resLocals,
@@ -110,15 +108,13 @@ export function InstructorAssessments({
                         <td class="align-middle">
                           ${row.sync_errors
                             ? SyncProblemButton({
+                                type: 'error',
                                 output: row.sync_errors,
-                                title: 'Sync Errors',
-                                classes: 'fa-times text-danger',
                               })
                             : row.sync_warnings
                               ? SyncProblemButton({
+                                  type: 'warning',
                                   output: row.sync_warnings,
-                                  title: 'Sync Warnings',
-                                  classes: 'fa-exclamation-triangle text-warning',
                                 })
                               : ''}
                           <a href="${urlPrefix}/assessment/${row.id}/">
@@ -152,38 +148,6 @@ export function InstructorAssessments({
       </body>
     </html>
   `.toString();
-}
-
-function SyncProblemButton({
-  output,
-  title,
-  classes,
-}: {
-  output: string;
-  title: string;
-  classes: string;
-}) {
-  const popoverContent = html`<pre
-    style="background-color: black"
-    class="text-white rounded p-3 mb-0"
-  >
-${unsafeHtml(ansiUp.ansi_to_html(output))}</pre
-  >`;
-
-  return html`
-    <button
-      class="btn btn-xs mr-1 js-sync-popover"
-      data-toggle="popover"
-      data-trigger="hover"
-      data-container="body"
-      data-html="true"
-      data-title="${title}"
-      data-content="${escapeHtml(popoverContent)}"
-      data-custom-class="popover-wide"
-    >
-      <i class="fa ${classes}" aria-hidden="true"></i>
-    </button>
-  `;
 }
 
 export function AssessmentStats({ row }: { row: AssessmentStatsRow }) {

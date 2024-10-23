@@ -42,6 +42,8 @@ export function Workspace({
                 serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
                 serverUpdateURL: `${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance_id}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
                 canTriggerFinish: false,
+                showsTimeoutWarning: true,
+                reloadOnFail: false,
                 csrfToken: resLocals.__csrf_token,
               },
               'time-limit-data',
@@ -135,19 +137,17 @@ export function Workspace({
                     `
                   : null}
                 <li class="nav-item ml-2 ml-md-3 my-1">
-                  <a
-                    tabindex="0"
+                  <button
                     type="button"
                     class="nav-item btn btn-light"
                     data-toggle="popover"
-                    data-trigger="focus"
                     data-container="body"
                     data-placement="bottom"
                     data-html="true"
                     data-content="${escapeHtml(HelpButtonContents())}"
                   >
                     <i class="fas fa-question-circle text-secondary" aria-hidden="true"></i>
-                  </a>
+                  </button>
                 </li>
               </ul>
             </div>

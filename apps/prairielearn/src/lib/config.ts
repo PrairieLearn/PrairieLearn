@@ -525,6 +525,13 @@ const ConfigSchema = z.object({
    */
   checkSharingOnSync: z.boolean().default(false),
   /**
+   * Determines if institution names in course instance access rules should be
+   * validated at sync time. This defaults to false in dev mode where institutions
+   * are not set up, but should be enabled in production to help instructors
+   * catch misconfigured access rules.
+   */
+  checkInstitutionsOnSync: z.boolean().default(false),
+  /**
    * A Stripe secret key to be used for billing. Only useful for enterprise
    * installations. See https://stripe.com/docs/keys.
    */
@@ -541,6 +548,11 @@ const ConfigSchema = z.object({
   openAiApiKey: z.string().nullable().default(null),
   openAiOrganization: z.string().nullable().default(null),
   requireTermsAcceptance: z.boolean().default(false),
+  pyroscopeEnabled: z.boolean().default(false),
+  pyroscopeServerAddress: z.string().nullable().default(null),
+  pyroscopeBasicAuthUser: z.string().nullable().default(null),
+  pyroscopeBasicAuthPassword: z.string().nullable().default(null),
+  pyroscopeTags: z.record(z.string(), z.string()).default({}),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -583,10 +595,7 @@ export async function loadConfig(paths: string[]) {
 }
 
 export function setLocalsFromConfig(locals: Record<string, any>) {
-  locals.homeUrl = config.homeUrl;
   locals.urlPrefix = config.urlPrefix;
   locals.plainUrlPrefix = config.urlPrefix;
   locals.navbarType = 'plain';
-  locals.devMode = config.devMode;
-  locals.is_administrator = false;
 }

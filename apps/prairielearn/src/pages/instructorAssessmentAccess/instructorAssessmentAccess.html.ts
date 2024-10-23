@@ -5,6 +5,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
+import { config } from '../../lib/config.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),
@@ -84,19 +85,17 @@ export function InstructorAssessmentAccess({
                           resLocals.authz_data.has_course_instance_permission_view
                             ? access_rule.uids
                             : html`
-                                <a
-                                  role="button"
+                                <button
+                                  type="button"
                                   class="btn btn-xs btn-warning"
-                                  tabindex="0"
                                   data-toggle="popover"
-                                  data-trigger="focus"
                                   data-container="body"
                                   data-placement="auto"
                                   title="Hidden UIDs"
                                   data-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones."
                                 >
                                   Hidden
-                                </a>
+                                </button>
                               `}
                         </td>
                         <td>${access_rule.start_date}</td>
@@ -109,14 +108,13 @@ export function InstructorAssessmentAccess({
                           ${access_rule.pt_exam_name
                             ? html`
                                 <a
-                                  href="${resLocals.config
-                                    .ptHost}/pt/course/${access_rule.pt_course_id}/staff/exam/${access_rule.pt_exam_id}"
+                                  href="${config.ptHost}/pt/course/${access_rule.pt_course_id}/staff/exam/${access_rule.pt_exam_id}"
                                 >
                                   ${access_rule.pt_course_name}: ${access_rule.pt_exam_name}
                                 </a>
                               `
                             : access_rule.exam_uuid
-                              ? resLocals.devMode
+                              ? config.devMode
                                 ? access_rule.exam_uuid
                                 : html`
                                     <span class="text-danger">

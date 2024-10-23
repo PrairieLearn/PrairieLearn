@@ -3,9 +3,9 @@ import { html } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../src/components/AssessmentBadge.html.js';
 import {
-  AssessmentInstanceScoreResult,
-  GradebookRow,
-  InstructorGradebookData,
+  type AssessmentInstanceScoreResult,
+  type GradebookRow,
+  type InstructorGradebookData,
 } from '../../src/pages/instructorGradebook/instructorGradebook.types.js';
 
 onDocumentReady(() => {
@@ -104,7 +104,7 @@ onDocumentReady(() => {
         field: 'role',
         title: html`Role
           <button
-            class="btn btn-xs"
+            class="btn btn-xs btn-ghost"
             type="button"
             title="Show roles help"
             data-toggle="modal"

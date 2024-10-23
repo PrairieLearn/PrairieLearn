@@ -3,8 +3,8 @@ import { html } from '@prairielearn/html';
 import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
 import {
-  AssessmentQuestionRow,
-  AssessmentQuestionZone,
+  type AssessmentQuestionRow,
+  type AssessmentQuestionZone,
 } from '../../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
 
 function maxPoints({

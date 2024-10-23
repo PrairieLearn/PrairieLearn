@@ -8,9 +8,9 @@ import { DeleteQuestionModal } from '../../src/pages/instructorAssessmentQuestio
 import { EditQuestionModal } from '../../src/pages/instructorAssessmentQuestions/editQuestionModal.html.js';
 import { EditZoneModal } from '../../src/pages/instructorAssessmentQuestions/editZoneModal.html.js';
 import {
-  AssessmentQuestionRow,
+  type AssessmentQuestionRow,
   AssessmentQuestionRowSchema,
-  AssessmentQuestionZone,
+  type AssessmentQuestionZone,
 } from '../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
 
 import { EditAssessmentQuestionsTable } from './lib/editAssessmentQuestionsTable.js';

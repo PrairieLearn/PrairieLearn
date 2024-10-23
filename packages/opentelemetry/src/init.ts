@@ -1,5 +1,5 @@
 import { Metadata, credentials } from '@grpc/grpc-js';
-import { ContextManager, metrics } from '@opentelemetry/api';
+import { type ContextManager, metrics } from '@opentelemetry/api';
 import { hrTimeToMilliseconds } from '@opentelemetry/core';
 import { OTLPMetricExporter } from '@opentelemetry/exporter-metrics-otlp-grpc';
 import { OTLPTraceExporter } from '@opentelemetry/exporter-trace-otlp-grpc';
@@ -22,21 +22,21 @@ import {
 import {
   PeriodicExportingMetricReader,
   MeterProvider,
-  PushMetricExporter,
+  type PushMetricExporter,
   ConsoleMetricExporter,
   AggregationTemporality,
 } from '@opentelemetry/sdk-metrics';
 import {
-  SpanExporter,
-  ReadableSpan,
-  SpanProcessor,
+  type SpanExporter,
+  type ReadableSpan,
+  type SpanProcessor,
   SimpleSpanProcessor,
   BatchSpanProcessor,
   ParentBasedSampler,
   TraceIdRatioBasedSampler,
   AlwaysOnSampler,
   AlwaysOffSampler,
-  Sampler,
+  type Sampler,
   ConsoleSpanExporter,
 } from '@opentelemetry/sdk-trace-base';
 import { NodeTracerProvider } from '@opentelemetry/sdk-trace-node';

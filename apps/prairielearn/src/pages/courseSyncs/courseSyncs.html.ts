@@ -9,7 +9,7 @@ import { JobStatus } from '../../components/JobStatus.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { config } from '../../lib/config.js';
 import {
-  Course,
+  type Course,
   IdSchema,
   JobSequenceSchema,
   QuestionSchema,
@@ -238,7 +238,6 @@ function ImageTable({
                           data-html="true"
                           title="Questions using ${image.image}"
                           data-content="${escapeHtml(ListQuestionsPopover({ image, urlPrefix }))}"
-                          data-trigger="focus"
                         >
                           Show
                         </button>

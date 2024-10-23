@@ -280,18 +280,6 @@ router.get(
     );
     res.locals.assessment_text_templated = assessment_text_templated;
 
-    res.locals.savedAnswers = 0;
-    res.locals.suspendedSavedAnswers = 0;
-    res.locals.instance_questions.forEach((question) => {
-      if (question.status === 'saved') {
-        if (question.allow_grade_left_ms > 0) {
-          res.locals.suspendedSavedAnswers++;
-        } else {
-          res.locals.savedAnswers++;
-        }
-      }
-    });
-
     const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
 
     if (!res.locals.assessment.group_work) {

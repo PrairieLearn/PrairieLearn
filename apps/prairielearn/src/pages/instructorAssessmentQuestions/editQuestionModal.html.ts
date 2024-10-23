@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.html.js';
 
-import { AssessmentQuestionRow } from './instructorAssessmentQuestions.types.js';
+import { type AssessmentQuestionRow } from './instructorAssessmentQuestions.types.js';
 
 export function EditQuestionModal({
   newQuestion,

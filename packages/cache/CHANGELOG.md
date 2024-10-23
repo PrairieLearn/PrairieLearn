@@ -1,5 +1,12 @@
 # @prairielearn/cache
 
+## 2.0.7
+
+### Patch Changes
+
+- Updated dependencies [ec01c81]
+  - @prairielearn/sentry@2.0.7
+
 ## 2.0.6
 
 ### Patch Changes

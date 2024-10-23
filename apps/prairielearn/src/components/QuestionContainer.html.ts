@@ -327,7 +327,6 @@ function QuestionFooterContent({
   questionContext: QuestionContext;
 }) {
   const {
-    showTrueAnswer,
     showSaveButton,
     showGradeButton,
     disableSaveButton,
@@ -350,9 +349,10 @@ function QuestionFooterContent({
     __csrf_token,
   } = resLocals;
 
-  if (showTrueAnswer && questionContext === 'student_exam') {
+  if (questionContext === 'student_exam' && variantAttemptsLeft === 0) {
     return 'This question is complete and cannot be answered again.';
   }
+
   if (authz_result?.authorized_edit === false) {
     return html`<div class="alert alert-warning mt-2" role="alert">
       You are viewing the question instance of a different user and so are not authorized to save
@@ -406,9 +406,8 @@ function QuestionFooterContent({
             ? html`
                 <button
                   type="button"
-                  class="btn btn-xs order-3"
+                  class="btn btn-xs btn-ghost mr-1"
                   data-toggle="popover"
-                  data-trigger="focus"
                   data-content="Your group role (${assessment_instance.user_group_roles}) is not allowed to submit this question."
                   aria-label="Submission blocked"
                 >
@@ -444,20 +443,19 @@ function QuestionFooterContent({
                     <small class="font-italic align-self-center">
                       Additional attempts available with new variants
                     </small>
-                    <a
-                      class="btn btn-xs align-self-center"
+                    <button
+                      type="button"
+                      class="btn btn-xs btn-ghost align-self-center ml-1"
                       data-toggle="popover"
-                      data-trigger="focus"
                       data-container="body"
                       data-html="true"
                       data-content="${escapeHtml(
                         NewVariantInfo({ variantAttemptsLeft, variantAttemptsTotal }),
                       )}"
                       data-placement="auto"
-                      tabindex="0"
                     >
                       <i class="fa fa-question-circle" aria-hidden="true"></i>
-                    </a>
+                    </button>
                   `
                 : ''}
           ${AvailablePointsNotes({ questionContext, instance_question, assessment_question })}
@@ -527,18 +525,17 @@ function SubmitRateFooter({
             Can only be graded once every ${assessment_question.grade_rate_minutes}
             ${assessment_question.grade_rate_minutes > 1 ? 'minutes' : 'minute'}
           </small>
-          <a
-            class="btn btn-xs"
+          <button
+            type="button"
+            class="btn btn-xs btn-ghost"
             data-toggle="popover"
-            data-trigger="focus"
             data-container="body"
             data-html="true"
             data-content="${escapeHtml(popoverContent)}"
             data-placement="auto"
-            tabindex="0"
           >
             <i class="fa fa-question-circle" aria-hidden="true"></i>
-          </a>
+          </button>
         </span>
       </div>
     </div>
@@ -615,8 +612,7 @@ function QuestionPanel({
   const showCopyQuestionButton =
     question.type === 'Freeform' &&
     question_copy_targets != null &&
-    (course.template_course ||
-      (question.shared_publicly_with_source && questionContext === 'public')) &&
+    (course.template_course || (question.share_source_publicly && questionContext === 'public')) &&
     questionContext !== 'manual_grading';
 
   return html`

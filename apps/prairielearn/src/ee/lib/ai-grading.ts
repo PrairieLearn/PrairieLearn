@@ -1,24 +1,37 @@
 import * as cheerio from 'cheerio';
 import { OpenAI } from 'openai';
+import { zodResponseFormat } from 'openai/helpers/zod';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  loadSqlEquiv,
+  queryOneRowAsync,
+  queryOptionalRow,
+  queryRow,
+  queryRows,
+} from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import {
   InstanceQuestionSchema,
+  SubmissionGradingContextEmbeddingSchema,
   SubmissionSchema,
   VariantSchema,
-  Question,
-  Course,
-  AssessmentQuestion,
+  type Course,
+  type Question,
+  type AssessmentQuestion,
+  type SubmissionGradingContextEmbedding,
+  IdSchema,
+  type InstanceQuestion,
 } from '../../lib/db-types.js';
 import * as manualGrading from '../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../lib/question-render.js';
 import { getQuestionCourse } from '../../lib/question-variant.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import * as questionServers from '../../question-servers/index.js';
+
+import { createEmbedding, vectorToString } from './contextEmbeddings.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -27,6 +40,193 @@ const SubmissionVariantSchema = z.object({
   submission: SubmissionSchema,
 });
 const GPTGradeSchema = z.object({ grade: z.number(), feedback: z.string() });
+const GradedExampleSchema = z.object({
+  submission_text: z.string(),
+  score_perc: z.number(),
+  instance_question_id: z.string(),
+});
+type GradedExample = z.infer<typeof GradedExampleSchema>;
+
+async function generateGPTPromptWithExamples({
+  question_prompt,
+  student_answer,
+  example_submissions,
+}: {
+  question_prompt: string;
+  student_answer: string;
+  example_submissions: GradedExample[];
+}): Promise<
+  {
+    role: 'system' | 'user';
+    content: string;
+  }[]
+> {
+  const messages: {
+    role: 'system' | 'user';
+    content: string;
+  }[] = [];
+
+  // Instructions for grading
+  messages.push({
+    role: 'system',
+    content:
+      'You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. I will provide some example answers and their corresponding grades.',
+  });
+
+  // Question prompt
+  messages.push({
+    role: 'user',
+    content: `Question: \n${question_prompt}`,
+  });
+
+  // Examples
+  for (const example of example_submissions) {
+    messages.push({
+      role: 'user',
+      content: `Example answer: \n${example.submission_text} \nGrade to this example answer: \n${example.score_perc}`,
+    });
+  }
+
+  // Student answer
+  messages.push({
+    role: 'user',
+    content: `Answer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
+  });
+  return messages;
+}
+
+async function generateSubmissionEmbeddings({
+  course,
+  question,
+  assessment_question,
+  urlPrefix,
+  openai,
+}: {
+  question: Question;
+  course: Course;
+  assessment_question: AssessmentQuestion;
+  urlPrefix: string;
+  openai: OpenAI;
+}): Promise<number> {
+  const question_course = await getQuestionCourse(question, course);
+
+  const result = await queryRows(
+    sql.select_instance_questions_for_assessment_question,
+    {
+      assessment_question_id: assessment_question.id,
+    },
+    InstanceQuestionSchema,
+  );
+
+  let newEmbeddingsCount = 0;
+
+  for (const instance_question of result) {
+    const submission_id = await queryRow(
+      sql.select_last_submission_id,
+      { instance_question_id: instance_question.id },
+      IdSchema,
+    );
+    const submission_embedding = await queryOptionalRow(
+      sql.select_embedding_for_submission,
+      { submission_id },
+      SubmissionGradingContextEmbeddingSchema,
+    );
+
+    // Only recalculate embedding if it doesn't exist or if it requires a force update
+    if (submission_embedding) {
+      continue;
+    }
+    const { variant, submission } = await queryRow(
+      sql.select_last_variant_and_submission,
+      { instance_question_id: instance_question.id },
+      SubmissionVariantSchema,
+    );
+    const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
+    const questionModule = questionServers.getModule(question.type);
+    const render_submission_results = await questionModule.render(
+      { question: false, submissions: true, answer: false },
+      variant,
+      question,
+      submission,
+      [submission],
+      question_course,
+      urls,
+    );
+    const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
+    $('script').remove();
+    const student_answer = $.html();
+    const embedding = await createEmbedding(openai, student_answer, `course_${course.id}`);
+
+    await queryOneRowAsync(sql.create_embedding_for_submission, {
+      embedding: vectorToString(embedding),
+      submission_id: submission.id,
+      submission_text: student_answer,
+      assessment_question_id: assessment_question.id,
+    });
+
+    newEmbeddingsCount++;
+  }
+  return newEmbeddingsCount;
+}
+
+async function ensureSubmissionEmbedding({
+  submission_id,
+  course,
+  question,
+  instance_question,
+  urlPrefix,
+  openai,
+}: {
+  submission_id: string;
+  question: Question;
+  course: Course;
+  instance_question: InstanceQuestion;
+  urlPrefix: string;
+  openai: OpenAI;
+}): Promise<SubmissionGradingContextEmbedding> {
+  const submission_embedding = await queryOptionalRow(
+    sql.select_embedding_for_submission,
+    { submission_id },
+    SubmissionGradingContextEmbeddingSchema,
+  );
+  // if the submission embedding already exists, return the embedding
+  if (submission_embedding) {
+    return submission_embedding;
+  }
+  const question_course = await getQuestionCourse(question, course);
+  const { variant, submission } = await queryRow(
+    sql.select_last_variant_and_submission,
+    { instance_question_id: instance_question.id },
+    SubmissionVariantSchema,
+  );
+  const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
+  const questionModule = questionServers.getModule(question.type);
+  const render_submission_results = await questionModule.render(
+    { question: false, submissions: true, answer: false },
+    variant,
+    question,
+    submission,
+    [submission],
+    question_course,
+    urls,
+  );
+  const $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
+  $('script').remove();
+  const student_answer = $.html();
+  const embedding = await createEmbedding(openai, student_answer, `course_${course.id}`);
+  // insert new embedding into the table and return the new embedding
+  const new_submission_embedding = await queryRow(
+    sql.create_embedding_for_submission,
+    {
+      embedding: vectorToString(embedding),
+      submission_id: submission.id,
+      submission_text: student_answer,
+      assessment_question_id: instance_question.assessment_question_id,
+    },
+    SubmissionGradingContextEmbeddingSchema,
+  );
+  return new_submission_embedding;
+}
 
 export async function aiGrade({
   course,
@@ -70,17 +270,23 @@ export async function aiGrade({
     const result = await queryRows(
       sql.select_instance_questions_manual_grading,
       {
-        assessment_id: assessment_question.assessment_id,
         assessment_question_id: assessment_question.id,
       },
       InstanceQuestionSchema,
     );
 
+    job.info('Checking for embeddings for all submissions.');
+    const newEmbeddingsCount = await generateSubmissionEmbeddings({
+      course,
+      question,
+      assessment_question,
+      urlPrefix,
+      openai,
+    });
+    job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
     job.info(`Found ${result.length} submissions to grade!`);
 
     let error_count = 0;
-    let output_count = 0;
-    let output: string | null = null;
 
     // Grade each instance question.
     for (const instance_question of result) {
@@ -108,77 +314,78 @@ export async function aiGrade({
         job.error('Error occurred');
         job.fail('Errors occurred while AI grading, see output for details');
       }
-      let $ = cheerio.load(render_question_results.data.questionHtml, null, false);
+      const $ = cheerio.load(render_question_results.data.questionHtml, null, false);
       $('script').remove();
       const question_prompt = $.html();
 
-      const render_submission_results = await questionModule.render(
-        { question: false, submissions: true, answer: false },
-        variant,
+      const submission_embedding = await ensureSubmissionEmbedding({
+        submission_id: submission.id,
+        course,
         question,
-        submission,
-        [submission],
-        question_course,
-        urls,
-      );
-      $ = cheerio.load(render_submission_results.data.submissionHtmls[0], null, false);
-      $('script').remove();
-      const student_answer = $.html();
+        instance_question,
+        urlPrefix,
+        openai,
+      });
+      const student_answer = submission_embedding.submission_text;
 
-      const completion = await openai.chat.completions.create({
-        messages: [
-          {
-            role: 'system',
-            content:
-              'You are an instructor for a course, and you are grading assignments. You should always return the grade using a json object of 2 parameters: grade and feedback. The grade should be an integer between 0 and 100. 0 being the lowest and 100 being the highest, and the feedback should be why you give this grade, or how to improve the answer. You can say correct or leave blank when the grade is close to 100. ',
-          },
-          {
-            role: 'user',
-            content: `Question: \n${question_prompt} \nAnswer: \n${student_answer} \nHow would you grade this? Please return the json object.`,
-          },
-        ],
-        model: 'gpt-3.5-turbo',
-        user: `course_${course.id}`,
+      const example_submissions = await queryRows(
+        sql.select_closest_embeddings,
+        {
+          submission_id: submission.id,
+          assessment_question_id: assessment_question.id,
+          embedding: submission_embedding.embedding,
+          limit: 5,
+        },
+        GradedExampleSchema,
+      );
+      let msg = `\nInstance question ${instance_question.id}\nGraded examples:`;
+      for (const example of example_submissions) {
+        msg += ` ${example.instance_question_id}`;
+      }
+      msg += '\n';
+
+      const messages = await generateGPTPromptWithExamples({
+        question_prompt,
+        student_answer,
+        example_submissions,
       });
 
-      let msg = `\nInstance question ${instance_question.id}\n`;
+      const completion = await openai.beta.chat.completions.parse({
+        messages,
+        model: 'gpt-4o-2024-08-06',
+        user: `course_${course.id}`,
+        response_format: zodResponseFormat(GPTGradeSchema, 'grades'),
+      });
+
       try {
         msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
-        msg += `Raw ChatGPT response:\n${completion.choices[0].message.content}`;
-        if (completion.choices[0].message.content === null) {
+        const grade_response = completion.choices[0].message;
+        msg += `Raw ChatGPT response:\n${grade_response.content}`;
+        if (grade_response.parsed) {
+          await manualGrading.updateInstanceQuestionScore(
+            assessment_question.assessment_id,
+            instance_question.id,
+            submission.id,
+            null, // modified_at
+            {
+              score_perc: grade_response.parsed.grade,
+              feedback: { manual: grade_response.parsed.feedback },
+              // NEXT STEPS: rubrics
+            },
+            user_id,
+          );
+          msg += `\nAI grades: ${grade_response.parsed.grade}`;
+        } else if (grade_response.refusal) {
+          job.error(`ERROR AI grading for ${instance_question.id}`);
+          job.error(grade_response.refusal);
           error_count++;
-          continue;
         }
-        const gpt_answer = GPTGradeSchema.parse(JSON.parse(completion.choices[0].message.content));
-        await manualGrading.updateInstanceQuestionScore(
-          assessment_question.assessment_id,
-          instance_question.id,
-          submission.id,
-          null, // modified_at
-          {
-            score_perc: gpt_answer.grade,
-            feedback: { manual: gpt_answer.feedback },
-            // NEXT STEPS: rubrics
-          },
-          '1',
-        );
-        msg += `\nAI grades: ${gpt_answer.grade}`;
       } catch (err) {
         job.error(`ERROR AI grading for ${instance_question.id}`);
         job.error(err);
         error_count++;
       }
-      output = (output == null ? '' : `${output}\n`) + msg;
-      output_count++;
-      if (output_count >= 5) {
-        job.info(output);
-        output = null;
-        output_count = 0;
-      }
-    }
-
-    if (output != null) {
-      job.info(output);
+      job.info(msg);
     }
     if (error_count > 0) {
       job.error('Number of errors: ' + error_count);

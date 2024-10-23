@@ -4,16 +4,16 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
-import { HtmlSafeString, html } from '@prairielearn/html';
+import { type HtmlSafeString, html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { User } from '../../lib/db-types.js';
+import { type User } from '../../lib/db-types.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
 import { parseUidsString } from '../../lib/user.js';
 import {
-  CourseInstanceAuthz,
+  type CourseInstanceAuthz,
   selectCourseInstancesWithStaffAccess,
 } from '../../models/course-instances.js';
 import {
@@ -99,9 +99,8 @@ router.post(
       // Verify there is at least one UID
       if (uids.length === 0) throw new error.HttpStatusError(400, 'Empty list of UIDs');
 
-      // Verify the requested course role is valid - we choose to disallow Owner
-      // because we want to discourage the assignment of this role to many users
-      if (!['None', 'Previewer', 'Viewer', 'Editor'].includes(req.body.course_role)) {
+      // Verify the requested course role is valid
+      if (!['None', 'Previewer', 'Viewer', 'Editor', 'Owner'].includes(req.body.course_role)) {
         throw new error.HttpStatusError(
           400,
           `Invalid requested course role: ${req.body.course_role}`,

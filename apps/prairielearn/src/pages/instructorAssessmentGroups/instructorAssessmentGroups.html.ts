@@ -7,7 +7,7 @@ import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
-import { GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
+import { type GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
@@ -176,8 +176,9 @@ export function InstructorAssessmentGroups({
                                     <div class="dropdown js-group-action-dropdown">
                                       <button
                                         type="button"
-                                        class="btn btn-xs dropdown-toggle"
+                                        class="btn btn-xs btn-ghost dropdown-toggle"
                                         data-toggle="dropdown"
+                                        data-boundary="window"
                                         aria-haspopup="true"
                                         aria-expanded="false"
                                       >

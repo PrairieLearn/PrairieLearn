@@ -192,6 +192,11 @@ interface Tag {
   description?: string;
 }
 
+interface SharingSet {
+  name: string;
+  description?: string;
+}
+
 interface Topic {
   name: string;
   color: string;
@@ -222,6 +227,7 @@ interface Course {
   topics: Topic[];
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
+  sharingSets: SharingSet[];
 }
 
 interface CourseInstanceAllowAccess {
@@ -235,6 +241,8 @@ interface CourseInstanceAllowAccess {
 export interface CourseInstance {
   uuid: string;
   longName: string;
+  /** @deprecated */
+  shortName?: string | null;
   number: number;
   timezone: string;
   hideInEnrollPage: boolean;
@@ -378,6 +386,10 @@ export interface Question {
   externalGradingOptions: QuestionExternalGradingOptions;
   workspaceOptions?: QuestionWorkspaceOptions;
   dependencies: Record<string, string>;
+  sharingSets: string[];
+  sharePublicly: boolean;
+  sharedPublicly: boolean;
+  shareSourcePublicly: boolean;
 }
 
 export interface CourseInstanceData {
@@ -667,7 +679,7 @@ export async function loadCourseInfo(
    * @param entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
    */
   function getFieldWithoutDuplicates<
-    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules',
+    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
   >(fieldName: K, entryIdentifier: string, defaults?: Course[K] | undefined): Course[K] {
     const known = new Map();
     const duplicateEntryIds = new Set();
@@ -709,6 +721,8 @@ export async function loadCourseInfo(
   );
   const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
   const topics = getFieldWithoutDuplicates('topics', 'name');
+  const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
+
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
   const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
@@ -760,6 +774,7 @@ export async function loadCourseInfo(
     assessmentModules,
     tags,
     topics,
+    sharingSets,
     exampleCourse,
     options: {
       useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
@@ -1035,6 +1050,14 @@ async function validateQuestion(
     }
   }
 
+  if ('sharedPublicly' in question) {
+    if ('sharePublicly' in question) {
+      errors.push('Cannot specify both "sharedPublicly" and "sharePublicly" in one question.');
+    } else {
+      warnings.push('"sharedPublicly" is deprecated; use "sharePublicly" instead.');
+    }
+  }
+
   return { warnings, errors };
 }
 
@@ -1080,8 +1103,8 @@ async function validateAssessment(
       const allowAccessWarnings = checkAllowAccessRoles(rule);
       warnings.push(...allowAccessWarnings);
 
-      if (rule.examUuid && rule.mode !== 'Exam') {
-        warnings.push('Invalid allowAccess rule: examUuid can only be used with "mode": "Exam"');
+      if (rule.examUuid && rule.mode === 'Public') {
+        warnings.push('Invalid allowAccess rule: examUuid cannot be used with "mode": "Public"');
       }
     });
   }
@@ -1204,10 +1227,21 @@ async function validateAssessment(
               'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
             );
           }
+
           if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
             errors.push(
               'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment',
             );
+          }
+
+          if (!courseInstanceExpired) {
+            if (alternative.points === 0 && alternative.maxPoints > 0) {
+              errors.push('Cannot specify "points": 0 when "maxPoints" > 0');
+            }
+
+            if (alternative.autoPoints === 0 && alternative.maxAutoPoints > 0) {
+              errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
+            }
           }
         }
       });
@@ -1343,6 +1377,18 @@ async function validateCourseInstance(
       warnings.push(
         'The property "userRoles" should be deleted. Instead, course owners can now manage staff access on the "Staff" page.',
       );
+    }
+
+    // `shortName` has never been a meaningful property in course instance config.
+    // However, for many years our template course erroneously included it in the
+    // template course instance, so it's been copied around to basically every course.
+    // We didn't set `additionalProperties: false` in the schema, so we never caught
+    // this and for a long time it was silently ignored.
+    //
+    // To avoid breaking existing courses, we added it as a valid property to the schema,
+    // but we'll warn about it for any active or future course instances.
+    if (courseInstance.shortName) {
+      warnings.push('The property "shortName" is not used and should be deleted.');
     }
   }
 

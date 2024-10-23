@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import { AnsiUp } from 'ansi_up';
 import sha256 from 'crypto-js/sha256.js';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
@@ -23,14 +22,13 @@ import { FindQIDModal } from './findQIDModal.html.js';
 import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';
 import { AssessmentQuestionRowSchema } from './instructorAssessmentQuestions.types.js';
 
-const ansiUp = new AnsiUp();
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const questionRows = await queryRows(
+    const questions = await queryRows(
       sql.questions,
       {
         assessment_id: res.locals.assessment.id,
@@ -38,11 +36,7 @@ router.get(
       },
       AssessmentQuestionRowSchema,
     );
-    const questions = questionRows.map((row) => {
-      if (row.sync_errors) row.sync_errors_ansified = ansiUp.ansi_to_html(row.sync_errors);
-      if (row.sync_warnings) row.sync_warnings_ansified = ansiUp.ansi_to_html(row.sync_warnings);
-      return row;
-    });
+
     const assessmentPath = path.join(
       res.locals.course.path,
       'courseInstances',

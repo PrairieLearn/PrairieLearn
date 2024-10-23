@@ -4,7 +4,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { CourseInstanceAccessRule } from '../../lib/db-types.js';
+import { type CourseInstanceAccessRule } from '../../lib/db-types.js';
 
 export function InstructorInstanceAdminAccess({
   resLocals,
@@ -88,19 +88,17 @@ function AccessRuleRow({
             hasCourseInstancePermissionView
             ? accessRule.uids.join(', ')
             : html`
-                <a
-                  role="button"
+                <button
+                  type="button"
                   class="btn btn-xs btn-warning"
-                  tabindex="0"
                   data-toggle="popover"
-                  data-trigger="focus"
                   data-container="body"
                   data-placement="auto"
                   title="Hidden UIDs"
                   data-content="This access rule is specific to individual students. You need permission to view student data in order to see which ones."
                 >
                   Hidden
-                </a>
+                </button>
               `}
       </td>
       <td>

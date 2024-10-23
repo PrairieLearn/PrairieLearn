@@ -1,6 +1,5 @@
 import * as path from 'node:path';
 
-import { AnsiUp } from 'ansi_up';
 import * as async from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -39,7 +38,6 @@ async function browseDirectory({
   paths: InstructorFilePaths;
 }): Promise<DirectoryListings> {
   const filenames = await fs.readdir(paths.workingPath);
-  const ansiUp = new AnsiUp();
   const all_files = await async.mapLimit(
     filenames
       .sort()
@@ -72,9 +70,7 @@ async function browseDirectory({
             contains(invalidRootPath, filepath),
           ),
           sync_errors: sync_data.errors,
-          sync_errors_ansified: ansiUp.ansi_to_html(sync_data.errors ?? ''),
           sync_warnings: sync_data.warnings,
-          sync_warnings_ansified: ansiUp.ansi_to_html(sync_data.warnings ?? ''),
         } as DirectoryEntryFile;
       } else if (stats.isDirectory()) {
         return {

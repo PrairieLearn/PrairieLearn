@@ -3,7 +3,8 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { CourseInstanceAuthz } from '../../models/course-instances.js';
+import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
+import { type CourseInstanceAuthz } from '../../models/course-instances.js';
 
 export type CourseInstanceAuthzRow = CourseInstanceAuthz & { enrollment_count?: number };
 
@@ -61,7 +62,6 @@ export function InstructorCourseAdminInstances({
                       <button
                         class="btn btn-xs btn-light"
                         data-toggle="popover"
-                        data-trigger="focus"
                         data-container="body"
                         data-placement="bottom"
                         data-html="true"
@@ -77,7 +77,6 @@ export function InstructorCourseAdminInstances({
                       <button
                         class="btn btn-xs btn-light"
                         data-toggle="popover"
-                        data-trigger="focus"
                         data-container="body"
                         data-placement="bottom"
                         data-html="true"
@@ -96,6 +95,17 @@ export function InstructorCourseAdminInstances({
                     return html`
                       <tr>
                         <td class="align-left">
+                          ${row.sync_errors
+                            ? SyncProblemButton({
+                                type: 'error',
+                                output: row.sync_errors,
+                              })
+                            : row.sync_warnings
+                              ? SyncProblemButton({
+                                  type: 'warning',
+                                  output: row.sync_warnings,
+                                })
+                              : ''}
                           <a
                             href="${resLocals.plainUrlPrefix}/course_instance/${row.id}/instructor/instance_admin"
                             >${row.long_name}</a

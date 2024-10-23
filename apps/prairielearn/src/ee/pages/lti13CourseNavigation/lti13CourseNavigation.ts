@@ -8,7 +8,7 @@ import { IdSchema, Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
 import {
   selectCourseInstanceById,
   selectCourseInstancesWithStaffAccess,
-  CourseInstanceAuthz,
+  type CourseInstanceAuthz,
 } from '../../../models/course-instances.js';
 import { selectCoursesWithEditAccess } from '../../../models/course.js';
 import { Lti13Claim } from '../../lib/lti13.js';
@@ -76,6 +76,7 @@ router.get(
           context_label: ltiClaim.context?.label,
           context_title: ltiClaim.context?.title,
           lineitems_url: ltiClaim.lineitems,
+          context_memberships_url: ltiClaim.context_memberships_url,
         });
 
         // TODO: Set course/instance staff permissions for LMS course staff here?

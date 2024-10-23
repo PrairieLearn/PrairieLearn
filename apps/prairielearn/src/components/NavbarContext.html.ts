@@ -1,7 +1,7 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 
 import { IssueBadge } from './IssueBadge.html.js';
-import { NavPage, NavSubPage } from './Navbar.types.js';
+import { type NavPage, type NavSubPage } from './Navbar.types.js';
 
 interface TabInfo {
   activeSubPage: NavSubPage | NavSubPage[];
@@ -93,6 +93,12 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
       urlSuffix: '/course_admin/issues',
       iconClasses: 'fas fa-bug',
       tabLabel: 'Issues',
+    },
+    {
+      activeSubPage: 'modules',
+      urlSuffix: '/course_admin/modules',
+      iconClasses: 'fa fa-layer-group',
+      tabLabel: 'Modules',
     },
     {
       activeSubPage: 'questions',
