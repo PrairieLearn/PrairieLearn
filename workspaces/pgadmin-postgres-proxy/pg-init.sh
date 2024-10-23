@@ -4,16 +4,24 @@ set -ex
 
 echo "Running $0 as: $(id)"
 
+PG_USER="postgres"
+PG_DB="postgres"
+
 /usr/lib/postgresql/14/bin/initdb -D /pgdata
 /usr/lib/postgresql/14/bin/pg_ctl -D /pgdata start
 echo "Waiting for postgres to start..."
 while ! pg_isready ; do sleep 1s ; done
-# /usr/lib/postgresql/14/bin/createuser --superuser postgres # already exists
-# /usr/lib/postgresql/14/bin/createdb postgres # already exists
-psql -U postgres -d postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';"
-psql -U postgres -d postgres < /sql-scripts/imdb.sql
-psql -U postgres -d postgres < /sql-scripts/world.sql
-psql -U postgres -d postgres < /sql-scripts/mds.sql
+
+psql -U "$PG_USER" -d "$PG_DB" -c "ALTER USER $PG_USER WITH PASSWORD 'postgres';"
+
+find /sql-scripts -type f -name '*.sql' | while read -r sql_file; do
+  psql -U "$PG_USER" -d "$PG_DB" -f "$sql_file"
+done
+
+find /sql-scripts -type f -name '*.dump' | while read -r dump_file; do
+  pg_restore -U "$PG_USER" -d "$PG_DB" "$dump_file"
+done
+
 /usr/lib/postgresql/14/bin/pg_ctl -D /pgdata stop
 echo "Waiting for postgres to stop..."
 while pg_isready ; do sleep 1s ; done
