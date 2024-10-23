@@ -97,6 +97,7 @@ export const AssessmentsFormatForQuestionSchema = z.array(
     color: z.string(),
   }),
 );
+export type AssessmentsFormatForQuestion = z.infer<typeof AssessmentsFormatForQuestionSchema>;
 
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
