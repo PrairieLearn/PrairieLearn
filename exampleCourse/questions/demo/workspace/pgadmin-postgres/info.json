@@ -1,0 +1,20 @@
+{
+    "uuid": "5b9d3721-0214-4b31-8a94-3bbe0326536a",
+    "title": "Scratchpad - pgadmin - postgress",
+    "topic": "others",
+    "tags": [
+        "workspace"
+    ],
+    "type": "v3",
+    "singleVariant": true,
+    "showCorrectAnswer": false,
+    "workspaceOptions": {
+        "image": "zacwarham/eric-gittu-zac:five",
+        "comment": "echuber2/pgadmin-postgres-proxy",
+        "port": 8080,
+        "args": "",
+        "rewriteUrl": true,
+        "home": "/home/postgres/workspace",
+        "enableNetworking": false
+    }
+}
