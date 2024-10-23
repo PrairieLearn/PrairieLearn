@@ -27,13 +27,9 @@ RUN apt-get update \
 
 COPY config_local.py servers.json pgpass /usr/local/lib/python3.10/dist-packages/pgadmin4/
 COPY database/ /sql-scripts/
-COPY pg_hba.conf postgresql.conf /etc/postgresql/14/main/
 
 RUN chown postgres:postgres /usr/local/lib/python3.10/dist-packages/pgadmin4/pgpass \
   && chmod 600 /usr/local/lib/python3.10/dist-packages/pgadmin4/pgpass
-
-# I don't think this will work in production.
-# VOLUME /var/run/postgresql
 
 COPY install.sh pl-gosu-helper.sh /
 RUN /bin/bash /install.sh
@@ -47,6 +43,8 @@ COPY Caddyfile /caddy/
 # UNSAFE - for local debugging only
 # COPY Caddyfile.test_https /caddy/
 # COPY --chmod=0755 pl-unsafe-test.sh /caddy/
+
+COPY postgresql.conf /pgdata
 
 USER postgres
 WORKDIR /

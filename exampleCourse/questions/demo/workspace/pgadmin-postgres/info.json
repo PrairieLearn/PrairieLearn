@@ -9,12 +9,12 @@
     "singleVariant": true,
     "showCorrectAnswer": false,
     "workspaceOptions": {
-        "image": "zacwarham/eric-gittu-zac:one",
+        "image": "zacwarham/eric-gittu-zac:five",
         "comment": "echuber2/pgadmin-postgres-proxy",
         "port": 8080,
         "args": "",
         "rewriteUrl": true,
         "home": "/home/postgres/workspace",
-        "enableNetworking": true
+        "enableNetworking": false
     }
 }
