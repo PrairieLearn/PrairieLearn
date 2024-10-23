@@ -43,6 +43,7 @@ export async function run() {
       await gradeAssessmentInstance(
         assessment_instance.id,
         authn_user_id,
+        authn_user_id,
         requireOpen,
         close,
         overrideGradeRate,
