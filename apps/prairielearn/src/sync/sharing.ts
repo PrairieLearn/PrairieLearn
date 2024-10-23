@@ -159,6 +159,7 @@ export async function checkInvalidSharingSetRemovals(
     }
     if (!courseData.questions[question.qid].data?.sharingSets) {
       invalidSharingSetRemovals[question.qid] = question.sharing_sets;
+      return;
     }
 
     question.sharing_sets.forEach((sharingSet) => {
