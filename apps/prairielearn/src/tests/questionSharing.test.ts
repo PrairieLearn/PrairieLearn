@@ -617,7 +617,7 @@ describe('Question Sharing', function () {
       await fs.writeJSON(
         path.join(
           sharingCourseLiveDir,
-          'courseInstances/Fa19/assessments/test/infoAsssessment.json',
+          'courseInstances/Fa19/assessments/test/infoAssessment.json',
         ),
         sharingCourseData.courseInstances['Fa19'].assessments['test'],
       );
