@@ -34,12 +34,10 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    let isAssessmentPublic = await checkAssessmentPublic(res.locals.assessment_id); // TEST, make const
+    const isAssessmentPublic = await checkAssessmentPublic(res.locals.assessment_id);
     const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
     const course = await selectCourseById(courseId);
     res.locals.course = course;
-
-    isAssessmentPublic = true; // TEST, remove
 
     if (!isAssessmentPublic) {
       throw new error.HttpStatusError(404, 'This assessment is not public.');

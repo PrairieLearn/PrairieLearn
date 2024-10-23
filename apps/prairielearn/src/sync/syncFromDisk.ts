@@ -111,7 +111,6 @@ export async function syncDiskToSqlWithLock(
   const sharingConfigurationValid = await timed('Validated sharing configuration', () =>
     checkSharingConfigurationValid(courseId, courseData, logger),
   );
-
   if (!sharingConfigurationValid) {
     return {
       status: 'sharing_error',

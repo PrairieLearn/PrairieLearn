@@ -652,7 +652,6 @@ describe('Question Sharing', function () {
         sharingCourseData.courseInstances['Fa19'].assessments['test'],
       );
 
-      // Sync the assessment
       const syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourse.path, logger);
       if (syncResult.status !== 'complete' || syncResult?.hadJsonErrorsOrWarnings) {
         throw new Error('Errors or warnings found during sync of sharing course');
