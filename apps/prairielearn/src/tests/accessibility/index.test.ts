@@ -302,6 +302,11 @@ describe('accessibility', () => {
       'UPDATE questions SET shared_publicly = true WHERE id = $question_id',
       { question_id: routeParams.question_id },
     );
+
+    await sqldb.queryOneRowAsync(
+      'UPDATE assessments SET share_source_publicly = true WHERE id = $assessment_id',
+      { assessment_id: routeParams.assessment_id },
+    );
   });
   after('shut down testing server', helperServer.after);
 
