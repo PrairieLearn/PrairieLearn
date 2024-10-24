@@ -204,7 +204,7 @@ export function checkInvalidSharedAssessments(
             continue;
           }
           const infoJson = courseData.questions[question.id];
-          if (!infoJson?.data?.sharedPublicly) {
+          if (!infoJson?.data?.sharePublicly) {
             invalidSharedAssessments.add(tid);
             continue;
           }
