@@ -159,11 +159,12 @@ export async function checkInvalidSharingSetRemovals(
     }
     if (!courseData.questions[question.qid].data?.sharingSets) {
       invalidSharingSetRemovals[question.qid] = question.sharing_sets;
+      return;
     }
 
     question.sharing_sets.forEach((sharingSet) => {
       // TODO: allow if the sharing set hasn't been shared to a course
-      if (!courseData.questions[question.qid].data?.sharingSets.includes(sharingSet)) {
+      if (!courseData.questions[question.qid].data?.sharingSets?.includes(sharingSet)) {
         if (!invalidSharingSetRemovals[question.qid]) {
           invalidSharingSetRemovals[question.qid] = [];
         }
