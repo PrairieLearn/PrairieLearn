@@ -40,7 +40,7 @@ router.get(
     res.locals.course = course;
 
     if (!isAssessmentPublic) {
-      throw new error.HttpStatusError(404, 'This assessment is not public.');
+      throw new error.HttpStatusError(404, 'Not Found');
     }
 
     res.locals.assessment = await selectAssessmentById(res.locals.assessment_id);
