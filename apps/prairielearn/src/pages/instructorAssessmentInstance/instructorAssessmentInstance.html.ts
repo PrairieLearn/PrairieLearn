@@ -582,7 +582,7 @@ export function InstructorAssessmentInstance({
                               <td>
                                 <button
                                   type="button"
-                                  class="btn badge color-${FINGERPRINT_COLORS[
+                                  class="btn btn-xs color-${FINGERPRINT_COLORS[
                                     row.client_fingerprint_number % 6
                                   ]} color-hover"
                                   id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
