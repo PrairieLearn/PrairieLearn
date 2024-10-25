@@ -9,7 +9,7 @@
     "singleVariant": true,
     "showCorrectAnswer": false,
     "workspaceOptions": {
-        "image": "zacwarham/eric-gittu-zac:five",
+        "image": "zacwarham/eric-gittu-zac:six",
         "comment": "echuber2/pgadmin-postgres-proxy",
         "port": 8080,
         "args": "",

@@ -31,9 +31,8 @@ COPY database/ /sql-scripts/
 RUN chown postgres:postgres /usr/local/lib/python3.10/dist-packages/pgadmin4/pgpass \
   && chmod 600 /usr/local/lib/python3.10/dist-packages/pgadmin4/pgpass
 
-COPY install.sh pl-gosu-helper.sh /
+COPY install.sh pl-gosu-helper.sh install-pg.sh pg-init.sh /
 RUN /bin/bash /install.sh
-COPY install-pg.sh pg-init.sh /
 RUN /bin/bash /install-pg.sh
 
 COPY dockerentrypoint.sh /sbin/dockerentrypoint.sh

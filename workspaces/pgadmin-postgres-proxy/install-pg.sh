@@ -9,6 +9,6 @@ mkdir -p /pgdata /var/run/postgresql
 chown -R postgres:postgres /pgdata /var/run/postgresql
 su postgres /pg-init.sh
 
-# Delete install scripts.
-rm /pg-init.sh
-rm /install-pg.sh
+# Delete install scripts; kept to allow for additional data installation
+# rm /pg-init.sh
+# rm /install-pg.sh
