@@ -417,7 +417,7 @@ BEGIN
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         (assessment_question->>'max_points')::double precision,
-                        (assessment_question->>'manual_perc')::double precision,
+                        computed_manual_perc,
                         COALESCE(computed_manual_points, 0),
                         COALESCE(computed_max_auto_points, 0),
                         (assessment_question->>'init_points')::double precision,
