@@ -190,8 +190,8 @@ async function testVariant(
   question: Question,
   course: Course,
   test_type: TestType,
-  authn_user_id: string,
   user_id: string,
+  authn_user_id: string,
 ): Promise<{ expected_submission: Submission; test_submission: Submission }> {
   const expected_submission_id = await createTestSubmission(
     variant,
@@ -316,8 +316,8 @@ async function testQuestion(
         question,
         variant_course,
         test_type,
-        authn_user_id,
         user_id,
+        authn_user_id,
       ));
     } finally {
       const gradeEnd = Date.now();
@@ -433,7 +433,7 @@ export async function startTestQuestion(
 
   const serverJob = await createServerJob({
     courseId: course.id,
-    userId: String(user_id),
+    userId: user_id,
     authnUserId: String(authn_user_id),
     type: 'test_question',
     description: 'Test ' + question.qid,
