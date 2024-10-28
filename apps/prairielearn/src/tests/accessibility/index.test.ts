@@ -1,6 +1,6 @@
 import { A11yError } from '@sa11y/format';
 import axe from 'axe-core';
-import { JSDOM } from 'jsdom';
+import { JSDOM, VirtualConsole } from 'jsdom';
 import { test } from 'mocha';
 import fetch from 'node-fetch';
 
@@ -26,7 +26,11 @@ async function loadPageJsdom(url: string): Promise<JSDOM> {
     }
     return res.text();
   });
-  return new JSDOM(text);
+  // JSDOM can be very verbose regarding unimplemented features (e.g., canvas).
+  // We don't have a need to see these warnings, so we create a virtual console
+  // that does not log anything.
+  const virtualConsole = new VirtualConsole();
+  return new JSDOM(text, { virtualConsole });
 }
 
 /**
