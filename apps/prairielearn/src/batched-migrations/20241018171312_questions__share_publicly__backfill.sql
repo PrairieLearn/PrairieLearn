@@ -5,5 +5,5 @@ SET
 FROM
   questions
 WHERE
-  v.id >= $start
-  AND v.id <= $end;
+  q.id >= $start
+  AND q.id <= $end;
