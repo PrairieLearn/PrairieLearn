@@ -116,9 +116,7 @@ function AssessmentQuestionsTable({
                     ${question.title}
                   </a>
                 </td>
-                <td>
-                  ${question.display_name}
-                </td>
+                <td>${question.display_name}</td>
                 <td>${TopicBadge(question.topic)}</td>
                 <td>${TagBadgeList(question.tags)}</td>
                 <td>
