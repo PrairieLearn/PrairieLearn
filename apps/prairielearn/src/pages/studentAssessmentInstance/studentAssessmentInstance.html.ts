@@ -248,19 +248,21 @@ export function StudentAssessmentInstance({
                       ? html`
                           <tr>
                             <th colspan="${zoneTitleColspan}">
-                              <span class="mr-1">${instance_question.zone_title}</span>
-                              ${instance_question.zone_has_max_points
-                                ? ZoneInfoBadge({
-                                    popoverContent: `Of the points that you are awarded for answering these questions, at most ${instance_question.zone_max_points} will count toward your total points.`,
-                                    mainContent: `Maximum ${instance_question.zone_max_points} points`,
-                                  })
-                                : ''}
-                              ${instance_question.zone_has_best_questions
-                                ? ZoneInfoBadge({
-                                    popoverContent: `Of these questions, only the ${instance_question.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
-                                    mainContent: `Best ${instance_question.zone_best_questions} questions`,
-                                  })
-                                : ''}
+                              <div class="d-flex align-items-center">
+                                <span class="mr-2">${instance_question.zone_title}</span>
+                                ${instance_question.zone_has_max_points
+                                  ? ZoneInfoPopover({
+                                      label: `Maximum ${instance_question.zone_max_points} points`,
+                                      content: `Of the points that you are awarded for answering these questions, at most ${instance_question.zone_max_points} will count toward your total points.`,
+                                    })
+                                  : ''}
+                                ${instance_question.zone_has_best_questions
+                                  ? ZoneInfoPopover({
+                                      label: `Best ${instance_question.zone_best_questions} questions`,
+                                      content: `Of these questions, only the ${instance_question.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
+                                    })
+                                  : ''}
+                              </div>
                             </th>
                           </tr>
                         `
@@ -666,23 +668,17 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
   `;
 }
 
-function ZoneInfoBadge({
-  popoverContent,
-  mainContent,
-}: {
-  popoverContent: string;
-  mainContent: string;
-}) {
+function ZoneInfoPopover({ label, content }: { label: string; content: string }) {
   return html`
     <button
       type="button"
-      class="btn btn-xs btn-secondary badge badge-secondary text-white font-weight-normal py-1"
+      class="btn btn-xs btn-secondary"
       data-toggle="popover"
       data-container="body"
       data-html="true"
-      data-content="${popoverContent}"
+      data-content="${content}"
     >
-      ${mainContent}&nbsp;<i class="far fa-question-circle" aria-hidden="true"></i>
+      ${label}&nbsp;<i class="far fa-question-circle" aria-hidden="true"></i>
     </button>
   `;
 }

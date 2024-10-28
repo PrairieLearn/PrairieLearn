@@ -584,7 +584,7 @@ export function InstructorAssessmentInstance({
                                   type="button"
                                   class="btn btn-xs color-${FINGERPRINT_COLORS[
                                     row.client_fingerprint_number % 6
-                                  ]} color-hover"
+                                  ]}"
                                   id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
                                   data-toggle="popover"
                                   data-container="body"
