@@ -1,6 +1,7 @@
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { queryOneRowAsync, queryAsync } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOneRowAsync } from '@prairielearn/postgres';
 
+const sql = loadSqlEquiv(import.meta.url);
 export default makeBatchedMigration({
   async getParameters() {
     const result = await queryOneRowAsync('SELECT MAX(id) as max from questions;', {});
@@ -12,17 +13,6 @@ export default makeBatchedMigration({
   },
 
   async execute(start: bigint, end: bigint): Promise<void> {
-    await queryAsync(
-      `
-      UPDATE questions AS q
-      SET
-        share_publicly = q.shared_publicly
-      FROM
-        questions AS q
-      WHERE
-        v.id >= $start AND
-        v.id <= $end`,
-      { start, end },
-    );
+    await queryAsync(sql.backfill_share_publicly, { start, end });
   },
 });
