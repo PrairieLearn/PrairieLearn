@@ -590,9 +590,9 @@ export async function renderPanelsForSubmission({
     variant.instance_question_id == null || assessment_instance == null
       ? null
       : await selectVariantsByInstanceQuestion({
-        assessment_instance_id: assessment_instance.id,
-        instance_question_id: variant.instance_question_id,
-      });
+          assessment_instance_id: assessment_instance.id,
+          instance_question_id: variant.instance_question_id,
+        });
 
   /** @type {SubmissionPanels} */
   const panels = {
