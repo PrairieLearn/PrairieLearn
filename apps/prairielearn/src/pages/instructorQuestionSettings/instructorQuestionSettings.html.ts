@@ -463,7 +463,7 @@ function AssessmentBadges({
     return html`
       <a
         href="/pl/course_instance/${assessmentsInCourseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}"
-        class="badge color-${assessment.color}"
+        class="btn btn-badge color-${assessment.color}"
       >
         ${assessment.label}
       </a>

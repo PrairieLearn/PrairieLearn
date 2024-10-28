@@ -4,7 +4,13 @@
 
 @import "../../../../node_modules/bootstrap/scss/mixins";
 
-// We reuse Bootstrap's `button-variant` mixin to generate appropriate hover styles.
+// We reuse Bootstrap's `button-variant` mixin to generate appropriate hover
+// styles. Crucially, this will ensure that appropriate color contrast is
+// maintained.
+//
+// As with normal buttons (see `local.css`), we also include an outline with
+// `:focus-visible` to ensure that the focus state has sufficient contrast,
+// no matter the background color on which the button is situated.
 //
 // Install `sass` with `npm install -g sass`.
 // Run `sass --sourcemap=none colors.scss colors.css` to compile this file.
@@ -42,17 +48,34 @@ $custom-colors: (
   "gray3": #505050,
 );
 
+.btn.btn-badge {
+  --bs-badge-padding-x: #{$badge-padding-x};
+  --bs-badge-padding-y: #{$badge-padding-y};
+  @include rfs($badge-font-size, --#{$prefix}badge-font-size);
+  --bs-badge-font-weight: #{$badge-font-weight};
+  --bs-badge-color: #{$badge-color};
+  --bs-badge-border-radius: #{$badge-border-radius};
+  padding: var(--bs-badge-padding-y) var(--bs-badge-padding-x);
+  font-size: var(--bs-badge-font-size);
+  font-weight: var(--bs-badge-font-weight);
+  line-height: 1;
+  border-radius: var(--bs-badge-border-radius);
+
+  // Ensures consistent sizing with badges, which don't have a border.
+  border: none;
+}
+
 @each $color, $value in $custom-colors {
   .color-#{$color} {
     color: color-contrast($value);
     background-color: $value;
   }
 
-  .color-#{$color}.color-hover {
+  .btn.color-#{$color} {
     @include button-variant($value, $value);
   }
   
-  .color-#{$color}.color-hover:focus:focus-visible {
+  .btn.color-#{$color}:focus:focus-visible {
     outline-style: solid !important;
     outline-color: var(--bs-btn-hover-color);
     outline-width: 2px !important;
