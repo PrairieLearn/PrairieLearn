@@ -264,10 +264,6 @@
       "description": "Whether this question is publicly shared.",
       "type": "boolean"
     },
-    "sharedPublicly": {
-      "description": "[DEPRECATED, DO NOT USE] Whether this question is publicly shared.",
-      "type": "boolean"
-    },
     "shareSourcePublicly": {
       "description": "Whether this questions's source code is publicly shared.",
       "type": "boolean"
