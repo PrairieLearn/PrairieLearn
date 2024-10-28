@@ -405,4 +405,27 @@ describe('Question syncing', () => {
     assert.isNull(newQuestionRow2?.deleted_at);
     assert.equal(newQuestionRow2?.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
+
+  it('sets manual grading percentage based on grading method', async () => {
+    const courseData = util.getCourseData();
+    await util.writeAndSyncCourseData(courseData);
+
+    const questions = await util.dumpTable('questions');
+    const internalGradingQuestion = questions.find((q) => q.qid === util.QUESTION_ID);
+    assert.equal(internalGradingQuestion?.grading_method, 'Internal');
+    assert.equal(internalGradingQuestion?.manual_perc, 0);
+    const externalGradingQuestion = questions.find(
+      (q) => q.qid === util.EXTERNAL_GRADING_QUESTION_ID,
+    );
+    assert.equal(externalGradingQuestion?.grading_method, 'External');
+    assert.equal(externalGradingQuestion?.manual_perc, 0);
+    const manualGradingQuestion = questions.find((q) => q.qid === util.MANUAL_GRADING_QUESTION_ID);
+    assert.equal(manualGradingQuestion?.grading_method, 'Manual');
+    assert.equal(manualGradingQuestion?.manual_perc, 100);
+    const partialManualGradingQuestion = questions.find(
+      (q) => q.qid === util.PARTIALLY_MANUAL_GRADING_QUESTION_ID,
+    );
+    assert.equal(partialManualGradingQuestion?.grading_method, 'Internal');
+    assert.equal(partialManualGradingQuestion?.manual_perc, 40);
+  });
 });
