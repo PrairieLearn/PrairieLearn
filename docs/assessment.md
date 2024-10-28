@@ -279,7 +279,9 @@ The choice of using `maxBonusPoints` or a `credit` value above 100 is based on i
 
 By default all assessments are _single instance_, meaning that each student has exactly one instance of the assessment that they can complete, and once they have completed that assessment instance then they cannot do the assessment again. This is the expected behavior for homeworks, quizzes, exams, etc.
 
-For practice exams it is often desirable to make a _multiple instance_ assessment by setting the option `"multipleInstance": true`. This will allow students to create new assessment instances and try the whole assessment repeatedly.
+For practice exams it is often desirable to make a _multiple instance_ assessment by setting the option `"multipleInstance": true`. This will allow students to create new assessment instances and try the whole assessment repeatedly. This setting may be used in cases where students are expected to get multiple attempts for the same assessments, either for no credit (i.e., for practice only), or where credit applies to the attempt with the highest overall score.
+
+Note that this setting is not suitable in scenarios where multiple attempts are created in different environments. For example, if students write an exam for credit, and are then allowed to re-attempt the same exam without credit for practice, or where the score used in the course is a weighted average of the attempts, then the multiple-instance option is not a valid approach. In such cases, a better option is a separate assessment (possibly with the same questions) for the original exam and for the practice version or re-attempt. The practice version itself may be suitable for multiple instances, but not the original exam.
 
 ## Enabling group work for collaborative assessments
 
