@@ -1,10 +1,8 @@
 {
     "uuid": "5b9d3721-0214-4b31-8a94-3bbe0326536a",
-    "title": "Scratchpad - pgadmin - postgress",
-    "topic": "others",
-    "tags": [
-        "workspace"
-    ],
+    "title": "Workspace demo: pgadmin",
+    "topic": "Workspace",
+    "tags": ["zacwarham", "echuber2", "gittu"],
     "type": "v3",
     "singleVariant": true,
     "showCorrectAnswer": false,

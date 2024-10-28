@@ -1,9 +1,39 @@
 <pl-question-panel>
   
-  <h3>Scratchpad - pgadmin</h3>
+  <h3>Details:</h3>
 
-  <p>This question has no weighting</p>
+  <p>This is a workspace question with an in-browser <a href="https://www.pgadmin.org/">pgadmin</a> instance. It is important to note that your work <strong>will not be autosaved.</strong></p>
 
-  <pl-workspace></pl-workspace>
+  <h3>Question:</h3>
+
+  <p>Inside of the workspace you will find the <code>foods.sql</code> file. Run it to create the table and answer the below question.</p>
+
+  <p>What five colours are represented the most in the <code>foods</code> table (in any order). You will need to write your own query to work this out.</p>
   
+  <pl-hidden-hints>
+    <pl-hint>
+      <pl-code language="sql" source-file-name="solution.sql"></pl-code>
+    </pl-hint>
+    <pl-hint>
+      Green, Red, Orange, Purple, and Yellow
+    </pl-hint>
+  </pl-hidden-hints>
 </pl-question-panel>
+
+<pl-order-blocks answers-name="top-colours">
+  <pl-answer correct="true">Green</pl-answer>
+  <pl-answer correct="true">Red</pl-answer>
+  <pl-answer correct="true">Orange</pl-answer>
+  <pl-answer correct="true">Purple</pl-answer>
+  <pl-answer correct="true">Yellow</pl-answer>
+  <pl-answer correct="false">Brown</pl-answer>
+  <pl-answer correct="false">White</pl-answer>
+  <pl-answer correct="false">Blue</pl-answer>
+  <pl-answer correct="false">Pink</pl-answer>
+  <pl-answer correct="false">Beige</pl-answer>
+  <pl-answer correct="false">Black</pl-answer>
+</pl-order-blocks>
+
+<br/>
+
+<pl-workspace></pl-workspace>
