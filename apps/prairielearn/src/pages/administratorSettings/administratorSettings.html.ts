@@ -134,6 +134,42 @@ export function AdministratorSettings({ resLocals }) {
               <div class="p-4 bg-dark">
                 <button type="button" class="btn btn-outline-light">Light</button>
               </div>
+              <h3>Custom colors</h3>
+              <div
+                class="mb-4"
+                style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;"
+              >
+                <button type="button" class="btn color-red1 color-hover">Red 1</button>
+                <button type="button" class="btn color-red2 color-hover">Red 2</button>
+                <button type="button" class="btn color-red3 color-hover">Red 3</button>
+                <button type="button" class="btn color-pink1 color-hover">Pink 1</button>
+                <button type="button" class="btn color-pink2 color-hover">Pink 2</button>
+                <button type="button" class="btn color-pink3 color-hover">Pink 3</button>
+                <button type="button" class="btn color-purple1 color-hover">Purple 1</button>
+                <button type="button" class="btn color-purple2 color-hover">Purple 2</button>
+                <button type="button" class="btn color-purple3 color-hover">Purple 3</button>
+                <button type="button" class="btn color-blue1 color-hover">Blue 1</button>
+                <button type="button" class="btn color-blue2 color-hover">Blue 2</button>
+                <button type="button" class="btn color-blue3 color-hover">Blue 3</button>
+                <button type="button" class="btn color-turquoise1 color-hover">Turquoise 1</button>
+                <button type="button" class="btn color-turquoise2 color-hover">Turquoise 2</button>
+                <button type="button" class="btn color-turquoise3 color-hover">Turquoise 3</button>
+                <button type="button" class="btn color-green1 color-hover">Green 1</button>
+                <button type="button" class="btn color-green2 color-hover">Green 2</button>
+                <button type="button" class="btn color-green3 color-hover">Green 3</button>
+                <button type="button" class="btn color-yellow1 color-hover">Yellow 1</button>
+                <button type="button" class="btn color-yellow2 color-hover">Yellow 2</button>
+                <button type="button" class="btn color-yellow3 color-hover">Yellow 3</button>
+                <button type="button" class="btn color-orange1 color-hover">Orange 1</button>
+                <button type="button" class="btn color-orange2 color-hover">Orange 2</button>
+                <button type="button" class="btn color-orange3 color-hover">Orange 3</button>
+                <button type="button" class="btn color-brown1 color-hover">Brown 1</button>
+                <button type="button" class="btn color-brown2 color-hover">Brown 2</button>
+                <button type="button" class="btn color-brown3 color-hover">Brown 3</button>
+                <button type="button" class="btn color-gray1 color-hover">Gray 1</button>
+                <button type="button" class="btn color-gray2 color-hover">Gray 2</button>
+                <button type="button" class="btn color-gray3 color-hover">Gray 3</button>
+              </div>
               <h3>Ghost button</h3>
               <p>
                 This is a custom button style that's meant to be used when we don't want the full
