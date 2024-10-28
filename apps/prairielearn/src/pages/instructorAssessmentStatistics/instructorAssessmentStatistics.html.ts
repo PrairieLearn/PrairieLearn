@@ -7,7 +7,7 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentInstanceSchema, AssessmentSchema, Assessment } from '../../lib/db-types.js';
+import { AssessmentInstanceSchema, AssessmentSchema, type Assessment } from '../../lib/db-types.js';
 
 export const DurationStatSchema = z.object({
   median_formatted: z.string(),

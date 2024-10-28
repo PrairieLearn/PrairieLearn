@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
-import { Job } from '../../../lib/db-types.js';
+import { type Job } from '../../../lib/db-types.js';
 
 export function InstructorAiGenerateJob({
   resLocals,

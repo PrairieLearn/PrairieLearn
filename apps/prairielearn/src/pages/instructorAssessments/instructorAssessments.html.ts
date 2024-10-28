@@ -13,7 +13,7 @@ import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
 
-import { StatsUpdateData } from './instructorAssessments.types.js';
+import { type StatsUpdateData } from './instructorAssessments.types.js';
 
 export const AssessmentStatsRowSchema = AssessmentSchema.extend({
   needs_statistics_update: z.boolean().optional(),
