@@ -434,7 +434,7 @@ export async function startTestQuestion(
   const serverJob = await createServerJob({
     courseId: course.id,
     userId: user_id,
-    authnUserId: String(authn_user_id),
+    authnUserId: authn_user_id,
     type: 'test_question',
     description: 'Test ' + question.qid,
   });
