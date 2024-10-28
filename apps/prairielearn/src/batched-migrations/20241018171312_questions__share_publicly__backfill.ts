@@ -2,6 +2,7 @@ import { makeBatchedMigration } from '@prairielearn/migrations';
 import { loadSqlEquiv, queryAsync, queryOneRowAsync } from '@prairielearn/postgres';
 
 const sql = loadSqlEquiv(import.meta.url);
+
 export default makeBatchedMigration({
   async getParameters() {
     const result = await queryOneRowAsync('SELECT MAX(id) as max from questions;', {});
