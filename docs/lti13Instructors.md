@@ -53,7 +53,7 @@ with a different PrairieLearn course instance.
 LTI 1.3 is under active development and beta testing.
 
 Our only currently supported Learning Management System is Canvas. Supporting
-additional learning systems will be supported after our first roll out with Canvas.
+additional learning systems will be explored after Canvas support comes out of beta.
 
 Sending grades is currently a manual operation for instructors. We will add the
 configurable ability for PrairieLearn to push grades continuously so Canvas is
