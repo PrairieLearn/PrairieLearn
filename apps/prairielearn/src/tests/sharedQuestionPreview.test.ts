@@ -63,7 +63,6 @@ describe('Shared Question Preview', function () {
         },
         z.string(),
       );
-      await sqldb.queryAsync(sql.update_shared_publicly, { question_id: testQuestion.id });
     }
   });
 
@@ -73,7 +72,7 @@ describe('Shared Question Preview', function () {
     await syncUtil.writeAndSyncCourseData(consumingCourseData);
   });
 
-  describe('Public Question Previews', function () {
+  describe('Public Question Previews', async function () {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
@@ -82,11 +81,32 @@ describe('Shared Question Preview', function () {
       isStudentPage: false,
     };
 
-    testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
+    describe('When questions are share_source_publicly but not shared_publicly', async function () {
+      before(
+        'Make sure question have share_source_publicly set but not shared_pubilcly',
+        async function () {
+          for (const testQuestion of testQuestions) {
+            await sqldb.queryAsync(sql.update_share_source_publicly, {
+              question_id: testQuestion.id,
+            });
+          }
+        },
+      );
+      testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
+      testFileDownloads(previewPageInfo, downloadFile, false);
+      testElementClientFiles(previewPageInfo, customElement);
+    });
 
-    testFileDownloads(previewPageInfo, downloadFile, false);
-
-    testElementClientFiles(previewPageInfo, customElement);
+    describe('When questions are shared_publicly', async function () {
+      before('Make sure question have shared_publicly set', async function () {
+        for (const testQuestion of testQuestions) {
+          await sqldb.queryAsync(sql.update_shared_publicly, { question_id: testQuestion.id });
+        }
+      });
+      testQuestionPreviews(previewPageInfo, addNumbers, addVectors);
+      testFileDownloads(previewPageInfo, downloadFile, false);
+      testElementClientFiles(previewPageInfo, customElement);
+    });
   });
 
   describe('Shared Question Previews Within a Course', function () {

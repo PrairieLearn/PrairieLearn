@@ -13,3 +13,11 @@ SET
   shared_publicly = true
 WHERE
   id = $question_id;
+
+-- BLOCK update_share_source_publicly
+UPDATE questions
+SET
+  share_source_publicly = true,
+  shared_publicly = false
+WHERE
+  id = $question_id;
