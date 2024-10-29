@@ -46,6 +46,22 @@ router.get(
     res.locals.assessment = await selectAssessmentById(res.locals.assessment_id);
     const questions = await selectAssessmentQuestions(res.locals.assessment_id, courseId);
 
+    // Filter out non-public assessments
+    let isOtherAssessmentPublic = {};
+    for (const question of questions) {
+      for (const assessment of question.other_assessments || []) {
+        isOtherAssessmentPublic[assessment.assessment_id] = false;
+      }
+    }
+    for (const id in isOtherAssessmentPublic) {
+      isOtherAssessmentPublic[id] = await checkAssessmentPublic(id);
+    }
+    for (const question of questions) {
+      question.other_assessments = question.other_assessments?.filter(
+        (assessment) => isOtherAssessmentPublic[assessment.assessment_id],
+      );
+    }
+
     res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions }));
   }),
 );
