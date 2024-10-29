@@ -11,6 +11,7 @@ This workspace provides a [pgadmin 4 8.10](https://www.pgadmin.org/docs/pgadmin4
 This image will log all queries made by the student inside the `/pgdata/log` directory of the container. This can be used to verify student work as needed. This is **not maintained across reboots**.
 
 #### Additional Notes
+
 - The `/database` directory will create the relevant database tables using either `.SQL` or `.dump` files. It is up to the end user to verify these are valid files.
 - Autosaving is **not enabled** in this workspace. Make sure this is clear for students using this.
 - No `postgresql` external grader is provided. You will need to create your own or build questions around the other autograders provided by the PrairieLearn team.
