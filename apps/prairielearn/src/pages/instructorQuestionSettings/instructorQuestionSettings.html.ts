@@ -11,7 +11,7 @@ import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
-import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
+import { AssessmentSchema, AssessmentSetSchema, IdSchema, type Topic } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
@@ -51,6 +51,7 @@ export function InstructorQuestionSettings({
   infoPath,
   origHash,
   canEdit,
+  courseTopics,
 }: {
   resLocals: Record<string, any>;
   questionTestPath: string;
@@ -64,6 +65,7 @@ export function InstructorQuestionSettings({
   infoPath: string;
   origHash: string;
   canEdit: boolean;
+  courseTopics: Topic[];
 }) {
   // Only show assessments on which this question is used when viewing the question
   // in the context of a course instance.
@@ -89,6 +91,10 @@ export function InstructorQuestionSettings({
             course: resLocals.course,
             urlPrefix: resLocals.urlPrefix,
           })}
+          <link
+            href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css"
+            rel="stylesheet"
+          />
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
               <h1>Question Settings</h1>
@@ -133,15 +139,33 @@ export function InstructorQuestionSettings({
                     slashes to separate directories.
                   </small>
                 </div>
-
-                <div class="table-responsive card mb-3">
+                <div class="table-responsive card mb-3 overflow-visible">
                   <table
                     class="table two-column-description"
                     aria-label="Question topic, tags, and assessments"
                   >
                     <tr>
-                      <th class="border-top-0">Topic</th>
-                      <td class="border-top-0">${TopicBadge(resLocals.topic)}</td>
+                      <th class="align-middle">
+                        <div>Topic</div>
+                      </th>
+                      <td>
+                        ${canEdit
+                          ? html` <select
+                              id="topic"
+                              name="topic"
+                              data-selected-topic="${resLocals.topic.name}"
+                            >
+                              ${courseTopics.map((topic) => {
+                                return html` <option
+                                  value="${topic.name}"
+                                  data-color="${topic.color}"
+                                  data-name="${topic.name}"
+                                  data-description="${topic.description}"
+                                ></option>`;
+                              })}
+                            </select>`
+                          : TopicBadge(resLocals.topic)}
+                      </td>
                     </tr>
                     <tr>
                       <th>Tags</th>

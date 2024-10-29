@@ -14,7 +14,7 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { IdSchema, TopicSchema } from '../../lib/db-types.js';
 import {
   FileModifyEditor,
   QuestionRenameEditor,
@@ -112,6 +112,7 @@ router.post(
 
       const origHash = req.body.orig_hash;
       questionInfo.title = req.body.title;
+      questionInfo.topic = req.body.topic;
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
@@ -253,6 +254,13 @@ router.get(
       { question_id: res.locals.question.id },
       SelectedAssessmentsSchema,
     );
+
+    const courseTopics = await sqldb.queryRows(
+      sql.select_topics_by_course_id,
+      { course_id: res.locals.course.id },
+      TopicSchema,
+    );
+
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
     let sharingSetsIn;
@@ -298,6 +306,7 @@ router.get(
         infoPath,
         origHash,
         canEdit,
+        courseTopics,
       }),
     );
   }),

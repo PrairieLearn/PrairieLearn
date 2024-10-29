@@ -1,7 +1,15 @@
+import TomSelect from 'tom-select';
+
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 import './lib/changeIdButton.js';
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
+
+interface TopicData {
+  name: string;
+  description: string;
+  color: string;
+}
 
 onDocumentReady(() => {
   const qidField = document.querySelector('input[name="qid"]') as HTMLInputElement;
@@ -10,6 +18,45 @@ onDocumentReady(() => {
     'form[name="edit-question-settings-form"]',
   );
   const saveButton = document.querySelector<HTMLButtonElement>('#save-button');
+
+  new TomSelect('#topic', {
+    valueField: 'name',
+    searchField: ['name'],
+    closeAfterSelect: true,
+    items: [(document.querySelector('#topic') as HTMLSelectElement).dataset.selectedTopic],
+    plugins: ['dropdown_input'],
+    maxItems: 1,
+    placeholder: 'Select a topic',
+    render: {
+      option(data: TopicData, escape: (input: string) => string) {
+        return (
+          '<div>' +
+          '<div class="d-flex">' +
+          '<span class="badge justify-content-start color-' +
+          escape(data.color) +
+          ' mx-1">' +
+          escape(data.name) +
+          '</span>' +
+          '</div>' +
+          '<div class="w-100 d-flex">' +
+          '<small class="text-muted justify-content-start text-start">' +
+          escape(data.description) +
+          '</small>' +
+          '</div>' +
+          '</div>'
+        );
+      },
+      item(data: TopicData, escape: (input: string) => string) {
+        return (
+          '<div class="btn btn-ghost badge color-' +
+          escape(data.color) +
+          '">' +
+          escape(data.name) +
+          '</div>'
+        );
+      },
+    },
+  });
 
   function validateId() {
     const newValue = qidField.value;
