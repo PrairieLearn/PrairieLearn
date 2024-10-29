@@ -37,12 +37,12 @@ router.get(
     const isAssessmentPublic = await checkAssessmentPublic(res.locals.assessment_id);
     const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
     const course = await selectCourseById(courseId);
-    res.locals.course = course;
 
     if (!isAssessmentPublic) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
 
+    res.locals.course = course;
     res.locals.assessment = await selectAssessmentById(res.locals.assessment_id);
     const questions = await selectAssessmentQuestions(res.locals.assessment_id, courseId);
 
