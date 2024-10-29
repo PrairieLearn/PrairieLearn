@@ -54,7 +54,7 @@ describe('Shared Question Preview', function () {
     await features.enable('question-sharing');
   });
 
-  before('Get question IDs from database', async function () {
+  before('Get question IDs from database', async () => {
     for (const testQuestion of testQuestions) {
       testQuestion.id = await sqldb.queryRow(
         sql.select_question_id,
@@ -72,7 +72,7 @@ describe('Shared Question Preview', function () {
     await syncUtil.writeAndSyncCourseData(consumingCourseData);
   });
 
-  describe('Public Question Previews', async function () {
+  describe('Public Question Previews', () => {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
@@ -81,10 +81,10 @@ describe('Shared Question Preview', function () {
       isStudentPage: false,
     };
 
-    describe('When questions are share_source_publicly but not shared_publicly', async function () {
+    describe('When questions are share_source_publicly but not shared_publicly', () => {
       before(
-        'Make sure question have share_source_publicly set but not shared_pubilcly',
-        async function () {
+        'Make sure questions have share_source_publicly set but not shared_publicly',
+        async () => {
           for (const testQuestion of testQuestions) {
             await sqldb.queryAsync(sql.update_share_source_publicly, {
               question_id: testQuestion.id,
@@ -97,8 +97,8 @@ describe('Shared Question Preview', function () {
       testElementClientFiles(previewPageInfo, customElement);
     });
 
-    describe('When questions are shared_publicly', async function () {
-      before('Make sure question have shared_publicly set', async function () {
+    describe('When questions are shared_publicly', () => {
+      before('Make sure questions have shared_publicly set', async () => {
         for (const testQuestion of testQuestions) {
           await sqldb.queryAsync(sql.update_shared_publicly, { question_id: testQuestion.id });
         }
@@ -109,7 +109,7 @@ describe('Shared Question Preview', function () {
     });
   });
 
-  describe('Shared Question Previews Within a Course', function () {
+  describe('Shared Question Previews Within a Course', () => {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
@@ -125,7 +125,7 @@ describe('Shared Question Preview', function () {
     testElementClientFiles(previewPageInfo, customElement);
   });
 
-  describe('Shared Question Previews Within a Course Instance', function () {
+  describe('Shared Question Previews Within a Course Instance', () => {
     const previewPageInfo = {
       siteUrl,
       baseUrl,
