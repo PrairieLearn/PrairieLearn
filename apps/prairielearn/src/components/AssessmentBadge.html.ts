@@ -20,9 +20,7 @@ export function AssessmentBadge({
   | { urlPrefix?: undefined; plainUrlPrefix: string; course_instance_id: string }
 )) {
   if (hideLink) {
-    return html`
-      <span class="badge color-${assessment.color} color-hover">${assessment.label}</span>
-    `;
+    return html`<span class="badge color-${assessment.color}">${assessment.label}</span>`;
   }
   if (publicURL) {
     // For public assessments, the URL prefix is different
