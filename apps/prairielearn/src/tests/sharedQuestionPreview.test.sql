@@ -7,9 +7,9 @@ WHERE
   qid = $qid
   AND course_id = 1;
 
--- BLOCK update_shared_publicly
+-- BLOCK update_share_publicly
 UPDATE questions
 SET
-  shared_publicly = true
+  share_publicly = true
 WHERE
   id = $question_id;

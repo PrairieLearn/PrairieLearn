@@ -36,7 +36,7 @@ SELECT
     WHERE
       qt.question_id = q.id
   ) AS tags,
-  q.shared_publicly,
+  q.share_publicly,
   q.share_source_publicly,
   (
     SELECT
@@ -83,7 +83,7 @@ SELECT
     WHERE
       qt.question_id = q.id
   ) AS tags,
-  q.shared_publicly,
+  q.share_publicly,
   q.share_source_publicly
 FROM
   questions AS q
@@ -92,7 +92,7 @@ WHERE
   q.course_id = $course_id
   AND q.deleted_at IS NULL
   AND (
-    q.shared_publicly
+    q.share_publicly
     OR q.share_source_publicly
   )
 GROUP BY
