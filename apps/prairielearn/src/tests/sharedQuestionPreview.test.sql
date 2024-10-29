@@ -10,7 +10,8 @@ WHERE
 -- BLOCK update_shared_publicly
 UPDATE questions
 SET
-  shared_publicly = true
+  shared_publicly = true,
+  share_source_publicly = false
 WHERE
   id = $question_id;
 
