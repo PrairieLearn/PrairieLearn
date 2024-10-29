@@ -22,7 +22,7 @@ done
 
 # Install dependencies and various libraries
 apt-get update && apt-get -y upgrade
-apt-get -y install gosu gcc graphviz graphviz-dev
+apt-get -y install gosu # gcc graphviz graphviz-dev - shouldn't be needed for posgtres
 
 # Prepare the gosu helper.
 mv /pl-gosu-helper.sh /usr/local/bin/

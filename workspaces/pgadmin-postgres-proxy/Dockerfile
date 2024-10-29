@@ -17,8 +17,8 @@ RUN apt-get update \
   && DEBIAN_FRONTEND=noninteractive apt-get -yq install postgresql postgresql-contrib \
   && rm -rf /var/lib/apt/lists/* \
   && python3 -m pip install --upgrade pip \
-  && python3 -m pip install sqlparse psycopg2\
-  && python3 -m pip install rstr \
+  && python3 -m pip install sqlparse psycopg2 \
+  # && python3 -m pip install rstr \
   && python3 -m pip install pgadmin4==8.10 \
   && mkdir /sql-scripts \
   && mkdir -p /var/run/postgresql && chown -R postgres:postgres /var/run/postgresql \
