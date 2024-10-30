@@ -38,9 +38,12 @@ RUN apt-get update && \
     rm -rf /var/lib/apt/lists/* && \
     find /tmp -not -path /tmp -delete
 
-# Make sure to build using bash as the shell so that conda/mamba hooks will
-# work during installation.
-SHELL ["/bin/bash", "-c"]
+# Run the rest of the build commands in a bash shell in login mode so that
+# conda/mamba shell hooks will work. This also allows images derived from
+# this one to add "RUN pip install" commands without trouble. To complete
+# this setup, we also must run mamba init with --system after mamba is
+# installed, as a separate step below.
+SHELL ["/bin/bash", "-lc"]
 
 # Install Python and required packages via miniconda.
 # This is a prerequisite for the VS Code extensions in the following steps.
@@ -65,6 +68,13 @@ RUN export arch=`uname -m` \
  && rm "Miniforge3-Linux-${arch}.sh" \
  && mamba clean --all --yes --quiet \
  && pip cache purge
+
+# Also add mamba init to /etc/profile.d/ so that noninteractive login shells
+# can use "pip install" (e.g. during additional Docker RUN commands). This is
+# somewhat redundant in light of the "init bash" already performed above, but
+# the normal bash hook will only activate for interactive shells.
+USER 0
+RUN /home/coder/conda/bin/mamba init --system
 
 # Install VS Code extensions and clear the extension cache to reduce image size.
 # We have first installed Python in the previous step, as specified in the
