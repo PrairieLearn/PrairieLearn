@@ -88,6 +88,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
   private started = false;
   private finished = false;
   public output = '';
+  private lastSent = Date.now();
 
   constructor(jobSequenceId: string, jobId: string) {
     this.jobSequenceId = jobSequenceId;
@@ -214,19 +215,25 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     }
   }
 
-  private addToOutput(msg: string) {
+  private addToOutput(msg: string, forceAdd = false) {
     this.output += msg;
-    const ansiUp = new AnsiUp();
-    const ansifiedOutput = ansiUp.ansi_to_html(this.output);
-    socketServer.io
-      ?.to('job-' + this.jobId)
-      .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
+    if (Date.now() - this.lastSent > 1000 || forceAdd) {
+      const ansiUp = new AnsiUp();
+      const ansifiedOutput = ansiUp.ansi_to_html(this.output);
+      socketServer.io
+        ?.to('job-' + this.jobId)
+        .emit('change:output', { job_id: this.jobId, output: ansifiedOutput });
+      this.lastSent = Date.now();
+    }
   }
 
   private async finish(err: any = undefined) {
     // Guard against handling job finish more than once.
     if (this.finished) return;
     this.finished = true;
+
+    // Force a send on the current output to ensure all messages are shown.
+    this.addToOutput('', true);
 
     // A `ServerJobAbortError` is thrown by the `fail` method. We won't print
     // any details about the error object itself, as `fail` will have already
