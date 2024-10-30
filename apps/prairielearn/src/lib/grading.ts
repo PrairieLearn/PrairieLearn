@@ -53,7 +53,7 @@ const VariantForSubmissionSchema = VariantSchema.extend({
 type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
   Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id'> & {
     submitted_answer: NonNullable<Submission['submitted_answer']>;
-    user_id: string | null;
+    user_id: string;
   };
 
 export async function insertSubmission({
