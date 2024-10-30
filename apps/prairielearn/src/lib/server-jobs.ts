@@ -97,7 +97,6 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
 
   fail(msg: string): never {
     this.error(msg);
-    this.addToOutput('', true);
     throw new ServerJobAbortError(msg);
   }
 
