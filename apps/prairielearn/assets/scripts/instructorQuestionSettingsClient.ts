@@ -27,6 +27,7 @@ onDocumentReady(() => {
     plugins: ['dropdown_input'],
     maxItems: 1,
     placeholder: 'Select a topic',
+    constrolInput: '<div><input /><i class="fas fa-pencil"></i><div>',
     render: {
       option(data: TopicData, escape: (input: string) => string) {
         return (
@@ -34,7 +35,7 @@ onDocumentReady(() => {
           '<div class="d-flex">' +
           '<span class="badge justify-content-start color-' +
           escape(data.color) +
-          ' mx-1">' +
+          '">' +
           escape(data.name) +
           '</span>' +
           '</div>' +
