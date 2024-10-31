@@ -215,9 +215,13 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     }
   }
 
-  private addToOutput(msg: string, forceAdd = false) {
+  private addToOutput(msg: string) {
     this.output += msg;
-    if (Date.now() - this.lastSent > 1000 || forceAdd) {
+    this.flush();
+  }
+
+  private flush(force = false) {
+    if (Date.now() - this.lastSent > 1000 || force) {
       const ansiUp = new AnsiUp();
       const ansifiedOutput = ansiUp.ansi_to_html(this.output);
       socketServer.io
@@ -233,7 +237,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     this.finished = true;
 
     // Force a send on the current output to ensure all messages are shown.
-    this.addToOutput('', true);
+    this.flush(true);
 
     // A `ServerJobAbortError` is thrown by the `fail` method. We won't print
     // any details about the error object itself, as `fail` will have already
