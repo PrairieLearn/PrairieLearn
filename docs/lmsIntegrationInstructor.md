@@ -1,7 +1,7 @@
 # LMS integration for instructors
 
 PrairieLearn currently has "Public Preview" support for integration with Learning
-Management Systems, starting with Canvas. General Availability of Canvas integration
+Management Systems, starting with Canvas. General availability of Canvas integration
 support as well as support for other LMS platforms will be coming in the future.
 
 ## Setting up your Canvas course for PrairieLearn
@@ -48,24 +48,3 @@ To send grades you first need to link the PrairieLearn assessment with a Canvas 
 You can unlink a single PrairieLearn assessment from Canvas. This can be helpful if you want to link it to a different Canvas assignment. Unlinking does not change any grades in Canvas or PrairieLearn.
 
 To do this, go to your course instance in PrairieLearn, then the "LTI 1.3" tab. For the assessment you want to unlink, select the dropdown arrow on the right of the "Send grades" button and select "Unlink assignment".
-
-### Linking assessments and sending grades
-
-To be able to push grades from PrairieLearn to Canvas, you need to link the PrairieLearn
-assessment with a Canvas assignment. You can either use PrairieLearn to create a new
-assignment in Canvas based off the PrairieLearn assessment, or you can poll Canvas for
-assignments available to PrairieLearn and pick from pre-existing assignments.
-
-PrairieLearn can only see assignments in Canvas that are associated with PrairieLearn.
-To do this in Canvas, edit the assignment Submission Type to "External Tool" and set
-the External Tool URL to the students' link to the assessment. (You can get this URL
-from the assessment instructor settings page.)
-
-When a PrairieLearn assessment is linked with a Canvas assignment, you will see a
-"Send Grades" button. Use this button to manually push grades to Canvas.
-
-### Removing the connection to Canvas
-
-You can remove PrairieLearn's connection with that Canvas course from the LTI 1.3
-instructor page. This is useful if you want to start over or link the Canvas course
-with a different PrairieLearn course instance.
