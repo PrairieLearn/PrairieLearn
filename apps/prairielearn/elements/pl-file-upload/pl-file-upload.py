@@ -206,7 +206,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     wildcard_files = set(
         match_regex_with_files(file_regex, remaining_files, limit_1=True)[0]
     )
-    remaining_files = [x for x in remaining_files if x not in file_names]
+    remaining_files = [x for x in remaining_files if x not in wildcard_files]
     optional_files = set(submitted_file_names) & set(opt_file_names)
     opt_wildcard_files = set(
         match_regex_with_files(opt_file_regex, submitted_file_names, limit_1=False)[0]
