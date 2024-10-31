@@ -391,7 +391,7 @@ The `file-patterns` and `optional-file-patterns` attributes support a number of 
   brackets. For example, `file_[abc].txt` allows "file_a.txt", "file_b.txt" and "file_c.txt", but not
   "file_x.txt".
 - The `[seq]` placeholder also supports ranges like "a-z" or "0-9". For example, `file_[0-9].txt`
-  allows "file_5.txt", but not "file_x.txt", while `file*[a-z].txt`allows the "file_x.txt" and 
+  allows "file_5.txt", but not "file_x.txt", while `file*[a-z].txt`allows the "file_x.txt" and
   not "file_5.txt". Ranges can also be combined. For example,`file\_[0-9a-z]` allows any alphanumeric
   character.
 
