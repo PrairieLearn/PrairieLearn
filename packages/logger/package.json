@@ -19,7 +19,7 @@
   },
   "dependencies": {
     "logform": "^2.6.1",
-    "winston": "^3.15.0",
+    "winston": "^3.16.0",
     "zod": "^3.23.8"
   }
 }
