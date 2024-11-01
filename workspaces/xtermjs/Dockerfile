@@ -1,4 +1,4 @@
-FROM node:22-bookworm
+FROM node:23-bookworm
 
 RUN apt-get update && apt-get upgrade -y
 RUN apt-get install -y emacs-nox vim tmux
