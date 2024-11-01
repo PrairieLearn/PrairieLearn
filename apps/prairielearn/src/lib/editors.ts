@@ -1261,6 +1261,89 @@ export class QuestionTransferEditor extends Editor {
   }
 }
 
+export class AssessmentTransferEditor extends Editor {
+  private from_aid: string;
+  private from_course_short_name: string;
+  private from_path: string;
+
+  public readonly uuid: string;
+
+  constructor(
+    params: BaseEditorOptions & {
+      from_aid: string;
+      from_course_short_name: string;
+      from_path: string;
+    },
+  ) {
+    super(params);
+
+    this.from_aid = params.from_aid;
+    this.from_course_short_name = params.from_course_short_name;
+    this.from_path = params.from_path;
+    this.description = `Copy assessment ${this.from_aid} from course ${this.from_course_short_name}`;
+
+    this.uuid = uuidv4();
+  }
+
+  async write() {
+    debug('AssessmentTransferEditor: write()');
+    const assessmentsPath = path.join(this.course.path, 'assessments');
+
+    debug('Get title of assessment that is being copied');
+    const sourceInfoJson = await fs.readJson(path.join(this.from_path, 'info.json'));
+    const from_title = sourceInfoJson.title || 'Empty Title';
+
+    debug('Get all existing long names');
+    const result = await sqldb.queryAsync(sql.select_assessments_with_course, {
+      course_id: this.course.id,
+    });
+    const oldNamesLong = _.map(result.rows, 'title');
+
+    debug('Get all existing short names');
+    const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'info.json');
+
+    debug('Generate aid and title');
+    let aid = this.from_aid;
+    let assessmentTitle = from_title;
+    if (oldNamesShort.includes(this.from_aid) || oldNamesLong.includes(from_title)) {
+      const names = this.getNamesForCopy(this.from_aid, oldNamesShort, from_title, oldNamesLong);
+      aid = names.shortName;
+      assessmentTitle = names.longName;
+    }
+    const assessmentPath = path.join(assessmentsPath, aid);
+
+    const fromPath = this.from_path;
+    const toPath = assessmentPath;
+    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+
+    debug('Read info.json');
+    const infoJson = await fs.readJson(path.join(assessmentPath, 'info.json'));
+
+    debug('Write info.json with new title and uuid');
+    infoJson.title = assessmentTitle;
+    infoJson.uuid = this.uuid;
+
+    // When transferring an assessment from an example/template course, drop the tags. They
+    // are likely undesirable in the template course.
+    if (this.course.example_course || this.course.template_course) {
+      delete infoJson.tags;
+    }
+
+    // We do not want to preserve sharing settings when copying an assessment to another course
+    delete infoJson['sharingSets'];
+    delete infoJson['sharePublicly'];
+    delete infoJson['sharedPublicly'];
+    delete infoJson['shareSourcePublicly'];
+    await fs.writeJson(path.join(assessmentPath, 'info.json'), infoJson, { spaces: 4 });
+
+    return {
+      pathsToAdd: [assessmentPath],
+      commitMessage: `copy assessment ${this.from_aid} (from course ${this.from_course_short_name}) to ${aid}`,
+    };
+  }
+}
+
 export class FileDeleteEditor extends Editor {
   private container: { rootPath: string; invalidRootPaths: string[] };
   private deletePath: string;
