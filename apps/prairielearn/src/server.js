@@ -379,7 +379,7 @@ export async function initExpress() {
       // response before replying with an error 500
       if (res && !res.headersSent) {
         res
-          .status?.(/** @type {any} */(err).status ?? 500)
+          .status?.(/** @type {any} */ (err).status ?? 500)
           ?.send?.('Error proxying workspace request');
       }
     },
