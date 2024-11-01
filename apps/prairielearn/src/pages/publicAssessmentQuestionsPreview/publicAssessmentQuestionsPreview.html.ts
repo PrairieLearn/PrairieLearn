@@ -38,6 +38,7 @@ export function InstructorAssessmentQuestions({
               urlPrefix: resLocals.urlPrefix,
               course_id: resLocals.course.id,
               course_instance_id: resLocals.assessment.course_instance_id,
+              course_sharing_name: resLocals.course.sharing_name,
             })}
           </div>
         </main>
@@ -50,11 +51,13 @@ function AssessmentQuestionsTable({
   urlPrefix,
   course_id,
   course_instance_id,
+  course_sharing_name,
 }: {
   questions: AssessmentQuestionRow[];
   urlPrefix: string;
   course_id: string;
   course_instance_id: string;
+  course_sharing_name: string;
 }) {
   const nTableCols = 4;
 
@@ -122,7 +125,7 @@ function AssessmentQuestionsTable({
                     ${question.title}
                   </a>
                 </td>
-                <td>${question.display_name}</td>
+                <td>${`@${course_sharing_name}/${question.display_name}`}</td>
                 <td>${TopicBadge(question.topic)}</td>
                 <td>${TagBadgeList(question.tags)}</td>
                 <td>
