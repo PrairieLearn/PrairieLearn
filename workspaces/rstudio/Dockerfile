@@ -62,6 +62,7 @@ RUN export OLD_UID=$(id -u rstudio) && \
 USER 0
 RUN apt-get update && \
     # Run 'unminimize' to add docs
+    apt-get install -y man-db unminimize && \
     yes | unminimize && \
     apt-get install -y --no-install-recommends \
     # Reverse proxy workaround for PrairieLearn:
@@ -70,7 +71,7 @@ RUN apt-get update && \
     gosu \
     fonts-dejavu \
     # Utilities for convenience debugging this container:
-    less htop vim nano silversearcher-ag zip unzip git cmake curl wget sqlite3 man-db && \
+    less htop vim nano silversearcher-ag zip unzip git cmake curl wget sqlite3 && \
     # Test:
     gosu nobody true && \
     # Cleanup:
