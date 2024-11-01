@@ -44,7 +44,7 @@
 # However, you could use the Rocker base images in that case.
 # Their site has more documentation.
 
-FROM rocker/rstudio:4.4.1
+FROM rocker/rstudio:4.4.2
 
 # On PL, we need to use 1001:1001 for the default user account. We adjust the
 # pre-existing rstudio user which is typically uid 1000 otherwise.
