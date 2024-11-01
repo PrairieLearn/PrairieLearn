@@ -63,7 +63,7 @@ describe('Shared Question Preview', function () {
         },
         z.string(),
       );
-      await sqldb.queryAsync(sql.update_shared_publicly, { question_id: testQuestion.id });
+      await sqldb.queryAsync(sql.update_share_publicly, { question_id: testQuestion.id });
     }
   });
 
