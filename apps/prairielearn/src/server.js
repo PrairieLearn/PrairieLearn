@@ -379,7 +379,7 @@ export async function initExpress() {
       // response before replying with an error 500
       if (res && !res.headersSent) {
         res
-          .status?.(/** @type {any} */ (err).status ?? 500)
+          .status?.(/** @type {any} */(err).status ?? 500)
           ?.send?.('Error proxying workspace request');
       }
     },
@@ -1560,6 +1560,7 @@ export async function initExpress() {
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)', [
     (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+    (await import('./middlewares/selectAssessmentInstanceId.js')).default,
     (await import('./middlewares/studentAssessmentAccess.js')).default,
     (await import('./middlewares/logPageView.js')).default('studentAssessment'),
     (await import('./pages/studentAssessment/studentAssessment.js')).default,
