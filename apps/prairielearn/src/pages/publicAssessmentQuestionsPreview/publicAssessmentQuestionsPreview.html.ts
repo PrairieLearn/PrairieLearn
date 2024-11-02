@@ -10,10 +10,8 @@ import { type AssessmentQuestionRow } from '../../models/questions.js';
 
 
 function CopyAssessmentModal({ resLocals }: { resLocals: Record<string, any> }) {
-  const { assessment_copy_targets, assessment, course } = resLocals;
-  console.log('assessment_copy_targets', assessment_copy_targets); // TEST
+  const { assessment_copy_targets, assessment, course_instance } = resLocals;
   if (assessment_copy_targets == null) return '';
-  console.log('after null check, CONGRATS!'); // TEST
   return Modal({
     id: 'copyAssessmentModal',
     title: 'Copy assessment',
@@ -32,16 +30,16 @@ function CopyAssessmentModal({ resLocals }: { resLocals: Record<string, any> }) 
               This assessment can be copied to any course for which you have editor permissions.
               Select one of your courses to copy this assessment.
             </p>
-            <select class="custom-select" name="to_course_id" required>
+            <select class="custom-select" name="to_course_instance_id" required>
               ${assessment_copy_targets.map(
-                (course, index) => html`
+                (course_instance, index) => html`
                   <option
-                    value="${course.id}"
-                    data-csrf-token="${course.__csrf_token}"
-                    data-copy-url="${course.copy_url}"
+                    value="${course_instance.id}"
+                    data-csrf-token="${course_instance.__csrf_token}"
+                    data-copy-url="${course_instance.copy_url}"
                     ${index === 0 ? 'selected' : ''}
                   >
-                    ${course.short_name}
+                    ${course_instance.short_name}
                   </option>
                 `,
               )}
@@ -54,7 +52,7 @@ function CopyAssessmentModal({ resLocals }: { resLocals: Record<string, any> }) 
         value="${assessment_copy_targets[0]?.__csrf_token ?? ''}"
       />
       <input type="hidden" name="assessment_id" value="${assessment.id}" />
-      <input type="hidden" name="course_id" value="${course.id}" />
+      <input type="hidden" name="course_instance_id" value="${course_instance.id}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
       ${assessment_copy_targets?.length > 0
         ? html`

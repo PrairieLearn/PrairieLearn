@@ -7,6 +7,7 @@ import { queryRow, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { type Assessment, AssessmentSchema } from '../../lib/db-types.js';
 import { selectCourseById, selectCourseIdByInstanceId } from '../../models/course.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { selectAssessmentQuestions } from '../../models/questions.js';
 
 import { InstructorAssessmentQuestions } from './publicAssessmentQuestionsPreview.html.js';
@@ -44,6 +45,7 @@ router.get(
     }
 
     res.locals.course = course;
+    res.locals.course_instance = await selectCourseInstanceById(res.locals.course_instance_id);
     res.locals.assessment = await selectAssessmentById(res.locals.assessment_id);
     const questions = await selectAssessmentQuestions(res.locals.assessment_id, courseId);
 

@@ -1784,6 +1784,11 @@ export async function initExpress() {
     (await import('./pages/instructorFileTransfer/instructorFileTransfer.js')).default,
   ]);
 
+  // TEST for transfering files to a course instance
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/file_transfer', [
+    (await import('./pages/instructorFileTransferToCourseInstance/instructorFileTransferToCourseInstance.js')).default,
+  ]);
+
   app.use(
     '/pl/course/:course_id(\\d+)/edit_error',
     (await import('./pages/editError/editError.js')).default,
@@ -1931,6 +1936,12 @@ export async function initExpress() {
   app.use(
     '/pl/course/:course_id(\\d+)/copy_public_question',
     (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
+  );
+
+  // Also not a page, like above. This one is used to initiate the transfer of an assessment
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/copy_public_assessment',
+    (await import('./pages/instructorCopyPublicAssessment/instructorCopyPublicAssessment.js')).default,
   );
 
   // Global client files
