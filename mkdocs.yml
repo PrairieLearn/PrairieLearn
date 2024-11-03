@@ -61,6 +61,7 @@ nav:
       - 'What to tell students': 'whatToTellStudents.md'
       - 'FAQ': 'faq.md'
       - 'API': 'api.md'
+      - 'LMS Integration': 'lmsIntegrationInstructor.md'
   - Developer Guide:
       - 'Developer guide': 'dev-guide.md'
       - 'Running in Docker with local source': 'installingLocal.md'

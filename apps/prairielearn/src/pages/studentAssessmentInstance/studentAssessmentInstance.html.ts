@@ -16,7 +16,7 @@ import {
   ExamQuestionAvailablePoints,
   ExamQuestionStatus,
   InstanceQuestionPoints,
-  QuestionAwardedPoints,
+  QuestionVariantHistory,
 } from '../../components/QuestionScore.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.html.js';
@@ -248,19 +248,21 @@ export function StudentAssessmentInstance({
                       ? html`
                           <tr>
                             <th colspan="${zoneTitleColspan}">
-                              <span class="mr-1">${instance_question.zone_title}</span>
-                              ${instance_question.zone_has_max_points
-                                ? ZoneInfoBadge({
-                                    popoverContent: `Of the points that you are awarded for answering these questions, at most ${instance_question.zone_max_points} will count toward your total points.`,
-                                    mainContent: `Maximum ${instance_question.zone_max_points} points`,
-                                  })
-                                : ''}
-                              ${instance_question.zone_has_best_questions
-                                ? ZoneInfoBadge({
-                                    popoverContent: `Of these questions, only the ${instance_question.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
-                                    mainContent: `Best ${instance_question.zone_best_questions} questions`,
-                                  })
-                                : ''}
+                              <div class="d-flex align-items-center">
+                                <span class="mr-2">${instance_question.zone_title}</span>
+                                ${instance_question.zone_has_max_points
+                                  ? ZoneInfoPopover({
+                                      label: `Maximum ${instance_question.zone_max_points} points`,
+                                      content: `Of the points that you are awarded for answering these questions, at most ${instance_question.zone_max_points} will count toward your total points.`,
+                                    })
+                                  : ''}
+                                ${instance_question.zone_has_best_questions
+                                  ? ZoneInfoPopover({
+                                      label: `Best ${instance_question.zone_best_questions} questions`,
+                                      content: `Of these questions, only the ${instance_question.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
+                                    })
+                                  : ''}
+                              </div>
                             </th>
                           </tr>
                         `
@@ -363,12 +365,22 @@ export function StudentAssessmentInstance({
                             ${resLocals.has_auto_grading_question
                               ? html`
                                   <td class="text-center">
-                                    <span class="badge badge-primary">
-                                      ${formatPoints(instance_question.current_value)}
-                                    </span>
+                                    ${run(() => {
+                                      if (!instance_question.max_auto_points) return html`&mdash;`;
+
+                                      // Compute the current "auto" value by subtracting the manual points.
+                                      // We use this because `current_value` doesn't account for manual points.
+                                      // We don't want to mislead the student into thinking that they can earn
+                                      // more points than they actually can.
+                                      const currentAutoValue =
+                                        (instance_question.current_value ?? 0) -
+                                        (instance_question.max_manual_points ?? 0);
+
+                                      return formatPoints(currentAutoValue);
+                                    })}
                                   </td>
                                   <td class="text-center">
-                                    ${QuestionAwardedPoints({
+                                    ${QuestionVariantHistory({
                                       urlPrefix: resLocals.urlPrefix,
                                       instanceQuestionId: instance_question.id,
                                       previousVariants: instance_question.previous_variants,
@@ -656,23 +668,17 @@ function InstanceQuestionTableHeader({ resLocals }: { resLocals: Record<string, 
   `;
 }
 
-function ZoneInfoBadge({
-  popoverContent,
-  mainContent,
-}: {
-  popoverContent: string;
-  mainContent: string;
-}) {
+function ZoneInfoPopover({ label, content }: { label: string; content: string }) {
   return html`
     <button
       type="button"
-      class="btn btn-xs btn-secondary badge badge-secondary text-white font-weight-normal py-1"
+      class="btn btn-xs btn-secondary"
       data-toggle="popover"
       data-container="body"
       data-html="true"
-      data-content="${popoverContent}"
+      data-content="${content}"
     >
-      ${mainContent}&nbsp;<i class="far fa-question-circle" aria-hidden="true"></i>
+      ${label}&nbsp;<i class="far fa-question-circle" aria-hidden="true"></i>
     </button>
   `;
 }
