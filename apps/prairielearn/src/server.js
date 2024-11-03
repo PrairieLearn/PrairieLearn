@@ -182,6 +182,7 @@ export async function initExpress() {
     } else {
       res.locals.userAgent = null;
     }
+    res.locals.is_iframe = req.headers['sec-fetch-dest'] === 'iframe';
     next();
   });
 

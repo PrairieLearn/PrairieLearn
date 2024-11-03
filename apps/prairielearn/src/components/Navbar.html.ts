@@ -19,10 +19,14 @@ export function Navbar({
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
 }) {
-  const { __csrf_token, course, urlPrefix } = resLocals;
+  const { __csrf_token, course, urlPrefix, is_iframe } = resLocals;
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
+
+  if (is_iframe) {
+    return NavbarIframe({ resLocals });
+  }
 
   return html`
     ${config.devMode && __csrf_token
@@ -117,7 +121,7 @@ export function NavbarIframe({ resLocals }: { resLocals: Record<string, any> }) 
     </div>
     <nav class="navbar navbar-dark bg-dark navbar-expand-md" aria-label="Global navigation">
       <div class="container-fluid">
-        <a class="navbar-brand" href="${resLocals.homeUrl}" target="_blank" aria-label="Homepage">
+        <a class="navbar-brand" href="${config.homeUrl}" target="_blank" aria-label="Homepage">
           <span class="navbar-brand-label">PrairieLearn</span>
           <span class="navbar-brand-hover-label">
             Go home <i class="fa fa-angle-right" aria-hidden="true"></i>

@@ -144,7 +144,7 @@ router.post(
       sub: ltiClaim.get('sub'),
     });
 
-    if (req.headers['sec-fetch-dest'] === 'iframe') {
+    if (res.locals.is_iframe) {
       res.end(
         Lti13Iframe({
           resLocals: res.locals,

@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
-import { NavbarIframe } from '../../../components/Navbar.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { type LoadUserAuth } from '../../../lib/authn.js';
 import { type Lti13Instance } from '../../../lib/db-types.js';
 
@@ -60,18 +60,9 @@ export const Lti13Iframe = ({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 redirect' })}
-        <script>
-          window.parent.postMessage(
-            {
-              subject: 'lti.frameResize',
-              height: 100,
-            },
-            '*',
-          );
-        </script>
       </head>
       <body>
-        ${NavbarIframe({ resLocals })}
+        ${Navbar({ resLocals })}
         <main>
           <a class="btn btn-primary btn-lg m-3" href="${target_url}" target="_blank"
             >Open PrairieLearn in a new window</a
