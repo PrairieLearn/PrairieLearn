@@ -3577,6 +3577,8 @@ __metadata:
     "@pyroscope/nodejs": "npm:^0.4.1"
     "@sa11y/format": "npm:^6.10.1"
     "@socket.io/redis-adapter": "npm:^8.3.0"
+    "@trpc/client": "npm:^10.45.2"
+    "@trpc/server": "npm:^10.45.2"
     "@types/archiver": "npm:^6.0.3"
     "@types/async": "npm:^3.2.24"
     "@types/blocked": "npm:^1.3.4"
@@ -4870,6 +4872,22 @@ __metadata:
   version: 0.3.0
   resolution: "@tokenizer/token@npm:0.3.0"
   checksum: 10c0/7ab9a822d4b5ff3f5bca7f7d14d46bdd8432528e028db4a52be7fbf90c7f495cc1af1324691dda2813c6af8dc4b8eb29de3107d4508165f9aa5b53e7d501f155
+  languageName: node
+  linkType: hard
+
+"@trpc/client@npm:^10.45.2":
+  version: 10.45.2
+  resolution: "@trpc/client@npm:10.45.2"
+  peerDependencies:
+    "@trpc/server": 10.45.2
+  checksum: 10c0/15c277a35f15108346902507c7f04fdcdf008d7fd8232f28806518af555ce72273a06d024b727494684c9d8752949b3e334437f321a7f3228be6411511b553f0
+  languageName: node
+  linkType: hard
+
+"@trpc/server@npm:^10.45.2":
+  version: 10.45.2
+  resolution: "@trpc/server@npm:10.45.2"
+  checksum: 10c0/c6bff389f7c4e273101834d55c917c2fe271189ee17985b79e4a925920afc39d45da3f247611cd7f8aeca3a461739118c621679bd183e9ad8765676e85c95712
   languageName: node
   linkType: hard
 
