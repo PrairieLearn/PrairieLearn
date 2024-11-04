@@ -22,9 +22,9 @@
     "@opentelemetry/exporter-trace-otlp-http": "^0.53.0",
     "@opentelemetry/instrumentation": "^0.53.0",
     "@opentelemetry/instrumentation-aws-sdk": "^0.44.0",
-    "@opentelemetry/instrumentation-connect": "^0.39.0",
+    "@opentelemetry/instrumentation-connect": "^0.40.0",
     "@opentelemetry/instrumentation-dns": "^0.39.0",
-    "@opentelemetry/instrumentation-express": "^0.42.0",
+    "@opentelemetry/instrumentation-express": "^0.44.0",
     "@opentelemetry/instrumentation-http": "^0.53.0",
     "@opentelemetry/instrumentation-ioredis": "^0.43.0",
     "@opentelemetry/instrumentation-pg": "^0.44.0",
@@ -40,15 +40,15 @@
   "devDependencies": {
     "@opentelemetry/context-async-hooks": "^1.26.0",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/chai": "^4.3.19",
-    "@types/mocha": "^10.0.7",
-    "@types/node": "^20.16.2",
+    "@types/chai": "^5.0.1",
+    "@types/mocha": "^10.0.9",
+    "@types/node": "^20.17.5",
     "c8": "^10.1.2",
-    "chai": "^5.1.1",
+    "chai": "^5.1.2",
     "chai-as-promised": "^8.0.0",
-    "mocha": "^10.7.3",
-    "tsx": "^4.19.0",
-    "typescript": "^5.5.4"
+    "mocha": "^10.8.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
   },
   "c8": {
     "reporter": [

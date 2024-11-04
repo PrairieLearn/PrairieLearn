@@ -1614,7 +1614,7 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it('records an error if a question does not specify points on an Homework-type assessment', async () => {
+  it('records an error if a question does not specify points on a Homework-type assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.zones?.push({
@@ -1700,7 +1700,7 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it('records an error if a question specifies points as an array an Homework-type assessment', async () => {
+  it('records an error if a question specifies points as an array on a Homework-type assessment', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.zones?.push({
@@ -1719,6 +1719,47 @@ describe('Assessment syncing', () => {
     assert.match(
       syncedAssessment?.sync_errors,
       /Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment/,
+    );
+  });
+
+  it('records a warning if a question has zero points and non-zero maxPoints on a Homework-type assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          maxPoints: 10,
+          points: 0,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(syncedAssessment?.sync_errors, /Cannot specify "points": 0 when "maxPoints" > 0/);
+  });
+
+  it('records a warning if a question has zero autoPoints and non-zero maxAutoPoints on a Homework-type assessment', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          maxAutoPoints: 10,
+          autoPoints: 0,
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['fail'] = assessment;
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('fail');
+    assert.match(
+      syncedAssessment?.sync_errors,
+      /Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0/,
     );
   });
 

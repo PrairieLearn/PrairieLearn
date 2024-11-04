@@ -90,7 +90,7 @@ export function InstructorQuestionStatistics({
                         <td style="width: 1%">
                           <a
                             href="/pl/course_instance/${row.course_instance_id}/instructor/assessment/${row.assessment_id}/"
-                            class="badge color-${row.assessment_color} color-hover"
+                            class="btn btn-badge color-${row.assessment_color}"
                           >
                             ${row.assessment_label}
                           </a>

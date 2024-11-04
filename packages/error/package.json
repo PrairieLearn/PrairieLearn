@@ -16,13 +16,13 @@
   "devDependencies": {
     "@prairielearn/html": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/mocha": "^10.0.7",
-    "@types/node": "^20.16.2",
+    "@types/mocha": "^10.0.9",
+    "@types/node": "^20.17.5",
     "c8": "^10.1.2",
-    "chai": "^5.1.1",
-    "mocha": "^10.7.3",
-    "tsx": "^4.19.0",
-    "typescript": "^5.5.4"
+    "chai": "^5.1.2",
+    "mocha": "^10.8.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
   },
   "dependencies": {
     "lodash": "^4.17.21"
