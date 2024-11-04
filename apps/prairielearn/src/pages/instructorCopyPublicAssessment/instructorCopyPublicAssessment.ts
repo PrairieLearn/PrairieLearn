@@ -50,8 +50,8 @@ router.post(
     }
 
     await copyAssessmentBetweenCourseInstances(res, {
-      fromCourse: course, // TEST, change to fromCourseInstance and result.course_instance?
-      fromCourseInstance: result.course_instance, // TEST, remove?
+      fromCourse: course,
+      fromCourseInstance: result.course_instance,
       toCourseInstanceId: res.locals.course_instance.id,
       assessment: result.assessment,
     });

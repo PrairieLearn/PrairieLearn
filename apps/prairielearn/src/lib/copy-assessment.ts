@@ -86,19 +86,19 @@ export async function copyAssessmentBetweenCourseInstances(
   }
 
   if (!assessment.tid) {
-    throw new Error(`Assessment ${assessment.title} does not have an id`); // TEST, use title?
+    throw new Error(`Assessment ${assessment.title} does not have a tid`);
   }
 
-  const toCourseId = await selectCourseIdByInstanceId(toCourseInstanceId); // TEST, CHANGE
+  const toCourseId = await selectCourseIdByInstanceId(toCourseInstanceId);
 
   const f = uuidv4();
   const relDir = path.join(f.slice(0, 3), f.slice(3, 6));
   const params = {
-    from_course_id: fromCourse.id,
-    to_course_id: toCourseId, // TEST, change back to to_course_instance_id?
     user_id: res.locals.user.user_id,
+    from_course_id: fromCourse.id,
+    to_course_id: toCourseId,
     transfer_type: 'CopyAssessment',
-    from_filename: path.join(fromCourse.path, 'courseInstances', fromCourseInstance.short_name, 'assessments', assessment.tid),
+    from_filename: path.join(fromCourse.path, 'courseInstances', fromCourseInstance.short_name, 'assessments', assessment.tid.toString()),
     storage_filename: path.join(relDir, f.slice(6)),
   };
 
@@ -109,6 +109,6 @@ export async function copyAssessmentBetweenCourseInstances(
 
   const result = await sqldb.queryOneRowAsync(sql.insert_file_transfer, params);
   res.redirect(
-    `${res.locals.plainUrlPrefix}/course_instance/${toCourseInstanceId}/file_transfer/${result.rows[0].id}`, // TEST, need course_instance?
+    `${res.locals.plainUrlPrefix}/course_instance/${toCourseInstanceId}/file_transfer/${result.rows[0].id}`,
   );
 }

@@ -1262,7 +1262,7 @@ export class QuestionTransferEditor extends Editor {
 }
 
 export class AssessmentTransferEditor extends Editor {
-  private from_aid: string;
+  private course_instance: CourseInstance;
   private from_course_short_name: string;
   private from_path: string;
 
@@ -1277,51 +1277,40 @@ export class AssessmentTransferEditor extends Editor {
   ) {
     super(params);
 
-    this.from_aid = params.from_aid;
+    this.course_instance = params.locals.course_instance;
     this.from_course_short_name = params.from_course_short_name;
     this.from_path = params.from_path;
-    this.description = `Copy assessment ${this.from_aid} from course ${this.from_course_short_name}`;
+    this.description = `Copy assessment ${this.from_aid} from course ${this.from_course_short_name}`; // TEST, change until it makes sense
 
     this.uuid = uuidv4();
   }
 
   async write() {
     debug('AssessmentTransferEditor: write()');
-    const assessmentsPath = path.join(this.course.path, 'assessments');
+    console.log('this.description: ', this.description); // TEST
+    const assessmentsPath = path.join(this.course.path, 'courseInstances', this.course_instance.short_name, 'assessments');
 
     debug('Get title of assessment that is being copied');
-    const sourceInfoJson = await fs.readJson(path.join(this.from_path, 'info.json'));
+    const sourceInfoJson = await fs.readJson(path.join(this.from_path, 'infoAssessment.json'));
     const from_title = sourceInfoJson.title || 'Empty Title';
 
-    debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_assessments_with_course, {
-      course_id: this.course.id,
-    });
-    const oldNamesLong = _.map(result.rows, 'title');
+    // TEST, get tid differently? Get the last segment of the path to use as the assessment tid
+    const assessment_tid = this.from_path.match(/[^/]+$/)[0];
 
-    debug('Get all existing short names');
-    const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'info.json');
+    this.description = `Copy assessment ${from_title} from public course ${this.from_course_short_name}`; // TEST
+    console.log('this.description: ', this.description); // TEST
 
-    debug('Generate aid and title');
-    let aid = this.from_aid;
-    let assessmentTitle = from_title;
-    if (oldNamesShort.includes(this.from_aid) || oldNamesLong.includes(from_title)) {
-      const names = this.getNamesForCopy(this.from_aid, oldNamesShort, from_title, oldNamesLong);
-      aid = names.shortName;
-      assessmentTitle = names.longName;
-    }
-    const assessmentPath = path.join(assessmentsPath, aid);
+    const assessmentPath = path.join(assessmentsPath, assessment_tid);
 
     const fromPath = this.from_path;
     const toPath = assessmentPath;
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
-    debug('Read info.json');
-    const infoJson = await fs.readJson(path.join(assessmentPath, 'info.json'));
+    const infoJson = await fs.readJson(path.join(assessmentPath, 'infoAssessment.json'));
 
-    debug('Write info.json with new title and uuid');
-    infoJson.title = assessmentTitle;
+    debug('Write infoAssessment.json with new title and uuid');
+    infoJson.title = from_title;
     infoJson.uuid = this.uuid;
 
     // When transferring an assessment from an example/template course, drop the tags. They
@@ -1330,16 +1319,19 @@ export class AssessmentTransferEditor extends Editor {
       delete infoJson.tags;
     }
 
+    // TEST, this.from_course_short_name is undefined
+    console.log('commit message would be: ', `copy assessment ${from_title} (from public course ${this.from_course_short_name}) to course instance ${this.course_instance.short_name}`); // TEST
+
     // We do not want to preserve sharing settings when copying an assessment to another course
     delete infoJson['sharingSets'];
     delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
-    await fs.writeJson(path.join(assessmentPath, 'info.json'), infoJson, { spaces: 4 });
+    await fs.writeJson(path.join(assessmentPath, 'infoAssessment.json'), infoJson, { spaces: 4 });
 
     return {
       pathsToAdd: [assessmentPath],
-      commitMessage: `copy assessment ${this.from_aid} (from course ${this.from_course_short_name}) to ${aid}`,
+      commitMessage: `copy assessment ${from_title} (from public course ${this.from_course_short_name}) to course instance ${this.course_instance.short_name}`,
     };
   }
 }
