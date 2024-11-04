@@ -20,12 +20,12 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/ejs": "^3.1.5",
-    "@types/node": "^20.16.2",
+    "@types/node": "^20.17.5",
     "c8": "^10.1.2",
-    "chai": "^5.1.1",
-    "mocha": "^10.7.3",
-    "tsx": "^4.19.0",
-    "typescript": "^5.5.4"
+    "chai": "^5.1.2",
+    "mocha": "^10.8.2",
+    "tsx": "^4.19.2",
+    "typescript": "^5.6.3"
   },
   "c8": {
     "reporter": [
