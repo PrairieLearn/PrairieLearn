@@ -224,7 +224,7 @@ router.get(
     if (res.locals.assessment.type === 'Homework') {
       await ensureUpToDate(res.locals);
     }
-    const instance_questions = await queryRows(
+    const instance_question_rows = await queryRows(
       sql.select_instance_questions,
       {
         assessment_instance_id: res.locals.assessment_instance.id,
@@ -234,16 +234,16 @@ router.get(
     const allPreviousVariants = await selectVariantsByInstanceQuestion({
       assessment_instance_id: res.locals.assessment_instance.id,
     });
-    for (const instance_question of instance_questions) {
+    for (const instance_question of instance_question_rows) {
       instance_question.previous_variants = allPreviousVariants.filter((variant) =>
         idsEqual(variant.instance_question_id, instance_question.id),
       );
     }
 
-    res.locals.has_manual_grading_question = instance_questions?.some(
+    res.locals.has_manual_grading_question = instance_question_rows?.some(
       (q) => q.max_manual_points || q.manual_points || q.requires_manual_grading,
     );
-    res.locals.has_auto_grading_question = instance_questions?.some(
+    res.locals.has_auto_grading_question = instance_question_rows?.some(
       (q) => q.max_auto_points || q.auto_points || !q.max_points,
     );
     const assessment_text_templated = assessment.renderText(
@@ -257,7 +257,7 @@ router.get(
     if (!res.locals.assessment.group_work) {
       res.send(
         StudentAssessmentInstance({
-          instance_questions,
+          instance_question_rows,
           showTimeLimitExpiredModal,
           userCanDeleteAssessmentInstance: assessment.canDeleteAssessmentInstance(res.locals),
           resLocals: res.locals,
@@ -279,7 +279,7 @@ router.get(
       // Get the role permissions. If the authorized user has course instance
       // permission, then role restrictions don't apply.
       if (!res.locals.authz_data.has_course_instance_permission_view) {
-        for (const question of instance_questions) {
+        for (const question of instance_question_rows) {
           question.group_role_permissions = await getQuestionGroupPermissions(
             question.id,
             res.locals.assessment_instance.group_id,
@@ -291,7 +291,7 @@ router.get(
 
     res.send(
       StudentAssessmentInstance({
-        instance_questions,
+        instance_question_rows,
         showTimeLimitExpiredModal,
         groupConfig,
         groupInfo,
