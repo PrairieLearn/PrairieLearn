@@ -479,7 +479,7 @@ export async function aiGrade({
         });
         try {
           job.info(
-            `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`,
+            `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}`,
           );
           const grade_response = completion.choices[0].message;
           job.info(`Raw ChatGPT response:\n${grade_response.content}`);
@@ -543,7 +543,7 @@ export async function aiGrade({
         });
         try {
           job.info(
-            `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`,
+            `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}`,
           );
           const grade_response = completion.choices[0].message;
           job.info(`Raw ChatGPT response:\n${grade_response.content}`);
