@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import { HttpStatusError } from '@prairielearn/error';
+import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
@@ -26,6 +26,11 @@ const router = Router();
 router.get(
   '/',
   asyncHandler(async function (req, res) {
+    if (res.locals.assessment.multiple_instance && res.locals.assessment.type === 'Homework') {
+      throw new AugmentedError('"Homework" assessments do not support multiple instances', {
+        data: { assessment: res.locals.assessment },
+      });
+    }
     // Before allowing the user to create a new assessment instance, we need
     // to check if the current access rules require a password. If they do,
     // we'll ensure that the password has already been entered before allowing

@@ -1560,7 +1560,7 @@ export async function initExpress() {
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)', [
     (await import('./middlewares/selectAndAuthzAssessment.js')).default,
-    (await import('./middlewares/selectAssessmentInstanceId.js')).default,
+    (await import('./middlewares/studentAssessmentRedirect.js')).default,
     (await import('./middlewares/studentAssessmentAccess.js')).default,
     (await import('./middlewares/logPageView.js')).default('studentAssessment'),
     (await import('./pages/studentAssessment/studentAssessment.js')).default,
