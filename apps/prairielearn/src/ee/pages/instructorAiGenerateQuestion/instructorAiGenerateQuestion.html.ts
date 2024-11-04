@@ -89,27 +89,28 @@ export function AiGeneratePage({
                           ></textarea>
                           <div class="form-text form-muted">
                             <em>
-                              Example: A toy car is pushed off a table with height h at speed v0. Assume
-                              acceleration due to gravity as 9.81 m/s^2. H is a number with 1 decimal digit
-                              selected at random between 1 and 2 meters. V0 is a an integer between 1 and 4
-                              m/s. How long does it take for the car to reach the ground?
+                              Example: A toy car is pushed off a table with height h at speed v0.
+                              Assume acceleration due to gravity as 9.81 m/s^2. H is a number with 1
+                              decimal digit selected at random between 1 and 2 meters. V0 is a an
+                              integer between 1 and 4 m/s. How long does it take for the car to
+                              reach the ground?
                             </em>
                           </div>
                           <label for="user-prompt-llm-user-input">
                             How should students input their solution? What choices or input boxes
                             are they given?
                           </label>
-                          <div class="form-text form-muted">
-                            <em>
-                              Example: students should enter the solution using a decimal number. The answer
-                              should be in seconds.
-                            </em>
-                          </div>
                           <textarea
                             name="prompt_user_input"
                             id="user-prompt-llm-user-input"
                             class="form-control"
                           ></textarea>
+                          <div class="form-text form-muted">
+                            <em>
+                              Example: students should enter the solution using a decimal number.
+                              The answer should be in seconds.
+                            </em>
+                          </div>
                           <label for="user-prompt-llm-grading">
                             How do we determine if a solution is correct/which answer choice is
                             correct?
@@ -118,11 +119,11 @@ export function AiGeneratePage({
                             name="prompt_grading"
                             id="user-prompt-llm-grading"
                             class="form-control"
-                          >
-                          </textarea>
+                          ></textarea>
                           <div class="form-text form-muted">
                             <em>
-                              Example: the answer is computed as sqrt(2 * h / g) where g = 9.81 m/s^2
+                              Example: the answer is computed as sqrt(2 * h / g) where g = 9.81
+                              m/s^2
                             </em>
                           </div>
                         </div>
@@ -164,7 +165,7 @@ export function AiGeneratePage({
                         return x.prompt_type !== 'autorevision';
                       })
                       .map((x) => {
-                        return `Human: ${x.user_prompt} AI: v${x.id}`;
+                        return html`Human: ${x.user_prompt} AI: v${x.id}`;
                       })
                       .join('\n')}`
               }

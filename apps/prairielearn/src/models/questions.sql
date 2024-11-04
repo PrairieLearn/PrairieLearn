@@ -92,7 +92,7 @@ FROM
 WHERE
   q.course_id = $course_id
   AND q.deleted_at IS NULL
-  AND q.is_draft IS FALSEs
+  AND q.is_draft IS FALSE
   AND (
     q.shared_publicly
     OR q.share_source_publicly

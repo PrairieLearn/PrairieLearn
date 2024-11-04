@@ -276,7 +276,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
       questionQid = `__drafts__/draft_${draftId}`;
 
-      const qid = await queryRows(
+      await queryRows(
         sql.insert_prompt_info,
         {
           qid: questionQid,
@@ -295,7 +295,6 @@ Keep in mind you are not just generating an example; you are generating an actua
         },
         z.any(),
       );
-      console.log(qid);
       job.data['questionQid'] = questionQid;
     }
 

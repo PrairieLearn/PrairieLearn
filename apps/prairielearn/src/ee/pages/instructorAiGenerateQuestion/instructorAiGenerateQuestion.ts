@@ -10,6 +10,7 @@ import { GenerationThreadItemSchema, QuestionSchema } from '../../../lib/db-type
 import { QuestionAddEditor, QuestionDeleteEditor } from '../../../lib/editors.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
+import { getAndRenderVariant } from '../../../lib/question-render.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
@@ -19,7 +20,6 @@ import {
   GenerationFailure,
   GenerationResults,
 } from './instructorAiGenerateQuestion.html.js';
-import { z } from 'zod';
 
 const router = express.Router();
 
@@ -90,11 +90,20 @@ router.get(
     assertCanCreateQuestion(res.locals);
 
     if (req.query?.qid) {
+      const qidFull = `__drafts__/${req.query?.qid}`;
       const threads = await queryRows(
         sql.select_generation_thread_items,
-        { qid: `__drafts__/${req.query?.qid}` },
+        { qid: qidFull, course_id: res.locals.course.id.toString() },
         GenerationThreadItemSchema,
       );
+      if (threads && threads.length > 0) {
+        res.locals.question = await queryRow(
+          sql.select_question_by_qid_and_course,
+          { qid: qidFull, course_id: res.locals.course.id },
+          QuestionSchema,
+        );
+        await getAndRenderVariant(null, null, res.locals);
+      }
       res.send(AiGeneratePage({ resLocals: res.locals, threads }));
     } else {
       res.send(AiGeneratePage({ resLocals: res.locals }));
@@ -127,9 +136,10 @@ router.post(
         saveLocals: res.locals,
       });
 
-      console.log(result.questionQid);
-
       if (result.htmlResult) {
+        res.set({
+          'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_question?qid=${result.questionQid.substring(11)}`,
+        });
         res.send(
           GenerationResults(
             result.htmlResult,
