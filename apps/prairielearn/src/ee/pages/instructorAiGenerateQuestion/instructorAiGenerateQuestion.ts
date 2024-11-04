@@ -12,6 +12,7 @@ import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
+import { selectQuestionByUuid } from '../../../models/question.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
 
 import {
@@ -52,13 +53,12 @@ export async function saveGeneratedQuestion(
     throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
   }
 
-  const result = await queryRow(
-    sql.select_added_question,
-    { uuid: editor.uuid, course_id: res.locals.course.id.toString() },
-    QuestionSchema,
-  );
+  const question = await selectQuestionByUuid({
+    course_id: res.locals.course.id,
+    uuid: editor.uuid,
+  });
 
-  return result.id;
+  return question.id;
 }
 
 function assertCanCreateQuestion(resLocals: Record<string, any>) {

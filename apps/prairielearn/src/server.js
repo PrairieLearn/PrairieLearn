@@ -124,7 +124,7 @@ export async function initExpress() {
 
   // This should come before the session middleware so that we don't
   // create a session every time we get a health check request.
-  app.get('/pl/webhooks/ping', function (req, res, _next) {
+  app.get('/pl/webhooks/ping', function (req, res) {
     res.send('.');
   });
 
@@ -136,23 +136,31 @@ export async function initExpress() {
     next();
   });
 
-  app.use(
-    createSessionMiddleware({
-      secret: config.secretKey,
-      store: new PostgresSessionStore(),
-      cookie: {
-        name: 'pl2_session',
-        writeNames: ['prairielearn_session', 'pl2_session'],
-        // Ensure that the legacy session cookie doesn't have a domain specified.
-        // We can only safely set domains on the new session cookie.
-        writeOverrides: [{ domain: undefined }, { domain: config.cookieDomain ?? undefined }],
-        httpOnly: true,
-        maxAge: config.sessionStoreExpireSeconds * 1000,
-        secure: 'auto', // uses Express "trust proxy" setting
-        sameSite: config.sessionCookieSameSite,
-      },
-    }),
-  );
+  const sessionMiddleware = createSessionMiddleware({
+    secret: config.secretKey,
+    store: new PostgresSessionStore(),
+    cookie: {
+      name: 'pl2_session',
+      writeNames: ['prairielearn_session', 'pl2_session'],
+      // Ensure that the legacy session cookie doesn't have a domain specified.
+      // We can only safely set domains on the new session cookie.
+      writeOverrides: [{ domain: undefined }, { domain: config.cookieDomain ?? undefined }],
+      httpOnly: true,
+      maxAge: config.sessionStoreExpireSeconds * 1000,
+      secure: 'auto', // uses Express "trust proxy" setting
+      sameSite: config.sessionCookieSameSite,
+    },
+  });
+
+  app.use((req, res, next) => {
+    // API routes don't utilize sessions; don't run the session middleware for them.
+    if (req.path.startsWith('/pl/api')) {
+      next();
+      return;
+    }
+
+    sessionMiddleware(req, res, next);
+  });
 
   // Attach the flash middleware immediately after the session middleware so
   // that all future handlers can write flash messages. This must come after
@@ -872,6 +880,7 @@ export async function initExpress() {
   //////////////////////////////////////////////////////////////////////
   // API ///////////////////////////////////////////////////////////////
 
+  app.use('/pl/api/internal', (await import('./api/internal/index.js')).default);
   app.use('/pl/api/v1', (await import('./api/v1/index.js')).default);
 
   //////////////////////////////////////////////////////////////////////
