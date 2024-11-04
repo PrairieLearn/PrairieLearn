@@ -1027,7 +1027,6 @@ describe('Manual Grading', function () {
             __csrf_token: token,
             plus_minus: 'unlimited',
             time_add: '0',
-            time_ref: 'minutes',
             reopen_closed: 'on',
           }).toString(),
         });

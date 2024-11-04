@@ -1,4 +1,5 @@
-import { escapeHtml, html } from '@prairielearn/html';
+import { escapeHtml, html, type HtmlValue, joinHtml } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import type {
   Assessment,
@@ -63,23 +64,44 @@ export function QuestionScorePanel({
               `
             : ''}
           ${assessment.type === 'Homework'
-            ? // Only show previous variants if the question allows multiple variants, or there are multiple variants (i.e., they were allowed at some point)
-              !question.single_variant ||
-              (instance_question_info.previous_variants?.length ?? 0) > 1
-              ? html`
-                  <tr>
-                    <td colspan="2" class="text-wrap">
-                      All variants:
-                      ${QuestionAwardedPoints({
-                        instanceQuestionId: instance_question.id,
-                        previousVariants: instance_question_info.previous_variants,
-                        currentVariantId: variant?.id,
-                        urlPrefix,
-                      })}
-                    </td>
-                  </tr>
-                `
-              : ''
+            ? html`
+                ${
+                  // This condition covers two cases:
+                  // - A purely manually-graded question
+                  // - A question with no points at all
+                  // In both cases, we opt not to display the value, since it
+                  // would not be possible to immediately earn any points with
+                  // the next submission.
+                  assessment_question.max_auto_points
+                    ? html`
+                        <tr>
+                          <td>Value:</td>
+                          <td>${QuestionValue({ instance_question, assessment_question })}</td>
+                        </tr>
+                      `
+                    : ''
+                }
+                ${
+                  // Only show previous variants if the question allows multiple variants,
+                  // or there are multiple variants (i.e., they were allowed at some point)
+                  !question.single_variant ||
+                  (instance_question_info.previous_variants?.length ?? 0) > 1
+                    ? html`
+                        <tr>
+                          <td colspan="2" class="text-wrap">
+                            All variants:
+                            ${QuestionVariantHistory({
+                              instanceQuestionId: instance_question.id,
+                              previousVariants: instance_question_info.previous_variants,
+                              currentVariantId: variant?.id,
+                              urlPrefix,
+                            })}
+                          </td>
+                        </tr>
+                      `
+                    : ''
+                }
+              `
             : assessment_question.max_auto_points
               ? html`
                   <tr>
@@ -270,7 +292,7 @@ export function ExamQuestionStatus({
   `;
 }
 
-export function QuestionAwardedPoints({
+export function QuestionVariantHistory({
   instanceQuestionId,
   previousVariants,
   currentVariantId,
@@ -398,20 +420,17 @@ export function ExamQuestionAvailablePoints({
       You have ${pointsList.length} remaining attempt${pointsList.length !== 1 ? 's' : ''} for this
       question.
     </p>
-    <hr />
     <p>
       If you score 100% on your next submission, then you will be awarded an additional
       ${formatPoints(pointsList[0])} points.
     </p>
-    <hr />
     ${bestScore > 0
       ? html`
           <p>
             If you score less than ${bestScore}% on your next submission, then you will be awarded
             no additional points, but you will keep any awarded points that you already have.
           </p>
-          <hr />
-          <p>
+          <p class="mb-0">
             If you score between ${bestScore}% and 100% on your next submission, then you will be
             awarded an additional
             <code>(${formatPoints(currentWeight)} * (score - ${bestScore})/100)</code>
@@ -419,7 +438,7 @@ export function ExamQuestionAvailablePoints({
           </p>
         `
       : html`
-          <p>
+          <p class="mb-0">
             If you score less than 100% on your next submission, then you will be awarded an
             additional
             <code>(${formatPoints(currentWeight)} * score / 100)</code>
@@ -436,6 +455,111 @@ export function ExamQuestionAvailablePoints({
     <button
       type="button"
       class="btn btn-xs btn-ghost js-available-points-popover"
+      data-toggle="popover"
+      data-container="body"
+      data-html="true"
+      data-content="${escapeHtml(popoverContent)}"
+      data-placement="auto"
+    >
+      <i class="fa fa-question-circle" aria-hidden="true"></i>
+    </button>
+  `;
+}
+
+function QuestionValue({
+  instance_question,
+  assessment_question,
+}: {
+  instance_question: InstanceQuestion;
+  assessment_question: AssessmentQuestion;
+}) {
+  const initAutoPoints =
+    (assessment_question.init_points ?? 0) - (assessment_question.max_manual_points ?? 0);
+
+  const currentAutoValue =
+    (instance_question.current_value ?? 0) - (assessment_question.max_manual_points ?? 0);
+
+  const bestCurrentScore = run(() => {
+    const variantPoints = instance_question.variants_points_list.at(-1);
+    if (variantPoints == null) return 0;
+    if (variantPoints < initAutoPoints) return (variantPoints / initAutoPoints) * 100;
+    return 0;
+  });
+
+  const popoverContent = run(() => {
+    const parts: HtmlValue[] = [
+      html`
+        <p>
+          This question awards partial credit if you continue getting closer to the correct answer.
+        </p>
+      `,
+    ];
+
+    if (bestCurrentScore === 0) {
+      const pluralizedPoints = currentAutoValue === 1 ? 'point' : 'points';
+      parts.push(html`
+        <p>
+          If you score 100% on your next submission, you will be awarded an additional
+          ${formatPoints(currentAutoValue)} ${pluralizedPoints}.
+        </p>
+      `);
+
+      parts.push(html`
+        <p class="mb-0">
+          If you score less than 100% on your next submission, you will be awarded an additional
+          <code>${formatPoints(initAutoPoints)} * score / 100</code> points.
+        </p>
+      `);
+    } else {
+      if (instance_question.some_perfect_submission) {
+        parts.push(html`
+          <p>
+            Your highest submission score since your last 100% submission is
+            ${formatPoints(bestCurrentScore)}%.
+          </p>
+        `);
+      } else {
+        parts.push(
+          html`<p>Your highest submission score so far is ${formatPoints(bestCurrentScore)}%.</p>`,
+        );
+      }
+
+      const perfectAdditionalPoints = (currentAutoValue * (100 - bestCurrentScore)) / 100;
+      const pluralizedPoints = perfectAdditionalPoints === 1 ? 'point' : 'points';
+      parts.push(html`
+        <p>
+          If you score 100% on your next submission, you will be awarded an additional
+          ${formatPoints(perfectAdditionalPoints)} ${pluralizedPoints}.
+        </p>
+      `);
+
+      parts.push(
+        html`<p>
+          If you score between ${formatPoints(bestCurrentScore)}% and 100% on your next submission,
+          you will be awarded an additional
+          <code>
+            ${formatPoints(currentAutoValue)} * (score - ${formatPoints(bestCurrentScore)}) / 100
+          </code>
+          points.
+        </p>`,
+      );
+
+      parts.push(html`
+        <p class="mb-0">
+          If you score less than ${formatPoints(bestCurrentScore)}% on your next submission, you
+          will not be awarded any additional points for that submission.
+        </p>
+      `);
+    }
+
+    return joinHtml(parts);
+  });
+
+  return html`
+    ${currentAutoValue}
+    <button
+      type="button"
+      class="btn btn-xs js-value-popover"
       data-toggle="popover"
       data-container="body"
       data-html="true"
