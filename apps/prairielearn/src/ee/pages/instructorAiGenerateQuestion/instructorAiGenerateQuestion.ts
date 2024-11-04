@@ -6,7 +6,7 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import { QuestionSchema } from '../../../lib/db-types.js';
+import { GenerationThreadItemSchema, QuestionSchema } from '../../../lib/db-types.js';
 import { QuestionAddEditor, QuestionDeleteEditor } from '../../../lib/editors.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -19,6 +19,7 @@ import {
   GenerationFailure,
   GenerationResults,
 } from './instructorAiGenerateQuestion.html.js';
+import { z } from 'zod';
 
 const router = express.Router();
 
@@ -88,7 +89,16 @@ router.get(
   asyncHandler(async (req, res) => {
     assertCanCreateQuestion(res.locals);
 
-    res.send(AiGeneratePage({ resLocals: res.locals }));
+    if (req.query?.qid) {
+      const threads = await queryRows(
+        sql.select_generation_thread_items,
+        { qid: `__drafts__/${req.query?.qid}` },
+        GenerationThreadItemSchema,
+      );
+      res.send(AiGeneratePage({ resLocals: res.locals, threads }));
+    } else {
+      res.send(AiGeneratePage({ resLocals: res.locals }));
+    }
   }),
 );
 
@@ -116,6 +126,8 @@ router.post(
         promptGrading: req.body.prompt_grading,
         saveLocals: res.locals,
       });
+
+      console.log(result.questionQid);
 
       if (result.htmlResult) {
         res.send(
@@ -155,6 +167,8 @@ router.post(
         req.body.prompt,
         genJobs[0]?.data?.html,
         genJobs[0]?.data?.python,
+        res.locals,
+        req.body.qid,
       );
 
       if (result.htmlResult) {

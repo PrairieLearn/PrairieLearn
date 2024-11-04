@@ -52,3 +52,50 @@ WHERE
   q.qid = $qid
   AND q.course_id = $course_id
   AND u.uid = $creator_id;
+
+-- BLOCK insert_prompt_info
+INSERT INTO
+  ai_generation_prompts (
+    question_id,
+    prompting_user,
+    prompt_type,
+    user_prompt,
+    context,
+    response,
+    title,
+    uuid,
+    html,
+    python,
+    errors,
+    completion
+  )
+SELECT
+  q.id,
+  $prompting_uid,
+  $prompt_type,
+  $user_prompt,
+  $context,
+  $response,
+  $title,
+  $uuid,
+  $html,
+  $python,
+  to_jsonb($errors::text[]),
+  $completion
+FROM
+  questions AS q
+WHERE
+  q.qid = $qid
+  AND q.course_id = $course_id
+RETURNING
+  question_id;
+
+-- BLOCK select_question_by_qid_and_course
+SELECT
+  *
+FROM
+  questions
+WHERE
+  q.qid = $qid
+  AND q.course_id = $course_id
+  AND q.deleted_at IS NULL;

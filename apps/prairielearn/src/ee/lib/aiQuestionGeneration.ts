@@ -1,11 +1,15 @@
+import * as path from 'path';
+
+import sha256 from 'crypto-js/sha256.js';
 import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows, queryRow } from '@prairielearn/postgres';
 
-import { QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
-import { QuestionAddEditor } from '../../lib/editors.js';
+import * as b64Util from '../../lib/base64-util.js';
+import { QuestionGenerationContextEmbeddingSchema, QuestionSchema } from '../../lib/db-types.js';
+import { FileModifyEditor, QuestionAddEditor } from '../../lib/editors.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
@@ -126,7 +130,7 @@ async function makeContext(
 function extractFromCompletion(
   completion: OpenAI.Chat.Completions.ChatCompletion,
   job: ServerJob,
-): void {
+): { html?: string; python?: string } {
   const completionText = completion.choices[0].message.content;
 
   job.info(`completion is ${completionText}`);
@@ -139,15 +143,19 @@ function extractFromCompletion(
   const html = completionText?.match(htmlSelector)?.groups?.code;
   const python = completionText?.match(pythonSelector)?.groups?.code;
 
+  const out = {};
+
   if (html !== undefined) {
     job.info(`extracted html file: ${html}`);
-    job.data['html'] = html;
+    out['html'] = html;
   }
 
   if (python !== undefined) {
     job.info(`extracted python file: ${python}`);
-    job.data['python'] = python;
+    out['python'] = python;
   }
+
+  return out;
 }
 
 /**
@@ -159,6 +167,7 @@ function extractFromCompletion(
  * @param promptGeneral The prompt for how to generate a question.
  * @param promptUserInput The prompt for how to take user input.
  * @param promptGrading The prompt for how to grade user input.
+ * @param saveLocals Request locals for prompt-saving.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
  */
 export async function generateQuestion({
@@ -179,6 +188,7 @@ export async function generateQuestion({
   saveLocals?: Record<string, any> | undefined;
 }): Promise<{
   jobSequenceId: string;
+  questionQid: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
 }> {
@@ -220,55 +230,27 @@ Keep in mind you are not just generating an example; you are generating an actua
       user: openAiUserFromAuthn(authnUserId),
     });
 
-    extractFromCompletion(completion, job);
-    const html = job?.data?.html;
+    const results = extractFromCompletion(completion, job);
+    const html = results?.html;
 
-    job.data['initialGenerationErrors'] = [];
-    job.data['prompt'] = userPrompt;
-    job.data['generation'] = completion.choices[0].message.content;
-    job.data['context'] = context;
-    job.data['completion'] = completion;
-
+    let errors: string[] = [];
     if (html && typeof html === 'string') {
-      const errors = validateHTML(html, false, !!job?.data?.python);
-      job.data['initialGenerationErrors'] = errors;
-      job.data['finalGenerationErrors'] = errors;
-      if (errors.length > 0) {
-        await regenInternal(
-          job,
-          client,
-          authnUserId,
-          userPrompt,
-          `Please fix the following issues: \n${errors.join('\n')}`,
-          html,
-          typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
-          0,
-          false,
-        );
-      }
+      errors = validateHTML(html, false, !!results?.python);
     } else {
-      await regenInternal(
-        job,
-        client,
-        authnUserId,
-        userPrompt,
-        'Please generate a question.html file.',
-        '',
-        typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
-        0,
-        false,
-      );
+      errors = ['Please generate a question.html file.'];
     }
+
+    let questionQid = '';
 
     if (saveLocals) {
       const files = {};
 
-      if (job?.data?.html) {
-        files['question.html'] = job?.data?.html;
+      if (results?.html) {
+        files['question.html'] = results?.html;
       }
 
-      if (job?.data?.python) {
-        files['server.py'] = job?.data?.python;
+      if (results?.python) {
+        files['server.py'] = results?.python;
       }
 
       const draftId = await queryRow(sql.update_draft_number, { course_id: courseId }, z.number());
@@ -291,11 +273,55 @@ Keep in mind you are not just generating an example; you are generating an actua
         },
         z.any(),
       );
+
+      questionQid = `__drafts__/draft_${draftId}`;
+
+      const qid = await queryRows(
+        sql.insert_prompt_info,
+        {
+          qid: questionQid,
+          course_id: courseId,
+          prompting_uid: authnUserId,
+          prompt_type: 'initial_prompt',
+          user_prompt: userPrompt,
+          context,
+          response: completion.choices[0].message.content,
+          title: 'temporary draft placeholder (todo: fix)',
+          uuid: `draft_${draftId}_todo_fix`,
+          html: results?.html,
+          python: results?.python,
+          errors,
+          completion,
+        },
+        z.any(),
+      );
+      console.log(qid);
+      job.data['questionQid'] = questionQid;
+    }
+
+    job.data.html = html;
+    job.data.python = results?.python;
+
+    if (errors.length > 0) {
+      await regenInternal(
+        job,
+        client,
+        authnUserId,
+        userPrompt,
+        `Please fix the following issues: \n${errors.join('\n')}`,
+        html || '',
+        typeof results?.python === 'string' ? results?.python : undefined,
+        0,
+        true,
+        saveLocals,
+        questionQid,
+      );
     }
   });
 
   return {
     jobSequenceId: serverJob.jobSequenceId,
+    questionQid: jobData.data.questionQid,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
   };
@@ -327,7 +353,9 @@ function traverseForTagNames(ast: any): Set<string> {
  * @param originalHTML The question.html file to revise.
  * @param originalPython The server.py file to revise.
  * @param numRegens Number of times that regen could be called.
- * @param saveInitialErrors Whether to save initial error checking results in the job data.
+ * @param isAutomated Whether the regeneration was the result of an automated check or a human revision prompt.
+ * @param saveLocals Request locals for prompt-saving.
+ * @param questionQid The
  */
 async function regenInternal(
   job: ServerJob,
@@ -338,7 +366,9 @@ async function regenInternal(
   originalHTML: string,
   originalPython: string | undefined,
   numRegens: number,
-  saveInitialErrors: boolean,
+  isAutomated: boolean,
+  saveLocals: Record<string, any> | undefined,
+  questionQid: string | undefined,
 ) {
   job.info(`prompt is ${revisionPrompt}`);
 
@@ -349,9 +379,6 @@ async function regenInternal(
   }
 
   const context = await makeContext(client, originalPrompt, undefined, tags, authnUserId);
-  if (saveInitialErrors) {
-    job.data['context'] = context;
-  }
 
   const sysPrompt = `
 ${promptPreamble(context)}
@@ -399,38 +426,92 @@ Keep in mind you are not just generating an example; you are generating an actua
     user: openAiUserFromAuthn(authnUserId),
   });
 
-  extractFromCompletion(completion, job);
-  job.data['generation'] = completion.choices[0].message.content;
-  job.data['completion'] = completion;
+  const results = extractFromCompletion(completion, job);
 
-  const html = job?.data?.html || originalHTML;
+  const html = results?.html || originalHTML;
 
-  if (saveInitialErrors) {
-    job.data['initialGenerationErrors'] = [];
-  }
-  job.data['finalGenerationErrors'] = [];
+  let errors: string[] = [];
 
   if (html && typeof html === 'string') {
-    const errors = validateHTML(html, false, !!job?.data?.python);
-    if (saveInitialErrors) {
-      job.data['initialGenerationErrors'] = errors;
+    errors = validateHTML(html, false, !!results?.python);
+  }
+
+  if (saveLocals) {
+    const courseId = saveLocals.course.id;
+    await queryRows(
+      sql.insert_prompt_info,
+      {
+        qid: questionQid,
+        course_id: courseId,
+        prompting_uid: authnUserId,
+        prompt_type: isAutomated ? 'autorevision' : 'human_revision',
+        user_prompt: revisionPrompt,
+        context,
+        response: completion.choices[0].message.content,
+        title: 'temporary draft placeholder (todo: fix)',
+        uuid: `${questionQid}_todo_fix`,
+        html: results?.html,
+        python: results?.python,
+        errors,
+        completion,
+      },
+      z.any(),
+    );
+
+    const htmlHash = sha256(b64Util.b64EncodeUnicode(originalHTML)).toString();
+    const pythonHash = sha256(b64Util.b64EncodeUnicode(originalPython)).toString();
+
+    const question = await queryRow(
+      sql.select_question_by_qid_and_course,
+      { qid: questionQid, course_id: courseId },
+      QuestionSchema,
+    );
+
+    const directory = question.directory || '.';
+
+    if (html !== originalHTML) {
+      const htmlEditor = new FileModifyEditor({
+        locals: saveLocals,
+        container: { rootPath: directory, invalidRootPaths: [] },
+        filePath: path.join(directory, 'question.html'),
+        editContents: b64Util.b64EncodeUnicode(html),
+        origHash: htmlHash,
+      });
+      const serverJob = await htmlEditor.prepareServerJob();
+      await htmlEditor.executeWithServerJob(serverJob);
     }
-    job.data['finalGenerationErrors'] = errors;
-    if (errors.length > 0 && numRegens > 0) {
-      const autoRevisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
-      job.data['autoRevisionPrompt'] = autoRevisionPrompt;
-      await regenInternal(
-        job,
-        client,
-        authnUserId,
-        originalPrompt,
-        autoRevisionPrompt,
-        html,
-        typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
-        numRegens - 1,
-        false,
-      );
+
+    if (results.python !== originalPython) {
+      const pythonEditor = new FileModifyEditor({
+        locals: saveLocals,
+        container: { rootPath: directory, invalidRootPaths: [] },
+        filePath: path.join(directory, 'server.py'),
+        editContents: b64Util.b64EncodeUnicode(results.python),
+        origHash: pythonHash,
+      });
+      const serverJob = await pythonEditor.prepareServerJob();
+      await pythonEditor.executeWithServerJob(serverJob);
     }
+  }
+
+  job.data.html = html;
+  job.data.python = results.python;
+
+  if (errors.length > 0 && numRegens > 0) {
+    const autoRevisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
+    await regenInternal(
+      job,
+      client,
+      authnUserId,
+      originalPrompt,
+      autoRevisionPrompt,
+      html,
+      typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
+      numRegens - 1,
+      true,
+      saveLocals,
+      questionQid,
+    );
   }
 }
 
@@ -454,6 +535,8 @@ export async function regenerateQuestion(
   revisionPrompt: string,
   originalHTML: string,
   originalPython: string,
+  saveLocals: Record<string, any> | undefined,
+  questionQid: string | undefined,
 ): Promise<{
   jobSequenceId: string;
   htmlResult: string | undefined;
@@ -467,9 +550,6 @@ export async function regenerateQuestion(
   });
 
   const jobData = await serverJob.execute(async (job) => {
-    job.data['prompt'] = revisionPrompt;
-    job.data['originalPrompt'] = originalPrompt;
-
     await regenInternal(
       job,
       client,
@@ -479,7 +559,9 @@ export async function regenerateQuestion(
       originalHTML,
       originalPython,
       1,
-      true,
+      false,
+      saveLocals,
+      questionQid,
     );
   });
 
