@@ -444,11 +444,11 @@ export async function aiGrade({
         },
         GradedExampleSchema,
       );
-      let msg = `\nInstance question ${instance_question.id}\nGraded examples:`;
+      let gradedExampleInfo = `\nInstance question ${instance_question.id}\nGraded examples:`;
       for (const example of example_submissions) {
-        msg += ` ${example.instance_question_id}`;
+        gradedExampleInfo += ` ${example.instance_question_id}`;
       }
-      msg += '\n';
+      job.info(gradedExampleInfo);
 
       const { messages, warning } = await generateGPTPrompt({
         questionPrompt,
@@ -478,9 +478,11 @@ export async function aiGrade({
           response_format: zodResponseFormat(GPTRubricGradeSchema, 'grades'),
         });
         try {
-          msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
+          job.info(
+            `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`,
+          );
           const grade_response = completion.choices[0].message;
-          msg += `Raw ChatGPT response:\n${grade_response.content}`;
+          job.info(`Raw ChatGPT response:\n${grade_response.content}`);
           if (grade_response.parsed) {
             // Only care about the rubric numbers
             const gptRubricItems: number[] = [];
@@ -517,7 +519,7 @@ export async function aiGrade({
               },
               user_id,
             );
-            msg += `\nAI rubric items: ${gptRubricItems.toString()}`;
+            job.info(`AI rubric items: ${gptRubricItems.toString()}`);
           } else if (grade_response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
             job.error(grade_response.refusal);
@@ -528,7 +530,6 @@ export async function aiGrade({
           job.error(err);
           error_count++;
         }
-        job.info(msg);
         if (warning) {
           job.warn(warning);
         }
@@ -541,9 +542,11 @@ export async function aiGrade({
           response_format: zodResponseFormat(GPTGradeSchema, 'grades'),
         });
         try {
-          msg += `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`;
+          job.info(
+            `Number of tokens used: ${completion.usage ? completion.usage.total_tokens : 0}\n`,
+          );
           const grade_response = completion.choices[0].message;
-          msg += `Raw ChatGPT response:\n${grade_response.content}`;
+          job.info(`Raw ChatGPT response:\n${grade_response.content}`);
           if (grade_response.parsed) {
             await manualGrading.updateInstanceQuestionScore(
               assessment_question.assessment_id,
@@ -556,7 +559,7 @@ export async function aiGrade({
               },
               user_id,
             );
-            msg += `\nAI grades: ${grade_response.parsed.grade}`;
+            job.info(`\nAI grades: ${grade_response.parsed.grade}`);
           } else if (grade_response.refusal) {
             job.error(`ERROR AI grading for ${instance_question.id}`);
             job.error(grade_response.refusal);
@@ -567,7 +570,6 @@ export async function aiGrade({
           job.error(err);
           error_count++;
         }
-        job.info(msg);
         if (warning) {
           job.warn(warning);
         }
