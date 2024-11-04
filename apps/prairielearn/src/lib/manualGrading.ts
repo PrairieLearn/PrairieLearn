@@ -120,7 +120,11 @@ export async function nextUngradedInstanceQuestionUrl(
   return `${urlPrefix}/assessment/${assessment_id}/manual_grading/assessment_question/${assessment_question_id}`;
 }
 
-export async function buildRubricData({
+/**
+ * Selects a variety of rubric data for a given assessment question.
+ * Also renders the selected rubric items with the submission data.
+ */
+export async function selectRubricData({
   assessment_question,
   submission,
 }: {
@@ -170,7 +174,7 @@ export async function buildRubricData({
  * as well as any value that impacts the mustache rendering, such as `submission`.
  */
 export async function populateRubricData(locals: Record<string, any>): Promise<void> {
-  locals.rubric_data = await buildRubricData({
+  locals.rubric_data = await selectRubricData({
     assessment_question: locals.assessment_question,
     submission: locals.submission,
   });

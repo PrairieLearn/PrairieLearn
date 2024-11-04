@@ -694,7 +694,7 @@ export async function renderPanelsForSubmission({
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
       panels.extraHeadersHtml = htmls.extraHeadersHtml;
 
-      const rubric_data = await manualGrading.buildRubricData({
+      const rubric_data = await manualGrading.selectRubricData({
         assessment_question,
         submission,
       });
