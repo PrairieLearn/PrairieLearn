@@ -107,14 +107,16 @@ const instrumentations = [
     ],
   }),
   new HttpInstrumentation({
-    ignoreIncomingPaths: [
-      // socket.io requests are generally just long-polling; they don't add
-      // useful information for us.
-      /\/socket.io\//,
-      // We get several of these per second; they just chew through our event quota.
-      // They don't really do anything interesting anyways.
-      /\/pl\/webhooks\/ping/,
-    ],
+    ignoreIncomingRequestHook(req) {
+      return [
+        // socket.io requests are generally just long-polling; they don't add
+        // useful information for us.
+        /\/socket.io\//,
+        // We get several of these per second; they just chew through our event quota.
+        // They don't really do anything interesting anyways.
+        /\/pl\/webhooks\/ping/,
+      ].some((re) => re.test(req.url ?? '/'));
+    },
   }),
   new IORedisInstrumentation(),
   new PgInstrumentation(),
