@@ -3,8 +3,8 @@ import { setTimeout as sleep } from 'timers/promises';
 import { parseLinkHeader } from '@web3-storage/parse-link-header';
 import type { Request } from 'express';
 import _ from 'lodash';
-import fetch, { RequestInfo, RequestInit, Response } from 'node-fetch';
-import { Issuer, TokenSet } from 'openid-client';
+import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-fetch';
+import { Issuer, type TokenSet } from 'openid-client';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -25,7 +25,7 @@ import {
   UserSchema,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { ServerJob } from '../../lib/server-jobs.js';
+import { type ServerJob } from '../../lib/server-jobs.js';
 import { selectLti13Instance } from '../models/lti13Instance.js';
 
 import { getInstitutionAuthenticationProviders } from './institution.js';

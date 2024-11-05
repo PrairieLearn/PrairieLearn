@@ -181,18 +181,20 @@ Note that the first argument of the `Feedback.check_xx` functions is the name of
 
 Be careful not to switch the ordering of the student and reference arguments. The student answer is subject to more strict type checking, and there have been instances in the past where the grader has been broken by poorly formatted student answers.
 
-## Banning/Disallowing library functions
+## Disallowing library functions
+
+**Note that because Python is a highly-dynamic language, the following method can be bypassed by students with sufficient knowledge of Python. For stronger guarantees about which functions are or are not used, consider using more advanced static analysis techniques, which are beyond the scope of what this autograder offers. You can also perform verification by hand with manual grading.**
 
 One can hook into library functions in the setup code to disallow students from accessing certain functions. This example is taken from the [demo/autograder/python/numpy] question.
 
-By setting the library functions equal to `Feedback.not_allowed`:
+One can set library functions equal to `Feedback.not_allowed`:
 
 ```python
 numpy.linalg.inv = Feedback.not_allowed
 numpy.linalg.pinv = Feedback.not_allowed
 ```
 
-the `inv` and `pinv` functions will be effectively banned from use. Any time the student tries to use the functions their code will raise an exception. This will survive library reimports.
+Now, any time the student tries to use the functions, their code will raise an exception.
 
 ## Overview
 

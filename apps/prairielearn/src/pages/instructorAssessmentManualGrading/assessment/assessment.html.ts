@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { HtmlValue, html, joinHtml } from '@prairielearn/html';
+import { type HtmlValue, html, joinHtml } from '@prairielearn/html';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.html.js';
 import { HeadContents } from '../../../components/HeadContents.html.js';

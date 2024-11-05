@@ -3,7 +3,7 @@ import crypto from 'node:crypto';
 import type { Request } from 'express';
 import uid from 'uid-safe';
 
-import { SessionStore } from './store.js';
+import { type SessionStore } from './store.js';
 
 export interface Session {
   id: string;

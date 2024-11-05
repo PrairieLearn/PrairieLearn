@@ -3,9 +3,9 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { IdSchema } from '../lib/db-types.js';
-import { ServerJobLogger } from '../lib/server-jobs.js';
+import { type ServerJobLogger } from '../lib/server-jobs.js';
 
-import { CourseData } from './course-db.js';
+import { type CourseData } from './course-db.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface SharedQuestion {
@@ -159,11 +159,12 @@ export async function checkInvalidSharingSetRemovals(
     }
     if (!courseData.questions[question.qid].data?.sharingSets) {
       invalidSharingSetRemovals[question.qid] = question.sharing_sets;
+      return;
     }
 
     question.sharing_sets.forEach((sharingSet) => {
       // TODO: allow if the sharing set hasn't been shared to a course
-      if (!courseData.questions[question.qid].data?.sharingSets.includes(sharingSet)) {
+      if (!courseData.questions[question.qid].data?.sharingSets?.includes(sharingSet)) {
         if (!invalidSharingSetRemovals[question.qid]) {
           invalidSharingSetRemovals[question.qid] = [];
         }

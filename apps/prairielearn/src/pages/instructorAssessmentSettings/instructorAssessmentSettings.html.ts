@@ -5,7 +5,7 @@ import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentSet, AssessmentModule } from '../../lib/db-types.js';
+import { type AssessmentSet, type AssessmentModule } from '../../lib/db-types.js';
 
 export function InstructorAssessmentSettings({
   resLocals,

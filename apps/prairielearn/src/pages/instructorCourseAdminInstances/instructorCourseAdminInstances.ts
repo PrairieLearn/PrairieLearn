@@ -13,7 +13,7 @@ import { selectCourseInstancesWithStaffAccess } from '../../models/course-instan
 
 import {
   InstructorCourseAdminInstances,
-  CourseInstanceAuthzRow,
+  type CourseInstanceAuthzRow,
 } from './instructorCourseAdminInstances.html.js';
 
 const router = express.Router();
