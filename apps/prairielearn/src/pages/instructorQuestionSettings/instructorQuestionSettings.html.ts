@@ -1,9 +1,8 @@
 import { z } from 'zod';
 
-import { escapeHtml, html } from '@prairielearn/html';
+import { escapeHtml, html, type HtmlValue } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
-import { ChangeIdButton } from '../../components/ChangeIdButton.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
@@ -12,9 +11,14 @@ import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
-import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
+import {
+  AssessmentSchema,
+  AssessmentSetSchema,
+  IdSchema,
+  type Question,
+} from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import { CourseWithPermissions } from '../../models/course.js';
+import { type CourseWithPermissions } from '../../models/course.js';
 
 export const SelectedAssessmentsSchema = z.object({
   short_name: z.string(),
@@ -50,6 +54,8 @@ export function InstructorQuestionSettings({
   sharingSetsIn,
   editableCourses,
   infoPath,
+  origHash,
+  canEdit,
 }: {
   resLocals: Record<string, any>;
   questionTestPath: string;
@@ -61,11 +67,12 @@ export function InstructorQuestionSettings({
   sharingSetsIn: SharingSetRow[];
   editableCourses: CourseWithPermissions[];
   infoPath: string;
+  origHash: string;
+  canEdit: boolean;
 }) {
   // Only show assessments on which this question is used when viewing the question
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
-
   return html`
     <!doctype html>
     <html lang="en">
@@ -92,7 +99,9 @@ export function InstructorQuestionSettings({
               <h1>Question Settings</h1>
             </div>
             <div class="card-body">
-              <form>
+              <form name="edit-question-settings-form" method="POST">
+                <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                <input type="hidden" name="orig_hash" value="${origHash}" />
                 <div class="form-group">
                   <h2 class="h4">General</h2>
                   <label for="title">Title</label>
@@ -102,7 +111,7 @@ export function InstructorQuestionSettings({
                     id="title"
                     name="title"
                     value="${resLocals.question.title}"
-                    disabled
+                    ${canEdit ? '' : 'disabled'}
                   />
                   <small class="form-text text-muted">
                     The title of the question (e.g., "Add two numbers").
@@ -110,15 +119,6 @@ export function InstructorQuestionSettings({
                 </div>
                 <div class="form-group">
                   <label for="qid">QID</label>
-                  ${resLocals.authz_data.has_course_permission_edit &&
-                  !resLocals.course.example_course
-                    ? ChangeIdButton({
-                        label: 'QID',
-                        currentValue: resLocals.question.qid,
-                        otherValues: qids,
-                        csrfToken: resLocals.__csrf_token,
-                      })
-                    : ''}
                   ${questionGHLink
                     ? html`<a target="_blank" href="${questionGHLink}"> view on GitHub </a>`
                     : ''}
@@ -128,10 +128,14 @@ export function InstructorQuestionSettings({
                     id="qid"
                     name="qid"
                     value="${resLocals.question.qid}"
-                    disabled
+                    pattern="[\\-A-Za-z0-9_\\/]+"
+                    data-other-values="${qids.join(',')}"
+                    ${canEdit ? '' : 'disabled'}
                   />
                   <small class="form-text text-muted">
-                    This is a unique identifier for the question. (e.g., "addNumbers")
+                    This is a unique identifier for the question, e.g. "addNumbers". Use only
+                    letters, numbers, dashes, and underscores, with no spaces. You may use forward
+                    slashes to separate directories.
                   </small>
                 </div>
 
@@ -156,6 +160,26 @@ export function InstructorQuestionSettings({
                       : ''}
                   </table>
                 </div>
+                ${canEdit
+                  ? html`
+                      <button
+                        id="save-button"
+                        type="submit"
+                        class="btn btn-primary mb-2"
+                        name="__action"
+                        value="update_question"
+                      >
+                        Save
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-secondary mb-2"
+                        onclick="window.location.reload()"
+                      >
+                        Cancel
+                      </button>
+                    `
+                  : ''}
               </form>
               ${sharingEnabled
                 ? html`
@@ -164,7 +188,7 @@ export function InstructorQuestionSettings({
                       <h2 class="h4">Sharing</h2>
                       <div data-testid="shared-with">
                         ${QuestionSharing({
-                          questionSharedPublicly: resLocals.question.shared_publicly,
+                          question: resLocals.question,
                           sharingSetsIn,
                         })}
                       </div>
@@ -188,8 +212,7 @@ export function InstructorQuestionSettings({
                   `
                 : ''}
               ${resLocals.authz_data.has_course_permission_view
-                ? resLocals.authz_data.has_course_permission_edit &&
-                  !resLocals.course.example_course
+                ? canEdit
                   ? html`
                       <hr />
                       <a
@@ -214,7 +237,7 @@ export function InstructorQuestionSettings({
                 : ''}
             </div>
             ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) ||
-            (resLocals.authz_data.has_course_permission_edit && !resLocals.course.example_course)
+            canEdit
               ? html`
                   <div class="card-footer">
                       ${
@@ -246,8 +269,7 @@ export function InstructorQuestionSettings({
                           : ''
                       }
                       ${
-                        resLocals.authz_data.has_course_permission_edit &&
-                        !resLocals.course.example_course
+                        canEdit
                           ? html`
                               <button
                                 class="btn btn-sm btn-primary"
@@ -386,36 +408,51 @@ function QuestionTestsForm({
 }
 
 function QuestionSharing({
-  questionSharedPublicly,
+  question,
   sharingSetsIn,
 }: {
-  questionSharedPublicly: boolean;
+  question: Question;
   sharingSetsIn: SharingSetRow[];
 }) {
-  if (questionSharedPublicly) {
-    return html`
-      <p>
-        <span class="badge color-green3 mr-1">Public</span>
-        This question is publicly shared.
-      </p>
-    `;
+  if (!question.shared_publicly && !question.share_source_publicly && sharingSetsIn.length === 0) {
+    return html`<p>This question is not being shared.</p>`;
   }
 
-  const sharedWithLabel =
-    sharingSetsIn.length === 1 ? '1 sharing set' : `${sharingSetsIn.length} sharing sets`;
+  const details: HtmlValue[] = [];
 
-  return html`
-    ${sharingSetsIn.length === 0
-      ? html`<p>This question is not being shared.</p>`
-      : html`
-          <p>
-            Shared with ${sharedWithLabel}:
-            ${sharingSetsIn.map((sharing_set) => {
-              return html` <span class="badge color-gray1">${sharing_set.name}</span> `;
-            })}
-          </p>
-        `}
-  `;
+  if (question.shared_publicly) {
+    details.push(html`
+      <p>
+        <span class="badge color-green3 mr-1">Public</span>
+        This question is publicly shared and can be imported by other courses.
+      </p>
+    `);
+  }
+
+  if (question.share_source_publicly) {
+    details.push(html`
+      <p>
+        <span class="badge color-green3 mr-1">Public source</span>
+        This question's source is publicly shared.
+      </p>
+    `);
+  }
+
+  if (sharingSetsIn.length > 0) {
+    const sharedWithLabel =
+      sharingSetsIn.length === 1 ? '1 sharing set' : `${sharingSetsIn.length} sharing sets`;
+
+    details.push(html`
+      <p>
+        Shared with ${sharedWithLabel}:
+        ${sharingSetsIn.map((sharing_set) => {
+          return html` <span class="badge color-gray1">${sharing_set.name}</span> `;
+        })}
+      </p>
+    `);
+  }
+
+  return details;
 }
 
 function AssessmentBadges({
@@ -446,7 +483,7 @@ function AssessmentBadges({
     return html`
       <a
         href="/pl/course_instance/${assessmentsInCourseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}"
-        class="badge color-${assessment.color}"
+        class="btn btn-badge color-${assessment.color}"
       >
         ${assessment.label}
       </a>

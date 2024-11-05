@@ -1,10 +1,10 @@
 import { A11yError } from '@sa11y/format';
 import axe from 'axe-core';
-import expressListEndpoints from 'express-list-endpoints';
-import { JSDOM } from 'jsdom';
+import { JSDOM, VirtualConsole } from 'jsdom';
 import { test } from 'mocha';
 import fetch from 'node-fetch';
 
+import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
@@ -26,7 +26,11 @@ async function loadPageJsdom(url: string): Promise<JSDOM> {
     }
     return res.text();
   });
-  return new JSDOM(text);
+  // JSDOM can be very verbose regarding unimplemented features (e.g., canvas).
+  // We don't have a need to see these warnings, so we create a virtual console
+  // that does not log anything.
+  const virtualConsole = new VirtualConsole();
+  return new JSDOM(text, { virtualConsole });
 }
 
 /**
@@ -253,7 +257,7 @@ function shouldSkipPath(path) {
 }
 
 describe('accessibility', () => {
-  let endpoints: expressListEndpoints.Endpoint[] = [];
+  let endpoints: Endpoint[] = [];
   let routeParams: Record<string, any> = {};
   before('set up testing server', async function () {
     config.cronActive = false;
@@ -302,14 +306,19 @@ describe('accessibility', () => {
       'UPDATE questions SET shared_publicly = true WHERE id = $question_id',
       { question_id: routeParams.question_id },
     );
+
+    await sqldb.queryOneRowAsync(
+      'UPDATE assessments SET share_source_publicly = true WHERE id = $assessment_id',
+      { assessment_id: routeParams.assessment_id },
+    );
   });
   after('shut down testing server', helperServer.after);
 
   test('All pages pass accessibility checks', async function () {
     this.timeout(240_000);
 
-    const missingParamsEndpoints: expressListEndpoints.Endpoint[] = [];
-    const failingEndpoints: [expressListEndpoints.Endpoint, any][] = [];
+    const missingParamsEndpoints: Endpoint[] = [];
+    const failingEndpoints: [Endpoint, any][] = [];
 
     for (const endpoint of endpoints) {
       if (shouldSkipPath(endpoint.path)) {

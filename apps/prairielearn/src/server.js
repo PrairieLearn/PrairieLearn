@@ -34,7 +34,7 @@ import yargsParser from 'yargs-parser';
 
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
-import { flashMiddleware, flash } from '@prairielearn/flash';
+import { flashMiddleware } from '@prairielearn/flash';
 import { logger, addFileLogging } from '@prairielearn/logger';
 import * as migrations from '@prairielearn/migrations';
 import {
@@ -50,6 +50,7 @@ import { createSessionMiddleware } from '@prairielearn/session';
 import * as cron from './cron/index.js';
 import { validateLti13CourseInstance } from './ee/lib/lti13.js';
 import * as assets from './lib/assets.js';
+import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
 import { config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
@@ -131,7 +132,6 @@ export async function initExpress() {
   // all pages including the error page (which we could jump to at
   // any point.
   app.use((req, res, next) => {
-    res.locals.config = config;
     setLocalsFromConfig(res.locals);
     next();
   });
@@ -153,6 +153,11 @@ export async function initExpress() {
       },
     }),
   );
+
+  // Attach the flash middleware immediately after the session middleware so
+  // that all future handlers can write flash messages. This must come after
+  // the session middleware so that it can access the session.
+  app.use(flashMiddleware());
 
   // This middleware helps ensure that sessions remain alive (un-expired) as
   // long as users are somewhat frequently active. See the documentation for
@@ -475,15 +480,11 @@ export async function initExpress() {
     next();
   });
 
+  // This makes a `CanonicalLogger` instance available throughout this request
+  // via AsyncLocalStorage.
+  app.use(canonicalLoggerMiddleware());
+
   // More middlewares
-  app.use(flashMiddleware());
-  app.use((req, res, next) => {
-    // This is so that the `navbar` partial can access the flash messages. If
-    // you want to add a flash message, you should import and use `flash`
-    // directly from `@prairielearn/flash`.
-    res.locals.flash = flash;
-    next();
-  });
   app.use((await import('./middlewares/logResponse.js')).default); // defers to end of response
   app.use((await import('./middlewares/cors.js')).default);
   app.use((await import('./middlewares/content-security-policy.js')).default);
@@ -1270,7 +1271,7 @@ export async function initExpress() {
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/modules', [
     function (req, res, next) {
-      res.locals.navSubPage = 'moduls';
+      res.locals.navSubPage = 'modules';
       next();
     },
     (await import('./pages/instructorCourseAdminModules/instructorCourseAdminModules.js')).default,
@@ -1783,6 +1784,11 @@ export async function initExpress() {
     (await import('./pages/instructorFileTransfer/instructorFileTransfer.js')).default,
   ]);
 
+  // TEST for transfering files to a course instance
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/file_transfer', [
+    (await import('./pages/instructorFileTransferToCourseInstance/instructorFileTransferToCourseInstance.js')).default,
+  ]);
+
   app.use(
     '/pl/course/:course_id(\\d+)/edit_error',
     (await import('./pages/editError/editError.js')).default,
@@ -1932,6 +1938,12 @@ export async function initExpress() {
     (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
   );
 
+  // Also not a page, like above. This one is used to initiate the transfer of an assessment
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/copy_public_assessment',
+    (await import('./pages/instructorCopyPublicAssessment/instructorCopyPublicAssessment.js')).default,
+  );
+
   // Global client files
   app.use(
     '/pl/course/:course_id(\\d+)/clientFilesCourse',
@@ -2027,7 +2039,7 @@ export async function initExpress() {
   app.use(
     '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
     [
-      function (req, res, next) {  
+      function (req, res, next) {
         res.locals.course_instance_id = req.params.course_instance_id;
         res.locals.assessment_id = req.params.assessment_id;
         res.locals.navPage = 'public_question';
@@ -2035,11 +2047,8 @@ export async function initExpress() {
         res.locals.navbarType = 'public';
         next();
       },
-      (
-        await import(
-          './pages/publicAssessmentQuestionsPreview/publicAssessmentQuestionsPreview.js'
-        )
-      ).default,
+      (await import('./pages/publicAssessmentQuestionsPreview/publicAssessmentQuestionsPreview.js'))
+        .default,
     ],
   );
   app.use('/pl/public/course_instance/:course_instance_id(\\d+)/assessments', [

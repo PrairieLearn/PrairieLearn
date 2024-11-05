@@ -3,7 +3,7 @@ import { z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { IdSchema } from '../../lib/db-types.js';
-import { CourseData, Question } from '../course-db.js';
+import { type CourseData, type Question } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
 function getParamsForQuestion(q: Question | null | undefined) {
@@ -47,8 +47,8 @@ function getParamsForQuestion(q: Question | null | undefined) {
     workspace_url_rewrite: q.workspaceOptions && q.workspaceOptions.rewriteUrl,
     workspace_enable_networking: q.workspaceOptions && q.workspaceOptions.enableNetworking,
     workspace_environment: q.workspaceOptions?.environment ?? {},
-    shared_publicly: q.sharedPubliclyWithSource || q.sharedPublicly || false,
-    shared_publicly_with_source: q.sharedPubliclyWithSource || false,
+    shared_publicly: q.sharePublicly ?? q.sharedPublicly ?? false,
+    share_source_publicly: q.shareSourcePublicly ?? false,
   };
 }
 

@@ -19,20 +19,19 @@ export function AssessmentBadge({
     }
   | { urlPrefix?: undefined; plainUrlPrefix: string; course_instance_id: string }
 )) {
-
   if (hideLink) {
-    return html`
-      <span class="badge color-${assessment.color} color-hover">${assessment.label}</span>
-    `;
+    return html`<span class="badge color-${assessment.color}">${assessment.label}</span>`;
   }
   if (publicURL) {
     // For public assessments, the URL prefix is different
-    urlPrefix = `${plainUrlPrefix}/public/course_instance/${course_instance_id}/instructor/assessment/${assessment.assessment_id}/questions`;
-  }
-  if (urlPrefix === undefined) {
+    urlPrefix = `${plainUrlPrefix}/public/course_instance/${course_instance_id}/assessment/${assessment.assessment_id}/questions`;
+  } else if (urlPrefix === undefined) {
     // Construct the URL prefix with the appropriate course instance
-    urlPrefix = `${plainUrlPrefix}/course_instance/${course_instance_id}/instructor/assessment/${assessment.assessment_id}`;
-  } 
+    urlPrefix = `${plainUrlPrefix}/assessment/${assessment.assessment_id}/questions`;
+  } else {
+    // Add the assessment ID to the URL prefix
+    urlPrefix = `${urlPrefix}/assessment/${assessment.assessment_id}/questions`;
+  }
 
   return html`
     <a

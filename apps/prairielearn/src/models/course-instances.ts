@@ -29,6 +29,14 @@ export async function selectCourseInstanceById(
   );
 }
 
+export async function selectCourseInstancesByCourseId(course_id: string) {
+  return await queryRows(
+    sql.select_course_instances_by_course_id,
+    { course_id },
+    CourseInstanceSchema,
+  );
+}
+
 /**
  * Returns all course instances to which the given user has staff access.
  *

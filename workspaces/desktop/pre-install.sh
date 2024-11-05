@@ -4,7 +4,7 @@ set -ex
 apt-get update && apt-get upgrade -y
 
 # bring back the missing manpages
-apt-get install -y man-db
+apt-get install -y man-db unminimize
 yes | unminimize
 
 # create base system

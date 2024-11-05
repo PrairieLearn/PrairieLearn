@@ -167,7 +167,7 @@ BEGIN
             allow_personal_notes = (valid_assessment.data->>'allow_personal_notes')::boolean,
             group_work = (valid_assessment.data->>'group_work')::boolean,
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
-            shared_publicly = (valid_assessment.data->>'shared_publicly')::boolean,
+            share_source_publicly = (valid_assessment.data->>'share_source_publicly')::boolean,
             sync_errors = NULL,
             sync_warnings = valid_assessment.warnings
         FROM
@@ -451,45 +451,25 @@ BEGIN
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
 
+                    -- If the assessment is configured as group work, sync the role permissions.
                     IF (valid_assessment.data->>'group_work')::boolean THEN
-                        -- Iterate over all group roles in assessment
-                        FOR valid_group_role IN (
-                            SELECT gr.id, gr.role_name
-                            FROM group_roles as gr
-                            WHERE gr.assessment_id = new_assessment_id
-                        ) LOOP
-                            -- Insert roles that can view
-                            INSERT INTO assessment_question_role_permissions (
-                                assessment_question_id,
-                                group_role_id,
-                                can_view
-                            ) VALUES (
-                                new_assessment_question_id,
-                                valid_group_role.id,
-                                (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view')))
-                            ) ON CONFLICT (assessment_question_id, group_role_id)
-                            DO UPDATE
-                            SET
-                                assessment_question_id = EXCLUDED.assessment_question_id,
-                                group_role_id = EXCLUDED.group_role_id,
-                                can_view = EXCLUDED.can_view;
-
-                            -- Insert roles that can submit
-                            INSERT INTO assessment_question_role_permissions (
-                                assessment_question_id,
-                                group_role_id,
-                                can_submit
-                            ) VALUES (
-                                new_assessment_question_id,
-                                valid_group_role.id,
-                                (valid_group_role.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
-                            ) ON CONFLICT (assessment_question_id, group_role_id)
-                            DO UPDATE
-                            SET
-                                assessment_question_id = EXCLUDED.assessment_question_id,
-                                group_role_id = EXCLUDED.group_role_id,
-                                can_submit = EXCLUDED.can_submit;
-                        END LOOP;
+                        INSERT INTO assessment_question_role_permissions (
+                            assessment_question_id,
+                            group_role_id,
+                            can_view,
+                            can_submit
+                        ) SELECT
+                            new_assessment_question_id,
+                            gr.id,
+                            (gr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view'))),
+                            (gr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
+                        FROM group_roles AS gr
+                        WHERE gr.assessment_id = new_assessment_id
+                        ON CONFLICT (assessment_question_id, group_role_id)
+                        DO UPDATE
+                        SET
+                            can_view = EXCLUDED.can_view,
+                            can_submit = EXCLUDED.can_submit;
                     END IF;
                 END LOOP;
             END LOOP;

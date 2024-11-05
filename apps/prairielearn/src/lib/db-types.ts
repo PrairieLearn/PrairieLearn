@@ -176,6 +176,7 @@ export const AssessmentSchema = z.object({
   score_stat_n_zero_perc: z.number(),
   score_stat_number: z.number(),
   score_stat_std: z.number(),
+  share_source_publicly: z.boolean().nullable(),
   shuffle_questions: z.boolean().nullable(),
   statistics_last_updated_at: DateFromISOString,
   stats_last_updated: DateFromISOString.nullable(),
@@ -828,7 +829,7 @@ export const QuestionSchema = z.object({
   partial_credit: z.boolean().nullable(),
   qid: z.string().nullable(),
   shared_publicly: z.boolean(),
-  shared_publicly_with_source: z.boolean(),
+  share_source_publicly: z.boolean(),
   show_correct_answer: z.boolean().nullable(),
   single_variant: z.boolean().nullable(),
   sync_errors: z.string().nullable(),
@@ -942,6 +943,19 @@ export const StripeCheckoutSessionSchema = z.object({
   subject_user_id: IdSchema.nullable(),
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
+
+export const SubmissionGradingContextEmbeddingSchema = z.object({
+  id: IdSchema,
+  embedding: z.string(),
+  submission_id: IdSchema,
+  submission_text: z.string(),
+  created_at: DateFromISOString,
+  updated_at: DateFromISOString,
+  assessment_question_id: IdSchema,
+});
+export type SubmissionGradingContextEmbedding = z.infer<
+  typeof SubmissionGradingContextEmbeddingSchema
+>;
 
 export const SubmissionSchema = z.object({
   auth_user_id: IdSchema.nullable(),

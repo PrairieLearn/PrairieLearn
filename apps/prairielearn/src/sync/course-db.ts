@@ -227,7 +227,7 @@ interface Course {
   topics: Topic[];
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
-  sharingSets: SharingSet[];
+  sharingSets?: SharingSet[];
 }
 
 interface CourseInstanceAllowAccess {
@@ -345,6 +345,7 @@ export interface Assessment {
   canSubmit: string[];
   advanceScorePerc: number;
   gradeRateMinutes: number;
+  shareSourcePublicly: boolean;
 }
 
 interface QuestionExternalGradingOptions {
@@ -387,9 +388,10 @@ export interface Question {
   externalGradingOptions: QuestionExternalGradingOptions;
   workspaceOptions?: QuestionWorkspaceOptions;
   dependencies: Record<string, string>;
-  sharingSets: string[];
+  sharingSets?: string[];
+  sharePublicly: boolean;
   sharedPublicly: boolean;
-  sharedPubliclyWithSource: boolean;
+  shareSourcePublicly: boolean;
 }
 
 export interface CourseInstanceData {
@@ -1054,10 +1056,12 @@ async function validateQuestion(
     }
   }
 
-  if (question.sharedPubliclyWithSource && question.sharedPublicly === false) {
-    warnings.push(
-      'Option "sharedPubliclyWithSource": true will override option "sharedPublicly": false',
-    );
+  if ('sharedPublicly' in question) {
+    if ('sharePublicly' in question) {
+      errors.push('Cannot specify both "sharedPublicly" and "sharePublicly" in one question.');
+    } else {
+      warnings.push('"sharedPublicly" is deprecated; use "sharePublicly" instead.');
+    }
   }
 
   return { warnings, errors };
@@ -1229,10 +1233,21 @@ async function validateAssessment(
               'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
             );
           }
+
           if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
             errors.push(
               'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment',
             );
+          }
+
+          if (!courseInstanceExpired) {
+            if (alternative.points === 0 && alternative.maxPoints > 0) {
+              errors.push('Cannot specify "points": 0 when "maxPoints" > 0');
+            }
+
+            if (alternative.autoPoints === 0 && alternative.maxAutoPoints > 0) {
+              errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
+            }
           }
         }
       });

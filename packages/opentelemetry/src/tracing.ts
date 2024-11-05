@@ -1,4 +1,4 @@
-import { Span, SpanStatusCode, trace } from '@opentelemetry/api';
+import { type Span, SpanStatusCode, trace } from '@opentelemetry/api';
 
 export async function instrumented<T>(
   name: string,

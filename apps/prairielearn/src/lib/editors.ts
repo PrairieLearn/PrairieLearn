@@ -28,9 +28,16 @@ import * as syncFromDisk from '../sync/syncFromDisk.js';
 import * as b64Util from './base64-util.js';
 import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
 import { config } from './config.js';
-import { Assessment, Course, CourseInstance, Question, User } from './db-types.js';
+import {
+  type Assessment,
+  type Course,
+  type CourseInstance,
+  type Question,
+  type User,
+} from './db-types.js';
 import { EXAMPLE_COURSE_PATH } from './paths.js';
-import { ServerJob, ServerJobExecutor, createServerJob } from './server-jobs.js';
+import { formatJsonWithPrettier } from './prettier.js';
+import { type ServerJob, type ServerJobExecutor, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:editors');
@@ -414,8 +421,13 @@ export abstract class Editor {
     return files;
   }
 
-  getNamesForCopy(oldShortName, shortNames, oldLongName, longNames) {
-    function getBaseShortName(oldname) {
+  getNamesForCopy(
+    oldShortName: string,
+    shortNames: string[],
+    oldLongName: string | null,
+    longNames: string[],
+  ): { shortName: string; longName: string } {
+    function getBaseShortName(oldname: string): string {
       const found = oldname.match(new RegExp('^(.*)_copy[0-9]+$'));
       if (found) {
         return found[1];
@@ -424,7 +436,7 @@ export abstract class Editor {
       }
     }
 
-    function getBaseLongName(oldname) {
+    function getBaseLongName(oldname: string | null): string {
       if (!_.isString(oldname)) return 'Unknown';
       debug(oldname);
       const found = oldname.match(new RegExp('^(.*) \\(copy [0-9]+\\)$'));
@@ -436,7 +448,7 @@ export abstract class Editor {
       }
     }
 
-    function getNumberShortName(basename, oldnames) {
+    function getNumberShortName(basename: string, oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         const found = oldname.match(new RegExp(`^${escapeRegExp(basename)}_copy([0-9]+)$`));
@@ -450,7 +462,7 @@ export abstract class Editor {
       return number;
     }
 
-    function getNumberLongName(basename, oldnames) {
+    function getNumberLongName(basename: string, oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         if (!_.isString(oldname)) return;
@@ -476,8 +488,11 @@ export abstract class Editor {
     };
   }
 
-  getNamesForAdd(shortNames, longNames) {
-    function getNumberShortName(oldnames) {
+  getNamesForAdd(
+    shortNames: string[],
+    longNames: string[],
+  ): { shortName: string; longName: string } {
+    function getNumberShortName(oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         const found = oldname.match(new RegExp('^New_([0-9]+)$'));
@@ -491,7 +506,7 @@ export abstract class Editor {
       return number;
     }
 
-    function getNumberLongName(oldnames) {
+    function getNumberLongName(oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
         if (!_.isString(oldname)) return;
@@ -572,6 +587,8 @@ export class AssessmentCopyEditor extends Editor {
     debug('Read infoAssessment.json');
     const infoJson = await fs.readJson(path.join(assessmentPath, 'infoAssessment.json'));
 
+    delete infoJson['shareSourcePublicly'];
+
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
     infoJson.uuid = this.uuid;
@@ -648,7 +665,7 @@ export class AssessmentRenameEditor extends Editor {
     const newPath = path.join(basePath, this.tid_new);
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
-    await this.removeEmptyPrecedingSubfolders(basePath, this.course_instance.short_name);
+    await this.removeEmptyPrecedingSubfolders(basePath, this.assessment.tid);
 
     return {
       pathsToAdd: [oldPath, newPath],
@@ -1084,7 +1101,8 @@ export class QuestionRenameEditor extends Editor {
         logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
       }
       debug(`Write ${infoPath}`);
-      await fs.writeJson(infoPath, infoJson, { spaces: 4 });
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+      await fs.writeFile(infoPath, formattedJson);
     }
 
     return {
@@ -1148,8 +1166,9 @@ export class QuestionCopyEditor extends Editor {
     // Even when copying a question within a course, we don't want to preserve
     // sharing settings because they cannot be undone
     delete infoJson['sharingSets'];
+    delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
-    delete infoJson['sharedPubliclyWithSource'];
+    delete infoJson['shareSourcePublicly'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1230,13 +1249,89 @@ export class QuestionTransferEditor extends Editor {
 
     // We do not want to preserve sharing settings when copying a question to another course
     delete infoJson['sharingSets'];
+    delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
-    delete infoJson['sharedPubliclyWithSource'];
+    delete infoJson['shareSourcePublicly'];
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
       pathsToAdd: [questionPath],
       commitMessage: `copy question ${this.from_qid} (from course ${this.from_course_short_name}) to ${qid}`,
+    };
+  }
+}
+
+export class AssessmentTransferEditor extends Editor {
+  private course_instance: CourseInstance;
+  private from_course_short_name: string;
+  private from_path: string;
+
+  public readonly uuid: string;
+
+  constructor(
+    params: BaseEditorOptions & {
+      from_aid: string;
+      from_course_short_name: string;
+      from_path: string;
+    },
+  ) {
+    super(params);
+
+    this.course_instance = params.locals.course_instance;
+    this.from_course_short_name = params.from_course_short_name;
+    this.from_path = params.from_path;
+    this.description = `Copy assessment ${this.from_aid} from course ${this.from_course_short_name}`; // TEST, change until it makes sense
+
+    this.uuid = uuidv4();
+  }
+
+  async write() {
+    debug('AssessmentTransferEditor: write()');
+    console.log('this.description: ', this.description); // TEST
+    const assessmentsPath = path.join(this.course.path, 'courseInstances', this.course_instance.short_name, 'assessments');
+
+    debug('Get title of assessment that is being copied');
+    const sourceInfoJson = await fs.readJson(path.join(this.from_path, 'infoAssessment.json'));
+    const from_title = sourceInfoJson.title || 'Empty Title';
+
+    // TEST, get tid differently? Get the last segment of the path to use as the assessment tid
+    const assessment_tid = this.from_path.match(/[^/]+$/)[0];
+
+    this.description = `Copy assessment ${from_title} from public course ${this.from_course_short_name}`; // TEST
+    console.log('this.description: ', this.description); // TEST
+
+    const assessmentPath = path.join(assessmentsPath, assessment_tid);
+
+    const fromPath = this.from_path;
+    const toPath = assessmentPath;
+    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+
+    const infoJson = await fs.readJson(path.join(assessmentPath, 'infoAssessment.json'));
+
+    debug('Write infoAssessment.json with new title and uuid');
+    infoJson.title = from_title;
+    infoJson.uuid = this.uuid;
+
+    // When transferring an assessment from an example/template course, drop the tags. They
+    // are likely undesirable in the template course.
+    if (this.course.example_course || this.course.template_course) {
+      delete infoJson.tags;
+    }
+
+    // TEST, this.from_course_short_name is undefined
+    console.log('commit message would be: ', `copy assessment ${from_title} (from public course ${this.from_course_short_name}) to course instance ${this.course_instance.short_name}`); // TEST
+
+    // We do not want to preserve sharing settings when copying an assessment to another course
+    delete infoJson['sharingSets'];
+    delete infoJson['sharePublicly'];
+    delete infoJson['sharedPublicly'];
+    delete infoJson['shareSourcePublicly'];
+    await fs.writeJson(path.join(assessmentPath, 'infoAssessment.json'), infoJson, { spaces: 4 });
+
+    return {
+      pathsToAdd: [assessmentPath],
+      commitMessage: `copy assessment ${from_title} (from public course ${this.from_course_short_name}) to course instance ${this.course_instance.short_name}`,
     };
   }
 }

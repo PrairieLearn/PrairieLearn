@@ -1,50 +1,71 @@
-import { z } from 'zod';
-
 import { html } from '@prairielearn/html';
 
-import { HeadContents } from '../../components/HeadContents.html.js';
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
+import { HeadContents } from '../../components/HeadContents.html.js';
+import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
-import { compiledScriptTag } from '../../lib/assets.js';
-import {
-  AlternativeGroupSchema,
-  AssessmentQuestionSchema,
-  AssessmentsFormatForQuestionSchema,
-  QuestionSchema,
-  TagSchema,
-  TopicSchema,
-  ZoneSchema,
-} from '../../lib/db-types.js';
+import { type AssessmentQuestionRow } from '../../models/questions.js';
 
-export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
-  alternative_group_number_choose: AlternativeGroupSchema.shape.number_choose,
-  alternative_group_number: AlternativeGroupSchema.shape.number,
-  alternative_group_size: z.number(),
-  assessment_question_advance_score_perc: AlternativeGroupSchema.shape.advance_score_perc,
-  display_name: z.string().nullable(),
-  number: z.string().nullable(),
-  other_assessments: AssessmentsFormatForQuestionSchema.nullable(),
-  sync_errors_ansified: z.string().optional(),
-  sync_errors: QuestionSchema.shape.sync_errors,
-  sync_warnings_ansified: z.string().optional(),
-  sync_warnings: QuestionSchema.shape.sync_warnings,
-  topic: TopicSchema,
-  qid: QuestionSchema.shape.qid,
-  start_new_zone: z.boolean().nullable(),
-  start_new_alternative_group: z.boolean().nullable(),
-  tags: TagSchema.pick({ color: true, id: true, name: true }).array().nullable(),
-  title: QuestionSchema.shape.title,
-  zone_best_questions: ZoneSchema.shape.best_questions,
-  zone_has_best_questions: z.boolean().nullable(),
-  zone_has_max_points: z.boolean().nullable(),
-  zone_max_points: ZoneSchema.shape.max_points,
-  zone_number_choose: ZoneSchema.shape.number_choose,
-  zone_number: ZoneSchema.shape.number,
-  zone_title: ZoneSchema.shape.title,
-});
-type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
+
+function CopyAssessmentModal({ resLocals }: { resLocals: Record<string, any> }) {
+  const { assessment_copy_targets, assessment, course_instance } = resLocals;
+  if (assessment_copy_targets == null) return '';
+  return Modal({
+    id: 'copyAssessmentModal',
+    title: 'Copy assessment',
+    formAction: assessment_copy_targets[0]?.copy_url ?? '',
+    body:
+      assessment_copy_targets.length === 0
+        ? html`
+            <p>
+              You can't copy this assessment because you don't have editor permissions in any courses.
+              <a href="/pl/request_course">Request a course</a> if you don't have one already.
+              Otherwise, contact the owner of the course you expected to have access to.
+            </p>
+          `
+        : html`
+            <p>
+              This assessment can be copied to any course for which you have editor permissions.
+              Select one of your courses to copy this assessment.
+            </p>
+            <select class="custom-select" name="to_course_instance_id" required>
+              ${assessment_copy_targets.map(
+                (course_instance, index) => html`
+                  <option
+                    value="${course_instance.id}"
+                    data-csrf-token="${course_instance.__csrf_token}"
+                    data-copy-url="${course_instance.copy_url}"
+                    ${index === 0 ? 'selected' : ''}
+                  >
+                    ${course_instance.short_name}
+                  </option>
+                `,
+              )}
+            </select>
+          `,
+    footer: html`
+      <input
+        type="hidden"
+        name="__csrf_token"
+        value="${assessment_copy_targets[0]?.__csrf_token ?? ''}"
+      />
+      <input type="hidden" name="assessment_id" value="${assessment.id}" />
+      <input type="hidden" name="course_instance_id" value="${course_instance.id}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      ${assessment_copy_targets?.length > 0
+        ? html`
+            <button type="submit" name="__action" value="copy_assessment" class="btn btn-primary">
+              Copy assessment
+            </button>
+          `
+        : ''}
+    `,
+  });
+}
+
+
 
 export function InstructorAssessmentQuestions({
   resLocals,
@@ -53,36 +74,41 @@ export function InstructorAssessmentQuestions({
   resLocals: Record<string, any>;
   questions: AssessmentQuestionRow[];
 }) {
+  CopyAssessmentModal({ resLocals }); // TEST, REMOVE?
   return html`
     <!doctype html>
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })}
-
       </head>
       <body>
         ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
-          <form name="copy-assessment-form" class="form-inline mr-2" method="POST">
-              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <button name="__action" value="copy_assessment" class="btn btn-sm btn-primary">
-              <i class="fa fa-clone"></i> Copy this assessment
-            </button>
-          </form>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               ${resLocals.assessment.title} ${resLocals.assessment.number}: Questions
+              <button
+                class="btn btn-light btn-sm ml-auto"
+                type="button"
+                data-toggle="modal"
+                data-target="#copyAssessmentModal"
+              >
+                <i class="fa fa-clone"></i>
+                Copy assessment
+              </button>
             </div>
             ${AssessmentQuestionsTable({
               questions,
               urlPrefix: resLocals.urlPrefix,
               course_id: resLocals.course.id,
               course_instance_id: resLocals.assessment.course_instance_id,
+              course_sharing_name: resLocals.course.sharing_name,
             })}
           </div>
         </main>
       </body>
     </html>
+  ${CopyAssessmentModal({ resLocals })}
   `.toString();
 }
 function AssessmentQuestionsTable({
@@ -90,11 +116,13 @@ function AssessmentQuestionsTable({
   urlPrefix,
   course_id,
   course_instance_id,
+  course_sharing_name,
 }: {
   questions: AssessmentQuestionRow[];
   urlPrefix: string;
   course_id: string;
   course_instance_id: string;
+  course_sharing_name: string;
 }) {
   const nTableCols = 4;
 
@@ -150,7 +178,7 @@ function AssessmentQuestionsTable({
               <tr>
                 <td>
                   <a
-                    href="/pl/public/course/${course_id}/question/${question.question_id}/preview"
+                    href="${urlPrefix}/public/course/${course_id}/question/${question.question_id}/preview"
                   >
                     ${question.alternative_group_size === 1
                       ? `${question.alternative_group_number}.`
@@ -162,41 +190,7 @@ function AssessmentQuestionsTable({
                     ${question.title}
                   </a>
                 </td>
-                <td>
-                  ${question.sync_errors
-                    ? html`
-                        <button
-                          class="btn btn-xs mr-1 js-sync-popover"
-                          data-toggle="popover"
-                          data-trigger="hover"
-                          data-container="body"
-                          data-html="true"
-                          data-title="Sync Errors"
-                          data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_errors_ansified}</pre>'
-                        >
-                          <i class="fa fa-times text-danger" aria-hidden="true"></i>
-                        </button>
-                      `
-                    : question.sync_warnings
-                      ? html`
-                          <button
-                            class="btn btn-xs mr-1 js-sync-popover"
-                            data-toggle="popover"
-                            data-trigger="hover"
-                            data-container="body"
-                            data-html="true"
-                            data-title="Sync Warnings"
-                            data-content='<pre style="background-color: black" class="text-white rounded p-3 mb-0">${question.sync_warnings_ansified}</pre>'
-                          >
-                            <i
-                              class="fa fa-exclamation-triangle text-warning"
-                              aria-hidden="true"
-                            ></i>
-                          </button>
-                        `
-                      : ''}
-                  ${question.display_name}
-                </td>
+                <td>${`@${course_sharing_name}/${question.display_name}`}</td>
                 <td>${TopicBadge(question.topic)}</td>
                 <td>${TagBadgeList(question.tags)}</td>
                 <td>
