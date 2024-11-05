@@ -1,15 +1,19 @@
 import { z } from 'zod';
 
 import { QuestionAddEditor } from '../../../../lib/editors.js';
+import { selectCourseById } from '../../../../models/course.js';
 import { selectQuestionByUuid } from '../../../../models/question.js';
-import { courseProcedure, privateProcedure, userProcedure } from '../../trpc.js';
+import { privateProcedure, selectUsers } from '../../trpc.js';
 
 export const createQuestion = privateProcedure
-  // TODO: this loses inference on the input type.
-  .unstable_concat(courseProcedure)
-  .unstable_concat(userProcedure)
   .input(
     z.object({
+      // Context.
+      course_id: z.string(),
+      user_id: z.string(),
+      authn_user_id: z.string(),
+
+      // Question data.
       qid: z.string().optional(),
       title: z.string().optional(),
       files: z.record(z.string()).optional(),
@@ -29,14 +33,21 @@ export const createQuestion = privateProcedure
     ]),
   )
   .mutation(async (opts) => {
+    const course = await selectCourseById(opts.input.course_id);
+    const { user, authn_user } = await selectUsers({
+      user_id: opts.input.user_id,
+      authn_user_id: opts.input.authn_user_id,
+    });
+
     const editor = new QuestionAddEditor({
       locals: {
         authz_data: {
+          // TODO: real data.
           has_course_permission_edit: false,
-          authn_user: opts.ctx.authn_user,
+          authn_user,
         },
-        course: opts.ctx.course,
-        user: opts.ctx.user,
+        course,
+        user,
       },
       files: opts.input.files,
     });
@@ -53,7 +64,7 @@ export const createQuestion = privateProcedure
     }
 
     const question = await selectQuestionByUuid({
-      course_id: opts.ctx.course.id,
+      course_id: course.id,
       uuid: editor.uuid,
     });
 

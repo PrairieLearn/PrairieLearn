@@ -9,7 +9,6 @@ import { z } from 'zod';
 import { run } from '@prairielearn/run';
 
 import { config } from '../../lib/config.js';
-import { selectCourseById } from '../../models/course.js';
 import { selectUserById } from '../../models/user.js';
 
 function getJWT(req: Request) {
@@ -67,35 +66,20 @@ export const privateProcedure = t.procedure.use(async (opts) => {
   return opts.next();
 });
 
-export const courseProcedure = t.procedure
-  .input(z.object({ course_id: z.string() }))
-  .use(async (opts) => {
-    const course = await selectCourseById(opts.input.course_id);
+export async function selectUsers({
+  user_id,
+  authn_user_id,
+}: {
+  user_id: string;
+  authn_user_id: string;
+}) {
+  const user = await selectUserById(user_id);
 
-    return opts.next({
-      ctx: {
-        course,
-      },
-    });
+  const authn_user = await run(async () => {
+    if (user_id === authn_user_id) return user;
+
+    return await selectUserById(authn_user_id);
   });
 
-export const userProcedure = t.procedure
-  .input(z.object({ user_id: z.string(), authn_user_id: z.string() }))
-  .use(async (opts) => {
-    const user = await selectUserById(opts.input.user_id);
-
-    const authn_user = await run(async () => {
-      if (opts.input.authn_user_id && opts.input.authn_user_id !== user.user_id) {
-        return await selectUserById(opts.input.authn_user_id);
-      }
-
-      return null;
-    });
-
-    return opts.next({
-      ctx: {
-        user,
-        authn_user,
-      },
-    });
-  });
+  return { user, authn_user };
+}
