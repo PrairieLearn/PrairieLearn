@@ -35,14 +35,13 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const isAssessmentPublic = await checkAssessmentPublic(res.locals.assessment_id);
-    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
-    const course = await selectCourseById(courseId);
 
     if (!isAssessmentPublic) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
 
-    res.locals.course = course;
+    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
+    res.locals.course = await selectCourseById(courseId);
     res.locals.assessment = await selectAssessmentById(res.locals.assessment_id);
     const questions = await selectAssessmentQuestions(res.locals.assessment_id, courseId);
 
