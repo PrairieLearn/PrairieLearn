@@ -2,10 +2,70 @@ import { html } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { type AssessmentQuestionRow } from '../../models/questions.js';
+
+
+function CopyAssessmentModal({ resLocals }: { resLocals: Record<string, any> }) {
+  const { assessment_copy_targets, assessment, course_instance } = resLocals;
+  if (assessment_copy_targets == null) return '';
+  return Modal({
+    id: 'copyAssessmentModal',
+    title: 'Copy assessment',
+    formAction: assessment_copy_targets[0]?.copy_url ?? '',
+    body:
+      assessment_copy_targets.length === 0
+        ? html`
+            <p>
+              You can't copy this assessment because you don't have editor permissions in any courses.
+              <a href="/pl/request_course">Request a course</a> if you don't have one already.
+              Otherwise, contact the owner of the course you expected to have access to.
+            </p>
+          `
+        : html`
+            <p>
+              This assessment can be copied to any course for which you have editor permissions.
+              Select one of your courses to copy this assessment.
+            </p>
+            <select class="custom-select" name="to_course_instance_id" required>
+              ${assessment_copy_targets.map(
+                (course_instance, index) => html`
+                  <option
+                    value="${course_instance.id}"
+                    data-csrf-token="${course_instance.__csrf_token}"
+                    data-copy-url="${course_instance.copy_url}"
+                    ${index === 0 ? 'selected' : ''}
+                  >
+                    ${course_instance.short_name}
+                  </option>
+                `,
+              )}
+            </select>
+          `,
+    footer: html`
+      <input
+        type="hidden"
+        name="__csrf_token"
+        value="${assessment_copy_targets[0]?.__csrf_token ?? ''}"
+      />
+      <input type="hidden" name="assessment_id" value="${assessment.id}" />
+      <input type="hidden" name="course_instance_id" value="${course_instance.id}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      ${assessment_copy_targets?.length > 0
+        ? html`
+            <button type="submit" name="__action" value="copy_assessment" class="btn btn-primary">
+              Copy assessment
+            </button>
+          `
+        : ''}
+    `,
+  });
+}
+
+
 
 export function InstructorAssessmentQuestions({
   resLocals,
@@ -14,6 +74,7 @@ export function InstructorAssessmentQuestions({
   resLocals: Record<string, any>;
   questions: AssessmentQuestionRow[];
 }) {
+  CopyAssessmentModal({ resLocals }); // TEST, REMOVE?
   return html`
     <!doctype html>
     <html lang="en">
@@ -26,6 +87,15 @@ export function InstructorAssessmentQuestions({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               ${resLocals.assessment.title} ${resLocals.assessment.number}: Questions
+              <button
+                class="btn btn-light btn-sm ml-auto"
+                type="button"
+                data-toggle="modal"
+                data-target="#copyAssessmentModal"
+              >
+                <i class="fa fa-clone"></i>
+                Copy assessment
+              </button>
             </div>
             ${AssessmentQuestionsTable({
               questions,
@@ -38,6 +108,7 @@ export function InstructorAssessmentQuestions({
         </main>
       </body>
     </html>
+  ${CopyAssessmentModal({ resLocals })}
   `.toString();
 }
 function AssessmentQuestionsTable({

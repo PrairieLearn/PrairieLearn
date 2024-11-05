@@ -7,9 +7,11 @@ import { queryRow, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { type Assessment, AssessmentSchema } from '../../lib/db-types.js';
 import { selectCourseById, selectCourseIdByInstanceId } from '../../models/course.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { selectAssessmentQuestions } from '../../models/questions.js';
 
 import { InstructorAssessmentQuestions } from './publicAssessmentQuestionsPreview.html.js';
+import { setAssessmentCopyTargets } from '../../lib/copy-assessment.js';
 
 async function selectAssessmentById(assessment_id: string): Promise<Assessment> {
   return await queryRow(
@@ -61,6 +63,10 @@ router.get(
           (assessment) => isOtherAssessmentPublic[assessment.assessment_id],
         ) ?? [];
     }
+
+
+    res.locals.user = res.locals.authn_user; // TEST, need res.locals.user for setAssessmentCopyTargets
+    await setAssessmentCopyTargets(res);
 
     res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions }));
   }),
