@@ -1790,9 +1790,36 @@ export async function initExpress() {
   ]);
 
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/edit_error/job_sequence_id/:job_sequence_id(\\d+)',
+    function (req, res, next) {
+      res.locals.navSubPage = 'file_view';
+      console.log('found TEST url'); // TEST
+      console.log(`Full Request URL: ${req.originalUrl}`); // Log the full request URL
+      next();
+    },
+    (req, res, next) => {
+      console.log('Before editErrorRouter'); // TEST
+      next();
+    },
+    (await import('./pages/editError/editError.js')).default,
+  );
+
+  app.use(
     '/pl/course/:course_id(\\d+)/edit_error',
     (await import('./pages/editError/editError.js')).default,
   );
+
+  // app.use(
+  //   '/pl/course_instance/:course_instance_id(\\d+)/edit_error/job_sequence_id/:job_sequence_id(\\d+)',
+  //   function (req, res, next) {
+  //     res.locals.navSubPage = 'file_view';
+  //     console.log('found TEST url'); // TEST
+  //     next();
+  //   },
+  //   (await import('./pages/editError/editError.js')).default,
+  // );
+
+
 
   app.use(/^(\/pl\/course\/[0-9]+\/course_admin)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/instances`);
@@ -1938,7 +1965,7 @@ export async function initExpress() {
     (await import('./pages/instructorCopyPublicQuestion/instructorCopyPublicQuestion.js')).default,
   );
 
-  // Also not a page, like above. This one is used to initiate the transfer of an assessment
+  // Also not a page, like above. This route is used to initiate the transfer of a public assessment
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/copy_public_assessment',
     (await import('./pages/instructorCopyPublicAssessment/instructorCopyPublicAssessment.js')).default,

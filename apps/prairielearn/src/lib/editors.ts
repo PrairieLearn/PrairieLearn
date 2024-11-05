@@ -1265,6 +1265,7 @@ export class AssessmentTransferEditor extends Editor {
   private course_instance: CourseInstance;
   private from_course_short_name: string;
   private from_path: string;
+  private to_assessment_tid: string;
 
   public readonly uuid: string;
 
@@ -1273,6 +1274,7 @@ export class AssessmentTransferEditor extends Editor {
       from_aid: string;
       from_course_short_name: string;
       from_path: string;
+      to_assessment_tid: string;
     },
   ) {
     super(params);
@@ -1280,27 +1282,22 @@ export class AssessmentTransferEditor extends Editor {
     this.course_instance = params.locals.course_instance;
     this.from_course_short_name = params.from_course_short_name;
     this.from_path = params.from_path;
-    this.description = `Copy assessment ${this.from_aid} from course ${this.from_course_short_name}`; // TEST, change until it makes sense
+    this.to_assessment_tid = params.to_assessment_tid;
+    this.description = `Copy public assessment ${this.to_assessment_tid} from course ${this.from_course_short_name}`;
+
 
     this.uuid = uuidv4();
   }
 
   async write() {
     debug('AssessmentTransferEditor: write()');
-    console.log('this.description: ', this.description); // TEST
     const assessmentsPath = path.join(this.course.path, 'courseInstances', this.course_instance.short_name, 'assessments');
 
     debug('Get title of assessment that is being copied');
     const sourceInfoJson = await fs.readJson(path.join(this.from_path, 'infoAssessment.json'));
     const from_title = sourceInfoJson.title || 'Empty Title';
 
-    // TEST, get tid differently? Get the last segment of the path to use as the assessment tid
-    const assessment_tid = this.from_path.match(/[^/]+$/)[0];
-
-    this.description = `Copy assessment ${from_title} from public course ${this.from_course_short_name}`; // TEST
-    console.log('this.description: ', this.description); // TEST
-
-    const assessmentPath = path.join(assessmentsPath, assessment_tid);
+    const assessmentPath = path.join(assessmentsPath, this.to_assessment_tid);
 
     const fromPath = this.from_path;
     const toPath = assessmentPath;
@@ -1319,9 +1316,6 @@ export class AssessmentTransferEditor extends Editor {
       delete infoJson.tags;
     }
 
-    // TEST, this.from_course_short_name is undefined
-    console.log('commit message would be: ', `copy assessment ${from_title} (from public course ${this.from_course_short_name}) to course instance ${this.course_instance.short_name}`); // TEST
-
     // We do not want to preserve sharing settings when copying an assessment to another course
     delete infoJson['sharingSets'];
     delete infoJson['sharePublicly'];
@@ -1331,7 +1325,7 @@ export class AssessmentTransferEditor extends Editor {
 
     return {
       pathsToAdd: [assessmentPath],
-      commitMessage: `copy assessment ${from_title} (from public course ${this.from_course_short_name}) to course instance ${this.course_instance.short_name}`,
+      commitMessage: `copy public assessment ${this.to_assessment_tid} (from course ${this.from_course_short_name}) to course instance ${this.course_instance.short_name}`,
     };
   }
 }

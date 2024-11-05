@@ -74,7 +74,6 @@ export function InstructorAssessmentQuestions({
   resLocals: Record<string, any>;
   questions: AssessmentQuestionRow[];
 }) {
-  CopyAssessmentModal({ resLocals }); // TEST, REMOVE?
   return html`
     <!doctype html>
     <html lang="en">

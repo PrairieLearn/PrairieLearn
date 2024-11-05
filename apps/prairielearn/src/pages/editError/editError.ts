@@ -11,9 +11,19 @@ import { EditError } from './editError.html.js';
 
 const router = Router();
 
+console.log('In editError.ts'); // TEST
+
+router.use((req, res, next) => {
+  console.log('In editErrorRouter middleware'); // TEST
+  console.log(`Request Path: ${req.path}`); // Log the request path
+  console.log(`Request Method: ${req.method}`); // Log the request method
+  next();
+});
+
 router.get(
   '/:job_sequence_id',
   asyncHandler(async (req, res) => {
+    console.log('In editError.ts GET'); // TEST
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }
@@ -23,9 +33,6 @@ router.get(
     const jobSequence = await getJobSequence(job_sequence_id, course_id);
 
     if (jobSequence.status === 'Running') {
-      // All edits wait for the corresponding job sequence to finish before
-      // proceeding, so something bad must have happened to get to this page
-      // with a sequence that is still running.
       throw new Error('Edit is still in progress (job sequence is still running)');
     } else if (jobSequence.status !== 'Error') {
       throw new Error('Edit did not fail');
@@ -34,7 +41,6 @@ router.get(
     let failedSync = false;
 
     if (jobSequence.legacy) {
-      // Legacy job sequences should no longer exist.
       logger.warn(
         `Found a legacy job sequence (id=${job_sequence_id}) while handling an edit error`,
       );
@@ -53,6 +59,7 @@ router.get(
 router.post(
   '/:job_sequence_id',
   asyncHandler(async (req, res) => {
+    console.log('In editError.ts POST'); // TEST
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }
@@ -65,5 +72,11 @@ router.post(
     }
   }),
 );
+
+// Catch-all route for debugging
+router.use((req, res) => {
+  console.log('Unmatched request in editErrorRouter');
+  res.status(404).send('Not Found');
+});
 
 export default router;

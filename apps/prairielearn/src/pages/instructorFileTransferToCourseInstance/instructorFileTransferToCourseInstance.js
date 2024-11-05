@@ -12,7 +12,7 @@ import { config } from '../../lib/config.js';
 import { AssessmentTransferEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 
-import { selectCourseInstanceById } from '../../models/course-instances.js';
+import { selectCourseById } from '../../models/course.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -34,9 +34,9 @@ async function getFileTransfer(file_transfer_id, user_id) {
       } and ${user_id} (types: ${typeof file_transfer.user_id}, ${typeof user_id})`,
     );
   }
-  const courseInstanceResult = selectCourseInstanceById(file_transfer.from_course_instance_id)
+  const courseResult = await selectCourseById(file_transfer.from_course_id)
   
-  file_transfer.from_course_instance = courseInstanceResult;
+  file_transfer.from_course = courseResult;
   return file_transfer;
 }
 
@@ -53,19 +53,22 @@ router.get(
     // Split the full path and grab everything after assessments/ to get the assessment ID
     const assessment_exploded = path.normalize(file_transfer.from_filename).split(path.sep);
     const assessments_dir_idx = assessment_exploded.findIndex((x) => x === 'assessments');
-    const assessment_id = assessment_exploded.slice(assessments_dir_idx + 1).join(path.sep); // TEST, remove since unused?
+    const assessment_id = assessment_exploded.slice(assessments_dir_idx + 1).join(path.sep);
     const editor = new AssessmentTransferEditor({
       locals: res.locals,
       from_aid: '', // TEST, how to remove without breaking type-check?
-      from_course_short_name: file_transfer.from_course_instance.short_name,
+      from_course_short_name: file_transfer.from_course.short_name,
       from_path: file_transfer.from_filename,
+      to_assessment_tid: assessment_id,
     });
 
     const serverJob = await editor.prepareServerJob();
     try {
       await editor.executeWithServerJob(serverJob);
     } catch {
-      res.redirect(`pl/course/${file_transfer.to_course_id}/edit_error/${serverJob.jobSequenceId}`); // TEST, revert back to old url and copy the edit_error page? This is still broken because it uses the urlPrefix still
+      // TEST, was res.redirect
+      //res.redirect(`edit_error/job_sequence_id/${serverJob.jobSequenceId}`); // TEST, revert back to old url and copy the edit_error page? This is still broken because it uses the urlPrefix still
+      res.redirect(res.locals.urlPrefix + `/edit_error/job_sequence_id/${serverJob.jobSequenceId}`); // TEST, revert back to old url and copy the edit_error page? This is still broken because it uses the urlPrefix still
       return;
     }
 
