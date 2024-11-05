@@ -3,6 +3,7 @@
 # (which was formerly STAT 430 Topics - Data Science Programming Methods
 
 # Alton Barbehenn and Dirk Eddelbuettel, 2019-2022
+# Dirk Eddelbuettel, 2024
 
 # We initially based this container on the 'r-ubuntu:20.04' container of the
 # Rocker Project which offers us a well-understood and stable basis
@@ -18,57 +19,61 @@
 # process via systemd to apt, and the Docker build step does not allow for
 # the required security escalation so we just apt as previously but pointing
 # at a richer and larger repository with complete CRAN coverage.)
+# r2u is now part of rocker so the image is now also rocker/r2u.
 
-FROM eddelbuettel/r2u:22.04
+FROM rocker/r2u:24.04
 
 # Needed to properly handle UTF-8
 ENV PYTHONIOENCODING=UTF-8
 
-# Install required libraries -- using prebuild binaries where available
-# We also install sqlite3 to support the SQL lectures
-# NB Dirk needs the line to /etc/hosts to build this locally as he hosts r2u
-#  RUN echo "192.168.1.114 dirk.eddelbuettel.com" >> /etc/hosts && \
-RUN apt update && apt install -y \
-        curl \
-	git \
-        pandoc \
-        r-cran-bench \        
-	r-cran-data.table \
-	r-cran-devtools \
-        r-cran-diffobj \
-	r-cran-doparallel \
-	r-cran-dygraphs \
-        r-cran-flexdashboard \
-	r-cran-foreach \
-	r-cran-fs \
-	r-cran-future.apply \
-	r-cran-gapminder \
-	r-cran-gh \
-	r-cran-git2r \
-	r-cran-igraph \
-	r-cran-lahman \
-        r-cran-lintr \
-	r-cran-memoise \
-	r-cran-microbenchmark \
-	r-cran-nycflights13 \
-	r-cran-palmerpenguins \
-	r-cran-png \
-	r-cran-profmem \
-	r-cran-rcpparmadillo \
-	r-cran-rex \
-	r-cran-rsqlite \
-	r-cran-runit \
-	r-cran-shiny \
-	r-cran-stringdist \
-	r-cran-testthat \
-	r-cran-tidyverse \
-	r-cran-tinytest \
-        r-cran-ttdo \
-        r-cran-unix \
-	r-cran-xts \
-	sqlite3 \
-        sudo \
-        && echo "options(diffobj.brightness=\"dark\")" >> /etc/R/Rprofile.site
+# Install required libraries -- using prebuild binaries where available. Because we
+# use r2u, the (R package) name can also be mapped to the (Ubuntu) binary provided
+# by r2u so instead of, say, 'apt install r-cran-tidyverse' we can now say 'install.r
+# tidyverse'. Switching to using the CRAN package names may make it easier to other R
+# users to adapt and adjust the package list.  We also install sqlite3 to support the
+# SQL lectures. (Adding a duckdb binary may be an option too.)
+RUN apt update \
+    && apt install -y curl \
+	              git \
+                      pandoc \
+	              sqlite3 \
+                      sudo \
+    && install.r bench \        
+	         data.table \
+	         devtools \
+                 diffobj \
+	         doparallel \
+                 duckdb \
+	         dygraphs \
+                 flexdashboard \
+	         foreach \
+	         fs \
+	         future.apply \
+	         gapminder \
+	         gh \
+	         git2r \
+	         igraph \
+	         lahman \
+                 lintr \
+	         memoise \
+	         microbenchmark \
+	         nycflights13 \
+	         palmerpenguins \
+	         png \
+	         profmem \
+	         RcppArmadillo \
+	         rex \
+	         rsqlite \
+	         runit \
+	         shiny \
+	         stringdist \
+	         testthat \
+	         tidyverse \
+	         tinytest \
+                 ttdo \
+                 unix \
+	         xts \
+    && echo "options(diffobj.brightness=\"dark\")" >> /etc/R/Rprofile.site
 
 # Install visualTest from Mango
 RUN installGithub.r MangoTheCat/visualTest
