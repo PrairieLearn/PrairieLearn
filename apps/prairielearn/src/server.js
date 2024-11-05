@@ -2078,16 +2078,6 @@ export async function initExpress() {
         .default,
     ],
   );
-  app.use('/pl/public/course_instance/:course_instance_id(\\d+)/assessments', [
-    function (req, res, next) {
-      res.locals.course_instance_id = req.params.course_instance_id;
-      res.locals.navPage = 'public_assessments';
-      res.locals.navSubPage = 'assessments';
-      res.locals.navbarType = 'public';
-      next();
-    },
-    (await import('./pages/publicAssessmentPreview/publicAssessmentPreview.js')).default,
-  ]);
 
   // Client files for questions
   app.use(
