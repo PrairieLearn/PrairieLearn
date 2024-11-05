@@ -34,6 +34,7 @@ export const router = t.router;
 export const publicProcedure = t.procedure;
 
 export const privateProcedure = t.procedure.use(async (opts) => {
+  // When running in the same process, we can bypass JWT verification.
   if (opts.ctx.bypassJwt) return opts.next();
 
   if (!config.trpcSecretKey) {
