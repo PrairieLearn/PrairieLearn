@@ -1,13 +1,12 @@
-import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { IdSchema } from '../lib/db-types.js';
 
-const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-router.all('/', async function (req, res, next) {
+export default asyncHandler(async (req, res, next) => {
   if (!res.locals.assessment.multiple_instance) {
     // If the assessment is single-instance, check if the user already has an
     // instance. If so, redirect to it.
@@ -26,5 +25,3 @@ router.all('/', async function (req, res, next) {
   }
   next();
 });
-
-export default router;
