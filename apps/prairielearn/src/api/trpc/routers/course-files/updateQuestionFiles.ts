@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { IdSchema } from '../../../../lib/db-types.js';
 import { QuestionModifyEditor } from '../../../../lib/editors.js';
 import { selectCourseById } from '../../../../models/course.js';
 import { privateProcedure, selectUsers } from '../../trpc.js';
@@ -8,9 +9,9 @@ export const updateQuestionFiles = privateProcedure
   .input(
     z.object({
       // Context.
-      course_id: z.string(),
-      user_id: z.string(),
-      authn_user_id: z.string(),
+      course_id: IdSchema,
+      user_id: IdSchema,
+      authn_user_id: IdSchema,
       has_course_permission_edit: z.boolean(),
 
       // Question data.

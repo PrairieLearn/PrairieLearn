@@ -5,12 +5,10 @@ import fs from 'fs-extra';
 import * as error from '@prairielearn/error';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
-import { getCourseFilesApi } from '../../lib/course-files.js';
+import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { QuestionAddEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
-import { selectQuestionByUuid } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
 
 import { QuestionsPage } from './instructorQuestions.html.js';
@@ -71,29 +69,21 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_question') {
-      const api = await getCourseFilesApi();
+      const api = getCourseFilesClient();
 
-      api.createQuestion.mutate({
+      const result = await api.createQuestion.mutate({
         course_id: res.locals.course.id,
         user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
       });
 
-      const editor = new QuestionAddEditor({
-        locals: res.locals,
-      });
-      const serverJob = await editor.prepareServerJob();
-      try {
-        await editor.executeWithServerJob(serverJob);
-      } catch {
-        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+      if (result.status === 'error') {
+        res.redirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
         return;
       }
 
-      const question = await selectQuestionByUuid({
-        course_id: res.locals.course.id,
-        uuid: editor.uuid,
-      });
-      res.redirect(res.locals.urlPrefix + '/question/' + question.id + '/settings');
+      res.redirect(res.locals.urlPrefix + '/question/' + result.question_id + '/settings');
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

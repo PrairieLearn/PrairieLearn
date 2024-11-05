@@ -1,29 +1,29 @@
 import * as trpcExpress from '@trpc/server/adapters/express';
+import { Router } from 'express';
 
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
-import { courseRouter } from './routers/course/index.js';
-import { router, createContext, t } from './trpc.js';
+import { courseFilesRouter } from './routers/course-files/index.js';
+import { createContext } from './trpc.js';
 
-const appRouter = router({
-  course: courseRouter,
-});
+export { courseFilesRouter };
+export type CourseFilesRouter = typeof courseFilesRouter;
 
-export type AppRouter = typeof appRouter;
+const router = Router();
 
-export default trpcExpress.createExpressMiddleware({
-  router: appRouter,
-  createContext,
-  onError: ({ error }) => {
-    if (error.code === 'INTERNAL_SERVER_ERROR') {
-      Sentry.captureException(error);
-      logger.error('tRPC error', error);
-    }
-  },
-});
+router.use(
+  '/course_files',
+  trpcExpress.createExpressMiddleware({
+    router: courseFilesRouter,
+    createContext,
+    onError: ({ error }) => {
+      if (error.code === 'INTERNAL_SERVER_ERROR') {
+        Sentry.captureException(error);
+        logger.error('tRPC error', error);
+      }
+    },
+  }),
+);
 
-export const caller = t.createCallerFactory(appRouter)({
-  jwt: null,
-  bypassJwt: true,
-});
+export default router;

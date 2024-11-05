@@ -4,7 +4,6 @@ import { initTRPC, TRPCError } from '@trpc/server';
 import { type CreateExpressContextOptions } from '@trpc/server/adapters/express';
 import { type Request } from 'express';
 import * as jose from 'jose';
-import { z } from 'zod';
 
 import { run } from '@prairielearn/run';
 
@@ -37,7 +36,7 @@ export const publicProcedure = t.procedure;
 export const privateProcedure = t.procedure.use(async (opts) => {
   if (opts.ctx.bypassJwt) return opts.next();
 
-  if (!config.internalApiSecretKey) {
+  if (!config.trpcSecretKey) {
     throw new TRPCError({
       code: 'INTERNAL_SERVER_ERROR',
       message: 'Internal API secret key is not configured',
@@ -53,7 +52,7 @@ export const privateProcedure = t.procedure.use(async (opts) => {
 
   // Verify the JWT.
   await jose
-    .jwtVerify(opts.ctx.jwt, crypto.createSecretKey(config.internalApiSecretKey, 'utf-8'), {
+    .jwtVerify(opts.ctx.jwt, crypto.createSecretKey(config.trpcSecretKey, 'utf-8'), {
       issuer: 'PrairieLearn',
     })
     .catch((err) => {

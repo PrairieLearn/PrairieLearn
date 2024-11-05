@@ -554,7 +554,7 @@ const ConfigSchema = z.object({
   pyroscopeBasicAuthUser: z.string().nullable().default(null),
   pyroscopeBasicAuthPassword: z.string().nullable().default(null),
   pyroscopeTags: z.record(z.string(), z.string()).default({}),
-  internalApiSecretKey: z.string().nullable().default(null),
+  trpcSecretKey: z.string().nullable().default(null),
   // TODO: bikeshed all these names.
   courseFilesApiMode: z.enum(['process', 'network']).default('process'),
   courseFilesApiUrl: z.string().nullable().default(null),
@@ -596,6 +596,10 @@ export async function loadConfig(paths: string[]) {
     if (!config.cookieDomain.startsWith('.')) {
       throw new Error('cookieDomain must start with a dot, e.g. ".example.com"');
     }
+  }
+
+  if (config.courseFilesApiMode === 'network' && !config.trpcSecretKey) {
+    throw new Error('trpcSecretKey must be set when courseFilesApiMode is "network"');
   }
 }
 

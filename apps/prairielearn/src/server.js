@@ -106,6 +106,16 @@ function enterpriseOnlyMiddleware(load) {
   return (req, res, next) => next();
 }
 
+function excludeRoutes(routes, handler) {
+  return (req, res, next) => {
+    if (routes.some((route) => req.path.startsWith(route))) {
+      next();
+    } else {
+      handler(req, res, next);
+    }
+  };
+}
+
 /**
  * Creates the express application and sets up all PrairieLearn routes.
  * @return {Promise<import('express').Express>} The express "app" object that was created.
@@ -152,25 +162,14 @@ export async function initExpress() {
     },
   });
 
-  app.use((req, res, next) => {
-    // API routes don't utilize sessions; don't run the session middleware for them.
-    if (req.path.startsWith('/pl/api')) {
-      next();
-      return;
-    }
-
-    sessionMiddleware(req, res, next);
-  });
-
-  // Attach the flash middleware immediately after the session middleware so
-  // that all future handlers can write flash messages. This must come after
-  // the session middleware so that it can access the session.
-  app.use(flashMiddleware());
-
-  // This middleware helps ensure that sessions remain alive (un-expired) as
-  // long as users are somewhat frequently active. See the documentation for
-  // `config.sessionStoreAutoExtendThrottleSeconds` for more information.
-  app.use((req, res, next) => {
+  const sessionRouter = express.Router();
+  sessionRouter.use(sessionMiddleware);
+  sessionRouter.use(flashMiddleware());
+  sessionRouter.use((req, res, next) => {
+    // This middleware helps ensure that sessions remain alive (un-expired) as
+    // long as users are somewhat frequently active. See the documentation for
+    // `config.sessionStoreAutoExtendThrottleSeconds` for more information.
+    //
     // Compute the number of milliseconds until the session expires.
     const sessionTtl = req.session.getExpirationDate().getTime() - Date.now();
 
@@ -183,6 +182,9 @@ export async function initExpress() {
 
     next();
   });
+
+  // API routes don't utilize sessions; don't run the session/flash middleware for them.
+  app.use(excludeRoutes(['/pl/api'], sessionRouter));
 
   app.use(function (req, res, next) {
     if (req.headers['user-agent']) {
@@ -535,7 +537,7 @@ export async function initExpress() {
     (await import('./pages/authLogout/authLogout.js')).default,
   ]);
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
-  app.use('/pl/api', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
+  app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
 
   // Must come after the authentication middleware, as we need to read the
   // `authn_is_administrator` property from the response locals.
@@ -557,7 +559,10 @@ export async function initExpress() {
     ),
   );
 
-  app.use((await import('./middlewares/csrfToken.js')).default); // sets and checks res.locals.__csrf_token
+  // Set and check `res.locals.__csrf_token`. We exclude API routes as those
+  // don't require CSRF protection (and in fact can't have it at all).
+  app.use(excludeRoutes(['/pl/api'], (await import('./middlewares/csrfToken.js')).default));
+
   app.use((await import('./middlewares/logRequest.js')).default);
 
   // load accounting for authenticated accesses
