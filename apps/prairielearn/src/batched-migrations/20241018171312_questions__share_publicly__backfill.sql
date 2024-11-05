@@ -3,5 +3,6 @@ UPDATE questions
 SET
   share_publicly = shared_publicly
 WHERE
-  id >= $start
+  shared_publicly IS TRUE
+  AND id >= $start
   AND id <= $end;
