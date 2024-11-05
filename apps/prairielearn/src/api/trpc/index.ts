@@ -4,11 +4,13 @@ import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
 import { courseRouter } from './routers/course/index.js';
-import { router, createContext } from './trpc.js';
+import { router, createContext, t } from './trpc.js';
 
 const appRouter = router({
   course: courseRouter,
 });
+
+export type AppRouter = typeof appRouter;
 
 export default trpcExpress.createExpressMiddleware({
   router: appRouter,
@@ -19,4 +21,9 @@ export default trpcExpress.createExpressMiddleware({
       logger.error('tRPC error', error);
     }
   },
+});
+
+export const caller = t.createCallerFactory(appRouter)({
+  jwt: null,
+  bypassJwt: true,
 });

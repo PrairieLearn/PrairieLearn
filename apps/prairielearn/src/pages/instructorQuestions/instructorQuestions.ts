@@ -5,6 +5,7 @@ import fs from 'fs-extra';
 import * as error from '@prairielearn/error';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { getCourseFilesApi } from '../../lib/course-files.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { QuestionAddEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
@@ -70,6 +71,13 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_question') {
+      const api = await getCourseFilesApi();
+
+      api.createQuestion.mutate({
+        course_id: res.locals.course.id,
+        user_id: res.locals.user.user_id,
+      });
+
       const editor = new QuestionAddEditor({
         locals: res.locals,
       });

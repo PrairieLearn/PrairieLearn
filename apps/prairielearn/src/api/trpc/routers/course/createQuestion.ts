@@ -9,7 +9,9 @@ export const createQuestion = privateProcedure
   .unstable_concat(userProcedure)
   .input(
     z.object({
-      files: z.record(z.string()),
+      qid: z.string().optional(),
+      title: z.string().optional(),
+      files: z.record(z.string()).optional(),
     }),
   )
   .output(

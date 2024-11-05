@@ -555,6 +555,9 @@ const ConfigSchema = z.object({
   pyroscopeBasicAuthPassword: z.string().nullable().default(null),
   pyroscopeTags: z.record(z.string(), z.string()).default({}),
   internalApiSecretKey: z.string().nullable().default(null),
+  // TODO: bikeshed all these names.
+  courseFilesApiMode: z.enum(['process', 'network']).default('process'),
+  courseFilesApiUrl: z.string().nullable().default(null),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

@@ -21,22 +21,23 @@ function getJWT(req: Request) {
   return token || null;
 }
 
-export async function createContext({ req, res }: CreateExpressContextOptions) {
+export async function createContext({ req }: CreateExpressContextOptions) {
   return {
-    req,
-    res,
     jwt: getJWT(req),
+    bypassJwt: false,
   };
 }
 
 export type TRPCContext = Awaited<ReturnType<typeof createContext>>;
 
-const t = initTRPC.context<TRPCContext>().create();
+export const t = initTRPC.context<TRPCContext>().create();
 
 export const router = t.router;
 export const publicProcedure = t.procedure;
 
 export const privateProcedure = t.procedure.use(async (opts) => {
+  if (opts.ctx.bypassJwt) return opts.next();
+
   if (!config.internalApiSecretKey) {
     throw new TRPCError({
       code: 'INTERNAL_SERVER_ERROR',
