@@ -17,15 +17,15 @@ In this training course, we will provide an introduction to the following topics
 
 ## Workshop Schedule
 
-#### [Lesson 1](lesson1.md): creating simple questions
+### [Lesson 1](lesson1.md): creating simple questions
 
-#### [Lesson 2](lesson2.md): creating assessments
+### [Lesson 2](lesson2.md): creating assessments
 
-#### [Lesson 3](lesson3.md): looking at more specialized elements
+### [Lesson 3](lesson3.md): looking at more specialized elements
 
-#### [Lesson 4](lesson4.md): customizing the grading method
+### [Lesson 4](lesson4.md): customizing the grading method
 
-#### [Lesson 5](lesson5.md): using graphical/drawing elements
+### [Lesson 5](lesson5.md): using graphical/drawing elements
 
 ## Workshop Videos
 
