@@ -5,6 +5,7 @@ import { selectQuestionByUuid } from '../../../../models/question.js';
 import { courseProcedure, privateProcedure, userProcedure } from '../../trpc.js';
 
 export const createQuestion = privateProcedure
+  // TODO: this loses inference on the input type.
   .unstable_concat(courseProcedure)
   .unstable_concat(userProcedure)
   .input(

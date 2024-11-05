@@ -25,7 +25,7 @@ export async function getCourseFilesApi() {
       .setIssuer('PrairieLearn')
       .sign(secret);
 
-    return createTRPCProxyClient<AppRouter>({
+    const client = createTRPCProxyClient<AppRouter>({
       links: [
         httpLink({
           url: config.courseFilesApiUrl,
@@ -35,5 +35,7 @@ export async function getCourseFilesApi() {
         }),
       ],
     }).course;
+
+    return client;
   }
 }
