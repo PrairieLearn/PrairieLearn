@@ -11,6 +11,7 @@ export const updateQuestionFiles = privateProcedure
       course_id: z.string(),
       user_id: z.string(),
       authn_user_id: z.string(),
+      has_course_permission_edit: z.boolean(),
 
       // Question data.
       files: z.record(z.string()),
@@ -33,8 +34,7 @@ export const updateQuestionFiles = privateProcedure
     const editor = new QuestionModifyEditor({
       locals: {
         authz_data: {
-          // TODO: real data.
-          has_course_permission_edit: false,
+          has_course_permission_edit: opts.input.has_course_permission_edit,
           authn_user,
         },
         course,

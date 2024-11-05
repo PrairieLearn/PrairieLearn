@@ -12,6 +12,7 @@ export const createQuestion = privateProcedure
       course_id: z.string(),
       user_id: z.string(),
       authn_user_id: z.string(),
+      has_course_permission_edit: z.boolean(),
 
       // Question data.
       qid: z.string().optional(),
@@ -42,8 +43,7 @@ export const createQuestion = privateProcedure
     const editor = new QuestionAddEditor({
       locals: {
         authz_data: {
-          // TODO: real data.
-          has_course_permission_edit: false,
+          has_course_permission_edit: opts.input.has_course_permission_edit,
           authn_user,
         },
         course,
