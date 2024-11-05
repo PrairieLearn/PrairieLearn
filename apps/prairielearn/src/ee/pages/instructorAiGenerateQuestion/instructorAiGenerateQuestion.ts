@@ -3,10 +3,8 @@ import asyncHandler from 'express-async-handler';
 import { OpenAI } from 'openai';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import { QuestionSchema } from '../../../lib/db-types.js';
 import { QuestionAddEditor } from '../../../lib/editors.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -22,8 +20,6 @@ import {
 } from './instructorAiGenerateQuestion.html.js';
 
 const router = express.Router();
-
-const sql = loadSqlEquiv(import.meta.url);
 
 export async function saveGeneratedQuestion(
   res,

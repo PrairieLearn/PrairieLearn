@@ -880,7 +880,7 @@ export async function initExpress() {
   //////////////////////////////////////////////////////////////////////
   // API ///////////////////////////////////////////////////////////////
 
-  app.use('/pl/api/internal', (await import('./api/internal/index.js')).default);
+  app.use('/pl/api/trpc', (await import('./api/trpc/index.js')).default);
   app.use('/pl/api/v1', (await import('./api/v1/index.js')).default);
 
   //////////////////////////////////////////////////////////////////////

@@ -19,7 +19,7 @@ const authzHasCourseInstanceView = asyncHandler(async (req, res, next) => {
 });
 
 // Pretty-print all JSON responses.
-router.use((await import('../lib/prettyPrintJson.js')).default);
+router.use((await import('./prettyPrintJson.js')).default);
 
 // All course instance pages require authorization
 router.use('/course_instances/:course_instance_id(\\d+)', [
@@ -58,12 +58,12 @@ router.use(
 );
 
 // If no earlier routes matched, 404 the route.
-router.use((await import('../lib/notFound.js')).default);
+router.use((await import('./notFound.js')).default);
 
 // The Sentry error handler must come before our own.
 router.use(Sentry.expressErrorHandler());
 
 // Handle errors independently from the normal PL error handling.
-router.use((await import('../lib/error.js')).default);
+router.use((await import('./error.js')).default);
 
 export default router;

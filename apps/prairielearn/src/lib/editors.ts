@@ -922,7 +922,13 @@ export class QuestionAddEditor extends Editor {
   private title?: string;
   private files?: Record<string, string>;
 
-  constructor(params: BaseEditorOptions & { qid?: string; files?: Record<string, string> }) {
+  constructor(
+    params: BaseEditorOptions & {
+      qid?: string;
+      title?: string;
+      files?: Record<string, string>;
+    },
+  ) {
     super(params);
 
     this.description = 'Add question';
