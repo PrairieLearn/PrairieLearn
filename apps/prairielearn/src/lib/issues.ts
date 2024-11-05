@@ -8,7 +8,7 @@ import { recursivelyTruncateStrings } from '@prairielearn/sanitize';
 
 import { validateVariantAgainstQuestion } from '../models/variant.js';
 
-import { Variant } from './db-types.js';
+import { type Variant } from './db-types.js';
 
 interface IssueForErrorData {
   variantId: string;

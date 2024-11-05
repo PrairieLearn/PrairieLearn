@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { escapeHtml, html } from '@prairielearn/html';
+import { escapeHtml, html, type HtmlValue } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
@@ -11,9 +11,14 @@ import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
-import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
+import {
+  AssessmentSchema,
+  AssessmentSetSchema,
+  IdSchema,
+  type Question,
+} from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import { CourseWithPermissions } from '../../models/course.js';
+import { type CourseWithPermissions } from '../../models/course.js';
 
 export const SelectedAssessmentsSchema = z.object({
   short_name: z.string(),
@@ -183,7 +188,7 @@ export function InstructorQuestionSettings({
                       <h2 class="h4">Sharing</h2>
                       <div data-testid="shared-with">
                         ${QuestionSharing({
-                          questionSharedPublicly: resLocals.question.shared_publicly,
+                          question: resLocals.question,
                           sharingSetsIn,
                         })}
                       </div>
@@ -403,36 +408,51 @@ function QuestionTestsForm({
 }
 
 function QuestionSharing({
-  questionSharedPublicly,
+  question,
   sharingSetsIn,
 }: {
-  questionSharedPublicly: boolean;
+  question: Question;
   sharingSetsIn: SharingSetRow[];
 }) {
-  if (questionSharedPublicly) {
-    return html`
-      <p>
-        <span class="badge color-green3 mr-1">Public</span>
-        This question is publicly shared.
-      </p>
-    `;
+  if (!question.shared_publicly && !question.share_source_publicly && sharingSetsIn.length === 0) {
+    return html`<p>This question is not being shared.</p>`;
   }
 
-  const sharedWithLabel =
-    sharingSetsIn.length === 1 ? '1 sharing set' : `${sharingSetsIn.length} sharing sets`;
+  const details: HtmlValue[] = [];
 
-  return html`
-    ${sharingSetsIn.length === 0
-      ? html`<p>This question is not being shared.</p>`
-      : html`
-          <p>
-            Shared with ${sharedWithLabel}:
-            ${sharingSetsIn.map((sharing_set) => {
-              return html` <span class="badge color-gray1">${sharing_set.name}</span> `;
-            })}
-          </p>
-        `}
-  `;
+  if (question.shared_publicly) {
+    details.push(html`
+      <p>
+        <span class="badge color-green3 mr-1">Public</span>
+        This question is publicly shared and can be imported by other courses.
+      </p>
+    `);
+  }
+
+  if (question.share_source_publicly) {
+    details.push(html`
+      <p>
+        <span class="badge color-green3 mr-1">Public source</span>
+        This question's source is publicly shared.
+      </p>
+    `);
+  }
+
+  if (sharingSetsIn.length > 0) {
+    const sharedWithLabel =
+      sharingSetsIn.length === 1 ? '1 sharing set' : `${sharingSetsIn.length} sharing sets`;
+
+    details.push(html`
+      <p>
+        Shared with ${sharedWithLabel}:
+        ${sharingSetsIn.map((sharing_set) => {
+          return html` <span class="badge color-gray1">${sharing_set.name}</span> `;
+        })}
+      </p>
+    `);
+  }
+
+  return details;
 }
 
 function AssessmentBadges({
@@ -463,7 +483,7 @@ function AssessmentBadges({
     return html`
       <a
         href="/pl/course_instance/${assessmentsInCourseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}"
-        class="badge color-${assessment.color}"
+        class="btn btn-badge color-${assessment.color}"
       >
         ${assessment.label}
       </a>

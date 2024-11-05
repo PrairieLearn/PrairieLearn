@@ -4,7 +4,7 @@ import * as namedLocks from '@prairielearn/named-locks';
 
 import { chalk, chalkDim } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
-import { ServerJobLogger } from '../lib/server-jobs.js';
+import { type ServerJobLogger } from '../lib/server-jobs.js';
 import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 

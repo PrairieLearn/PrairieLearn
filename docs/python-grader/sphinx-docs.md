@@ -132,10 +132,15 @@ Complete grading immediately, additionally outputting the message in fb_text.
 
 #### _static_ not_allowed(\*args, \*\*kwargs)
 
-library_function = Feedback.not_allowed
-
 Used to hook into disallowed functions, raises an exception if
 the student tries to call it.
+
+Note that because Python is a highly-dynamic language, this method can
+be bypassed by students with sufficient knowledge of Python. For stronger
+guarantees about which functions are or are not used, consider using more
+advanced static analysis techniques, which are beyond the scope of what
+this autograder offers. You can also perform verification by hand with
+manual grading.
 
 #### _classmethod_ set_score(percentage)
 

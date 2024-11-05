@@ -1,19 +1,19 @@
 import { z } from 'zod';
 
 import { formatDateYMDHM } from '@prairielearn/formatter';
-import { html, HtmlSafeString } from '@prairielearn/html';
+import { html, type HtmlSafeString } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Modal } from '../../../components/Modal.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import {
-  Lti13CourseInstance,
-  Lti13Instance,
+  type Lti13CourseInstance,
+  type Lti13Instance,
   AssessmentSchema,
   AssessmentSetSchema,
-  Lti13Assessments,
+  type Lti13Assessments,
 } from '../../../lib/db-types.js';
-import { Lineitems } from '../../lib/lti13.js';
+import { type Lineitems } from '../../lib/lti13.js';
 
 interface Lti13FullInstance {
   lti13_course_instance: Lti13CourseInstance;

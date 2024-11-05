@@ -92,7 +92,7 @@ This config file specifies the following things:
 - The script `/grade/serverFilesCourse/python_autograder/run.sh` will be executed when your container starts up
 - If grading takes longer that 5 seconds, the container will be killed
 
-#### Special directories
+### Special directories
 
 There are several ways that you can load files from PrairieLearn into your container if you don't want to build the files directly into your image.
 
