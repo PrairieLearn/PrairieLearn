@@ -1784,42 +1784,14 @@ export async function initExpress() {
     (await import('./pages/instructorFileTransfer/instructorFileTransfer.js')).default,
   ]);
 
-  // TEST for transfering files to a course instance
   app.use('/pl/course_instance/:course_instance_id(\\d+)/file_transfer', [
     (await import('./pages/instructorFileTransferToCourseInstance/instructorFileTransferToCourseInstance.js')).default,
   ]);
 
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/edit_error/job_sequence_id/:job_sequence_id(\\d+)',
-    function (req, res, next) {
-      res.locals.navSubPage = 'file_view';
-      console.log('found TEST url'); // TEST
-      console.log(`Full Request URL: ${req.originalUrl}`); // Log the full request URL
-      next();
-    },
-    (req, res, next) => {
-      console.log('Before editErrorRouter'); // TEST
-      next();
-    },
-    (await import('./pages/editError/editError.js')).default,
-  );
-
-  app.use(
     '/pl/course/:course_id(\\d+)/edit_error',
     (await import('./pages/editError/editError.js')).default,
   );
-
-  // app.use(
-  //   '/pl/course_instance/:course_instance_id(\\d+)/edit_error/job_sequence_id/:job_sequence_id(\\d+)',
-  //   function (req, res, next) {
-  //     res.locals.navSubPage = 'file_view';
-  //     console.log('found TEST url'); // TEST
-  //     next();
-  //   },
-  //   (await import('./pages/editError/editError.js')).default,
-  // );
-
-
 
   app.use(/^(\/pl\/course\/[0-9]+\/course_admin)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/instances`);

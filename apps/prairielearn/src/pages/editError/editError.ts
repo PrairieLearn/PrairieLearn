@@ -11,19 +11,9 @@ import { EditError } from './editError.html.js';
 
 const router = Router();
 
-console.log('In editError.ts'); // TEST
-
-router.use((req, res, next) => {
-  console.log('In editErrorRouter middleware'); // TEST
-  console.log(`Request Path: ${req.path}`); // Log the request path
-  console.log(`Request Method: ${req.method}`); // Log the request method
-  next();
-});
-
 router.get(
   '/:job_sequence_id',
   asyncHandler(async (req, res) => {
-    console.log('In editError.ts GET'); // TEST
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }
@@ -59,7 +49,6 @@ router.get(
 router.post(
   '/:job_sequence_id',
   asyncHandler(async (req, res) => {
-    console.log('In editError.ts POST'); // TEST
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }
@@ -72,11 +61,5 @@ router.post(
     }
   }),
 );
-
-// Catch-all route for debugging
-router.use((req, res) => {
-  console.log('Unmatched request in editErrorRouter');
-  res.status(404).send('Not Found');
-});
 
 export default router;

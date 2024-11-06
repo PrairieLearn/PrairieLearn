@@ -49,15 +49,14 @@ router.get(
       res.locals.user.user_id,
     );
 
-    console.log('file_transfer', file_transfer); // TEST
-    // Split the full path and grab everything after assessments/ to get the assessment ID
+    // Split the full path and grab everything after 'assessments/' to get the assessment ID
     const assessment_exploded = path.normalize(file_transfer.from_filename).split(path.sep);
     const assessments_dir_idx = assessment_exploded.findIndex((x) => x === 'assessments');
     const assessment_id = assessment_exploded.slice(assessments_dir_idx + 1).join(path.sep);
     const editor = new AssessmentTransferEditor({
       locals: res.locals,
       from_aid: '', // TEST, how to remove without breaking type-check?
-      from_course_short_name: file_transfer.from_course.short_name,
+      from_course_sharing_name: file_transfer.from_course.sharing_name,
       from_path: file_transfer.from_filename,
       to_assessment_tid: assessment_id,
     });
@@ -66,9 +65,7 @@ router.get(
     try {
       await editor.executeWithServerJob(serverJob);
     } catch {
-      // TEST, was res.redirect
-      //res.redirect(`edit_error/job_sequence_id/${serverJob.jobSequenceId}`); // TEST, revert back to old url and copy the edit_error page? This is still broken because it uses the urlPrefix still
-      res.redirect(res.locals.urlPrefix + `/edit_error/job_sequence_id/${serverJob.jobSequenceId}`); // TEST, revert back to old url and copy the edit_error page? This is still broken because it uses the urlPrefix still
+      res.redirect(res.locals.urlPrefix + '/instructor/edit_error/' + serverJob.jobSequenceId);
       return;
     }
 
