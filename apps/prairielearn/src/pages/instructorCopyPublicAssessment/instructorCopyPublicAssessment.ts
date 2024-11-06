@@ -6,7 +6,7 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { copyAssessmentBetweenCourseInstances } from '../../lib/copy-assessment.js';
-import { CourseSchema, CourseInstanceSchema, AssessmentSchema } from '../../lib/db-types.js';
+import { CourseInstanceSchema, AssessmentSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 
 import { selectCourseById } from '../../models/course.js';
@@ -23,7 +23,7 @@ router.post(
     if (idsEqual(req.body.course_instance_id, res.locals.course_instance.id)) {
       throw new error.HttpStatusError(
         400,
-        'Template course questions cannot be copied to the same course instance.',
+        'Template course instance assessments cannot be copied to the same course instance.',
       );
     }
 

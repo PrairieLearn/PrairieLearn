@@ -55,7 +55,6 @@ router.get(
     const assessment_id = assessment_exploded.slice(assessments_dir_idx + 1).join(path.sep);
     const editor = new AssessmentTransferEditor({
       locals: res.locals,
-      from_aid: '', // TEST, how to remove without breaking type-check?
       from_course_sharing_name: file_transfer.from_course.sharing_name,
       from_path: file_transfer.from_filename,
       to_assessment_tid: assessment_id,

@@ -23,6 +23,9 @@ router.get(
     const jobSequence = await getJobSequence(job_sequence_id, course_id);
 
     if (jobSequence.status === 'Running') {
+      // All edits wait for the corresponding job sequence to finish before
+      // proceeding, so something bad must have happened to get to this page
+      // with a sequence that is still running.
       throw new Error('Edit is still in progress (job sequence is still running)');
     } else if (jobSequence.status !== 'Error') {
       throw new Error('Edit did not fail');
@@ -31,6 +34,7 @@ router.get(
     let failedSync = false;
 
     if (jobSequence.legacy) {
+      // Legacy job sequences should no longer exist.
       logger.warn(
         `Found a legacy job sequence (id=${job_sequence_id}) while handling an edit error`,
       );

@@ -20,15 +20,15 @@ function CopyAssessmentModal({ resLocals }: { resLocals: Record<string, any> }) 
       assessment_copy_targets.length === 0
         ? html`
             <p>
-              You can't copy this assessment because you don't have editor permissions in any courses.
+              You can't copy this assessment because you don't have editor permissions in any courses that have course instances.
               <a href="/pl/request_course">Request a course</a> if you don't have one already.
               Otherwise, contact the owner of the course you expected to have access to.
             </p>
           `
         : html`
             <p>
-              This assessment can be copied to any course for which you have editor permissions.
-              Select one of your courses to copy this assessment.
+              This assessment can be copied to any course instance for which you have editor permissions.
+              Select one of your course instances to copy this assessment.
             </p>
             <select class="custom-select" name="to_course_instance_id" required>
               ${assessment_copy_targets.map(

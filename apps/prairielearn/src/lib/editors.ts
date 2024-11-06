@@ -1271,7 +1271,6 @@ export class AssessmentTransferEditor extends Editor {
 
   constructor(
     params: BaseEditorOptions & {
-      from_aid: string;
       from_course_sharing_name: string;
       from_path: string;
       to_assessment_tid: string;
@@ -1290,8 +1289,6 @@ export class AssessmentTransferEditor extends Editor {
   }
 
   async write() {
-    console.log('this.description', this.description) // TEST
-
     debug('AssessmentTransferEditor: write()');
     const assessmentsPath = path.join(this.course.path, 'courseInstances', this.course_instance.short_name, 'assessments');
 
@@ -1308,8 +1305,7 @@ export class AssessmentTransferEditor extends Editor {
     debug('Get all existing short names');
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
-
-    // TEST, change for this to automatically change the name if it already exists
+    // Change the assessment name if it already exists
     debug('Generate TID and Title');
     const names = this.getNamesForCopy(
       this.to_assessment_tid,
@@ -1318,12 +1314,7 @@ export class AssessmentTransferEditor extends Editor {
       oldNamesLong,
     );
     const tid = names.shortName;
-    const assessmentTitle = names.longName;
-    const assessmentPath = path.join(assessmentsPath, tid); // TEST, rename others to tid as well
-
-
-
-    //const assessmentPath = path.join(assessmentsPath, this.to_assessment_tid);
+    const assessmentPath = path.join(assessmentsPath, tid);
 
     const fromPath = this.from_path;
     const toPath = assessmentPath;
@@ -1336,10 +1327,9 @@ export class AssessmentTransferEditor extends Editor {
     infoJson.title = from_title;
     infoJson.uuid = this.uuid;
 
-    // TEST, write the QIDs to have the sharing course name before the QID, like COURSE/QID
+    // Rewrite the question IDs to include the course sharing name, so that they are imported from the sharing course
     for (const zone of infoJson.zones) {
       for (const question of zone.questions) {
-        console.log(`${this.from_course_sharing_name}/${question.id}`) // TEST
         question.id = `@${this.from_course_sharing_name}/${question.id}`;
       }
     }
