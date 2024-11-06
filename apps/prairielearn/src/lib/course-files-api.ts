@@ -12,6 +12,8 @@ export type CourseFilesClient = ReturnType<typeof createTRPCProxyClient<CourseFi
 
 function getCourseFilesLink() {
   if (config.courseFilesApiMode === 'process') {
+    // Based on code from the following issue:
+    // https://github.com/trpc/trpc/issues/3768
     return httpLink({
       // Dummy URL; won't actually be used.
       url: 'https://local',
