@@ -27,8 +27,8 @@ function CopyAssessmentModal({ resLocals }: { resLocals: Record<string, any> }) 
           `
         : html`
             <p>
-              This assessment can be copied to any course instance for which you have editor permissions.
-              Select one of your course instances to copy this assessment.
+              This assessment can be copied to any course instance in courses for which you have editor permissions.
+              Select one of your course instances to copy this assessment to.
             </p>
             <select class="custom-select" name="to_course_instance_id" required>
               ${assessment_copy_targets.map(
