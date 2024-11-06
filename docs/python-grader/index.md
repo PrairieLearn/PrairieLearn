@@ -159,7 +159,7 @@ if __name__ == "__main__":
     # Student's own debugging code
 ```
 
-If, on the other hand, a question expects a student to write code that checks for the value of `__name__`, this can be achieved by adding a [tests/leading_code.py file](#leading-and-trailing-code) with the following content:
+If, on the other hand, a question expects a student to write code that checks for the value of `__name__`, this can be achieved by adding a [`tests/leading_code.py` file](#leading-and-trailing-code) with the following content:
 
 ```python
 __name__ = "__main__"
