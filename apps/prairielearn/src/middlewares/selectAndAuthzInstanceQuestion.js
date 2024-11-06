@@ -9,7 +9,6 @@ import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../li
 var sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function selectAndAuthzInstanceQuestion(req, res) {
-  console.log('selectAndAuthzInstanceQuestion');
   const result = await sqldb.queryAsync(sql.select_and_auth, {
     instance_question_id: req.params.instance_question_id,
     assessment_id: req.params.assessment_id,

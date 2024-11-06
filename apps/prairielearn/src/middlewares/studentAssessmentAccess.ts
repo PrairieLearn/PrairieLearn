@@ -11,7 +11,6 @@ import { setCookie } from '../lib/cookie.js';
 import { StudentAssessmentAccess } from './studentAssessmentAccess.html.js';
 
 export default asyncHandler(async (req, res, next) => {
-  console.log('studentAssessmentAccess');
   if (
     typeof res.locals.assessment_instance === 'undefined' &&
     !_.get(res.locals, 'authz_result.active', true)

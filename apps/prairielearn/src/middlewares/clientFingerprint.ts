@@ -9,7 +9,6 @@ import { idsEqual } from '../lib/id.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export default asyncHandler(async (req, res, next) => {
-  console.log('clientFingerprint');
   if (!res.locals.assessment_instance) {
     throw new Error('Assessment Instance is not present');
   }
