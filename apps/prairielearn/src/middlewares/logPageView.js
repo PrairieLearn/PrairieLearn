@@ -46,6 +46,7 @@ export async function logPageView(pageType, req, res) {
 
 export default function (pageType) {
   return asyncHandler(async (req, res, next) => {
+    console.log('logPageView');
     if (req.method !== 'GET' || !res.locals.user || !res.locals.authn_user) {
       next();
       return;

@@ -8,6 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 var sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function selectAndAuthzAssessmentInstance(req, res) {
+  console.log('selectAndAuthzAssessmentInstance');
   const result = await sqldb.queryAsync(sql.select_and_auth, {
     assessment_instance_id: req.params.assessment_instance_id,
     course_instance_id: res.locals.course_instance.id,

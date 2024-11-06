@@ -3,10 +3,20 @@ import asyncHandler from 'express-async-handler';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import logPageView from '../../middlewares/logPageView.js';
+
 import { StudentGradebookRowSchema, StudentGradebook } from './studentGradebook.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
+
+router.use([
+  function (req, res, next) {
+    res.locals.navSubPage = 'gradebook';
+    next();
+  },
+  logPageView('studentGradebook'),
+]);
 
 router.get(
   '/',

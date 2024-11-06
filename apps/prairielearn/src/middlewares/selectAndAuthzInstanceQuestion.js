@@ -9,6 +9,7 @@ import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../li
 var sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export async function selectAndAuthzInstanceQuestion(req, res) {
+  console.log('selectAndAuthzInstanceQuestion');
   const result = await sqldb.queryAsync(sql.select_and_auth, {
     instance_question_id: req.params.instance_question_id,
     assessment_id: req.params.assessment_id,
@@ -37,7 +38,7 @@ export async function selectAndAuthzInstanceQuestion(req, res) {
       }
       res.locals.assessment_instance.user_group_roles = (
         res.locals.assessment_instance.group_info.rolesInfo?.roleAssignments?.[
-          res.locals.authz_data.user.uid
+        res.locals.authz_data.user.uid
         ] || ['None']
       )
         .map((role) => role.role_name)

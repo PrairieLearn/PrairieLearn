@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { checkPlanGrantsForQuestion } from '../lib/billing/plan-grants.js';
 
 export default asyncHandler(async (req, res, next) => {
+  console.log('checkPlanGrantsForQuestion');
   const hasPlanGrants = await checkPlanGrantsForQuestion(res);
 
   if (!hasPlanGrants) {

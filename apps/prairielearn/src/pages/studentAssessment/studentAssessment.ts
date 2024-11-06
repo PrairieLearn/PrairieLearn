@@ -19,12 +19,18 @@ import {
   canUserAssignGroupRoles,
 } from '../../lib/groups.js';
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
-import { checkPasswordOrRedirect } from '../../middlewares/studentAssessmentAccess.js';
+import logPageView from '../../middlewares/logPageView.js';
+import selectAndAuthzAssessment from '../../middlewares/selectAndAuthzAssessment.js';
+import studentAssessmentAccess, {
+  checkPasswordOrRedirect,
+} from '../../middlewares/studentAssessmentAccess.js';
 
 import { StudentAssessment } from './studentAssessment.html.js';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
+
+router.use([selectAndAuthzAssessment, studentAssessmentAccess, logPageView('studentAssessment')]);
 
 router.get(
   '/',

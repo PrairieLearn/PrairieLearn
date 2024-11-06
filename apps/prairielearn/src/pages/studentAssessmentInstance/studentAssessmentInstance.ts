@@ -24,12 +24,23 @@ import {
   updateGroupRoles,
 } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
+import clientFingerprint from '../../middlewares/clientFingerprint.js';
+import logPageView from '../../middlewares/logPageView.js';
+import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
+import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
 import { selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
 import { StudentAssessmentInstance } from './studentAssessmentInstance.html.js';
 
-const router = Router();
+const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
+
+router.use([
+  selectAndAuthzAssessmentInstance,
+  studentAssessmentAccess,
+  clientFingerprint,
+  logPageView('studentAssessmentInstance'),
+]);
 
 const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   start_new_zone: z.boolean(),

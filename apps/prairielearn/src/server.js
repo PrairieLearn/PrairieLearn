@@ -99,7 +99,7 @@ if ('h' in argv || 'help' in argv) {
  * @param {() => T} load
  * @returns {T | import('express').RequestHandler}
  */
-function enterpriseOnlyMiddleware(load) {
+export function enterpriseOnlyMiddleware(load) {
   if (isEnterprise()) {
     return load();
   }
@@ -379,7 +379,7 @@ export async function initExpress() {
       // response before replying with an error 500
       if (res && !res.headersSent) {
         res
-          .status?.(/** @type {any} */ (err).status ?? 500)
+          .status?.(/** @type {any} */(err).status ?? 500)
           ?.send?.('Error proxying workspace request');
       }
     },
@@ -1543,73 +1543,34 @@ export async function initExpress() {
   // Student pages /////////////////////////////////////////////////////
 
   app.use('/pl/course_instance/:course_instance_id(\\d+)/gradebook', [
-    function (req, res, next) {
-      res.locals.navSubPage = 'gradebook';
-      next();
-    },
-    (await import('./middlewares/logPageView.js')).default('studentGradebook'),
     (await import('./pages/studentGradebook/studentGradebook.js')).default,
   ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/assessments', [
-    function (req, res, next) {
-      res.locals.navSubPage = 'assessments';
-      next();
-    },
-    (await import('./middlewares/logPageView.js')).default('studentAssessments'),
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/assessments',
     (await import('./pages/studentAssessments/studentAssessments.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)', [
-    (await import('./middlewares/selectAndAuthzAssessment.js')).default,
-    (await import('./middlewares/studentAssessmentAccess.js')).default,
-    (await import('./middlewares/logPageView.js')).default('studentAssessment'),
-    (await import('./pages/studentAssessment/studentAssessment.js')).default,
-  ]);
+  );
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)',
+    (await import('./pages/studentAssessment/studentAssessment.js')).default);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)/file',
-    [
-      (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
-      (await import('./middlewares/studentAssessmentAccess.js')).default,
-      (await import('./middlewares/clientFingerprint.js')).default,
-      (await import('./middlewares/logPageView.js')).default('studentAssessmentInstanceFile'),
-      (await import('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile.js'))
-        .default,
-    ],
+    (await import('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile.js'))
+      .default
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)/time_remaining',
-    [
-      (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
-      (await import('./middlewares/studentAssessmentAccess.js')).default,
-      (
-        await import(
-          './pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining.js'
-        )
-      ).default,
-    ],
+    (
+      await import(
+        './pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining.js'
+      )
+    ).default
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)',
-    [
-      (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
-      (await import('./middlewares/studentAssessmentAccess.js')).default,
-      (await import('./middlewares/clientFingerprint.js')).default,
-      (await import('./middlewares/logPageView.js')).default('studentAssessmentInstance'),
-      (await import('./pages/studentAssessmentInstance/studentAssessmentInstance.js')).default,
-    ],
+    (await import('./pages/studentAssessmentInstance/studentAssessmentInstance.js')).default,
   );
 
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
-    [
-      (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
-      (await import('./middlewares/studentAssessmentAccess.js')).default,
-      (await import('./middlewares/clientFingerprint.js')).default,
-      // don't use logPageView here, we load it inside the page so it can get the variant_id
-      await enterpriseOnlyMiddleware(
-        async () => (await import('./ee/middlewares/checkPlanGrantsForQuestion.js')).default,
-      ),
-      (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
-    ],
+    (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
   );
   if (config.devMode) {
     app.use(

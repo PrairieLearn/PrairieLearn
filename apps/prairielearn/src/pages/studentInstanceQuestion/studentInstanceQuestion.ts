@@ -5,6 +5,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
+import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import {
   gradeAssessmentInstance,
   canDeleteAssessmentInstance,
@@ -22,17 +23,28 @@ import {
   setRendererHeader,
 } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
+import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { logPageView } from '../../middlewares/logPageView.js';
+import selectAndAuthzInstanceQuestion from '../../middlewares/selectAndAuthzInstanceQuestion.js';
+import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
 import {
   validateVariantAgainstQuestion,
   selectVariantsByInstanceQuestion,
 } from '../../models/variant.js';
+import { enterpriseOnlyMiddleware } from '../../server.js';
 
 import { StudentInstanceQuestion } from './studentInstanceQuestion.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const router = Router();
+const router = Router({ mergeParams: true });
+
+router.use([
+  selectAndAuthzInstanceQuestion,
+  studentAssessmentAccess,
+  clientFingerprint,
+  enterpriseOnlyMiddleware(() => checkPlanGrantsForQuestion),
+]);
 
 /**
  * Get a validated variant ID from a request, or throw an exception.
