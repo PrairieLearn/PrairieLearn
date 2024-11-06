@@ -19,7 +19,7 @@ router.use([
   selectAndAuthzAssessmentInstance,
   studentAssessmentAccess,
   clientFingerprint,
-  logPageView('studentAssessmentInstanceFile')
+  logPageView('studentAssessmentInstanceFile'),
 ]);
 
 router.get(

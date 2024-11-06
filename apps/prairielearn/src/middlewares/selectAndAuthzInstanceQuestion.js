@@ -37,7 +37,7 @@ export async function selectAndAuthzInstanceQuestion(req, res) {
       }
       res.locals.assessment_instance.user_group_roles = (
         res.locals.assessment_instance.group_info.rolesInfo?.roleAssignments?.[
-        res.locals.authz_data.user.uid
+          res.locals.authz_data.user.uid
         ] || ['None']
       )
         .map((role) => role.role_name)
