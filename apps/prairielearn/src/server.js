@@ -368,7 +368,7 @@ export async function initExpress() {
       // response before replying with an error 500
       if (res && !res.headersSent) {
         res
-          .status?.(/** @type {any} */(err).status ?? 500)
+          .status?.(/** @type {any} */ (err).status ?? 500)
           ?.send?.('Error proxying workspace request');
       }
     },
@@ -533,9 +533,7 @@ export async function initExpress() {
   app.use('/pl/webhooks/terminate', (await import('./webhooks/terminate.js')).default);
   app.use(
     '/pl/webhooks/stripe',
-    await enterpriseOnly(
-      async () => (await import('./ee/webhooks/stripe/index.js')).default,
-    ),
+    await enterpriseOnly(async () => (await import('./ee/webhooks/stripe/index.js')).default),
   );
 
   app.use((await import('./middlewares/csrfToken.js')).default); // sets and checks res.locals.__csrf_token
@@ -682,9 +680,7 @@ export async function initExpress() {
 
   // all pages under /pl/course_instance require authorization
   app.use('/pl/course_instance/:course_instance_id(\\d+)', [
-    await enterpriseOnly(
-      async () => (await import('./ee/middlewares/checkPlanGrants.js')).default,
-    ),
+    await enterpriseOnly(async () => (await import('./ee/middlewares/checkPlanGrants.js')).default),
     (await import('./middlewares/autoEnroll.js')).default,
     function (req, res, next) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
