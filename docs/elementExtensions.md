@@ -37,7 +37,7 @@ A host element can call the `load_extension()` function to load one specific ext
 
 A two-way flow of logic and information exists between elements and their extensions.
 
-##### Importing an Extension From an Element
+#### Importing an Extension From an Element
 
 Loading extension Python scripts returns a named tuple of all globally defined functions and variables. Loading all extensions will return a dictionary mapping the extension name to its named tuple. For example, if an extension were to define the following in their controller:
 
@@ -59,7 +59,7 @@ def render(element_html, data):
 
 This small example above will render `"hello world!"` to the question page. Note that when loading all extensions with `load_all_extensions()`, modules are returned in ascending alphabetical order.
 
-##### Importing a Host Element From an Extension
+#### Importing a Host Element From an Extension
 
 Extensions can also import files from their host element with the `load_host_script()` function. This can be used to obtain helper functions, class definitions, constant variables, etc.
 If the host element were to contain, for example:
