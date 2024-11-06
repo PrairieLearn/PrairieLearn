@@ -71,6 +71,7 @@ import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
+import enterpriseOnly from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
@@ -92,18 +93,6 @@ if ('h' in argv || 'help' in argv) {
 
   console.log(msg);
   process.exit(0);
-}
-
-/**
- * @template T
- * @param {() => T} load
- * @returns {T | import('express').RequestHandler}
- */
-export function enterpriseOnlyMiddleware(load) {
-  if (isEnterprise()) {
-    return load();
-  }
-  return (req, res, next) => next();
 }
 
 /**
@@ -379,7 +368,7 @@ export async function initExpress() {
       // response before replying with an error 500
       if (res && !res.headersSent) {
         res
-          .status?.(/** @type {any} */ (err).status ?? 500)
+          .status?.(/** @type {any} */(err).status ?? 500)
           ?.send?.('Error proxying workspace request');
       }
     },
@@ -544,7 +533,7 @@ export async function initExpress() {
   app.use('/pl/webhooks/terminate', (await import('./webhooks/terminate.js')).default);
   app.use(
     '/pl/webhooks/stripe',
-    await enterpriseOnlyMiddleware(
+    await enterpriseOnly(
       async () => (await import('./ee/webhooks/stripe/index.js')).default,
     ),
   );
@@ -693,7 +682,7 @@ export async function initExpress() {
 
   // all pages under /pl/course_instance require authorization
   app.use('/pl/course_instance/:course_instance_id(\\d+)', [
-    await enterpriseOnlyMiddleware(
+    await enterpriseOnly(
       async () => (await import('./ee/middlewares/checkPlanGrants.js')).default,
     ),
     (await import('./middlewares/autoEnroll.js')).default,
