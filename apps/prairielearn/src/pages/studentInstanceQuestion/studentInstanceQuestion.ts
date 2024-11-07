@@ -39,7 +39,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const router = Router({ mergeParams: true });
 
-router.use(router.use(selectAndAuthzInstanceQuestion));
+router.use(selectAndAuthzInstanceQuestion);
 router.use(studentAssessmentAccess);
 router.use(clientFingerprint);
 router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
