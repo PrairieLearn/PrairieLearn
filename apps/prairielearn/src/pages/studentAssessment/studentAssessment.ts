@@ -22,12 +22,14 @@ import selectAndAuthzAssessment from '../../middlewares/selectAndAuthzAssessment
 import studentAssessmentAccess, {
   checkPasswordOrRedirect,
 } from '../../middlewares/studentAssessmentAccess.js';
+import studentAssessmentRedirect from '../../middlewares/studentAssessmentRedirect.js';
 
 import { StudentAssessment } from './studentAssessment.html.js';
 
 const router = Router({ mergeParams: true });
 
 router.use(selectAndAuthzAssessment);
+router.use(studentAssessmentRedirect);
 router.use(studentAssessmentAccess);
 router.use(logPageView('studentAssessment'));
 
