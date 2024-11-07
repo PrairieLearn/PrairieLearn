@@ -13,6 +13,7 @@ import {
   VariantSchema,
   ClientFingerprintSchema,
   AssessmentInstanceSchema,
+  type AssessmentInstance,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
@@ -104,22 +105,26 @@ export async function makeAssessmentInstance(
   user_id: string,
   group_work: boolean,
   authn_user_id: string,
-  mode: 'Exam' | 'Homework',
+  mode: AssessmentInstance['mode'],
   time_limit_min: number | null,
   date: Date,
   client_fingerprint_id: string | null,
 ): Promise<string> {
-  const result = await sqldb.callOneRowAsync('assessment_instances_insert', [
-    assessment_id,
-    user_id,
-    group_work,
-    authn_user_id,
-    mode,
-    time_limit_min,
-    date,
-    client_fingerprint_id,
-  ]);
-  return result.rows[0].assessment_instance_id;
+  const assessment_instance_id = await sqldb.callRow(
+    'assessment_instances_insert',
+    [
+      assessment_id,
+      user_id,
+      group_work,
+      authn_user_id,
+      mode,
+      time_limit_min,
+      date,
+      client_fingerprint_id,
+    ],
+    IdSchema,
+  );
+  return assessment_instance_id;
 }
 
 /**
