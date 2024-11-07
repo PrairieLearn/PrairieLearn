@@ -71,6 +71,7 @@ import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
+import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
@@ -92,18 +93,6 @@ if ('h' in argv || 'help' in argv) {
 
   console.log(msg);
   process.exit(0);
-}
-
-/**
- * @template T
- * @param {() => T} load
- * @returns {T | import('express').RequestHandler}
- */
-function enterpriseOnlyMiddleware(load) {
-  if (isEnterprise()) {
-    return load();
-  }
-  return (req, res, next) => next();
 }
 
 /**
@@ -544,9 +533,7 @@ export async function initExpress() {
   app.use('/pl/webhooks/terminate', (await import('./webhooks/terminate.js')).default);
   app.use(
     '/pl/webhooks/stripe',
-    await enterpriseOnlyMiddleware(
-      async () => (await import('./ee/webhooks/stripe/index.js')).default,
-    ),
+    await enterpriseOnly(async () => (await import('./ee/webhooks/stripe/index.js')).default),
   );
 
   app.use((await import('./middlewares/csrfToken.js')).default); // sets and checks res.locals.__csrf_token
@@ -693,9 +680,7 @@ export async function initExpress() {
 
   // all pages under /pl/course_instance require authorization
   app.use('/pl/course_instance/:course_instance_id(\\d+)', [
-    await enterpriseOnlyMiddleware(
-      async () => (await import('./ee/middlewares/checkPlanGrants.js')).default,
-    ),
+    await enterpriseOnly(async () => (await import('./ee/middlewares/checkPlanGrants.js')).default),
     (await import('./middlewares/autoEnroll.js')).default,
     function (req, res, next) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
@@ -1543,73 +1528,37 @@ export async function initExpress() {
   // Student pages /////////////////////////////////////////////////////
 
   app.use('/pl/course_instance/:course_instance_id(\\d+)/gradebook', [
-    function (req, res, next) {
-      res.locals.navSubPage = 'gradebook';
-      next();
-    },
-    (await import('./middlewares/logPageView.js')).default('studentGradebook'),
     (await import('./pages/studentGradebook/studentGradebook.js')).default,
   ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/assessments', [
-    function (req, res, next) {
-      res.locals.navSubPage = 'assessments';
-      next();
-    },
-    (await import('./middlewares/logPageView.js')).default('studentAssessments'),
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/assessments',
     (await import('./pages/studentAssessments/studentAssessments.js')).default,
-  ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)', [
-    (await import('./middlewares/selectAndAuthzAssessment.js')).default,
-    (await import('./middlewares/studentAssessmentAccess.js')).default,
-    (await import('./middlewares/logPageView.js')).default('studentAssessment'),
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)',
     (await import('./pages/studentAssessment/studentAssessment.js')).default,
-  ]);
+  );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)/file',
-    [
-      (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
-      (await import('./middlewares/studentAssessmentAccess.js')).default,
-      (await import('./middlewares/clientFingerprint.js')).default,
-      (await import('./middlewares/logPageView.js')).default('studentAssessmentInstanceFile'),
-      (await import('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile.js'))
-        .default,
-    ],
+    (await import('./pages/studentAssessmentInstanceFile/studentAssessmentInstanceFile.js'))
+      .default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)/time_remaining',
-    [
-      (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
-      (await import('./middlewares/studentAssessmentAccess.js')).default,
-      (
-        await import(
-          './pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining.js'
-        )
-      ).default,
-    ],
+    (
+      await import(
+        './pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining.js'
+      )
+    ).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)',
-    [
-      (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
-      (await import('./middlewares/studentAssessmentAccess.js')).default,
-      (await import('./middlewares/clientFingerprint.js')).default,
-      (await import('./middlewares/logPageView.js')).default('studentAssessmentInstance'),
-      (await import('./pages/studentAssessmentInstance/studentAssessmentInstance.js')).default,
-    ],
+    (await import('./pages/studentAssessmentInstance/studentAssessmentInstance.js')).default,
   );
 
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instance_question/:instance_question_id(\\d+)',
-    [
-      (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
-      (await import('./middlewares/studentAssessmentAccess.js')).default,
-      (await import('./middlewares/clientFingerprint.js')).default,
-      // don't use logPageView here, we load it inside the page so it can get the variant_id
-      await enterpriseOnlyMiddleware(
-        async () => (await import('./ee/middlewares/checkPlanGrantsForQuestion.js')).default,
-      ),
-      (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
-    ],
+    (await import('./pages/studentInstanceQuestion/studentInstanceQuestion.js')).default,
   );
   if (config.devMode) {
     app.use(
