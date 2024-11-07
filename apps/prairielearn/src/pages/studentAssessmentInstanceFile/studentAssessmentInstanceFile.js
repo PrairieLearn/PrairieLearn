@@ -7,9 +7,18 @@ import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { FileSchema } from '../../lib/db-types.js';
 import * as fileStore from '../../lib/file-store.js';
+import clientFingerprint from '../../middlewares/clientFingerprint.js';
+import logPageView from '../../middlewares/logPageView.js';
+import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
+import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-const router = Router();
+const router = Router({ mergeParams: true });
+
+router.use(selectAndAuthzAssessmentInstance);
+router.use(studentAssessmentAccess);
+router.use(clientFingerprint);
+router.use(logPageView('studentAssessmentInstanceFile'));
 
 router.get(
   '/:unsafe_file_id(\\d+)/:unsafe_display_filename',

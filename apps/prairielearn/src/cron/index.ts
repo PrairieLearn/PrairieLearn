@@ -114,6 +114,11 @@ export async function init() {
       module: await import('./cleanTimeSeries.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
     },
+    {
+      name: 'cleanUserSessions',
+      module: await import('./cleanUserSessions.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanUserSessionsSec,
+    },
   ];
 
   if (isEnterprise()) {

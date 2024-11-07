@@ -176,7 +176,12 @@ starting_value = 17
 # ...
 ```
 
-For more fine-tuned randomized files, the `_workspace_files` parameter can also be set in `server.py`, containing an array of potentially dynamic files to be created in the workspace home directory. Each element of the array must include a `name` property, containing the file name (which can include a path with directories), and either a `contents` property, containing the contents of the file, or a `questionFile` property, pointing to an existing file in a different location in the question directory. For example:
+For more fine-tuned randomized files, the `_workspace_files` parameter can also be set in `server.py`, containing an array of potentially dynamic files to be created in the workspace home directory. Each element of the array must include a `name` property, containing the file name (which can include a path with directories), and one of the following:
+
+- a `contents` property, containing the contents of the file.
+- a `questionFile` or `serverFilesCourseFile` property, pointing to an existing file in the question directory or the course's `serverFilesCourse` directory, respectively.
+
+For example:
 
 ```py
 def generate(data):
@@ -206,12 +211,14 @@ def generate(data):
         },
         # A question file can also be added by using its path in the question instead of its contents
         {"name": "provided.txt", "questionFile": "clientFilesQuestion/provided.txt"},
+        # A file can also be added by using its path in serverFilesCourse
+        {"name": "course.txt", "serverFilesCourseFile": "data.txt"},
         # To make an empty file, set `contents` to None or an empty string
         {"name": "empty.txt", "contents": None}
     ]
 ```
 
-By default, `contents` is expected to be a string in UTF-8 format. To provide binary content, the value must be encoded using base64 or hex, as shown in the example above. In this case, the `encoding` property must also be provided. Either `questionFile` or `contents` must be provided, but not both. If an empty file is expected, `contents` may be set to `None` or an empty string.
+By default, `contents` is expected to be a string in UTF-8 format. To provide binary content, the value must be encoded using base64 or hex, as shown in the example above. In this case, the `encoding` property must also be provided. Exactly one of `questionFile`, `serverFilesCourseFile` or `contents` must be provided. If an empty file is expected, `contents` may be set to `None` or an empty string.
 
 If a file name appears in multiple locations, the following precedence takes effect:
 
