@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
+import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
 import { type GenerationThreadItem } from '../../../lib/db-types.js';
 
 const examplePrompts = [
@@ -160,14 +161,17 @@ export function AiGeneratePage({
                       <div id="generation-results"></div>
                     </div>`
                   : html`Threads:
-                    ${threads
-                      .filter((x) => {
-                        return x.prompt_type !== 'autorevision';
-                      })
-                      .map((x) => {
-                        return html`Human: ${x.user_prompt} AI: v${x.id}`;
-                      })
-                      .join('\n')}`
+                      ${threads
+                        .filter((x) => {
+                          return x.prompt_type !== 'autorevision';
+                        })
+                        .map((x) => {
+                          return html`Human: ${x.user_prompt} AI: v${x.id}`;
+                        })
+                        .join('\n')}
+                      <div class="col-lg-9 col-sm-12">
+                        ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
+                      </div>`
               }
                 
               </div>
