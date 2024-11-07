@@ -13,6 +13,8 @@ const sql = loadSqlEquiv(import.meta.url);
 router.all(
   '/',
   asyncHandler(async (req, res) => {
+    res.removeHeader('content-security-policy');
+    res.removeHeader('x-frame-options');
     const ltiClaim = new Lti13Claim(req);
 
     // Get lti13_course_instance info, if present
