@@ -34,45 +34,45 @@ ENV PYTHONIOENCODING=UTF-8
 # SQL lectures. (Adding a duckdb binary may be an option too.)
 RUN apt update \
     && apt install -y curl \
-	              git \
+                      git \
                       pandoc \
-	              sqlite3 \
+                      sqlite3 \
                       sudo \
     && install.r bench \        
-	         data.table \
-	         devtools \
+                 data.table \
+                 devtools \
                  diffobj \
-	         doparallel \
+                 doparallel \
                  duckdb \
-	         dygraphs \
+                 dygraphs \
                  flexdashboard \
-	         foreach \
-	         fs \
-	         future.apply \
-	         gapminder \
-	         gh \
-	         git2r \
-	         igraph \
-	         lahman \
+                 foreach \
+                 fs \
+                 future.apply \
+                 gapminder \
+                 gh \
+                 git2r \
+                 igraph \
+                 lahman \
                  lintr \
-	         memoise \
-	         microbenchmark \
-	         nycflights13 \
-	         palmerpenguins \
-	         png \
-	         profmem \
-	         RcppArmadillo \
-	         rex \
-	         rsqlite \
-	         runit \
-	         shiny \
-	         stringdist \
-	         testthat \
-	         tidyverse \
-	         tinytest \
+                 memoise \
+                 microbenchmark \
+                 nycflights13 \
+                 palmerpenguins \
+                 png \
+                 profmem \
+                 RcppArmadillo \
+                 rex \
+                 rsqlite \
+                 runit \
+                 shiny \
+                 stringdist \
+                 testthat \
+                 tidyverse \
+                 tinytest \
                  ttdo \
                  unix \
-	         xts \
+                 xts \
     && echo "options(diffobj.brightness=\"dark\")" >> /etc/R/Rprofile.site
 
 # Install visualTest from Mango
@@ -81,16 +81,16 @@ RUN installGithub.r MangoTheCat/visualTest
 # Install plr (helper package for grading R code in PrairieLearn)
 COPY plr /r_autograder/plr
 RUN install2.r --repos=NULL /r_autograder/plr \
-	&& rm -r /r_autograder/plr
+        && rm -r /r_autograder/plr
 
 # Set up user ag
 RUN useradd ag \ 
-	&& mkdir /home/ag \
-	&& chown ag:ag /home/ag \
-	&& echo "[user]" > /home/ag/.gitconfig \
-	&& echo "	name = Autograding User" >> /home/ag/.gitconfig \
-	&& echo "	email = ag@nowhere" >> /home/ag/.gitconfig \
-	&& chown ag:ag /home/ag/.gitconfig
+        && mkdir /home/ag \
+        && chown ag:ag /home/ag \
+        && echo "[user]" > /home/ag/.gitconfig \
+        && echo "       name = Autograding User" >> /home/ag/.gitconfig \
+        && echo "       email = ag@nowhere" >> /home/ag/.gitconfig \
+        && chown ag:ag /home/ag/.gitconfig
 
 # Copy autograder interface script into position
 COPY r_autograder /r_autograder
