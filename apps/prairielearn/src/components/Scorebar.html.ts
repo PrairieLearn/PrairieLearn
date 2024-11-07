@@ -15,13 +15,13 @@ export function Scorebar(
       style="min-width: ${minWidth}; max-width: ${maxWidth};"
     >
       <div class="progress-bar bg-success" style="width: ${Math.floor(Math.min(100, score))}%">
-        ${score >= 50 ? `${Math.round(score * 100)/100}%` : ''}
+        ${score >= 50 ? `${Math.round(score * 100) / 100}%` : ''}
       </div>
       <div
         class="d-flex flex-column justify-content-center text-center"
         style="width: ${100 - Math.floor(Math.min(100, score))}%"
       >
-        ${score >= 50 ? '' : `${Math.round(score * 100)/100}%`}
+        ${score >= 50 ? '' : `${Math.round(score * 100) / 100}%`}
       </div>
     </div>
   `;
