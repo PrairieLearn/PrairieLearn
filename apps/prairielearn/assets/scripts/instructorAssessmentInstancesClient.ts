@@ -4,7 +4,7 @@ import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-u
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { Scorebar } from '../../src/components/Scorebar.html.js';
-import { AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
+import { type AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 import { getPopoverTriggerForContainer } from './lib/popover.js';
 
@@ -420,7 +420,7 @@ onDocumentReady(() => {
             />`
           : ''}
         <select
-          class="custom-select select-time-limit"
+          class="custom-select select-time-limit mb-3"
           name="plus_minus"
           aria-label="Time limit options"
           onchange="
@@ -448,22 +448,16 @@ onDocumentReady(() => {
             ? html`<option value="expire">Expire time limit</option>`
             : ''}
         </select>
-        <p class="form-inline">
+        <div class="input-group mb-3 time-limit-field">
           <input
-            class="form-control time-limit-field"
+            class="form-control"
             type="number"
             name="time_add"
             aria-label="Time value"
-            style="width: 5em"
             value="5"
           />
-          <select class="custom-select time-limit-field" name="time_ref" aria-label="Time unit">
-            <option value="minutes">minutes</option>
-            ${row.time_remaining_sec !== null
-              ? html`<option value="percent">% total limit</option>`
-              : ''}
-          </select>
-        </p>
+          <span class="input-group-text">minutes</span>
+        </div>
         ${row.has_closed_instance
           ? html`
               <div class="form-check mb-2 reopen-closed-field">

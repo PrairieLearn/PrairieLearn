@@ -1,5 +1,17 @@
 # @prairielearn/formatter
 
+## 1.3.4
+
+### Patch Changes
+
+- 4b79275: Upgrade all JavaScript dependencies
+
+## 1.3.3
+
+### Patch Changes
+
+- 4ab7483: Remove remnants of `express-session` package
+
 ## 1.3.2
 
 ### Patch Changes

@@ -1,5 +1,19 @@
 # @prairielearn/browser-utils
 
+## 2.2.2
+
+### Patch Changes
+
+- 4b79275: Upgrade all JavaScript dependencies
+- Updated dependencies [4b79275]
+  - @prairielearn/html@4.0.6
+
+## 2.2.1
+
+### Patch Changes
+
+- 0fa45be: Remove stray `console.log` call
+
 ## 2.2.0
 
 ### Minor Changes
