@@ -10,13 +10,7 @@ import { StudentGradebookRowSchema, StudentGradebook } from './studentGradebook.
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
-router.use([
-  function (req, res, next) {
-    res.locals.navSubPage = 'gradebook';
-    next();
-  },
-  logPageView('studentGradebook'),
-]);
+router.use(logPageView('studentGradebook'));
 
 router.get(
   '/',

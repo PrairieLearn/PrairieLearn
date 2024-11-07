@@ -24,7 +24,7 @@ import {
 } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
-import enterpriseOnly from '../../middlewares/enterpriseOnly.js';
+import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
 import selectAndAuthzInstanceQuestion from '../../middlewares/selectAndAuthzInstanceQuestion.js';
 import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
@@ -39,12 +39,10 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const router = Router({ mergeParams: true });
 
-router.use([
-  selectAndAuthzInstanceQuestion,
-  studentAssessmentAccess,
-  clientFingerprint,
-  enterpriseOnly(() => checkPlanGrantsForQuestion),
-]);
+router.use(router.use(selectAndAuthzInstanceQuestion));
+router.use(studentAssessmentAccess);
+router.use(clientFingerprint);
+router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
 
 /**
  * Get a validated variant ID from a request, or throw an exception.

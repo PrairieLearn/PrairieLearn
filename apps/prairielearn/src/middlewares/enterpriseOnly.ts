@@ -1,6 +1,8 @@
+import { type RequestHandler } from 'express';
+
 import { isEnterprise } from '../lib/license.js';
 
-export default function enterpriseOnlyMiddleware(load) {
+export function enterpriseOnly<T>(load: () => T): T | RequestHandler {
   if (isEnterprise()) {
     return load();
   }

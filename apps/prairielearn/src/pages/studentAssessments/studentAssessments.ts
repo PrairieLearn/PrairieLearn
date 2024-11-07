@@ -10,13 +10,7 @@ import { StudentAssessments, StudentAssessmentsRowSchema } from './studentAssess
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
-router.use([
-  function (req, res, next) {
-    res.locals.navSubPage = 'assessments';
-    next();
-  },
-  logPageView('studentAssessments'),
-]);
+router.use(logPageView('studentAssessments'));
 
 router.get(
   '/',

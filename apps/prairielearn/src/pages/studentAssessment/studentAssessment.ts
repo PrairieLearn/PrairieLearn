@@ -30,7 +30,9 @@ import { StudentAssessment } from './studentAssessment.html.js';
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
 
-router.use([selectAndAuthzAssessment, studentAssessmentAccess, logPageView('studentAssessment')]);
+router.use(selectAndAuthzAssessment);
+router.use(studentAssessmentAccess);
+router.use(logPageView('studentAssessment'));
 
 router.get(
   '/',

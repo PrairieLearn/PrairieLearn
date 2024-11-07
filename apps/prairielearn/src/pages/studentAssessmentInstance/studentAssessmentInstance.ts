@@ -35,12 +35,10 @@ import { StudentAssessmentInstance } from './studentAssessmentInstance.html.js';
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
 
-router.use([
-  selectAndAuthzAssessmentInstance,
-  studentAssessmentAccess,
-  clientFingerprint,
-  logPageView('studentAssessmentInstance'),
-]);
+router.use(selectAndAuthzAssessmentInstance);
+router.use(studentAssessmentAccess);
+router.use(clientFingerprint);
+router.use(logPageView('studentAssessmentInstance'));
 
 const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   start_new_zone: z.boolean(),

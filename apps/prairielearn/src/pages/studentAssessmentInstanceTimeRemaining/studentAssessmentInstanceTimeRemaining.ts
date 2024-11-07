@@ -6,7 +6,8 @@ import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.j
 
 const router = Router({ mergeParams: true });
 
-router.use([selectAndAuthzAssessmentInstance, studentAssessmentAccess]);
+router.use(selectAndAuthzAssessmentInstance);
+router.use(studentAssessmentAccess);
 
 router.get(
   '/',
