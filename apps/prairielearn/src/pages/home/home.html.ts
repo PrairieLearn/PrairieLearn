@@ -16,6 +16,7 @@ export const InstructorCourseSchema = z.object({
     z.object({
       id: CourseInstanceSchema.shape.id,
       long_name: CourseInstanceSchema.shape.long_name,
+      expired: z.boolean(),
     }),
   ),
 });
@@ -203,17 +204,28 @@ function InstructorCoursesCard({ instructorCourses }: { instructorCourses: Instr
                       </a>`
                     : `${course.short_name}: ${course.title}`}
                 </td>
-                <td>
+                <td class="js-course-instance-list">
                   ${course.course_instances.map(
                     (course_instance) => html`
                       <a
-                        class="btn btn-outline-primary btn-sm my-1"
+                        class="btn btn-outline-primary btn-sm my-1 ${course_instance.expired
+                          ? 'd-none js-inactive-course-instance'
+                          : ''}"
                         href="${config.urlPrefix}/course_instance/${course_instance.id}/instructor"
                       >
                         ${course_instance.long_name}
                       </a>
                     `,
                   )}
+                  ${course.course_instances.some((ci) => ci.expired)
+                    ? html`<button
+                        class="btn btn-light btn-xs my-1"
+                        onclick="this.closest('.js-course-instance-list').querySelectorAll('.js-inactive-course-instance').forEach(b => b.classList.remove('d-none')); this.remove();"
+                      >
+                        Show older instances
+                      </button>`
+                    : // TODO Should there be a special case for all instances being expired?
+                      ''}
                 </td>
               </tr>
             `,
