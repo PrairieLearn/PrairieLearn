@@ -35,7 +35,7 @@ router.get(
     const paths = getPaths(req.params[0], res.locals);
 
     try {
-      res.send(createFileBrowser({ paths, resLocals: res.locals }));
+      res.send(createFileBrowser({ paths, resLocals: res.locals, isReadOnly: false }));
     } catch (err) {
       if (err.code === 'ENOENT' && paths.branch.length > 1) {
         res.redirect(`${req.baseUrl}/${encodePath(paths.branch.slice(-2)[0].path)}`);

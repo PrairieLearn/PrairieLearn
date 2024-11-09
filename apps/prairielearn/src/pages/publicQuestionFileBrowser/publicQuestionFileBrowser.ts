@@ -32,12 +32,9 @@ router.get(
     await setLocals(req, res);
 
     const paths = getPaths(req.params[0], res.locals);
-    // The public browser does not implement editing functionality, so even if "getPaths"
-    // determined that the user has the necessary permissions, the features are disabled here
-    paths.hasEditPermission = false;
 
     try {
-      res.send(createFileBrowser({ paths, resLocals: res.locals }));
+      res.send(createFileBrowser({ paths, resLocals: res.locals, isReadOnly: true }));
     } catch (err) {
       if (err.code === 'ENOENT' && paths.branch.length > 1) {
         res.redirect(`${req.baseUrl}/${encodePath(paths.branch.slice(-2)[0].path)}`);

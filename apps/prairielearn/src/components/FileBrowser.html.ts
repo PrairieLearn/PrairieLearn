@@ -237,9 +237,11 @@ export async function browseFile({ paths }: { paths: InstructorFilePaths }): Pro
 export async function createFileBrowser({
   resLocals,
   paths,
+  isReadOnly,
 }: {
   resLocals: Record<string, any>;
   paths: InstructorFilePaths;
+  isReadOnly: boolean;
 }) {
   const stats = await fs.lstat(paths.workingPath);
   if (stats.isDirectory()) {
@@ -248,14 +250,15 @@ export async function createFileBrowser({
       paths,
       isFile: false,
       directoryListings: await browseDirectory({ paths }),
+      isReadOnly,
     });
   } else if (stats.isFile()) {
-    return;
-    FileBrowser({
+    return FileBrowser({
       resLocals,
       paths,
       isFile: true,
       fileInfo: await browseFile({ paths }),
+      isReadOnly,
     });
   } else {
     throw new Error(
@@ -270,7 +273,8 @@ export function FileBrowser({
   isFile,
   fileInfo,
   directoryListings,
-}: { resLocals: Record<string, any>; paths: InstructorFilePaths } & (
+  isReadOnly,
+}: { resLocals: Record<string, any>; paths: InstructorFilePaths; isReadOnly: boolean } & (
   | { isFile: true; fileInfo: FileInfo; directoryListings?: undefined }
   | { isFile: false; directoryListings: DirectoryListings; fileInfo?: undefined }
 )) {
@@ -354,8 +358,8 @@ export function FileBrowser({
                 </div>
                 <div class="col-auto">
                   ${isFile
-                    ? FileBrowserActions({ paths, fileInfo, csrfToken })
-                    : paths.hasEditPermission
+                    ? FileBrowserActions({ paths, fileInfo, isReadOnly, csrfToken })
+                    : paths.hasEditPermission && !isReadOnly
                       ? DirectoryBrowserActions({ paths, csrfToken })
                       : ''}
                 </div>
@@ -364,7 +368,7 @@ export function FileBrowser({
 
             ${isFile
               ? html`<div class="card-body">${FileContentPreview({ paths, fileInfo })}</div>`
-              : DirectoryBrowserBody({ paths, directoryListings, csrfToken })}
+              : DirectoryBrowserBody({ paths, directoryListings, isReadOnly, csrfToken })}
           </div>
         </main>
       </body>
@@ -375,37 +379,41 @@ export function FileBrowser({
 function FileBrowserActions({
   paths,
   fileInfo,
+  isReadOnly,
   csrfToken,
 }: {
   paths: InstructorFilePaths;
   fileInfo: FileInfo;
+  isReadOnly: boolean;
   csrfToken: string;
 }) {
   const encodedPath = encodePath(fileInfo.path);
   return html`
-    <a
-      tabindex="0"
-      class="btn btn-sm btn-light ${fileInfo.canEdit ? '' : 'disabled'}"
-      href="${paths.urlPrefix}/file_edit/${encodedPath}"
-    >
-      <i class="fa fa-edit"></i>
-      <span>Edit</span>
-    </a>
-    <button
-      type="button"
-      class="btn btn-sm btn-light"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-placement="auto"
-      title="Upload file"
-      data-content="${escapeHtml(FileUploadForm({ file: fileInfo, csrfToken }))}"
-      data-trigger="click"
-      ${fileInfo.canUpload ? '' : 'disabled'}
-    >
-      <i class="fa fa-arrow-up"></i>
-      <span>Upload</span>
-    </button>
+    ${isReadOnly
+      ? ''
+      : html`<a
+            tabindex="0"
+            class="btn btn-sm btn-light ${fileInfo.canEdit ? '' : 'disabled'}"
+            href="${paths.urlPrefix}/file_edit/${encodedPath}"
+          >
+            <i class="fa fa-edit"></i>
+            <span>Edit</span>
+          </a>
+          <button
+            type="button"
+            class="btn btn-sm btn-light"
+            data-toggle="popover"
+            data-container="body"
+            data-html="true"
+            data-placement="auto"
+            title="Upload file"
+            data-content="${escapeHtml(FileUploadForm({ file: fileInfo, csrfToken }))}"
+            data-trigger="click"
+            ${fileInfo.canUpload ? '' : 'disabled'}
+          >
+            <i class="fa fa-arrow-up"></i>
+            <span>Upload</span>
+          </button>`}
     <a
       class="btn btn-sm btn-light ${fileInfo.canDownload ? '' : 'disabled'}"
       href="${paths.urlPrefix}/file_download/${encodedPath}?attachment=${encodeURIComponent(
@@ -415,38 +423,40 @@ function FileBrowserActions({
       <i class="fa fa-arrow-down"></i>
       <span>Download</span>
     </a>
-    <button
-      type="button"
-      class="btn btn-sm btn-light"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-placement="auto"
-      title="Rename file"
-      data-content="${escapeHtml(
-        FileRenameForm({ file: fileInfo, csrfToken, isViewingFile: true }),
-      )}"
-      data-trigger="click"
-      ${fileInfo.canRename ? '' : 'disabled'}
-    >
-      <i class="fa fa-i-cursor"></i>
-      <span>Rename</span>
-    </button>
-    <button
-      type="button"
-      class="btn btn-sm btn-light"
-      data-toggle="popover"
-      data-container="body"
-      data-html="true"
-      data-placement="auto"
-      title="Confirm delete"
-      data-content="${escapeHtml(FileDeleteForm({ file: fileInfo, csrfToken }))}"
-      data-trigger="click"
-      ${fileInfo.canDelete ? '' : 'disabled'}
-    >
-      <i class="far fa-trash-alt"></i>
-      <span>Delete</span>
-    </button>
+    ${isReadOnly
+      ? ''
+      : html`<button
+            type="button"
+            class="btn btn-sm btn-light"
+            data-toggle="popover"
+            data-container="body"
+            data-html="true"
+            data-placement="auto"
+            title="Rename file"
+            data-content="${escapeHtml(
+              FileRenameForm({ file: fileInfo, csrfToken, isViewingFile: true }),
+            )}"
+            data-trigger="click"
+            ${fileInfo.canRename ? '' : 'disabled'}
+          >
+            <i class="fa fa-i-cursor"></i>
+            <span>Rename</span>
+          </button>
+          <button
+            type="button"
+            class="btn btn-sm btn-light"
+            data-toggle="popover"
+            data-container="body"
+            data-html="true"
+            data-placement="auto"
+            title="Confirm delete"
+            data-content="${escapeHtml(FileDeleteForm({ file: fileInfo, csrfToken }))}"
+            data-trigger="click"
+            ${fileInfo.canDelete ? '' : 'disabled'}
+          >
+            <i class="far fa-trash-alt"></i>
+            <span>Delete</span>
+          </button>`}
   `;
 }
 
@@ -541,11 +551,13 @@ function FileContentPreview({
 
 function DirectoryBrowserBody({
   paths,
-  directoryListings: directoryListings,
+  directoryListings,
+  isReadOnly,
   csrfToken,
 }: {
   paths: InstructorFilePaths;
   directoryListings: DirectoryListings;
+  isReadOnly: boolean;
   csrfToken: string;
 }) {
   return html`
@@ -572,30 +584,32 @@ function DirectoryBrowserBody({
                   : html`<span>${f.name}</span>`}
               </td>
               <td>
-                <a
-                  class="btn btn-xs btn-secondary ${f.canEdit ? '' : 'disabled'}"
-                  href="${paths.urlPrefix}/file_edit/${encodePath(f.path)}"
-                >
-                  <i class="fa fa-edit"></i>
-                  <span>Edit</span>
-                </a>
-                <button
-                  type="button"
-                  id="instructorFileUploadForm-${f.id}"
-                  class="btn btn-xs btn-secondary"
-                  data-toggle="popover"
-                  data-container="body"
-                  data-html="true"
-                  data-placement="auto"
-                  title="Upload file"
-                  data-content="
+                ${isReadOnly
+                  ? ''
+                  : html`<a
+                        class="btn btn-xs btn-secondary ${f.canEdit ? '' : 'disabled'}"
+                        href="${paths.urlPrefix}/file_edit/${encodePath(f.path)}"
+                      >
+                        <i class="fa fa-edit"></i>
+                        <span>Edit</span>
+                      </a>
+                      <button
+                        type="button"
+                        id="instructorFileUploadForm-${f.id}"
+                        class="btn btn-xs btn-secondary"
+                        data-toggle="popover"
+                        data-container="body"
+                        data-html="true"
+                        data-placement="auto"
+                        title="Upload file"
+                        data-content="
                   ${escapeHtml(FileUploadForm({ file: f, csrfToken }))}"
-                  data-trigger="click"
-                  ${f.canUpload ? '' : 'disabled'}
-                >
-                  <i class="fa fa-arrow-up"></i>
-                  <span>Upload</span>
-                </button>
+                        data-trigger="click"
+                        ${f.canUpload ? '' : 'disabled'}
+                      >
+                        <i class="fa fa-arrow-up"></i>
+                        <span>Upload</span>
+                      </button>`}
                 <a
                   class="btn btn-xs btn-secondary ${f.canDownload ? '' : 'disabled'}"
                   href="${paths.urlPrefix}/file_download/${encodePath(
@@ -605,40 +619,42 @@ function DirectoryBrowserBody({
                   <i class="fa fa-arrow-down"></i>
                   <span>Download</span>
                 </a>
-                <button
-                  type="button"
-                  class="btn btn-xs btn-secondary"
-                  data-toggle="popover"
-                  data-container="body"
-                  data-html="true"
-                  data-placement="auto"
-                  title="Rename file"
-                  data-content="${escapeHtml(
-                    FileRenameForm({ file: f, csrfToken, isViewingFile: false }),
-                  )}"
-                  data-trigger="click"
-                  data-testid="rename-file-button"
-                  ${f.canRename ? '' : 'disabled'}
-                >
-                  <i class="fa fa-i-cursor"></i>
-                  <span>Rename</span>
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-xs btn-secondary"
-                  data-toggle="popover"
-                  data-container="body"
-                  data-html="true"
-                  data-placement="auto"
-                  title="Confirm delete"
-                  data-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
-                  data-trigger="click"
-                  data-testid="delete-file-button"
-                  ${f.canDelete ? '' : 'disabled'}
-                >
-                  <i class="far fa-trash-alt"></i>
-                  <span>Delete</span>
-                </button>
+                ${isReadOnly
+                  ? ''
+                  : html` <button
+                        type="button"
+                        class="btn btn-xs btn-secondary"
+                        data-toggle="popover"
+                        data-container="body"
+                        data-html="true"
+                        data-placement="auto"
+                        title="Rename file"
+                        data-content="${escapeHtml(
+                          FileRenameForm({ file: f, csrfToken, isViewingFile: false }),
+                        )}"
+                        data-trigger="click"
+                        data-testid="rename-file-button"
+                        ${f.canRename ? '' : 'disabled'}
+                      >
+                        <i class="fa fa-i-cursor"></i>
+                        <span>Rename</span>
+                      </button>
+                      <button
+                        type="button"
+                        class="btn btn-xs btn-secondary"
+                        data-toggle="popover"
+                        data-container="body"
+                        data-html="true"
+                        data-placement="auto"
+                        title="Confirm delete"
+                        data-content="${escapeHtml(FileDeleteForm({ file: f, csrfToken }))}"
+                        data-trigger="click"
+                        data-testid="delete-file-button"
+                        ${f.canDelete ? '' : 'disabled'}
+                      >
+                        <i class="far fa-trash-alt"></i>
+                        <span>Delete</span>
+                      </button>`}
               </td>
             </tr>
           `,
