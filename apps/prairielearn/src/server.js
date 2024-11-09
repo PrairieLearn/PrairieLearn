@@ -1952,10 +1952,14 @@ export async function initExpress() {
     },
     (await import('./pages/publicQuestionFileBrowser/publicQuestionFileBrowser.js')).default,
   ]);
-  app.use(
-    '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_download',
+  app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_download', [
+    function (req, res, next) {
+      res.locals.navPage = 'public_question';
+      res.locals.navSubPage = 'file_download';
+      next();
+    },
     (await import('./pages/publicQuestionFileDownload/publicQuestionFileDownload.js')).default,
-  );
+  ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview', [
     function (req, res, next) {
       res.locals.navPage = 'public_question';
