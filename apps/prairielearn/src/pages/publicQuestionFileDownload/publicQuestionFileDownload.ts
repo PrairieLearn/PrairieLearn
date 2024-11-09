@@ -3,23 +3,37 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
+import { UserSchema } from '../../lib/db-types.js';
+import { getPaths } from '../../lib/instructorFiles.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
 
 const router = Router({ mergeParams: true });
 
+async function setLocals(req, res) {
+  res.locals.user = UserSchema.parse(res.locals.authn_user);
+  res.locals.authz_data = { user: res.locals.user };
+  res.locals.course = await selectCourseById(req.params.course_id);
+  res.locals.question = await selectQuestionById(req.params.question_id);
+
+  if (
+    !res.locals.question.share_source_publicly ||
+    res.locals.course.id !== res.locals.question.course_id
+  ) {
+    throw new error.HttpStatusError(404, 'Not Found');
+  }
+}
+
 router.get(
   '/*',
   asyncHandler(async (req, res) => {
-    const course = await selectCourseById(req.params.course_id);
-    const question = await selectQuestionById(req.params.question_id);
+    await setLocals(req, res);
+    // Calling this only to catch illegal paths (e.g., working path ourside question path)
+    getPaths(req.params[0], res.locals);
 
-    if (!question.share_source_publicly || course.id !== question.course_id) {
-      throw new error.HttpStatusError(404, 'Not Found');
-    }
     if (req.query.type) res.type(req.query.type.toString());
     if (req.query.attachment) res.attachment(req.query.attachment.toString());
-    res.sendFile(req.params[0], { root: course.path });
+    res.sendFile(req.params[0], { root: res.locals.course.path });
   }),
 );
 
