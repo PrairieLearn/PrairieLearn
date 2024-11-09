@@ -1,7 +1,6 @@
 import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
 
-import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryZeroOrOneRowAsync } from '@prairielearn/postgres';
 
 import { AccessDenied } from './selectAndAuthzAssessment.html.js';
@@ -15,8 +14,7 @@ export default asyncHandler(async (req, res, next) => {
     authz_data: res.locals.authz_data,
     req_date: res.locals.req_date,
   });
-  if (true || result.rowCount === 0) {
-    //throw new error.HttpStatusError(403, 'Access denied');
+  if (result.rowCount === 0) {
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }
