@@ -234,6 +234,36 @@ export async function browseFile({ paths }: { paths: InstructorFilePaths }): Pro
   return file;
 }
 
+export async function createFileBrowser({
+  resLocals,
+  paths,
+}: {
+  resLocals: Record<string, any>;
+  paths: InstructorFilePaths;
+}) {
+  const stats = await fs.lstat(paths.workingPath);
+  if (stats.isDirectory()) {
+    return FileBrowser({
+      resLocals,
+      paths,
+      isFile: false,
+      directoryListings: await browseDirectory({ paths }),
+    });
+  } else if (stats.isFile()) {
+    return;
+    FileBrowser({
+      resLocals,
+      paths,
+      isFile: true,
+      fileInfo: await browseFile({ paths }),
+    });
+  } else {
+    throw new Error(
+      `Invalid working path - ${paths.workingPath} is neither a directory nor a file`,
+    );
+  }
+}
+
 export function FileBrowser({
   resLocals,
   paths,
