@@ -2139,10 +2139,16 @@ export async function startServer() {
   const app = await initExpress();
 
   if (config.serverType === 'https') {
-    const key = await fs.promises.readFile(config.sslKeyFile);
-    const cert = await fs.promises.readFile(config.sslCertificateFile);
-    const ca = [await fs.promises.readFile(config.sslCAFile)];
-    var options = { key, cert, ca };
+    var options = {};
+    if (config.sslKeyFile) {
+      options.key = await fs.promises.readFile(config.sslKeyFile);
+    }
+    if (config.sslCertificateFile) {
+      options.cert = await fs.promises.readFile(config.sslCertificateFile);
+    }
+    if (config.sslCAFile) {
+      options.ca = [await fs.promises.readFile(config.sslCAFile)];
+    }
     server = https.createServer(options, app);
     logger.verbose('server listening to HTTPS on port ' + config.serverPort);
   } else if (config.serverType === 'http') {
