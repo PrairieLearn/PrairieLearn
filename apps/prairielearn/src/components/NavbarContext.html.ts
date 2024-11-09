@@ -16,7 +16,7 @@ interface TabInfo {
 const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
   public_question: [
     {
-      activeSubPage: ['file_view'],
+      activeSubPage: 'file_view',
       urlSuffix: ({ question }) => `/question/${question.id}/file_view`,
       iconClasses: 'fa fa-edit',
       tabLabel: 'Files',
