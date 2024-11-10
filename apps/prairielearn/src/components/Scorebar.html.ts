@@ -1,5 +1,5 @@
 import { html } from '@prairielearn/html';
-import { formatPoints } from '../../src/lib/format.js';
+import { formatPoints } from '../lib/format.js';
 
 export function Scorebar(
   scorePerc: number | null,
