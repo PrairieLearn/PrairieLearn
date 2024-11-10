@@ -1,4 +1,5 @@
 import { html } from '@prairielearn/html';
+
 import { formatPoints } from '../lib/format.js';
 
 export function Scorebar(
