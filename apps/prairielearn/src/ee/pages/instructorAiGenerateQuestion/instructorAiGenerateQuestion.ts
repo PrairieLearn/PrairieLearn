@@ -3,15 +3,11 @@ import asyncHandler from 'express-async-handler';
 import { OpenAI } from 'openai';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import { GenerationThreadItemSchema, QuestionSchema } from '../../../lib/db-types.js';
-import { QuestionDeleteEditor } from '../../../lib/editors.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
-import { getAndRenderVariant } from '../../../lib/question-render.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
@@ -23,8 +19,6 @@ import {
 } from './instructorAiGenerateQuestion.html.js';
 
 const router = express.Router();
-
-const sql = loadSqlEquiv(import.meta.url);
 
 export async function saveGeneratedQuestion(
   res,
@@ -85,25 +79,7 @@ router.get(
   asyncHandler(async (req, res) => {
     assertCanCreateQuestion(res.locals);
 
-    if (req.query?.qid) {
-      const qidFull = `__drafts__/${req.query?.qid}`;
-      const threads = await queryRows(
-        sql.select_generation_thread_items,
-        { qid: qidFull, course_id: res.locals.course.id.toString() },
-        GenerationThreadItemSchema,
-      );
-      if (threads && threads.length > 0) {
-        res.locals.question = await queryRow(
-          sql.select_question_by_qid_and_course,
-          { qid: qidFull, course_id: res.locals.course.id },
-          QuestionSchema,
-        );
-        await getAndRenderVariant(null, null, res.locals);
-      }
-      res.send(AiGeneratePage({ resLocals: res.locals, threads }));
-    } else {
-      res.send(AiGeneratePage({ resLocals: res.locals }));
-    }
+    res.send(AiGeneratePage({ resLocals: res.locals }));
   }),
 );
 
@@ -133,9 +109,6 @@ router.post(
       });
 
       if (result.htmlResult) {
-        res.set({
-          'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_question?qid=${result.questionQid.substring(11)}`,
-        });
         res.send(
           GenerationResults(
             result.htmlResult,
@@ -174,7 +147,7 @@ router.post(
         genJobs[0]?.data?.html,
         genJobs[0]?.data?.python,
         res.locals,
-        req.body.qid,
+        undefined,
       );
 
       if (result.htmlResult) {
@@ -214,21 +187,6 @@ router.post(
       );
 
       res.redirect(res.locals.urlPrefix + '/question/' + qid + '/settings');
-    } else if (req.body.__action === 'delete_drafts') {
-      const questions = await queryRows(
-        sql.select_all_drafts,
-        { course_id: res.locals.course.id.toString() },
-        QuestionSchema,
-      );
-
-      for (const question of questions) {
-        const locals = res.locals;
-        locals['question'] = question;
-        const editor = new QuestionDeleteEditor({ locals });
-        const serverJob = await editor.prepareServerJob();
-        await editor.executeWithServerJob(serverJob);
-      }
-      res.send(AiGeneratePage({ resLocals: res.locals }));
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }

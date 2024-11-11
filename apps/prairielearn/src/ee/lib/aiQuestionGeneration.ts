@@ -8,8 +8,9 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryRows, queryRow } from '@prairielearn/postgres';
 
 import * as b64Util from '../../lib/base64-util.js';
+import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { QuestionGenerationContextEmbeddingSchema, QuestionSchema } from '../../lib/db-types.js';
-import { FileModifyEditor, QuestionAddEditor } from '../../lib/editors.js';
+import { FileModifyEditor } from '../../lib/editors.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
@@ -255,26 +256,29 @@ Keep in mind you are not just generating an example; you are generating an actua
 
       const draftId = await queryRow(sql.update_draft_number, { course_id: courseId }, z.number());
 
-      const editor = new QuestionAddEditor({
-        locals: saveLocals,
+      const client = getCourseFilesClient();
+
+      const result = await client.createQuestion.mutate({
+        course_id: saveLocals.course.id,
+        user_id: saveLocals.user.user_id,
+        authn_user_id: authnUserId,
+        has_course_permission_edit: saveLocals.authz_data.has_course_permission_edit,
         files,
-        draftId,
       });
 
-      const serverJob = await editor.prepareServerJob();
-      await editor.executeWithServerJob(serverJob);
+      const qid = 'question_id' in result ? result.question_id : `draft_${draftId}`;
 
       await queryRows(
         sql.insert_draft_info,
         {
-          qid: `draft_${draftId}`,
+          qid,
           course_id: courseId,
           creator_id: authnUserId,
         },
         z.any(),
       );
 
-      questionQid = `__drafts__/draft_${draftId}`;
+      questionQid = `__drafts__/${qid}`;
 
       await queryRows(
         sql.insert_prompt_info,
