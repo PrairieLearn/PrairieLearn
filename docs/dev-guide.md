@@ -289,12 +289,11 @@ WHERE
 
 - Use explicit row locking whenever modifying student data related to an assessment. This must be done within a transaction. The rule is that we lock either the variant (if there is no corresponding assessment instance) or the assessment instance (if we have one). It is fine to repeatedly lock the same row within a single transaction, so all functions involved in modifying elements of an assessment (e.g., adding a submission, grading, etc) should call a locking function when they start. All locking functions are equivalent in their action, so the most convenient one should be used in any given situation:
 
-  | Locking function            | Argument                 |
-  | --------------------------- | ------------------------ |
-  | `assessment_instances_lock` | `assessment_instance_id` |
-  | `instance_questions_lock`   | `instance_question_id`   |
-  | `variants_lock`             | `variant_id`             |
-  | `submission_lock`           | `submission_id`          |
+  | Locking function          | Argument               |
+  | ------------------------- | ---------------------- |
+  | `instance_questions_lock` | `instance_question_id` |
+  | `variants_lock`           | `variant_id`           |
+  | `submission_lock`         | `submission_id`        |
 
 - To pass an array of parameters to SQL code, use the following pattern, which allows zero or more elements in the array. This replaces `$points_list` with `ARRAY[10, 5, 1]` in the SQL. It's required to specify the type of array in case it is empty:
 
