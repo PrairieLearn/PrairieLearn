@@ -19,6 +19,7 @@ export const createQuestion = privateProcedure
       qid: z.string().optional(),
       title: z.string().optional(),
       files: z.record(z.string()).optional(),
+      draft_id: z.number().optional(),
     }),
   )
   .output(
@@ -51,6 +52,7 @@ export const createQuestion = privateProcedure
         user,
       },
       files: opts.input.files,
+      draftId: opts.input.draft_id,
     });
 
     const serverJob = await editor.prepareServerJob();
