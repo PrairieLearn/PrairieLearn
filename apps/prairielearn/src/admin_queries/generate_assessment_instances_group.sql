@@ -1,3 +1,4 @@
+-- BLOCK select_groups
 SELECT
   u.user_id,
   u.uid,
@@ -8,8 +9,7 @@ SELECT
   ci.id AS course_instance_id,
   ci.short_name AS course_instance,
   a.id AS assessment_id,
-  a.title AS assessment,
-  aii.assessment_instance_id
+  a.title AS assessment
 FROM
   assessments AS a
   JOIN course_instances AS ci on (ci.id = a.course_instance_id)
@@ -27,9 +27,10 @@ FROM
       1
   ) AS lgu ON (TRUE)
   JOIN users AS u ON (u.user_id = lgu.user_id)
-  JOIN assessment_instances_insert (a.id, u.user_id, a.group_work, u.user_id, $mode) AS aii ON TRUE
 WHERE
   a.id = $assessment_id
+  -- This query only works for assessments with group work enabled
+  AND a.group_work = TRUE
   AND g.deleted_at IS NULL
 ORDER BY
-  aii.assessment_instance_id;
+  u.user_id;
