@@ -3,8 +3,17 @@ SELECT
   *
 FROM
   questions
-where
+WHERE
   id = $question_id;
+
+-- BLOCK select_question_by_uuid
+SELECT
+  *
+FROM
+  questions
+WHERE
+  course_id = $course_id
+  AND uuid = $uuid;
 
 -- BLOCK select_question_by_instance_question_id
 SELECT
