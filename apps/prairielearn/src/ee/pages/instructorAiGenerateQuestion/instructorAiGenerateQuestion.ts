@@ -6,10 +6,9 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
+import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { GenerationThreadItemSchema, QuestionSchema } from '../../../lib/db-types.js';
 import { QuestionDeleteEditor } from '../../../lib/editors.js';
-
-import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { getAndRenderVariant } from '../../../lib/question-render.js';

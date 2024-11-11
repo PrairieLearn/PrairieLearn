@@ -929,7 +929,7 @@ export class QuestionAddEditor extends Editor {
       qid?: string;
       title?: string;
       files?: Record<string, string>;
-      draftId?: number
+      draftId?: number;
     },
   ) {
     super(params);
@@ -954,8 +954,8 @@ export class QuestionAddEditor extends Editor {
         return { qid: this.qid, title: this.title };
       }
 
-      if (this.isDraft){
-        return {qid: `draft_${this.draftId}`, title: `draft #${this.draftId}`}
+      if (this.isDraft) {
+        return { qid: `draft_${this.draftId}`, title: `draft #${this.draftId}` };
       }
 
       debug('Get all existing long names');
@@ -974,8 +974,8 @@ export class QuestionAddEditor extends Editor {
     });
 
     const questionPath = this.isDraft
-    ? path.join(questionsPath, '__drafts__', qid)
-    : path.join(questionsPath, qid);
+      ? path.join(questionsPath, '__drafts__', qid)
+      : path.join(questionsPath, qid);
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
     const toPath = questionPath;
