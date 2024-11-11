@@ -2175,17 +2175,21 @@ export async function startServer() {
   });
   server.on('connection', () => connectionCounter.add(1));
 
-  opentelemetry.createObservableValueGauges(
-    meter,
-    'http.connections.active',
-    {
-      valueType: opentelemetry.ValueType.INT,
-      interval: 1000,
-    },
-    () => {
-      return util.promisify(server.getConnections.bind(server))();
-    },
-  );
+  // Hack to get us running in Bun, which doesn't currently support `getConnections`:
+  // https://github.com/oven-sh/bun/issues/4459
+  if (server.getConnections) {
+    opentelemetry.createObservableValueGauges(
+      meter,
+      'http.connections.active',
+      {
+        valueType: opentelemetry.ValueType.INT,
+        interval: 1000,
+      },
+      () => {
+        return util.promisify(server.getConnections.bind(server))();
+      },
+    );
+  }
 
   const serverSocketActivity = new SocketActivityMetrics(meter, 'http');
   server.on('connection', (socket) => serverSocketActivity.addSocket(socket));
