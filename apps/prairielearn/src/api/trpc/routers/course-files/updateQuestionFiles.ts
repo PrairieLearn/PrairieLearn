@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { IdSchema } from '../../../../lib/db-types.js';
+import { IdSchema, QuestionSchema } from '../../../../lib/db-types.js';
 import { QuestionModifyEditor } from '../../../../lib/editors.js';
 import { selectCourseById } from '../../../../models/course.js';
 import { privateProcedure, selectUsers } from '../../trpc.js';
@@ -13,6 +13,7 @@ export const updateQuestionFiles = privateProcedure
       user_id: IdSchema,
       authn_user_id: IdSchema,
       has_course_permission_edit: z.boolean(),
+      question: QuestionSchema,
 
       // Question data.
       files: z.record(z.string()),
@@ -40,6 +41,7 @@ export const updateQuestionFiles = privateProcedure
         },
         course,
         user,
+        question: opts.input.question,
       },
       files: opts.input.files,
     });
