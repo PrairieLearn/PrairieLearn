@@ -1,16 +1,10 @@
-import * as path from 'path';
-
-import sha256 from 'crypto-js/sha256.js';
 import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows, queryRow } from '@prairielearn/postgres';
-
-import * as b64Util from '../../lib/base64-util.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { QuestionGenerationContextEmbeddingSchema, QuestionSchema } from '../../lib/db-types.js';
-import { FileModifyEditor } from '../../lib/editors.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
@@ -462,40 +456,33 @@ Keep in mind you are not just generating an example; you are generating an actua
       z.any(),
     );
 
-    const htmlHash = sha256(b64Util.b64EncodeUnicode(originalHTML)).toString();
-    const pythonHash = sha256(b64Util.b64EncodeUnicode(originalPython)).toString();
-
     const question = await queryRow(
       sql.select_question_by_qid_and_course,
       { qid: questionQid, course_id: courseId },
       QuestionSchema,
     );
 
-    const directory = question.directory || '.';
-
-    if (html !== originalHTML) {
-      const htmlEditor = new FileModifyEditor({
-        locals: saveLocals,
-        container: { rootPath: directory, invalidRootPaths: [] },
-        filePath: path.join(directory, 'question.html'),
-        editContents: b64Util.b64EncodeUnicode(html),
-        origHash: htmlHash,
-      });
-      const serverJob = await htmlEditor.prepareServerJob();
-      await htmlEditor.executeWithServerJob(serverJob);
+    const files : Record <string, string> = {};
+    if (results?.html){
+      files['question.html'] = results?.html;
     }
 
-    if (results.python !== originalPython) {
-      const pythonEditor = new FileModifyEditor({
-        locals: saveLocals,
-        container: { rootPath: directory, invalidRootPaths: [] },
-        filePath: path.join(directory, 'server.py'),
-        editContents: b64Util.b64EncodeUnicode(results.python),
-        origHash: pythonHash,
-      });
-      const serverJob = await pythonEditor.prepareServerJob();
-      await pythonEditor.executeWithServerJob(serverJob);
+    if (results?.python){
+      files['server.py'] = results?.python;
     }
+
+    const client = getCourseFilesClient();
+
+    await client.updateQuestionFiles.mutate({
+      course_id: saveLocals.course.id,
+      user_id: saveLocals.user.user_id,
+      authn_user_id: authnUserId,
+      has_course_permission_edit: saveLocals.authz_data.has_course_permission_edit,
+      question: question,
+      files,
+    });
+
+
   }
 
   job.data.html = html;
