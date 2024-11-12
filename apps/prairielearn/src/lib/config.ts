@@ -554,9 +554,14 @@ const ConfigSchema = z.object({
   pyroscopeBasicAuthUser: z.string().nullable().default(null),
   pyroscopeBasicAuthPassword: z.string().nullable().default(null),
   pyroscopeTags: z.record(z.string(), z.string()).default({}),
-  trpcSecretKey: z.string().nullable().default(null),
-  // TODO: bikeshed all these names.
-  courseFilesApiMode: z.enum(['process', 'network']).default('process'),
+  /**
+   * Keys used to sign and verify tRPC requests. Multiple keys are supported
+   * to allow for key rotation. The first key will always be used to sign
+   * requests. When verifying requests, all keys will be tried in order.
+   */
+  trpcSecretKeys: z.string().array().nullable().default(null),
+  courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
+  /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
   courseFilesApiUrl: z.string().nullable().default(null),
 });
 
@@ -598,8 +603,8 @@ export async function loadConfig(paths: string[]) {
     }
   }
 
-  if (config.courseFilesApiMode === 'network' && !config.trpcSecretKey) {
-    throw new Error('trpcSecretKey must be set when courseFilesApiMode is "network"');
+  if (config.courseFilesApiTransport === 'network' && !config.trpcSecretKeys?.length) {
+    throw new Error('trpcSecretKeys must be set when courseFilesApiMode is "network"');
   }
 }
 

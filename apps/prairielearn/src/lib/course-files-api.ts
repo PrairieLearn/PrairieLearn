@@ -11,7 +11,7 @@ import { config } from './config.js';
 export type CourseFilesClient = ReturnType<typeof createTRPCProxyClient<CourseFilesRouter>>;
 
 function getCourseFilesLink() {
-  if (config.courseFilesApiMode === 'process') {
+  if (config.courseFilesApiTransport === 'process') {
     // Based on code from the following issue:
     // https://github.com/trpc/trpc/issues/3768
     return httpLink({
@@ -28,20 +28,24 @@ function getCourseFilesLink() {
     });
   }
 
-  const { courseFilesApiUrl, trpcSecretKey } = config;
+  const { courseFilesApiUrl, trpcSecretKeys } = config;
 
   if (!courseFilesApiUrl) {
     throw new Error('Course files API URL is not configured');
   }
 
-  if (!trpcSecretKey) {
-    throw new Error('Internal API secret key is not configured');
+  if (!trpcSecretKeys?.length) {
+    throw new Error('Internal API secret keys are not configured');
   }
+
+  // The first secret key is always used for signing. Multiple keys can be
+  // specified to allow for key rotation.
+  const secretKey = trpcSecretKeys[0];
 
   return httpLink({
     url: courseFilesApiUrl,
     headers: async () => {
-      const secret = crypto.createSecretKey(trpcSecretKey, 'utf-8');
+      const secret = crypto.createSecretKey(secretKey, 'utf-8');
       const jwt = await new jose.SignJWT({})
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuer('PrairieLearn')
