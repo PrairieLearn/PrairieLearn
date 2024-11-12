@@ -402,3 +402,15 @@ To fix student scores without requiring them to answer another question you can:
 4. Upload the new scores with the "Upload new total scores" button on the "Uploads" tab.
 
 Changing total scores via CSV download/upload should only be done after the assessment is over and students are not working on it anymore, to avoid any risk of overwriting scores while students are answering more questions.
+
+## I updated my question, but students are still seeing the old version. How can I get students to see the new version?
+
+Some changes in question files do not take effect for students that have already started working on a variant. These include, but are not limited to: changes in the value of correct answers, added or removed graded elements, changes in element type (e.g., replacing string input with integer input), some other changes in element settings (e.g., multiple choice answers), changes in file names for gradable files, or updates to the `generate` function in `server.py`.
+
+You are highly encouraged to avoid changes such as the ones above to questions where students have already started working through the question. If such a change is necessary, though, and if you expect students to have their variants reset after such a change, you may do so in one of two ways:
+
+1. To reset all variants for a particular assessment question, go to the assessment page, click "Actions" on the relevant question, then "Reset question variants". This will invalidate _every_ variant that has been created so far and that has not yet been completed, and students will be given a new one the next time they load the page.
+
+2. To reset the variants for an individual student (or a small subset of students), go to the assessment page, select the "Students" tab, click on the assessment for the individual student (or group, for group assessments), then on the Questions list click "Action" on the relevant question, then "Reset question variants". This will invalidate the variants only for the specific student or group.
+
+Neither of these options will affect the score a student may already have obtained in any previous variants. That said, for exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](regrading.md).
