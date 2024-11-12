@@ -3,6 +3,7 @@ import * as parse5 from 'parse5';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows, queryRow } from '@prairielearn/postgres';
+
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { QuestionGenerationContextEmbeddingSchema, QuestionSchema } from '../../lib/db-types.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
@@ -462,12 +463,12 @@ Keep in mind you are not just generating an example; you are generating an actua
       QuestionSchema,
     );
 
-    const files : Record <string, string> = {};
-    if (results?.html){
+    const files: Record<string, string> = {};
+    if (results?.html) {
       files['question.html'] = results?.html;
     }
 
-    if (results?.python){
+    if (results?.python) {
       files['server.py'] = results?.python;
     }
 
@@ -478,11 +479,9 @@ Keep in mind you are not just generating an example; you are generating an actua
       user_id: saveLocals.user.user_id,
       authn_user_id: authnUserId,
       has_course_permission_edit: saveLocals.authz_data.has_course_permission_edit,
-      question: question,
+      question,
       files,
     });
-
-
   }
 
   job.data.html = html;
