@@ -4,6 +4,7 @@ import { IdSchema } from '../../../../lib/db-types.js';
 import { QuestionModifyEditor } from '../../../../lib/editors.js';
 import { selectCourseById } from '../../../../models/course.js';
 import { privateProcedure, selectUsers } from '../../trpc.js';
+import { selectQuestionById } from '../../../../models/question.js';
 
 export const updateQuestionFiles = privateProcedure
   .input(
@@ -27,6 +28,7 @@ export const updateQuestionFiles = privateProcedure
   )
   .mutation(async (opts) => {
     const course = await selectCourseById(opts.input.course_id);
+    const question = await selectQuestionById(opts.input.question_id);
 
     const { user, authn_user } = await selectUsers({
       user_id: opts.input.user_id,
@@ -41,7 +43,7 @@ export const updateQuestionFiles = privateProcedure
         },
         course,
         user,
-        question: { qid: opts.input.question_id },
+        question: question,
       },
       files: opts.input.files,
     });
