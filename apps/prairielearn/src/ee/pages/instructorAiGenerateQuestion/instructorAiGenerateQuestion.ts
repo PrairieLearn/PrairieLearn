@@ -6,8 +6,13 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
+import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import { GenerationThreadItemSchema, Question, QuestionSchema } from '../../../lib/db-types.js';
+import {
+  GenerationThreadItemSchema,
+  type Question,
+  QuestionSchema,
+} from '../../../lib/db-types.js';
 import { QuestionDeleteEditor } from '../../../lib/editors.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -21,7 +26,6 @@ import {
   GenerationFailure,
   GenerationResults,
 } from './instructorAiGenerateQuestion.html.js';
-import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
 
 const router = express.Router();
 
@@ -103,7 +107,13 @@ router.get(
         await setQuestionCopyTargets(res);
         setRendererHeader(res);
       }
-      res.send(AiGeneratePage({ resLocals: res.locals, threads, qid: req.query?.qid }));
+      res.send(
+        AiGeneratePage({
+          resLocals: res.locals,
+          threads,
+          qid: typeof req.query?.qid == 'string' ? req.query?.qid : undefined,
+        }),
+      );
     } else {
       res.send(AiGeneratePage({ resLocals: res.locals }));
     }
@@ -157,7 +167,11 @@ router.post(
       }
     } else if (req.body.__action === 'regenerate_question') {
       const qidFull = `__drafts__/${req.body.unsafe_qid}`;
-      const questions: Question[] = await queryRows(sql.select_question_by_qid_and_course({ qid: qidFull, course_id: res.locals.course.id }, QuestionSchema));
+      const questions: Question[] = await queryRows(
+        sql.select_question_by_qid_and_course,
+        { qid: qidFull, course_id: res.locals.course.id },
+        QuestionSchema,
+      );
       if (
         questions.length !== 1 ||
         !questions[0]?.course_id ||
@@ -181,8 +195,8 @@ router.post(
         res.locals.authn_user.user_id,
         threads[0].user_prompt,
         req.body.prompt,
-        threads[threads.length - 1].html,
-        threads[threads.length - 1].python,
+        threads[threads.length - 1].html || '',
+        threads[threads.length - 1].python || '',
         res.locals,
         req.body.unsafe_qid,
       );
