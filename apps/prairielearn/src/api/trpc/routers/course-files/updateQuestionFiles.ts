@@ -13,7 +13,7 @@ export const updateQuestionFiles = privateProcedure
       user_id: IdSchema,
       authn_user_id: IdSchema,
       has_course_permission_edit: z.boolean(),
-      qid: IdSchema,
+      question_id: IdSchema,
 
       // Question data.
       files: z.record(z.string()),
@@ -41,7 +41,7 @@ export const updateQuestionFiles = privateProcedure
         },
         course,
         user,
-        question: { qid: opts.input.qid },
+        question: { qid: opts.input.question_id },
       },
       files: opts.input.files,
     });
