@@ -15,7 +15,7 @@ export function getStripeClient() {
     throw new Error('Stripe is not configured.');
   }
 
-  return new Stripe(config.stripeSecretKey, { apiVersion: '2024-06-20' });
+  return new Stripe(config.stripeSecretKey);
 }
 
 export async function getOrCreateStripeCustomerId(

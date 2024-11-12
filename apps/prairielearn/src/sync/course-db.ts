@@ -227,7 +227,7 @@ interface Course {
   topics: Topic[];
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
-  sharingSets: SharingSet[];
+  sharingSets?: SharingSet[];
 }
 
 interface CourseInstanceAllowAccess {
@@ -386,7 +386,7 @@ export interface Question {
   externalGradingOptions: QuestionExternalGradingOptions;
   workspaceOptions?: QuestionWorkspaceOptions;
   dependencies: Record<string, string>;
-  sharingSets: string[];
+  sharingSets?: string[];
   sharePublicly: boolean;
   sharedPublicly: boolean;
   shareSourcePublicly: boolean;
