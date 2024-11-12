@@ -7,11 +7,11 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import { GenerationThreadItemSchema, QuestionSchema } from '../../../lib/db-types.js';
+import { GenerationThreadItemSchema, Question, QuestionSchema } from '../../../lib/db-types.js';
 import { QuestionDeleteEditor } from '../../../lib/editors.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
-import { getAndRenderVariant } from '../../../lib/question-render.js';
+import { getAndRenderVariant, setRendererHeader } from '../../../lib/question-render.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
@@ -21,6 +21,7 @@ import {
   GenerationFailure,
   GenerationResults,
 } from './instructorAiGenerateQuestion.html.js';
+import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
 
 const router = express.Router();
 
@@ -99,8 +100,10 @@ router.get(
           QuestionSchema,
         );
         await getAndRenderVariant(null, null, res.locals);
+        await setQuestionCopyTargets(res);
+        setRendererHeader(res);
       }
-      res.send(AiGeneratePage({ resLocals: res.locals, threads }));
+      res.send(AiGeneratePage({ resLocals: res.locals, threads, qid: req.query?.qid }));
     } else {
       res.send(AiGeneratePage({ resLocals: res.locals }));
     }
@@ -153,31 +156,42 @@ router.post(
         );
       }
     } else if (req.body.__action === 'regenerate_question') {
-      const genJobs = await selectJobsByJobSequenceId(req.body.unsafe_sequence_job_id);
+      const qidFull = `__drafts__/${req.body.unsafe_qid}`;
+      const questions: Question[] = await queryRows(sql.select_question_by_qid_and_course({ qid: qidFull, course_id: res.locals.course.id }, QuestionSchema));
       if (
-        genJobs.length !== 1 ||
-        !genJobs[0]?.course_id ||
-        !idsEqual(genJobs[0]?.course_id, res.locals.course.id)
+        questions.length !== 1 ||
+        !questions[0]?.course_id ||
+        !idsEqual(questions[0]?.course_id, res.locals.course.id)
       ) {
         throw new error.HttpStatusError(
           403,
-          `Job sequence ${req.body.unsafe_sequence_job_id} not found.`,
+          `Question ${req.body.unsafe_sequence_job_id} not found.`,
         );
       }
+
+      const threads = await queryRows(
+        sql.select_generation_thread_items,
+        { qid: qidFull, course_id: res.locals.course.id.toString() },
+        GenerationThreadItemSchema,
+      );
 
       const result = await regenerateQuestion(
         client,
         res.locals.course.id,
         res.locals.authn_user.user_id,
-        genJobs[0]?.data?.prompt,
+        threads[0].user_prompt,
         req.body.prompt,
-        genJobs[0]?.data?.html,
-        genJobs[0]?.data?.python,
+        threads[threads.length - 1].html,
+        threads[threads.length - 1].python,
         res.locals,
-        req.body.qid,
+        req.body.unsafe_qid,
       );
 
       if (result.htmlResult) {
+        res.set({
+          'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_question?qid=${req.body.unsafe_qid}`,
+        });
+
         res.send(
           GenerationResults(
             result.htmlResult,

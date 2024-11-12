@@ -41,9 +41,11 @@ const examplePrompts = [
 export function AiGeneratePage({
   resLocals,
   threads,
+  qid,
 }: {
   resLocals: Record<string, any>;
   threads?: GenerationThreadItem[];
+  qid?: number;
 }) {
   return html`
     <!doctype html>
@@ -166,11 +168,35 @@ export function AiGeneratePage({
                           return x.prompt_type !== 'autorevision';
                         })
                         .map((x) => {
-                          return html`Human: ${x.user_prompt} AI: v${x.id}`;
-                        })
-                        .join('\n')}
+                          return html`<div>You prompted: ${x.user_prompt}</div><div>We created: v${x.id}</div>`})}
                       <div class="col-lg-9 col-sm-12">
                         ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
+                      </div>
+                      <div>
+                      <form
+                      name="regen-question-form"
+                      hx-post="${resLocals.urlPrefix}/ai_generate_question"
+                      hx-target="#generation-results"
+                      hx-swap="outerHTML"
+                      hx-disabled-elt="button"
+                    >
+                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                      <input type="hidden" name="__action" value="regenerate_question" />
+                      <input type="hidden" name="unsafe_qid" value="${qid}" />
+                      <div class="form-group">
+                        <label for="user-prompt-llm">What needs to be changed?</label>
+                        <textarea name="prompt" id="user-prompt-llm" class="form-control"></textarea>
+                      </div>
+                      <button class="btn btn-primary">
+                        <span
+                          class="spinner-grow spinner-grow-sm d-none"
+                          role="status"
+                          aria-hidden="true"
+                          data-loading-class-remove="d-none"
+                        ></span>
+                        Adjust question
+                      </button>
+                    </form>
                       </div>`
               }
                 
