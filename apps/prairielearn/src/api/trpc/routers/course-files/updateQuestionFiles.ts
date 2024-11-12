@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { IdSchema } from '../../../../lib/db-types.js';
 import { QuestionModifyEditor } from '../../../../lib/editors.js';
 import { selectCourseById } from '../../../../models/course.js';
+import { selectQuestionById } from '../../../../models/question.js';
 import { privateProcedure, selectUsers } from '../../trpc.js';
 
 export const updateQuestionFiles = privateProcedure
@@ -13,7 +14,7 @@ export const updateQuestionFiles = privateProcedure
       user_id: IdSchema,
       authn_user_id: IdSchema,
       has_course_permission_edit: z.boolean(),
-      qid: IdSchema,
+      question_id: IdSchema,
 
       // Question data.
       files: z.record(z.string()),
@@ -27,6 +28,7 @@ export const updateQuestionFiles = privateProcedure
   )
   .mutation(async (opts) => {
     const course = await selectCourseById(opts.input.course_id);
+    const question = await selectQuestionById(opts.input.question_id);
 
     const { user, authn_user } = await selectUsers({
       user_id: opts.input.user_id,
@@ -41,7 +43,7 @@ export const updateQuestionFiles = privateProcedure
         },
         course,
         user,
-        question: { qid: opts.input.qid },
+        question,
       },
       files: opts.input.files,
     });
