@@ -6,6 +6,34 @@ There are multiple locations within each course where files can be stored for ac
 
 `ServerFiles` directories are only accessible from code running on the server, so are useful for libraries that can solve questions or generate random question instances. Files in a `serverFiles` directory cannot be directly accessed by the student's web browser.
 
+### Example Usage of `serverFilesCourse` in an Autograder
+
+In this example, we’ll demonstrate how to use a data file, `chem.json`, within an autograder setup. Assume we have a data file called `chem.json` located in the `serverFilesCourse` directory within the course root directory, specifically at `serverFilesCourse/compounds/chem.json`.
+
+To access `serverFilesCourse` from the autograder, specify the file directory in the question `info.json`. Here’s how to set it up to allow access to the `compounds` directory:
+
+```diff
+...
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
++       "serverFilesCourse": ["compounds"]
+    }
+...
+```
+
+In your `test.py` file, you can then load the `chem.json` file using the following code:
+
+```python
+import json
+
+with open("grade/serverFilesCourse/compounds/chem.json", "r") as f:
+    list_of_compounds = json.load(f)
+```
+
+This setup enables you to access files in the `serverFilesCourse` directory during autograder execution, making it easy to include static data files in your grading logic.
+
 ## Directory layout
 
 A `clientFiles*` subdirectory can be associated with the course, a question, a course instance, or an assessment, as shown below. The `serverFilesCourse` subdirectory is associated with the course as a whole.
