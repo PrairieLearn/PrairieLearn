@@ -405,7 +405,7 @@ Changing total scores via CSV download/upload should only be done after the asse
 
 ## I updated my question, but students are still seeing the old version. How can I get students to see the new version?
 
-Some changes in question files do not take effect for students that have already started working on a variant. These include, but are not limited to: changes in the value of correct answers, added or removed graded elements, changes in element type (e.g., replacing string input with integer input), some other changes in element settings (e.g., multiple choice answers), changes in file names for gradable files, or updates to the `generate` function in `server.py`.
+Some changes in question files do not take effect for students that have already started working on a variant. These include, but are not limited to: changes in the value of correct answers, added or removed graded elements, changes in element type (e.g., replacing string input with integer input), changes in the `answers-name` option for graded elements, some other changes in element settings (e.g., multiple choice answers), changes in file names for gradable files, or updates to the `generate` function in `server.py`.
 
 You are highly encouraged to avoid changes such as the ones above to questions where students have already started working through the question. However, if such a change is necessary and you expect students to have their variants reset after such a change, you may do so in one of two ways:
 
@@ -413,4 +413,6 @@ You are highly encouraged to avoid changes such as the ones above to questions w
 
 - To reset the variants for an individual student (or a small subset of students), go to the assessment page, select the "Students" tab, click on the assessment for the individual student (or group, for group assessments), then on the Questions list click "Action" on the relevant question, then "Reset question variants". This will invalidate the variants only for the specific student or group.
 
-Neither of these options will affect the score a student may already have obtained in any previous variants. That said, for exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](regrading.md).
+Neither of these options will affect the score a student may already have obtained in any previous variants. However, any work a student may have started on an open variant but not yet submitted will be lost.
+
+For exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](regrading.md).
