@@ -407,7 +407,7 @@ Changing total scores via CSV download/upload should only be done after the asse
 
 Some changes in question files do not take effect for students that have already started working on a variant. These include, but are not limited to: changes in the value of correct answers, added or removed graded elements, changes in element type (e.g., replacing string input with integer input), some other changes in element settings (e.g., multiple choice answers), changes in file names for gradable files, or updates to the `generate` function in `server.py`.
 
-You are highly encouraged to avoid changes such as the ones above to questions where students have already started working through the question. If such a change is necessary, though, and if you expect students to have their variants reset after such a change, you may do so in one of two ways:
+You are highly encouraged to avoid changes such as the ones above to questions where students have already started working through the question. However, if such a change is necessary and you expect students to have their variants reset after such a change, you may do so in one of two ways:
 
 1. To reset all variants for a particular assessment question, go to the assessment page, click "Actions" on the relevant question, then "Reset question variants". This will invalidate _every_ variant that has been created so far and that has not yet been completed, and students will be given a new one the next time they load the page.
 
