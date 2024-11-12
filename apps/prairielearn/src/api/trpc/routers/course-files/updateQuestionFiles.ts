@@ -41,7 +41,7 @@ export const updateQuestionFiles = privateProcedure
         },
         course,
         user,
-        question: question
+        question: opts.input.question
       },
       files: opts.input.files,
     });
