@@ -11,6 +11,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import { QuestionTransferEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
+import { selectQuestionByUuid } from '../../models/question.js';
 
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -71,15 +72,17 @@ router.get(
       user_id: res.locals.user.user_id,
     });
     debug(`Get question_id from uuid=${editor.uuid} with course_id=${res.locals.course.id}`);
-    const result = await sqldb.queryOneRowAsync(sql.select_question_id_from_uuid, {
-      uuid: editor.uuid,
+    const question = await selectQuestionByUuid({
+      // TODO: we'll have to change something here once we allow instructors to
+      // copy questions that have been shared with their course.
       course_id: res.locals.course.id,
+      uuid: editor.uuid,
     });
     flash(
       'success',
       'Question copied successfully. You are now viewing your copy of the question.',
     );
-    res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id);
+    res.redirect(res.locals.urlPrefix + '/question/' + question.id);
   }),
 );
 

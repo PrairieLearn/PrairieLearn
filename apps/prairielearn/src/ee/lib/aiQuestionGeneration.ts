@@ -479,7 +479,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       user_id: saveLocals.user.user_id,
       authn_user_id: authnUserId,
       has_course_permission_edit: saveLocals.authz_data.has_course_permission_edit,
-      question,
+      qid: question.qid,
       files,
     });
   }

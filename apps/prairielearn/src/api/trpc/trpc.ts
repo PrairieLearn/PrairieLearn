@@ -37,10 +37,10 @@ export const privateProcedure = t.procedure.use(async (opts) => {
   // When running in the same process, we can bypass JWT verification.
   if (opts.ctx.bypassJwt) return opts.next();
 
-  if (!config.trpcSecretKey) {
+  if (!config.trpcSecretKeys?.length) {
     throw new TRPCError({
       code: 'INTERNAL_SERVER_ERROR',
-      message: 'Internal API secret key is not configured',
+      message: 'Internal API secret keys are not configured',
     });
   }
 
@@ -51,19 +51,24 @@ export const privateProcedure = t.procedure.use(async (opts) => {
     });
   }
 
-  // Verify the JWT.
-  await jose
-    .jwtVerify(opts.ctx.jwt, crypto.createSecretKey(config.trpcSecretKey, 'utf-8'), {
-      issuer: 'PrairieLearn',
-    })
-    .catch((err) => {
-      throw new TRPCError({
-        code: 'UNAUTHORIZED',
-        message: `Invalid JWT: ${err.message}`,
+  for (const secretKey of config.trpcSecretKeys) {
+    try {
+      await jose.jwtVerify(opts.ctx.jwt, crypto.createSecretKey(secretKey, 'utf-8'), {
+        issuer: 'PrairieLearn',
       });
-    });
 
-  return opts.next();
+      // The payload was successfully verified. We can proceed.
+      return opts.next();
+    } catch {
+      // Ignore errors and try the next key.
+    }
+  }
+
+  // We weren't able to verify the JWT with any of the secret keys.
+  throw new TRPCError({
+    code: 'UNAUTHORIZED',
+    message: 'Invalid JWT',
+  });
 });
 
 export async function selectUsers({

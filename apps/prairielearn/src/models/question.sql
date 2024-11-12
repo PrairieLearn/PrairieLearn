@@ -13,7 +13,8 @@ FROM
   questions
 WHERE
   course_id = $course_id
-  AND uuid = $uuid;
+  AND uuid = $uuid
+  AND deleted_at IS NULL;
 
 -- BLOCK select_question_by_instance_question_id
 SELECT
