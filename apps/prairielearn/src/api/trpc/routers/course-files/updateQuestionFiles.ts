@@ -3,8 +3,8 @@ import { z } from 'zod';
 import { IdSchema } from '../../../../lib/db-types.js';
 import { QuestionModifyEditor } from '../../../../lib/editors.js';
 import { selectCourseById } from '../../../../models/course.js';
-import { privateProcedure, selectUsers } from '../../trpc.js';
 import { selectQuestionById } from '../../../../models/question.js';
+import { privateProcedure, selectUsers } from '../../trpc.js';
 
 export const updateQuestionFiles = privateProcedure
   .input(
@@ -43,7 +43,7 @@ export const updateQuestionFiles = privateProcedure
         },
         course,
         user,
-        question: question,
+        question,
       },
       files: opts.input.files,
     });
