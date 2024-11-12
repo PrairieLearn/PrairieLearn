@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { IdSchema, QuestionSchema } from '../../../../lib/db-types.js';
+import { IdSchema } from '../../../../lib/db-types.js';
 import { QuestionModifyEditor } from '../../../../lib/editors.js';
 import { selectCourseById } from '../../../../models/course.js';
 import { privateProcedure, selectUsers } from '../../trpc.js';
