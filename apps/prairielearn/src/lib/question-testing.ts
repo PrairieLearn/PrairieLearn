@@ -86,8 +86,9 @@ async function createTestSubmission(
     format_errors: data.format_errors,
     gradable: data.gradable,
     broken: hasFatalIssue,
-    // The `test` phase is not allowed to mutate `true_answers`, so we just pick
-    // the original `true_answer` so we can use our standard `insertSubmission`.
+    // The `test` phase is not allowed to mutate `params` and `true_answers`, so
+    // we just pick the original `params` and `true_answer` so we can use our
+    // standard `insertSubmission`.
     params: variant.params,
     true_answer: variant.true_answer,
     feedback: null,
