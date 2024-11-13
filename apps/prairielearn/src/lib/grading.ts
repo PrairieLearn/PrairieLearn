@@ -437,10 +437,11 @@ export async function saveAndGradeSubmission(
   );
 
   await gradeVariant(
-    // Note that parsing a submission may modify the `true_answer` of the variant
-    // (for v3 questions, this is `data["correct_answers"])`. This is why we need
-    // to use the variant returned from `saveSubmission` rather than the one passed
-    // to this function.
+    // Note that parsing a submission may modify the `params` and `true_answer`
+    // of the variant (for v3 questions, this is `data["params"]` and
+    // `data["correct_answers"])`. This is why we need to use the variant
+    // returned from `saveSubmission` rather than the one passed to this
+    // function.
     updated_variant,
     submission_id,
     question,
