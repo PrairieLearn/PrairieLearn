@@ -474,14 +474,16 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     const client = getCourseFilesClient();
 
-    await client.updateQuestionFiles.mutate({
-      course_id: saveLocals.course.id,
-      user_id: saveLocals.user.user_id,
-      authn_user_id: authnUserId,
-      has_course_permission_edit: saveLocals.authz_data.has_course_permission_edit,
-      question_id: question.qid,
-      files,
-    });
+    if (question.qid){
+      await client.updateQuestionFiles.mutate({
+        course_id: saveLocals.course.id,
+        user_id: saveLocals.user.user_id,
+        authn_user_id: authnUserId,
+        has_course_permission_edit: saveLocals.authz_data.has_course_permission_edit,
+        question_id: question.qid,
+        files,
+      });
+    }
   }
 
   job.data.html = html;
