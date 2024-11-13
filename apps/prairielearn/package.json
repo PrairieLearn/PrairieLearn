@@ -53,6 +53,8 @@
     "@prairielearn/workspace-utils": "workspace:^",
     "@pyroscope/nodejs": "^0.4.1",
     "@socket.io/redis-adapter": "^8.3.0",
+    "@trpc/client": "^10.45.2",
+    "@trpc/server": "^10.45.2",
     "@types/d3": "^7.4.3",
     "@viz-js/viz": "^3.10.0",
     "@web3-storage/parse-link-header": "^3.1.0",
