@@ -1080,6 +1080,53 @@ export class QuestionModifyEditor extends Editor {
   }
 }
 
+export class QuestionModifyEditor extends Editor {
+  private question: Question;
+  private origHash: string;
+  private files: Record<string, string>;
+
+  constructor(
+    params: BaseEditorOptions & {
+      files: Record<string, string>;
+    },
+  ) {
+    super(params);
+
+    this.question = params.locals.question;
+    this.files = params.files;
+    this.description = `Modify question ${this.question.qid}`;
+  }
+
+  async write() {
+    assert(this.question.qid, 'question.qid is required');
+
+    const questionPath = path.join(this.course.path, 'questions', this.question.qid);
+
+    // Validate that all file paths don't escape the question directory.
+    for (const filePath of Object.keys(this.files)) {
+      if (!contains(questionPath, filePath)) {
+        throw new Error(`Invalid file path: ${filePath}`);
+      }
+    }
+
+    // Note that we deliberately only modify files that were provided. We don't
+    // try to delete "excess" files that aren't in the `files` object because the
+    // user might have added extra files of their own, e.g. in the `tests` or
+    // `clientFilesQuestion` directory. We don't want to remove them, and we also
+    // don't want to mandate that the caller must always read all existing files
+    // and provide them in the `files` object.
+    for (const [filePath, contents] of Object.entries(this.files)) {
+      const resolvedPath = path.join(questionPath, filePath);
+      await fs.writeFile(resolvedPath, b64Util.b64DecodeUnicode(contents));
+    }
+
+    return {
+      pathsToAdd: [questionPath],
+      commitMessage: this.description,
+    };
+  }
+}
+
 export class QuestionDeleteEditor extends Editor {
   private question: Question;
 
