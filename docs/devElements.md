@@ -4,7 +4,7 @@ See [`elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/
 
 Element code uses the libraries in [the `python/` module](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/python).
 
-### Anatomy of an element
+## Anatomy of an element
 
 The system-wide elements available in the current build of the PrairieLearn server
 live in `[PrairieLearn directory]/elements` inside a folder corresponding to the element name.
@@ -46,7 +46,7 @@ And an `info.json` with the following contents:
 }
 ```
 
-### Element functions
+## Element functions
 
 All element functions are of the following form:
 
@@ -105,7 +105,7 @@ The element functions are:
 
 The above table describes the purpose of each function and the values in `data` that are allowed to be modified. Any permitted changes to the values in `data` will be persisted to the database. No function is allowed to add or delete keys in `data`.
 
-### Element dependencies
+## Element dependencies
 
 It's likely that your element will depend on certain client-side assets, such as scripts or stylesheets. To keep clean separation of HTML, CSS, and JS, you can place those dependencies in other files. If you depend on libraries like `lodash` or `d3`, you can also link to node modules containing these libraries. PrairieLearn will compile a list of all dependencies needed by all elements on a page, deduplicate the dependencies, and ensure they are loaded on the page.
 

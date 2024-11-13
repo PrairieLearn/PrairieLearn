@@ -1,6 +1,6 @@
 import { loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
-import { User, UserSchema } from '../lib/db-types.js';
+import { type User, UserSchema } from '../lib/db-types.js';
 import * as faker from '../lib/faker.js';
 
 const sql = loadSqlEquiv(import.meta.url);

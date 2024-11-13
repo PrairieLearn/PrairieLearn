@@ -14,7 +14,11 @@ import { getAndRenderVariant, renderPanelsForSubmission } from '../../../lib/que
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
-import { GradingJobData, GradingJobDataSchema, InstanceQuestion } from './instanceQuestion.html.js';
+import {
+  type GradingJobData,
+  GradingJobDataSchema,
+  InstanceQuestion,
+} from './instanceQuestion.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
 const router = express.Router();

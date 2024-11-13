@@ -1,6 +1,6 @@
 import { v4 as uuidv4 } from 'uuid';
 
-import { HtmlValue, escapeHtml, html } from '@prairielearn/html';
+import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 
 export function ChangeIdButton({
   label,

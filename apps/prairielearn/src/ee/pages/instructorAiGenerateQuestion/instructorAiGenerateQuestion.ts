@@ -3,11 +3,9 @@ import asyncHandler from 'express-async-handler';
 import { OpenAI } from 'openai';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import { QuestionSchema } from '../../../lib/db-types.js';
-import { QuestionAddEditor } from '../../../lib/editors.js';
+import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
@@ -21,8 +19,6 @@ import {
 } from './instructorAiGenerateQuestion.html.js';
 
 const router = express.Router();
-
-const sql = loadSqlEquiv(import.meta.url);
 
 export async function saveGeneratedQuestion(
   res,
@@ -39,26 +35,21 @@ export async function saveGeneratedQuestion(
     files['server.py'] = pythonFileContents;
   }
 
-  const editor = new QuestionAddEditor({
-    locals: res.locals,
+  const client = getCourseFilesClient();
+
+  const result = await client.createQuestion.mutate({
+    course_id: res.locals.course.id,
+    user_id: res.locals.user.user_id,
+    authn_user_id: res.locals.authn_user.user_id,
+    has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
     files,
   });
 
-  const serverJob = await editor.prepareServerJob();
-
-  try {
-    await editor.executeWithServerJob(serverJob);
-  } catch {
-    throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+  if (result.status === 'error') {
+    throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
   }
 
-  const result = await queryRow(
-    sql.select_added_question,
-    { uuid: editor.uuid, course_id: res.locals.course.id.toString() },
-    QuestionSchema,
-  );
-
-  return result.id;
+  return result.question_id;
 }
 
 function assertCanCreateQuestion(resLocals: Record<string, any>) {

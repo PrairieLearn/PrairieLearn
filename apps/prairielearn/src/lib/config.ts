@@ -167,6 +167,7 @@ const ConfigSchema = z.object({
   cronIntervalWorkspaceHostTransitionsSec: z.number().default(10),
   cronIntervalChunksHostAutoScalingSec: z.number().default(10),
   cronIntervalCleanTimeSeriesSec: z.number().default(10 * 60),
+  cronIntervalCleanUserSessionsSec: z.number().default(10 * 60),
   cronDailySec: z.number().default(8 * 60 * 60),
   /**
    * Controls how much history is retained when removing old rows
@@ -553,6 +554,15 @@ const ConfigSchema = z.object({
   pyroscopeBasicAuthUser: z.string().nullable().default(null),
   pyroscopeBasicAuthPassword: z.string().nullable().default(null),
   pyroscopeTags: z.record(z.string(), z.string()).default({}),
+  /**
+   * Keys used to sign and verify tRPC requests. Multiple keys are supported
+   * to allow for key rotation. The first key will always be used to sign
+   * requests. When verifying requests, all keys will be tried in order.
+   */
+  trpcSecretKeys: z.string().array().nullable().default(null),
+  courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
+  /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
+  courseFilesApiUrl: z.string().nullable().default(null),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -592,13 +602,14 @@ export async function loadConfig(paths: string[]) {
       throw new Error('cookieDomain must start with a dot, e.g. ".example.com"');
     }
   }
+
+  if (config.courseFilesApiTransport === 'network' && !config.trpcSecretKeys?.length) {
+    throw new Error('trpcSecretKeys must be set when courseFilesApiMode is "network"');
+  }
 }
 
 export function setLocalsFromConfig(locals: Record<string, any>) {
-  locals.homeUrl = config.homeUrl;
   locals.urlPrefix = config.urlPrefix;
   locals.plainUrlPrefix = config.urlPrefix;
   locals.navbarType = 'plain';
-  locals.devMode = config.devMode;
-  locals.is_administrator = false;
 }

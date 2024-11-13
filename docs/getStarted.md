@@ -14,7 +14,7 @@ This tutorial will show you how to create:
 - [questions using templates from outside courses](#start-a-new-question-from-an-existing-one-outside-your-own-course)
 - [assessments](#creating-a-new-assessment)
 
-### Creating a course instance
+## Creating a course instance
 
 A course instance corresponds to a single offering of a course, such as "Fall 2024", or possibly "Fall 2024, Section M". Follow the steps below to create a new course instance:
 
@@ -45,9 +45,9 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - You will be able to see the new course instance from the course home page. You can always return to the course home page by clicking your course number from the top menu, next to the PrairieLearn button.
 
-### Creating questions from scratch
+## Creating questions from scratch
 
-#### Add a new question
+### Add a new question
 
 - go to the `Questions` tab. Your questions page should be similar to the example below:
 
@@ -117,7 +117,7 @@ To provide a simple example, here we first create a question without any randomi
 
 Note that this question does not use any server side code, and for that reason, the file `server.py` is not needed. Indeed, you could just delete `server.py` for this question. (we will not remove the file for the purpose of the following steps of this tutorial).
 
-### Start a new question from an existing one _inside_ your own course
+## Start a new question from an existing one _inside_ your own course
 
 - from the `Questions` tab, select the question you want to copy. As an example, we will use the question with QID `find_rectangle_area`.
 
@@ -185,9 +185,9 @@ We will add randomization to the previous question, using the file [server.py](q
 
 - go to the `Preview` tab to see your question. Try it out! Check a different variant and see how the variables change.
 
-### Start a new question from an existing one _outside_ your own course
+## Start a new question from an existing one _outside_ your own course
 
-#### Copying questions from the example course (XC 101)
+### Copying questions from the example course (XC 101)
 
 You should also have access to the example course `XC 101`. From the top menu, next to the PrairieLearn homepage button, you can select other courses that you were allowed access to. Select `XC 101`. If you cannot see the example course, contact us on Slack (`#pl-help`) and we will make sure you gain access.
 
@@ -201,7 +201,7 @@ Once you find a question that you want to use as template, you can follow these 
 
 - That is it! You are now viewing a copy of the question inside your course. You can modify the question following the steps from the section above.
 
-#### Copying questions from www.prairielearn.com
+### Copying questions from www.prairielearn.com
 
 - Go to <https://www.prairielearn.com/catalog/questions>
 
@@ -211,7 +211,7 @@ Once you find a question that you want to use as template, you can follow these 
 
 - That is it! You are now viewing a copy of the question inside your course. You can modify the question following the steps from the section above.
 
-### Creating a new assessment
+## Creating a new assessment
 
 Before you create an assessment, make sure you are in the desired course instance.
 
@@ -260,7 +260,7 @@ Before you create an assessment, make sure you are in the desired course instanc
 
 - click `Save and sync`.
 
-### Check how a student will see the assessment
+## Check how a student will see the assessment
 
 Follow these steps to preview an assessment as a student:
 
