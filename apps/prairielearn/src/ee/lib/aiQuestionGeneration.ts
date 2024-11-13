@@ -474,7 +474,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     const client = getCourseFilesClient();
 
-    if (question.qid){
+    if (question.qid) {
       await client.updateQuestionFiles.mutate({
         course_id: saveLocals.course.id,
         user_id: saveLocals.user.user_id,
