@@ -56,35 +56,42 @@ WITH
       grading_job_data AS gjd
     WHERE
       s.id = $submission_id
-  )
-INSERT INTO
-  grading_jobs AS gj (
-    submission_id,
-    auth_user_id,
-    grading_method,
-    grading_requested_at,
-    grading_received_at,
-    grading_started_at
+  ),
+  new_grading_job AS (
+    INSERT INTO
+      grading_jobs AS gj (
+        submission_id,
+        auth_user_id,
+        grading_method,
+        grading_requested_at,
+        grading_received_at,
+        grading_started_at
+      )
+    SELECT
+      $submission_id,
+      $authn_user_id,
+      gjd.grading_method,
+      now(),
+      -- For internal grading jobs, we can just use the same timestamp for
+      -- all of these. When we're grading externally, these will
+      -- be set when the grading job is actually "processed".
+      CASE
+        WHEN gjd.grading_method = 'Internal' THEN now()
+        ELSE NULL
+      END,
+      CASE
+        WHEN gjd.grading_method = 'Internal' THEN now()
+        ELSE NULL
+      END
+    FROM
+      grading_job_data AS gjd
+    RETURNING
+      gj.*
   )
 SELECT
-  $submission_id,
-  $authn_user_id,
-  gjd.grading_method,
-  now(),
-  -- For internal grading jobs, we can just use the same timestamp for
-  -- all of these. When we're grading externally, these will
-  -- be set when the grading job is actually "processed".
-  CASE
-    WHEN gjd.grading_method = 'Internal' THEN now()
-    ELSE NULL
-  END,
-  CASE
-    WHEN gjd.grading_method = 'Internal' THEN now()
-    ELSE NULL
-  END
-FROM
-  grading_job_data AS gjd
-RETURNING
   gj.*,
   gjd.assessment_instance_id,
-  gjd.credit;
+  gjd.credit
+FROM
+  new_grading_job AS gj
+  JOIN grading_job_data AS gjd ON TRUE;
