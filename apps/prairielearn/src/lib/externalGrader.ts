@@ -9,6 +9,8 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
+import { updateGradingJobAfterGrading } from '../models/grading-job.js';
+
 import { config } from './config.js';
 import {
   IdSchema,
@@ -231,22 +233,19 @@ export async function processGradingResult(content: any): Promise<void> {
       }
     }
 
-    await sqldb.callAsync('grading_jobs_update_after_grading', [
-      content.gradingId,
-      content.grading.receivedTime,
-      content.grading.startTime,
-      content.grading.endTime,
-      null, // `submitted_answer`
-      content.grading.format_errors,
+    await updateGradingJobAfterGrading({
+      grading_job_id: content.gradingId,
+      received_time: content.grading.receivedTime,
+      start_time: content.grading.startTime,
+      finish_time: content.grading.endTime,
+      format_errors: content.grading.format_errors,
       gradable,
-      false, // `broken`
-      null, // `params`
-      null, // `true_answer`
-      content.grading.feedback,
-      {}, // `partial_scores`
-      content.grading.score,
-      null, // `v2_score`: gross legacy, this can safely be null
-    ]);
+      broken: false,
+      feedback: content.grading.feedback,
+      partial_scores: {},
+      score: content.grading.score,
+      // `v2_score`: gross legacy, this can safely be null
+    });
     const assessment_instance_id = await sqldb.queryOptionalRow(
       sql.select_assessment_for_grading_job,
       { grading_job_id: content.gradingId },
