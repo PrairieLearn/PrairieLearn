@@ -2,7 +2,7 @@ import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryRows, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, queryRow, queryAsync } from '@prairielearn/postgres';
 
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { QuestionGenerationContextEmbeddingSchema, QuestionSchema } from '../../lib/db-types.js';
@@ -163,7 +163,8 @@ function extractFromCompletion(
  * @param promptGeneral The prompt for how to generate a question.
  * @param promptUserInput The prompt for how to take user input.
  * @param promptGrading The prompt for how to grade user input.
- * @param saveLocals Request locals for prompt-saving.
+ * @param userId The ID of the generating/saving user.
+ * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
  */
 export async function generateQuestion({
@@ -173,15 +174,17 @@ export async function generateQuestion({
   promptGeneral,
   promptUserInput,
   promptGrading,
-  saveLocals,
+  userId,
+  hasCoursePermissionEdit,
 }: {
   client: OpenAI;
-  courseId: string | undefined;
+  courseId: string;
   authnUserId: string;
   promptGeneral: string;
   promptUserInput: string;
   promptGrading: string;
-  saveLocals?: Record<string, any> | undefined;
+  userId?: string | undefined;
+  hasCoursePermissionEdit?: boolean | undefined;
 }): Promise<{
   jobSequenceId: string;
   questionQid: string;
@@ -236,9 +239,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       errors = ['Please generate a question.html file.'];
     }
 
-    let questionQid = '';
-
-    if (saveLocals) {
+    if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
       const files = {};
 
       if (results?.html) {
@@ -249,59 +250,54 @@ Keep in mind you are not just generating an example; you are generating an actua
         files['server.py'] = results?.python;
       }
 
-      const draftId = await queryRow(sql.update_draft_number, { course_id: courseId }, z.number());
+      const draftNumber = await queryRow(
+        sql.update_draft_number,
+        { course_id: courseId },
+        z.number(),
+      );
 
       const client = getCourseFilesClient();
 
+      const qid = `__drafts__/draft_${draftNumber}`;
+
       await client.createQuestion.mutate({
-        course_id: saveLocals.course.id,
-        user_id: saveLocals.user.user_id,
+        course_id: courseId,
+        user_id: userId,
         authn_user_id: authnUserId,
-        has_course_permission_edit: saveLocals.authz_data.has_course_permission_edit,
-        draft_id: draftId,
+        has_course_permission_edit: hasCoursePermissionEdit,
+        qid,
+        title: `draft ${draftNumber}`,
         files,
       });
 
-      const qid = `draft_${draftId}`;
+      await queryAsync(sql.insert_draft_info, {
+        qid,
+        course_id: courseId,
+        creator_id: authnUserId,
+      });
 
-      await queryRows(
-        sql.insert_draft_info,
-        {
-          qid,
-          course_id: courseId,
-          creator_id: authnUserId,
-        },
-        z.any(),
-      );
-
-      questionQid = `__drafts__/${qid}`;
-
-      await queryRows(
-        sql.insert_prompt_info,
-        {
-          qid: questionQid,
-          course_id: courseId,
-          prompting_uid: authnUserId,
-          prompt_type: 'initial_prompt',
-          user_prompt: userPrompt,
-          context,
-          response: completion.choices[0].message.content,
-          title: 'temporary draft placeholder (todo: fix)',
-          uuid: `draft_${draftId}_todo_fix`,
-          html: results?.html,
-          python: results?.python,
-          errors,
-          completion,
-        },
-        z.any(),
-      );
-      job.data['questionQid'] = questionQid;
+      await queryAsync(sql.insert_prompt_info, {
+        qid,
+        course_id: courseId,
+        prompting_uid: authnUserId,
+        prompt_type: 'initial_prompt',
+        user_prompt: userPrompt,
+        context,
+        response: completion.choices[0].message.content,
+        title: 'temporary draft placeholder (todo: fix)',
+        uuid: `draft_${draftNumber}_todo_fix`,
+        html: results?.html,
+        python: results?.python,
+        errors,
+        completion,
+      });
+      job.data['questionQid'] = qid;
     }
 
     job.data.html = html;
     job.data.python = results?.python;
 
-    if (errors.length > 0) {
+    if (errors.length > 0 && typeof job.data.questionQid === 'string') {
       await regenInternal(
         job,
         client,
@@ -312,8 +308,10 @@ Keep in mind you are not just generating an example; you are generating an actua
         typeof results?.python === 'string' ? results?.python : undefined,
         0,
         true,
-        saveLocals,
-        questionQid,
+        job.data.questionQid,
+        courseId,
+        userId,
+        hasCoursePermissionEdit,
       );
     }
   });
@@ -345,7 +343,6 @@ function traverseForTagNames(ast: any): Set<string> {
  * Revises a question using the LLM based on user input.
  *
  * @param client The OpenAI client to use.
- * @param courseId The ID of the current course.
  * @param authnUserId The authenticated user's ID.
  * @param originalPrompt The prompt creating the original generation.
  * @param revisionPrompt A prompt with user instructions on how to revise the question.
@@ -353,8 +350,10 @@ function traverseForTagNames(ast: any): Set<string> {
  * @param originalPython The server.py file to revise.
  * @param numRegens Number of times that regen could be called.
  * @param isAutomated Whether the regeneration was the result of an automated check or a human revision prompt.
- * @param saveLocals Request locals for prompt-saving.
- * @param questionQid The
+ * @param questionQid The qid of the question to edit.
+ * @param courseId The ID of the current course.
+ * @param userId The ID of the generating/saving user.
+ * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
  */
 async function regenInternal(
   job: ServerJob,
@@ -366,8 +365,10 @@ async function regenInternal(
   originalPython: string | undefined,
   numRegens: number,
   isAutomated: boolean,
-  saveLocals: Record<string, any> | undefined,
   questionQid: string | undefined,
+  courseId: string,
+  userId?: string | undefined,
+  hasCoursePermissionEdit?: boolean | undefined,
 ) {
   job.info(`prompt is ${revisionPrompt}`);
 
@@ -435,27 +436,22 @@ Keep in mind you are not just generating an example; you are generating an actua
     errors = validateHTML(html, false, !!results?.python);
   }
 
-  if (saveLocals) {
-    const courseId = saveLocals.course.id;
-    await queryRows(
-      sql.insert_prompt_info,
-      {
-        qid: questionQid,
-        course_id: courseId,
-        prompting_uid: authnUserId,
-        prompt_type: isAutomated ? 'autorevision' : 'human_revision',
-        user_prompt: revisionPrompt,
-        context,
-        response: completion.choices[0].message.content,
-        title: 'temporary draft placeholder (todo: fix)',
-        uuid: `${questionQid}_todo_fix`,
-        html: results?.html,
-        python: results?.python,
-        errors,
-        completion,
-      },
-      z.any(),
-    );
+  if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
+    await queryAsync(sql.insert_prompt_info, {
+      qid: questionQid,
+      course_id: courseId,
+      prompting_uid: authnUserId,
+      prompt_type: isAutomated ? 'autorevision' : 'human_revision',
+      user_prompt: revisionPrompt,
+      context,
+      response: completion.choices[0].message.content,
+      title: 'temporary draft placeholder (todo: fix)',
+      uuid: `${questionQid}_todo_fix`,
+      html: results?.html,
+      python: results?.python,
+      errors,
+      completion,
+    });
 
     const question = await queryRow(
       sql.select_question_by_qid_and_course,
@@ -474,12 +470,12 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     const client = getCourseFilesClient();
 
-    if (question.qid){
+    if (question.qid) {
       await client.updateQuestionFiles.mutate({
-        course_id: saveLocals.course.id,
-        user_id: saveLocals.user.user_id,
+        course_id: courseId,
+        user_id: userId,
         authn_user_id: authnUserId,
-        has_course_permission_edit: saveLocals.authz_data.has_course_permission_edit,
+        has_course_permission_edit: hasCoursePermissionEdit,
         question_id: question.qid,
         files,
       });
@@ -501,8 +497,10 @@ Keep in mind you are not just generating an example; you are generating an actua
       typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
       numRegens - 1,
       true,
-      saveLocals,
       questionQid,
+      courseId,
+      userId,
+      hasCoursePermissionEdit,
     );
   }
 }
@@ -517,6 +515,8 @@ Keep in mind you are not just generating an example; you are generating an actua
  * @param revisionPrompt A prompt with user instructions on how to revise the question.
  * @param originalHTML The question.html file to revise.
  * @param originalPython The server.py file to revise.
+ * @param userId The ID of the generating/saving user.
+ * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
  */
 export async function regenerateQuestion(
@@ -527,8 +527,9 @@ export async function regenerateQuestion(
   revisionPrompt: string,
   originalHTML: string,
   originalPython: string,
-  saveLocals: Record<string, any> | undefined,
   questionQid: string | undefined,
+  userId?: string | undefined,
+  hasCoursePermissionEdit?: boolean | undefined,
 ): Promise<{
   jobSequenceId: string;
   htmlResult: string | undefined;
@@ -552,8 +553,10 @@ export async function regenerateQuestion(
       originalPython,
       1,
       false,
-      saveLocals,
       questionQid,
+      courseId,
+      userId,
+      hasCoursePermissionEdit,
     );
   });
 

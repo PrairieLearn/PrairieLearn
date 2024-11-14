@@ -61,6 +61,7 @@ export async function insertSubmission({
   format_errors,
   gradable,
   broken,
+  params,
   true_answer,
   feedback,
   credit,
@@ -74,6 +75,7 @@ export async function insertSubmission({
   format_errors: Record<string, any> | null;
   gradable: boolean | null;
   broken: boolean | null;
+  params: Record<string, any> | null;
   true_answer: Record<string, any> | null;
   feedback: Record<string, any> | null;
   credit?: number | null;
@@ -85,9 +87,9 @@ export async function insertSubmission({
   return await sqldb.runInTransactionAsync(async () => {
     await sqldb.callAsync('variants_lock', [variant_id]);
 
-    // Select the variant, while updating the variant's `correct_answer`, which
-    // is permitted to change during the `parse` phase (which occurs before this
-    // submission is inserted).
+    // Select the variant, while updating the variant's `params` and
+    // `correct_answer`, which is permitted to change during the `parse` phase
+    // (which occurs before this submission is inserted).
     //
     // Note that we do this mutation as part of the selection process to avoid another
     // database round trip. This mutation is safe to do before the access checks below
@@ -95,7 +97,7 @@ export async function insertSubmission({
     // not be updated.
     const variant = await sqldb.queryRow(
       sql.update_variant_true_answer,
-      { variant_id, true_answer },
+      { variant_id, params, true_answer },
       VariantForSubmissionSchema,
     );
 
@@ -136,7 +138,7 @@ export async function insertSubmission({
         credit,
         mode,
         delta,
-        params: variant.params,
+        params,
         true_answer,
         feedback,
         gradable,
@@ -435,10 +437,11 @@ export async function saveAndGradeSubmission(
   );
 
   await gradeVariant(
-    // Note that parsing a submission may modify the `true_answer` of the variant
-    // (for v3 questions, this is `data["correct_answers"])`. This is why we need
-    // to use the variant returned from `saveSubmission` rather than the one passed
-    // to this function.
+    // Note that parsing a submission may modify the `params` and `true_answer`
+    // of the variant (for v3 questions, this is `data["params"]` and
+    // `data["correct_answers"])`. This is why we need to use the variant
+    // returned from `saveSubmission` rather than the one passed to this
+    // function.
     updated_variant,
     submission_id,
     question,

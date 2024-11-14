@@ -877,7 +877,7 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
         tolerateMissing: recursive,
       });
       if (info) {
-        if (info.data && 'clientFiles' in info.data) {
+        if (info.data) {
           //it's a draft if it's of the form .../__drafts__/question/info.json
           //only Questions have property isDraft or clientFiles
           const pathSplit = infoFilePath.split(path.sep);

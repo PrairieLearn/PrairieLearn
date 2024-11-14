@@ -142,7 +142,8 @@ router.post(
         promptGeneral: req.body.prompt,
         promptUserInput: req.body.prompt_user_input,
         promptGrading: req.body.prompt_grading,
-        saveLocals: res.locals,
+        userId: res.locals.user.user_id,
+        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });
 
       if (result.htmlResult) {
@@ -197,8 +198,9 @@ router.post(
         req.body.prompt,
         threads[threads.length - 1].html || '',
         threads[threads.length - 1].python || '',
-        res.locals,
         req.body.unsafe_qid,
+        res.locals.user.user_id,
+        res.locals.authz_data.has_course_permission_edit,
       );
 
       if (result.htmlResult) {
