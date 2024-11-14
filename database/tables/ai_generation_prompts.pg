@@ -1,21 +1,21 @@
 columns
     completion: jsonb
-    context: text
+    context: text not null
     errors: jsonb
-    html: text
+    html: text not null
     id: bigint not null default nextval('ai_generation_prompts_id_seq'::regclass)
-    prompt_type: ai_prompt_type
-    prompting_user: bigint
+    prompt_type: ai_prompt_type not null
+    prompting_user_id: bigint
     python: text
     question_id: bigint
-    response: text
+    response: text not null
     title: text
-    user_prompt: text
+    user_prompt: text not null
     uuid: text
 
 indexes
     ai_generation_prompts_pkey: PRIMARY KEY (id) USING btree (id)
 
 foreign-key constraints
-    ai_generation_prompts_prompting_user_fkey: FOREIGN KEY (prompting_user) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
+    ai_generation_prompts_prompting_user_id_fkey: FOREIGN KEY (prompting_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
     ai_generation_prompts_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE SET NULL

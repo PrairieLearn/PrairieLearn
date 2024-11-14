@@ -108,6 +108,7 @@ export function checkInvalidSharingSetAdditions(
 ): boolean {
   const invalidSharingSetAdditions: Record<string, string[]> = {};
   const draftQuestionsWithSharingSets: string[] = [];
+  const draftQuestionsWithPublicSharing: string[] = [];
   const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
 
   for (const qid in courseData.questions) {
@@ -123,6 +124,13 @@ export function checkInvalidSharingSetAdditions(
     });
     if (question.data?.isDraft && questionSharingSets.length > 0) {
       draftQuestionsWithSharingSets.push(qid);
+    }
+
+    if (
+      question.data?.isDraft &&
+      (question.data?.sharePublicly || question.data.shareSourcePublicly)
+    ) {
+      draftQuestionsWithPublicSharing.push(qid);
     }
   }
 
@@ -140,11 +148,22 @@ export function checkInvalidSharingSetAdditions(
   const existDraftQuestionsWithSharingSets = draftQuestionsWithSharingSets.length > 0;
   if (existDraftQuestionsWithSharingSets) {
     logger.error(
-      `✖ Course sync completely failed. The following questions are being added to sharing sets, but are drafts: ${draftQuestionsWithSharingSets.join(', ')}`,
+      `✖ Course sync completely failed. The following draft questions cannot be added to sharing sets: ${draftQuestionsWithSharingSets.join(', ')}`,
     );
   }
 
-  return existInvalidSharingSetAdditions || existDraftQuestionsWithSharingSets;
+  const existPubliclySharedDraftQuestions = draftQuestionsWithPublicSharing.length > 0;
+  if (existPubliclySharedDraftQuestions) {
+    logger.error(
+      `✖ Course sync completely failed. The following draft questions cannot be publicly shared: ${draftQuestionsWithSharingSets.join(', ')}`,
+    );
+  }
+
+  return (
+    existInvalidSharingSetAdditions ||
+    existDraftQuestionsWithSharingSets ||
+    existPubliclySharedDraftQuestions
+  );
 }
 
 export async function checkInvalidSharingSetRemovals(

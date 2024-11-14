@@ -491,14 +491,14 @@ export const FileEditSchema = z.object({
 });
 export type FileEdit = z.infer<typeof FileEditSchema>;
 
-export const GenerationThreadItemSchema = z.object({
+export const AiGenerationPromptSchema = z.object({
   completion: z.any(),
   context: z.string().nullable(),
   errors: z.array(z.string()),
   html: z.string().nullable(),
   id: z.string(),
   prompt_type: z.enum(['initial_prompt', 'human_revision', 'autorevision']),
-  prompting_user: z.string(),
+  prompting_user_id: z.string(),
   python: z.string().nullable(),
   question_id: z.string(),
   response: z.string(),
@@ -507,7 +507,7 @@ export const GenerationThreadItemSchema = z.object({
   uuid: z.string().nullable(),
 });
 
-export type GenerationThreadItem = z.infer<typeof GenerationThreadItemSchema>;
+export type AiGenerationPrompt = z.infer<typeof AiGenerationPromptSchema>;
 
 export const GradingJobSchema = z.object({
   auth_user_id: IdSchema.nullable(),

@@ -954,10 +954,6 @@ export class QuestionAddEditor extends Editor {
         return { qid: this.qid, title: this.title };
       }
 
-      if (this.isDraft) {
-        return { qid: `draft_${this.draftId}`, title: `draft #${this.draftId}` };
-      }
-
       debug('Get all existing long names');
       const result = await sqldb.queryAsync(sql.select_questions_with_course, {
         course_id: this.course.id,
@@ -973,9 +969,7 @@ export class QuestionAddEditor extends Editor {
       return { qid: names.shortName, title: names.longName };
     });
 
-    const questionPath = this.isDraft
-      ? path.join(questionsPath, '__drafts__', qid)
-      : path.join(questionsPath, qid);
+    const questionPath = path.join(questionsPath, qid);
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
     const toPath = questionPath;
@@ -1124,10 +1118,7 @@ export class QuestionRenameEditor extends Editor {
 
     debug('QuestionRenameEditor: write()');
 
-    let questionsPath = path.join(this.course.path, 'questions');
-    if (this.question.is_draft) {
-      questionsPath = path.join(questionsPath, '__drafts__');
-    }
+    const questionsPath = path.join(this.course.path, 'questions');
     const oldPath = path.join(questionsPath, this.question.qid);
     const newPath = path.join(questionsPath, this.qid_new);
 
@@ -1231,9 +1222,7 @@ export class QuestionCopyEditor extends Editor {
     const qid = names.shortName;
     const questionPath = path.join(questionsPath, qid);
 
-    const fromPath = this.question.is_draft
-      ? path.join(questionsPath, '__drafts__', this.question.qid)
-      : path.join(questionsPath, this.question.qid);
+    const fromPath = path.join(questionsPath, this.question.qid);
     const toPath = questionPath;
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });

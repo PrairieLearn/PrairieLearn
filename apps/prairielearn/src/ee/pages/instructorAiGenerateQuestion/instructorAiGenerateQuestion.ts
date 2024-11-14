@@ -105,7 +105,8 @@ router.post(
         promptGeneral: req.body.prompt,
         promptUserInput: req.body.prompt_user_input,
         promptGrading: req.body.prompt_grading,
-        saveLocals: res.locals,
+        userId: res.locals.user.user_id,
+        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });
 
       if (result.htmlResult) {
@@ -146,8 +147,9 @@ router.post(
         req.body.prompt,
         genJobs[0]?.data?.html,
         genJobs[0]?.data?.python,
-        res.locals,
         undefined,
+        res.locals.user.user_id,
+        res.locals.authz_data.has_course_permission_edit,
       );
 
       if (result.htmlResult) {

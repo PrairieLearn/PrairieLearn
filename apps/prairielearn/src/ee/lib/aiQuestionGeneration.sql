@@ -40,7 +40,7 @@ RETURNING
 
 -- BLOCK insert_draft_info
 INSERT INTO
-  questions_draft_metadata (id, draft_created_by, draft_updated_by)
+  draft_question_metadata (question_id, created_by, updated_by)
 SELECT
   q.id,
   u.user_id,
@@ -57,7 +57,7 @@ WHERE
 INSERT INTO
   ai_generation_prompts (
     question_id,
-    prompting_user,
+    prompting_user_id,
     prompt_type,
     user_prompt,
     context,
