@@ -250,11 +250,11 @@ Keep in mind you are not just generating an example; you are generating an actua
         files['server.py'] = results?.python;
       }
 
-      const draftId = await queryRow(sql.update_draft_number, { course_id: courseId }, z.number());
+      const draftNumber = await queryRow(sql.update_draft_number, { course_id: courseId }, z.number());
 
       const client = getCourseFilesClient();
 
-      const qid = `__drafts__/draft_${draftId}`;
+      const qid = `__drafts__/draft_${draftNumber}`;
 
       await client.createQuestion.mutate({
         course_id: courseId,
@@ -262,7 +262,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         authn_user_id: authnUserId,
         has_course_permission_edit: hasCoursePermissionEdit,
         qid,
-        title: `draft ${draftId}`,
+        title: `draft ${draftNumber}`,
         files,
       });
 
@@ -281,7 +281,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         context,
         response: completion.choices[0].message.content,
         title: 'temporary draft placeholder (todo: fix)',
-        uuid: `draft_${draftId}_todo_fix`,
+        uuid: `draft_${draftNumber}_todo_fix`,
         html: results?.html,
         python: results?.python,
         errors,
