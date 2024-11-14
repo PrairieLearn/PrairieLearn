@@ -152,10 +152,7 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(400, 'This assessment is not accepting submissions at this time.');
   }
-  if (
-    res.locals.assessment.group_config?.has_roles &&
-    !res.locals.instance_question.group_role_permissions.can_submit
-  ) {
+  if (res.locals.group_config?.has_roles && !res.locals.group_role_permissions.can_submit) {
     throw new HttpStatusError(
       403,
       'Your current group role does not give you permission to submit to this question.',
@@ -319,7 +316,7 @@ router.get(
     });
 
     if (
-      res.locals.assessment.group_config?.has_roles &&
+      res.locals.group_config?.has_roles &&
       !res.locals.authz_data.has_course_instance_permission_view
     ) {
       if (res.locals.instance_question_info.prev_instance_question.id != null) {
