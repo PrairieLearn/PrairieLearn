@@ -234,9 +234,9 @@ Some courses may use libraries that are common across multiple questions. For su
 
 ### Example Usage of `serverFilesCourse` for static data
 
-In this example, we’ll demonstrate how to use a data file, `chem.json`, within an autograder setup. Assume we have a data file called `chem.json` located in the `serverFilesCourse` directory within the course root directory, specifically at `serverFilesCourse/compounds/chem.json`.
+The Python autograder is able to retrieve information from `serverFilesCourse`. This can be used when there are files and other static data that can be shared across multiple questions. For example, assume there is a data file called `chem.json` used in multiple questions. The file can be saved in the `serverFilesCourse` directory within the course root directory, for example at `serverFilesCourse/compounds/chem.json`.
 
-To access `serverFilesCourse` from the autograder, specify the file directory in the question `info.json`. Here’s how to set it up to allow access to the `compounds` directory:
+To access `serverFilesCourse` from the autograder, specify the file or its containing directory in the question `info.json`. For example, to copy the `compounds` directory to the autograder, use:
 
 ```diff
 ...
@@ -249,18 +249,14 @@ To access `serverFilesCourse` from the autograder, specify the file directory in
 ...
 ```
 
-In your `test.py` file, you can then load the `chem.json` file using the following code:
+The tests in `test.py` can then load the `chem.json` file using code such as the following:
 
 ```python
 import json
 
-with open("grade/serverFilesCourse/compounds/chem.json", "r") as f:
+with open("/grade/serverFilesCourse/compounds/chem.json", "r") as f:
     list_of_compounds = json.load(f)
 ```
-
-This setup enables you to access files in the `serverFilesCourse` directory during autograder execution, making it easy to include static data files in your grading logic.
-
-
 
 ## Security
 
