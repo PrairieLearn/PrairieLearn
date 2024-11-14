@@ -2139,7 +2139,8 @@ export async function startServer() {
   const app = await initExpress();
 
   if (config.serverType === 'https') {
-    var options = {};
+    /** @type { import('https').ServerOptions} */
+    const options = {};
     if (config.sslKeyFile) {
       options.key = await fs.promises.readFile(config.sslKeyFile);
     }
