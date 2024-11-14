@@ -368,7 +368,7 @@ export async function initExpress() {
       // response before replying with an error 500
       if (res && !res.headersSent) {
         res
-          .status?.(/** @type {any} */ (err).status ?? 500)
+          .status?.(/** @type {any} */(err).status ?? 500)
           ?.send?.('Error proxying workspace request');
       }
     },
@@ -1534,6 +1534,32 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/assessments',
     (await import('./pages/studentAssessments/studentAssessments.js')).default,
   );
+  // Client files for assessments
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourse',
+    [
+      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+      (await import('./middlewares/studentAssessmentAccess.js')).default,
+      (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
+    ],
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourseInstance',
+    [
+      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+      (await import('./middlewares/studentAssessmentAccess.js')).default,
+      (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
+    ],
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesAssessment',
+    [
+      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+      (await import('./middlewares/studentAssessmentAccess.js')).default,
+      (await import('./pages/clientFilesAssessment/clientFilesAssessment.js')).default,
+    ],
+  );
+
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)',
     (await import('./pages/studentAssessment/studentAssessment.js')).default,
@@ -1579,32 +1605,6 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
     (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
-  );
-
-  // Client files for assessments
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourse',
-    [
-      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
-      (await import('./middlewares/studentAssessmentAccess.js')).default,
-      (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
-    ],
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourseInstance',
-    [
-      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
-      (await import('./middlewares/studentAssessmentAccess.js')).default,
-      (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
-    ],
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesAssessment',
-    [
-      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
-      (await import('./middlewares/studentAssessmentAccess.js')).default,
-      (await import('./pages/clientFilesAssessment/clientFilesAssessment.js')).default,
-    ],
   );
 
   // Client files for questions
