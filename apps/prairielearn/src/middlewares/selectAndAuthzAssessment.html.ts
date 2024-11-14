@@ -15,8 +15,12 @@ export function AccessDenied({ resLocals }: { resLocals: Record<string, any> }) 
       <body>
         ${Navbar({ resLocals, navPage: 'assessment_instance' })}
         <main id="content" class="container">
-          <h1>Access Denied</h1>
-          <p>This assessment is not available to you right now.</p>
+          <h1>Assessment Unavailable</h1>
+          <p>
+            This assessment's configuration does not allow you to access it right now. This the
+            intended behavior (and not an error) based on your current time, location, or other
+            parameters.
+          </p>
           <div>
             <a href="/pl/course_instance/${courseInstance}/assessments" class="btn btn-primary">
               Go to Assessments
