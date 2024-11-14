@@ -963,8 +963,6 @@ export class QuestionAddEditor extends Editor {
       return { qid: names.shortName, title: names.longName };
     });
 
-    console.log({qid: qid, title: title});
-
     const questionPath = path.join(questionsPath, qid);
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
