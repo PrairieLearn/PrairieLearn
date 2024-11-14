@@ -101,8 +101,8 @@ WITH
           max(ar.end_date) AS end_date,
           bool_and(
             ar.end_date IS NOT NULL
-            -- TODO Should there be a tolerance (e.g., 1 week, or 1 month) before expiring?
-            AND ar.end_date < now()
+            -- Tolerance of 1 month to allow instructors to easily see recently expired courses
+            AND ar.end_date < now() - interval '1 month'
           ) AS expired
         FROM
           course_instance_access_rules AS ar
