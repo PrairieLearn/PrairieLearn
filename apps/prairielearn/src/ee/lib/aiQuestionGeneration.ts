@@ -250,7 +250,11 @@ Keep in mind you are not just generating an example; you are generating an actua
         files['server.py'] = results?.python;
       }
 
-      const draftNumber = await queryRow(sql.update_draft_number, { course_id: courseId }, z.number());
+      const draftNumber = await queryRow(
+        sql.update_draft_number,
+        { course_id: courseId },
+        z.number(),
+      );
 
       const client = getCourseFilesClient();
 
