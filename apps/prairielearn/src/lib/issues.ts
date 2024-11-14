@@ -105,8 +105,8 @@ export async function writeCourseIssues(
       variantId: variant.id,
       studentMessage,
       courseData,
-      authnUserId: authn_user_id,
       userId: user_id,
+      authnUserId: authn_user_id,
     });
   });
 }
