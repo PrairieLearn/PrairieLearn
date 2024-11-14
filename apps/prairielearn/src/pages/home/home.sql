@@ -30,7 +30,7 @@ WITH
             'id',
             ci.id,
             'expired',
-            coalesce(d.expired, TRUE)
+            FALSE -- Example courses never expire
           )
           ORDER BY
             d.start_date DESC NULLS LAST,
@@ -48,11 +48,7 @@ WITH
       LATERAL (
         SELECT
           min(ar.start_date) AS start_date,
-          max(ar.end_date) AS end_date,
-          bool_and(
-            ar.end_date IS NOT NULL
-            AND ar.end_date < now()
-          ) AS expired
+          max(ar.end_date) AS end_date
         FROM
           course_instance_access_rules AS ar
         WHERE
