@@ -962,7 +962,8 @@ export class QuestionAddEditor extends Editor {
 
       return { qid: names.shortName, title: names.longName };
     });
-    
+
+    console.log({qid: qid, title: title});
 
     const questionPath = path.join(questionsPath, qid);
 
@@ -1017,7 +1018,7 @@ export class QuestionAddEditor extends Editor {
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `add question ${qid}${this.isDraft ? ' as draft' : ''}`,
+      commitMessage: `add question ${qid}`,
     };
   }
 }
