@@ -8,11 +8,7 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { config } from '../../../lib/config.js';
 import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import {
-  GenerationThreadItemSchema,
-  type Question,
-  QuestionSchema,
-} from '../../../lib/db-types.js';
+import { AiGenerationPromptSchema, type Question, QuestionSchema } from '../../../lib/db-types.js';
 import { QuestionDeleteEditor } from '../../../lib/editors.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -95,8 +91,9 @@ router.get(
       const threads = await queryRows(
         sql.select_generation_thread_items,
         { qid: qidFull, course_id: res.locals.course.id.toString() },
-        GenerationThreadItemSchema,
+        AiGenerationPromptSchema,
       );
+      
       if (threads && threads.length > 0) {
         res.locals.question = await queryRow(
           sql.select_question_by_qid_and_course,
@@ -187,7 +184,7 @@ router.post(
       const threads = await queryRows(
         sql.select_generation_thread_items,
         { qid: qidFull, course_id: res.locals.course.id.toString() },
-        GenerationThreadItemSchema,
+        AiGenerationPromptSchema,
       );
 
       const result = await regenerateQuestion(

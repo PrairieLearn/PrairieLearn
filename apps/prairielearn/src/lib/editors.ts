@@ -922,7 +922,6 @@ export class QuestionAddEditor extends Editor {
   private title?: string;
   private files?: Record<string, string>;
   private isDraft: boolean;
-  private draftId?: number;
 
   constructor(
     params: BaseEditorOptions & {
@@ -940,9 +939,6 @@ export class QuestionAddEditor extends Editor {
     this.qid = params.qid;
     this.title = params.title;
     this.files = params.files;
-
-    this.isDraft = typeof params.draftId !== 'undefined' && params.draftId >= 0;
-    this.draftId = params.draftId;
   }
 
   async write() {

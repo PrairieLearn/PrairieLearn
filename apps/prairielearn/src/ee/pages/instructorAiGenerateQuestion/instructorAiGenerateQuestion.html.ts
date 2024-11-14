@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
-import { type GenerationThreadItem } from '../../../lib/db-types.js';
+import { type AiGenerationPrompt } from '../../../lib/db-types.js';
 
 const examplePrompts = [
   {
@@ -44,7 +44,7 @@ export function AiGeneratePage({
   qid,
 }: {
   resLocals: Record<string, any>;
-  threads?: GenerationThreadItem[];
+  threads?: AiGenerationPrompt[];
   qid?: string;
 }) {
   return html`
