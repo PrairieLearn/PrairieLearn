@@ -17,7 +17,7 @@ export function AccessDenied({ resLocals }: { resLocals: Record<string, any> }) 
         <main id="content" class="container">
           <h1>Assessment Unavailable</h1>
           <p>
-            This assessment's configuration does not allow you to access it right now. This the
+            This assessment's configuration does not allow you to access it right now. This is the
             intended behavior (and not an error) based on your current time, location, or other
             parameters.
           </p>
