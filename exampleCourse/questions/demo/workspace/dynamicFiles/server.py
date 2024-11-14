@@ -32,4 +32,6 @@ def generate(data):
         },
         # A question file can also be added by using its path in the question instead of its contents
         {"name": "provided.txt", "questionFile": "clientFilesQuestion/provided.txt"},
+        # A file can also be added by using its path in the serverFilesCourse
+        {"name": "course.txt", "serverFilesCourseFile": "workspace_file.txt"},
     ]

@@ -112,7 +112,6 @@ router.post(
         assessment_instance_id: req.body.assessment_instance_id,
         assessment_id: res.locals.assessment.id,
         time_add: req.body.time_add,
-        time_ref: req.body.time_ref,
         base_time: 'date_limit',
         authn_user_id: res.locals.authz_data.authn_user.user_id,
       };
@@ -121,7 +120,6 @@ router.post(
       } else if (req.body.plus_minus === 'expire') {
         params.base_time = 'current_date';
         params.time_add = 0;
-        params.time_ref = 'minutes';
       } else if (req.body.plus_minus === 'set_total') {
         params.base_time = 'start_date';
       } else if (req.body.plus_minus === 'set_rem') {
@@ -135,7 +133,6 @@ router.post(
       const params = {
         assessment_id: res.locals.assessment.id,
         time_add: req.body.time_add,
-        time_ref: req.body.time_ref,
         base_time: 'date_limit',
         reopen_closed: !!req.body.reopen_closed,
         authn_user_id: res.locals.authz_data.authn_user.user_id,
@@ -145,7 +142,6 @@ router.post(
       } else if (req.body.plus_minus === 'expire') {
         params.base_time = 'current_date';
         params.time_add = 0;
-        params.time_ref = 'minutes';
       } else if (req.body.plus_minus === 'set_total') {
         params.base_time = 'start_date';
       } else if (req.body.plus_minus === 'set_rem') {
