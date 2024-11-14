@@ -2997,9 +2997,9 @@ __metadata:
   linkType: hard
 
 "@orchidjs/unicode-variants@npm:^1.0.4":
-  version: 1.0.4
-  resolution: "@orchidjs/unicode-variants@npm:1.0.4"
-  checksum: 10c0/b5e8362b6e98127db4ec9a1e02432f01ac2e679feb9d7cf47d7a77f65161c31cc2635bd511cc04ec7e3bb907fcdb1449ce3867245278c714e4d64ea989c49b9f
+  version: 1.1.0
+  resolution: "@orchidjs/unicode-variants@npm:1.1.0"
+  checksum: 10c0/4c1d599172d8953ae9f8c69d918bfee7bf094773657b9d6a0c42bae83676139f341cd1f658a1e82f652d7d479eec1555388f2a9730337974bbb166af7eafa834
   languageName: node
   linkType: hard
 
