@@ -921,14 +921,12 @@ export class QuestionAddEditor extends Editor {
   private qid?: string;
   private title?: string;
   private files?: Record<string, string>;
-  private isDraft: boolean;
 
   constructor(
     params: BaseEditorOptions & {
       qid?: string;
       title?: string;
       files?: Record<string, string>;
-      draftId?: number;
     },
   ) {
     super(params);
@@ -1018,7 +1016,7 @@ export class QuestionAddEditor extends Editor {
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `add question ${qid}${this.isDraft ? ' as draft' : ''}`,
+      commitMessage: `add question ${qid}`,
     };
   }
 }
