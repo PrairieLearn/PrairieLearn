@@ -51,6 +51,8 @@ export const createQuestion = privateProcedure
         user,
       },
       files: opts.input.files,
+      title: opts.input.title,
+      qid: opts.input.qid
     });
 
     const serverJob = await editor.prepareServerJob();
