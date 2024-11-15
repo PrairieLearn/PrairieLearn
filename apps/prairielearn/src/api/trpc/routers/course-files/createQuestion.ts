@@ -52,7 +52,7 @@ export const createQuestion = privateProcedure
       },
       files: opts.input.files,
       title: opts.input.title,
-      qid: opts.input.qid
+      qid: opts.input.qid,
     });
 
     const serverJob = await editor.prepareServerJob();
