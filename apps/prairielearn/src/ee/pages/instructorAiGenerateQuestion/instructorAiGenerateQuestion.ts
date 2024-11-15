@@ -93,7 +93,7 @@ router.get(
         { qid: qidFull, course_id: res.locals.course.id.toString() },
         AiGenerationPromptSchema,
       );
-      
+
       if (threads && threads.length > 0) {
         res.locals.question = await queryRow(
           sql.select_question_by_qid_and_course,
