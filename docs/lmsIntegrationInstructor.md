@@ -2,7 +2,7 @@
 
 Integrating Learning Management Systems (LMSes) with PrairieLearn uses [LTI 1.3](https://www.1edtech.org/standards/lti) technology to connect LMS courses with PrairieLearn course instances. This allows for programmatic assignment linking and grade syncing.
 
-Integration with Canvas via LTI 1.3 is currently available as a public preview. General availability of Canvas integration support as well as support for other LMS platforms will be coming in the future.
+Canvas integration via LTI 1.3 is currently available as a public preview. General availability of Canvas integration as well as support for other LMS platforms will be coming in the future.
 
 ## Prerequisites
 
