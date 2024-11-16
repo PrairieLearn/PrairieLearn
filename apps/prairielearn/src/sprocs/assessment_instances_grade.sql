@@ -53,9 +53,8 @@ BEGIN
         t_points_by_zone AS (SELECT * FROM assessment_instances_points(assessment_instance_id)),
         t_used_for_grade AS (SELECT unnest(iq_ids) AS iq_ids FROM t_points_by_zone),
         v_used_for_grade AS (SELECT array_agg(iq_ids) AS iq_ids FROM t_used_for_grade),
-        -- `points` is converted to `numeric` to force Postgres to use full-precision
-        -- arithmetic. This will avoid accumulating floating-point errors when summing
-        -- non-integer points.
+        -- `points` is converted to `numeric` so that we avoid accumulating
+        -- floating-point errors when summing non-integer points.
         v_total_points AS (SELECT sum(t_points_by_zone.points::numeric) AS total_points FROM t_points_by_zone)
     SELECT
         v_total_points.total_points, v_used_for_grade.iq_ids

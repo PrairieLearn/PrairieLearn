@@ -69,8 +69,8 @@ BEGIN
     length := cardinality(variants_points_list);
     auto_points := 0;
     FOR i in 1..length LOOP
-        -- We convert values to `numeric` to force Postgres to use full-precision arithmetic.
-        -- This will avoid accumulating floating-point errors when summing non-integer points.
+        -- We convert values to `numeric` to avoid accumulating floating-point
+        -- errors when summing non-integer points.
         auto_points := auto_points::numeric + variants_points_list[i]::numeric;
     END LOOP;
     auto_points := least(auto_points, aq.max_auto_points);

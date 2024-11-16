@@ -77,8 +77,7 @@ BEGIN
         ), points_zones AS (
             SELECT
                 ptsq.zid,
-                -- We convert `points` to `numeric` to force Postgres to use
-                -- full-precision arithmetic. This will avoid accumulating
+                -- We convert `points` to `numeric` to avoid accumulating
                 -- floating-point errors when summing non-integer points.
                 LEAST(sum(ptsq.points::numeric), ptsq.zone_max_points) AS points,
                 array_agg(ptsq.iq_id) AS iq_ids
