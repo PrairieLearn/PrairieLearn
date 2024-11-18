@@ -841,7 +841,7 @@ export const QuestionSchema = z.object({
   external_grading_timeout: z.number().nullable(),
   grading_method: z.enum(['Internal', 'External', 'Manual']),
   id: IdSchema,
-  is_draft: z.boolean(),
+  draft: z.boolean(),
   number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),

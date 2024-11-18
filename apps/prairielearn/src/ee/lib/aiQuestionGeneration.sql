@@ -38,7 +38,7 @@ WHERE
 RETURNING
   draft_number;
 
--- BLOCK insert_draft_info
+-- BLOCK insert_draft_question_metadata
 INSERT INTO
   draft_question_metadata (question_id, created_by, updated_by)
 SELECT
@@ -53,7 +53,7 @@ WHERE
   AND q.course_id = $course_id
   AND u.uid = $creator_id;
 
--- BLOCK insert_prompt_info
+-- BLOCK insert_ai_generation_prompt
 INSERT INTO
   ai_generation_prompts (
     question_id,

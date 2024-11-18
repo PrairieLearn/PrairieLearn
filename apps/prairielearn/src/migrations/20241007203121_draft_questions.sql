@@ -1,5 +1,5 @@
 ALTER TABLE questions
-ADD COLUMN IF NOT EXISTS is_draft boolean NOT NULL DEFAULT false;
+ADD COLUMN IF NOT EXISTS draft boolean NOT NULL DEFAULT false;
 
 ALTER TABLE pl_courses
 ADD COLUMN IF NOT EXISTS draft_number integer NOT NULL DEFAULT 0;

@@ -270,13 +270,13 @@ Keep in mind you are not just generating an example; you are generating an actua
         files,
       });
 
-      await queryAsync(sql.insert_draft_info, {
+      await queryAsync(sql.insert_draft_question_metadata, {
         qid,
         course_id: courseId,
         creator_id: authnUserId,
       });
 
-      await queryAsync(sql.insert_prompt_info, {
+      await queryAsync(sql.insert_ai_generation_prompt, {
         qid,
         course_id: courseId,
         prompting_uid: authnUserId,
@@ -298,21 +298,21 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data.python = results?.python;
 
     if (errors.length > 0 && typeof job.data.questionQid === 'string') {
-      await regenInternal(
+      await regenInternal({
         job,
         client,
         authnUserId,
-        userPrompt,
-        `Please fix the following issues: \n${errors.join('\n')}`,
-        html || '',
-        typeof results?.python === 'string' ? results?.python : undefined,
-        0,
-        true,
-        job.data.questionQid,
+        originalPrompt: userPrompt,
+        revisionPrompt: `Please fix the following issues: \n${errors.join('\n')}`,
+        originalHTML: html || '',
+        originalPython: typeof results?.python === 'string' ? results?.python : undefined,
+        numRegens: 0,
+        isAutomated: true,
+        questionQid: job.data.questionQid,
         courseId,
         userId,
         hasCoursePermissionEdit,
-      );
+      });
     }
   });
 
@@ -355,21 +355,35 @@ function traverseForTagNames(ast: any): Set<string> {
  * @param userId The ID of the generating/saving user.
  * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
  */
-async function regenInternal(
-  job: ServerJob,
-  client: OpenAI,
-  authnUserId: string,
-  originalPrompt: string,
-  revisionPrompt: string,
-  originalHTML: string,
-  originalPython: string | undefined,
-  numRegens: number,
-  isAutomated: boolean,
-  questionQid: string | undefined,
-  courseId: string,
-  userId?: string | undefined,
-  hasCoursePermissionEdit?: boolean | undefined,
-) {
+async function regenInternal({
+  job,
+  client,
+  authnUserId,
+  originalPrompt,
+  revisionPrompt,
+  originalHTML,
+  originalPython,
+  numRegens,
+  isAutomated,
+  questionQid,
+  courseId,
+  userId,
+  hasCoursePermissionEdit,
+}: {
+  job: ServerJob;
+  client: OpenAI;
+  authnUserId: string;
+  originalPrompt: string;
+  revisionPrompt: string;
+  originalHTML: string;
+  originalPython: string | undefined;
+  numRegens: number;
+  isAutomated: boolean;
+  questionQid: string | undefined;
+  courseId: string;
+  userId?: string | undefined;
+  hasCoursePermissionEdit?: boolean | undefined;
+}) {
   job.info(`prompt is ${revisionPrompt}`);
 
   let tags: string[] = [];
@@ -437,7 +451,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   }
 
   if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
-    await queryAsync(sql.insert_prompt_info, {
+    await queryAsync(sql.insert_ai_generation_prompt, {
       qid: questionQid,
       course_id: courseId,
       prompting_uid: authnUserId,
@@ -487,21 +501,21 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   if (errors.length > 0 && numRegens > 0) {
     const autoRevisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
-    await regenInternal(
+    await regenInternal({
       job,
       client,
       authnUserId,
       originalPrompt,
-      autoRevisionPrompt,
-      html,
-      typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
-      numRegens - 1,
-      true,
+      revisionPrompt: autoRevisionPrompt,
+      originalHTML: html,
+      originalPython: typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
+      numRegens: numRegens - 1,
+      isAutomated: true,
       questionQid,
       courseId,
       userId,
       hasCoursePermissionEdit,
-    );
+    });
   }
 }
 
@@ -543,7 +557,7 @@ export async function regenerateQuestion(
   });
 
   const jobData = await serverJob.execute(async (job) => {
-    await regenInternal(
+    await regenInternal({
       job,
       client,
       authnUserId,
@@ -551,13 +565,13 @@ export async function regenerateQuestion(
       revisionPrompt,
       originalHTML,
       originalPython,
-      1,
-      false,
+      numRegens: 1,
+      isAutomated: false,
       questionQid,
       courseId,
       userId,
       hasCoursePermissionEdit,
-    );
+    });
   });
 
   return {
