@@ -27,18 +27,15 @@ onDocumentReady(() => {
     plugins: ['dropdown_input'],
     maxItems: 1,
     placeholder: 'Select a topic',
-    constrolInput: '<div><input /><i class="fas fa-pencil"></i><div>',
     render: {
       option(data: TopicData, escape: (input: string) => string) {
         return (
           '<div>' +
-          '<div class="d-flex">' +
           '<span class="badge justify-content-start color-' +
           escape(data.color) +
           '">' +
           escape(data.name) +
           '</span>' +
-          '</div>' +
           '<div class="w-100 d-flex">' +
           '<small class="text-muted justify-content-start text-start">' +
           escape(data.description) +
@@ -49,10 +46,13 @@ onDocumentReady(() => {
       },
       item(data: TopicData, escape: (input: string) => string) {
         return (
+          '<div class="w-100 d-flex justify-content-between align-items-center">' +
           '<div class="btn btn-ghost badge color-' +
           escape(data.color) +
           '">' +
           escape(data.name) +
+          '</div>' +
+          '<i class="fas fa-angle-down mx-2"></i>' +
           '</div>'
         );
       },
