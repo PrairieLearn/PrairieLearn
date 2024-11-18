@@ -47,7 +47,7 @@ SELECT
 FROM
   users AS u
 WHERE
-  AND u.uid = $creator_id;
+  u.uid = $creator_id;
 
 -- BLOCK insert_ai_generation_prompt
 INSERT INTO
