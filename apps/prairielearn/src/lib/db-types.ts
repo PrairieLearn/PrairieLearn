@@ -498,7 +498,7 @@ export const AiGenerationPromptSchema = z.object({
   html: z.string().nullable(),
   id: z.string(),
   prompt_type: z.enum(['initial', 'human_revision', 'auto_revision']),
-  prompting_user_id: z.string(),
+  prompting_authn_user_id: z.string(),
   python: z.string().nullable(),
   question_id: z.string(),
   response: z.string(),

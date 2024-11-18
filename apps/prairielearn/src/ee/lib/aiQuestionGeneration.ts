@@ -188,7 +188,6 @@ export async function generateQuestion({
 }): Promise<{
   jobSequenceId: string;
   questionQid: string;
-  draftSaveStatus: 'success' | 'error';
   htmlResult: string | undefined;
   pythonResult: string | undefined;
 }> {
@@ -278,7 +277,8 @@ Keep in mind you are not just generating an example; you are generating an actua
 
       await queryAsync(sql.insert_ai_generation_prompt, {
         question_id: saveResults.question_id,
-        prompting_user_id: authnUserId,
+        prompting_user_id: userId,
+        prompting_authn_user_id: authnUserId,
         prompt_type: 'initial',
         user_prompt: userPrompt,
         system_prompt: sysPrompt,
@@ -287,11 +287,13 @@ Keep in mind you are not just generating an example; you are generating an actua
         python: results?.python,
         errors,
         completion,
+        job_sequence_id: serverJob.jobSequenceId,
       });
       job.data['questionId'] = saveResults.question_id;
+    } else {
+      job.error("Adding question as draft failed.");
     }
 
-    job.data['draftSaveStatus'] = saveResults.status;
     job.data['questionQid'] = qid;
 
     job.data.html = html;
@@ -317,13 +319,13 @@ Keep in mind you are not just generating an example; you are generating an actua
         userId,
         hasCoursePermissionEdit,
         questionQid: qid,
+        jobSequenceId: serverJob.jobSequenceId,
       });
     }
   });
 
   return {
     jobSequenceId: serverJob.jobSequenceId,
-    draftSaveStatus: jobData.data.draftSaveStatus,
     questionQid: jobData.data.questionQid,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
@@ -376,6 +378,7 @@ async function regenInternal({
   courseId,
   userId,
   hasCoursePermissionEdit,
+  jobSequenceId,
 }: {
   job: ServerJob;
   client: OpenAI;
@@ -391,6 +394,7 @@ async function regenInternal({
   courseId: string;
   userId: string;
   hasCoursePermissionEdit: boolean;
+  jobSequenceId: string;
 }) {
   job.info(`prompt is ${revisionPrompt}`);
 
@@ -461,7 +465,8 @@ Keep in mind you are not just generating an example; you are generating an actua
   if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
     await queryAsync(sql.insert_ai_generation_prompt, {
       qid: questionId,
-      prompting_user_id: authnUserId,
+      prompting_user_id: userId,
+      prompting_authn_user_id: authnUserId,
       prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
       user_prompt: revisionPrompt,
       system_prompt: sysPrompt,
@@ -470,6 +475,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       python: results?.python,
       errors,
       completion,
+      job_sequence_id: jobSequenceId,
     });
 
     const files: Record<string, string> = {};
@@ -483,7 +489,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     const client = getCourseFilesClient();
 
-    await client.updateQuestionFiles.mutate({
+    const result = await client.updateQuestionFiles.mutate({
       course_id: courseId,
       user_id: userId,
       authn_user_id: authnUserId,
@@ -491,6 +497,10 @@ Keep in mind you are not just generating an example; you are generating an actua
       question_id: questionId,
       files,
     });
+
+    if (result.status === "error"){
+      job.error("Draft mutation failed.");
+    }
   }
 
   job.data.html = html;
@@ -513,6 +523,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       courseId,
       userId,
       hasCoursePermissionEdit,
+      jobSequenceId,
     });
   }
 }
@@ -576,6 +587,7 @@ export async function regenerateQuestion(
       courseId,
       userId,
       hasCoursePermissionEdit,
+      jobSequenceId: serverJob.jobSequenceId,
     });
   });
 
