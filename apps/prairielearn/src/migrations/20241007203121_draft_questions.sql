@@ -22,8 +22,6 @@ CREATE TABLE IF NOT EXISTS ai_question_generation_prompts (
   user_prompt text NOT NULL,
   system_prompt text NOT NULL,
   response text NOT NULL,
-  title text,
-  uuid text,
   html text NOT NULL,
   python text,
   errors jsonb,

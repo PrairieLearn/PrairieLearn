@@ -9,9 +9,7 @@ columns
     question_id: bigint
     response: text not null
     system_prompt: text not null
-    title: text
     user_prompt: text not null
-    uuid: text
 
 indexes
     ai_question_generation_prompts_pkey: PRIMARY KEY (id) USING btree (id)

@@ -184,7 +184,7 @@ export async function generateQuestion({
   promptUserInput: string;
   promptGrading: string;
   userId: string;
-  hasCoursePermissionEdit?: boolean;
+  hasCoursePermissionEdit: boolean;
 }): Promise<{
   jobSequenceId: string;
   questionQid: string;
@@ -286,8 +286,6 @@ Keep in mind you are not just generating an example; you are generating an actua
           user_prompt: userPrompt,
           system_prompt: sysPrompt,
           response: completion.choices[0].message.content,
-          title: 'temporary draft placeholder (todo: fix)',
-          uuid: `draft_${draftNumber}_todo_fix`,
           html: results?.html,
           python: results?.python,
           errors,
@@ -465,8 +463,6 @@ Keep in mind you are not just generating an example; you are generating an actua
       user_prompt: revisionPrompt,
       system_prompt: sysPrompt,
       response: completion.choices[0].message.content,
-      title: 'temporary draft placeholder (todo: fix)',
-      uuid: `${questionQid}_todo_fix`,
       html: results?.html,
       python: results?.python,
       errors,
