@@ -183,11 +183,12 @@ export async function generateQuestion({
   promptGeneral: string;
   promptUserInput: string;
   promptGrading: string;
-  userId?: string | undefined;
-  hasCoursePermissionEdit?: boolean | undefined;
+  userId: string;
+  hasCoursePermissionEdit: boolean;
 }): Promise<{
   jobSequenceId: string;
   questionQid: string;
+  draftSaveStatus: 'success' | 'error';
   htmlResult: string | undefined;
   pythonResult: string | undefined;
 }> {
@@ -239,85 +240,91 @@ Keep in mind you are not just generating an example; you are generating an actua
       errors = ['Please generate a question.html file.'];
     }
 
-    if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
-      const files = {};
+    const files = {};
 
-      if (results?.html) {
-        files['question.html'] = results?.html;
-      }
+    if (results?.html) {
+      files['question.html'] = results?.html;
+    }
 
-      if (results?.python) {
-        files['server.py'] = results?.python;
-      }
+    if (results?.python) {
+      files['server.py'] = results?.python;
+    }
 
-      const draftNumber = await queryRow(
-        sql.update_draft_number,
-        { course_id: courseId },
-        z.number(),
-      );
+    const draftNumber = await queryRow(
+      sql.update_draft_number,
+      { course_id: courseId },
+      z.number(),
+    );
 
-      const client = getCourseFilesClient();
+    const courseFilesClient = getCourseFilesClient();
 
-      const qid = `__drafts__/draft_${draftNumber}`;
+    const qid = `__drafts__/draft_${draftNumber}`;
 
-      await client.createQuestion.mutate({
-        course_id: courseId,
-        user_id: userId,
-        authn_user_id: authnUserId,
-        has_course_permission_edit: hasCoursePermissionEdit,
-        qid,
-        title: `draft ${draftNumber}`,
-        files,
-      });
+    const saveResults = await courseFilesClient.createQuestion.mutate({
+      course_id: courseId,
+      user_id: userId,
+      authn_user_id: authnUserId,
+      has_course_permission_edit: hasCoursePermissionEdit,
+      qid,
+      title: `draft ${draftNumber}`,
+      files,
+    });
 
-      await queryAsync(sql.insert_draft_info, {
-        qid,
+    if (saveResults.status === 'success') {
+      await queryAsync(sql.insert_draft_question_metadata, {
+        question_id: saveResults.question_id,
         course_id: courseId,
         creator_id: authnUserId,
       });
 
-      await queryAsync(sql.insert_prompt_info, {
-        qid,
+      await queryAsync(sql.insert_ai_generation_prompt, {
+        question_id: saveResults.question_id,
         course_id: courseId,
-        prompting_uid: authnUserId,
-        prompt_type: 'initial_prompt',
+        prompting_user_id: authnUserId,
+        prompt_type: 'initial',
         user_prompt: userPrompt,
-        context,
+        system_prompt: sysPrompt,
         response: completion.choices[0].message.content,
-        title: 'temporary draft placeholder (todo: fix)',
-        uuid: `draft_${draftNumber}_todo_fix`,
         html: results?.html,
         python: results?.python,
         errors,
         completion,
       });
-      job.data['questionQid'] = qid;
+      job.data['questionId'] = saveResults.question_id;
     }
+
+    job.data['draftSaveStatus'] = saveResults.status;
+    job.data['questionQid'] = qid;
 
     job.data.html = html;
     job.data.python = results?.python;
 
-    if (errors.length > 0 && typeof job.data.questionQid === 'string') {
-      await regenInternal(
+    if (
+      saveResults.status === 'success' &&
+      errors.length > 0 &&
+      typeof job.data.questionQid === 'string'
+    ) {
+      await regenInternal({
         job,
         client,
         authnUserId,
-        userPrompt,
-        `Please fix the following issues: \n${errors.join('\n')}`,
-        html || '',
-        typeof results?.python === 'string' ? results?.python : undefined,
-        0,
-        true,
-        job.data.questionQid,
+        originalPrompt: userPrompt,
+        revisionPrompt: `Please fix the following issues: \n${errors.join('\n')}`,
+        originalHTML: html || '',
+        originalPython: typeof results?.python === 'string' ? results?.python : undefined,
+        numRegens: 0,
+        isAutomated: true,
+        questionId: saveResults.question_id,
         courseId,
         userId,
         hasCoursePermissionEdit,
-      );
+      });
     }
   });
 
   return {
     jobSequenceId: serverJob.jobSequenceId,
+    draftSaveStatus: jobData.data.draftSaveStatus,
     questionQid: jobData.data.questionQid,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
@@ -355,21 +362,35 @@ function traverseForTagNames(ast: any): Set<string> {
  * @param userId The ID of the generating/saving user.
  * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
  */
-async function regenInternal(
-  job: ServerJob,
-  client: OpenAI,
-  authnUserId: string,
-  originalPrompt: string,
-  revisionPrompt: string,
-  originalHTML: string,
-  originalPython: string | undefined,
-  numRegens: number,
-  isAutomated: boolean,
-  questionQid: string | undefined,
-  courseId: string,
-  userId?: string | undefined,
-  hasCoursePermissionEdit?: boolean | undefined,
-) {
+async function regenInternal({
+  job,
+  client,
+  authnUserId,
+  originalPrompt,
+  revisionPrompt,
+  originalHTML,
+  originalPython,
+  numRegens,
+  isAutomated,
+  questionId,
+  courseId,
+  userId,
+  hasCoursePermissionEdit,
+}: {
+  job: ServerJob;
+  client: OpenAI;
+  authnUserId: string;
+  originalPrompt: string;
+  revisionPrompt: string;
+  originalHTML: string;
+  originalPython: string | undefined;
+  numRegens: number;
+  isAutomated: boolean;
+  questionId: string;
+  courseId: string;
+  userId: string;
+  hasCoursePermissionEdit: boolean;
+}) {
   job.info(`prompt is ${revisionPrompt}`);
 
   let tags: string[] = [];
@@ -437,27 +458,19 @@ Keep in mind you are not just generating an example; you are generating an actua
   }
 
   if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
-    await queryAsync(sql.insert_prompt_info, {
-      qid: questionQid,
+    await queryAsync(sql.insert_ai_generation_prompt, {
+      qid: questionId,
       course_id: courseId,
-      prompting_uid: authnUserId,
-      prompt_type: isAutomated ? 'autorevision' : 'human_revision',
+      prompting_user_id: authnUserId,
+      prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
       user_prompt: revisionPrompt,
-      context,
+      system_prompt: sysPrompt,
       response: completion.choices[0].message.content,
-      title: 'temporary draft placeholder (todo: fix)',
-      uuid: `${questionQid}_todo_fix`,
       html: results?.html,
       python: results?.python,
       errors,
       completion,
     });
-
-    const question = await queryRow(
-      sql.select_question_by_qid_and_course,
-      { qid: questionQid, course_id: courseId },
-      QuestionSchema,
-    );
 
     const files: Record<string, string> = {};
     if (results?.html) {
@@ -470,38 +483,36 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     const client = getCourseFilesClient();
 
-    if (question.qid) {
-      await client.updateQuestionFiles.mutate({
-        course_id: courseId,
-        user_id: userId,
-        authn_user_id: authnUserId,
-        has_course_permission_edit: hasCoursePermissionEdit,
-        question_id: question.qid,
-        files,
-      });
-    }
+    await client.updateQuestionFiles.mutate({
+      course_id: courseId,
+      user_id: userId,
+      authn_user_id: authnUserId,
+      has_course_permission_edit: hasCoursePermissionEdit,
+      question_id: questionId,
+      files,
+    });
   }
 
   job.data.html = html;
   job.data.python = results.python;
 
   if (errors.length > 0 && numRegens > 0) {
-    const autoRevisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
-    await regenInternal(
+    const auto_revisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
+    await regenInternal({
       job,
       client,
       authnUserId,
       originalPrompt,
-      autoRevisionPrompt,
-      html,
-      typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
-      numRegens - 1,
-      true,
-      questionQid,
+      revisionPrompt: auto_revisionPrompt,
+      originalHTML: html,
+      originalPython: typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
+      numRegens: numRegens - 1,
+      isAutomated: true,
+      questionId,
       courseId,
       userId,
       hasCoursePermissionEdit,
-    );
+    });
   }
 }
 
@@ -528,8 +539,8 @@ export async function regenerateQuestion(
   originalHTML: string,
   originalPython: string,
   questionQid: string | undefined,
-  userId?: string | undefined,
-  hasCoursePermissionEdit?: boolean | undefined,
+  userId: string,
+  hasCoursePermissionEdit: boolean,
 ): Promise<{
   jobSequenceId: string;
   htmlResult: string | undefined;
@@ -542,8 +553,14 @@ export async function regenerateQuestion(
     authnUserId,
   });
 
+  const question = await queryRow(
+    sql.select_question_by_qid_and_course,
+    { qid: questionQid, course_id: courseId },
+    QuestionSchema,
+  );
+
   const jobData = await serverJob.execute(async (job) => {
-    await regenInternal(
+    await regenInternal({
       job,
       client,
       authnUserId,
@@ -551,13 +568,13 @@ export async function regenerateQuestion(
       revisionPrompt,
       originalHTML,
       originalPython,
-      1,
-      false,
-      questionQid,
+      numRegens: 1,
+      isAutomated: false,
+      questionId: question.id,
       courseId,
       userId,
       hasCoursePermissionEdit,
-    );
+    });
   });
 
   return {

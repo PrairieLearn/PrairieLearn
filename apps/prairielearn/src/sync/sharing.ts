@@ -122,12 +122,12 @@ export function checkInvalidSharingSetAdditions(
         invalidSharingSetAdditions[qid].push(sharingSet);
       }
     });
-    if (question.data?.isDraft && questionSharingSets.length > 0) {
+    if (question.data?.draft && questionSharingSets.length > 0) {
       draftQuestionsWithSharingSets.push(qid);
     }
 
     if (
-      question.data?.isDraft &&
+      question.data?.draft &&
       (question.data?.sharePublicly || question.data.shareSourcePublicly)
     ) {
       draftQuestionsWithPublicSharing.push(qid);

@@ -26,7 +26,7 @@ function getParamsForQuestion(q: Question | null | undefined) {
     template_directory: q.template,
     options: q.options,
     client_files: q.clientFiles || [],
-    is_draft: q.isDraft || false,
+    draft: q.draft || false,
     topic: q.topic,
     grading_method: q.gradingMethod || 'Internal',
     single_variant: !!q.singleVariant,

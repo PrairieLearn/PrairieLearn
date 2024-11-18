@@ -38,59 +38,45 @@ WHERE
 RETURNING
   draft_number;
 
--- BLOCK insert_draft_info
+-- BLOCK insert_draft_question_metadata
 INSERT INTO
   draft_question_metadata (question_id, created_by, updated_by)
 SELECT
-  q.id,
-  u.user_id,
+  $question_id u.user_id,
   u.user_id
 FROM
-  questions AS q,
   users AS u
 WHERE
-  q.qid = $qid
-  AND q.course_id = $course_id
   AND u.uid = $creator_id;
 
--- BLOCK insert_prompt_info
+-- BLOCK insert_ai_generation_prompt
 INSERT INTO
-  ai_generation_prompts (
+  ai_question_generation_prompts (
     question_id,
     prompting_user_id,
     prompt_type,
     user_prompt,
-    context,
+    system_prompt,
     response,
-    title,
-    uuid,
     html,
     python,
     errors,
     completion
   )
-SELECT
-  q.id,
-  $prompting_uid,
-  $prompt_type,
-  $user_prompt,
-  $context,
-  $response,
-  $title,
-  $uuid,
-  $html,
-  $python,
-  to_jsonb($errors::text[]),
-  $completion
-FROM
-  questions AS q
-WHERE
-  q.qid = $qid
-  AND q.course_id = $course_id
-RETURNING
-  question_id;
-
--- BLOCK select_question_by_qid_and_course
+VALUES
+  (
+    $question_id,
+    $prompting_user_id,
+    $prompt_type,
+    $user_prompt,
+    $system_prompt,
+    $response,
+    $html,
+    $python,
+    to_jsonb($errors::text[]),
+    $completion
+  )
+  -- BLOCK select_question_by_qid_and_course
 SELECT
   *
 FROM
