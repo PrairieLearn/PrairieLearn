@@ -18,6 +18,7 @@ CREATE TABLE IF NOT EXISTS ai_question_generation_prompts (
   id bigserial PRIMARY KEY,
   question_id BIGINT REFERENCES questions (id) ON DELETE SET NULL ON UPDATE CASCADE,
   prompting_user_id BIGINT REFERENCES users (user_id) ON DELETE SET NULL ON UPDATE CASCADE,
+  prompting_authn_user_id BIGINT REFERENCES users (user_id) ON DELETE SET NULL ON UPDATE CASCADE,
   prompt_type enum_ai_question_generation_prompt_type NOT NULL,
   user_prompt text NOT NULL,
   system_prompt text NOT NULL,
@@ -25,5 +26,6 @@ CREATE TABLE IF NOT EXISTS ai_question_generation_prompts (
   html text NOT NULL,
   python text,
   errors jsonb,
-  completion jsonb NOT NULL
+  completion jsonb NOT NULL,
+  job_sequence_id BIGINT REFERENCES job_sequences (id) ON DELETE SET NULL ON UPDATE CASCADE 
 );

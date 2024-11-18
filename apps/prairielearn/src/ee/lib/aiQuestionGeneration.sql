@@ -55,6 +55,7 @@ INSERT INTO
   ai_question_generation_prompts (
     question_id,
     prompting_user_id,
+    prompting_authn_user_id,
     prompt_type,
     user_prompt,
     system_prompt,
@@ -62,12 +63,14 @@ INSERT INTO
     html,
     python,
     errors,
-    completion
+    completion,
+    job_seq_id
   )
 VALUES
   (
     $question_id,
     $prompting_user_id,
+    $prompting_authn_user_id,
     $prompt_type,
     $user_prompt,
     $system_prompt,
@@ -75,7 +78,8 @@ VALUES
     $html,
     $python,
     to_jsonb($errors::text[]),
-    $completion
+    $completion,
+    $job_seq_id
   )
   -- BLOCK select_question_by_qid_and_course
 SELECT
