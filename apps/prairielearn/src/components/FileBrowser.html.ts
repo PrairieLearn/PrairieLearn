@@ -339,20 +339,18 @@ export function FileBrowser({
               <div class="row align-items-center justify-content-between">
                 <div class="col-auto text-monospace d-flex">
                   ${joinHtml(
-                    paths.branch.map(
-                      (dir) => html`
-                        ${dir.canView
-                          ? html`
-                              <a
-                                class="text-white"
-                                href="${paths.urlPrefix}/file_view/${encodePath(dir.path)}"
-                              >
-                                ${dir.name}
-                              </a>
-                            `
-                          : html`<span>${dir.name}</span>`}
-                      `,
-                    ),
+                    paths.branch
+                      .filter((dir) => dir.canView)
+                      .map(
+                        (dir) => html`
+                          <a
+                            class="text-white"
+                            href="${paths.urlPrefix}/file_view/${encodePath(dir.path)}"
+                          >
+                            ${dir.name}
+                          </a>
+                        `,
+                      ),
                     html`<span class="mx-2">/</span>`,
                   )}
                 </div>
