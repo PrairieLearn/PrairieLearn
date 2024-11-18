@@ -502,9 +502,7 @@ export const AiGenerationPromptSchema = z.object({
   python: z.string().nullable(),
   question_id: z.string(),
   response: z.string(),
-  title: z.string().nullable(),
   user_prompt: z.string(),
-  uuid: z.string().nullable(),
 });
 
 export type AiGenerationPrompt = z.infer<typeof AiGenerationPromptSchema>;
