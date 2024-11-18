@@ -313,7 +313,7 @@ interface QuestionFooterResLocals {
   __csrf_token: string;
 }
 
-export function QuestionFooter({
+function QuestionFooter({
   resLocals,
   questionContext,
 }: {
