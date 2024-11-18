@@ -387,7 +387,7 @@ async function regenInternal({
   numRegens: number;
   isAutomated: boolean;
   questionId: string;
-  questionQid: string;
+  questionQid: string | undefined;
   courseId: string;
   userId: string;
   hasCoursePermissionEdit: boolean;
