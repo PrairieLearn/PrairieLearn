@@ -163,14 +163,24 @@ export function AiGeneratePage({
                       <div id="generation-results"></div>
                     </div>`
                   : html`Threads:
-                      ${threads
-                        .filter((x) => {
-                          return x.prompt_type !== 'autorevision';
-                        })
-                        .map((x) => {
-                          return html`<div>You prompted: ${x.user_prompt}</div>
-                            <div>We created: v${x.id}</div>`;
-                        })}
+                      <div class="position-relative">
+                        ${threads
+                          .filter((x) => {
+                            return x.prompt_type !== 'autorevision';
+                          })
+                          .map((x) => {
+                            return html`<div
+                                class="p-3 mb-2 bg-secondary text-white position-absolute end-0"
+                              >
+                                You prompted: ${x.user_prompt}
+                              </div>
+                              <div
+                                class="p-3 mb-2 bg-secondary text-white position-absolute start-0"
+                              >
+                                We created: v${x.id} (Revert)
+                              </div>`;
+                          })}
+                      </div>
                       <div class="col-lg-9 col-sm-12">
                         ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
                       </div>
