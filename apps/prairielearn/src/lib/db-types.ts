@@ -493,7 +493,7 @@ export type FileEdit = z.infer<typeof FileEditSchema>;
 
 export const AiGenerationPromptSchema = z.object({
   completion: z.any(),
-  context: z.string().nullable(),
+  system_prompt: z.string().nullable(),
   errors: z.array(z.string()),
   html: z.string().nullable(),
   id: z.string(),
