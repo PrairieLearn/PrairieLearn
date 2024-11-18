@@ -277,7 +277,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       });
 
       await queryAsync(sql.insert_ai_generation_prompt, {
-        question_id: saveResults.question_id,
+        question_id: qid,
         prompting_user_id: authnUserId,
         prompt_type: 'initial',
         user_prompt: userPrompt,
@@ -316,6 +316,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         courseId,
         userId,
         hasCoursePermissionEdit,
+        questionQid: qid,
       });
     }
   });
@@ -371,6 +372,7 @@ async function regenInternal({
   numRegens,
   isAutomated,
   questionId,
+  questionQid,
   courseId,
   userId,
   hasCoursePermissionEdit,
@@ -385,6 +387,7 @@ async function regenInternal({
   numRegens: number;
   isAutomated: boolean;
   questionId: string;
+  questionQid: string;
   courseId: string;
   userId: string;
   hasCoursePermissionEdit: boolean;
@@ -457,7 +460,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
     await queryAsync(sql.insert_ai_generation_prompt, {
-      qid: questionId,
+      qid: questionQid,
       prompting_user_id: authnUserId,
       prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
       user_prompt: revisionPrompt,
@@ -506,6 +509,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       numRegens: numRegens - 1,
       isAutomated: true,
       questionId,
+      questionQid,
       courseId,
       userId,
       hasCoursePermissionEdit,
@@ -568,6 +572,7 @@ export async function regenerateQuestion(
       numRegens: 1,
       isAutomated: false,
       questionId: question.id,
+      questionQid,
       courseId,
       userId,
       hasCoursePermissionEdit,
