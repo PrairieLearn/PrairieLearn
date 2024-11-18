@@ -240,67 +240,70 @@ Keep in mind you are not just generating an example; you are generating an actua
       errors = ['Please generate a question.html file.'];
     }
 
-    if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
-      const files = {};
+    const files = {};
 
-      if (results?.html) {
-        files['question.html'] = results?.html;
-      }
+    if (results?.html) {
+      files['question.html'] = results?.html;
+    }
 
-      if (results?.python) {
-        files['server.py'] = results?.python;
-      }
+    if (results?.python) {
+      files['server.py'] = results?.python;
+    }
 
-      const draftNumber = await queryRow(
-        sql.update_draft_number,
-        { course_id: courseId },
-        z.number(),
-      );
+    const draftNumber = await queryRow(
+      sql.update_draft_number,
+      { course_id: courseId },
+      z.number(),
+    );
 
-      const client = getCourseFilesClient();
+    const courseFilesClient = getCourseFilesClient();
 
-      const qid = `__drafts__/draft_${draftNumber}`;
+    const qid = `__drafts__/draft_${draftNumber}`;
 
-      const saveResults = await client.createQuestion.mutate({
+    const saveResults = await courseFilesClient.createQuestion.mutate({
+      course_id: courseId,
+      user_id: userId,
+      authn_user_id: authnUserId,
+      has_course_permission_edit: hasCoursePermissionEdit,
+      qid,
+      title: `draft ${draftNumber}`,
+      files,
+    });
+
+    if (saveResults.status === 'success') {
+      await queryAsync(sql.insert_draft_question_metadata, {
+        question_id: saveResults.question_id,
         course_id: courseId,
-        user_id: userId,
-        authn_user_id: authnUserId,
-        has_course_permission_edit: hasCoursePermissionEdit,
-        qid,
-        title: `draft ${draftNumber}`,
-        files,
+        creator_id: authnUserId,
       });
 
-      if (saveResults.status === 'success') {
-        await queryAsync(sql.insert_draft_question_metadata, {
-          question_id: saveResults.question_id,
-          course_id: courseId,
-          creator_id: authnUserId,
-        });
-
-        await queryAsync(sql.insert_ai_generation_prompt, {
-          question_id: saveResults.question_id,
-          course_id: courseId,
-          prompting_user_id: authnUserId,
-          prompt_type: 'initial',
-          user_prompt: userPrompt,
-          system_prompt: sysPrompt,
-          response: completion.choices[0].message.content,
-          html: results?.html,
-          python: results?.python,
-          errors,
-          completion,
-        });
-      }
-
-      job.data['draftSaveStatus'] = saveResults.status;
-      job.data['questionQid'] = qid;
+      await queryAsync(sql.insert_ai_generation_prompt, {
+        question_id: saveResults.question_id,
+        course_id: courseId,
+        prompting_user_id: authnUserId,
+        prompt_type: 'initial',
+        user_prompt: userPrompt,
+        system_prompt: sysPrompt,
+        response: completion.choices[0].message.content,
+        html: results?.html,
+        python: results?.python,
+        errors,
+        completion,
+      });
+      job.data['questionId'] = saveResults.question_id;
     }
+
+    job.data['draftSaveStatus'] = saveResults.status;
+    job.data['questionQid'] = qid;
 
     job.data.html = html;
     job.data.python = results?.python;
 
-    if (errors.length > 0 && typeof job.data.questionQid === 'string') {
+    if (
+      saveResults.status === 'success' &&
+      errors.length > 0 &&
+      typeof job.data.questionQid === 'string'
+    ) {
       await regenInternal({
         job,
         client,
@@ -311,7 +314,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         originalPython: typeof results?.python === 'string' ? results?.python : undefined,
         numRegens: 0,
         isAutomated: true,
-        questionQid: job.data.questionQid,
+        questionId: saveResults.question_id,
         courseId,
         userId,
         hasCoursePermissionEdit,
@@ -369,7 +372,7 @@ async function regenInternal({
   originalPython,
   numRegens,
   isAutomated,
-  questionQid,
+  questionId,
   courseId,
   userId,
   hasCoursePermissionEdit,
@@ -383,7 +386,7 @@ async function regenInternal({
   originalPython: string | undefined;
   numRegens: number;
   isAutomated: boolean;
-  questionQid: string | undefined;
+  questionId: string;
   courseId: string;
   userId: string;
   hasCoursePermissionEdit: boolean;
@@ -456,7 +459,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
     await queryAsync(sql.insert_ai_generation_prompt, {
-      qid: questionQid,
+      qid: questionId,
       course_id: courseId,
       prompting_user_id: authnUserId,
       prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
@@ -469,12 +472,6 @@ Keep in mind you are not just generating an example; you are generating an actua
       completion,
     });
 
-    const question = await queryRow(
-      sql.select_question_by_qid_and_course,
-      { qid: questionQid, course_id: courseId },
-      QuestionSchema,
-    );
-
     const files: Record<string, string> = {};
     if (results?.html) {
       files['question.html'] = results?.html;
@@ -486,16 +483,14 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     const client = getCourseFilesClient();
 
-    if (question.qid) {
-      await client.updateQuestionFiles.mutate({
-        course_id: courseId,
-        user_id: userId,
-        authn_user_id: authnUserId,
-        has_course_permission_edit: hasCoursePermissionEdit,
-        question_id: question.qid,
-        files,
-      });
-    }
+    await client.updateQuestionFiles.mutate({
+      course_id: courseId,
+      user_id: userId,
+      authn_user_id: authnUserId,
+      has_course_permission_edit: hasCoursePermissionEdit,
+      question_id: questionId,
+      files,
+    });
   }
 
   job.data.html = html;
@@ -513,7 +508,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       originalPython: typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
       numRegens: numRegens - 1,
       isAutomated: true,
-      questionQid,
+      questionId,
       courseId,
       userId,
       hasCoursePermissionEdit,
@@ -558,6 +553,12 @@ export async function regenerateQuestion(
     authnUserId,
   });
 
+  const question = await queryRow(
+    sql.select_question_by_qid_and_course,
+    { qid: questionQid, course_id: courseId },
+    QuestionSchema,
+  );
+
   const jobData = await serverJob.execute(async (job) => {
     await regenInternal({
       job,
@@ -569,7 +570,7 @@ export async function regenerateQuestion(
       originalPython,
       numRegens: 1,
       isAutomated: false,
-      questionQid,
+      questionId: question.id,
       courseId,
       userId,
       hasCoursePermissionEdit,
