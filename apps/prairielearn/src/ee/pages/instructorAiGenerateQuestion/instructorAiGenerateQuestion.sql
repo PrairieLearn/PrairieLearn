@@ -35,7 +35,7 @@ FROM
   ai_question_generation_prompts
   JOIN questions ON ai_question_generation_prompts.question_id = questions.id
 WHERE
-  AND questions.course_id = $course_id
+  questions.course_id = $course_id
   AND questions.deleted_at IS NULL
 ORDER BY
   ai_question_generation_prompts.id;
