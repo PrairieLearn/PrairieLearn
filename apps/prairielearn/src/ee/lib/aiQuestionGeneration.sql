@@ -64,7 +64,7 @@ INSERT INTO
     python,
     errors,
     completion,
-    job_seq_id
+    job_sequence_id
   )
 VALUES
   (
@@ -79,7 +79,7 @@ VALUES
     $python,
     to_jsonb($errors::text[]),
     $completion,
-    $job_seq_id
+    $job_sequence_id
   )
   -- BLOCK select_question_by_qid_and_course
 SELECT
