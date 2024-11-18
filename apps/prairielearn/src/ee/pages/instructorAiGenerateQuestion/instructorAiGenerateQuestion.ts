@@ -8,11 +8,21 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { config } from '../../../lib/config.js';
 import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import { AiGenerationPromptSchema, type Question, QuestionSchema } from '../../../lib/db-types.js';
+import {
+  AiGenerationPromptSchema,
+  IdSchema,
+  type Question,
+  QuestionSchema,
+} from '../../../lib/db-types.js';
 import { QuestionDeleteEditor } from '../../../lib/editors.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
-import { getAndRenderVariant, setRendererHeader } from '../../../lib/question-render.js';
+import {
+  getAndRenderVariant,
+  renderPanelsForSubmission,
+  setRendererHeader,
+} from '../../../lib/question-render.js';
+import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
@@ -92,7 +102,6 @@ router.get(
         { course_id: res.locals.course.id.toString() },
         AiGenerationPromptSchema,
       );
-      console.log(threads);
 
       if (threads && threads.length > 0) {
         res.locals.question = await queryRow(
@@ -100,7 +109,9 @@ router.get(
           { qid: qidFull, course_id: res.locals.course.id },
           QuestionSchema,
         );
-        await getAndRenderVariant(null, null, res.locals);
+        const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
+
+        await getAndRenderVariant(variant_id, null, res.locals);
         await setQuestionCopyTargets(res);
         setRendererHeader(res);
       }
@@ -256,9 +267,38 @@ router.post(
         await editor.executeWithServerJob(serverJob);
       }
       res.send(AiGeneratePage({ resLocals: res.locals }));
+    } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
+      res.locals.question = queryRow(
+        sql.select_question_by_qid_and_course,
+        { qid: req.query.qid, course_id: res.locals.course.id },
+        QuestionSchema,
+      );
+      const variantId = await processSubmission(req, res);
+      res.redirect(
+        `${res.locals.urlPrefix}/ai_generate_question?qid=${req.query?.qid}&variant_id=${variantId}`,
+      );
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
+  }),
+);
+
+router.get(
+  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
+  asyncHandler(async (req, res) => {
+    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
+      submission_id: req.params.submission_id,
+      question_id: res.locals.question.id,
+      instance_question_id: null,
+      variant_id: req.params.variant_id,
+      user_id: res.locals.user.user_id,
+      urlPrefix: res.locals.urlPrefix,
+      questionContext: 'instructor',
+      csrfToken: null,
+      authorizedEdit: null,
+      renderScorePanels: false,
+    });
+    res.send({ submissionPanel, extraHeadersHtml });
   }),
 );
 

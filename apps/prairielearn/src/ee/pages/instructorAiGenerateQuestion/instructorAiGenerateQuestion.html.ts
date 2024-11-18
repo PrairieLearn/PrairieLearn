@@ -162,25 +162,31 @@ export function AiGeneratePage({
                       </select>
                       <div id="generation-results"></div>
                     </div>`
-                  : html`Threads:
-                      ${threads
-                        .filter((x) => {
-                          return x.prompt_type !== 'auto_revision';
-                        })
-                        .map((x) => {
-                          return html`<div class="d-flex flex-row-reverse">
-                              <div class="p-3 mb-2 bg-secondary text-white rounded">
-                                You prompted: ${x.user_prompt}
-                              </div>
-                            </div>
-                            <div class="d-flex flex-row">
-                              <div class="p-3 mb-2 bg-secondary text-white rounded">
-                                We created: v${x.id} (Revert)
-                              </div>
-                            </div>`;
-                        })}
-                      <div class="col-lg-9 col-sm-12">
-                        ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
+                  : html`<div class="container text-center">
+                        <div class="row row justify-content-center">
+                          <div class="col-lg-9 col-sm-12">
+                            Threads:
+                            ${threads
+                              .filter((x) => {
+                                return x.prompt_type !== 'auto_revision';
+                              })
+                              .map((x) => {
+                                return html`<div class="d-flex flex-row-reverse">
+                                    <div class="p-3 mb-2 bg-secondary text-white rounded">
+                                      You prompted: ${x.user_prompt}
+                                    </div>
+                                  </div>
+                                  <div class="d-flex flex-row">
+                                    <div class="p-3 mb-2 bg-secondary text-white rounded">
+                                      We created: v${x.id}
+                                    </div>
+                                  </div>`;
+                              })}
+                          </div>
+                          <div class="col-lg-9 col-sm-12">
+                            ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
+                          </div>
+                        </div>
                       </div>
                       <div>
                         <form
