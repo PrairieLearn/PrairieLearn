@@ -32,11 +32,11 @@ WHERE
 SELECT
   *
 FROM
-  ai_generation_prompts
-  JOIN questions ON ai_generation_prompts.question_id = questions.id
+  ai_question_generation_prompts
+  JOIN questions ON ai_question_generation_prompts.question_id = questions.id
 WHERE
   questions.qid = $qid
   AND questions.course_id = $course_id
   AND questions.deleted_at IS NULL
 ORDER BY
-  ai_generation_prompts.id;
+  ai_question_generation_prompts.id;

@@ -183,7 +183,7 @@ export async function generateQuestion({
   promptGeneral: string;
   promptUserInput: string;
   promptGrading: string;
-  userId?: string | undefined;
+  userId: string | undefined;
   hasCoursePermissionEdit?: boolean | undefined;
 }): Promise<{
   jobSequenceId: string;
@@ -279,10 +279,10 @@ Keep in mind you are not just generating an example; you are generating an actua
       await queryAsync(sql.insert_ai_generation_prompt, {
         qid,
         course_id: courseId,
-        prompting_uid: authnUserId,
-        prompt_type: 'initial_prompt',
+        prompting_user_id: authnUserId,
+        prompt_type: 'initial',
         user_prompt: userPrompt,
-        context,
+        system_prompt: sysPrompt,
         response: completion.choices[0].message.content,
         title: 'temporary draft placeholder (todo: fix)',
         uuid: `draft_${draftNumber}_todo_fix`,
@@ -381,8 +381,8 @@ async function regenInternal({
   isAutomated: boolean;
   questionQid: string | undefined;
   courseId: string;
-  userId?: string | undefined;
-  hasCoursePermissionEdit?: boolean | undefined;
+  userId: string | undefined;
+  hasCoursePermissionEdit: boolean | undefined;
 }) {
   job.info(`prompt is ${revisionPrompt}`);
 
@@ -454,10 +454,10 @@ Keep in mind you are not just generating an example; you are generating an actua
     await queryAsync(sql.insert_ai_generation_prompt, {
       qid: questionQid,
       course_id: courseId,
-      prompting_uid: authnUserId,
-      prompt_type: isAutomated ? 'autorevision' : 'human_revision',
+      prompting_user_id: authnUserId,
+      prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
       user_prompt: revisionPrompt,
-      context,
+      system_prompt: sysPrompt,
       response: completion.choices[0].message.content,
       title: 'temporary draft placeholder (todo: fix)',
       uuid: `${questionQid}_todo_fix`,
@@ -500,13 +500,13 @@ Keep in mind you are not just generating an example; you are generating an actua
   job.data.python = results.python;
 
   if (errors.length > 0 && numRegens > 0) {
-    const autoRevisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
+    const auto_revisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
     await regenInternal({
       job,
       client,
       authnUserId,
       originalPrompt,
-      revisionPrompt: autoRevisionPrompt,
+      revisionPrompt: auto_revisionPrompt,
       originalHTML: html,
       originalPython: typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
       numRegens: numRegens - 1,
@@ -542,8 +542,8 @@ export async function regenerateQuestion(
   originalHTML: string,
   originalPython: string,
   questionQid: string | undefined,
-  userId?: string | undefined,
-  hasCoursePermissionEdit?: boolean | undefined,
+  userId: string,
+  hasCoursePermissionEdit: boolean,
 ): Promise<{
   jobSequenceId: string;
   htmlResult: string | undefined;

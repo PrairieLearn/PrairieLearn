@@ -55,12 +55,12 @@ WHERE
 
 -- BLOCK insert_ai_generation_prompt
 INSERT INTO
-  ai_generation_prompts (
+  ai_question_generation_prompts (
     question_id,
     prompting_user_id,
     prompt_type,
     user_prompt,
-    context,
+    system_prompt,
     response,
     title,
     uuid,
@@ -71,10 +71,10 @@ INSERT INTO
   )
 SELECT
   q.id,
-  $prompting_uid,
+  $prompting_user_id,
   $prompt_type,
   $user_prompt,
-  $context,
+  $system_prompt,
   $response,
   $title,
   $uuid,
