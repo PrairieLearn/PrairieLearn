@@ -85,14 +85,14 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     assertCanCreateQuestion(res.locals);
-
     if (req.query?.qid) {
       const qidFull = `__drafts__/${req.query?.qid}`;
       const threads = await queryRows(
         sql.select_generation_thread_items,
-        { qid: qidFull, course_id: res.locals.course.id.toString() },
+        { course_id: res.locals.course.id.toString() },
         AiGenerationPromptSchema,
       );
+      console.log(threads);
 
       if (threads && threads.length > 0) {
         res.locals.question = await queryRow(
@@ -132,6 +132,7 @@ router.post(
     });
 
     if (req.body.__action === 'generate_question') {
+      console.log("a")
       const result = await generateQuestion({
         client,
         courseId: res.locals.course.id,
@@ -142,6 +143,8 @@ router.post(
         userId: res.locals.user.user_id,
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });
+
+      console.log(result);
 
       if (result.htmlResult) {
         res.set({

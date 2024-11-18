@@ -42,7 +42,8 @@ RETURNING
 INSERT INTO
   draft_question_metadata (question_id, created_by, updated_by)
 SELECT
-  $question_id u.user_id,
+  $question_id, 
+  u.user_id,
   u.user_id
 FROM
   users AS u

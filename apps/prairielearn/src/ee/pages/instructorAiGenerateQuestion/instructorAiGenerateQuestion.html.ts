@@ -166,7 +166,7 @@ export function AiGeneratePage({
                       <div class="position-relative">
                         ${threads
                           .filter((x) => {
-                            return x.prompt_type !== 'autorevision';
+                            return x.prompt_type !== 'auto_revision';
                           })
                           .map((x) => {
                             return html`<div

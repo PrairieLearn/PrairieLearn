@@ -270,10 +270,11 @@ Keep in mind you are not just generating an example; you are generating an actua
       files,
     });
 
+    console.log(saveResults);
+
     if (saveResults.status === 'success') {
       await queryAsync(sql.insert_draft_question_metadata, {
         question_id: saveResults.question_id,
-        course_id: courseId,
         creator_id: authnUserId,
       });
 
