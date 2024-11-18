@@ -183,11 +183,12 @@ export async function generateQuestion({
   promptGeneral: string;
   promptUserInput: string;
   promptGrading: string;
-  userId: string | undefined;
-  hasCoursePermissionEdit?: boolean | undefined;
+  userId: string;
+  hasCoursePermissionEdit?: boolean;
 }): Promise<{
   jobSequenceId: string;
   questionQid: string;
+  draftSaveStatus: 'success' | 'error';
   htmlResult: string | undefined;
   pythonResult: string | undefined;
 }> {
@@ -260,7 +261,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
       const qid = `__drafts__/draft_${draftNumber}`;
 
-      await client.createQuestion.mutate({
+      const saveResults = await client.createQuestion.mutate({
         course_id: courseId,
         user_id: userId,
         authn_user_id: authnUserId,
@@ -270,27 +271,31 @@ Keep in mind you are not just generating an example; you are generating an actua
         files,
       });
 
-      await queryAsync(sql.insert_draft_question_metadata, {
-        qid,
-        course_id: courseId,
-        creator_id: authnUserId,
-      });
+      if (saveResults.status === 'success') {
+        await queryAsync(sql.insert_draft_question_metadata, {
+          question_id: saveResults.question_id,
+          course_id: courseId,
+          creator_id: authnUserId,
+        });
 
-      await queryAsync(sql.insert_ai_generation_prompt, {
-        qid,
-        course_id: courseId,
-        prompting_user_id: authnUserId,
-        prompt_type: 'initial',
-        user_prompt: userPrompt,
-        system_prompt: sysPrompt,
-        response: completion.choices[0].message.content,
-        title: 'temporary draft placeholder (todo: fix)',
-        uuid: `draft_${draftNumber}_todo_fix`,
-        html: results?.html,
-        python: results?.python,
-        errors,
-        completion,
-      });
+        await queryAsync(sql.insert_ai_generation_prompt, {
+          question_id: saveResults.question_id,
+          course_id: courseId,
+          prompting_user_id: authnUserId,
+          prompt_type: 'initial',
+          user_prompt: userPrompt,
+          system_prompt: sysPrompt,
+          response: completion.choices[0].message.content,
+          title: 'temporary draft placeholder (todo: fix)',
+          uuid: `draft_${draftNumber}_todo_fix`,
+          html: results?.html,
+          python: results?.python,
+          errors,
+          completion,
+        });
+      }
+
+      job.data['draftSaveStatus'] = saveResults.status;
       job.data['questionQid'] = qid;
     }
 
@@ -318,6 +323,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   return {
     jobSequenceId: serverJob.jobSequenceId,
+    draftSaveStatus: jobData.data.draftSaveStatus,
     questionQid: jobData.data.questionQid,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
@@ -381,8 +387,8 @@ async function regenInternal({
   isAutomated: boolean;
   questionQid: string | undefined;
   courseId: string;
-  userId: string | undefined;
-  hasCoursePermissionEdit: boolean | undefined;
+  userId: string;
+  hasCoursePermissionEdit: boolean;
 }) {
   job.info(`prompt is ${revisionPrompt}`);
 
