@@ -132,7 +132,6 @@ router.post(
     });
 
     if (req.body.__action === 'generate_question') {
-      console.log("a")
       const result = await generateQuestion({
         client,
         courseId: res.locals.course.id,
@@ -144,7 +143,6 @@ router.post(
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });
 
-      console.log(result);
 
       if (result.htmlResult) {
         res.set({
