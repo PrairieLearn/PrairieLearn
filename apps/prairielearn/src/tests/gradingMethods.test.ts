@@ -27,61 +27,32 @@ const mockStudents = [
   { authUid: 'student4', authName: 'Student User 4', authUin: '00000004' },
 ];
 
-async function waitForExternalGrader($questionsPage): Promise<any> {
-  const {
-    variantId,
-    questionId,
-    instanceQuestionId,
-    userId,
-    variantToken,
-    urlPrefix,
-    questionContext,
-    csrfToken,
-    authorizedEdit,
-  } = $questionsPage('.question-container').data();
+async function waitForExternalGrader($questionsPage): Promise<void> {
+  const { variantId, variantToken } = $questionsPage('.question-container').data();
   const socket = io(`http://localhost:${config.serverPort}/external-grading`);
 
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     socket.on('connect_error', (err) => reject(err));
 
-    function handleStatusChange(msg) {
-      msg.submissions.forEach((s) => {
-        if (s.grading_job_status === 'graded') {
-          socket.emit(
-            'getResults',
-            {
-              // Cheerio converts data attributes to numbers based on format, but
-              // the socket expects them as strings
-              question_id: questionId.toString(),
-              instance_question_id: instanceQuestionId.toString(),
-              variant_id: variantId.toString(),
-              user_id: userId.toString(),
-              variant_token: variantToken.toString(),
-              submission_id: s.id.toString(),
-              url_prefix: urlPrefix.toString(),
-              question_context: questionContext.toString(),
-              csrf_token: csrfToken.toString(),
-              authorized_edit: authorizedEdit,
-            },
-            (resultsMsg: any) => resolve(resultsMsg),
-          );
+    function handleStatusChange(msg: any) {
+      for (const submission of msg.submissions) {
+        if (submission.grading_job_status === 'graded') {
+          resolve();
           return;
         }
-      });
+      }
     }
 
     socket.emit(
       'init',
       { variant_id: variantId.toString(), variant_token: variantToken.toString() },
-      function (msg) {
+      (msg: any) => {
         if (!msg) return reject(new Error('Socket initialization failed'));
         handleStatusChange(msg);
       },
     );
 
-    socket.on('change:status', function (msg) {
-      handleStatusChange(msg);
-    });
+    socket.on('change:status', (msg) => handleStatusChange(msg));
   }).finally(() => {
     // Whether or not we actually got a valid result, we should close the
     // socket to allow the test process to exit.
@@ -297,16 +268,24 @@ describe('Grading method(s)', function () {
           ]);
           assert.equal(gradeRes.status, 200);
         });
-        it('should retrieve results via socket', async () => {
+        it('should wait for results and render the updated panels', async () => {
           questionsPage = await gradeRes.text();
           $questionsPage = cheerio.load(questionsPage);
 
           iqId = parseInstanceQuestionId(iqUrl);
-          const socketResult = await waitForExternalGrader($questionsPage);
-          assert.isNotNull(socketResult);
-          assert.isNotNull(socketResult.submissionPanel);
+          await waitForExternalGrader($questionsPage);
 
-          const $submissionPanel = cheerio.load(socketResult.submissionPanel);
+          // Now that the grading job is done, we can check the results.
+          const submissionBody = $questionsPage('.js-submission-body').first();
+          const dynamicRenderUrl = new URL(submissionBody.attr('data-dynamic-render-url'), siteUrl);
+          dynamicRenderUrl.searchParams.set('render_score_panels', 'true');
+          const dynamicRenderPanels = await fetch(dynamicRenderUrl).then((res) => {
+            assert.ok(res.ok);
+            return res.json() as any;
+          });
+
+          assert.ok(dynamicRenderPanels.submissionPanel);
+          const $submissionPanel = cheerio.load(dynamicRenderPanels.submissionPanel);
           assert.lengthOf($submissionPanel('[data-testid="submission-block"]'), 1);
           assert.equal(getLatestSubmissionStatus($submissionPanel), '100%');
           assert.lengthOf($submissionPanel('.pl-external-grader-results'), 1);
