@@ -2036,8 +2036,7 @@ export async function initExpress() {
         res.locals.navbarType = 'public';
         next();
       },
-      (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js'))
-        .default,
+      (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
     ],
   );
 

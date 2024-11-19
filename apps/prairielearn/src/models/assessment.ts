@@ -12,11 +12,11 @@ export async function checkAssessmentPublic(assessment_id: string): Promise<bool
 }
 
 export async function selectAssessmentById(assessment_id: string): Promise<Assessment> {
-    return await queryRow(
-      sql.select_assessment_by_id,
-      {
-        assessment_id,
-      },
-      AssessmentSchema,
-    );
+  return await queryRow(
+    sql.select_assessment_by_id,
+    {
+      assessment_id,
+    },
+    AssessmentSchema,
+  );
 }
