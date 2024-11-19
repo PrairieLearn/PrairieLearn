@@ -1,11 +1,3 @@
--- BLOCK select_assessment_by_id
-SELECT
-  *
-FROM
-  assessments
-where
-  id = $assessment_id;
-
 -- BLOCK check_assessment_is_public
 SELECT
   a.share_source_publicly

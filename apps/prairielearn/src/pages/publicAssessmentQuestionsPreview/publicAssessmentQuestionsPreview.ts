@@ -5,21 +5,12 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { queryRow, loadSqlEquiv } from '@prairielearn/postgres';
 
-import { type Assessment, AssessmentSchema } from '../../lib/db-types.js';
-import { selectCourseById, selectCourseIdByInstanceId } from '../../models/course.js';
+import { selectCourseByCourseInstanceId } from '../../models/course.js';
+import { selectAssessmentById } from '../../models/assessment.js';
 import { selectAssessmentQuestions } from '../../models/assessment-question.js';
 
 import { InstructorAssessmentQuestions } from './publicAssessmentQuestionsPreview.html.js';
 
-async function selectAssessmentById(assessment_id: string): Promise<Assessment> {
-  return await queryRow(
-    sql.select_assessment_by_id,
-    {
-      assessment_id,
-    },
-    AssessmentSchema,
-  );
-}
 
 async function checkAssessmentPublic(assessment_id: string): Promise<boolean> {
   const isPublic = await queryRow(sql.check_assessment_is_public, { assessment_id }, z.boolean());
@@ -37,8 +28,7 @@ router.get(
       throw new error.HttpStatusError(404, 'Not Found');
     }
     
-    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
-    const course = await selectCourseById(courseId);
+    const course = await selectCourseByCourseInstanceId(res.locals.course_instance_id.toString());
 
     if (course.sharing_name === null) {
       throw new error.HttpStatusError(404, 'Not Found');
@@ -49,7 +39,7 @@ router.get(
 
     const questions = await selectAssessmentQuestions({
       assessment_id: assessment.id,
-      course_id: courseId,
+      course_id: course.id,
     });
 
     // Filter out non-public assessments
