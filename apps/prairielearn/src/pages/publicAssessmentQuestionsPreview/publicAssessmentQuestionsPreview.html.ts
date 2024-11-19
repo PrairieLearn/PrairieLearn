@@ -5,13 +5,18 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
-import { type AssessmentQuestionRow } from '../../models/questions.js';
+import { type Assessment, type Course } from '../../lib/db-types.js';
+import { type AssessmentQuestionRow } from '../../models/assessment-question.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,
+  assessment,
+  course,
   questions,
 }: {
   resLocals: Record<string, any>;
+  assessment: Assessment;
+  course: Course;
   questions: AssessmentQuestionRow[];
 }) {
   return html`
@@ -25,14 +30,14 @@ export function InstructorAssessmentQuestions({
         <main id="content" class="container-fluid">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${resLocals.assessment.title} ${resLocals.assessment.number}: Questions
+              ${assessment.title} ${assessment.number}: Questions
             </div>
             ${AssessmentQuestionsTable({
               questions,
               urlPrefix: resLocals.urlPrefix,
-              course_id: resLocals.course.id,
-              course_instance_id: resLocals.assessment.course_instance_id,
-              course_sharing_name: resLocals.course.sharing_name,
+              course_id: course.id,
+              course_instance_id: assessment.course_instance_id,
+              course_sharing_name: course.sharing_name,
             })}
           </div>
         </main>

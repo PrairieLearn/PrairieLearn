@@ -11,7 +11,7 @@ import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import type { AssessmentQuestionRow } from '../../models/questions.js';
+import type { AssessmentQuestionRow } from '../../models/assessment-question.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,

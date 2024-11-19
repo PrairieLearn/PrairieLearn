@@ -7,7 +7,7 @@ import { queryRow, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { type Assessment, AssessmentSchema } from '../../lib/db-types.js';
 import { selectCourseById, selectCourseIdByInstanceId } from '../../models/course.js';
-import { selectAssessmentQuestions } from '../../models/questions.js';
+import { selectAssessmentQuestions } from '../../models/assessment-question.js';
 
 import { InstructorAssessmentQuestions } from './publicAssessmentQuestionsPreview.html.js';
 
@@ -40,11 +40,17 @@ router.get(
     const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
     const course = await selectCourseById(courseId);
 
-
+    if (course.sharing_name === null) {
+      throw new error.HttpStatusError(404, 'Not Found');
+    }
 
     res.locals.course = course;
-    res.locals.assessment = await selectAssessmentById(res.locals.assessment_id);
-    const questions = await selectAssessmentQuestions(res.locals.assessment_id, courseId);
+    const assessment = await selectAssessmentById(res.locals.assessment_id); 
+
+    const questions = await selectAssessmentQuestions({
+      assessment_id: assessment.id,
+      course_id: courseId,
+    });
 
     // Filter out non-public assessments
     const isOtherAssessmentPublic = {};
@@ -63,7 +69,7 @@ router.get(
         ) ?? [];
     }
 
-    res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questions }));
+    res.send(InstructorAssessmentQuestions({ resLocals: res.locals, assessment, course, questions }));
   }),
 );
 
