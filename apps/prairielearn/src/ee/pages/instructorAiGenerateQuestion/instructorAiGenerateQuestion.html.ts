@@ -187,19 +187,19 @@ export function AiGeneratePage({
                               })}
                           </div>
                           <div class="col">
-                            <ul class="nav nav-tabs">
-                              <li class="active">
-                                <a data-toggle="tab" href="#question-preview">Question Preview</a>
+                            <ul class="nav nav-pills">
+                              <li class="nav-item">
+                                <a class="nav-link active" data-toggle="tab" aria-current="page" href="#question-preview">Question Preview</a>
                               </li>
-                              <li>
-                                <a data-toggle="tab" href="#question-code">Question Source</a>
+                              <li class="nav-item">
+                                <a a class="nav-link" data-toggle="tab" href="#question-code">Question Source</a>
                               </li>
                             </ul>
                             <div class="tab-content">
-                              <div id="question-preview" class="tab-pane fade in active">
+                              <div role="tabpanel" id="question-preview" class="tab-pane active">
                                 ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
                               </div>
-                              <div id="question-code" class="tab-pane fade">
+                              <div role="tabpanel" id="question-code" class="tab-pane">
                                 <a
                                   href="${resLocals.urlPrefix +
                                   '/jobSequence/' +
@@ -215,7 +215,7 @@ export function AiGeneratePage({
                                   <textarea
                                     id="output-html"
                                     class="bg-dark text-white rounded p-3"
-                                    style="width:100%"
+                                    style="width:100%; height:10em"
                                   >
 ${threads[threads.length - 1].html}
         </textarea
@@ -231,7 +231,7 @@ ${threads[threads.length - 1].html}
                                         <textarea
                                           id="output-python"
                                           class="bg-dark text-white rounded p-3"
-                                          style="width:100%"
+                                          style="width:100%; height:10em"
                                         >
 ${threads[threads.length - 1].python} 
               </textarea
