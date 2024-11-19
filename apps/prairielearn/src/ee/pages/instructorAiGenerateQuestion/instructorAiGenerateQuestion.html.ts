@@ -1,8 +1,9 @@
-import { html } from '@prairielearn/html';
+import { html, unsafeHtml } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
+import { compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { type AiGenerationPrompt } from '../../../lib/db-types.js';
 
 const examplePrompts = [
@@ -52,7 +53,9 @@ export function AiGeneratePage({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })}
-      </head>
+        ${compiledScriptTag('question.ts')}
+        <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script> 
+      </head> 
       <body hx-ext="loading-states">
         ${Navbar({ navPage: 'course_admin', resLocals })}
         <main id="content" class="container-fluid">
@@ -163,8 +166,8 @@ export function AiGeneratePage({
                       <div id="generation-results"></div>
                     </div>`
                   : html`<div class="container text-center">
-                        <div class="row row justify-content-center">
-                          <div class="col-lg-9 col-sm-12">
+                        <div class="row justify-content-center">
+                          <div class="col">
                             Threads:
                             ${threads
                               .filter((x) => {
@@ -183,7 +186,7 @@ export function AiGeneratePage({
                                   </div>`;
                               })}
                           </div>
-                          <div class="col-lg-9 col-sm-12">
+                          <div class="col">
                             ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
                           </div>
                         </div>

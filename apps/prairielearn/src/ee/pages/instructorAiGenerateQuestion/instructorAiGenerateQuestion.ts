@@ -25,6 +25,7 @@ import {
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
+import { logPageView } from '../../../middlewares/logPageView.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
 
 import {
@@ -113,6 +114,7 @@ router.get(
 
         await getAndRenderVariant(variant_id, null, res.locals);
         await setQuestionCopyTargets(res);
+        await logPageView('instructorQuestionPreview', req, res);
         setRendererHeader(res);
       }
       res.send(
@@ -268,9 +270,9 @@ router.post(
       }
       res.send(AiGeneratePage({ resLocals: res.locals }));
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
-      res.locals.question = queryRow(
+      res.locals.question = await queryRow(
         sql.select_question_by_qid_and_course,
-        { qid: req.query.qid, course_id: res.locals.course.id },
+        { qid: `__drafts__/${req.query.qid}`, course_id: res.locals.course.id },
         QuestionSchema,
       );
       const variantId = await processSubmission(req, res);

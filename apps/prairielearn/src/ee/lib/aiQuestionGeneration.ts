@@ -291,7 +291,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       });
       job.data['questionId'] = saveResults.question_id;
     } else {
-      job.error("Adding question as draft failed.");
+      job.error('Adding question as draft failed.');
     }
 
     job.data['questionQid'] = qid;
@@ -498,8 +498,8 @@ Keep in mind you are not just generating an example; you are generating an actua
       files,
     });
 
-    if (result.status === "error"){
-      job.error("Draft mutation failed.");
+    if (result.status === 'error') {
+      job.error('Draft mutation failed.');
     }
   }
 
