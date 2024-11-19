@@ -1,4 +1,4 @@
-import { html, unsafeHtml } from '@prairielearn/html';
+import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
@@ -180,14 +180,66 @@ export function AiGeneratePage({
                                     </div>
                                   </div>
                                   <div class="d-flex flex-row">
-                                    <div class="p-3 mb-2 bg-secondary text-white rounded">
+                                    <div class="p-3 mb-2 bg-dark text-white rounded">
                                       We created: v${x.id}
                                     </div>
                                   </div>`;
                               })}
                           </div>
                           <div class="col">
-                            ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
+                            <ul class="nav nav-tabs">
+                              <li class="active">
+                                <a data-toggle="tab" href="#question-preview">Question Preview</a>
+                              </li>
+                              <li>
+                                <a data-toggle="tab" href="#question-code">Question Source</a>
+                              </li>
+                            </ul>
+                            <div class="tab-content">
+                              <div id="question-preview" class="tab-pane fade in active">
+                                ${QuestionContainer({ resLocals, questionContext: 'instructor' })}
+                              </div>
+                              <div id="question-code" class="tab-pane fade">
+                                <a
+                                  href="${resLocals.urlPrefix +
+                                  '/jobSequence/' +
+                                  threads[threads.length - 1].job_sequence_id}"
+                                  target="_blank"
+                                >
+                                  [DEBUG] See Job Logs
+                                </a>
+                                <div class="mr-auto">
+                                  <span class="card-title"> Generated HTML </span>
+                                </div>
+                                <div id="card-html">
+                                  <textarea
+                                    id="output-html"
+                                    class="bg-dark text-white rounded p-3"
+                                    style="width:100%"
+                                  >
+${threads[threads.length - 1].html}
+        </textarea
+                                  >
+                                </div>
+                                ${threads[threads.length - 1].python === undefined
+                                  ? ''
+                                  : html`
+                                      <div class="mr-auto">
+                                        <span class="card-title"> Generated Python </span>
+                                      </div>
+                                      <div id="card-python">
+                                        <textarea
+                                          id="output-python"
+                                          class="bg-dark text-white rounded p-3"
+                                          style="width:100%"
+                                        >
+${threads[threads.length - 1].python} 
+              </textarea
+                                        >
+                                      </div>
+                                    `}
+                              </div>
+                            </div>
                           </div>
                         </div>
                       </div>
