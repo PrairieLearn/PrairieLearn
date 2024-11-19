@@ -21,10 +21,8 @@ async function selectAssessmentById(assessment_id: string): Promise<Assessment> 
   );
 }
 
-const BooleanSchema = z.boolean();
-
 async function checkAssessmentPublic(assessment_id: string): Promise<boolean> {
-  const isPublic = await queryRow(sql.check_assessment_is_public, { assessment_id }, BooleanSchema);
+  const isPublic = await queryRow(sql.check_assessment_is_public, { assessment_id }, z.boolean());
   return isPublic;
 }
 
@@ -34,13 +32,15 @@ const sql = loadSqlEquiv(import.meta.url);
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const isAssessmentPublic = await checkAssessmentPublic(res.locals.assessment_id);
-    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
-    const course = await selectCourseById(courseId);
-
+    const isAssessmentPublic = await checkAssessmentPublic(res.locals.assessment_id);    
     if (!isAssessmentPublic) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
+    
+    const courseId = await selectCourseIdByInstanceId(res.locals.course_instance_id.toString());
+    const course = await selectCourseById(courseId);
+
+
 
     res.locals.course = course;
     res.locals.assessment = await selectAssessmentById(res.locals.assessment_id);

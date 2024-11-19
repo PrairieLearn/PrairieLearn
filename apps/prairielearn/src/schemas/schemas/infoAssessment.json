@@ -164,7 +164,7 @@
     "shareSourcePublicly": {
       "description": "If true, the assessment's source code is shared publicly.",
       "type": "boolean",
-      "default": true
+      "default": false
     }
   },
   "definitions": {
