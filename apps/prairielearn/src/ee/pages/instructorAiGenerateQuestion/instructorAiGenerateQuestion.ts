@@ -125,7 +125,11 @@ router.get(
         }),
       );
     } else {
-      res.send(AiGeneratePage({ resLocals: res.locals }));
+      res.send(
+        AiGeneratePage({
+          resLocals: res.locals,
+        }),
+      );
     }
   }),
 );

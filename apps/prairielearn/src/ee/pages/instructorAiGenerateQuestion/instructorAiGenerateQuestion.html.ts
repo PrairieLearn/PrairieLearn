@@ -71,7 +71,9 @@ export function AiGeneratePage({
                       </p>
                       <form
                         name="add-question-form"
-                        hx-post="${resLocals.urlPrefix}/ai_generate_question"
+                        hx-post=${qid !== undefined
+                          ? html`"${resLocals.urlPrefix}/ai_generate_question?qid=${qid}"`
+                          : html`"${resLocals.urlPrefix}/ai_generate_question"`}
                         hx-target="#generation-results"
                         hx-swap="outerHTML"
                         hx-disabled-elt="button"
@@ -254,8 +256,7 @@ ${threads[threads.length - 1].python}
                       <div>
                         <form
                           name="regen-question-form"
-                          hx-post="${resLocals.urlPrefix}/ai_generate_question"
-                          hx-target="#generation-results"
+                          hx-post="${resLocals.urlPrefix}/ai_generate_question?qid=${qid}"
                           hx-swap="outerHTML"
                           hx-disabled-elt="button"
                         >
