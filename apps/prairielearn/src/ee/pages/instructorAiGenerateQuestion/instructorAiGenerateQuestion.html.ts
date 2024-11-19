@@ -189,10 +189,18 @@ export function AiGeneratePage({
                           <div class="col">
                             <ul class="nav nav-pills">
                               <li class="nav-item">
-                                <a class="nav-link active" data-toggle="tab" aria-current="page" href="#question-preview">Question Preview</a>
+                                <a
+                                  class="nav-link active"
+                                  data-toggle="tab"
+                                  aria-current="page"
+                                  href="#question-preview"
+                                  >Question Preview</a
+                                >
                               </li>
                               <li class="nav-item">
-                                <a a class="nav-link" data-toggle="tab" href="#question-code">Question Source</a>
+                                <a a class="nav-link" data-toggle="tab" href="#question-code"
+                                  >Question Source</a
+                                >
                               </li>
                             </ul>
                             <div class="tab-content">
