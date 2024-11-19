@@ -503,6 +503,7 @@ export const AiGenerationPromptSchema = z.object({
   question_id: z.string(),
   response: z.string(),
   user_prompt: z.string(),
+  job_sequence_id: z.string().nullable(),
 });
 
 export type AiGenerationPrompt = z.infer<typeof AiGenerationPromptSchema>;
