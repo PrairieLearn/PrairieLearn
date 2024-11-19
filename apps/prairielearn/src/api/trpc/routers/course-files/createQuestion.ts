@@ -19,6 +19,7 @@ export const createQuestion = privateProcedure
       qid: z.string().optional(),
       title: z.string().optional(),
       files: z.record(z.string()).optional(),
+      is_draft: z.boolean().optional(),
     }),
   )
   .output(
@@ -27,6 +28,7 @@ export const createQuestion = privateProcedure
         status: z.literal('success'),
         job_sequence_id: z.string(),
         question_id: z.string(),
+        question_qid: z.string(),
       }),
       z.object({
         status: z.literal('error'),
@@ -53,6 +55,7 @@ export const createQuestion = privateProcedure
       files: opts.input.files,
       qid: opts.input.qid,
       title: opts.input.title,
+      isDraft: opts.input.is_draft,
     });
 
     const serverJob = await editor.prepareServerJob();
@@ -75,5 +78,6 @@ export const createQuestion = privateProcedure
       status: 'success',
       job_sequence_id: serverJob.jobSequenceId,
       question_id: question.id,
+      question_qid: `__drafts__/draft_${editor.draftNumber}`,
     };
   });

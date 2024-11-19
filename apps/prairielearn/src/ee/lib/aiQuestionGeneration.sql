@@ -29,15 +29,6 @@ WHERE
   doc_path = $doc_path
   AND chunk_id = ANY ($chunk_ids);
 
--- BLOCK update_draft_number
-UPDATE pl_courses
-SET
-  draft_number = draft_number + 1
-WHERE
-  id = $course_id
-RETURNING
-  draft_number;
-
 -- BLOCK insert_draft_question_metadata
 INSERT INTO
   draft_question_metadata (question_id, created_by, updated_by)
