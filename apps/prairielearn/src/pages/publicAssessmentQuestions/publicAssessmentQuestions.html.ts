@@ -27,7 +27,7 @@ export function InstructorAssessmentQuestions({
       </head>
       <body>
         ${Navbar({ resLocals })}
-        <main id="content" class="container-fluid">
+        <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               ${assessment.title} ${assessment.number}: Questions
@@ -45,6 +45,7 @@ export function InstructorAssessmentQuestions({
     </html>
   `.toString();
 }
+
 function AssessmentQuestionsTable({
   questions,
   urlPrefix,
