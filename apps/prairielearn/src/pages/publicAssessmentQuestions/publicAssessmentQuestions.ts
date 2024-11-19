@@ -39,7 +39,13 @@ router.get(
     }
 
     res.send(
-      InstructorAssessmentQuestions({ resLocals: res.locals, assessment, course, questions }),
+      InstructorAssessmentQuestions({
+        resLocals: res.locals,
+        assessment,
+        course,
+        questions,
+        course_sharing_name: course.sharing_name,
+      }),
     );
   }),
 );

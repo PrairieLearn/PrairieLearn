@@ -13,11 +13,13 @@ export function InstructorAssessmentQuestions({
   assessment,
   course,
   questions,
+  course_sharing_name,
 }: {
   resLocals: Record<string, any>;
   assessment: Assessment;
   course: Course;
   questions: AssessmentQuestionRow[];
+  course_sharing_name: string;
 }) {
   return html`
     <!doctype html>
@@ -37,7 +39,7 @@ export function InstructorAssessmentQuestions({
               urlPrefix: resLocals.urlPrefix,
               course_id: course.id,
               course_instance_id: assessment.course_instance_id,
-              course_sharing_name: course.sharing_name,
+              course_sharing_name,
             })}
           </div>
         </main>
