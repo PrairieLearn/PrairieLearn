@@ -27,5 +27,5 @@ CREATE TABLE IF NOT EXISTS ai_question_generation_prompts (
   python text,
   errors jsonb,
   completion jsonb NOT NULL,
-  job_sequence_id BIGINT REFERENCES job_sequences (id) ON DELETE SET NULL ON UPDATE CASCADE 
+  job_sequence_id BIGINT REFERENCES job_sequences (id) ON DELETE SET NULL ON UPDATE CASCADE
 );
