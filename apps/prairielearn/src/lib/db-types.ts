@@ -94,6 +94,7 @@ export const AssessmentsFormatForQuestionSchema = z.array(
     label: z.string(),
     assessment_id: IdSchema,
     course_instance_id: IdSchema,
+    share_source_publicly: z.boolean(),
     color: z.string(),
   }),
 );
