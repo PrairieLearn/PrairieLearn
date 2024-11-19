@@ -9,7 +9,7 @@ import { selectCourseByCourseInstanceId } from '../../models/course.js';
 import { selectAssessmentById } from '../../models/assessment.js';
 import { selectAssessmentQuestions } from '../../models/assessment-question.js';
 
-import { InstructorAssessmentQuestions } from './publicAssessmentQuestionsPreview.html.js';
+import { InstructorAssessmentQuestions } from './publicAssessmentQuestions.html.js';
 
 
 async function checkAssessmentPublic(assessment_id: string): Promise<boolean> {

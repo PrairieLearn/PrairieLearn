@@ -1,4 +1,3 @@
-
 import { queryRow, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { type Assessment, AssessmentSchema } from '../lib/db-types.js';

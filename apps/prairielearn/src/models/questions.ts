@@ -8,7 +8,6 @@ import {
   AssessmentsFormatForQuestionSchema,
   TagSchema,
 } from '../lib/db-types.js';
-
 import { idsEqual } from '../lib/id.js';
 
 const QuestionsPageDataSchema = z.object({
@@ -67,5 +66,3 @@ export async function selectPublicQuestionsForCourse(
 
   return rows;
 }
-
-
