@@ -280,11 +280,10 @@ Keep in mind you are not just generating an example; you are generating an actua
         job_sequence_id: serverJob.jobSequenceId,
       });
       job.data['questionId'] = saveResults.question_id;
+      job.data['questionQid'] = saveResults.question_qid;
     } else {
       job.error('Adding question as draft failed.');
     }
-
-    job.data['questionQid'] = qid;
 
     job.data.html = html;
     job.data.python = results?.python;
@@ -308,7 +307,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         courseId,
         userId,
         hasCoursePermissionEdit,
-        questionQid: qid,
+        questionQid: saveResults.question_qid,
         jobSequenceId: serverJob.jobSequenceId,
       });
     }

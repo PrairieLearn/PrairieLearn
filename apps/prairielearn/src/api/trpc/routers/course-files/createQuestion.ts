@@ -28,6 +28,7 @@ export const createQuestion = privateProcedure
         status: z.literal('success'),
         job_sequence_id: z.string(),
         question_id: z.string(),
+        question_qid: z.string(),
       }),
       z.object({
         status: z.literal('error'),
@@ -77,5 +78,6 @@ export const createQuestion = privateProcedure
       status: 'success',
       job_sequence_id: serverJob.jobSequenceId,
       question_id: question.id,
+      question_qid: `__drafts__/draft_${editor.draftNumber}`,
     };
   });
