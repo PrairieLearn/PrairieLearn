@@ -1,24 +1,15 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { queryRow, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { selectCourseByCourseInstanceId } from '../../models/course.js';
-import { selectAssessmentById } from '../../models/assessment.js';
+import { checkAssessmentPublic, selectAssessmentById } from '../../models/assessment.js';
 import { selectAssessmentQuestions } from '../../models/assessment-question.js';
 
 import { InstructorAssessmentQuestions } from './publicAssessmentQuestions.html.js';
 
-
-async function checkAssessmentPublic(assessment_id: string): Promise<boolean> {
-  const isPublic = await queryRow(sql.check_assessment_is_public, { assessment_id }, z.boolean());
-  return isPublic;
-}
-
 const router = express.Router();
-const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -29,12 +20,11 @@ router.get(
     }
     
     const course = await selectCourseByCourseInstanceId(res.locals.course_instance_id.toString());
-
     if (course.sharing_name === null) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
 
-    res.locals.course = course;
+    res.locals.course = course; // TEST, pass to res.locals? Need for PublicNavbar
     const assessment = await selectAssessmentById(res.locals.assessment_id); 
 
     const questions = await selectAssessmentQuestions({
