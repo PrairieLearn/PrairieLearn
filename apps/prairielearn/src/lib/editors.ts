@@ -7,6 +7,7 @@ import debugfn from 'debug';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
@@ -921,12 +922,14 @@ export class QuestionAddEditor extends Editor {
   private qid?: string;
   private title?: string;
   private files?: Record<string, string>;
+  private isDraft?: boolean;
 
   constructor(
     params: BaseEditorOptions & {
       qid?: string;
       title?: string;
       files?: Record<string, string>;
+      isDraft?: boolean;
     },
   ) {
     super(params);
@@ -937,6 +940,7 @@ export class QuestionAddEditor extends Editor {
     this.qid = params.qid;
     this.title = params.title;
     this.files = params.files;
+    this.isDraft = params.isDraft;
   }
 
   async write() {
@@ -946,6 +950,23 @@ export class QuestionAddEditor extends Editor {
     const { qid, title } = await run(async () => {
       if (this.qid && this.title) {
         return { qid: this.qid, title: this.title };
+      } else if (this.isDraft) {
+        let draftNumber = await sqldb.queryRow(
+          sql.update_draft_number,
+          { course_id: this.course.id },
+          z.number(),
+        );
+
+        while (fs.existsSync(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))) {
+          //increment and sync to postgres
+          draftNumber = await sqldb.queryRow(
+            sql.update_draft_number,
+            { course_id: this.course.id },
+            z.number(),
+          );
+        }
+
+        return { qid: `__drafts__/draft_${draftNumber}`, title: `draft #${draftNumber}` };
       }
 
       debug('Get all existing long names');

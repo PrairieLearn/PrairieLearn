@@ -1,6 +1,5 @@
 import { type OpenAI } from 'openai';
 import * as parse5 from 'parse5';
-import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows, queryRow, queryAsync } from '@prairielearn/postgres';
 
@@ -249,23 +248,14 @@ Keep in mind you are not just generating an example; you are generating an actua
       files['server.py'] = results?.python;
     }
 
-    const draftNumber = await queryRow(
-      sql.update_draft_number,
-      { course_id: courseId },
-      z.number(),
-    );
-
     const courseFilesClient = getCourseFilesClient();
-
-    const qid = `__drafts__/draft_${draftNumber}`;
 
     const saveResults = await courseFilesClient.createQuestion.mutate({
       course_id: courseId,
       user_id: userId,
       authn_user_id: authnUserId,
       has_course_permission_edit: hasCoursePermissionEdit,
-      qid,
-      title: `draft ${draftNumber}`,
+      is_draft: true,
       files,
     });
 
@@ -291,7 +281,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       });
       job.data['questionId'] = saveResults.question_id;
     } else {
-      job.error("Adding question as draft failed.");
+      job.error('Adding question as draft failed.');
     }
 
     job.data['questionQid'] = qid;
@@ -498,8 +488,8 @@ Keep in mind you are not just generating an example; you are generating an actua
       files,
     });
 
-    if (result.status === "error"){
-      job.error("Draft mutation failed.");
+    if (result.status === 'error') {
+      job.error('Draft mutation failed.');
     }
   }
 
