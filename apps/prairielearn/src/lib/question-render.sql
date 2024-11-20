@@ -176,7 +176,6 @@ SELECT
     'sequence_locked',
     next_iq.sequence_locked
   ) AS next_instance_question,
-  to_jsonb(q) AS question,
   to_jsonb(aq) AS assessment_question,
   to_jsonb(ai) AS assessment_instance,
   to_jsonb(a) AS assessment,
@@ -220,7 +219,6 @@ FROM
   LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
   JOIN pl_courses AS c ON (c.id = v.course_id)
   JOIN pl_courses AS qc ON (qc.id = q.course_id)
-  JOIN LATERAL instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
   LEFT JOIN users AS u ON (s.auth_user_id = u.user_id)
   LEFT JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
