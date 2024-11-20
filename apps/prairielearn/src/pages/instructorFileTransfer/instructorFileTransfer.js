@@ -82,7 +82,7 @@ router.get(
       'success',
       'Question copied successfully. You are now viewing your copy of the question.',
     );
-    res.redirect(res.locals.urlPrefix + '/question/' + question.id);
+    res.redirect(`${res.locals.urlPrefix}/question/${question.id}/settings`);
   }),
 );
 
