@@ -8,18 +8,18 @@ import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { type Assessment, type Course } from '../../lib/db-types.js';
 import { type AssessmentQuestionRow } from '../../models/assessment-question.js';
 
-export function InstructorAssessmentQuestions({
+export function PublicAssessmentQuestions({
   resLocals,
   assessment,
   course,
+  course_instance_id,
   questions,
-  course_sharing_name,
 }: {
   resLocals: Record<string, any>;
   assessment: Assessment;
   course: Course;
+  course_instance_id: string;
   questions: AssessmentQuestionRow[];
-  course_sharing_name: string;
 }) {
   return html`
     <!doctype html>
@@ -38,8 +38,8 @@ export function InstructorAssessmentQuestions({
               questions,
               urlPrefix: resLocals.urlPrefix,
               course_id: course.id,
-              course_instance_id: assessment.course_instance_id,
-              course_sharing_name,
+              course_instance_id,
+              course_sharing_name: course.sharing_name,
             })}
           </div>
         </main>

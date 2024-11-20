@@ -7,7 +7,7 @@ import { selectAssessmentQuestions } from '../../models/assessment-question.js';
 import { checkAssessmentPublic, selectAssessmentById } from '../../models/assessment.js';
 import { selectCourseByCourseInstanceId } from '../../models/course.js';
 
-import { InstructorAssessmentQuestions } from './publicAssessmentQuestions.html.js';
+import { PublicAssessmentQuestions } from './publicAssessmentQuestions.html.js';
 
 const router = express.Router({ mergeParams: true });
 
@@ -41,12 +41,12 @@ router.get(
     }
 
     res.send(
-      InstructorAssessmentQuestions({
+      PublicAssessmentQuestions({
         resLocals: res.locals,
         assessment,
         course,
+        course_instance_id,
         questions,
-        course_sharing_name: course.sharing_name,
       }),
     );
   }),
