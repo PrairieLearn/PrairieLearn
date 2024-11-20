@@ -9,26 +9,28 @@ import { selectCourseByCourseInstanceId } from '../../models/course.js';
 
 import { InstructorAssessmentQuestions } from './publicAssessmentQuestions.html.js';
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const isAssessmentPublic = await checkAssessmentPublic(res.locals.assessment_id);
+    const assessment_id = req.params.assessment_id
+    const course_instance_id = req.params.course_instance_id
+    const isAssessmentPublic = await checkAssessmentPublic(assessment_id);
     if (!isAssessmentPublic) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
 
-    const course = await selectCourseByCourseInstanceId(res.locals.course_instance_id.toString());
+    const course = await selectCourseByCourseInstanceId(course_instance_id.toString());
     if (course.sharing_name === null) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
 
     res.locals.course = course; // TEST, pass to res.locals? Need for PublicNavbar
-    const assessment = await selectAssessmentById(res.locals.assessment_id);
+    const assessment = await selectAssessmentById(assessment_id);
 
     const questions = await selectAssessmentQuestions({
-      assessment_id: assessment.id,
+      assessment_id,
       course_id: course.id,
     });
 
