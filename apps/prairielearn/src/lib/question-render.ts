@@ -84,6 +84,7 @@ const SubmissionInfoSchema = z.object({
   grading_job: GradingJobSchema.nullable(),
   submission: SubmissionSchema,
   variant: VariantSchema,
+  question_number: z.string().nullable(),
   next_instance_question: z.object({
     id: IdSchema.nullable(),
     sequence_locked: z.boolean().nullable(),
@@ -99,7 +100,6 @@ const SubmissionInfoSchema = z.object({
   user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
   submission_count: z.coerce.number(),
-  question_number: z.string().nullable(),
   group_config: GroupConfigSchema.nullable(),
 });
 
