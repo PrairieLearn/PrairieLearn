@@ -46,7 +46,7 @@ router.get(
       question: res.locals.question,
       instance_question: null,
       variant_id: req.params.variant_id,
-      user: res.locals.user.user_id,
+      user: res.locals.user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'instructor',
       // This is only used by score panels, which are not rendered in this context.
