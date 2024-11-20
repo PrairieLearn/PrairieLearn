@@ -8,7 +8,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
-import { type Course, type FileTransfer, FileTransferSchema } from '../../lib/db-types.js';
+import { type FileTransfer, FileTransferSchema } from '../../lib/db-types.js';
 import { QuestionTransferEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseById } from '../../models/course.js';
@@ -18,10 +18,7 @@ const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:instructorFileTransfer');
 
-async function getFileTransfer(
-  file_transfer_id: string,
-  user_id: string,
-): Promise<FileTransfer & { from_course: Course }> {
+async function getFileTransfer(file_transfer_id: string, user_id: string): Promise<FileTransfer> {
   const file_transfer = await sqldb.queryRow(
     sql.select_file_transfer,
     { id: file_transfer_id },
@@ -37,8 +34,7 @@ async function getFileTransfer(
       } and ${user_id} (types: ${typeof file_transfer.user_id}, ${typeof user_id})`,
     );
   }
-  const from_course = await selectCourseById(file_transfer.from_course_id);
-  return { ...file_transfer, from_course };
+  return file_transfer;
 }
 
 router.get(
@@ -49,6 +45,7 @@ router.get(
       req.params.file_transfer_id,
       res.locals.user.user_id,
     );
+    const from_course = await selectCourseById(file_transfer.from_course_id);
     // Split the full path and grab everything after questions/ to get the QID
     const question_exploded = path.normalize(file_transfer.from_filename).split(path.sep);
     const questions_dir_idx = question_exploded.findIndex((x) => x === 'questions');
@@ -56,7 +53,7 @@ router.get(
     const editor = new QuestionTransferEditor({
       locals: res.locals,
       from_qid: qid,
-      from_course_short_name: file_transfer.from_course.short_name ?? '',
+      from_course_short_name: from_course.short_name,
       from_path: path.join(config.filesRoot, file_transfer.storage_filename),
     });
     const serverJob = await editor.prepareServerJob();
