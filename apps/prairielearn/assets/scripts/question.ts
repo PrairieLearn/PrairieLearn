@@ -82,13 +82,13 @@ function externalGradingLiveUpdate() {
   socket.emit(
     'init',
     { variant_id: variantId, variant_token: variantToken },
-    (msg: StatusMessage) => handleStatusChange(socket, msg),
+    (msg: StatusMessage) => handleStatusChange(msg),
   );
 
-  socket.on('change:status', (msg: StatusMessage) => handleStatusChange(socket, msg));
+  socket.on('change:status', (msg: StatusMessage) => handleStatusChange(msg));
 }
 
-function handleStatusChange(socket: Socket, msg: StatusMessage) {
+function handleStatusChange(msg: StatusMessage) {
   msg.submissions.forEach((submission) => {
     // Always update results
     updateStatus(submission);
@@ -108,13 +108,13 @@ function handleStatusChange(socket: Socket, msg: StatusMessage) {
       // from more recent grading jobs to replace the existing ones.
       if (status !== 'graded' || gradingJobId !== submission.grading_job_id) {
         // Let's get results for this job!
-        fetchResults(socket, submission.id);
+        fetchResults(submission.id);
       }
     }
   });
 }
 
-function fetchResults(socket: Socket, submissionId: string) {
+function fetchResults(submissionId: string) {
   $('#submissionInfoModal-' + submissionId).modal('hide');
 
   const submissionPanel = document.getElementById('submission-' + submissionId);
