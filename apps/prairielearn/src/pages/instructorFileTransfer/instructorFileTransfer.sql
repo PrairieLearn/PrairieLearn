@@ -17,12 +17,3 @@ WHERE
   AND ft.deleted_at IS NULL
 RETURNING
   ft.id;
-
--- BLOCK select_course_from_course_id
-SELECT
-  c.*
-FROM
-  pl_courses as c
-WHERE
-  c.id = $course_id
-  AND c.deleted_at IS NULL;
