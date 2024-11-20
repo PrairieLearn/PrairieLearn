@@ -12,6 +12,7 @@ export function InstructorAssessmentSettings({
   origHash,
   tids,
   studentLink,
+  publicLink,
   infoAssessmentPath,
   assessmentSets,
   assessmentModules,
@@ -21,6 +22,7 @@ export function InstructorAssessmentSettings({
   origHash: string;
   tids: string[];
   studentLink: string;
+  publicLink: string;
   infoAssessmentPath: string;
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
@@ -193,6 +195,45 @@ export function InstructorAssessmentSettings({
                     The link that students will use to access this assessment.
                   </small>
                 </div>
+                ${resLocals.assessment.share_source_publicly
+                  ? html`
+                  <div class="form-group">
+                  <label for="publicLink">Public Link</label>
+                  <span class="input-group">
+                    <input
+                      type="text"
+                      class="form-control"
+                      id="publicLink"
+                      name="publicLink"
+                      value="${publicLink}"
+                      disabled
+                    />
+                    <div class="input-group-append">
+                      <button
+                        type="button"
+                        class="btn btn-sm btn-outline-secondary btn-copy"
+                        data-clipboard-text="${publicLink}"
+                        aria-label="Copy public link"
+                      >
+                        <i class="far fa-clipboard"></i>
+                      </button>
+                      <button
+                        type="button"
+                        title="Public Link QR Code"
+                        aria-label="Public Link QR Code"
+                        class="btn btn-sm btn-outline-secondary js-qrcode-button"
+                        data-qr-code-content="${publicLink}"
+                      >
+                        <i class="fas fa-qrcode"></i>
+                      </button>
+                    </div>
+                  </span>
+                  <small class="form-text text-muted">
+                    The link that other instructors can use to view this assessment.
+                  </small>
+                  ` : ''
+                }
+
                 ${resLocals.authz_data.has_course_permission_view
                   ? canEdit
                     ? html`
