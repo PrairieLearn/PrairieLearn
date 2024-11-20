@@ -82,13 +82,13 @@ function externalGradingLiveUpdate() {
   socket.emit(
     'init',
     { variant_id: variantId, variant_token: variantToken },
-    (msg: StatusMessage) => handleStatusChange(msg),
+    (msg: StatusMessage) => handleStatusChange(socket, msg),
   );
 
-  socket.on('change:status', (msg: StatusMessage) => handleStatusChange(msg));
+  socket.on('change:status', (msg: StatusMessage) => handleStatusChange(socket, msg));
 }
 
-function handleStatusChange(msg: StatusMessage) {
+function handleStatusChange(socket: Socket, msg: StatusMessage) {
   msg.submissions.forEach((submission) => {
     // Always update results
     updateStatus(submission);
@@ -109,6 +109,9 @@ function handleStatusChange(msg: StatusMessage) {
       if (status !== 'graded' || gradingJobId !== submission.grading_job_id) {
         // Let's get results for this job!
         fetchResults(submission.id);
+
+        // We don't need the socket anymore.
+        socket.close();
       }
     }
   });
