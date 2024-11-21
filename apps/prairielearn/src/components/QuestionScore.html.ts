@@ -53,7 +53,11 @@ export function QuestionScorePanel({
       <div class="card-header bg-secondary text-white">
         <h2>Question ${instance_question_info.question_number}</h2>
       </div>
-      <table class="table table-sm two-column-description-no-header" aria-label="Question score">
+      <table
+        class="table table-sm two-column-description-no-header"
+        aria-label="Question score"
+        id="question-score-panel-content"
+      >
         <tbody>
           ${assessment.type === 'Exam'
             ? html`

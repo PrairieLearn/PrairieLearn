@@ -336,14 +336,20 @@ export function QuestionFooter({
   if (resLocals.question.type === 'Freeform') {
     return html`
       <div class="card-footer" id="question-panel-footer">
-        ${QuestionFooterContent({ resLocals, questionContext })}
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <div id="question-footer-content">
+          ${QuestionFooterContent({ resLocals, questionContext })}
+        </div>
       </div>
     `;
   } else {
     return html`
       <div class="card-footer" id="question-panel-footer">
         <form class="question-form" name="question-form" method="POST">
-          ${QuestionFooterContent({ resLocals, questionContext })}
+          <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+          <div id="question-footer-content">
+            ${QuestionFooterContent({ resLocals, questionContext })}
+          </div>
         </form>
       </div>
     `;
@@ -354,7 +360,7 @@ function QuestionFooterContent({
   resLocals,
   questionContext,
 }: {
-  resLocals: QuestionFooterResLocals;
+  resLocals: Omit<QuestionFooterResLocals, '__csrf_token'>;
   questionContext: QuestionContext;
 }) {
   const {
@@ -379,7 +385,6 @@ function QuestionFooterContent({
     group_info,
     group_role_permissions,
     user,
-    __csrf_token,
   } = resLocals;
 
   if (questionContext === 'student_exam' && variantAttemptsLeft === 0) {
@@ -457,7 +462,6 @@ function QuestionFooterContent({
                 <input type="hidden" name="postData" class="postData" />
                 <input type="hidden" name="__action" class="__action" />
               `}
-          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
           ${showNewVariantButton
             ? html`
                 <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ml-1">
