@@ -3755,7 +3755,7 @@ __metadata:
     three: "npm:0.160.1"
     tmp: "npm:^0.2.3"
     tmp-promise: "npm:^3.0.3"
-    tom-select: "npm:^2.4.0"
+    tom-select: "npm:^2.4.1"
     tsx: "npm:^4.19.2"
     typescript: "npm:^5.6.3"
     typescript-cp: "npm:^0.1.9"
@@ -14818,13 +14818,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tom-select@npm:^2.4.0":
-  version: 2.4.0
-  resolution: "tom-select@npm:2.4.0"
+"tom-select@npm:^2.4.1":
+  version: 2.4.1
+  resolution: "tom-select@npm:2.4.1"
   dependencies:
     "@orchidjs/sifter": "npm:^1.1.0"
     "@orchidjs/unicode-variants": "npm:^1.1.2"
-  checksum: 10c0/3a6cd8ee35ae6534b46844ff2a50fc9b1743389a1e3759b1906999eae392aba65edcdc508919c31ac0e2f108585958b9080a5d870a685599618b6074cdc49a37
+  checksum: 10c0/e12917319dc570741c40ba937ff07a212d4644d1b754ee52f284b91a261ed8cca04ae48c9ff90a13cdc9e7d1f97fa7aad389e7c55cc2be60057ffc7259c84b30
   languageName: node
   linkType: hard
 
