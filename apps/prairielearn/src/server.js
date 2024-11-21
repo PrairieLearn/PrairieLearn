@@ -76,6 +76,7 @@ import staticNodeModules from './middlewares/staticNodeModules.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+import { handler as ssrHandler } from './astro/dist/server/entry.mjs';
 
 process.on('warning', (e) => console.warn(e));
 
@@ -2084,6 +2085,11 @@ export async function initExpress() {
       (await import('./ee/routers/administratorInstitution.js')).default,
     );
   }
+
+  // Hook astro into this
+  const base = '/astro/';
+  app.use(base, express.static('./astro/dist/client/'));
+  app.use(ssrHandler);
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
