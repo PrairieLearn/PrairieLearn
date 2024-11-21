@@ -1244,7 +1244,7 @@ export class QuestionCopyEditor extends Editor {
 
 export class QuestionTransferEditor extends Editor {
   private from_qid: string;
-  private from_course_short_name: string;
+  private from_course: string;
   private from_path: string;
 
   public readonly uuid: string;
@@ -1252,16 +1252,19 @@ export class QuestionTransferEditor extends Editor {
   constructor(
     params: BaseEditorOptions & {
       from_qid: string;
-      from_course_short_name: string;
+      from_course_short_name: Course['short_name'];
       from_path: string;
     },
   ) {
     super(params);
 
     this.from_qid = params.from_qid;
-    this.from_course_short_name = params.from_course_short_name;
+    this.from_course =
+      params.from_course_short_name == null
+        ? 'unknown course'
+        : `course ${params.from_course_short_name}`;
     this.from_path = params.from_path;
-    this.description = `Copy question ${this.from_qid} from course ${this.from_course_short_name}`;
+    this.description = `Copy question ${this.from_qid} from ${this.from_course}`;
 
     this.uuid = uuidv4();
   }
@@ -1320,7 +1323,7 @@ export class QuestionTransferEditor extends Editor {
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `copy question ${this.from_qid} (from course ${this.from_course_short_name}) to ${qid}`,
+      commitMessage: `copy question ${this.from_qid} (from ${this.from_course}) to ${qid}`,
     };
   }
 }

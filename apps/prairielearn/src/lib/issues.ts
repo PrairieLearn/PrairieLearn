@@ -14,6 +14,7 @@ interface IssueForErrorData {
   variantId: string;
   studentMessage: string | null;
   courseData: Record<string, any>;
+  userId: string | null;
   authnUserId: string | null;
 }
 
@@ -39,6 +40,7 @@ export async function insertIssue({
   courseCaused,
   courseData,
   systemData,
+  userId,
   authnUserId,
 }: IssueData): Promise<void> {
   // Truncate all strings in the data objects to 1000 characters. This ensures
@@ -59,6 +61,7 @@ export async function insertIssue({
     courseCaused,
     truncatedCourseData,
     truncatedSystemData,
+    userId,
     authnUserId,
   ]);
 }
@@ -84,6 +87,7 @@ export async function insertIssueForError(
  *
  * @param courseIssues - List of issue objects for to be written.
  * @param variant - The variant associated with the issues.
+ * @param user_id - The user submitting the issues.
  * @param authn_user_id - The currently authenticated user.
  * @param studentMessage - The message to display to the student.
  * @param courseData - Arbitrary data to be associated with the issues.
@@ -91,6 +95,7 @@ export async function insertIssueForError(
 export async function writeCourseIssues(
   courseIssues: ErrorMaybeWithData[],
   variant: Variant,
+  user_id: string | null,
   authn_user_id: string | null,
   studentMessage: string | null,
   courseData: Record<string, any>,
@@ -100,6 +105,7 @@ export async function writeCourseIssues(
       variantId: variant.id,
       studentMessage,
       courseData,
+      userId: user_id,
       authnUserId: authn_user_id,
     });
   });
@@ -136,6 +142,7 @@ export async function reportIssueFromForm(
       ...(studentSubmission ? ['instance_question', 'assessment_instance', 'assessment'] : []),
     ]),
     systemData: {},
+    userId: res.locals.user.user_id,
     authnUserId: res.locals.authn_user.user_id,
   });
   return variant.id;
