@@ -491,7 +491,6 @@ export const FileEditSchema = z.object({
 });
 export type FileEdit = z.infer<typeof FileEditSchema>;
 
-
 export const AiGenerationPromptSchema = z.object({
   completion: z.any(),
   system_prompt: z.string().nullable(),
@@ -509,7 +508,6 @@ export const AiGenerationPromptSchema = z.object({
 
 export type AiGenerationPrompt = z.infer<typeof AiGenerationPromptSchema>;
 
-
 export const FileTransferSchema = z.object({
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
@@ -522,7 +520,6 @@ export const FileTransferSchema = z.object({
   user_id: IdSchema,
 });
 export type FileTransfer = z.infer<typeof FileTransferSchema>;
-
 
 export const GradingJobSchema = z.object({
   auth_user_id: IdSchema.nullable(),
