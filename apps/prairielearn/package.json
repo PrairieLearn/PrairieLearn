@@ -175,7 +175,7 @@
     "three": "0.160.1",
     "tmp": "^0.2.3",
     "tmp-promise": "^3.0.3",
-    "tom-select": "^2.4.0",
+    "tom-select": "^2.4.1",
     "tzientist": "^3.2.0",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",

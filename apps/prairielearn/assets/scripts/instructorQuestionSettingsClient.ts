@@ -1,15 +1,13 @@
 import TomSelect from 'tom-select';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
+import { html } from '@prairielearn/html';
 
 import './lib/changeIdButton.js';
-import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
+import { TopicBadge } from '../../src/components/TopicBadge.html.js';
+import { type Topic } from '../../src/lib/db-types.js';
 
-interface TopicData {
-  name: string;
-  description: string;
-  color: string;
-}
+import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 
 onDocumentReady(() => {
   const qidField = document.querySelector('input[name="qid"]') as HTMLInputElement;
@@ -21,40 +19,23 @@ onDocumentReady(() => {
 
   new TomSelect('#topic', {
     valueField: 'name',
-    searchField: ['name'],
+    searchField: ['name', 'description'],
     closeAfterSelect: true,
-    items: [(document.querySelector('#topic') as HTMLSelectElement).dataset.selectedTopic],
     plugins: ['dropdown_input'],
     maxItems: 1,
-    placeholder: 'Select a topic',
     render: {
-      option(data: TopicData, escape: (input: string) => string) {
-        return (
-          '<div>' +
-          '<span class="badge justify-content-start color-' +
-          escape(data.color) +
-          '">' +
-          escape(data.name) +
-          '</span>' +
-          '<div class="w-100 d-flex">' +
-          '<small class="text-muted justify-content-start text-start">' +
-          escape(data.description) +
-          '</small>' +
-          '</div>' +
-          '</div>'
-        );
+      option(data: Topic) {
+        return html`
+          <div>
+            ${TopicBadge(data)}
+            <div>
+              <small class="text-muted">${data.description}</small>
+            </div>
+          </div>
+        `.toString();
       },
-      item(data: TopicData, escape: (input: string) => string) {
-        return (
-          '<div class="w-100 d-flex justify-content-between align-items-center">' +
-          '<div class="btn btn-ghost badge color-' +
-          escape(data.color) +
-          '">' +
-          escape(data.name) +
-          '</div>' +
-          '<i class="fas fa-angle-down mx-2"></i>' +
-          '</div>'
-        );
+      item(data: Topic) {
+        return TopicBadge(data).toString();
       },
     },
   });

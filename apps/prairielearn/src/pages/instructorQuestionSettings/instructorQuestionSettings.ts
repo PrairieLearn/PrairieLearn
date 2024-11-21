@@ -14,7 +14,6 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
-import { TopicSchema } from '../../lib/db-types.js';
 import {
   FileModifyEditor,
   QuestionRenameEditor,
@@ -31,6 +30,7 @@ import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
+import { selectTopicsByCourseId } from '../../models/topics.js';
 
 import {
   InstructorQuestionSettings,
@@ -257,11 +257,7 @@ router.get(
       SelectedAssessmentsSchema,
     );
 
-    const courseTopics = await sqldb.queryRows(
-      sql.select_topics_by_course_id,
-      { course_id: res.locals.course.id },
-      TopicSchema,
-    );
+    const courseTopics = await selectTopicsByCourseId(res.locals.course.id);
 
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 

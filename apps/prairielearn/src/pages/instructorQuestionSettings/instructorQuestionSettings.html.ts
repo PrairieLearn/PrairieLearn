@@ -9,7 +9,7 @@ import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
-import { compiledScriptTag } from '../../lib/assets.js';
+import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
 import {
   AssessmentSchema,
@@ -98,7 +98,11 @@ export function InstructorQuestionSettings({
             urlPrefix: resLocals.urlPrefix,
           })}
           <link
-            href="https://cdn.jsdelivr.net/npm/tom-select@2.3.1/dist/css/tom-select.css"
+            href="${nodeModulesAssetPath(
+              resLocals.use_bootstrap_4
+                ? 'tom-select/dist/css/tom-select.bootstrap4.css'
+                : 'tom-select/dist/css/tom-select.bootstrap5.css',
+            )}"
             rel="stylesheet"
           />
           <div class="card mb-4">
@@ -151,35 +155,34 @@ export function InstructorQuestionSettings({
                     aria-label="Question topic, tags, and assessments"
                   >
                     <tr>
-                      <th class="align-middle">
-                        <div>Topic</div>
-                      </th>
+                      <th class="align-middle">Topic</th>
                       <td>
                         ${canEdit
-                          ? html` <select
-                              id="topic"
-                              name="topic"
-                              data-selected-topic="${resLocals.topic.name}"
-                            >
-                              ${courseTopics.map((topic) => {
-                                return html` <option
-                                  value="${topic.name}"
-                                  data-color="${topic.color}"
-                                  data-name="${topic.name}"
-                                  data-description="${topic.description}"
-                                ></option>`;
-                              })}
-                            </select>`
+                          ? html`
+                              <select id="topic" name="topic" placeholder="Select a topic">
+                                ${courseTopics.map((topic) => {
+                                  return html`
+                                    <option
+                                      value="${topic.name}"
+                                      data-color="${topic.color}"
+                                      data-name="${topic.name}"
+                                      data-description="${topic.description}"
+                                      ${topic.name === resLocals.topic.name ? 'selected' : ''}
+                                    ></option>
+                                  `;
+                                })}
+                              </select>
+                            `
                           : TopicBadge(resLocals.topic)}
                       </td>
                     </tr>
                     <tr>
-                      <th>Tags</th>
+                      <th class="align-middle">Tags</th>
                       <td>${TagBadgeList(resLocals.tags)}</td>
                     </tr>
                     ${shouldShowAssessmentsList
                       ? html`<tr>
-                          <th>Assessments</th>
+                          <th class="align-middle">Assessments</th>
                           <td>${AssessmentBadges({ assessmentsWithQuestion, resLocals })}</td>
                         </tr>`
                       : ''}
