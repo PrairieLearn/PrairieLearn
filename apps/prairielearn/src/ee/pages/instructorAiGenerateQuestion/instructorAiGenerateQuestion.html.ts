@@ -50,7 +50,6 @@ export function AiGeneratePage({
   qid?: string;
   queryUrl?: string;
 }) {
-  console.log(queryUrl);
   return html`
     <!doctype html>
     <html lang="en">
