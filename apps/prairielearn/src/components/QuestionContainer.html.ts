@@ -337,7 +337,7 @@ export function QuestionFooter({
     return html`
       <div class="card-footer" id="question-panel-footer">
         <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-        <div id="question-footer-content">
+        <div id="question-panel-footer-content">
           ${QuestionFooterContent({ resLocals, questionContext })}
         </div>
       </div>
@@ -347,7 +347,7 @@ export function QuestionFooter({
       <div class="card-footer" id="question-panel-footer">
         <form class="question-form" name="question-form" method="POST">
           <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-          <div id="question-footer-content">
+          <div id="question-panel-footer-content">
             ${QuestionFooterContent({ resLocals, questionContext })}
           </div>
         </form>
