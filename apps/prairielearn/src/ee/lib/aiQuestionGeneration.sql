@@ -76,7 +76,7 @@ VALUES
 SELECT
   *
 FROM
-  questions
+  questions as q
 WHERE
   q.qid = $qid
   AND q.course_id = $course_id
