@@ -43,11 +43,14 @@ export function AiGeneratePage({
   resLocals,
   threads,
   qid,
+  queryUrl,
 }: {
   resLocals: Record<string, any>;
   threads?: AiGenerationPrompt[];
   qid?: string;
+  queryUrl?: string;
 }) {
+  console.log(queryUrl);
   return html`
     <!doctype html>
     <html lang="en">
@@ -71,8 +74,8 @@ export function AiGeneratePage({
                       </p>
                       <form
                         name="add-question-form"
-                        hx-post=${qid !== undefined
-                          ? html`"${resLocals.urlPrefix}/ai_generate_question?qid=${qid}"`
+                        hx-post=${queryUrl !== undefined
+                          ? html`"${resLocals.urlPrefix}/ai_generate_question?${queryUrl}"`
                           : html`"${resLocals.urlPrefix}/ai_generate_question"`}
                         hx-target="#generation-results"
                         hx-swap="outerHTML"
@@ -227,8 +230,7 @@ export function AiGeneratePage({
                                     class="bg-dark text-white rounded p-3"
                                     style="width:100%; height:10em"
                                   >
-${threads[threads.length - 1].html}
-        </textarea
+${threads[threads.length - 1].html}</textarea
                                   >
                                 </div>
                                 ${threads[threads.length - 1].python === undefined
@@ -243,8 +245,7 @@ ${threads[threads.length - 1].html}
                                           class="bg-dark text-white rounded p-3"
                                           style="width:100%; height:10em"
                                         >
-${threads[threads.length - 1].python} 
-              </textarea
+${threads[threads.length - 1].python}</textarea
                                         >
                                       </div>
                                     `}
@@ -256,7 +257,7 @@ ${threads[threads.length - 1].python}
                       <div>
                         <form
                           name="regen-question-form"
-                          hx-post="${resLocals.urlPrefix}/ai_generate_question?qid=${qid}"
+                          hx-post="${resLocals.urlPrefix}/ai_generate_question?${queryUrl}"
                           hx-swap="outerHTML"
                           hx-disabled-elt="button"
                         >

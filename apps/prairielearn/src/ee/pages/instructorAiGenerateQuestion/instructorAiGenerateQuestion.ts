@@ -100,7 +100,7 @@ router.get(
       const qidFull = `__drafts__/${req.query?.qid}`;
       const threads = await queryRows(
         sql.select_generation_thread_items,
-        { course_id: res.locals.course.id.toString() },
+        { qid: qidFull, course_id: res.locals.course.id.toString() },
         AiGenerationPromptSchema,
       );
 
@@ -117,11 +117,13 @@ router.get(
         await logPageView('instructorQuestionPreview', req, res);
         setRendererHeader(res);
       }
+      const queryUrl = req.originalUrl.split('?')[1]; //only the info after the query seperator
       res.send(
         AiGeneratePage({
           resLocals: res.locals,
           threads,
           qid: typeof req.query?.qid == 'string' ? req.query?.qid : undefined,
+          queryUrl,
         }),
       );
     } else {
@@ -272,7 +274,8 @@ router.post(
         const serverJob = await editor.prepareServerJob();
         await editor.executeWithServerJob(serverJob);
       }
-      res.send(AiGeneratePage({ resLocals: res.locals }));
+      const queryUrl = req.originalUrl.split('?')[1];
+      res.send(AiGeneratePage({ resLocals: res.locals, queryUrl }));
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
       res.locals.question = await queryRow(
         sql.select_question_by_qid_and_course,
