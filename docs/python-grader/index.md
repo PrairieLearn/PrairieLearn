@@ -238,15 +238,13 @@ The Python autograder is able to retrieve information from `serverFilesCourse`. 
 
 To access `serverFilesCourse` from the autograder, specify the file or its containing directory in the question `info.json`. For example, to copy the `compounds` directory to the autograder, use:
 
-```diff
-...
+```json
     "externalGradingOptions": {
         "enabled": true,
         "image": "prairielearn/grader-python",
         "entrypoint": "/python_autograder/run.sh",
-+       "serverFilesCourse": ["compounds"]
+        "serverFilesCourse": ["compounds"]
     }
-...
 ```
 
 The tests in `test.py` can then load the `chem.json` file using code such as the following:
