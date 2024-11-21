@@ -53,6 +53,7 @@ const VariantForSubmissionSchema = VariantSchema.extend({
 type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
   Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id'> & {
     submitted_answer: NonNullable<Submission['submitted_answer']>;
+    user_id: string;
   };
 
 export async function insertSubmission({
@@ -234,6 +235,7 @@ export async function saveSubmission(
   await writeCourseIssues(
     courseIssues,
     variant,
+    submission.user_id,
     submission.auth_user_id,
     studentMessage,
     courseData,
@@ -314,6 +316,7 @@ async function selectSubmissionForGrading(
  * @param check_submission_id - The submission_id that must be graded (or null to skip this check).
  * @param question - The question for the variant.
  * @param variant_course - The course for the variant.
+ * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
  * @param overrideGradeRateCheck - Whether to override grade rate limits.
  */
@@ -322,6 +325,7 @@ export async function gradeVariant(
   check_submission_id: string | null,
   question: Question,
   variant_course: Course,
+  user_id: string | null,
   authn_user_id: string | null,
   overrideGradeRateCheck: boolean,
 ): Promise<void> {
@@ -367,6 +371,7 @@ export async function gradeVariant(
     await writeCourseIssues(
       courseIssues,
       variant,
+      user_id,
       submission.auth_user_id,
       studentMessage,
       courseData,
@@ -446,6 +451,7 @@ export async function saveAndGradeSubmission(
     submission_id,
     question,
     course,
+    submissionData.user_id,
     submissionData.auth_user_id,
     overrideGradeRateCheck,
   );

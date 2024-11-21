@@ -62,6 +62,7 @@ router.post(
         res.locals.question,
         res.locals.course_instance,
         res.locals.course,
+        res.locals.user.user_id,
         res.locals.authn_user.user_id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
@@ -78,6 +79,7 @@ router.post(
           res.locals.question,
           res.locals.course_instance,
           res.locals.course,
+          res.locals.user.user_id,
           res.locals.authn_user.user_id,
         );
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);

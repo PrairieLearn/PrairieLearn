@@ -508,6 +508,19 @@ export const AiGenerationPromptSchema = z.object({
 
 export type AiGenerationPrompt = z.infer<typeof AiGenerationPromptSchema>;
 
+export const FileTransferSchema = z.object({
+  created_at: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
+  from_course_id: IdSchema,
+  from_filename: z.string(),
+  id: IdSchema,
+  storage_filename: z.string(),
+  to_course_id: IdSchema,
+  transfer_type: z.enum(['CopyQuestion']),
+  user_id: IdSchema,
+});
+export type FileTransfer = z.infer<typeof FileTransferSchema>;
+
 export const GradingJobSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   auto_points: z.number().nullable(),
