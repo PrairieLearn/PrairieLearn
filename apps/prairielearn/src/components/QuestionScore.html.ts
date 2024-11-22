@@ -13,7 +13,7 @@ import { formatPoints, formatPointsOrList } from '../lib/format.js';
 import { idsEqual } from '../lib/id.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
-interface QuestionScorePanelBodyProps {
+interface QuestionScorePanelContentProps {
   instance_question: InstanceQuestion & {
     allow_grade_left_ms?: number;
     allow_grade_interval?: string;
@@ -31,7 +31,7 @@ interface QuestionScorePanelBodyProps {
 }
 
 export function QuestionScorePanel(
-  props: QuestionScorePanelBodyProps & {
+  props: QuestionScorePanelContentProps & {
     authz_result?: { authorized_edit: boolean | null };
     csrfToken: string;
   },
@@ -70,7 +70,7 @@ export function QuestionScorePanelContent({
   instance_question_info,
   variant,
   urlPrefix,
-}: QuestionScorePanelBodyProps) {
+}: QuestionScorePanelContentProps) {
   const hasAutoAndManualPoints =
     assessment_question.max_auto_points &&
     (assessment_question.max_manual_points ||
