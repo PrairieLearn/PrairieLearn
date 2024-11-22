@@ -1255,13 +1255,7 @@ export async function initExpress() {
     },
     (await import('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing.js')).default,
   ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/staff', [
-    function (req, res, next) {
-      res.locals.navSubPage = 'staff';
-      next();
-    },
-    (await import('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff.js')).default,
-  ]);
+
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/sets', [
     function (req, res, next) {
       res.locals.navSubPage = 'sets';
@@ -1393,13 +1387,7 @@ export async function initExpress() {
     (await import('./pages/instructorInstanceAdminAccess/instructorInstanceAdminAccess.js'))
       .default,
   ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments', [
-    function (req, res, next) {
-      res.locals.navSubPage = 'assessments';
-      next();
-    },
-    (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
-  ]);
+
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook', [
     function (req, res, next) {
       res.locals.navSubPage = 'gradebook';
@@ -2086,10 +2074,49 @@ export async function initExpress() {
     );
   }
 
-  // Hook astro into this
-  const base = '/astro/';
-  app.use(base, express.static('./astro/dist/client/'));
-  app.use(ssrHandler);
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments', [
+    function (req, res, next) {
+      res.locals.navSubPage = 'assessments';
+      next();
+    },
+    (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
+  ]);
+  // Redirect this URL to our astro server
+  // going to also have to 404 through astro
+  // https://docs.astro.build/en/guides/routing/#modifying-the-slug-example-for-ssr
+
+  // /astro/course_instance
+  // app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/staff', [
+  //   function (req, res, next) {
+  //     res.locals.navSubPage = 'staff';
+  //     next();
+  //   },
+  //   (await import('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff.js')).default,
+  // ]);
+  app.get(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/staff',
+    (req, res) => {
+      res.redirect(
+        '/astro/course_instance/' +
+          req.params.course_instance_id +
+          '/instructor/course_admin/staff',
+      );
+    },
+  );
+
+  // Render all /astro/ routes through Astro
+  app.use('/astro/', express.static('./astro/dist/client/'));
+  // We want to use all our express middleware in Astro
+  // https://docs.astro.build/en/guides/integrations-guide/node/#middleware
+  app.use((req, res, next) => {
+    // Astro only support passing locals through their special Astro.locals parameter
+    // https://github.com/withastro/adapters/blob/5391c024f1cd0b66b2db26c25e695cf76788b890/packages/node/src/middleware.ts#L20C26-L20C32
+
+    ssrHandler(req, res, next, {
+      ...res.locals,
+      originalUrl: req.originalUrl,
+    });
+  });
 
   //////////////////////////////////////////////////////////////////////
   //////////////////////////////////////////////////////////////////////
