@@ -42,7 +42,7 @@ export function QuestionScorePanel(
       <div class="card-header bg-secondary text-white">
         <h2>Question ${instance_question_info.question_number}</h2>
       </div>
-      ${QuestionScorePanelBody(props)}
+      ${QuestionScorePanelContent(props)}
       ${variant != null && assessment.allow_issue_reporting
         ? html`
             <div class="card-footer">
@@ -61,7 +61,7 @@ export function QuestionScorePanel(
   `;
 }
 
-export function QuestionScorePanelBody({
+export function QuestionScorePanelContent({
   instance_question,
   assessment,
   assessment_question,
@@ -81,7 +81,7 @@ export function QuestionScorePanelBody({
     <table
       class="table table-sm two-column-description-no-header"
       aria-label="Question score"
-      id="question-score-panel-body"
+      id="question-score-panel-content"
     >
       <tbody>
         ${assessment.type === 'Exam'

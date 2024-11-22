@@ -202,6 +202,7 @@ router.post(
       const overrideGradeRate = false;
       await gradeAssessmentInstance(
         res.locals.assessment_instance.id,
+        res.locals.user.user_id,
         res.locals.authn_user.user_id,
         requireOpen,
         closeExam,

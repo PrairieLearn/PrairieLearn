@@ -11,7 +11,7 @@ import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js
 import { QuestionFooterContent } from '../components/QuestionContainer.html.js';
 import { type QuestionContext } from '../components/QuestionContainer.types.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
-import { QuestionScorePanelBody } from '../components/QuestionScore.html.js';
+import { QuestionScorePanelContent } from '../components/QuestionScore.html.js';
 import {
   SubmissionPanel,
   SubmissionBasicSchema,
@@ -145,9 +145,17 @@ async function render(
 
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
-  // locals.authn_user may not be populated when rendering a panel
-  const user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
-  await writeCourseIssues(courseIssues, variant, user_id, studentMessage, courseData);
+  // user information may not be populated when rendering a panel.
+  const user_id = locals.user && locals.user.user_id ? locals.user.user_id : null;
+  const authn_user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
+  await writeCourseIssues(
+    courseIssues,
+    variant,
+    user_id,
+    authn_user_id,
+    studentMessage,
+    courseData,
+  );
   return data;
 }
 
@@ -732,7 +740,7 @@ export async function renderPanelsForSubmission({
         return;
       }
 
-      panels.questionScorePanel = QuestionScorePanelBody({
+      panels.questionScorePanel = QuestionScorePanelContent({
         instance_question,
         assessment_question,
         assessment_instance,

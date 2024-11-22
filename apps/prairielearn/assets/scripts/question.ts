@@ -202,7 +202,7 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     mathjaxTypeset();
   }
   if (msg.questionScorePanel) {
-    const questionScorePanel = document.getElementById('question-score-panel-body');
+    const questionScorePanel = document.getElementById('question-score-panel-content');
     if (questionScorePanel) {
       questionScorePanel.outerHTML = msg.questionScorePanel;
     }
