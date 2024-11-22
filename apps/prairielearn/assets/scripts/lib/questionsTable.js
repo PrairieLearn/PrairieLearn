@@ -129,7 +129,7 @@ onDocumentReady(() => {
     }
     var values = $('<div>')
       .html(value)
-      .find('.badge')
+      .find('.badge, .btn-badge')
       .filter(
         (i, elem) => $(elem).text().trim().toUpperCase() === search.trim().toUpperCase(),
       ).length;

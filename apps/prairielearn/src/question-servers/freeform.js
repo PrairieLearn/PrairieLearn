@@ -470,7 +470,7 @@ function checkData(data, origData, phase) {
   /**************************************************************************************************************************************/
   //              property                 type       presentPhases                         changePhases
   /**************************************************************************************************************************************/
-  err = checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'grade'])
+  err =   checkProp('params',                'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
        || checkProp('correct_answers',       'object',  allPhases,                            ['generate', 'prepare', 'parse', 'grade'])
        || checkProp('variant_seed',          'integer', allPhases,                            [])
        || checkProp('options',               'object',  allPhases,                            [])
