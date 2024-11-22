@@ -2,7 +2,7 @@ import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 
 import { makeAwsConfigProvider } from '@prairielearn/aws';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 
 const awsConfigProvider = makeAwsConfigProvider({
   credentials: fromNodeProviderChain(),

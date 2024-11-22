@@ -11,7 +11,7 @@ import fs from 'fs-extra';
 import { makeAwsConfigProvider } from '@prairielearn/aws';
 import { logger } from '@prairielearn/logger';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 
 const debug = debugfn('prairielearn:aws');
 

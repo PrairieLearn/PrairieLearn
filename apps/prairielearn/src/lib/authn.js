@@ -6,7 +6,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { redirectToTermsPageIfNeeded } from '../ee/lib/terms.js';
 import { clearCookie } from '../lib/cookie.js';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 import { InstitutionSchema, UserSchema } from './db-types.js';
 import { isEnterprise } from './license.js';
 import { HttpRedirect } from './redirect.js';

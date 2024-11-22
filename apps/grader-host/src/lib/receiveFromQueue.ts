@@ -10,7 +10,7 @@ import { z } from 'zod';
 
 import * as Sentry from '@prairielearn/sentry';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 import globalLogger from './logger.js';
 
 const GradingJobMessageSchema = z.object({

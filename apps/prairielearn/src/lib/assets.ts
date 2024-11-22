@@ -12,7 +12,7 @@ import { type HtmlSafeString } from '@prairielearn/html';
 import staticNodeModules from '../middlewares/staticNodeModules.js';
 import elementFiles from '../pages/elementFiles/elementFiles.js';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 import { APP_ROOT_PATH } from './paths.js';
 
 let assetsPrefix: string | null = null;

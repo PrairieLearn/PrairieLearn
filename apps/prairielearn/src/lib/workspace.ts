@@ -24,7 +24,7 @@ import { checkSignedToken } from '@prairielearn/signed-token';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
 import * as chunks from './chunks.js';
-import { config } from './config.js';
+import { config } from './config.ts';
 import {
   CourseSchema,
   DateFromISOString,

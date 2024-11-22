@@ -5,7 +5,7 @@ import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
 import { makeAwsClientConfig } from './aws.js';
-import { config } from './config.js';
+import { config } from './config.ts';
 
 const loopbenchInstance = loopbench();
 

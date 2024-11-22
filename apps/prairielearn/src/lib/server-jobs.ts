@@ -11,7 +11,7 @@ import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
 import { chalk, chalkDim } from './chalk.js';
-import { config } from './config.js';
+import { config } from './config.ts';
 import { IdSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
 import { type JobSequenceWithTokens, JobSequenceWithJobsSchema } from './server-jobs.types.js';
 import * as socketServer from './socket-server.js';

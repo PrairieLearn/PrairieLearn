@@ -6,7 +6,7 @@ import { Server } from 'socket.io';
 
 import { logger } from '@prairielearn/logger';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 
 const debug = debugfn('prairielearn:socket-server');
 

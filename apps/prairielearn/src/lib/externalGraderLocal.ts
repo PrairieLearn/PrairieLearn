@@ -10,7 +10,7 @@ import fs from 'fs-extra';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 import type { Course, GradingJob, Question, Submission, Variant } from './db-types.js';
 import { buildDirectory, makeGradingResult } from './externalGraderCommon.js';
 

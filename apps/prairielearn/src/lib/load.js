@@ -5,7 +5,7 @@ import _ from 'lodash';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:load');

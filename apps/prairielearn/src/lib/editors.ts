@@ -28,7 +28,7 @@ import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import * as b64Util from './base64-util.js';
 import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
-import { config } from './config.js';
+import { config } from './config.ts';
 import {
   type Assessment,
   type Course,

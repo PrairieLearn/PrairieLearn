@@ -3,7 +3,7 @@ import fetch, { type Response } from 'node-fetch';
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 
 export function canSendMessages(): boolean {
   return !!config.secretSlackOpsBotEndpoint;

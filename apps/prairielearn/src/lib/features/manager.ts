@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
 
-import { config } from '../config.js';
+import { config } from '../config.ts';
 
 const sql = loadSqlEquiv(import.meta.url);
 

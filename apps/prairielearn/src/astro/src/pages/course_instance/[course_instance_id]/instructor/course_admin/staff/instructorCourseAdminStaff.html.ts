@@ -13,7 +13,7 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { type User } from '../../../../../../../../lib/db-types.js';
-import { httpPrefixForCourseRepo } from '../../../../../../../../lib/github';
+import { httpPrefixForCourseRepo } from '../../../../../../../../lib/github.js';
 import {
   deleteAllCourseInstancePermissionsForCourse,
   deleteCourseInstancePermissions,

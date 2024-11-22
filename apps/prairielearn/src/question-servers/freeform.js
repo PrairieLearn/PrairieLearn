@@ -17,17 +17,17 @@ import { cache } from '@prairielearn/cache';
 import { logger } from '@prairielearn/logger';
 import { instrumented, metrics, instrumentedWithMetrics } from '@prairielearn/opentelemetry';
 
-import * as assets from '../lib/assets.js';
-import { canonicalLogger } from '../lib/canonical-logger.js';
-import * as chunks from '../lib/chunks.js';
-import { withCodeCaller, FunctionMissingError } from '../lib/code-caller/index.js';
-import { config } from '../lib/config.js';
-import { features } from '../lib/features/index.js';
-import { idsEqual } from '../lib/id.js';
+import * as assets from '../lib/assets.ts';
+import { canonicalLogger } from '../lib/canonical-logger.ts';
+import * as chunks from '../lib/chunks.ts';
+import { withCodeCaller, FunctionMissingError } from '../lib/code-caller/index.ts';
+import { config } from '../lib/config.ts';
+import { features } from '../lib/features/index.ts';
+import { idsEqual } from '../lib/id.ts';
 import * as jsonLoad from '../lib/json-load.js';
-import * as markdown from '../lib/markdown.js';
-import { APP_ROOT_PATH } from '../lib/paths.js';
-import { getOrUpdateCourseCommitHash } from '../models/course.js';
+import * as markdown from '../lib/markdown.ts';
+import { APP_ROOT_PATH } from '../lib/paths.ts';
+import { getOrUpdateCourseCommitHash } from '../models/course.ts';
 import * as schemas from '../schemas/index.js';
 
 const debug = debugfn('prairielearn:freeform');

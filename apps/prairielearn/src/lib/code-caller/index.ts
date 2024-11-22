@@ -10,13 +10,13 @@ import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
 import * as chunks from '../chunks.js';
-import { config } from '../config.js';
+import { config } from '../config.ts';
 import { type Course } from '../db-types.js';
 import * as load from '../load.js';
 
 import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container.js';
 import { CodeCallerNative } from './code-caller-native.js';
-import { type CodeCaller, FunctionMissingError } from './code-caller-shared.js';
+import { type CodeCaller, FunctionMissingError } from './code-caller-shared.ts';
 
 const debug = debugfn('prairielearn:code-caller');
 

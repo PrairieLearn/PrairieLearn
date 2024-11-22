@@ -7,7 +7,7 @@ import { assert, use as chaiUse } from 'chai';
 import chaiAsPromised from 'chai-as-promised';
 import sinon from 'sinon';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 import { receiveFromQueue } from './receiveFromQueue.js';
 
 chaiUse(chaiAsPromised);

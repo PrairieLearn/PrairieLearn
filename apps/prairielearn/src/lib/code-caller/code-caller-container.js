@@ -18,10 +18,10 @@ import { logger } from '@prairielearn/logger';
 import { instrumented } from '@prairielearn/opentelemetry';
 
 import { makeAwsClientConfig } from '../aws.js';
-import { config } from '../config.js';
+import { config } from '../config.ts';
 import { deferredPromise } from '../deferred.js';
 
-import { FunctionMissingError } from './code-caller-shared.js';
+import { FunctionMissingError } from './code-caller-shared.ts';
 
 /** @typedef {typeof CREATED | typeof WAITING | typeof IN_CALL | typeof EXITING | typeof EXITED} CallerState */
 const CREATED = Symbol('CREATED');
@@ -111,8 +111,8 @@ async function ensureImage() {
   }
 }
 
-/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
-/** @typedef {import('./code-caller-shared.js').CallType} CallType */
+/** @typedef {import('./code-caller-shared.ts').CodeCaller} CodeCaller */
+/** @typedef {import('./code-caller-shared.ts').CallType} CallType */
 
 /**
  * @implements {CodeCaller}
@@ -203,7 +203,7 @@ export class CodeCallerContainer {
    * Allows this caller to prepare for execution of code from a particular
    * course.
    *
-   * @param {import('./code-caller-shared.js').PrepareForCourseOptions} options
+   * @param {import('./code-caller-shared.ts').PrepareForCourseOptions} options
    */
   async prepareForCourse({ coursePath, forbiddenModules }) {
     this.forbiddenModules = forbiddenModules;

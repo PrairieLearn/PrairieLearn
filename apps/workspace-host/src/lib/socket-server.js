@@ -2,7 +2,7 @@
 import { Emitter } from '@socket.io/redis-emitter';
 import { Redis } from 'ioredis';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 
 /** @type {Emitter} */
 export let io;

@@ -8,7 +8,7 @@ import { checkSignedToken } from '@prairielearn/signed-token';
 
 import { gradingJobStatus } from '../models/grading-job.js';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 import { GradingJobSchema, IdSchema } from './db-types.js';
 import type { StatusMessage } from './externalGradingSocket.types.js';
 import { renderPanelsForSubmission } from './question-render.js';

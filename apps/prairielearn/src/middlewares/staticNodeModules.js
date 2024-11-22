@@ -3,7 +3,7 @@ import * as path from 'node:path';
 
 import * as express from 'express';
 
-import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../lib/paths.js';
+import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../lib/paths.ts';
 
 const NODE_MODULES_PATHS = [
   path.resolve(APP_ROOT_PATH, 'node_modules'),

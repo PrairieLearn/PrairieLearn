@@ -3,7 +3,7 @@ import * as assert from 'node:assert';
 import { AutoScaling } from '@aws-sdk/client-auto-scaling';
 
 import { makeAwsClientConfig } from './aws.js';
-import { config } from './config.js';
+import { config } from './config.ts';
 import logger from './logger.js';
 
 /**

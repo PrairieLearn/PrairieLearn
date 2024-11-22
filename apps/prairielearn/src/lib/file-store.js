@@ -10,7 +10,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { uploadToS3, getFromS3 } from '../lib/aws.js';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 import { IdSchema } from './db-types.js';
 
 const debug = debugfn('prairielearn:socket-server');

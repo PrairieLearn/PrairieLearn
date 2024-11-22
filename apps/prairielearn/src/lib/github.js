@@ -8,13 +8,13 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { insertCourse, updateCourseCommitHash } from '../models/course.js';
-import { syncDiskToSql } from '../sync/syncFromDisk.js';
+import { insertCourse, updateCourseCommitHash } from '../models/course.ts';
+import { syncDiskToSql } from '../sync/syncFromDisk.ts';
 
-import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
-import { config } from './config.js';
-import { sendCourseRequestMessage } from './opsbot.js';
-import { createServerJob } from './server-jobs.js';
+import { logChunkChangesToJob, updateChunksForCourse } from './chunks.ts';
+import { config } from './config.ts';
+import { sendCourseRequestMessage } from './opsbot.ts';
+import { createServerJob } from './server-jobs.ts';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

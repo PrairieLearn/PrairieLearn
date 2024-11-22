@@ -2,7 +2,7 @@ import * as http from 'node:http';
 
 import Docker from 'dockerode';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 import * as lifecycle from './lifecycle.js';
 import globalLogger from './logger.js';
 

@@ -20,7 +20,7 @@ import { type CourseData } from '../sync/course-db.js';
 
 import { downloadFromS3, makeS3ClientConfig } from './aws.js';
 import { chalk, chalkDim } from './chalk.js';
-import { config } from './config.js';
+import { config } from './config.ts';
 import { createServerJob, type ServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

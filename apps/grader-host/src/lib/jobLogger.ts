@@ -3,7 +3,7 @@ import { Writable, type WritableOptions } from 'node:stream';
 import winston from 'winston';
 import type Transport from 'winston-transport';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 
 export interface WinstonBufferedLogger extends winston.Logger {
   getBuffer(): Buffer;

@@ -9,7 +9,7 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 import {
   IdSchema,
   CourseSchema,

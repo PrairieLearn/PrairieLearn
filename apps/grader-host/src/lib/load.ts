@@ -1,6 +1,6 @@
 import * as sqldb from '@prairielearn/postgres';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 import * as healthCheck from './healthCheck.js';
 import * as lifecycle from './lifecycle.js';
 import logger from './logger.js';

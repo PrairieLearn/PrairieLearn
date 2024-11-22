@@ -13,7 +13,7 @@ import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
 import { makeS3ClientConfig, makeAwsClientConfig } from './aws.js';
-import { config } from './config.js';
+import { config } from './config.ts';
 import { IdSchema } from './db-types.js';
 import { deferredPromise } from './deferred.js';
 import { processGradingResult } from './externalGrader.js';

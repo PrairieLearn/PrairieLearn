@@ -14,7 +14,7 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './aws.js';
-import { config as globalConfig } from './config.js';
+import { config as globalConfig } from './config.ts';
 import { getJobDirectory, buildDirectory } from './externalGraderCommon.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

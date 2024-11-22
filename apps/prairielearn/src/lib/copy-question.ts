@@ -10,7 +10,7 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { selectCoursesWithEditAccess } from '../models/course.js';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 import { type Course, type Question } from './db-types.js';
 import { idsEqual } from './id.js';
 

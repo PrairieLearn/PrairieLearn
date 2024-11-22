@@ -6,7 +6,7 @@ import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from './aws.js';
-import { config } from './config.js';
+import { config } from './config.ts';
 import logger from './logger.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

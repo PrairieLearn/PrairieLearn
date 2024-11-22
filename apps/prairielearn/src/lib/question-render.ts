@@ -22,7 +22,7 @@ import { selectUserById } from '../models/user.js';
 import { selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 import {
   type Assessment,
   type AssessmentInstance,

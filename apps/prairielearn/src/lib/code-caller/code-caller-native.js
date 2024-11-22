@@ -9,9 +9,9 @@ import { v4 as uuidv4 } from 'uuid';
 import { logger } from '@prairielearn/logger';
 
 import { deferredPromise } from '../deferred.js';
-import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
+import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.ts';
 
-import { FunctionMissingError } from './code-caller-shared.js';
+import { FunctionMissingError } from './code-caller-shared.ts';
 
 const debug = debugfn('prairielearn:code-caller-native');
 
@@ -76,8 +76,8 @@ const EXITED = Symbol('EXITED');
 
 */
 
-/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
-/** @typedef {import('./code-caller-shared.js').CallType} CallType */
+/** @typedef {import('./code-caller-shared.ts').CodeCaller} CodeCaller */
+/** @typedef {import('./code-caller-shared.ts').CallType} CallType */
 
 /**
  * @implements {CodeCaller}
@@ -152,7 +152,7 @@ export class CodeCallerNative {
   }
 
   /**
-   * @param {import('./code-caller-shared.js').PrepareForCourseOptions} options
+   * @param {import('./code-caller-shared.ts').PrepareForCourseOptions} options
    */
   async prepareForCourse({ coursePath, forbiddenModules }) {
     this.debug('enter prepareForCourse()');

@@ -8,7 +8,7 @@ import {
 import { logger } from '@prairielearn/logger';
 
 import { makeAwsClientConfig } from './aws.js';
-import { config } from './config.js';
+import { config } from './config.ts';
 
 /**
  * Gets the lifecycle state of the current EC2 instance.

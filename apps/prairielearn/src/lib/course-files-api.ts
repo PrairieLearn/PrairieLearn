@@ -6,7 +6,7 @@ import * as jose from 'jose';
 
 import { courseFilesRouter, type CourseFilesRouter } from '../api/trpc/index.js';
 
-import { config } from './config.js';
+import { config } from './config.ts';
 
 export type CourseFilesClient = ReturnType<typeof createTRPCProxyClient<CourseFilesRouter>>;
 
