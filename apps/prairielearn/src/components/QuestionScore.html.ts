@@ -43,7 +43,7 @@ export function QuestionScorePanel(
       <div class="card-header bg-secondary text-white">
         <h2>Question ${instance_question_info.question_number}</h2>
       </div>
-
+      ${QuestionScorePanelContent(props)}
       ${variant != null && assessment.allow_issue_reporting
         ? html`
             <div class="card-footer">
