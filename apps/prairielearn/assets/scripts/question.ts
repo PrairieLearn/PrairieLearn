@@ -244,6 +244,9 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
 
     // We might be getting new markup for just the content, or legacy markup
     // for the whole panel.
+    //
+    // TODO: switch back to using a specific ID once we drop the legacy markup.
+    // Using a specific ID ensures we can find things easily via grep.
     const targetElement = document.getElementById(parsedHTML.id);
     targetElement?.replaceWith(parsedHTML);
   }
@@ -258,6 +261,9 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
 
     // We might be getting new markup for just the content, or legacy markup
     // for the whole panel.
+    //
+    // TODO: switch back to using a specific ID once we drop the legacy markup.
+    // Using a specific ID ensures we can find things easily via grep.
     const targetElement = document.getElementById(parsedHTML.id);
     targetElement?.replaceWith(parsedHTML);
   }
