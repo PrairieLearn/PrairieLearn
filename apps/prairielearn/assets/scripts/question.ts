@@ -1,11 +1,6 @@
 import { type Socket, io } from 'socket.io-client';
 
-import {
-  onDocumentReady,
-  decodeData,
-  parseHTML,
-  parseHTMLElement,
-} from '@prairielearn/browser-utils';
+import { onDocumentReady, decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
 
 import type {
   StatusMessage,
@@ -245,19 +240,12 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     mathjaxTypeset();
   }
   if (msg.questionScorePanel) {
-    if (msg.questionScorePanel.includes('question-score-panel-content')) {
-      // We're receiving new markup for just the content, not the panel as a whole.
-      const questionScorePanelContent = document.getElementById('question-score-panel-content');
-      if (questionScorePanelContent) {
-        questionScorePanelContent.outerHTML = msg.questionScorePanel;
-      }
-    } else {
-      // We're receiving legacy markup for the whole panel.
-      const questionScorePanel = document.getElementById('question-score-panel');
-      if (questionScorePanel) {
-        questionScorePanel.outerHTML = msg.questionScorePanel;
-      }
-    }
+    const parsedHTML = parseHTMLElement(document, msg.questionScorePanel);
+
+    // We might be getting new markup for just the content, or legacy markup
+    // for the whole panel.
+    const targetElement = document.getElementById(parsedHTML.id);
+    targetElement?.replaceWith(parsedHTML);
   }
   if (msg.assessmentScorePanel) {
     const assessmentScorePanel = document.getElementById('assessment-score-panel');
@@ -267,19 +255,11 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
   }
   if (msg.questionPanelFooter) {
     const parsedHTML = parseHTMLElement(document, msg.questionPanelFooter);
-    if (msg.questionPanelFooter.includes('question-panel-footer-content')) {
-      // We're receiving new markup for just the content, not the panel as a whole.
-      const questionPanelFooterContent = document.getElementById('question-panel-footer-content');
-      if (questionPanelFooterContent) {
-        questionPanelFooterContent.outerHTML = msg.questionPanelFooter;
-      }
-    } else {
-      // We're receiving legacy markup for the whole panel.
-      const questionPanelFooter = document.getElementById('question-panel-footer');
-      if (questionPanelFooter) {
-        questionPanelFooter.outerHTML = msg.questionPanelFooter;
-      }
-    }
+
+    // We might be getting new markup for just the content, or legacy markup
+    // for the whole panel.
+    const targetElement = document.getElementById(parsedHTML.id);
+    targetElement?.replaceWith(parsedHTML);
   }
   if (msg.questionNavNextButton) {
     const questionNavNextButton = document.getElementById('question-nav-next');
