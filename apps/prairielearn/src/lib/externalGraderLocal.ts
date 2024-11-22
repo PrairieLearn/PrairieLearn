@@ -66,6 +66,18 @@ export class ExternalGraderLocal {
         throw new Error('No external grading image specified.');
       }
 
+      if (question.external_grading_entrypoint == null) {
+        // The grader-host does not currently support a null entrypoint, and
+        // schema does not allow the entrypoint to be skipped if external
+        // grading options are provided. To avoid local code having a different
+        // behavior than production, we ensure that the local code throws an
+        // error if the entrypoint is null, which would also happen in
+        // production. A future implementation could allow the entrypoint to be
+        // skipped to use the default entrypoint from the image, but this would
+        // require equivalent changes to the grader-host.
+        throw new Error('No external grading entrypoint specified.');
+      }
+
       await docker.ping();
 
       results.received_time = new Date().toISOString();
@@ -73,23 +85,21 @@ export class ExternalGraderLocal {
 
       await buildDirectory(dir, submission, variant, question, course);
 
-      if (question.external_grading_entrypoint) {
-        const entrypointFirstToken = shlex.split(question.external_grading_entrypoint)[0];
-        if (
-          path.isAbsolute(entrypointFirstToken) &&
-          contains('/grade', entrypointFirstToken, false)
-        ) {
-          // Mark the entrypoint as executable if it lives in the mounted volume.
-          // If it is living in the docker container then we don't have access to
-          // it before we actually run it.
-          try {
-            await execa('chmod', [
-              '+x',
-              path.resolve(dir, path.relative('/grade', entrypointFirstToken)),
-            ]);
-          } catch {
-            logger.error('Could not make file executable; continuing execution anyways');
-          }
+      const entrypointFirstToken = shlex.split(question.external_grading_entrypoint)[0];
+      if (
+        path.isAbsolute(entrypointFirstToken) &&
+        contains('/grade', entrypointFirstToken, false)
+      ) {
+        // Mark the entrypoint as executable if it lives in the mounted volume.
+        // If it is living in the docker container then we don't have access to
+        // it before we actually run it.
+        try {
+          await execa('chmod', [
+            '+x',
+            path.resolve(dir, path.relative('/grade', entrypointFirstToken)),
+          ]);
+        } catch {
+          logger.error('Could not make file executable; continuing execution anyways');
         }
       }
 
@@ -138,9 +148,7 @@ export class ExternalGraderLocal {
             },
           ],
         },
-        Entrypoint: question.external_grading_entrypoint
-          ? shlex.split(question.external_grading_entrypoint)
-          : undefined,
+        Entrypoint: shlex.split(question.external_grading_entrypoint),
       });
 
       const stream = await container.attach({
