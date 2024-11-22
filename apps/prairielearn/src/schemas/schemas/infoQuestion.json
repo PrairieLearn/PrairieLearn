@@ -94,7 +94,7 @@
           "type": "string"
         },
         "entrypoint": {
-          "description": "Program or command line to run as the entrypoint to your grader.",
+          "description": "Program or command to run as the entrypoint to your grader.",
           "anyOf": [{ "type": "string" }, { "type": "array", "items": { "type": "string" } }]
         },
         "serverFilesCourse": {
