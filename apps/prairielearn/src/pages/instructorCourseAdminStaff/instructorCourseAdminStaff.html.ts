@@ -263,7 +263,7 @@ function CoursePermissionsInsertForm({
           class="form-control"
           id="addUsersInputUid"
           name="uid"
-          placeholder="student1@example.com, student2@example.com"
+          placeholder="staff1@example.com, staff2@example.com"
           required
           aria-describedby="addUsersInputUidHelp"
         ></textarea>
