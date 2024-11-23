@@ -4,25 +4,18 @@ import { render } from 'preact-render-to-string';
 
 import { type HtmlSafeString, unsafeHtml } from '@prairielearn/html';
 
+// Based on https://pkg.go.dev/encoding/json#HTMLEscape
 const ENCODE_HTML_RULES: Record<string, string> = {
-  '&': '&amp;',
-  '<': '&lt;',
-  '>': '&gt;',
-  // TODO: needed?
-  // '"': '&#34;',
-  // "'": '&#39;',
+  '&': '\\u0026',
+  '>': '\\u003e',
+  '<': '\\u003c',
+  '\u2028': '\\u2028',
+  '\u2029': '\\u2029',
 };
-const MATCH_HTML = /[&<>'"]/g;
+const MATCH_HTML = /[&><\u2028\u2029]/g;
 
-function encodeCharacter(c: string) {
-  return ENCODE_HTML_RULES[c] || c;
-}
-
-/**
- * Based on the `escapeXML` function from the `ejs` library.
- */
-function escapeHtmlRaw(value: string): string {
-  return value == null ? '' : String(value).replace(MATCH_HTML, encodeCharacter);
+function escapeJsonForHtml(value: any): string {
+  return JSON.stringify(value).replace(MATCH_HTML, (c) => ENCODE_HTML_RULES[c] || c);
 }
 
 export function renderWithProps<T>(
@@ -37,7 +30,7 @@ export function renderWithProps<T>(
           type="application/json"
           id={`${id}-props`}
           dangerouslySetInnerHTML={{
-            __html: escapeHtmlRaw(JSON.stringify(props)),
+            __html: escapeJsonForHtml(props),
           }}
         ></script>
         <div id={`${id}-root`}>
