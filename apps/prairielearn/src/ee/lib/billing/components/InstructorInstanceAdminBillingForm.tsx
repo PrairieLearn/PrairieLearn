@@ -192,7 +192,7 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
           student billing will allow your course instance to exceed any enrollment limits that would
           otherwise apply.
         </p>
-        {studentBillingAlert && <MaybeAlert {...studentBillingAlert} />}
+        {studentBillingAlert && <Alert {...studentBillingAlert} />}
       </div>
 
       <h2 class="h4">Features</h2>
@@ -222,7 +222,7 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
           grading and <strong>{pluralizeQuestionCount(workspaceQuestionCount)}</strong> that use
           workspaces.
         </p>
-        {computeAlert && <MaybeAlert {...computeAlert} />}
+        {computeAlert && <Alert {...computeAlert} />}
       </div>
 
       {/* TODO: something should be showing this. But what/when? */}
@@ -245,7 +245,7 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
   );
 }
 
-function MaybeAlert(props: AlertProps) {
+function Alert(props: AlertProps) {
   return <div class={`alert alert-${props.color}`}>${props.message}</div>;
 }
 
