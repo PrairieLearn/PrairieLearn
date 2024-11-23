@@ -16,6 +16,7 @@
     "refresh-workspace-hosts": "yarn workspace @prairielearn/prairielearn start --refresh-workspace-hosts-and-exit"
   },
   "dependencies": {
+    "eslint-plugin-react": "^7.37.2",
     "node-gyp": "^10.2.0"
   },
   "devDependencies": {

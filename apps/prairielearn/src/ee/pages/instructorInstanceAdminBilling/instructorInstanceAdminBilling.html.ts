@@ -1,9 +1,9 @@
-import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
-import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.html.js';
+import { renderWithProps } from '../../../lib/preact.js';
+import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
 
 export type EnrollmentLimitSource = 'course_instance' | 'institution';
@@ -36,7 +36,6 @@ export function InstructorCourseInstanceBilling({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })}
-        ${compiledScriptTag('instructorInstanceAdminBillingClient.ts')}
       </head>
       <body>
         ${Navbar({ resLocals })}
@@ -51,19 +50,23 @@ export function InstructorCourseInstanceBilling({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">Billing</div>
             <div class="card-body">
-              ${InstructorInstanceAdminBillingForm({
-                initialRequiredPlans: requiredPlans,
-                desiredRequiredPlans: requiredPlans,
-                institutionPlanGrants,
-                courseInstancePlanGrants,
-                enrollmentCount,
-                enrollmentLimit,
-                enrollmentLimitSource,
-                externalGradingQuestionCount,
-                workspaceQuestionCount,
-                editable,
-                csrfToken: resLocals.__csrf_token,
-              })}
+              ${renderWithProps(
+                'InstructorInstanceAdminBillingForm',
+                InstructorInstanceAdminBillingForm,
+                {
+                  initialRequiredPlans: requiredPlans,
+                  desiredRequiredPlans: requiredPlans,
+                  institutionPlanGrants,
+                  courseInstancePlanGrants,
+                  enrollmentCount,
+                  enrollmentLimit,
+                  enrollmentLimitSource,
+                  externalGradingQuestionCount,
+                  workspaceQuestionCount,
+                  editable,
+                  csrfToken: resLocals.__csrf_token,
+                },
+              )}
             </div>
           </div>
         </main>

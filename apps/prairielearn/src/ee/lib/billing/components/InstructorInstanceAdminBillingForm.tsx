@@ -1,5 +1,5 @@
-import { EncodedData } from '@prairielearn/browser-utils';
-import { html } from '@prairielearn/html';
+import { h } from 'preact';
+import React, { useState } from 'preact/hooks';
 
 import { type PlanName, planGrantsMatchPlanFeatures } from '../plans-types.js';
 
@@ -22,6 +22,14 @@ interface InstructorInstanceAdminBillingState {
   computeCanChange: boolean;
   computeDidChange: boolean;
   computeAlert: AlertProps | null;
+}
+
+export interface InstructorInstanceAdminBillingFormProps
+  extends InstructorInstanceAdminBillingInput {
+  enrollmentLimitSource: 'course_instance' | 'institution';
+  externalGradingQuestionCount: number;
+  workspaceQuestionCount: number;
+  csrfToken: string;
 }
 
 interface AlertProps {
@@ -88,14 +96,6 @@ export function instructorInstanceAdminBillingState(
   };
 }
 
-export interface InstructorInstanceAdminBillingFormProps
-  extends InstructorInstanceAdminBillingInput {
-  enrollmentLimitSource: 'course_instance' | 'institution';
-  externalGradingQuestionCount: number;
-  workspaceQuestionCount: number;
-  csrfToken: string;
-}
-
 export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdminBillingFormProps) {
   const {
     enrollmentCount,
@@ -107,6 +107,17 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
     csrfToken,
   } = props;
 
+  const [basicPlanEnabled, setBasicPlanEnabled] = useState(
+    props.initialRequiredPlans.includes('basic'),
+  );
+  const [computePlanEnabled, setComputePlanEnabled] = useState(
+    props.initialRequiredPlans.includes('compute'),
+  );
+
+  const requiredPlans: PlanName[] = [];
+  if (basicPlanEnabled) requiredPlans.push('basic');
+  if (computePlanEnabled) requiredPlans.push('compute');
+
   const {
     studentBillingEnabled,
     studentBillingCanChange,
@@ -114,7 +125,10 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
     computeEnabled,
     computeCanChange,
     computeAlert,
-  } = instructorInstanceAdminBillingState(props);
+  } = instructorInstanceAdminBillingState({
+    ...props,
+    desiredRequiredPlans: requiredPlans,
+  });
 
   const enrollmentLimitPercentage = Math.min(100, (enrollmentCount / enrollmentLimit) * 100);
   const enrollmentLimitExceeded = enrollmentCount > enrollmentLimit;
@@ -128,31 +142,30 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
       ? 'bg-warning'
       : 'bg-primary';
 
-  return html`
+  return (
     <form method="POST" class="js-billing-form">
-      ${EncodedData(props, 'billing-form-data')}
       <h2 class="h4">Enrollments</h2>
       <div class="mb-3">
         <div class="d-flex flex-row align-items-center">
           <span class="mr-2">
-            ${formatEnrollmentCount(enrollmentCount, enrollmentLimit, studentBillingEnabled)}
+            {formatEnrollmentCount(enrollmentCount, enrollmentLimit, studentBillingEnabled)}
           </span>
           <div
-            class="progress flex-grow-1 ${studentBillingEnabled ? 'd-none' : ''}"
+            class={`progress flex-grow-1 ${studentBillingEnabled ? 'd-none' : ''}`}
             style="max-width: 100px"
           >
             <div
-              class="progress-bar ${enrollmentLimitProgressBarColor}"
+              class={`progress-bar ${enrollmentLimitProgressBarColor}`}
               role="progressbar"
-              style="width: ${enrollmentLimitProgressBarPercentage}%"
-              aria-valuenow="${enrollmentCount}"
-              aria-valuemin="0"
-              aria-valuemax="${enrollmentLimit}"
+              style={{ width: `${enrollmentLimitProgressBarPercentage}%` }}
+              aria-valuenow={enrollmentCount}
+              aria-valuemin={0}
+              aria-valuemax={enrollmentLimit}
             ></div>
           </div>
         </div>
         <div class="small text-muted">
-          ${enrollmentLimitExplanation({
+          {enrollmentLimitExplanation({
             studentBillingEnabled,
             enrollmentLimit,
             enrollmentLimitSource,
@@ -165,10 +178,11 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
           class="form-check-input"
           type="checkbox"
           name="student_billing_enabled"
-          ${studentBillingEnabled ? 'checked' : ''}
+          checked={studentBillingEnabled}
+          disabled={!studentBillingCanChange}
           value="1"
           id="studentBillingEnabled"
-          ${!studentBillingCanChange ? 'disabled' : ''}
+          onChange={(e) => setBasicPlanEnabled(e.currentTarget.checked)}
         />
         <label class="form-check-label" for="studentBillingEnabled">
           Enable student billing for enrollments
@@ -178,7 +192,7 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
           student billing will allow your course instance to exceed any enrollment limits that would
           otherwise apply.
         </p>
-        ${MaybeAlert(studentBillingAlert)}
+        {studentBillingAlert && <MaybeAlert {...studentBillingAlert} />}
       </div>
 
       <h2 class="h4">Features</h2>
@@ -192,10 +206,11 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
           class="form-check-input"
           type="checkbox"
           name="compute_enabled"
-          ${computeEnabled ? 'checked' : ''}
+          checked={computeEnabled}
+          disabled={!computeCanChange}
           value="1"
           id="computeEnabled"
-          ${!computeCanChange ? 'disabled' : ''}
+          onChange={(e) => setComputePlanEnabled(e.currentTarget.checked)}
         />
         <label class="form-check-label" for="computeEnabled">
           External grading and workspaces
@@ -203,19 +218,17 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
         <p class="small text-muted">
           Students will be able to use questions that utilize external grading and/or workspaces.
           This course has
-          <strong>${pluralizeQuestionCount(externalGradingQuestionCount)}</strong> that use external
-          grading and <strong>${pluralizeQuestionCount(workspaceQuestionCount)}</strong> that use
+          <strong>{pluralizeQuestionCount(externalGradingQuestionCount)}</strong> that use external
+          grading and <strong>{pluralizeQuestionCount(workspaceQuestionCount)}</strong> that use
           workspaces.
         </p>
-        ${MaybeAlert(computeAlert)}
+        {computeAlert && <MaybeAlert {...computeAlert} />}
       </div>
 
+      {/* TODO: something should be showing this. But what/when? */}
       <div
         class="alert alert-warning js-student-billing-warning"
-        data-student-billing-enabled="${studentBillingEnabled}"
-        data-compute-enabled="${computeEnabled}"
-        data-enrollment-count="${enrollmentCount}"
-        data-enrollment-limit="${enrollmentLimit}"
+        data-student-billing-enabled={studentBillingEnabled}
         hidden
       >
         Any students currently enrolled in your course will lose access until they have paid for the
@@ -224,15 +237,16 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
         your students.
       </div>
 
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="submit" class="btn btn-primary" ${!editable ? 'disabled' : null}>Save</button>
+      <input type="hidden" name="__csrf_token" value={csrfToken} />
+      <button type="submit" class="btn btn-primary" disabled={!editable}>
+        Save
+      </button>
     </form>
-  `;
+  );
 }
 
-function MaybeAlert(props: AlertProps | null) {
-  if (!props) return null;
-  return html`<div class="alert alert-${props.color}">${props.message}</div>`;
+function MaybeAlert(props: AlertProps) {
+  return <div class={`alert alert-${props.color}`}>${props.message}</div>;
 }
 
 function enrollmentLimitExplanation({
