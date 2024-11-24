@@ -230,8 +230,6 @@ Some courses may use libraries that are common across multiple questions. For su
 }
 ```
 
-
-
 ### Example Usage of `serverFilesCourse` for static data
 
 The Python autograder is able to retrieve information from `serverFilesCourse`. This can be used when there are files and other static data that can be shared across multiple questions. For example, assume there is a data file called `chem.json` used in multiple questions. The file can be saved in the `serverFilesCourse` directory within the course root directory, for example at `serverFilesCourse/compounds/chem.json`.
