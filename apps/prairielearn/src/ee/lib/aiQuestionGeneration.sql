@@ -32,14 +32,8 @@ WHERE
 -- BLOCK insert_draft_question_metadata
 INSERT INTO
   draft_question_metadata (question_id, created_by, updated_by)
-SELECT
-  $question_id,
-  u.user_id,
-  u.user_id
-FROM
-  users AS u
-WHERE
-  u.uid = $creator_id;
+VALUES
+  ($question_id, $creator_id, $creator_id);
 
 -- BLOCK insert_ai_generation_prompt
 INSERT INTO

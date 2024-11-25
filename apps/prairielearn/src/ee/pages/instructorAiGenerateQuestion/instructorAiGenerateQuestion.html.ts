@@ -285,6 +285,37 @@ ${threads[threads.length - 1].python}</textarea
                             Adjust question
                           </button>
                         </form>
+                      </div>
+                      <hr />
+                      <div class="mt-3">
+                        <form class="" name="question-save-form" method="POST">
+                          <input type="hidden" name="__action" value="save_question" />
+                          <input
+                            type="hidden"
+                            name="__csrf_token"
+                            value="${resLocals.__csrf_token}"
+                          />
+                          <input type="hidden" name="unsafe_qid" value="${qid}" />
+                          <div class="input-group mb-3">
+                            <input
+                              type="text"
+                              class="form-control"
+                              placeholder="Question Title"
+                              aria-label="Question title"
+                              name="title"
+                            />
+                          </div>
+                          <div class="input-group mb-3">
+                            <input
+                              type="text"
+                              class="form-control"
+                              placeholder="Question ID (ex: addNumbers)"
+                              aria-label="Question ID (ex: addNumbers)"
+                              name="qid"
+                            />
+                          </div>
+                          <button class="btn btn-primary">Save Question</button>
+                        </form>
                       </div>`
               }
                 
@@ -317,93 +348,6 @@ ${threads[threads.length - 1].python}</textarea
     </html>
   `.toString();
 }
-
-export const GenerationResults = (
-  generatedHTML: string | undefined,
-  generatedPython: string | undefined,
-  seqId: string,
-  resLocals,
-): string => {
-  if (generatedHTML === undefined) {
-    return html`
-      <div id="generation-results">
-        <hr />
-        <h1>Generation Failed</h1>
-        <p>The generated code did not include a question.html file.</p>
-        <a href="${resLocals.urlPrefix + '/jobSequence/' + seqId}" target="_blank">
-          See Job Logs
-        </a>
-      </div>
-    `.toString();
-  }
-  return html`
-    <div id="generation-results">
-      <p>Generation Results:</p>
-      <a href="${resLocals.urlPrefix + '/jobSequence/' + seqId}" target="_blank">
-        [DEBUG] See Job Logs
-      </a>
-      <div class="mr-auto">
-        <span class="card-title"> Generated HTML </span>
-      </div>
-      <div id="card-html">
-        <textarea id="output-html" class="bg-dark text-white rounded p-3" style="width:100%">
-${generatedHTML} 3
-        </textarea
-        >
-      </div>
-      ${generatedPython === undefined
-        ? ''
-        : html`
-            <div class="mr-auto">
-              <span class="card-title"> Generated Python </span>
-            </div>
-            <div id="card-python">
-              <textarea
-                id="output-python"
-                class="bg-dark text-white rounded p-3"
-                style="width:100%"
-              >
-${generatedPython} 
-              </textarea
-              >
-            </div>
-          `}
-      <form
-        name="regen-question-form"
-        hx-post="${resLocals.urlPrefix}/ai_generate_question"
-        hx-target="#generation-results"
-        hx-swap="outerHTML"
-        hx-disabled-elt="button"
-      >
-        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-        <input type="hidden" name="__action" value="regenerate_question" />
-        <input type="hidden" name="unsafe_sequence_job_id" value="${seqId}" />
-        <div class="form-group">
-          <label for="user-prompt-llm">What needs to be changed?</label>
-          <textarea name="prompt" id="user-prompt-llm" class="form-control"></textarea>
-        </div>
-        <button class="btn btn-primary">
-          <span
-            class="spinner-grow spinner-grow-sm d-none"
-            role="status"
-            aria-hidden="true"
-            data-loading-class-remove="d-none"
-          ></span>
-          Adjust question
-        </button>
-      </form>
-      <br />
-      <div>
-        <form class="" name="resync-context-form" method="POST">
-          <input type="hidden" name="__action" value="save_question" />
-          <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-          <input type="hidden" name="unsafe_sequence_job_id" value="${seqId}" />
-          <button class="btn btn-primary">Save Question</button>
-        </form>
-      </div>
-    </div>
-  `.toString();
-};
 
 export function GenerationFailure({
   urlPrefix,

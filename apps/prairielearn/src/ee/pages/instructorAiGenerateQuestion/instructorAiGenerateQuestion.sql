@@ -30,7 +30,7 @@ WHERE
 
 -- BLOCK select_generation_thread_items
 SELECT
-  *
+  ai_question_generation_prompts.*
 FROM
   ai_question_generation_prompts
   JOIN questions ON ai_question_generation_prompts.question_id = questions.id

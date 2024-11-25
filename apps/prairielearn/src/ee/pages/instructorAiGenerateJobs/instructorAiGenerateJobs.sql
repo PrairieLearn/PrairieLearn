@@ -1,13 +1,13 @@
--- BLOCK select_generation_sequence_by_course
+-- BLOCK select_drafts_by_course_id
 SELECT
-  to_jsonb(js.*) AS job_sequence,
-  to_jsonb(u.*) AS user
+  dqm.*,
+  q.qid,
+  u.uid
 FROM
-  job_sequences AS js
-  LEFT JOIN users AS u ON (js.authn_user_id = u.user_id)
+  questions AS q
+  LEFT JOIN draft_question_metadata AS dqm ON dqm.question_id = q.id
+  LEFT JOIN users As u ON u.user_id = dqm.created_by
 WHERE
-  js.course_id = $course_id
-  AND js.type IN ('ai_question_generate', 'ai_question_regenerate')
-ORDER BY
-  js.start_date,
-  js.id;
+  q.course_id = $course_id
+  AND q.draft IS TRUE
+  AND q.deleted_at IS NULL;

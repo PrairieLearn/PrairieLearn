@@ -14,7 +14,6 @@ import {
   type Question,
   QuestionSchema,
 } from '../../../lib/db-types.js';
-import { QuestionDeleteEditor } from '../../../lib/editors.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import {
@@ -24,15 +23,10 @@ import {
 } from '../../../lib/question-render.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
-import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
 
-import {
-  AiGeneratePage,
-  GenerationFailure,
-  GenerationResults,
-} from './instructorAiGenerateQuestion.html.js';
+import { AiGeneratePage, GenerationFailure } from './instructorAiGenerateQuestion.html.js';
 
 const router = express.Router();
 
@@ -42,6 +36,8 @@ export async function saveGeneratedQuestion(
   res,
   htmlFileContents: string | undefined,
   pythonFileContents: string | undefined,
+  title?: string,
+  qid?: string,
 ): Promise<string> {
   const files = {};
 
@@ -60,6 +56,8 @@ export async function saveGeneratedQuestion(
     user_id: res.locals.user.user_id,
     authn_user_id: res.locals.authn_user.user_id,
     has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+    qid,
+    title,
     files,
   });
 
@@ -166,14 +164,7 @@ router.post(
         res.set({
           'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_question?qid=${result.questionQid.substring(11)}`,
         });
-        res.send(
-          GenerationResults(
-            result.htmlResult,
-            result.pythonResult,
-            result.jobSequenceId,
-            res.locals,
-          ),
-        );
+        res.send();
       } else {
         res.send(
           GenerationFailure({
@@ -214,7 +205,7 @@ router.post(
         req.body.prompt,
         threads[threads.length - 1].html || '',
         threads[threads.length - 1].python || '',
-        req.body.unsafe_qid,
+        qidFull,
         res.locals.user.user_id,
         res.locals.authz_data.has_course_permission_edit,
       );
@@ -224,14 +215,7 @@ router.post(
           'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_question?qid=${req.body.unsafe_qid}`,
         });
 
-        res.send(
-          GenerationResults(
-            result.htmlResult,
-            result.pythonResult,
-            result.jobSequenceId,
-            res.locals,
-          ),
-        );
+        res.send();
       } else {
         res.send(
           GenerationFailure({
@@ -241,22 +225,23 @@ router.post(
         );
       }
     } else if (req.body.__action === 'save_question') {
-      const genJobs = await selectJobsByJobSequenceId(req.body.unsafe_sequence_job_id);
-      if (
-        genJobs.length !== 1 ||
-        !genJobs[0]?.course_id ||
-        !idsEqual(genJobs[0]?.course_id, res.locals.course.id)
-      ) {
-        throw new error.HttpStatusError(
-          403,
-          `Job sequence ${req.body.unsafe_sequence_job_id} not found.`,
-        );
+      const draftQid = `__drafts__/${req.body.unsafe_qid}`;
+      const threads = await queryRows(
+        sql.select_generation_thread_items,
+        { qid: draftQid, course_id: res.locals.course.id.toString() },
+        AiGenerationPromptSchema,
+      );
+
+      if (threads.length === 0) {
+        throw new error.HttpStatusError(403, `Draft question ${req.body.unsafe_qid} not found.`);
       }
 
       const qid = await saveGeneratedQuestion(
         res,
-        genJobs[0]?.data?.html,
-        genJobs[0]?.data?.python,
+        threads[threads.length - 1].html || undefined,
+        threads[threads.length - 1].python || undefined,
+        req.body.title,
+        req.body.qid,
       );
 
       res.redirect(res.locals.urlPrefix + '/question/' + qid + '/settings');
@@ -268,11 +253,19 @@ router.post(
       );
 
       for (const question of questions) {
-        const locals = res.locals;
-        locals['question'] = question;
-        const editor = new QuestionDeleteEditor({ locals });
-        const serverJob = await editor.prepareServerJob();
-        await editor.executeWithServerJob(serverJob);
+        const client = getCourseFilesClient();
+
+        const result = await client.deleteQuestion.mutate({
+          course_id: res.locals.course.id,
+          user_id: res.locals.user.user_id,
+          authn_user_id: res.locals.authn_user.user_id,
+          has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+          question_id: question.id,
+        });
+
+        if (result.status === 'error') {
+          throw new error.HttpStatusError(500, `Cannot delete draft question: ${question.qid}`);
+        }
       }
       const queryUrl = req.originalUrl.split('?')[1];
       res.send(AiGeneratePage({ resLocals: res.locals, queryUrl }));

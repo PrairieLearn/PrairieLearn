@@ -3,6 +3,7 @@ import * as parse5 from 'parse5';
 
 import { loadSqlEquiv, queryRows, queryRow, queryAsync } from '@prairielearn/postgres';
 
+import * as b64Util from '../../lib/base64-util.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { QuestionGenerationContextEmbeddingSchema, QuestionSchema } from '../../lib/db-types.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
@@ -453,7 +454,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
     await queryAsync(sql.insert_ai_generation_prompt, {
-      qid: questionId,
+      question_id: questionId,
       prompting_user_id: userId,
       prompting_authn_user_id: authnUserId,
       prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
@@ -469,11 +470,11 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     const files: Record<string, string> = {};
     if (results?.html) {
-      files['question.html'] = results?.html;
+      files['question.html'] = b64Util.b64EncodeUnicode(html);
     }
 
     if (results?.python) {
-      files['server.py'] = results?.python;
+      files['server.py'] = b64Util.b64EncodeUnicode(results?.python);
     }
 
     const client = getCourseFilesClient();

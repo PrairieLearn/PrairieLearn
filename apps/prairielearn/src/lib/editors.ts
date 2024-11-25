@@ -1048,7 +1048,6 @@ export class QuestionAddEditor extends Editor {
 
 export class QuestionModifyEditor extends Editor {
   private question: Question;
-  private origHash: string;
   private files: Record<string, string>;
 
   constructor(

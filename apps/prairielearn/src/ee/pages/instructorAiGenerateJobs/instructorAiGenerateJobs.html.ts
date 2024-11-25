@@ -1,26 +1,17 @@
-import { z } from 'zod';
-
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
-import { JobStatus } from '../../../components/JobStatus.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
-import { JobSequenceSchema, UserSchema } from '../../../lib/db-types.js';
 
-export const JobRowSchema = z.object({
-  job_sequence: JobSequenceSchema,
-  user: UserSchema.nullable(),
-});
-
-type JobRow = z.infer<typeof JobRowSchema>;
+import { type DraftMetadataWithQid } from './instructorAiGenerateJobs.js';
 
 export function InstructorAIGenerateJobs({
   resLocals,
-  jobs,
+  drafts,
 }: {
   resLocals: Record<string, any>;
-  jobs: JobRow[];
+  drafts: DraftMetadataWithQid[];
 }) {
   return html`
     <!doctype html>
@@ -37,30 +28,28 @@ export function InstructorAIGenerateJobs({
               <table class="table table-sm table-hover" aria-label="AI question generation jobs">
                 <thead>
                   <tr>
-                    <th>Date</th>
-                    <th>User</th>
-                    <th>Status</th>
+                    <th>Draft ID</th>
+                    <th>Created At</th>
+                    <th>Created By</th>
                     <th>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
-                  ${jobs.map(
+                  ${drafts.map(
                     (row) => html`
                       <tr>
+                        <td>${row.qid}</td>
                         <td>
-                          ${row.job_sequence.start_date == null
+                          ${row.created_at == null
                             ? html`&mdash;`
-                            : formatDate(
-                                row.job_sequence.start_date,
-                                resLocals.course.display_timezone,
-                              )}
+                            : formatDate(row.created_at, resLocals.course.display_timezone)}
                         </td>
-                        <td>${row.user?.uid ?? '(System)'}</td>
-                        <td>${JobStatus({ status: row.job_sequence.status })}</td>
+                        <td>${row.uid ?? '(System)'}</td>
                         <td>
                           <a
-                            href="${resLocals.urlPrefix}/ai_generate_question_job/${row.job_sequence
-                              .id}"
+                            href="${resLocals.urlPrefix}/ai_generate_question?qid=${row.qid.substring(
+                              11,
+                            )}"
                             class="btn btn-xs btn-info"
                           >
                             Details
