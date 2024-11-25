@@ -5,9 +5,9 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import {
-  InstructorAIGenerateJobs,
+  InstructorAIGenerateDrafts,
   draftMetadataWithQidSchema,
-} from './instructorAiGenerateJobs.html.js';
+} from './instructorAiGenerateDrafts.html.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -25,7 +25,7 @@ router.get(
       draftMetadataWithQidSchema,
     );
 
-    res.send(InstructorAIGenerateJobs({ resLocals: res.locals, drafts }));
+    res.send(InstructorAIGenerateDrafts({ resLocals: res.locals, drafts }));
   }),
 );
 

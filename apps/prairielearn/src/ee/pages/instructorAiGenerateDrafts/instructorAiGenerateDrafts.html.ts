@@ -18,7 +18,7 @@ export const draftMetadataWithQidSchema = z.object({
 });
 export type DraftMetadataWithQid = z.infer<typeof draftMetadataWithQidSchema>;
 
-export function InstructorAIGenerateJobs({
+export function InstructorAIGenerateDrafts({
   resLocals,
   drafts,
 }: {
@@ -35,7 +35,7 @@ export function InstructorAIGenerateJobs({
         ${Navbar({ navPage: 'course_admin', navSubPage: 'questions', resLocals })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">Generation job history</div>
+            <div class="card-header bg-primary text-white">AI Generation Draft Questions</div>
             <div class="table-responsive">
               <table class="table table-sm table-hover" aria-label="AI question generation jobs">
                 <thead>
@@ -65,7 +65,7 @@ export function InstructorAIGenerateJobs({
                                 )}"
                                 class="btn btn-xs btn-info"
                               >
-                                Details
+                                Keep Editing
                               </a>
                             </td>`
                           : html`<td>Not available</td>`}

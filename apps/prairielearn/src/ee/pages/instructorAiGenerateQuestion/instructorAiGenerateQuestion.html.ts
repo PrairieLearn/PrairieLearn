@@ -169,10 +169,9 @@ export function AiGeneratePage({
                       </select>
                       <div id="generation-results"></div>
                     </div>`
-                  : html`<div class="container text-center">
+                  : html`<div class="container">
                         <div class="row justify-content-center">
                           <div class="col">
-                            Threads:
                             ${threads
                               .filter((x) => {
                                 return x.prompt_type !== 'auto_revision';
@@ -323,7 +322,7 @@ ${threads[threads.length - 1].python}</textarea
               <br />
               <div>
                 <a href="${resLocals.urlPrefix}/ai_generate_question_jobs" class="btn btn-primary">
-                  Previous Generation Jobs
+                  Draft Questions
                 </a>
               </div>
             </div>
