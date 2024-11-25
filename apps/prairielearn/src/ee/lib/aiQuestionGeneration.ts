@@ -452,7 +452,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
     await queryAsync(sql.insert_ai_generation_prompt, {
-      qid: questionId,
+      question_id: questionId,
       prompting_user_id: authnUserId,
       prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
       user_prompt: revisionPrompt,
