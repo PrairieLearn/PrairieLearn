@@ -191,7 +191,6 @@ const SKIP_ROUTES = [
   '/pl/course_instance/:course_instance_id/instructor/ai_generate_question/variant/:variant_id/submission/:submission_id',
   '/pl/course/:course_id/ai_generate_question/variant/:variant_id/submission/:submission_id',
 
-
   // These pages just redirect to other pages and thus don't have to be tested.
   '/pl/course_instance/:course_instance_id/instructor/assessment/:assessment_id/manual_grading/assessment_question/:assessment_question_id/next_ungraded',
   '/pl/course_instance/:course_instance_id/instructor/loadFromDisk',
