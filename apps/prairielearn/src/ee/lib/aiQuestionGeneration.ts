@@ -445,11 +445,12 @@ Keep in mind you are not just generating an example; you are generating an actua
   const results = extractFromCompletion(completion, job);
 
   const html = results?.html || originalHTML;
+  const python = results.python || originalPython;
 
   let errors: string[] = [];
 
   if (html && typeof html === 'string') {
-    errors = validateHTML(html, false, !!results?.python);
+    errors = validateHTML(html, false, !!python);
   }
 
   if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
@@ -461,8 +462,8 @@ Keep in mind you are not just generating an example; you are generating an actua
       user_prompt: revisionPrompt,
       system_prompt: sysPrompt,
       response: completion.choices[0].message.content,
-      html: results?.html,
-      python: results?.python,
+      html,
+      python,
       errors,
       completion,
       job_sequence_id: jobSequenceId,
@@ -474,7 +475,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     }
 
     if (results?.python) {
-      files['server.py'] = b64Util.b64EncodeUnicode(results?.python);
+      files['server.py'] = b64Util.b64EncodeUnicode(python);
     }
 
     const client = getCourseFilesClient();
@@ -494,7 +495,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   }
 
   job.data.html = html;
-  job.data.python = results.python;
+  job.data.python = python;
 
   if (errors.length > 0 && numRegens > 0) {
     const auto_revisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
@@ -505,7 +506,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       originalPrompt,
       revisionPrompt: auto_revisionPrompt,
       originalHTML: html,
-      originalPython: typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
+      originalPython: python,
       numRegens: numRegens - 1,
       isAutomated: true,
       questionId,

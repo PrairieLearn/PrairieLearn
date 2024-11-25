@@ -38,7 +38,7 @@ export function InstructorAIGenerateJobs({
                   ${drafts.map(
                     (row) => html`
                       <tr>
-                        <td>${row.qid}</td>
+                        <td>${row.qid ?? html`&mdash;`}</td>
                         <td>
                           ${row.created_at == null
                             ? html`&mdash;`
