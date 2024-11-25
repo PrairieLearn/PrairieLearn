@@ -17,16 +17,3 @@ WHERE
   q.course_id = $course_id
   AND q.deleted_at IS NULL
   AND q.draft IS TRUE;
-
--- BLOCK select_generation_thread_items
-SELECT
-  *
-FROM
-  ai_question_generation_prompts
-  JOIN questions ON ai_question_generation_prompts.question_id = questions.id
-WHERE
-  questions.qid = $qid
-  AND questions.course_id = $course_id
-  AND questions.deleted_at IS NULL
-ORDER BY
-  ai_question_generation_prompts.id;
