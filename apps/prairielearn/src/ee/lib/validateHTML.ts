@@ -142,6 +142,7 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): strin
 function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
   const errors: string[] = [];
   let displayDropdown = false;
+  let usedAnswersName = false;
   let usedAllOfTheAbove = false;
   let usedNoneOfTheAbove = false;
   let usedAllOfTheAboveFeedback = false;
@@ -154,6 +155,7 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
       const val = attr.value;
       switch (key) {
         case 'answers-name':
+          usedAnswersName = true;
           break;
         case 'weight':
           assertInt('pl-multiple-choice', key, val, errors);
@@ -210,6 +212,9 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
     }
   }
 
+  if (!usedAnswersName) {
+    errors.push('pl-multiple-choice: answers-name is a required attribute.');
+  }
   if (!usedAllOfTheAbove && usedAllOfTheAboveFeedback) {
     errors.push(
       'pl-multiple-choice: if using all-of-the-above-feedback, you must also use all-of-the-above.',
@@ -491,12 +496,14 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
   const errors: string[] = [];
   let usedPartialCredit = true;
   let usedPartialCreditMethod = false;
+  let usedAnswersName = false;
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
       const key = attr.name;
       const val = attr.value;
       switch (key) {
         case 'answers-name':
+          usedAnswersName = true;
           break;
         case 'weight':
         case 'number-answers':
@@ -531,6 +538,10 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
           errors.push(`pl-checkbox: ${key} is not a valid attribute.`);
       }
     }
+  }
+
+  if (!usedAnswersName) {
+    errors.push('pl-checkbox: answers-name is a required attribute.');
   }
 
   if (usedPartialCreditMethod && !usedPartialCredit) {
