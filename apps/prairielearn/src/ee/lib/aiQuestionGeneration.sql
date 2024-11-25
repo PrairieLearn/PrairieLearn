@@ -69,8 +69,9 @@ VALUES
     to_jsonb($errors::text[]),
     $completion,
     $job_sequence_id
-  )
-  -- BLOCK select_question_by_qid_and_course
+  );
+  
+-- BLOCK select_question_by_qid_and_course
 SELECT
   *
 FROM
