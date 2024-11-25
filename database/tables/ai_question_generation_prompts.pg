@@ -5,7 +5,6 @@ columns
     id: bigint not null default nextval('ai_question_generation_prompts_id_seq'::regclass)
     job_sequence_id: bigint
     prompt_type: enum_ai_question_generation_prompt_type not null
-    prompting_authn_user_id: bigint
     prompting_user_id: bigint
     python: text
     question_id: bigint
@@ -18,6 +17,5 @@ indexes
 
 foreign-key constraints
     ai_question_generation_prompts_job_sequence_id_fkey: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
-    ai_question_generation_prompts_prompting_authn_user_id_fkey: FOREIGN KEY (prompting_authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
     ai_question_generation_prompts_prompting_user_id_fkey: FOREIGN KEY (prompting_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
     ai_question_generation_prompts_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE SET NULL

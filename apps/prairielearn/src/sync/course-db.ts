@@ -877,12 +877,6 @@ async function loadInfoForDirectory<T extends { uuid: string }>({
         tolerateMissing: recursive,
       });
       if (info) {
-        if (info.data) {
-          //it's a draft if it's of the form .../__drafts__/question/info.json
-          //only Questions have property draft or clientFiles
-          const pathSplit = infoFilePath.split(path.sep);
-          info.data['draft'] = pathSplit[pathSplit.length - 3] === '__drafts__';
-        }
         infoFiles[path.join(relativeDir, dir)] = info;
       } else if (recursive) {
         try {
@@ -1422,6 +1416,11 @@ export async function loadQuestions(
   for (const qid in questions) {
     if (qid[0] === '@') {
       infofile.addError(questions[qid], "Question IDs are not allowed to begin with '@'");
+    }
+    if (questions[qid].data) {
+      //it's a draft if it's of the form .../__drafts__/question/info.json
+      const pathSplit = qid.split(path.sep);
+      questions[qid].data['draft'] = pathSplit[0] === '__drafts__';
     }
   }
   checkDuplicateUUIDs(

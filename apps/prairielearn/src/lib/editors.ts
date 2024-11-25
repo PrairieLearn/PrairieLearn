@@ -942,7 +942,6 @@ export class QuestionAddEditor extends Editor {
     this.title = params.title;
     this.files = params.files;
     this.isDraft = params.isDraft;
-    this.draftNumber = -1;
   }
 
   async write() {
@@ -967,8 +966,6 @@ export class QuestionAddEditor extends Editor {
             z.number(),
           );
         }
-
-        this.draftNumber = draftNumber;
 
         return { qid: `__drafts__/draft_${draftNumber}`, title: `draft #${draftNumber}` };
       }

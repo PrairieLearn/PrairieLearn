@@ -74,10 +74,17 @@ export const createQuestion = privateProcedure
       uuid: editor.uuid,
     });
 
-    return {
-      status: 'success',
-      job_sequence_id: serverJob.jobSequenceId,
-      question_id: question.id,
-      question_qid: `__drafts__/draft_${editor.draftNumber}`,
-    };
+    if (question.qid) {
+      return {
+        status: 'success',
+        job_sequence_id: serverJob.jobSequenceId,
+        question_id: question.id,
+        question_qid: question.qid,
+      };
+    } else {
+      return {
+        status: 'error',
+        job_sequence_id: serverJob.jobSequenceId,
+      };
+    }
   });
