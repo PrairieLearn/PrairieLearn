@@ -1,27 +1,16 @@
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import { DateFromISOString, IdSchema } from '../../../lib/db-types.js';
-
-import { InstructorAIGenerateJobs } from './instructorAiGenerateJobs.html.js';
+import {
+  InstructorAIGenerateJobs,
+  draftMetadataWithQidSchema,
+} from './instructorAiGenerateJobs.html.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
-
-const draftMetadataWithQidSchema = z.object({
-  created_at: DateFromISOString.nullable(),
-  created_by: IdSchema.nullable(),
-  id: IdSchema,
-  uid: z.string().nullable(),
-  question_id: IdSchema.nullable(),
-  updated_by: IdSchema.nullable(),
-  qid: z.string().nullable(),
-});
-export type DraftMetadataWithQid = z.infer<typeof draftMetadataWithQidSchema>;
 
 router.get(
   '/',

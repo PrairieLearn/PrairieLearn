@@ -1,10 +1,22 @@
+import { z } from 'zod';
+
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
+import { DateFromISOString, IdSchema } from '../../../lib/db-types.js';
 
-import { type DraftMetadataWithQid } from './instructorAiGenerateJobs.js';
+export const draftMetadataWithQidSchema = z.object({
+  created_at: DateFromISOString.nullable(),
+  created_by: IdSchema.nullable(),
+  id: IdSchema,
+  uid: z.string().nullable(),
+  question_id: IdSchema.nullable(),
+  updated_by: IdSchema.nullable(),
+  qid: z.string().nullable(),
+});
+export type DraftMetadataWithQid = z.infer<typeof draftMetadataWithQidSchema>;
 
 export function InstructorAIGenerateJobs({
   resLocals,
