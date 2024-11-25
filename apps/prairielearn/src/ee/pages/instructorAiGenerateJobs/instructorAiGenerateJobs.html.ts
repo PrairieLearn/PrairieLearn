@@ -45,16 +45,18 @@ export function InstructorAIGenerateJobs({
                             : formatDate(row.created_at, resLocals.course.display_timezone)}
                         </td>
                         <td>${row.uid ?? '(System)'}</td>
-                        <td>
-                          <a
-                            href="${resLocals.urlPrefix}/ai_generate_question?qid=${row.qid.substring(
-                              11,
-                            )}"
-                            class="btn btn-xs btn-info"
-                          >
-                            Details
-                          </a>
-                        </td>
+                        ${row.qid
+                          ? html`<td>
+                              <a
+                                href="${resLocals.urlPrefix}/ai_generate_question?qid=${row.qid.substring(
+                                  11,
+                                )}"
+                                class="btn btn-xs btn-info"
+                              >
+                                Details
+                              </a>
+                            </td>`
+                          : html`<td>Not available</td>`}
                       </tr>
                     `,
                   )}
