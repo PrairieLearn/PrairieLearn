@@ -18,16 +18,6 @@ WHERE
   AND q.deleted_at IS NULL
   AND q.draft IS TRUE;
 
--- BLOCK select_question_by_qid_and_course
-SELECT
-  *
-FROM
-  questions as q
-WHERE
-  q.qid = $qid
-  AND q.course_id = $course_id
-  AND q.deleted_at IS NULL;
-
 -- BLOCK select_generation_thread_items
 SELECT
   *

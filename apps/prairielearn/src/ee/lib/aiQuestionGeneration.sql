@@ -46,7 +46,6 @@ INSERT INTO
   ai_question_generation_prompts (
     question_id,
     prompting_user_id,
-    prompting_authn_user_id,
     prompt_type,
     user_prompt,
     system_prompt,
@@ -61,7 +60,6 @@ VALUES
   (
     $question_id,
     $prompting_user_id,
-    $prompting_authn_user_id,
     $prompt_type,
     $user_prompt,
     $system_prompt,

@@ -78,6 +78,6 @@ export const createQuestion = privateProcedure
       status: 'success',
       job_sequence_id: serverJob.jobSequenceId,
       question_id: question.id,
-      question_qid: `__drafts__/draft_${editor.draftNumber}`,
+      question_qid: question.qid,
     };
   });

@@ -267,8 +267,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
       await queryAsync(sql.insert_ai_generation_prompt, {
         question_id: saveResults.question_id,
-        prompting_user_id: userId,
-        prompting_authn_user_id: authnUserId,
+        prompting_user_id: authnUserId,
         prompt_type: 'initial',
         user_prompt: userPrompt,
         system_prompt: sysPrompt,
@@ -282,7 +281,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       job.data['questionId'] = saveResults.question_id;
       job.data['questionQid'] = saveResults.question_qid;
     } else {
-      job.error('Adding question as draft failed.');
+      throw Error('Adding question as draft failed.');
     }
 
     job.data.html = html;
@@ -454,8 +453,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
     await queryAsync(sql.insert_ai_generation_prompt, {
       qid: questionId,
-      prompting_user_id: userId,
-      prompting_authn_user_id: authnUserId,
+      prompting_user_id: authnUserId,
       prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
       user_prompt: revisionPrompt,
       system_prompt: sysPrompt,
@@ -488,7 +486,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     });
 
     if (result.status === 'error') {
-      job.error('Draft mutation failed.');
+      throw Error('Draft mutation failed.');
     }
   }
 
