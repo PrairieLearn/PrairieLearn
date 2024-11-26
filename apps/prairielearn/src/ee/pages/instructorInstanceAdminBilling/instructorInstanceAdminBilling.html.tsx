@@ -1,8 +1,8 @@
-import { html } from '@prairielearn/html';
+import { h } from 'preact';
 
-import { HeadContents } from '../../../components/HeadContents.html.js';
-import { Navbar } from '../../../components/Navbar.html.js';
-import { renderWithProps } from '../../../lib/preact.js';
+import { PreactHeadContents } from '../../../components/HeadContents.html.js';
+import { PreactNavbar } from '../../../components/Navbar.html.js';
+import { renderHtmlDocument, renderWithProps } from '../../../lib/preact.js';
 import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
 
@@ -31,26 +31,21 @@ export function InstructorCourseInstanceBilling({
   editable: boolean;
   resLocals: Record<string, any>;
 }) {
-  return html`
-    <!doctype html>
+  return renderHtmlDocument(
     <html lang="en">
       <head>
-        ${HeadContents({ resLocals })}
+        <PreactHeadContents resLocals={resLocals} />
       </head>
       <body>
-        ${Navbar({ resLocals })}
+        <PreactNavbar resLocals={resLocals} />
         <main id="content" class="container mb-4">
-          ${!editable
-            ? html`
-                <div class="alert alert-warning">
-                  Only course owners can change billing settings.
-                </div>
-              `
-            : null}
+          {!editable && (
+            <div class="alert alert-warning">Only course owners can change billing settings.</div>
+          )}
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">Billing</div>
             <div class="card-body">
-              ${renderWithProps(
+              {renderWithProps(
                 'InstructorInstanceAdminBillingForm',
                 InstructorInstanceAdminBillingForm,
                 {
@@ -71,6 +66,6 @@ export function InstructorCourseInstanceBilling({
           </div>
         </main>
       </body>
-    </html>
-  `.toString();
+    </html>,
+  );
 }

@@ -1,3 +1,5 @@
+import { h } from 'preact';
+
 import { flash, type FlashMessageType } from '@prairielearn/flash';
 import { html, type HtmlValue, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
@@ -7,6 +9,15 @@ import { config } from '../lib/config.js';
 import { IssueBadge } from './IssueBadge.html.js';
 import type { NavbarType, NavPage, NavSubPage } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.html.js';
+
+export function PreactNavbar(props: {
+  resLocals: Record<string, any>;
+  navPage?: NavPage;
+  navSubPage?: NavSubPage;
+  navbarType?: NavbarType;
+}) {
+  return <div dangerouslySetInnerHTML={{ __html: Navbar(props).toString() }}></div>;
+}
 
 export function Navbar({
   resLocals,
