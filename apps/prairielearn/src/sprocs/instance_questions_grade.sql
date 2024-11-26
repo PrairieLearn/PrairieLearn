@@ -28,6 +28,9 @@ BEGIN
             false,
             jsonb_build_object('grading_job_id', grading_job_id),
             '{}'::jsonb,
+            -- The first one is user_id, the second is authn_user_id. We can't
+            -- differentiate between the two at this point, so we just use the
+            -- same value for both.
             instance_questions_grade.authn_user_id,
             instance_questions_grade.authn_user_id
         )
