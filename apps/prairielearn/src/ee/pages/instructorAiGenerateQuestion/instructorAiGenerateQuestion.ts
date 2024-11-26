@@ -245,30 +245,6 @@ router.post(
       );
 
       res.redirect(res.locals.urlPrefix + '/question/' + qid + '/settings');
-    } else if (req.body.__action === 'delete_drafts') {
-      const questions = await queryRows(
-        sql.select_all_drafts,
-        { course_id: res.locals.course.id.toString() },
-        QuestionSchema,
-      );
-
-      for (const question of questions) {
-        const client = getCourseFilesClient();
-
-        const result = await client.deleteQuestion.mutate({
-          course_id: res.locals.course.id,
-          user_id: res.locals.user.user_id,
-          authn_user_id: res.locals.authn_user.user_id,
-          has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-          question_id: question.id,
-        });
-
-        if (result.status === 'error') {
-          throw new error.HttpStatusError(500, `Cannot delete draft question: ${question.qid}`);
-        }
-      }
-      const queryUrl = req.originalUrl.split('?')[1];
-      res.send(AiGeneratePage({ resLocals: res.locals, queryUrl }));
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
       res.locals.question = await queryRow(
         sql.select_question_by_qid_and_course,

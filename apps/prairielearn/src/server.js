@@ -1297,7 +1297,7 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_jobs', [
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts', [
     (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question', [
@@ -1813,7 +1813,7 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
-  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_jobs', [
+  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_drafts', [
     (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/ai_generate_question', [

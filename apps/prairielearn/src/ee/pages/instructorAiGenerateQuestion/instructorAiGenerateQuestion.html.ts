@@ -61,8 +61,15 @@ export function AiGeneratePage({
       <body hx-ext="loading-states">
         ${Navbar({ navPage: 'course_admin', resLocals })}
         <main id="content" class="container-fluid">
+        <div>
+          <a href="${resLocals.urlPrefix}/ai_generate_question_drafts" class="btn btn-primary mb-4">
+            <i class="fa fa-arrow-left" aria-hidden="true"></i>
+            Back to draft questions
+          </a>
+        </div>
           <div class="card  mb-4">
-            <div class="card-header bg-primary text-white d-flex">Generate Question using AI</div>
+            <div class="card-header bg-primary text-white d-flex justify-content-between">Generate Question using AI
+            ${qid ? html`<div class="d-flex flex-row-reverse"><button type="button" class="btn btn-sm btn-light" data-toggle="modal" data-target="#finalizeModal">Finalize question</button></div>` : ''}</div>
             <div class="card-body">
               ${
                 !threads || threads.length <= 0
@@ -179,15 +186,51 @@ export function AiGeneratePage({
                               .map((x) => {
                                 return html`<div class="d-flex flex-row-reverse">
                                     <div class="p-3 mb-2 bg-secondary text-white rounded">
-                                      You prompted: ${x.user_prompt}
+                                      ${x.user_prompt}
                                     </div>
                                   </div>
                                   <div class="d-flex flex-row">
                                     <div class="p-3 mb-2 bg-dark text-white rounded">
-                                      We created: v${x.id}
+                                      ${x.prompt_type === 'initial'
+                                        ? 'We generated a potential question.'
+                                        : 'We have made changes. Please check the preview and prompt for further revisions.'}
                                     </div>
                                   </div>`;
                               })}
+
+                            <div>
+                              <form
+                                name="regen-question-form"
+                                hx-post="${resLocals.urlPrefix}/ai_generate_question?${queryUrl}"
+                                hx-swap="outerHTML"
+                                hx-disabled-elt="button"
+                              >
+                                <input
+                                  type="hidden"
+                                  name="__csrf_token"
+                                  value="${resLocals.__csrf_token}"
+                                />
+                                <input type="hidden" name="__action" value="regenerate_question" />
+                                <input type="hidden" name="unsafe_qid" value="${qid}" />
+                                <div class="form-group">
+                                  <label for="user-prompt-llm">What needs to be changed?</label>
+                                  <textarea
+                                    name="prompt"
+                                    id="user-prompt-llm"
+                                    class="form-control"
+                                  ></textarea>
+                                </div>
+                                <button class="btn btn-primary">
+                                  <span
+                                    class="spinner-grow spinner-grow-sm d-none"
+                                    role="status"
+                                    aria-hidden="true"
+                                    data-loading-class-remove="d-none"
+                                  ></span>
+                                  Adjust question
+                                </button>
+                              </form>
+                            </div>
                           </div>
                           <div class="col">
                             <ul class="nav nav-pills">
@@ -252,86 +295,79 @@ ${threads[threads.length - 1].python}</textarea
                           </div>
                         </div>
                       </div>
-                      <div>
-                        <form
-                          name="regen-question-form"
-                          hx-post="${resLocals.urlPrefix}/ai_generate_question?${queryUrl}"
-                          hx-swap="outerHTML"
-                          hx-disabled-elt="button"
-                        >
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <input type="hidden" name="__action" value="regenerate_question" />
-                          <input type="hidden" name="unsafe_qid" value="${qid}" />
-                          <div class="form-group">
-                            <label for="user-prompt-llm">What needs to be changed?</label>
-                            <textarea
-                              name="prompt"
-                              id="user-prompt-llm"
-                              class="form-control"
-                            ></textarea>
+                      <div
+                        class="modal fade"
+                        id="finalizeModal"
+                        tabindex="-1"
+                        role="dialog"
+                        aria-hidden="true"
+                      >
+                        <div class="modal-dialog" role="document">
+                          <div class="modal-content">
+                            <div class="modal-header">
+                              <h5 class="modal-title">Finalize question</h5>
+                              <button
+                                type="button"
+                                class="close"
+                                data-dismiss="modal"
+                                aria-label="Close"
+                              >
+                                <span aria-hidden="true">&times;</span>
+                              </button>
+                            </div>
+                            <form class="" name="question-save-form" method="POST">
+                              <input type="hidden" name="__action" value="save_question" />
+                              <input
+                                type="hidden"
+                                name="__csrf_token"
+                                value="${resLocals.__csrf_token}"
+                              />
+                              <input type="hidden" name="unsafe_qid" value="${qid}" />
+                              <div class="modal-body">
+                                <div class="input-group mb-3">
+                                  <input
+                                    type="text"
+                                    class="form-control"
+                                    placeholder="Question Title"
+                                    aria-label="Question title"
+                                    name="title"
+                                  />
+                                </div>
+                                <div class="input-group mb-3">
+                                  <input
+                                    type="text"
+                                    class="form-control"
+                                    placeholder="Question ID (ex: addNumbers)"
+                                    aria-label="Question ID (ex: addNumbers)"
+                                    name="qid"
+                                  />
+                                </div>
+                              </div>
+                              <div class="modal-footer">
+                                <button
+                                  type="button"
+                                  class="btn btn-secondary"
+                                  data-dismiss="modal"
+                                >
+                                  Close
+                                </button>
+                                <button class="btn btn-primary">Finalize question</button>
+                              </div>
+                            </form>
                           </div>
-                          <button class="btn btn-primary">
-                            <span
-                              class="spinner-grow spinner-grow-sm d-none"
-                              role="status"
-                              aria-hidden="true"
-                              data-loading-class-remove="d-none"
-                            ></span>
-                            Adjust question
-                          </button>
-                        </form>
-                      </div>
-                      <hr />
-                      <div class="mt-3">
-                        <form class="" name="question-save-form" method="POST">
-                          <input type="hidden" name="__action" value="save_question" />
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <input type="hidden" name="unsafe_qid" value="${qid}" />
-                          <div class="input-group mb-3">
-                            <input
-                              type="text"
-                              class="form-control"
-                              placeholder="Question Title"
-                              aria-label="Question title"
-                              name="title"
-                            />
-                          </div>
-                          <div class="input-group mb-3">
-                            <input
-                              type="text"
-                              class="form-control"
-                              placeholder="Question ID (ex: addNumbers)"
-                              aria-label="Question ID (ex: addNumbers)"
-                              name="qid"
-                            />
-                          </div>
-                          <button class="btn btn-primary">Save Question</button>
-                        </form>
+                        </div>
                       </div>`
               }
-                
-              </div>
-              <br />
-              <div>
-                <a href="${resLocals.urlPrefix}/ai_generate_question_jobs" class="btn btn-primary">
-                  Draft Questions
-                </a>
+              ${
+                qid
+                  ? html`please
+                      <u><a data-toggle="modal" data-target="#finalizeModal"question</a></u
+                      >.`
+                  : ''
+              }
               </div>
             </div>
           </div>
-          <form class="" name="sync-context-form" method="POST">
-            <input type="hidden" name="__action" value="delete_drafts" />
-            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-            <button class="btn btn-primary">Delete All Draft Questions for Course</button>
-          </form>
         </main>
       </body>
       <script>

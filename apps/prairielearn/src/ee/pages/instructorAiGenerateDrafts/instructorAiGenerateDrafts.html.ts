@@ -35,7 +35,15 @@ export function InstructorAIGenerateDrafts({
         ${Navbar({ navPage: 'course_admin', navSubPage: 'questions', resLocals })}
         <main id="content" class="container-fluid">
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white">AI Generation Draft Questions</div>
+            <div class="card-header bg-primary text-white d-flex justify-content-between">
+              AI Generation Draft Questions
+              <div class="d-flex flex-row-reverse">
+                <a href="${resLocals.urlPrefix}/ai_generate_question" class="btn btn-sm btn-light">
+                  <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
+                  <span class="d-none d-sm-inline">Generate new question with AI</span>
+                </a>
+              </div>
+            </div>
             <div class="table-responsive">
               <table class="table table-sm table-hover" aria-label="AI question generation jobs">
                 <thead>
@@ -75,6 +83,11 @@ export function InstructorAIGenerateDrafts({
                 </tbody>
               </table>
             </div>
+            <form class="mt-3" name="sync-context-form" method="POST">
+              <input type="hidden" name="__action" value="delete_drafts" />
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+              <button class="btn btn-primary">Delete All Draft Questions for Course</button>
+            </form>
           </div>
         </main>
       </body>

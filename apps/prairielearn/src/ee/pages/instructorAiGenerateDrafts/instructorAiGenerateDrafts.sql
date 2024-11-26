@@ -1,4 +1,4 @@
--- BLOCK select_drafts_by_course_id
+-- BLOCK select_draft_generation_info_by_course_id
 SELECT
   dqm.*,
   q.qid,
@@ -11,3 +11,13 @@ WHERE
   q.course_id = $course_id
   AND q.draft IS TRUE
   AND q.deleted_at IS NULL;
+
+-- BLOCK select_drafts_by_course_id
+SELECT
+  *
+FROM
+  questions AS q
+WHERE
+  q.course_id = $course_id
+  AND q.deleted_at IS NULL
+  AND q.draft IS TRUE;

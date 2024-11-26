@@ -8,16 +8,6 @@ WHERE
   AND q.course_id = $course_id
   AND q.deleted_at IS NULL;
 
--- BLOCK select_all_drafts
-SELECT
-  *
-FROM
-  questions AS q
-WHERE
-  q.course_id = $course_id
-  AND q.deleted_at IS NULL
-  AND q.draft IS TRUE;
-
 -- BLOCK select_question_by_qid_and_course
 SELECT
   *
