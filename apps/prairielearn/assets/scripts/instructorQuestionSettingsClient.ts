@@ -21,7 +21,7 @@ onDocumentReady(() => {
     valueField: 'name',
     searchField: ['name', 'description'],
     closeAfterSelect: true,
-    plugins: ['dropdown_input'],
+    plugins: ['dropdown_input', 'no_backspace_delete'],
     maxItems: 1,
     render: {
       option(data: Topic) {
