@@ -269,6 +269,6 @@
       "dist/*",
       "public/*"
     ],
-    "ext": "js,ts,json,sql"
+    "ext": "js,jsx,ts,tsx,json,sql"
   }
 }

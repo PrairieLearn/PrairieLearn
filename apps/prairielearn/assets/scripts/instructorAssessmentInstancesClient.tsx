@@ -620,7 +620,7 @@ onDocumentReady(() => {
             </div>
           ) : null}
         </p>
-        <div class="btn-toolbar">
+        <div class="btn-toolbar justify-content-end">
           <button type="button" class="btn btn-secondary mr-2" data-dismiss="popover">
             Cancel
           </button>
