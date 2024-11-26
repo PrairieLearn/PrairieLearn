@@ -156,7 +156,9 @@ export function InstructorQuestionSettings({
                   >
                     <tr>
                       <th class="align-middle">Topic</th>
-                      <td>
+                      <!-- The style attribute is necessary until we upgrade to Bootstrap 5.3 -->
+                      <!-- This is used by tom-select to style the active item in the dropdown -->
+                      <td style="--bs-tertiary-bg: #f8f9fa">
                         ${canEdit
                           ? html`
                               <select id="topic" name="topic" placeholder="Select a topic">
