@@ -358,13 +358,7 @@ ${threads[threads.length - 1].python}</textarea
                         </div>
                       </div>`
               }
-              ${
-                qid
-                  ? html`please
-                      <u><a data-toggle="modal" data-target="#finalizeModal"question</a></u
-                      >.`
-                  : ''
-              }
+              ${qid ? html`To use a question in assessments, please <u><a data-toggle="modal" data-target="#finalizeModal">finalize the question</a></u>.` : ''}
               </div>
             </div>
           </div>
