@@ -95,6 +95,16 @@ if ('h' in argv || 'help' in argv) {
   process.exit(0);
 }
 
+function excludeRoutes(routes, handler) {
+  return (req, res, next) => {
+    if (routes.some((route) => req.path.startsWith(route))) {
+      next();
+    } else {
+      handler(req, res, next);
+    }
+  };
+}
+
 /**
  * Creates the express application and sets up all PrairieLearn routes.
  * @return {Promise<import('express').Express>} The express "app" object that was created.
@@ -113,7 +123,7 @@ export async function initExpress() {
 
   // This should come before the session middleware so that we don't
   // create a session every time we get a health check request.
-  app.get('/pl/webhooks/ping', function (req, res, _next) {
+  app.get('/pl/webhooks/ping', function (req, res) {
     res.send('.');
   });
 
@@ -125,33 +135,30 @@ export async function initExpress() {
     next();
   });
 
-  app.use(
-    createSessionMiddleware({
-      secret: config.secretKey,
-      store: new PostgresSessionStore(),
-      cookie: {
-        name: 'pl2_session',
-        writeNames: ['prairielearn_session', 'pl2_session'],
-        // Ensure that the legacy session cookie doesn't have a domain specified.
-        // We can only safely set domains on the new session cookie.
-        writeOverrides: [{ domain: undefined }, { domain: config.cookieDomain ?? undefined }],
-        httpOnly: true,
-        maxAge: config.sessionStoreExpireSeconds * 1000,
-        secure: 'auto', // uses Express "trust proxy" setting
-        sameSite: config.sessionCookieSameSite,
-      },
-    }),
-  );
+  const sessionMiddleware = createSessionMiddleware({
+    secret: config.secretKey,
+    store: new PostgresSessionStore(),
+    cookie: {
+      name: 'pl2_session',
+      writeNames: ['prairielearn_session', 'pl2_session'],
+      // Ensure that the legacy session cookie doesn't have a domain specified.
+      // We can only safely set domains on the new session cookie.
+      writeOverrides: [{ domain: undefined }, { domain: config.cookieDomain ?? undefined }],
+      httpOnly: true,
+      maxAge: config.sessionStoreExpireSeconds * 1000,
+      secure: 'auto', // uses Express "trust proxy" setting
+      sameSite: config.sessionCookieSameSite,
+    },
+  });
 
-  // Attach the flash middleware immediately after the session middleware so
-  // that all future handlers can write flash messages. This must come after
-  // the session middleware so that it can access the session.
-  app.use(flashMiddleware());
-
-  // This middleware helps ensure that sessions remain alive (un-expired) as
-  // long as users are somewhat frequently active. See the documentation for
-  // `config.sessionStoreAutoExtendThrottleSeconds` for more information.
-  app.use((req, res, next) => {
+  const sessionRouter = express.Router();
+  sessionRouter.use(sessionMiddleware);
+  sessionRouter.use(flashMiddleware());
+  sessionRouter.use((req, res, next) => {
+    // This middleware helps ensure that sessions remain alive (un-expired) as
+    // long as users are somewhat frequently active. See the documentation for
+    // `config.sessionStoreAutoExtendThrottleSeconds` for more information.
+    //
     // Compute the number of milliseconds until the session expires.
     const sessionTtl = req.session.getExpirationDate().getTime() - Date.now();
 
@@ -164,6 +171,9 @@ export async function initExpress() {
 
     next();
   });
+
+  // API routes don't utilize sessions; don't run the session/flash middleware for them.
+  app.use(excludeRoutes(['/pl/api'], sessionRouter));
 
   app.use(function (req, res, next) {
     if (req.headers['user-agent']) {
@@ -516,7 +526,7 @@ export async function initExpress() {
     (await import('./pages/authLogout/authLogout.js')).default,
   ]);
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
-  app.use('/pl/api', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
+  app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
 
   // Must come after the authentication middleware, as we need to read the
   // `authn_is_administrator` property from the response locals.
@@ -536,7 +546,10 @@ export async function initExpress() {
     await enterpriseOnly(async () => (await import('./ee/webhooks/stripe/index.js')).default),
   );
 
-  app.use((await import('./middlewares/csrfToken.js')).default); // sets and checks res.locals.__csrf_token
+  // Set and check `res.locals.__csrf_token`. We exclude API routes as those
+  // don't require CSRF protection (and in fact can't have it at all).
+  app.use(excludeRoutes(['/pl/api'], (await import('./middlewares/csrfToken.js')).default));
+
   app.use((await import('./middlewares/logRequest.js')).default);
 
   // load accounting for authenticated accesses
@@ -857,6 +870,7 @@ export async function initExpress() {
   //////////////////////////////////////////////////////////////////////
   // API ///////////////////////////////////////////////////////////////
 
+  app.use('/pl/api/trpc', (await import('./api/trpc/index.js')).default);
   app.use('/pl/api/v1', (await import('./api/v1/index.js')).default);
 
   //////////////////////////////////////////////////////////////////////
@@ -2139,10 +2153,17 @@ export async function startServer() {
   const app = await initExpress();
 
   if (config.serverType === 'https') {
-    const key = await fs.promises.readFile(config.sslKeyFile);
-    const cert = await fs.promises.readFile(config.sslCertificateFile);
-    const ca = [await fs.promises.readFile(config.sslCAFile)];
-    var options = { key, cert, ca };
+    /** @type { import('https').ServerOptions} */
+    const options = {};
+    if (config.sslKeyFile) {
+      options.key = await fs.promises.readFile(config.sslKeyFile);
+    }
+    if (config.sslCertificateFile) {
+      options.cert = await fs.promises.readFile(config.sslCertificateFile);
+    }
+    if (config.sslCAFile) {
+      options.ca = [await fs.promises.readFile(config.sslCAFile)];
+    }
     server = https.createServer(options, app);
     logger.verbose('server listening to HTTPS on port ' + config.serverPort);
   } else if (config.serverType === 'http') {

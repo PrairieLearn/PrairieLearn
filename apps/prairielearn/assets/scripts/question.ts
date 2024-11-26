@@ -1,6 +1,6 @@
 import { type Socket, io } from 'socket.io-client';
 
-import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
+import { onDocumentReady, decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
 
 import type {
   StatusMessage,
@@ -240,10 +240,15 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     mathjaxTypeset();
   }
   if (msg.questionScorePanel) {
-    const questionScorePanel = document.getElementById('question-score-panel');
-    if (questionScorePanel) {
-      questionScorePanel.outerHTML = msg.questionScorePanel;
-    }
+    const parsedHTML = parseHTMLElement(document, msg.questionScorePanel);
+
+    // We might be getting new markup for just the content, or legacy markup
+    // for the whole panel.
+    //
+    // TODO: switch back to using a specific ID once we drop the legacy markup.
+    // Using a specific ID ensures we can find things easily via grep.
+    const targetElement = document.getElementById(parsedHTML.id);
+    targetElement?.replaceWith(parsedHTML);
   }
   if (msg.assessmentScorePanel) {
     const assessmentScorePanel = document.getElementById('assessment-score-panel');
@@ -252,10 +257,15 @@ function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
     }
   }
   if (msg.questionPanelFooter) {
-    const questionPanelFooter = document.getElementById('question-panel-footer');
-    if (questionPanelFooter) {
-      questionPanelFooter.outerHTML = msg.questionPanelFooter;
-    }
+    const parsedHTML = parseHTMLElement(document, msg.questionPanelFooter);
+
+    // We might be getting new markup for just the content, or legacy markup
+    // for the whole panel.
+    //
+    // TODO: switch back to using a specific ID once we drop the legacy markup.
+    // Using a specific ID ensures we can find things easily via grep.
+    const targetElement = document.getElementById(parsedHTML.id);
+    targetElement?.replaceWith(parsedHTML);
   }
   if (msg.questionNavNextButton) {
     const questionNavNextButton = document.getElementById('question-nav-next');
