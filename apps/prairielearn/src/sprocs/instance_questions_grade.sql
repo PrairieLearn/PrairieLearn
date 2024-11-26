@@ -22,12 +22,12 @@ BEGIN
         -- farther upstream, and avoid recording an issue here.
         PERFORM issues_insert_for_variant(
             v.id,
-            'Submission when instance question is closed',
-            '',
-            false,
-            false,
-            jsonb_build_object('grading_job_id', grading_job_id),
-            '{}'::jsonb,
+            'Submission when instance question is closed', -- student message
+            '', -- instructor message
+            false, -- manually reported
+            false, -- course-caused
+            jsonb_build_object('grading_job_id', grading_job_id), -- course data
+            '{}'::jsonb, -- system data
             -- The first one is user_id, the second is authn_user_id. We can't
             -- differentiate between the two at this point, so we just use the
             -- same value for both.
