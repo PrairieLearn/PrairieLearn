@@ -46,6 +46,7 @@ router.get(
         assessment,
         course,
         course_instance_id,
+        course_sharing_name: course.sharing_name,
         questions,
       }),
     );
