@@ -2,7 +2,7 @@ import { h } from 'preact';
 
 import { PreactHeadContents } from '../../../components/HeadContents.html.js';
 import { PreactNavbar } from '../../../components/Navbar.html.js';
-import { renderHtmlDocument, renderWithProps } from '../../../lib/preact.js';
+import { renderHtmlDocument, renderForClientHydration } from '../../../lib/preact.js';
 import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';
 
@@ -45,7 +45,7 @@ export function InstructorCourseInstanceBilling({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">Billing</div>
             <div class="card-body">
-              {renderWithProps(
+              {renderForClientHydration(
                 'InstructorInstanceAdminBillingForm',
                 InstructorInstanceAdminBillingForm,
                 {

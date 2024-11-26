@@ -20,7 +20,7 @@ export function renderHtmlDocument(content: VNode) {
   return `<!doctype html>\n${render(content)}`;
 }
 
-export function renderWithProps<T>(
+export function renderForClientHydration<T>(
   id: string,
   Component: ComponentType<T>,
   props: T & Attributes,
