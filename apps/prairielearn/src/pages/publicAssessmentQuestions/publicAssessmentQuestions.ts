@@ -14,8 +14,8 @@ const router = express.Router({ mergeParams: true });
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const assessment_id = req.params.assessment_id
-    const course_instance_id = req.params.course_instance_id
+    const assessment_id = req.params.assessment_id;
+    const course_instance_id = req.params.course_instance_id;
     const isAssessmentPublic = await checkAssessmentPublic(assessment_id);
     if (!isAssessmentPublic) {
       throw new error.HttpStatusError(404, 'Not Found');
