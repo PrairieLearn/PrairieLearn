@@ -486,7 +486,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     });
 
     if (result.status === 'error') {
-      throw Error('Draft mutation failed.');
+      throw new Error('Draft mutation failed.');
     }
   }
 
