@@ -170,12 +170,10 @@ function extractFiles<T extends RowForFiles>(
   }
 
   // v3 question data.
-  return row.submitted_answer?._files?.map((file: any) => {
-    return {
-      filename: makeFilename(file.name),
-      contents: parseFileContents(file.contents),
-    };
-  });
+  return row.submitted_answer?._files?.map((file: any) => ({
+    filename: makeFilename(file.name),
+    contents: parseFileContents(file.contents),
+  }));
 }
 
 function extractFilesForSubmissions(row: AssessmentInstanceSubmissionRow): ArchiveFile[] | null {
@@ -227,7 +225,7 @@ interface ArchiveFile {
 async function pipeCursorToArchive<T>(
   res: express.Response,
   cursor: sqldb.CursorIterator<T>,
-  transform: (row: T) => ArchiveFile[] | null,
+  extractFiles: (row: T) => ArchiveFile[] | null,
 ) {
   const archive = archiver('zip');
   const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(' ', '');
@@ -237,11 +235,18 @@ async function pipeCursorToArchive<T>(
 
   for await (const rows of cursor.iterate(100)) {
     for (const row of rows) {
-      const files = transform(row);
+      // Sort files to ensure consistent ordering; this is done
+      // for backwards compatibility and may not be necessary.
+      const files = extractFiles(row)?.sort((a, b) =>
+        (a.filename ?? '').localeCompare(b.filename ?? ''),
+      );
+
       if (!files) continue;
 
       for (const file of files) {
-        if (file.filename == null || file.contents == null) continue;
+        // Exclude any files that are missing a name or contents.
+        // We allow empty files, so we specifically check for null, not truthiness.
+        if (!file.filename || file.contents == null) continue;
 
         archive.append(file.contents, { name: prefix + file.filename });
       }
