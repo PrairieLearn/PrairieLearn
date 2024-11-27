@@ -78,6 +78,7 @@ describe('Editing question settings', () => {
           orig_hash: settingsPageResponse.$('input[name=orig_hash]').val(),
           title: 'New title',
           qid: 'question',
+          topic: 'Test2',
         },
       },
     );
@@ -108,6 +109,7 @@ describe('Editing question settings', () => {
           orig_hash: settingsPageResponse.$('input[name=orig_hash]').val(),
           title: 'New title',
           qid: 'test/question1',
+          topic: 'Test',
         },
       },
     );

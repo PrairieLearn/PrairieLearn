@@ -2987,19 +2987,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@orchidjs/sifter@npm:^1.0.3":
-  version: 1.0.3
-  resolution: "@orchidjs/sifter@npm:1.0.3"
+"@orchidjs/sifter@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@orchidjs/sifter@npm:1.1.0"
   dependencies:
-    "@orchidjs/unicode-variants": "npm:^1.0.4"
-  checksum: 10c0/a0c4659ae7a8729ba7adef1b531e6dea394e9bba0309e3e803d66f6efa3d5d74c6d959540ccd8ae056b7283e1713f937cf81efede2b4ce6dddfa198a3a3f0a35
+    "@orchidjs/unicode-variants": "npm:^1.1.2"
+  checksum: 10c0/615f4c8f340c062d1a944ae88d7d745353e45d14d002c6966bc02ef44aca13c904942836f9ad89cbe2b5d8fa3b885c2b00b65be8d318cabc75f440949068ed6a
   languageName: node
   linkType: hard
 
-"@orchidjs/unicode-variants@npm:^1.0.4":
-  version: 1.0.4
-  resolution: "@orchidjs/unicode-variants@npm:1.0.4"
-  checksum: 10c0/b5e8362b6e98127db4ec9a1e02432f01ac2e679feb9d7cf47d7a77f65161c31cc2635bd511cc04ec7e3bb907fcdb1449ce3867245278c714e4d64ea989c49b9f
+"@orchidjs/unicode-variants@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "@orchidjs/unicode-variants@npm:1.1.2"
+  checksum: 10c0/7836e0766641d79a0337a2a8ca7f49051bb71e19e0e8fc64cdbafac4f2f718abd368b364ad79a9b13547a70e24cebb3cc4d71e75f22791ade8ba80654eb1323f
   languageName: node
   linkType: hard
 
@@ -3758,7 +3758,7 @@ __metadata:
     three: "npm:0.160.1"
     tmp: "npm:^0.2.3"
     tmp-promise: "npm:^3.0.3"
-    tom-select: "npm:^2.3.1"
+    tom-select: "npm:^2.4.1"
     tsx: "npm:^4.19.2"
     typescript: "npm:^5.6.3"
     typescript-cp: "npm:^0.1.9"
@@ -14779,13 +14779,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tom-select@npm:^2.3.1":
-  version: 2.3.1
-  resolution: "tom-select@npm:2.3.1"
+"tom-select@npm:^2.4.1":
+  version: 2.4.1
+  resolution: "tom-select@npm:2.4.1"
   dependencies:
-    "@orchidjs/sifter": "npm:^1.0.3"
-    "@orchidjs/unicode-variants": "npm:^1.0.4"
-  checksum: 10c0/82267fbb10e3573e750aba8da12fe0bdcd71d155b2eb9e86c148bfa9a50a638ff911feaa23f9c8d09b069b47f3a52a766f291d4cf8f399e16be4082e119c1c75
+    "@orchidjs/sifter": "npm:^1.1.0"
+    "@orchidjs/unicode-variants": "npm:^1.1.2"
+  checksum: 10c0/e12917319dc570741c40ba937ff07a212d4644d1b754ee52f284b91a261ed8cca04ae48c9ff90a13cdc9e7d1f97fa7aad389e7c55cc2be60057ffc7259c84b30
   languageName: node
   linkType: hard
 
