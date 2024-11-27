@@ -923,7 +923,6 @@ export class QuestionAddEditor extends Editor {
   private title?: string;
   private files?: Record<string, string>;
   private isDraft?: boolean;
-  draftNumber: number;
 
   constructor(
     params: BaseEditorOptions & {

@@ -1113,6 +1113,7 @@ async function validateAssessment(
   const foundQids = new Set();
   const duplicateQids = new Set();
   const missingQids = new Set();
+  const draftQids = new Set();
   const checkAndRecordQid = (qid: string): void => {
     if (qid[0] === '@') {
       // Question is being imported from another course. We hold off on validating this until
@@ -1126,6 +1127,10 @@ async function validateAssessment(
       foundQids.add(qid);
     } else {
       duplicateQids.add(qid);
+    }
+
+    if (qid in questions && questions[qid].data?.draft) {
+      draftQids.add(qid);
     }
   };
   (assessment.zones || []).forEach((zone) => {
@@ -1258,6 +1263,12 @@ async function validateAssessment(
   if (missingQids.size > 0) {
     errors.push(
       `The following questions do not exist in this course: ${[...missingQids].join(', ')}`,
+    );
+  }
+
+  if (draftQids.size > 0) {
+    errors.push(
+      `The following questions are marked as draft and therefore cannot be used in assessments: ${[...draftQids].join(', ')}`,
     );
   }
 
