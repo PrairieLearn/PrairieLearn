@@ -300,7 +300,7 @@ Keep in mind you are not just generating an example; you are generating an actua
         revisionPrompt: `Please fix the following issues: \n${errors.join('\n')}`,
         originalHTML: html || '',
         originalPython: typeof results?.python === 'string' ? results?.python : undefined,
-        numRegens: 0,
+        remainingAttempts: 0,
         isAutomated: true,
         questionId: saveResults.question_id,
         courseId,
@@ -344,7 +344,7 @@ function traverseForTagNames(ast: any): Set<string> {
  * @param revisionPrompt A prompt with user instructions on how to revise the question.
  * @param originalHTML The question.html file to revise.
  * @param originalPython The server.py file to revise.
- * @param numRegens Number of times that regen could be called.
+ * @param remainingAttempts Number of times that regen could be called.
  * @param isAutomated Whether the regeneration was the result of an automated check or a human revision prompt.
  * @param questionQid The qid of the question to edit.
  * @param courseId The ID of the current course.
@@ -359,7 +359,7 @@ async function regenInternal({
   revisionPrompt,
   originalHTML,
   originalPython,
-  numRegens,
+  remainingAttempts,
   isAutomated,
   questionId,
   questionQid,
@@ -375,7 +375,7 @@ async function regenInternal({
   revisionPrompt: string;
   originalHTML: string;
   originalPython: string | undefined;
-  numRegens: number;
+  remainingAttempts: number;
   isAutomated: boolean;
   questionId: string;
   questionQid: string | undefined;
@@ -493,7 +493,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   job.data.html = html;
   job.data.python = results.python;
 
-  if (errors.length > 0 && numRegens > 0) {
+  if (errors.length > 0 && remainingAttempts > 0) {
     const auto_revisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
     await regenInternal({
       job,
@@ -503,7 +503,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       revisionPrompt: auto_revisionPrompt,
       originalHTML: html,
       originalPython: typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
-      numRegens: numRegens - 1,
+      remainingAttempts: remainingAttempts - 1,
       isAutomated: true,
       questionId,
       questionQid,
@@ -567,7 +567,7 @@ export async function regenerateQuestion(
       revisionPrompt,
       originalHTML,
       originalPython,
-      numRegens: 1,
+      remainingAttempts: 1,
       isAutomated: false,
       questionId: question.id,
       questionQid,
