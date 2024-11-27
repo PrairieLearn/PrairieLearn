@@ -3278,6 +3278,7 @@ __metadata:
     "@prairielearn/aws": "workspace:^"
     "@prairielearn/config": "workspace:^"
     "@prairielearn/docker-utils": "workspace:^"
+    "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/run": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
@@ -3300,6 +3301,7 @@ __metadata:
     logform: "npm:^2.6.1"
     mocha: "npm:^10.8.2"
     nodemon: "npm:^3.1.7"
+    shlex: "npm:^2.1.2"
     sinon: "npm:^19.0.2"
     tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.19.2"
@@ -3743,6 +3745,7 @@ __metadata:
     selector-set: "npm:^1.1.5"
     serve-favicon: "npm:^2.5.0"
     set-cookie-parser: "npm:^2.7.1"
+    shlex: "npm:^2.1.2"
     showdown: "npm:^2.1.0"
     socket.io: "npm:^4.8.1"
     socket.io-adapter: "npm:^2.5.5"
@@ -3892,6 +3895,7 @@ __metadata:
     "@prairielearn/config": "workspace:^"
     "@prairielearn/docker-utils": "workspace:^"
     "@prairielearn/logger": "workspace:^"
+    "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
@@ -3913,6 +3917,7 @@ __metadata:
     mocha: "npm:^10.8.2"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:^3.1.7"
+    shlex: "npm:^2.1.2"
     tsx: "npm:^4.19.2"
     typescript: "npm:^5.6.3"
     typescript-cp: "npm:^0.1.9"
@@ -14040,6 +14045,13 @@ __metadata:
   version: 1.2.1
   resolution: "shimmer@npm:1.2.1"
   checksum: 10c0/ae8b27c389db2a00acfc8da90240f11577685a8f3e40008f826a3bea8b4f3b3ecd305c26be024b4a0fd3b123d132c1569d6e238097960a9a543b6c60760fb46a
+  languageName: node
+  linkType: hard
+
+"shlex@npm:^2.1.2":
+  version: 2.1.2
+  resolution: "shlex@npm:2.1.2"
+  checksum: 10c0/f3f14f65311eba2f24a7d00bf3682b56c052c4088f3c3c94c6d1dcc46c1951fe662edcd85e62933095ce1a6987fe2fb56e1aedb18c2fbe593c23b1f1013390b4
   languageName: node
   linkType: hard
 

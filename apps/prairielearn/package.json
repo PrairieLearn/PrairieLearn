@@ -163,6 +163,7 @@
     "selector-observer": "^2.1.6",
     "selector-set": "^1.1.5",
     "serve-favicon": "^2.5.0",
+    "shlex": "^2.1.2",
     "showdown": "^2.1.0",
     "socket.io": "^4.8.1",
     "socket.io-adapter": "^2.5.5",
