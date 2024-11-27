@@ -74,7 +74,8 @@ export class ExternalGraderLocal {
         // error if the entrypoint is null, which would also happen in
         // production. A future implementation could allow the entrypoint to be
         // skipped to use the default entrypoint from the image, but this would
-        // require equivalent changes to the grader-host.
+        // require equivalent changes to the grader-host; see
+        // https://github.com/PrairieLearn/PrairieLearn/issues/10940.
         throw new Error('No external grading entrypoint specified.');
       }
 
