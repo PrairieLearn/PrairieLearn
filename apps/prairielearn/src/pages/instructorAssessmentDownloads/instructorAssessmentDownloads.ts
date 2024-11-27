@@ -3,11 +3,24 @@ import { pipeline } from 'node:stream/promises';
 import archiver from 'archiver';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import {
+  AssessmentInstanceSchema,
+  AssessmentQuestionSchema,
+  GroupSchema,
+  InstanceQuestionSchema,
+  QuestionSchema,
+  type Submission,
+  SubmissionSchema,
+  UserSchema,
+  type Variant,
+  VariantSchema,
+} from '../../lib/db-types.js';
 import { getGroupConfig } from '../../lib/groups.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 
@@ -21,7 +34,73 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type Columns = [string, string][];
 
-function getFilenames(locals) {
+const AssessmentInstanceSubmissionRowSchema = z.object({
+  uid: UserSchema.shape.uid.nullable(),
+  uin: UserSchema.shape.uin.nullable(),
+  name: UserSchema.shape.name.nullable(),
+  role: z.string().nullable(),
+  assessment_label: z.string(),
+  assessment_instance_number: AssessmentInstanceSchema.shape.number,
+  qid: QuestionSchema.shape.qid,
+  instance_question_number: InstanceQuestionSchema.shape.number,
+  points: InstanceQuestionSchema.shape.points,
+  score_perc: InstanceQuestionSchema.shape.score_perc,
+  auto_points: InstanceQuestionSchema.shape.auto_points,
+  manual_points: InstanceQuestionSchema.shape.manual_points,
+  max_points: AssessmentQuestionSchema.shape.max_points,
+  max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+  max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+  variant_number: VariantSchema.shape.number,
+  variant_seed: VariantSchema.shape.variant_seed,
+  params: SubmissionSchema.shape.params,
+  true_answer: SubmissionSchema.shape.true_answer,
+  options: VariantSchema.shape.options,
+  date: SubmissionSchema.shape.date,
+  submission_id: SubmissionSchema.shape.id,
+  submission_date_formatted: z.string(),
+  submitted_answer: SubmissionSchema.shape.submitted_answer,
+  partial_scores: SubmissionSchema.shape.partial_scores,
+  override_score: SubmissionSchema.shape.override_score,
+  credit: SubmissionSchema.shape.credit,
+  mode: SubmissionSchema.shape.mode,
+  grading_requested_at_formatted: z.string(),
+  graded_at_formatted: z.string(),
+  correct: z.enum(['TRUE', 'FALSE']),
+  feedback: SubmissionSchema.shape.feedback,
+  submission_number: z.number(),
+  final_submission_per_variant: z.boolean(),
+  best_submission_per_variant: z.boolean(),
+  group_name: GroupSchema.shape.name.nullable(),
+  uid_list: z.array(z.string()).nullable(),
+  submission_user: UserSchema.shape.uid.nullable(),
+  assigned_grader: UserSchema.shape.uid.nullable(),
+  last_grader: UserSchema.shape.uid.nullable(),
+});
+type AssessmentInstanceSubmissionRow = z.infer<typeof AssessmentInstanceSubmissionRowSchema>;
+
+const ManualGradingSubmissionRowSchema = z.object({
+  uid: UserSchema.shape.uid.nullable(),
+  uin: UserSchema.shape.uin.nullable(),
+  qid: QuestionSchema.shape.qid,
+  old_score_perc: InstanceQuestionSchema.shape.score_perc,
+  old_auto_points: InstanceQuestionSchema.shape.auto_points,
+  old_manual_points: InstanceQuestionSchema.shape.manual_points,
+  max_points: AssessmentQuestionSchema.shape.max_points,
+  max_auto_points: AssessmentQuestionSchema.shape.max_auto_points,
+  max_manual_points: AssessmentQuestionSchema.shape.max_manual_points,
+  old_feedback: SubmissionSchema.shape.feedback,
+  submission_id: SubmissionSchema.shape.id,
+  params: SubmissionSchema.shape.params,
+  true_answer: SubmissionSchema.shape.true_answer,
+  submitted_answer: SubmissionSchema.shape.submitted_answer,
+  old_partial_scores: SubmissionSchema.shape.partial_scores,
+  group_name: GroupSchema.shape.name.nullable(),
+  uid_list: z.array(z.string()).nullable(),
+});
+
+type ManualGradingSubmissionRow = z.infer<typeof ManualGradingSubmissionRowSchema>;
+
+function getFilenames(locals: Record<string, any>) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
@@ -60,7 +139,96 @@ function getFilenames(locals) {
   return filenames;
 }
 
-async function pipeCursorToArchive(res, cursor: sqldb.CursorIterator<any>) {
+function parseFileContents(contents: any): Buffer | null {
+  if (contents == null) return null;
+
+  try {
+    return Buffer.from(typeof contents === 'string' ? contents : '', 'base64');
+  } catch {
+    // Ignore any errors in reading the contents and treat as a blank file.
+    return Buffer.from('');
+  }
+}
+
+interface RowForFiles {
+  submitted_answer: Submission['submitted_answer'];
+  params: Variant['params'];
+}
+
+function extractFiles<T extends RowForFiles>(
+  row: T,
+  makeFilename: (filename: string | null) => string | null,
+): ArchiveFile[] | null {
+  if (row.submitted_answer?.fileData) {
+    // Legacy v2 question data.
+    return [
+      {
+        filename: makeFilename(row.params?.fileName),
+        contents: parseFileContents(row.submitted_answer.fileData),
+      },
+    ];
+  }
+
+  // v3 question data.
+  return row.submitted_answer?._files?.map((file: any) => {
+    return {
+      filename: makeFilename(file.name),
+      contents: parseFileContents(file.contents),
+    };
+  });
+}
+
+function extractFilesForSubmissions(row: AssessmentInstanceSubmissionRow): ArchiveFile[] | null {
+  // This doesn't handle QIDs with slashes in them:
+  // https://github.com/PrairieLearn/PrairieLearn/issues/7715
+  //
+  // We should probably rethink the directory structure that this will spit out.
+  const filenamePrefix = [
+    row.group_name ?? row.uid,
+    row.assessment_instance_number,
+    row.qid,
+    row.variant_number,
+    row.submission_number,
+    row.submission_id,
+  ].join('_');
+
+  return extractFiles(row, (suffix) => {
+    if (suffix == null) return null;
+
+    return filenamePrefix + '_' + suffix;
+  });
+}
+
+function extractFilesForManualGrading(row: ManualGradingSubmissionRow): ArchiveFile[] | null {
+  // This doesn't handle QIDs with slashes in them:
+  // https://github.com/PrairieLearn/PrairieLearn/issues/7715
+  //
+  // We should probably rethink the directory structure that this will spit out.
+  // We should also aim for more consistency between this function and
+  // `extractFilesForSubmissions`.
+  const filenamePrefix = [
+    row.group_name ?? [row.uid, row.uin].join('_'),
+    row.qid,
+    row.submission_id,
+  ].join('_');
+
+  return extractFiles(row, (suffix) => {
+    if (suffix == null) return null;
+
+    return filenamePrefix + '_' + suffix;
+  });
+}
+
+interface ArchiveFile {
+  filename: string | null;
+  contents: Buffer | null;
+}
+
+async function pipeCursorToArchive<T>(
+  res: express.Response,
+  cursor: sqldb.CursorIterator<T>,
+  transform: (row: T) => ArchiveFile[] | null,
+) {
   const archive = archiver('zip');
   const dirname = (res.locals.assessment_set.name + res.locals.assessment.number).replace(' ', '');
   const prefix = `${dirname}/`;
@@ -69,14 +237,14 @@ async function pipeCursorToArchive(res, cursor: sqldb.CursorIterator<any>) {
 
   for await (const rows of cursor.iterate(100)) {
     for (const row of rows) {
-      let contents: string | Buffer;
-      try {
-        contents = Buffer.from(typeof row.contents === 'string' ? row.contents : '', 'base64');
-      } catch {
-        // Ignore any errors in reading the contents and treat as a blank file.
-        contents = '';
+      const files = transform(row);
+      if (!files) continue;
+
+      for (const file of files) {
+        if (file.filename == null || file.contents == null) continue;
+
+        archive.append(file.contents, { name: prefix + file.filename });
       }
-      archive.append(contents, { name: prefix + row.filename });
     }
   }
   archive.finalize();
@@ -228,6 +396,7 @@ router.get(
     } else if (req.params.filename === filenames.submissionsForManualGradingCsvFilename) {
       const cursor = await sqldb.queryCursor(sql.submissions_for_manual_grading, {
         assessment_id: res.locals.assessment.id,
+        include_files: false,
       });
 
       // Replace user-friendly column names with upload-friendly names
@@ -270,12 +439,16 @@ router.get(
       const include_final = req.params.filename === filenames.finalSubmissionsCsvFilename;
       const include_best = req.params.filename === filenames.bestSubmissionsCsvFilename;
 
-      const cursor = await sqldb.queryCursor(sql.assessment_instance_submissions, {
-        assessment_id: res.locals.assessment.id,
-        include_all,
-        include_final,
-        include_best,
-      });
+      const cursor = await sqldb.queryValidatedCursor(
+        sql.assessment_instance_submissions,
+        {
+          assessment_id: res.locals.assessment.id,
+          include_all,
+          include_final,
+          include_best,
+        },
+        AssessmentInstanceSubmissionRowSchema,
+      );
 
       let submissionColumn = identityColumn;
       if (res.locals.assessment.group_work) {
@@ -317,13 +490,17 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
     } else if (req.params.filename === filenames.filesForManualGradingZipFilename) {
-      const cursor = await sqldb.queryCursor(sql.files_for_manual_grading, {
-        assessment_id: res.locals.assessment.id,
-        group_work: res.locals.assessment.group_work,
-      });
+      const cursor = await sqldb.queryValidatedCursor(
+        sql.submissions_for_manual_grading,
+        {
+          assessment_id: res.locals.assessment.id,
+          include_files: true,
+        },
+        ManualGradingSubmissionRowSchema,
+      );
 
       res.attachment(req.params.filename);
-      await pipeCursorToArchive(res, cursor);
+      await pipeCursorToArchive(res, cursor, extractFilesForManualGrading);
     } else if (
       req.params.filename === filenames.allFilesZipFilename ||
       req.params.filename === filenames.finalFilesZipFilename ||
@@ -333,16 +510,19 @@ router.get(
       const include_final = req.params.filename === filenames.finalFilesZipFilename;
       const include_best = req.params.filename === filenames.bestFilesZipFilename;
 
-      const cursor = await sqldb.queryCursor(sql.assessment_instance_files, {
-        assessment_id: res.locals.assessment.id,
-        include_all,
-        include_final,
-        include_best,
-        group_work: res.locals.assessment.group_work,
-      });
+      const cursor = await sqldb.queryValidatedCursor(
+        sql.assessment_instance_submissions,
+        {
+          assessment_id: res.locals.assessment.id,
+          include_all,
+          include_final,
+          include_best,
+        },
+        AssessmentInstanceSubmissionRowSchema,
+      );
 
       res.attachment(req.params.filename);
-      await pipeCursorToArchive(res, cursor);
+      await pipeCursorToArchive(res, cursor, extractFilesForSubmissions);
     } else if (req.params.filename === filenames.groupsCsvFilename) {
       const groupConfig = await getGroupConfig(res.locals.assessment.id);
       const cursor = await sqldb.queryCursor(sql.group_configs, {
