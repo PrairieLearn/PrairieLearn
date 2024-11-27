@@ -65,7 +65,7 @@ export function InstructorAIGenerateDrafts({
                             : formatDate(row.created_at, resLocals.course.display_timezone)}
                         </td>
                         <td>${row.uid ?? '(System)'}</td>
-                        ${row.qid
+                        ${row.qid && row.id
                           ? html`<td>
                               <a
                                 href="${resLocals.urlPrefix}/ai_generate_question?qid=${row.qid.substring(
