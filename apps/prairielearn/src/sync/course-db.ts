@@ -1128,7 +1128,7 @@ async function validateAssessment(
     } else {
       duplicateQids.add(qid);
     }
-    if (questions[qid].data.draft) {
+    if (questions[qid].data?.draft) {
       draftQids.add(qid);
     }
   };
