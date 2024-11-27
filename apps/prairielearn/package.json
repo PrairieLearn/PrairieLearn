@@ -22,6 +22,7 @@
     "@aws-sdk/credential-providers": "^3.685.0",
     "@aws-sdk/lib-storage": "^3.685.0",
     "@fortawesome/fontawesome-free": "^6.6.0",
+    "@js-temporal/polyfill": "^0.4.4",
     "@node-saml/passport-saml": "^5.0.0",
     "@octokit/rest": "^21.0.2",
     "@prairielearn/aws": "workspace:^",
@@ -150,6 +151,7 @@
     "plist": "^3.1.0",
     "popper.js": "^1.16.1",
     "postgres-interval": "^4.0.2",
+    "preact": "^10.24.2",
     "prettier": "3.3.3",
     "qrcode-svg": "^1.1.0",
     "qs": "^6.13.0",
@@ -270,6 +272,6 @@
       "dist/*",
       "public/*"
     ],
-    "ext": "js,ts,json,sql"
+    "ext": "js,jsx,ts,tsx,json,sql"
   }
 }
