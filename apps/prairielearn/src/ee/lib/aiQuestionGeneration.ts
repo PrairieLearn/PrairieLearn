@@ -281,7 +281,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       job.data['questionId'] = saveResults.question_id;
       job.data['questionQid'] = saveResults.question_qid;
     } else {
-      throw Error('Adding question as draft failed.');
+      throw new Error('Adding question as draft failed.');
     }
 
     job.data.html = html;
