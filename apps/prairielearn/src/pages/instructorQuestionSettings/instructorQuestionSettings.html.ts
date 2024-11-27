@@ -87,6 +87,14 @@ export function InstructorQuestionSettings({
             max-width: 50%;
           }
         </style>
+        <link
+          href="${nodeModulesAssetPath(
+            resLocals.use_bootstrap_4
+              ? 'tom-select/dist/css/tom-select.bootstrap4.css'
+              : 'tom-select/dist/css/tom-select.bootstrap5.css',
+          )}"
+          rel="stylesheet"
+        />
       </head>
       <body>
         ${Navbar({ resLocals })}
@@ -97,14 +105,6 @@ export function InstructorQuestionSettings({
             course: resLocals.course,
             urlPrefix: resLocals.urlPrefix,
           })}
-          <link
-            href="${nodeModulesAssetPath(
-              resLocals.use_bootstrap_4
-                ? 'tom-select/dist/css/tom-select.bootstrap4.css'
-                : 'tom-select/dist/css/tom-select.bootstrap5.css',
-            )}"
-            rel="stylesheet"
-          />
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex">
               <h1>Question Settings</h1>
