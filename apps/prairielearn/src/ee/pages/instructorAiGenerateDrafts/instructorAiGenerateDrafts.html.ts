@@ -10,7 +10,7 @@ import { DateFromISOString, IdSchema } from '../../../lib/db-types.js';
 export const draftMetadataWithQidSchema = z.object({
   created_at: DateFromISOString.nullable(),
   created_by: IdSchema.nullable(),
-  id: IdSchema,
+  id: IdSchema.nullable(),
   uid: z.string().nullable(),
   question_id: IdSchema.nullable(),
   updated_by: IdSchema.nullable(),

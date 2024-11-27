@@ -22,11 +22,13 @@ router.get(
       throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
-    const drafts = await queryRows(
-      sql.select_draft_generation_info_by_course_id,
-      { course_id: res.locals.course.id },
-      draftMetadataWithQidSchema,
-    );
+    const drafts = (
+      await queryRows(
+        sql.select_draft_generation_info_by_course_id,
+        { course_id: res.locals.course.id },
+        draftMetadataWithQidSchema,
+      )
+    ).filter((x) => x.qid !== null);
 
     res.send(InstructorAIGenerateDrafts({ resLocals: res.locals, drafts }));
   }),
