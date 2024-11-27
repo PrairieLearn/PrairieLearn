@@ -353,7 +353,7 @@ export function QuestionFooter({
   }
 }
 
-function QuestionFooterContent({
+export function QuestionFooterContent({
   resLocals,
   questionContext,
 }: {
