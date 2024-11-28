@@ -30,6 +30,7 @@ import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
+import { selectTopicsByCourseId } from '../../models/topics.js';
 
 import {
   InstructorQuestionSettings,
@@ -114,6 +115,7 @@ router.post(
 
       const origHash = req.body.orig_hash;
       questionInfo.title = req.body.title;
+      questionInfo.topic = req.body.topic;
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
@@ -256,6 +258,9 @@ router.get(
       { question_id: res.locals.question.id },
       SelectedAssessmentsSchema,
     );
+
+    const courseTopics = await selectTopicsByCourseId(res.locals.course.id);
+
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
     let sharingSetsIn;
@@ -301,6 +306,7 @@ router.get(
         infoPath,
         origHash,
         canEdit,
+        courseTopics,
       }),
     );
   }),
