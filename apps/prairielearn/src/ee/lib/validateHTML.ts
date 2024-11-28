@@ -141,8 +141,8 @@ function checkTag(ast: DocumentFragment | ChildNode, optimistic: boolean): strin
  */
 function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
   const errors: string[] = [];
-  let displayDropdown = false;
   let usedAnswersName = false;
+  let displayDropdown = false;
   let usedAllOfTheAbove = false;
   let usedNoneOfTheAbove = false;
   let usedAllOfTheAboveFeedback = false;
@@ -211,7 +211,6 @@ function checkMultipleChoice(ast: DocumentFragment | ChildNode): string[] {
       }
     }
   }
-
   if (!usedAnswersName) {
     errors.push('pl-multiple-choice: answers-name is a required attribute.');
   }
@@ -494,9 +493,9 @@ function checkStringInput(ast: DocumentFragment | ChildNode): string[] {
  */
 function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
   const errors: string[] = [];
+  let usedAnswersName = false;
   let usedPartialCredit = true;
   let usedPartialCreditMethod = false;
-  let usedAnswersName = false;
   if ('attrs' in ast) {
     for (const attr of ast.attrs) {
       const key = attr.name;
@@ -539,11 +538,9 @@ function checkCheckbox(ast: DocumentFragment | ChildNode): string[] {
       }
     }
   }
-
   if (!usedAnswersName) {
     errors.push('pl-checkbox: answers-name is a required attribute.');
   }
-
   if (usedPartialCreditMethod && !usedPartialCredit) {
     errors.push(
       'pl-checkbox: if partial-credit-method is set, then partial-credit must be set to true.',
