@@ -5,7 +5,7 @@ defusedxml==0.7.1
 Faker==30.8.2
 folium==0.18.0
 ipython==8.29.0
-jupyter-collaboration==2.1.2
+jupyter-collaboration==3.0.1
 matplotlib==3.9.2
 nbconvert==7.16.4
 nbformat==5.10.4
