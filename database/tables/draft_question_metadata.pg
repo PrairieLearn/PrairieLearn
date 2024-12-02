@@ -7,6 +7,8 @@ columns
 
 indexes
     draft_question_metadata_pkey: PRIMARY KEY (id) USING btree (id)
+    draft_question_metadata_question_id_key: UNIQUE (question_id) USING btree (question_id)
+    draft_question_metadata_question_id_idx: USING btree (question_id)
 
 foreign-key constraints
     draft_question_metadata_created_by_fkey: FOREIGN KEY (created_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
