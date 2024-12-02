@@ -259,30 +259,31 @@ Keep in mind you are not just generating an example; you are generating an actua
       files,
     });
 
-    if (saveResults.status === 'success') {
-      await queryAsync(sql.insert_draft_question_metadata, {
-        question_id: saveResults.question_id,
-        creator_id: authnUserId,
-      });
-
-      await queryAsync(sql.insert_ai_question_generation_prompt, {
-        question_id: saveResults.question_id,
-        prompting_user_id: authnUserId,
-        prompt_type: 'initial',
-        user_prompt: userPrompt,
-        system_prompt: sysPrompt,
-        response: completion.choices[0].message.content,
-        html: results?.html,
-        python: results?.python,
-        errors,
-        completion,
-        job_sequence_id: serverJob.jobSequenceId,
-      });
-      job.data['questionId'] = saveResults.question_id;
-      job.data['questionQid'] = saveResults.question_qid;
-    } else {
-      throw new Error('Adding question as draft failed.');
+    if (saveResults.status === 'error') {
+      job.fail(`Adding question as draft failed (job sequence: ${saveResults.job_sequence_id})`);
+      return;
     }
+
+    await queryAsync(sql.insert_draft_question_metadata, {
+      question_id: saveResults.question_id,
+      creator_id: authnUserId,
+    });
+
+    await queryAsync(sql.insert_ai_question_generation_prompt, {
+      question_id: saveResults.question_id,
+      prompting_user_id: authnUserId,
+      prompt_type: 'initial',
+      user_prompt: userPrompt,
+      system_prompt: sysPrompt,
+      response: completion.choices[0].message.content,
+      html: results?.html,
+      python: results?.python,
+      errors,
+      completion,
+      job_sequence_id: serverJob.jobSequenceId,
+    });
+    job.data['questionId'] = saveResults.question_id;
+    job.data['questionQid'] = saveResults.question_qid;
 
     job.data.html = html;
     job.data.python = results?.python;
@@ -486,7 +487,8 @@ Keep in mind you are not just generating an example; you are generating an actua
     });
 
     if (result.status === 'error') {
-      throw new Error('Draft mutation failed.');
+      job.fail(`Draft mutation failed (job sequence: ${result.job_sequence_id})`);
+      return;
     }
   }
 
