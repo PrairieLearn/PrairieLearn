@@ -1868,6 +1868,16 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@js-temporal/polyfill@npm:^0.4.4":
+  version: 0.4.4
+  resolution: "@js-temporal/polyfill@npm:0.4.4"
+  dependencies:
+    jsbi: "npm:^4.3.0"
+    tslib: "npm:^2.4.1"
+  checksum: 10c0/9edd8431f38837235c7dc88c48bfb2235ca13ec24f22848cd3ca7ebfdb169a2cb9654e04a7efca1488d2b67b851d84013f0bfa8dc3df207bd496ad13560ec937
+  languageName: node
+  linkType: hard
+
 "@koa/router@npm:^9.0.0":
   version: 9.4.0
   resolution: "@koa/router@npm:9.4.0"
@@ -2987,19 +2997,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@orchidjs/sifter@npm:^1.0.3":
-  version: 1.0.3
-  resolution: "@orchidjs/sifter@npm:1.0.3"
+"@orchidjs/sifter@npm:^1.1.0":
+  version: 1.1.0
+  resolution: "@orchidjs/sifter@npm:1.1.0"
   dependencies:
-    "@orchidjs/unicode-variants": "npm:^1.0.4"
-  checksum: 10c0/a0c4659ae7a8729ba7adef1b531e6dea394e9bba0309e3e803d66f6efa3d5d74c6d959540ccd8ae056b7283e1713f937cf81efede2b4ce6dddfa198a3a3f0a35
+    "@orchidjs/unicode-variants": "npm:^1.1.2"
+  checksum: 10c0/615f4c8f340c062d1a944ae88d7d745353e45d14d002c6966bc02ef44aca13c904942836f9ad89cbe2b5d8fa3b885c2b00b65be8d318cabc75f440949068ed6a
   languageName: node
   linkType: hard
 
-"@orchidjs/unicode-variants@npm:^1.0.4":
-  version: 1.0.4
-  resolution: "@orchidjs/unicode-variants@npm:1.0.4"
-  checksum: 10c0/b5e8362b6e98127db4ec9a1e02432f01ac2e679feb9d7cf47d7a77f65161c31cc2635bd511cc04ec7e3bb907fcdb1449ce3867245278c714e4d64ea989c49b9f
+"@orchidjs/unicode-variants@npm:^1.1.2":
+  version: 1.1.2
+  resolution: "@orchidjs/unicode-variants@npm:1.1.2"
+  checksum: 10c0/7836e0766641d79a0337a2a8ca7f49051bb71e19e0e8fc64cdbafac4f2f718abd368b364ad79a9b13547a70e24cebb3cc4d71e75f22791ade8ba80654eb1323f
   languageName: node
   linkType: hard
 
@@ -3278,6 +3288,7 @@ __metadata:
     "@prairielearn/aws": "workspace:^"
     "@prairielearn/config": "workspace:^"
     "@prairielearn/docker-utils": "workspace:^"
+    "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/run": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
@@ -3300,6 +3311,7 @@ __metadata:
     logform: "npm:^2.6.1"
     mocha: "npm:^10.8.2"
     nodemon: "npm:^3.1.7"
+    shlex: "npm:^2.1.2"
     sinon: "npm:^19.0.2"
     tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.19.2"
@@ -3544,6 +3556,7 @@ __metadata:
     "@aws-sdk/credential-providers": "npm:^3.685.0"
     "@aws-sdk/lib-storage": "npm:^3.685.0"
     "@fortawesome/fontawesome-free": "npm:^6.6.0"
+    "@js-temporal/polyfill": "npm:^0.4.4"
     "@node-saml/passport-saml": "npm:^5.0.0"
     "@octokit/rest": "npm:^21.0.2"
     "@prairielearn/aws": "workspace:^"
@@ -3745,6 +3758,7 @@ __metadata:
     selector-set: "npm:^1.1.5"
     serve-favicon: "npm:^2.5.0"
     set-cookie-parser: "npm:^2.7.1"
+    shlex: "npm:^2.1.2"
     showdown: "npm:^2.1.0"
     socket.io: "npm:^4.8.1"
     socket.io-adapter: "npm:^2.5.5"
@@ -3757,7 +3771,7 @@ __metadata:
     three: "npm:0.160.1"
     tmp: "npm:^0.2.3"
     tmp-promise: "npm:^3.0.3"
-    tom-select: "npm:^2.3.1"
+    tom-select: "npm:^2.4.1"
     tsx: "npm:^4.19.2"
     typescript: "npm:^5.6.3"
     typescript-cp: "npm:^0.1.9"
@@ -3894,6 +3908,7 @@ __metadata:
     "@prairielearn/config": "workspace:^"
     "@prairielearn/docker-utils": "workspace:^"
     "@prairielearn/logger": "workspace:^"
+    "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
@@ -3915,6 +3930,7 @@ __metadata:
     mocha: "npm:^10.8.2"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:^3.1.7"
+    shlex: "npm:^2.1.2"
     tsx: "npm:^4.19.2"
     typescript: "npm:^5.6.3"
     typescript-cp: "npm:^0.1.9"
@@ -8689,9 +8705,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"es-iterator-helpers@npm:^1.1.0":
-  version: 1.2.0
-  resolution: "es-iterator-helpers@npm:1.2.0"
+"es-iterator-helpers@npm:^1.0.19":
+  version: 1.1.0
+  resolution: "es-iterator-helpers@npm:1.1.0"
   dependencies:
     call-bind: "npm:^1.0.7"
     define-properties: "npm:^1.2.1"
@@ -8701,14 +8717,13 @@ __metadata:
     function-bind: "npm:^1.1.2"
     get-intrinsic: "npm:^1.2.4"
     globalthis: "npm:^1.0.4"
-    gopd: "npm:^1.0.1"
     has-property-descriptors: "npm:^1.0.2"
     has-proto: "npm:^1.0.3"
     has-symbols: "npm:^1.0.3"
     internal-slot: "npm:^1.0.7"
     iterator.prototype: "npm:^1.1.3"
     safe-array-concat: "npm:^1.1.2"
-  checksum: 10c0/2bd60580dfeae353f5b80445d2808da745e97eeacdb663a8c4d99a12046873830a06d377e9d5e88fe54eece7c94319a5ce5a01220e24d71394ceca8d3ef621d7
+  checksum: 10c0/84d6c240c7da6e62323b336cb1497781546dab16bebdbd879ccfdf588979712d3e941d41165b6c2ffce5a03a7b929d4e6131d3124d330da1a0e2bfa1da7cd99f
   languageName: node
   linkType: hard
 
@@ -8999,16 +9014,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"eslint-plugin-react@npm:^7.37.2":
-  version: 7.37.2
-  resolution: "eslint-plugin-react@npm:7.37.2"
+"eslint-plugin-react@npm:^7.37.1":
+  version: 7.37.1
+  resolution: "eslint-plugin-react@npm:7.37.1"
   dependencies:
     array-includes: "npm:^3.1.8"
     array.prototype.findlast: "npm:^1.2.5"
     array.prototype.flatmap: "npm:^1.3.2"
     array.prototype.tosorted: "npm:^1.1.4"
     doctrine: "npm:^2.1.0"
-    es-iterator-helpers: "npm:^1.1.0"
+    es-iterator-helpers: "npm:^1.0.19"
     estraverse: "npm:^5.3.0"
     hasown: "npm:^2.0.2"
     jsx-ast-utils: "npm:^2.4.1 || ^3.0.0"
@@ -9023,7 +9038,7 @@ __metadata:
     string.prototype.repeat: "npm:^1.0.0"
   peerDependencies:
     eslint: ^3 || ^4 || ^5 || ^6 || ^7 || ^8 || ^9.7
-  checksum: 10c0/01c498f263c201698bf653973760f86a07fa0cdec56c044f3eaa5ddaae71c64326015dfa5fde76ca8c5386ffe789fc79932624b614e13b6a1ad789fee3f7c491
+  checksum: 10c0/13cf55666f16d2ca45b14aad1b0e14741d1817679c86d20aff0bc1e802439a8541f40a42c4c8e3486ffb710f1bcc2f3e56697f2b5f724306a7fca174e1ad6433
   languageName: node
   linkType: hard
 
@@ -11165,6 +11180,13 @@ __metadata:
   bin:
     js-yaml: bin/js-yaml.js
   checksum: 10c0/184a24b4eaacfce40ad9074c64fd42ac83cf74d8c8cd137718d456ced75051229e5061b8633c3366b8aada17945a7a356b337828c19da92b51ae62126575018f
+  languageName: node
+  linkType: hard
+
+"jsbi@npm:^4.3.0":
+  version: 4.3.0
+  resolution: "jsbi@npm:4.3.0"
+  checksum: 10c0/1817ac1b50ea3f4438bcd84cadc9aee7a8657829f65b55ea6f151f401dbbd3babedbfdd3e4f481bd7b5472abb7823efa640fd7e5eee7c30cea6431f7a8b74696
   languageName: node
   linkType: hard
 
@@ -13740,7 +13762,7 @@ __metadata:
     eslint-plugin-mocha: "npm:^10.5.0"
     eslint-plugin-no-floating-promise: "npm:^2.0.0"
     eslint-plugin-no-only-tests: "npm:^3.3.0"
-    eslint-plugin-react: "npm:^7.37.2"
+    eslint-plugin-react: "npm:^7.37.1"
     globby: "npm:^14.0.2"
     htmlhint: "npm:^1.1.4"
     node-gyp: "npm:^10.2.0"
@@ -14819,6 +14841,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"shlex@npm:^2.1.2":
+  version: 2.1.2
+  resolution: "shlex@npm:2.1.2"
+  checksum: 10c0/f3f14f65311eba2f24a7d00bf3682b56c052c4088f3c3c94c6d1dcc46c1951fe662edcd85e62933095ce1a6987fe2fb56e1aedb18c2fbe593c23b1f1013390b4
+  languageName: node
+  linkType: hard
+
 "showdown@npm:^2.1.0":
   version: 2.1.0
   resolution: "showdown@npm:2.1.0"
@@ -15607,13 +15636,13 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tom-select@npm:^2.3.1":
-  version: 2.3.1
-  resolution: "tom-select@npm:2.3.1"
+"tom-select@npm:^2.4.1":
+  version: 2.4.1
+  resolution: "tom-select@npm:2.4.1"
   dependencies:
-    "@orchidjs/sifter": "npm:^1.0.3"
-    "@orchidjs/unicode-variants": "npm:^1.0.4"
-  checksum: 10c0/82267fbb10e3573e750aba8da12fe0bdcd71d155b2eb9e86c148bfa9a50a638ff911feaa23f9c8d09b069b47f3a52a766f291d4cf8f399e16be4082e119c1c75
+    "@orchidjs/sifter": "npm:^1.1.0"
+    "@orchidjs/unicode-variants": "npm:^1.1.2"
+  checksum: 10c0/e12917319dc570741c40ba937ff07a212d4644d1b754ee52f284b91a261ed8cca04ae48c9ff90a13cdc9e7d1f97fa7aad389e7c55cc2be60057ffc7259c84b30
   languageName: node
   linkType: hard
 
@@ -15717,7 +15746,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tslib@npm:^2.3.1, tslib@npm:^2.4.0, tslib@npm:^2.6.2, tslib@npm:^2.6.3":
+"tslib@npm:^2.3.1, tslib@npm:^2.4.0, tslib@npm:^2.4.1, tslib@npm:^2.6.2, tslib@npm:^2.6.3":
   version: 2.7.0
   resolution: "tslib@npm:2.7.0"
   checksum: 10c0/469e1d5bf1af585742128827000711efa61010b699cb040ab1800bcd3ccdd37f63ec30642c9e07c4439c1db6e46345582614275daca3e0f4abae29b0083f04a6

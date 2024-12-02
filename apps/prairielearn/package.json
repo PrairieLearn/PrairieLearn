@@ -22,6 +22,7 @@
     "@aws-sdk/credential-providers": "^3.685.0",
     "@aws-sdk/lib-storage": "^3.685.0",
     "@fortawesome/fontawesome-free": "^6.6.0",
+    "@js-temporal/polyfill": "^0.4.4",
     "@node-saml/passport-saml": "^5.0.0",
     "@octokit/rest": "^21.0.2",
     "@prairielearn/aws": "workspace:^",
@@ -165,6 +166,7 @@
     "selector-observer": "^2.1.6",
     "selector-set": "^1.1.5",
     "serve-favicon": "^2.5.0",
+    "shlex": "^2.1.2",
     "showdown": "^2.1.0",
     "socket.io": "^4.8.1",
     "socket.io-adapter": "^2.5.5",
@@ -177,7 +179,7 @@
     "three": "0.160.1",
     "tmp": "^0.2.3",
     "tmp-promise": "^3.0.3",
-    "tom-select": "^2.3.1",
+    "tom-select": "^2.4.1",
     "tzientist": "^3.2.0",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",
@@ -271,6 +273,6 @@
       "dist/*",
       "public/*"
     ],
-    "ext": "js,ts,jsx,tsx,json,sql"
+    "ext": "js,jsx,ts,tsx,json,sql"
   }
 }

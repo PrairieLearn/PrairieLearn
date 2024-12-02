@@ -32,6 +32,7 @@
     "eslint-plugin-mocha": "^10.5.0",
     "eslint-plugin-no-floating-promise": "^2.0.0",
     "eslint-plugin-no-only-tests": "^3.3.0",
+    "eslint-plugin-react": "^7.37.1",
     "globby": "^14.0.2",
     "htmlhint": "^1.1.4",
     "prettier": "3.3.3",
