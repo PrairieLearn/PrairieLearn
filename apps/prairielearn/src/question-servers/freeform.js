@@ -450,9 +450,7 @@ function checkData(data, origData, phase) {
     if (!editPhases.includes(phase)) {
       if (!_.has(origData, prop)) return '"' + prop + '" is missing from "origData"';
 
-      // If `data` and `origData` are the same object, we can skip the expensive
-      // deep comparison of them. We rely on this optimization in `processQuestionHtml`.
-      if (data[prop] !== origData[prop] && !_.isEqual(data[prop], origData[prop])) {
+      if (!_.isEqual(data[prop], origData[prop])) {
         return `data.${prop} has been illegally modified, new value: "${JSON.stringify(
           data[prop],
         )}", original value: "${JSON.stringify(origData[prop])}"`;
