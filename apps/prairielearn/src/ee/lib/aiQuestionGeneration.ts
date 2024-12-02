@@ -528,7 +528,7 @@ Keep in mind you are not just generating an example; you are generating an actua
  * @param originalHTML The question.html file to revise.
  * @param originalPython The server.py file to revise.
  * @param userId The ID of the generating/saving user.
- * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privileges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
  */
 export async function regenerateQuestion(
