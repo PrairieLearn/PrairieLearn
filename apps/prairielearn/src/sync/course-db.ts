@@ -16,6 +16,7 @@ import { selectInstitutionForCourse } from '../models/institution.js';
 import * as schemas from '../schemas/index.js';
 
 import * as infofile from './infofile.js';
+import { isDraftQid } from './question.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
@@ -379,7 +380,6 @@ export interface Question {
   clientTemplates: string[];
   template: string;
   gradingMethod: 'Internal' | 'External' | 'Manual';
-  draft: boolean;
   singleVariant: boolean;
   showCorrectAnswer: boolean;
   partialCredit: boolean;
@@ -1129,7 +1129,7 @@ async function validateAssessment(
       duplicateQids.add(qid);
     }
 
-    if (qid in questions && questions[qid].data?.draft) {
+    if (isDraftQid(qid)) {
       draftQids.add(qid);
     }
   };
@@ -1427,11 +1427,6 @@ export async function loadQuestions(
   for (const qid in questions) {
     if (qid[0] === '@') {
       infofile.addError(questions[qid], "Question IDs are not allowed to begin with '@'");
-    }
-    if (questions[qid].data) {
-      //it's a draft if it's of the form .../__drafts__/question/info.json
-      const pathSplit = qid.split(path.sep);
-      questions[qid].data['draft'] = pathSplit[0] === '__drafts__';
     }
   }
   checkDuplicateUUIDs(

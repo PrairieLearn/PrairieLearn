@@ -6,8 +6,9 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '../../lib/db-types.js';
 import { type CourseData, type Question } from '../course-db.js';
 import * as infofile from '../infofile.js';
+import { isDraftQid } from '../question.js';
 
-function getParamsForQuestion(q: Question | null | undefined) {
+function getParamsForQuestion(qid: string, q: Question | null | undefined) {
   if (!q) return null;
 
   let partialCredit;
@@ -35,7 +36,7 @@ function getParamsForQuestion(q: Question | null | undefined) {
     template_directory: q.template,
     options: q.options,
     client_files: q.clientFiles || [],
-    draft: q.draft || false,
+    draft: isDraftQid(qid),
     topic: q.topic,
     grading_method: q.gradingMethod || 'Internal',
     single_variant: !!q.singleVariant,
@@ -72,7 +73,7 @@ export async function sync(
       question.uuid,
       infofile.stringifyErrors(question),
       infofile.stringifyWarnings(question),
-      getParamsForQuestion(question.data),
+      getParamsForQuestion(qid, question.data),
     ]);
   });
 

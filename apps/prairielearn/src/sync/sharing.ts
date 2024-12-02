@@ -6,6 +6,7 @@ import { IdSchema } from '../lib/db-types.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
 
 import { type CourseData } from './course-db.js';
+import { isDraftQid } from './question.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface SharedQuestion {
@@ -107,8 +108,6 @@ export function checkInvalidSharingSetAdditions(
   logger: ServerJobLogger,
 ): boolean {
   const invalidSharingSetAdditions: Record<string, string[]> = {};
-  const draftQuestionsWithSharingSets: string[] = [];
-  const draftQuestionsWithPublicSharing: string[] = [];
   const sharingSetNames = (courseData.course.data?.sharingSets || []).map((ss) => ss.name);
 
   for (const qid in courseData.questions) {
@@ -122,16 +121,6 @@ export function checkInvalidSharingSetAdditions(
         invalidSharingSetAdditions[qid].push(sharingSet);
       }
     });
-    if (question.data?.draft && questionSharingSets.length > 0) {
-      draftQuestionsWithSharingSets.push(qid);
-    }
-
-    if (
-      question.data?.draft &&
-      (question.data?.sharePublicly || question.data.shareSourcePublicly)
-    ) {
-      draftQuestionsWithPublicSharing.push(qid);
-    }
   }
 
   const existInvalidSharingSetAdditions = Object.keys(invalidSharingSetAdditions).length > 0;
@@ -145,25 +134,7 @@ export function checkInvalidSharingSetAdditions(
     );
   }
 
-  const existDraftQuestionsWithSharingSets = draftQuestionsWithSharingSets.length > 0;
-  if (existDraftQuestionsWithSharingSets) {
-    logger.error(
-      `✖ Course sync completely failed. The following draft questions cannot be added to sharing sets: ${draftQuestionsWithSharingSets.join(', ')}`,
-    );
-  }
-
-  const existPubliclySharedDraftQuestions = draftQuestionsWithPublicSharing.length > 0;
-  if (existPubliclySharedDraftQuestions) {
-    logger.error(
-      `✖ Course sync completely failed. The following draft questions cannot be publicly shared: ${draftQuestionsWithSharingSets.join(', ')}`,
-    );
-  }
-
-  return (
-    existInvalidSharingSetAdditions ||
-    existDraftQuestionsWithSharingSets ||
-    existPubliclySharedDraftQuestions
-  );
+  return existInvalidSharingSetAdditions;
 }
 
 export async function checkInvalidSharingSetRemovals(
@@ -216,4 +187,40 @@ export async function checkInvalidSharingSetRemovals(
   }
 
   return existInvalidSharingSetRemovals;
+}
+
+export function checkInvalidDraftQuestionSharing(
+  courseData: CourseData,
+  logger: ServerJobLogger,
+): boolean {
+  const draftQuestionsWithSharingSets: string[] = [];
+  const draftQuestionsWithPublicSharing: string[] = [];
+  for (const qid in courseData.questions) {
+    const question = courseData.questions[qid];
+
+    const isDraft = isDraftQid(qid);
+    const questionSharingSets = question.data?.sharingSets || [];
+
+    if (isDraft && questionSharingSets.length > 0) {
+      draftQuestionsWithSharingSets.push(qid);
+    }
+
+    if (isDraft && (question.data?.sharePublicly || question.data?.shareSourcePublicly)) {
+      draftQuestionsWithPublicSharing.push(qid);
+    }
+  }
+
+  if (draftQuestionsWithSharingSets.length > 0) {
+    logger.error(
+      `✖ Course sync completely failed. The following draft questions cannot be added to sharing sets: ${draftQuestionsWithSharingSets.join(', ')}`,
+    );
+  }
+
+  if (draftQuestionsWithPublicSharing.length > 0) {
+    logger.error(
+      `✖ Course sync completely failed. The following draft questions cannot be publicly shared: ${draftQuestionsWithPublicSharing.join(', ')}`,
+    );
+  }
+
+  return draftQuestionsWithSharingSets.length > 0 || draftQuestionsWithPublicSharing.length > 0;
 }
