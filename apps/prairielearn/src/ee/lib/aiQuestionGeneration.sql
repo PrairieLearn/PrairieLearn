@@ -35,7 +35,7 @@ INSERT INTO
 VALUES
   ($question_id, $creator_id, $creator_id);
 
--- BLOCK insert_ai_generation_prompt
+-- BLOCK insert_ai_question_generation_prompt
 INSERT INTO
   ai_question_generation_prompts (
     question_id,
