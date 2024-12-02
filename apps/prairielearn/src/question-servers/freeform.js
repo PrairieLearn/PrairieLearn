@@ -449,7 +449,10 @@ function checkData(data, origData, phase) {
     }
     if (!editPhases.includes(phase)) {
       if (!_.has(origData, prop)) return '"' + prop + '" is missing from "origData"';
-      if (!_.isEqual(data[prop], origData[prop])) {
+
+      // If `data` and `origData` are the same object, we can skip the expensive
+      // deep comparison of them. We rely on this optimization in `processQuestionHtml`.
+      if (data !== origData && !_.isEqual(data[prop], origData[prop])) {
         return `data.${prop} has been illegally modified, new value: "${JSON.stringify(
           data[prop],
         )}", original value: "${JSON.stringify(origData[prop])}"`;
@@ -552,7 +555,7 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
 }
 
 async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, html) {
-  const origData = JSON.parse(JSON.stringify(data));
+  const origData = structuredClone(data);
   const renderedElementNames = [];
   const courseIssues = [];
   let fileData = Buffer.from('');
@@ -679,7 +682,7 @@ async function traverseQuestionAndExecuteFunctions(phase, codeCaller, data, cont
 }
 
 async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data, context, $) {
-  const origData = JSON.parse(JSON.stringify(data));
+  const origData = structuredClone(data);
   const renderedElementNames = [];
   const courseIssues = [];
   let fileData = Buffer.from('');
@@ -808,9 +811,9 @@ async function legacyTraverseQuestionAndExecuteFunctions(phase, codeCaller, data
  * @param {QuestionProcessingContext} context
  */
 async function processQuestionHtml(phase, codeCaller, data, context) {
-  const origData = JSON.parse(JSON.stringify(data));
-
-  const checkErr = checkData(data, origData, phase);
+  // We deliberately reuse the same `data` object for both the "new" and "original"
+  // arguments to avoid an unnecessary deep clone and comparison.
+  const checkErr = checkData(data, data, phase);
   if (checkErr) {
     return {
       courseIssues: [
@@ -893,7 +896,7 @@ async function processQuestionHtml(phase, codeCaller, data, context) {
 
 async function processQuestionServer(phase, codeCaller, data, html, fileData, context) {
   const courseIssues = [];
-  const origData = JSON.parse(JSON.stringify(data));
+  const origData = structuredClone(data);
 
   const checkErrBefore = checkData(data, origData, phase);
   if (checkErrBefore) {
