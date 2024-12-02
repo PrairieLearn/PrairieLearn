@@ -452,7 +452,7 @@ function checkData(data, origData, phase) {
 
       // If `data` and `origData` are the same object, we can skip the expensive
       // deep comparison of them. We rely on this optimization in `processQuestionHtml`.
-      if (data !== origData && !_.isEqual(data[prop], origData[prop])) {
+      if (data[prop] !== origData[prop] && !_.isEqual(data[prop], origData[prop])) {
         return `data.${prop} has been illegally modified, new value: "${JSON.stringify(
           data[prop],
         )}", original value: "${JSON.stringify(origData[prop])}"`;
