@@ -3,22 +3,23 @@ import asyncHandler from 'express-async-handler';
 import { OpenAI } from 'openai';
 
 import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
+import { type AiGenerationPrompt, AiGenerationPromptSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+
 const sql = loadSqlEquiv(import.meta.url);
 import {
   AiGeneratePage,
   GenerationFailure,
   GenerationResults,
 } from './instructorAiGenerateQuestion.html.js';
-import { AiGenerationPrompt, AiGenerationPromptSchema } from '../../../lib/db-types.js';
 
 const router = express.Router();
 
@@ -145,11 +146,9 @@ router.post(
 
       const threads: AiGenerationPrompt[] = await queryRows(
         sql.select_generation_thread_items,
-        { qid: qid, course_id: res.locals.course.id.toString() },
+        { qid, course_id: res.locals.course.id.toString() },
         AiGenerationPromptSchema,
       );
-
-
 
       const result = await regenerateQuestion(
         client,
@@ -157,8 +156,8 @@ router.post(
         res.locals.authn_user.user_id,
         threads[0]?.user_prompt,
         req.body.prompt,
-        threads[0]?.html,
-        threads[0]?.python,
+        threads[threads.length - 1].html || '',
+        threads[threads.length - 1].python || '',
         qid,
         res.locals.user.user_id,
         res.locals.authz_data.has_course_permission_edit,
