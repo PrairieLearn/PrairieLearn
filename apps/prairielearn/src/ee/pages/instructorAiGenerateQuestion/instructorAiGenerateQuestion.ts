@@ -198,7 +198,7 @@ router.post(
       );
 
       if (prompts.length < 1) {
-        throw new error.HttpStatusError(403, `Prompts for question ${qid} not found.`);
+        throw new error.HttpStatusError(403, `Prompts for question ${req.body.unsafe_qid} not found.`);
       }
 
       const result = await regenerateQuestion(

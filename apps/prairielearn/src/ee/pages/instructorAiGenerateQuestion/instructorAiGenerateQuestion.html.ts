@@ -69,7 +69,7 @@ export function AiGeneratePage({
         </div>
           <div class="card  mb-4">
             <div class="card-header bg-primary text-white d-flex justify-content-between">Generate Question using AI
-            ${qid ? html`<div class="d-flex flex-row-reverse"><button type="button" class="btn btn-sm btn-light" data-toggle="modal" data-target="#finalizeModal">Finalize question</button></div>` : ''}</div>
+            ${prompts && prompts.length > 0 ? html`<div class="d-flex flex-row-reverse"><button type="button" class="btn btn-sm btn-light" data-toggle="modal" data-target="#finalizeModal">Finalize question</button></div>` : ''}</div>
             <div class="card-body">
               ${
                 !prompts || prompts.length <= 0
