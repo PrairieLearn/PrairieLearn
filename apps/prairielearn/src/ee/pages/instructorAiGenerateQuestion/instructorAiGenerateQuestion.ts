@@ -150,11 +150,8 @@ router.post(
         AiGenerationPromptSchema,
       );
 
-      if (prompts.length < 1){
-        throw new error.HttpStatusError(
-          403,
-          `Prompts for question ${qid} not found.`,
-        );
+      if (prompts.length < 1) {
+        throw new error.HttpStatusError(403, `Prompts for question ${qid} not found.`);
       }
 
       const result = await regenerateQuestion(

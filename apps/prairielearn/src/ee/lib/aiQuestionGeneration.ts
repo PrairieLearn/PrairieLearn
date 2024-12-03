@@ -560,7 +560,7 @@ export async function regenerateQuestion(
   );
 
   const jobData = await serverJob.execute(async (job) => {
-    job.data['questionQid'] = questionQid; 
+    job.data['questionQid'] = questionQid;
     await regenInternal({
       job,
       client,
