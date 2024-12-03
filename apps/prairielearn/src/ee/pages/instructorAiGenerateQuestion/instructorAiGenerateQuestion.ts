@@ -11,12 +11,14 @@ import { idsEqual } from '../../../lib/id.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
-
+import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+const sql = loadSqlEquiv(import.meta.url);
 import {
   AiGeneratePage,
   GenerationFailure,
   GenerationResults,
 } from './instructorAiGenerateQuestion.html.js';
+import { AiGenerationPrompt, AiGenerationPromptSchema } from '../../../lib/db-types.js';
 
 const router = express.Router();
 
@@ -141,14 +143,22 @@ router.post(
 
       const qid = genJobs[0]?.data['questionQid'];
 
+      const threads: AiGenerationPrompt[] = await queryRows(
+        sql.select_generation_thread_items,
+        { qid: qid, course_id: res.locals.course.id.toString() },
+        AiGenerationPromptSchema,
+      );
+
+
+
       const result = await regenerateQuestion(
         client,
         res.locals.course.id,
         res.locals.authn_user.user_id,
-        genJobs[0]?.data?.prompt,
+        threads[0]?.user_prompt,
         req.body.prompt,
-        genJobs[0]?.data?.html,
-        genJobs[0]?.data?.python,
+        threads[0]?.html,
+        threads[0]?.python,
         qid,
         res.locals.user.user_id,
         res.locals.authz_data.has_course_permission_edit,
