@@ -260,30 +260,31 @@ Keep in mind you are not just generating an example; you are generating an actua
       files,
     });
 
-    if (saveResults.status === 'success') {
-      await queryAsync(sql.insert_draft_question_metadata, {
-        question_id: saveResults.question_id,
-        creator_id: authnUserId,
-      });
-
-      await queryAsync(sql.insert_ai_generation_prompt, {
-        question_id: saveResults.question_id,
-        prompting_user_id: authnUserId,
-        prompt_type: 'initial',
-        user_prompt: userPrompt,
-        system_prompt: sysPrompt,
-        response: completion.choices[0].message.content,
-        html: results?.html,
-        python: results?.python,
-        errors,
-        completion,
-        job_sequence_id: serverJob.jobSequenceId,
-      });
-      job.data['questionId'] = saveResults.question_id;
-      job.data['questionQid'] = saveResults.question_qid;
-    } else {
-      throw new Error('Adding question as draft failed.');
+    if (saveResults.status === 'error') {
+      job.fail(`Adding question as draft failed (job sequence: ${saveResults.job_sequence_id})`);
+      return;
     }
+
+    await queryAsync(sql.insert_draft_question_metadata, {
+      question_id: saveResults.question_id,
+      creator_id: authnUserId,
+    });
+
+    await queryAsync(sql.insert_ai_question_generation_prompt, {
+      question_id: saveResults.question_id,
+      prompting_user_id: authnUserId,
+      prompt_type: 'initial',
+      user_prompt: userPrompt,
+      system_prompt: sysPrompt,
+      response: completion.choices[0].message.content,
+      html: results?.html,
+      python: results?.python,
+      errors,
+      completion,
+      job_sequence_id: serverJob.jobSequenceId,
+    });
+    job.data['questionId'] = saveResults.question_id;
+    job.data['questionQid'] = saveResults.question_qid;
 
     job.data.html = html;
     job.data.python = results?.python;
@@ -453,7 +454,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   }
 
   if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
-    await queryAsync(sql.insert_ai_generation_prompt, {
+    await queryAsync(sql.insert_ai_question_generation_prompt, {
       question_id: questionId,
       prompting_user_id: authnUserId,
       prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
@@ -488,7 +489,8 @@ Keep in mind you are not just generating an example; you are generating an actua
     });
 
     if (result.status === 'error') {
-      throw new Error('Draft mutation failed.');
+      job.fail(`Draft mutation failed (job sequence: ${result.job_sequence_id})`);
+      return;
     }
   }
 
@@ -528,7 +530,7 @@ Keep in mind you are not just generating an example; you are generating an actua
  * @param originalHTML The question.html file to revise.
  * @param originalPython The server.py file to revise.
  * @param userId The ID of the generating/saving user.
- * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privlidges.
+ * @param hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privileges.
  * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
  */
 export async function regenerateQuestion(
@@ -539,7 +541,7 @@ export async function regenerateQuestion(
   revisionPrompt: string,
   originalHTML: string,
   originalPython: string,
-  questionQid: string | undefined,
+  questionQid: string,
   userId: string,
   hasCoursePermissionEdit: boolean,
 ): Promise<{

@@ -14,6 +14,7 @@ columns
 
 indexes
     ai_question_generation_prompts_pkey: PRIMARY KEY (id) USING btree (id)
+    ai_question_generation_prompts_question_id_idx: USING btree (question_id)
 
 foreign-key constraints
     ai_question_generation_prompts_job_sequence_id_fkey: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL

@@ -18,7 +18,7 @@ WHERE
   AND q.course_id = $course_id
   AND q.deleted_at IS NULL;
 
--- BLOCK select_generation_thread_items
+-- BLOCK select_ai_question_generation_prompts
 SELECT
   ai_question_generation_prompts.*
 FROM

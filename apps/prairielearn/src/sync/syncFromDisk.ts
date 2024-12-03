@@ -25,6 +25,7 @@ import {
   checkInvalidPublicSharingRemovals,
   checkInvalidSharingSetDeletions,
   checkInvalidSharingSetAdditions,
+  checkInvalidDraftQuestionSharing,
 } from './sharing.js';
 
 interface SyncResultSharingError {
@@ -69,13 +70,15 @@ export async function checkSharingConfigurationValid(
     courseData,
     logger,
   );
+  const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
 
   const sharingConfigurationValid =
     !existInvalidRenames &&
     !existInvalidPublicSharingRemovals &&
     !existInvalidSharingSetDeletions &&
     !existInvalidSharingSetAdditions &&
-    !existInvalidSharingSetRemovals;
+    !existInvalidSharingSetRemovals &&
+    !existInvalidDraftQuestionSharing;
   return sharingConfigurationValid;
 }
 

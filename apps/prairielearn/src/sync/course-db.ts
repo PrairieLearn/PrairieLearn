@@ -16,6 +16,7 @@ import { selectInstitutionForCourse } from '../models/institution.js';
 import * as schemas from '../schemas/index.js';
 
 import * as infofile from './infofile.js';
+import { isDraftQid } from './question.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
@@ -349,7 +350,7 @@ export interface Assessment {
 interface QuestionExternalGradingOptions {
   enabled: boolean;
   image: string;
-  entrypoint: string;
+  entrypoint: string | string[];
   serverFilesCourse: string[];
   timeout: number;
   enableNetworking: boolean;
@@ -360,7 +361,7 @@ interface QuestionWorkspaceOptions {
   image: string;
   port: number;
   home: string;
-  args: string;
+  args: string | string[];
   gradedFiles: string[];
   rewriteUrl: string;
   enableNetworking: boolean;
@@ -1129,7 +1130,7 @@ async function validateAssessment(
       duplicateQids.add(qid);
     }
 
-    if (qid in questions && questions[qid].data?.draft) {
+    if (isDraftQid(qid)) {
       draftQids.add(qid);
     }
   };

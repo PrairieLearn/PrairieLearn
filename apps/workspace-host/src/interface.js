@@ -17,6 +17,7 @@ import express from 'express';
 import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
 import fetch from 'node-fetch';
+import * as shlex from 'shlex';
 import { v4 as uuidv4 } from 'uuid';
 import yargsParser from 'yargs-parser';
 
@@ -732,11 +733,6 @@ async function _createContainer(workspace) {
 
   const containerPath = workspace.settings.workspace_home;
   let args = workspace.settings.workspace_args.trim();
-  if (args.length === 0) {
-    args = null;
-  } else {
-    args = args.split(' ');
-  }
 
   let networkMode = 'bridge';
   if (!workspace.settings.workspace_enable_networking) {
@@ -812,7 +808,7 @@ async function _createContainer(workspace) {
       'prairielearn.course-id': String(workspace.course_id),
       'prairielearn.institution-id': String(workspace.institution_id),
     },
-    Cmd: args, // FIXME: proper arg parsing
+    Cmd: args?.length ? shlex.split(args) : undefined,
     name: localName,
     Volumes: {
       [containerPath]: {},

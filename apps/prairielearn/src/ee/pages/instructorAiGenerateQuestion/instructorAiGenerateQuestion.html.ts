@@ -41,12 +41,12 @@ const examplePrompts = [
 
 export function AiGeneratePage({
   resLocals,
-  threads,
+  prompts,
   qid,
   queryUrl,
 }: {
   resLocals: Record<string, any>;
-  threads?: AiGenerationPrompt[];
+  prompts?: AiGenerationPrompt[];
   qid?: string;
   queryUrl?: string;
 }) {
@@ -72,7 +72,7 @@ export function AiGeneratePage({
             ${qid ? html`<div class="d-flex flex-row-reverse"><button type="button" class="btn btn-sm btn-light" data-toggle="modal" data-target="#finalizeModal">Finalize question</button></div>` : ''}</div>
             <div class="card-body">
               ${
-                !threads || threads.length <= 0
+                !prompts || prompts.length <= 0
                   ? html`<div id="generation-prompter">
                       <p>
                         Please describe your question in as much detail as possible in the box
@@ -179,7 +179,7 @@ export function AiGeneratePage({
                   : html`<div class="container">
                         <div class="row justify-content-center">
                           <div class="col">
-                            ${threads
+                            ${prompts
                               .filter((x) => {
                                 return x.prompt_type !== 'auto_revision';
                               })
@@ -257,7 +257,7 @@ export function AiGeneratePage({
                                 <a
                                   href="${resLocals.urlPrefix +
                                   '/jobSequence/' +
-                                  threads[threads.length - 1].job_sequence_id}"
+                                  prompts[prompts.length - 1].job_sequence_id}"
                                   target="_blank"
                                 >
                                   [DEBUG] See Job Logs
@@ -271,10 +271,10 @@ export function AiGeneratePage({
                                     class="bg-dark text-white rounded p-3"
                                     style="width:100%; height:10em"
                                   >
-${threads[threads.length - 1].html}</textarea
+${prompts[prompts.length - 1].html}</textarea
                                   >
                                 </div>
-                                ${threads[threads.length - 1].python === undefined
+                                ${prompts[prompts.length - 1].python === undefined
                                   ? ''
                                   : html`
                                       <div class="mr-auto">
@@ -286,7 +286,7 @@ ${threads[threads.length - 1].html}</textarea
                                           class="bg-dark text-white rounded p-3"
                                           style="width:100%; height:10em"
                                         >
-${threads[threads.length - 1].python}</textarea
+${prompts[prompts.length - 1].python}</textarea
                                         >
                                       </div>
                                     `}
