@@ -187,7 +187,7 @@ router.post(
       ) {
         throw new error.HttpStatusError(
           403,
-          `Question ${req.body.unsafe_sequence_job_id} not found.`,
+          `Draft question with qid ${req.body.unsafe_qid} not found.`,
         );
       }
 
