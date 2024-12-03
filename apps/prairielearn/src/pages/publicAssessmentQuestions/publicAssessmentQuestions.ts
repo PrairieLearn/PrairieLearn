@@ -21,12 +21,9 @@ router.get(
       throw new error.HttpStatusError(404, 'Not Found');
     }
 
+    
     const course = await selectCourseByCourseInstanceId(course_instance_id.toString());
-    if (course.sharing_name === null) {
-      throw new error.HttpStatusError(404, 'Not Found');
-    }
-
-    res.locals.course = course; // TEST, pass to res.locals? Need for PublicNavbar
+    res.locals.course = course;
     const assessment = await selectAssessmentById(assessment_id);
 
     const questions = await selectAssessmentQuestions({
