@@ -108,8 +108,7 @@ describe('Grading method(s)', function () {
           const hm1Body = await loadHomeworkPage(mockStudents[0]);
           $hm1Body = cheerio.load(hm1Body);
           iqUrl =
-            siteUrl +
-            $hm1Body('a:contains("HW9.1. Internal Grading: Adding two numbers")').attr('href');
+            siteUrl + $hm1Body('a:contains("Internal Grading: Adding two numbers")').attr('href');
 
           // open page to produce variant because we want to get the correct answer
           questionsPage = await (await fetch(iqUrl)).text();
@@ -146,8 +145,7 @@ describe('Grading method(s)', function () {
           const hm1Body = await loadHomeworkPage(mockStudents[1]);
           $hm1Body = cheerio.load(hm1Body);
           iqUrl =
-            siteUrl +
-            $hm1Body('a:contains("HW9.1. Internal Grading: Adding two numbers")').attr('href');
+            siteUrl + $hm1Body('a:contains("Internal Grading: Adding two numbers")').attr('href');
 
           // open page to produce variant because we want to get the correct answer
           await fetch(iqUrl);
@@ -184,9 +182,7 @@ describe('Grading method(s)', function () {
           $hm1Body = cheerio.load(hm1Body);
           iqUrl =
             siteUrl +
-            $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr(
-              'href',
-            );
+            $hm1Body('a:contains("Manual Grading: Fibonacci function, file upload")').attr('href');
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
           assert.lengthOf($questionsPage('button[value="grade"]'), 0);
@@ -221,9 +217,7 @@ describe('Grading method(s)', function () {
           $hm1Body = cheerio.load(hm1Body);
           iqUrl =
             siteUrl +
-            $hm1Body('a:contains("HW9.2. Manual Grading: Fibonacci function, file upload")').attr(
-              'href',
-            );
+            $hm1Body('a:contains("Manual Grading: Fibonacci function, file upload")').attr('href');
         });
         it('should be possible to submit a save action to "Manual" type question', async () => {
           gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
@@ -257,7 +251,7 @@ describe('Grading method(s)', function () {
           $hm1Body = cheerio.load(hm1Body);
           iqUrl =
             siteUrl +
-            $hm1Body('a:contains("HW9.3. External Grading: Alpine Linux smoke test")').attr('href');
+            $hm1Body('a:contains("External Grading: Alpine Linux smoke test")').attr('href');
           questionsPage = await (await fetch(iqUrl)).text();
           $questionsPage = cheerio.load(questionsPage);
           assert.lengthOf($questionsPage('button[value="grade"]'), 1);
@@ -315,7 +309,7 @@ describe('Grading method(s)', function () {
           $hm1Body = cheerio.load(hm1Body);
           iqUrl =
             siteUrl +
-            $hm1Body('a:contains("HW9.3. External Grading: Alpine Linux smoke test")').attr('href');
+            $hm1Body('a:contains("External Grading: Alpine Linux smoke test")').attr('href');
 
           gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
             { name: 'answer.txt', contents: Buffer.from('correct').toString('base64') },
@@ -341,6 +335,56 @@ describe('Grading method(s)', function () {
           assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
         });
       });
+      describe('"grade" action with entrypoint arguments', () => {
+        it('should load page as student', async () => {
+          const hm1Body = await loadHomeworkPage(mockStudents[0]);
+          $hm1Body = cheerio.load(hm1Body);
+          iqUrl =
+            siteUrl +
+            $hm1Body('a:contains("External Grading: Alpine Linux with arguments")').attr('href');
+          questionsPage = await (await fetch(iqUrl)).text();
+          $questionsPage = cheerio.load(questionsPage);
+          assert.lengthOf($questionsPage('button[value="grade"]'), 1);
+        });
+        it('should submit "grade" action', async () => {
+          gradeRes = await saveOrGrade(iqUrl, {}, 'grade', [
+            { name: 'answer.txt', contents: Buffer.from('answer with space').toString('base64') },
+          ]);
+          assert.equal(gradeRes.status, 200);
+        });
+        it('should retrieve results via socket', async () => {
+          questionsPage = await gradeRes.text();
+          $questionsPage = cheerio.load(questionsPage);
+
+          iqId = parseInstanceQuestionId(iqUrl);
+          const socketResult = await waitForExternalGrader($questionsPage);
+          assert.isNotNull(socketResult);
+          assert.isNotNull(socketResult.submissionPanel);
+
+          const $submissionPanel = cheerio.load(socketResult.submissionPanel);
+          assert.lengthOf($submissionPanel('[data-testid="submission-block"]'), 1);
+          assert.equal(getLatestSubmissionStatus($submissionPanel), '100%');
+          assert.lengthOf($submissionPanel('.pl-external-grader-results'), 1);
+          assert.lengthOf($submissionPanel('.grading-block:not(.d-none)'), 0);
+        });
+
+        it('should result in 1 grading jobs', async () => {
+          const grading_jobs = (await sqldb.queryAsync(sql.get_grading_jobs_by_iq, { iqId })).rows;
+          assert.lengthOf(grading_jobs, 1);
+        });
+        it('should result in 1 "submission-block" component being rendered', async () => {
+          // reload QuestionsPage to also check behaviour when results are ready on load
+          questionsPage = await (await fetch(iqUrl)).text();
+          $questionsPage = cheerio.load(questionsPage);
+          assert.lengthOf($questionsPage('[data-testid="submission-block"]'), 1);
+        });
+        it('should display submission status', async () => {
+          assert.equal(getLatestSubmissionStatus($questionsPage), '100%');
+        });
+        it('should NOT result in "grading-block" component being displayed', () => {
+          assert.lengthOf($questionsPage('.grading-block:not(.d-none)'), 0);
+        });
+      });
     });
 
     describe('"Manual" with auto points only (treat as "Internal")', () => {
@@ -350,9 +394,9 @@ describe('Grading method(s)', function () {
           $hm1Body = cheerio.load(hm1Body);
           iqUrl =
             siteUrl +
-            $hm1Body(
-              'a:contains("HW9.5. Manual Grading: Adding two numbers (with auto points)")',
-            ).attr('href');
+            $hm1Body('a:contains("Manual Grading: Adding two numbers (with auto points)")').attr(
+              'href',
+            );
 
           // open page to produce variant because we want to get the correct answer
           questionsPage = await (await fetch(iqUrl)).text();
@@ -390,9 +434,9 @@ describe('Grading method(s)', function () {
           $hm1Body = cheerio.load(hm1Body);
           iqUrl =
             siteUrl +
-            $hm1Body(
-              'a:contains("HW9.5. Manual Grading: Adding two numbers (with auto points)")',
-            ).attr('href');
+            $hm1Body('a:contains("Manual Grading: Adding two numbers (with auto points)")').attr(
+              'href',
+            );
 
           // open page to produce variant because we want to get the correct answer
           await fetch(iqUrl);
@@ -430,7 +474,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body(
-              'a:contains("HW9.4. Internal Grading: Adding two numbers (with manual points)")',
+              'a:contains("Internal Grading: Adding two numbers (with manual points)")',
             ).attr('href');
 
           // open page to produce variant because we want to get the correct answer
@@ -471,7 +515,7 @@ describe('Grading method(s)', function () {
           iqUrl =
             siteUrl +
             $hm1Body(
-              'a:contains("HW9.4. Internal Grading: Adding two numbers (with manual points)")',
+              'a:contains("Internal Grading: Adding two numbers (with manual points)")',
             ).attr('href');
 
           // open page to produce variant because we want to get the correct answer
@@ -508,7 +552,7 @@ describe('Grading method(s)', function () {
         it('should load page as student', async () => {
           const hm1Body = await loadHomeworkPage(mockStudents[0]);
           $hm1Body = cheerio.load(hm1Body);
-          iqUrl = siteUrl + $hm1Body('a:contains("HW9.6. Add two numbers")').attr('href');
+          iqUrl = siteUrl + $hm1Body('a:contains("Add two numbers")').attr('href');
 
           // open page to produce variant because we want to get the correct answer
           questionsPage = await (await fetch(iqUrl)).text();
@@ -544,7 +588,7 @@ describe('Grading method(s)', function () {
         it('should load page as student and submit "save" action', async () => {
           const hm1Body = await loadHomeworkPage(mockStudents[1]);
           $hm1Body = cheerio.load(hm1Body);
-          iqUrl = siteUrl + $hm1Body('a:contains("HW9.6. Add two numbers")').attr('href');
+          iqUrl = siteUrl + $hm1Body('a:contains("Add two numbers")').attr('href');
 
           // open page to produce variant because we want to get the correct answer
           await fetch(iqUrl);

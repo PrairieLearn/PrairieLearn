@@ -3,15 +3,18 @@ import asyncHandler from 'express-async-handler';
 import { OpenAI } from 'openai';
 
 import * as error from '@prairielearn/error';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
+import { AiGenerationPromptSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
 
+const sql = loadSqlEquiv(import.meta.url);
 import {
   AiGeneratePage,
   GenerationFailure,
@@ -105,6 +108,8 @@ router.post(
         promptGeneral: req.body.prompt,
         promptUserInput: req.body.prompt_user_input,
         promptGrading: req.body.prompt_grading,
+        userId: res.locals.authn_user.user_id,
+        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });
 
       if (result.htmlResult) {
@@ -137,14 +142,25 @@ router.post(
         );
       }
 
+      const qid = genJobs[0]?.data['questionQid'];
+
+      const prompts = await queryRows(
+        sql.select_ai_question_generation_prompts,
+        { qid, course_id: res.locals.course.id.toString() },
+        AiGenerationPromptSchema,
+      );
+
       const result = await regenerateQuestion(
         client,
         res.locals.course.id,
         res.locals.authn_user.user_id,
-        genJobs[0]?.data?.prompt,
+        prompts[0]?.user_prompt,
         req.body.prompt,
-        genJobs[0]?.data?.html,
-        genJobs[0]?.data?.python,
+        prompts[prompts.length - 1].html || '',
+        prompts[prompts.length - 1].python || '',
+        qid,
+        res.locals.authn_user.user_id,
+        res.locals.authz_data.has_course_permission_edit,
       );
 
       if (result.htmlResult) {

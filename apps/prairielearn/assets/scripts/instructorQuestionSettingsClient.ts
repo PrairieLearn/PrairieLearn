@@ -1,6 +1,12 @@
+import TomSelect from 'tom-select';
+
 import { onDocumentReady } from '@prairielearn/browser-utils';
+import { html } from '@prairielearn/html';
 
 import './lib/changeIdButton.js';
+import { TopicBadge } from '../../src/components/TopicBadge.html.js';
+import { type Topic } from '../../src/lib/db-types.js';
+
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 
 onDocumentReady(() => {
@@ -10,6 +16,29 @@ onDocumentReady(() => {
     'form[name="edit-question-settings-form"]',
   );
   const saveButton = document.querySelector<HTMLButtonElement>('#save-button');
+
+  new TomSelect('#topic', {
+    valueField: 'name',
+    searchField: ['name', 'description'],
+    closeAfterSelect: true,
+    plugins: ['dropdown_input', 'no_backspace_delete'],
+    maxItems: 1,
+    render: {
+      option(data: Topic) {
+        return html`
+          <div>
+            ${TopicBadge(data)}
+            <div>
+              <small class="text-muted">${data.description}</small>
+            </div>
+          </div>
+        `.toString();
+      },
+      item(data: Topic) {
+        return TopicBadge(data).toString();
+      },
+    },
+  });
 
   function validateId() {
     const newValue = qidField.value;
