@@ -1,4 +1,4 @@
--- BLOCK select_generation_thread_items
+-- BLOCK select_ai_question_generation_prompts
 SELECT
   ai_question_generation_prompts.*
 FROM

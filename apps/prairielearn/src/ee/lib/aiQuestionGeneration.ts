@@ -444,6 +444,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   const results = extractFromCompletion(completion, job);
 
   const html = results?.html || originalHTML;
+  const python = results?.python || originalPrompt;
 
   let errors: string[] = [];
 
@@ -451,45 +452,43 @@ Keep in mind you are not just generating an example; you are generating an actua
     errors = validateHTML(html, false, !!results?.python);
   }
 
-  if (userId !== undefined && hasCoursePermissionEdit !== undefined) {
-    await queryAsync(sql.insert_ai_question_generation_prompt, {
-      question_id: questionId,
-      prompting_user_id: authnUserId,
-      prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
-      user_prompt: revisionPrompt,
-      system_prompt: sysPrompt,
-      response: completion.choices[0].message.content,
-      html: results?.html,
-      python: results?.python,
-      errors,
-      completion,
-      job_sequence_id: jobSequenceId,
-    });
+  await queryAsync(sql.insert_ai_question_generation_prompt, {
+    question_id: questionId,
+    prompting_user_id: authnUserId,
+    prompt_type: isAutomated ? 'auto_revision' : 'human_revision',
+    user_prompt: revisionPrompt,
+    system_prompt: sysPrompt,
+    response: completion.choices[0].message.content,
+    html,
+    python,
+    errors,
+    completion,
+    job_sequence_id: jobSequenceId,
+  });
 
-    const files: Record<string, string> = {};
-    if (results?.html) {
-      files['question.html'] = results?.html;
-    }
+  const files: Record<string, string> = {};
+  if (results?.html) {
+    files['question.html'] = results?.html;
+  }
 
-    if (results?.python) {
-      files['server.py'] = results?.python;
-    }
+  if (python) {
+    files['server.py'] = python;
+  }
 
-    const client = getCourseFilesClient();
+  const courseFilesClient = getCourseFilesClient();
 
-    const result = await client.updateQuestionFiles.mutate({
-      course_id: courseId,
-      user_id: userId,
-      authn_user_id: authnUserId,
-      has_course_permission_edit: hasCoursePermissionEdit,
-      question_id: questionId,
-      files,
-    });
+  const result = await courseFilesClient.updateQuestionFiles.mutate({
+    course_id: courseId,
+    user_id: userId,
+    authn_user_id: authnUserId,
+    has_course_permission_edit: hasCoursePermissionEdit,
+    question_id: questionId,
+    files,
+  });
 
-    if (result.status === 'error') {
-      job.fail(`Draft mutation failed (job sequence: ${result.job_sequence_id})`);
-      return;
-    }
+  if (result.status === 'error') {
+    job.fail(`Draft mutation failed (job sequence: ${result.job_sequence_id})`);
+    return;
   }
 
   job.data.html = html;
