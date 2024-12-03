@@ -254,7 +254,7 @@ router.post(
 router.get(
   '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
+    const panels = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
       question_id: res.locals.question.id,
       instance_question_id: res.locals.instance_question.id,
@@ -265,7 +265,7 @@ router.get(
       authorizedEdit: res.locals.authz_result.authorized_edit,
       renderScorePanels: req.query.render_score_panels === 'true',
     });
-    res.send({ submissionPanel, extraHeadersHtml });
+    res.json(panels);
   }),
 );
 

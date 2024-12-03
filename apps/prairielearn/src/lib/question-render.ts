@@ -8,10 +8,10 @@ import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
-import { QuestionFooter, QuestionFooterContent } from '../components/QuestionContainer.html.js';
+import { QuestionFooterContent } from '../components/QuestionContainer.html.js';
 import { type QuestionContext } from '../components/QuestionContainer.types.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
-import { QuestionScorePanel, QuestionScorePanelContent } from '../components/QuestionScore.html.js';
+import { QuestionScorePanelContent } from '../components/QuestionScore.html.js';
 import {
   SubmissionPanel,
   SubmissionBasicSchema,

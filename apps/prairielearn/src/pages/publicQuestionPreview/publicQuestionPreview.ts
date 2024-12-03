@@ -67,7 +67,7 @@ router.get(
   '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
     await setLocals(req, res);
-    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
+    const panels = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
       question_id: res.locals.question.id,
       instance_question_id: null,
@@ -80,7 +80,7 @@ router.get(
       // Score panels are never rendered on the public question preview page.
       renderScorePanels: false,
     });
-    res.send({ submissionPanel, extraHeadersHtml });
+    res.json(panels);
   }),
 );
 

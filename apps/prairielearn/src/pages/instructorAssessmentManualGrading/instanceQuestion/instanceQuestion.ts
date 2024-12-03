@@ -90,7 +90,7 @@ router.get(
       // The score panels never need to be live-updated in this context.
       renderScorePanels: false,
     });
-    res.send(panels);
+    res.json(panels);
   }),
 );
 
