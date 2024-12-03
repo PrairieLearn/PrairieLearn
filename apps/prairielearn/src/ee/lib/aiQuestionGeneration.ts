@@ -449,7 +449,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   let errors: string[] = [];
 
   if (html && typeof html === 'string') {
-    errors = validateHTML(html, false, !!results?.python);
+    errors = validateHTML(html, false, !!python);
   }
 
   await queryAsync(sql.insert_ai_question_generation_prompt, {
