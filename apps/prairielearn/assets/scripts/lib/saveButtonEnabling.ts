@@ -10,7 +10,15 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
   // Create a record to store the default values of select elements. This is because we do not have access to the default value of a select element like we do for an input element.
   const selectDefaultValues: Record<string, any> = {};
   form.querySelectorAll('select').forEach((element) => {
-    selectDefaultValues[element.id] = (element as HTMLSelectElement).value;
+    if (element.multiple) {
+      selectDefaultValues[element.id] = Array.from(
+        (element as HTMLSelectElement).selectedOptions,
+      ).map((option) => option.value);
+    } else {
+      if (element.id && element.id !== '') {
+        selectDefaultValues[element.id] = (element as HTMLSelectElement).value;
+      }
+    }
   });
 
   // Add event listenerst to inputs. If the value is different from the default value, set valueHasChanged{} to true. If the value is the same as the default value, set valueHasChanged{} to false. Then call checkDifferences() to see if the save button should be enabled.
@@ -28,12 +36,27 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
   // Similar to the above, but for select elements. The difference here being that select elements do not store the default value so we must store those in selectDefaultValues{} and compare against those.
 
   form.addEventListener('change', (e) => {
-    if (
-      (e.target as HTMLInputElement).value === selectDefaultValues[(e.target as HTMLElement).id]
-    ) {
-      valueHasChanged[(e.target as HTMLElement).id] = false;
+    if ((e.target as HTMLInputElement).multiple) {
+      // If the select element is a multiple select, we must compare the selected options to the default values.
+      const selectedOptions = Array.from((e.target as HTMLSelectElement).selectedOptions).map(
+        (option) => option.value,
+      );
+      if (
+        JSON.stringify(selectedOptions.sort()) ===
+        JSON.stringify(selectDefaultValues[(e.target as HTMLElement).id].sort())
+      ) {
+        valueHasChanged[(e.target as HTMLElement).id] = false;
+      } else {
+        valueHasChanged[(e.target as HTMLElement).id] = true;
+      }
     } else {
-      valueHasChanged[(e.target as HTMLElement).id] = true;
+      if (
+        (e.target as HTMLInputElement).value === selectDefaultValues[(e.target as HTMLElement).id]
+      ) {
+        valueHasChanged[(e.target as HTMLElement).id] = false;
+      } else {
+        valueHasChanged[(e.target as HTMLElement).id] = true;
+      }
     }
 
     checkDifferences();

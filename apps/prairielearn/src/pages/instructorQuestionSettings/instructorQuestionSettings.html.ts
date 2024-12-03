@@ -17,6 +17,7 @@ import {
   IdSchema,
   type Question,
   type Topic,
+  type Tag,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { type CourseWithPermissions } from '../../models/course.js';
@@ -58,6 +59,7 @@ export function InstructorQuestionSettings({
   origHash,
   canEdit,
   courseTopics,
+  courseTags,
 }: {
   resLocals: Record<string, any>;
   questionTestPath: string;
@@ -72,10 +74,15 @@ export function InstructorQuestionSettings({
   origHash: string;
   canEdit: boolean;
   courseTopics: Topic[];
+  courseTags: Tag[];
 }) {
   // Only show assessments on which this question is used when viewing the question
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
+  let selectedTags = [];
+  if (resLocals.tags) {
+    selectedTags = resLocals.tags.map((tag) => tag.name);
+  }
   return html`
     <!doctype html>
     <html lang="en">
@@ -180,7 +187,27 @@ export function InstructorQuestionSettings({
                     </tr>
                     <tr>
                       <th class="align-middle">Tags</th>
-                      <td>${TagBadgeList(resLocals.tags)}</td>
+                      <td>
+                        ${canEdit
+                          ? html`
+                              <select id="tags" name="tags" placeholder="Select tags" multiple>
+                                ${courseTags.length > 0
+                                  ? courseTags.map((tag) => {
+                                      return html`
+                                        <option
+                                          value="${tag.name}"
+                                          data-color="${tag.color}"
+                                          data-name="${tag.name}"
+                                          data-description="${tag.description}"
+                                          ${selectedTags.includes(tag.name) ? 'selected' : ''}
+                                        ></option>
+                                      `;
+                                    })
+                                  : ''}
+                              </select>
+                            `
+                          : TagBadgeList(resLocals.tags)}
+                      </td>
                     </tr>
                     ${shouldShowAssessmentsList
                       ? html`<tr>
