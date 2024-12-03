@@ -139,6 +139,8 @@ router.post(
         );
       }
 
+      const qid = genJobs[0]?.data['questionQid'];
+
       const result = await regenerateQuestion(
         client,
         res.locals.course.id,
@@ -147,7 +149,7 @@ router.post(
         req.body.prompt,
         genJobs[0]?.data?.html,
         genJobs[0]?.data?.python,
-        undefined,
+        qid,
         res.locals.user.user_id,
         res.locals.authz_data.has_course_permission_edit,
       );

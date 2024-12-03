@@ -539,7 +539,7 @@ export async function regenerateQuestion(
   revisionPrompt: string,
   originalHTML: string,
   originalPython: string,
-  questionQid: string | undefined,
+  questionQid: string,
   userId: string,
   hasCoursePermissionEdit: boolean,
 ): Promise<{
