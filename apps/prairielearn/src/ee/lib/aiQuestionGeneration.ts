@@ -444,7 +444,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   const results = extractFromCompletion(completion, job);
 
   const html = results?.html || originalHTML;
-  const python = results?.python || originalPrompt;
+  const python = results?.python || originalPython;
 
   let errors: string[] = [];
 
@@ -492,7 +492,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   }
 
   job.data.html = html;
-  job.data.python = results.python;
+  job.data.python = python;
 
   if (errors.length > 0 && remainingAttempts > 0) {
     const auto_revisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
@@ -560,6 +560,7 @@ export async function regenerateQuestion(
   );
 
   const jobData = await serverJob.execute(async (job) => {
+    job.data['questionQid'] = questionQid; 
     await regenInternal({
       job,
       client,
