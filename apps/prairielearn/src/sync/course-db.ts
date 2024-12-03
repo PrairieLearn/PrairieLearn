@@ -344,6 +344,7 @@ export interface Assessment {
   canSubmit: string[];
   advanceScorePerc: number;
   gradeRateMinutes: number;
+  shareSourcePublicly: boolean;
 }
 
 interface QuestionExternalGradingOptions {

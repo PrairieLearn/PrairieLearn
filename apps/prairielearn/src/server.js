@@ -1988,6 +1988,18 @@ export async function initExpress() {
       coreElements: false,
     }),
   );
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
+    [
+      function (req, res, next) {
+        res.locals.navPage = 'public_question';
+        res.locals.navSubPage = 'questions';
+        res.locals.navbarType = 'public';
+        next();
+      },
+      (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
+    ],
+  );
 
   // Client files for questions
   app.use(
