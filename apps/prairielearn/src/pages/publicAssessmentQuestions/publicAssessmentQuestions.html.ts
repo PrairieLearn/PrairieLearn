@@ -32,6 +32,8 @@ export function PublicAssessmentQuestions({
       <body>
         ${Navbar({ resLocals })}
         <main id="content" class="container">
+          ${course.sharing_name
+            ? html`
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               ${assessment.title} ${assessment.number}: Questions
@@ -44,6 +46,15 @@ export function PublicAssessmentQuestions({
               course_sharing_name,
             })}
           </div>
+            ` : html`<p>
+                This course doesn't have a sharing name. If you are an Owner of this course, please
+                choose a sharing name on the
+                <a
+                  href="${resLocals.plainUrlPrefix}/course/${resLocals.course
+                    .id}/course_admin/sharing"
+                  >course sharing settings page</a
+                >.
+              </p>`}
         </main>
       </body>
     </html>

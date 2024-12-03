@@ -312,16 +312,10 @@ describe('accessibility', () => {
       { assessment_id: routeParams.assessment_id },
     );
 
-    // TEST, set sharing name so it doesn't fail on that part for publicAssessmentQuestions
-    // TEST, what to make sharing_name? Does it matter?
-
-    // TEST, need course id from course_instance_id
     const courseId = await sqldb.queryOneRowAsync(
       'SELECT course_id FROM course_instances WHERE id = $course_instance_id',
       { course_instance_id: routeParams.course_instance_id },
     );
-
-    console.log('courseId:', courseId); // TEST
 
     await sqldb.queryOneRowAsync(
       'UPDATE pl_courses SET sharing_name = $sharing_name WHERE id = $course_id',
