@@ -491,6 +491,23 @@ export const FileEditSchema = z.object({
 });
 export type FileEdit = z.infer<typeof FileEditSchema>;
 
+export const AiGenerationPromptSchema = z.object({
+  completion: z.any(),
+  system_prompt: z.string().nullable(),
+  errors: z.array(z.string()),
+  html: z.string().nullable(),
+  id: z.string(),
+  prompt_type: z.enum(['initial', 'human_revision', 'auto_revision']),
+  prompting_user_id: z.string(),
+  python: z.string().nullable(),
+  question_id: z.string(),
+  response: z.string(),
+  user_prompt: z.string(),
+  job_sequence_id: z.string().nullable(),
+});
+
+export type AiGenerationPrompt = z.infer<typeof AiGenerationPromptSchema>;
+
 export const FileTransferSchema = z.object({
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
@@ -836,6 +853,7 @@ export const QuestionSchema = z.object({
   external_grading_timeout: z.number().nullable(),
   grading_method: z.enum(['Internal', 'External', 'Manual']),
   id: IdSchema,
+  draft: z.boolean(),
   number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),
