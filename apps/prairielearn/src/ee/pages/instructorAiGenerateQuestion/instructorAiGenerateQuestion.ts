@@ -226,20 +226,20 @@ router.post(
       }
     } else if (req.body.__action === 'save_question') {
       const draftQid = `__drafts__/${req.body.unsafe_qid}`;
-      const threads = await queryRows(
-        sql.select_generation_thread_items,
+      const prompts = await queryRows(
+        sql.select_ai_question_generation_prompts,
         { qid: draftQid, course_id: res.locals.course.id.toString() },
         AiGenerationPromptSchema,
       );
 
-      if (threads.length === 0) {
+      if (prompts.length === 0) {
         throw new error.HttpStatusError(403, `Draft question ${req.body.unsafe_qid} not found.`);
       }
 
       const qid = await saveGeneratedQuestion(
         res,
-        threads[threads.length - 1].html || undefined,
-        threads[threads.length - 1].python || undefined,
+        prompts[prompts.length - 1].html || undefined,
+        prompts[prompts.length - 1].python || undefined,
         req.body.title,
         req.body.qid,
       );
