@@ -92,7 +92,6 @@ export function connection(socket: Socket) {
       user_id: msg.user_id,
       urlPrefix: msg.url_prefix,
       questionContext: msg.question_context,
-      csrfToken: msg.csrf_token,
       authorizedEdit: msg.authorized_edit,
       renderScorePanels: true,
     }).then(

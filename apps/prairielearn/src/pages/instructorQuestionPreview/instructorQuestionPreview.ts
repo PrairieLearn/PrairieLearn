@@ -49,8 +49,9 @@ router.get(
       user_id: res.locals.user.user_id,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'instructor',
-      csrfToken: null,
-      authorizedEdit: null,
+      // This is only used by score panels, which are not rendered in this context.
+      authorizedEdit: false,
+      // score panels are never rendered on the instructor question preview page.
       renderScorePanels: false,
     });
     res.send({ submissionPanel, extraHeadersHtml });

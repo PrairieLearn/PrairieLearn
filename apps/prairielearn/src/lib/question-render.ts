@@ -8,10 +8,10 @@ import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
-import { QuestionFooter } from '../components/QuestionContainer.html.js';
+import { QuestionFooter, QuestionFooterContent } from '../components/QuestionContainer.html.js';
 import { type QuestionContext } from '../components/QuestionContainer.types.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
-import { QuestionScorePanel } from '../components/QuestionScore.html.js';
+import { QuestionScorePanel, QuestionScorePanelContent } from '../components/QuestionScore.html.js';
 import {
   SubmissionPanel,
   SubmissionBasicSchema,
@@ -599,7 +599,6 @@ export async function renderPanelsForSubmission({
   user_id,
   urlPrefix,
   questionContext,
-  csrfToken,
   authorizedEdit,
   renderScorePanels,
 }: {
@@ -610,8 +609,7 @@ export async function renderPanelsForSubmission({
   user_id: string;
   urlPrefix: string;
   questionContext: QuestionContext;
-  csrfToken: string | null;
-  authorizedEdit: boolean | null;
+  authorizedEdit: boolean;
   renderScorePanels: boolean;
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
@@ -743,20 +741,14 @@ export async function renderPanelsForSubmission({
       ) {
         return;
       }
-      if (csrfToken == null) {
-        // This should not happen in this context
-        throw new Error('CSRF token not provided in a context where the score panel is rendered.');
-      }
 
-      panels.questionScorePanel = QuestionScorePanel({
+      panels.questionScorePanel = QuestionScorePanelContent({
         instance_question,
         assessment_question,
         assessment_instance,
         assessment,
         question,
         variant,
-        csrfToken,
-        authz_result: { authorized_edit: authorizedEdit },
         urlPrefix,
         instance_question_info: { question_number, previous_variants },
       }).toString();
@@ -779,11 +771,6 @@ export async function renderPanelsForSubmission({
       // Render the question panel footer
       if (!renderScorePanels) return;
 
-      if (csrfToken == null) {
-        // This should not happen in this context
-        throw new Error('CSRF token not provided in a context where the score panel is rendered.');
-      }
-
       const group_info = await run(async () => {
         if (!assessment_instance?.group_id || !group_config) return null;
 
@@ -792,13 +779,12 @@ export async function renderPanelsForSubmission({
 
       const user = await selectUserById(user_id);
 
-      panels.questionPanelFooter = QuestionFooter({
+      panels.questionPanelFooter = QuestionFooterContent({
         resLocals: {
           variant,
           question,
           assessment_question,
           instance_question,
-          __csrf_token: csrfToken,
           authz_result: { authorized_edit: authorizedEdit },
           instance_question_info: { previous_variants },
           group_config,

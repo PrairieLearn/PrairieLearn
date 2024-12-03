@@ -262,9 +262,8 @@ router.get(
       user_id: res.locals.user.user_id,
       urlPrefix: res.locals.urlPrefix,
       questionContext: res.locals.question.type === 'Exam' ? 'student_exam' : 'student_homework',
-      csrfToken: null,
-      authorizedEdit: null,
-      renderScorePanels: false,
+      authorizedEdit: res.locals.authz_result.authorized_edit,
+      renderScorePanels: req.query.render_score_panels === 'true',
     });
     res.send({ submissionPanel, extraHeadersHtml });
   }),
