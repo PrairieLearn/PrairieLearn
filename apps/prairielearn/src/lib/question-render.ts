@@ -604,7 +604,7 @@ export async function renderPanelsForSubmission({
   user: User;
   urlPrefix: string;
   questionContext: QuestionContext;
-  authorizedEdit: boolean | null;
+  authorizedEdit: boolean;
   renderScorePanels: boolean;
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(

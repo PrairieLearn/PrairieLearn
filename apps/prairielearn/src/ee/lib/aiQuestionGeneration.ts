@@ -3,6 +3,7 @@ import * as parse5 from 'parse5';
 
 import { loadSqlEquiv, queryRows, queryRow, queryAsync } from '@prairielearn/postgres';
 
+import * as b64Util from '../../lib/base64-util.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { QuestionGenerationContextEmbeddingSchema, QuestionSchema } from '../../lib/db-types.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
@@ -444,12 +445,12 @@ Keep in mind you are not just generating an example; you are generating an actua
   const results = extractFromCompletion(completion, job);
 
   const html = results?.html || originalHTML;
-  const python = results?.python || originalPrompt;
+  const python = results?.python || originalPython;
 
   let errors: string[] = [];
 
   if (html && typeof html === 'string') {
-    errors = validateHTML(html, false, !!results?.python);
+    errors = validateHTML(html, false, !!python);
   }
 
   await queryAsync(sql.insert_ai_question_generation_prompt, {
@@ -468,11 +469,11 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   const files: Record<string, string> = {};
   if (results?.html) {
-    files['question.html'] = results?.html;
+    files['question.html'] = b64Util.b64EncodeUnicode(html);
   }
 
-  if (python) {
-    files['server.py'] = python;
+  if (results?.python) {
+    files['server.py'] = b64Util.b64EncodeUnicode(python);
   }
 
   const courseFilesClient = getCourseFilesClient();
@@ -492,7 +493,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   }
 
   job.data.html = html;
-  job.data.python = results.python;
+  job.data.python = python;
 
   if (errors.length > 0 && remainingAttempts > 0) {
     const auto_revisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
@@ -503,7 +504,7 @@ Keep in mind you are not just generating an example; you are generating an actua
       originalPrompt,
       revisionPrompt: auto_revisionPrompt,
       originalHTML: html,
-      originalPython: typeof job?.data?.python === 'string' ? job?.data?.python : undefined,
+      originalPython: python,
       remainingAttempts: remainingAttempts - 1,
       isAutomated: true,
       questionId,
@@ -560,6 +561,7 @@ export async function regenerateQuestion(
   );
 
   const jobData = await serverJob.execute(async (job) => {
+    job.data['questionQid'] = questionQid;
     await regenInternal({
       job,
       client,

@@ -265,7 +265,7 @@ router.get(
       authorizedEdit: res.locals.authz_result.authorized_edit,
       renderScorePanels: req.query.render_score_panels === 'true',
     });
-    res.send(panels);
+    res.json(panels);
   }),
 );
 

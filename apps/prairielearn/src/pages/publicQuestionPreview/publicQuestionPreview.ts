@@ -80,7 +80,7 @@ router.get(
       // Score panels are never rendered on the public question preview page.
       renderScorePanels: false,
     });
-    res.send(panels);
+    res.json(panels);
   }),
 );
 
