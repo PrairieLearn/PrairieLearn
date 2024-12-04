@@ -79,7 +79,7 @@ export function InstructorQuestionSettings({
   // Only show assessments on which this question is used when viewing the question
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
-  let selectedTags = [];
+  let selectedTags: (string | null)[] = [];
   if (resLocals.tags) {
     selectedTags = resLocals.tags.map((tag) => tag.name);
   }
