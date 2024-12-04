@@ -11,12 +11,12 @@ export function saveButtonEnabling(form: HTMLFormElement, saveButton: HTMLButton
   const selectDefaultValues: Record<string, any> = {};
   form.querySelectorAll('select').forEach((element) => {
     if (element.multiple) {
-      selectDefaultValues[element.id] = Array.from(
-        (element as HTMLSelectElement).selectedOptions,
-      ).map((option) => option.value);
+      selectDefaultValues[element.id] = Array.from(element.selectedOptions).map(
+        (option) => option.value
+      );
     } else {
       if (element.id && element.id !== '') {
-        selectDefaultValues[element.id] = (element as HTMLSelectElement).value;
+        selectDefaultValues[element.id] = element.value;
       }
     }
   });
