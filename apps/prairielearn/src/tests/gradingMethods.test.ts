@@ -357,11 +357,19 @@ describe('Grading method(s)', function () {
           $questionsPage = cheerio.load(questionsPage);
 
           iqId = parseInstanceQuestionId(iqUrl);
-          const socketResult = await waitForExternalGrader($questionsPage);
-          assert.isNotNull(socketResult);
-          assert.isNotNull(socketResult.submissionPanel);
+          await waitForExternalGrader($questionsPage);
 
-          const $submissionPanel = cheerio.load(socketResult.submissionPanel);
+          // Now that the grading job is done, we can check the results.
+          const submissionBody = $questionsPage('.js-submission-body').first();
+          const dynamicRenderUrl = new URL(submissionBody.attr('data-dynamic-render-url'), siteUrl);
+          dynamicRenderUrl.searchParams.set('render_score_panels', 'true');
+          const dynamicRenderPanels = await fetch(dynamicRenderUrl).then((res) => {
+            assert.ok(res.ok);
+            return res.json() as any;
+          });
+
+          assert.ok(dynamicRenderPanels.submissionPanel);
+          const $submissionPanel = cheerio.load(dynamicRenderPanels.submissionPanel);
           assert.lengthOf($submissionPanel('[data-testid="submission-block"]'), 1);
           assert.equal(getLatestSubmissionStatus($submissionPanel), '100%');
           assert.lengthOf($submissionPanel('.pl-external-grader-results'), 1);
