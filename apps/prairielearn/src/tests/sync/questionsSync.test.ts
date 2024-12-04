@@ -431,4 +431,18 @@ describe('Question syncing', () => {
     assert.isNull(newQuestionRow2?.deleted_at);
     assert.equal(newQuestionRow2?.uuid, '0e3097ba-b554-4908-9eac-d46a78d6c249');
   });
+
+  it('syncs draft questions', async () => {
+    const courseData = util.getCourseData();
+    const question = makeQuestion(courseData);
+    question.title = 'Draft question';
+    question.uuid = '0e8097aa-b554-4908-9eac-d46a78d6c249';
+    courseData.questions['__drafts__/draft_1'] = question;
+    await util.writeAndSyncCourseData(courseData);
+
+    const syncedQuestions = await util.dumpTable('questions');
+    const syncedQuestion = syncedQuestions.find((q) => q.qid === '__drafts__/draft_1');
+    assert.isOk(syncedQuestion);
+    assert.isTrue(syncedQuestion.draft);
+  });
 });
