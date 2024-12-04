@@ -295,7 +295,7 @@ function setupDynamicObjects() {
   }
 }
 
-function loadPendingSubmissionPanel(panel: HTMLElement, includeScorePanels: boolean) {
+function loadPendingSubmissionPanel(panel: HTMLDivElement, includeScorePanels: boolean) {
   const { submissionId, dynamicRenderUrl } = panel.dataset;
   if (submissionId == null || dynamicRenderUrl == null) return;
 
@@ -313,11 +313,7 @@ function loadPendingSubmissionPanel(panel: HTMLElement, includeScorePanels: bool
       updateDynamicPanels(msg, submissionId);
     })
     .catch(() => {
-      const container = document.querySelector(`#submission-${submissionId}-body`);
-      if (container != null) {
-        container.innerHTML =
-          '<div class="card-body submission-body">Error retrieving submission</div>';
-      }
+      panel.innerHTML = '<div class="card-body submission-body">Error retrieving submission</div>';
     });
 }
 
