@@ -74,7 +74,6 @@ export function connection(socket: Socket) {
         'submission_id',
         'url_prefix',
         'question_context',
-        'csrf_token',
         'authorized_edit',
       ])
     ) {
@@ -155,8 +154,8 @@ function checkToken(token: string, variantId: string): boolean {
   const data = { variantId };
   const valid = checkSignedToken(token, data, config.secretKey, { maxAge: 24 * 60 * 60 * 1000 });
   if (!valid) {
-    logger.error(`CSRF token for variant ${variantId} failed validation.`);
-    Sentry.captureException(new Error(`CSRF token for variant ${variantId} failed validation.`));
+    logger.error(`Token for variant ${variantId} failed validation.`);
+    Sentry.captureException(new Error(`Token for variant ${variantId} failed validation.`));
   }
   return valid;
 }
