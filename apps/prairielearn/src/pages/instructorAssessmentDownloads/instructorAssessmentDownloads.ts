@@ -65,7 +65,7 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   mode: SubmissionSchema.shape.mode,
   grading_requested_at_formatted: z.string().nullable(),
   graded_at_formatted: z.string().nullable(),
-  correct: z.enum(['TRUE', 'FALSE']),
+  correct: z.enum(['TRUE', 'FALSE']).nullable(),
   feedback: SubmissionSchema.shape.feedback,
   submission_number: z.number(),
   final_submission_per_variant: z.boolean(),
