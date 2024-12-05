@@ -115,7 +115,6 @@ router.get(
         await logPageView('instructorQuestionPreview', req, res);
         setRendererHeader(res);
       }
-      console.log(req);
       const queryUrl = req.originalUrl.split('?')[1]; // Only the info after the query separator
       res.send(
         AiGeneratePage({
