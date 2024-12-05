@@ -1,9 +1,9 @@
 ansi2html==1.9.2
 chevron==0.14.0
-coloraide==4.0
+coloraide==4.0.1
 Faker==30.8.2
 lxml==5.3.0
-matplotlib==3.9.2
+matplotlib==3.9.3
 networkx==3.4.2
 nltk==3.9.1
 numpy==1.26.4
@@ -15,7 +15,7 @@ psutil==6.1.0
 PuLP==2.9.0
 pycryptodome==3.21.0
 Pygments==2.18.0
-pyarrow==18.0.0
+pyarrow==18.1.0
 pygments-ansi-color==0.3.0
 pygraphviz==1.14
 pyquaternion==0.9.9
@@ -23,8 +23,8 @@ pytest-cov==6.0.0
 pytest-repeat==0.9.3
 pytest==8.3.3
 recommonmark==0.7.1
-regex==2024.9.11
-ruff==0.7.2
+regex==2024.11.6
+ruff==0.8.1
 schemdraw==0.19
 scikit-learn==1.5.2
 scipy==1.14.1
@@ -35,7 +35,7 @@ statsmodels==0.14.4
 sympy==1.13.3
 text-unidecode==1.3
 types-chevron==0.14.2.20240310
-types-lxml==2024.9.16
+types-lxml==2024.11.8
 types-Pygments==2.18.0.20240506
 typing-extensions==4.12.2
 tzlocal==5.2
