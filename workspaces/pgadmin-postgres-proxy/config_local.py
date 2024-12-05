@@ -19,3 +19,4 @@ FIXED_BINARY_PATHS = {
     "ppas-16": "",
     "ppas-17": ""
 }
+DATA_RESULT_ROWS_PER_PAGE = 1000

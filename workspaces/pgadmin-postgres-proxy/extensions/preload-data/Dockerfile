@@ -1,4 +1,4 @@
-FROM zacwarham/eric-gittu-zac:seven
+FROM zacwarham/eric-gittu-zac:eight
 
 USER root
 
