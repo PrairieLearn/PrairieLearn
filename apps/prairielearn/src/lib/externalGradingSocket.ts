@@ -63,45 +63,6 @@ export function connection(socket: Socket) {
       },
     );
   });
-
-  socket.on('getResults', (msg, callback) => {
-    if (
-      !ensureProps(msg, [
-        'question_id',
-        'instance_question_id',
-        'variant_id',
-        'variant_token',
-        'submission_id',
-        'url_prefix',
-        'question_context',
-        'authorized_edit',
-      ])
-    ) {
-      return callback(null);
-    }
-    if (!checkToken(msg.variant_token, msg.variant_id)) {
-      return callback(null);
-    }
-
-    renderPanelsForSubmission({
-      submission_id: msg.submission_id,
-      question_id: msg.question_id,
-      instance_question_id: msg.instance_question_id,
-      variant_id: msg.variant_id,
-      user_id: msg.user_id,
-      urlPrefix: msg.url_prefix,
-      questionContext: msg.question_context,
-      authorizedEdit: msg.authorized_edit,
-      renderScorePanels: true,
-    }).then(
-      (panels) => callback(panels),
-      (err) => {
-        logger.error('Error rendering panels for submission', err);
-        Sentry.captureException(err);
-        callback(null);
-      },
-    );
-  });
 }
 
 export async function getVariantSubmissionsStatus(variant_id: string) {
