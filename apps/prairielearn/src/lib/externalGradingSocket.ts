@@ -11,7 +11,6 @@ import { gradingJobStatus } from '../models/grading-job.js';
 import { config } from './config.js';
 import { GradingJobSchema, IdSchema } from './db-types.js';
 import type { StatusMessage } from './externalGradingSocket.types.js';
-import { renderPanelsForSubmission } from './question-render.js';
 import * as socketServer from './socket-server.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

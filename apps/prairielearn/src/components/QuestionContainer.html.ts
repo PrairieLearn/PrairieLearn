@@ -34,15 +34,10 @@ export function QuestionContainer({
     question,
     issues,
     variant,
-    instance_question,
-    user,
     variantToken,
-    __csrf_token,
     questionJsonBase64,
-    urlPrefix,
     course_instance,
     authz_data,
-    authz_result,
     is_administrator,
     showTrueAnswer,
     showSubmissions,
@@ -56,14 +51,7 @@ export function QuestionContainer({
       class="question-container"
       data-grading-method="${question.grading_method}"
       data-variant-id="${variant.id}"
-      data-question-id="${question.id}"
-      data-instance-question-id="${instance_question?.id ?? ''}"
-      data-user-id="${user.user_id}"
       data-variant-token="${variantToken}"
-      data-url-prefix="${urlPrefix}"
-      data-question-context="${questionContext}"
-      data-csrf-token="${__csrf_token}"
-      data-authorized-edit="${authz_result?.authorized_edit !== false}"
     >
       ${question.type !== 'Freeform'
         ? html`<div hidden="true" class="question-data">${questionJsonBase64}</div>`
@@ -326,7 +314,7 @@ interface QuestionFooterResLocals {
   __csrf_token: string;
 }
 
-export function QuestionFooter({
+function QuestionFooter({
   resLocals,
   questionContext,
 }: {
