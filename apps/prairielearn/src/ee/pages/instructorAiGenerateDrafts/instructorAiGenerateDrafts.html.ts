@@ -34,6 +34,12 @@ export function InstructorAIGenerateDrafts({
       <body>
         ${Navbar({ navPage: 'course_admin', navSubPage: 'questions', resLocals })}
         <main id="content" class="container-fluid">
+          <div class="mb-3">
+            <a href="${resLocals.urlPrefix}/course_admin/questions" class="btn btn-sm btn-primary">
+              <i class="fa fa-arrow-left" aria-hidden="true"></i>
+              Back to all questions
+            </a>
+          </div>
           <div class="card mb-4">
             <div
               class="card-header bg-primary text-white d-flex align-items-center justify-content-between"

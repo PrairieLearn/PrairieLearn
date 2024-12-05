@@ -60,16 +60,16 @@ export function AiGeneratePage({
       <body hx-ext="loading-states">
         ${Navbar({ navPage: 'course_admin', resLocals })}
         <main id="content" class="container-fluid">
-          <div>
+          <div class="mb-3">
             <a
               href="${resLocals.urlPrefix}/ai_generate_question_drafts"
-              class="btn btn-primary mb-4"
+              class="btn btn-sm btn-primary"
             >
               <i class="fa fa-arrow-left" aria-hidden="true"></i>
               Back to draft questions
             </a>
           </div>
-          <div class="card  mb-4">
+          <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex justify-content-between">
               Generate Question using AI
               ${prompts && prompts.length > 0
