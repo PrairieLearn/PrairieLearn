@@ -1,48 +1,57 @@
-// @ts-check
-
 import * as async from 'async';
+import type { Response } from 'express';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.html.js';
-import { QuestionFooter } from '../components/QuestionContainer.html.js';
+import { QuestionFooterContent } from '../components/QuestionContainer.html.js';
+import { type QuestionContext } from '../components/QuestionContainer.types.js';
 import { QuestionNavSideButton } from '../components/QuestionNavigation.html.js';
-import { QuestionScorePanel } from '../components/QuestionScore.html.js';
+import { QuestionScorePanelContent } from '../components/QuestionScore.html.js';
 import {
   SubmissionPanel,
   SubmissionBasicSchema,
   SubmissionDetailedSchema,
 } from '../components/SubmissionPanel.html.js';
+import type { SubmissionForRender } from '../components/SubmissionPanel.html.js';
 import { selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
-import { config, setLocalsFromConfig } from './config.js';
+import { config } from './config.js';
 import {
+  type Assessment,
+  type AssessmentInstance,
   AssessmentInstanceSchema,
+  type AssessmentQuestion,
   AssessmentQuestionSchema,
   AssessmentSchema,
   AssessmentSetSchema,
+  type Course,
   CourseInstanceSchema,
   CourseSchema,
-  DateFromISOString,
   GradingJobSchema,
+  type GroupConfig,
+  GroupConfigSchema,
   IdSchema,
+  type InstanceQuestion,
   InstanceQuestionSchema,
   IssueSchema,
-  QuestionSchema,
+  type Question,
+  type Submission,
   SubmissionSchema,
+  type User,
+  type Variant,
   VariantSchema,
 } from './db-types.js';
-import { getGroupConfig, getQuestionGroupPermissions, getUserRoles } from './groups.js';
+import { getGroupInfo, getQuestionGroupPermissions, getUserRoles } from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
+import type { SubmissionPanels } from './question-render.types.js';
 import { getQuestionCourse, ensureVariant } from './question-variant.js';
-
-/** @import { SubmissionPanels } from './question-render.types.js'  */
-/** @import { SubmissionForRender } from '../components/SubmissionPanel.html.js' */
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -65,20 +74,21 @@ const IssueRenderDataSchema = IssueSchema.extend({
   user_email: z.string().nullable(),
 });
 
+type InstanceQuestionWithAllowGrade = InstanceQuestion & {
+  allow_grade_left_ms: number;
+  allow_grade_date: Date | null;
+  allow_grade_interval: string;
+};
+
 const SubmissionInfoSchema = z.object({
   grading_job: GradingJobSchema.nullable(),
   submission: SubmissionSchema,
   variant: VariantSchema,
-  instance_question: InstanceQuestionSchema.extend({
-    allow_grade_left_ms: z.coerce.number(),
-    allow_grade_date: DateFromISOString.nullable(),
-    allow_grade_interval: z.string(),
-  }).nullable(),
+  question_number: z.string().nullable(),
   next_instance_question: z.object({
     id: IdSchema.nullable(),
     sequence_locked: z.boolean().nullable(),
   }),
-  question: QuestionSchema,
   assessment_question: AssessmentQuestionSchema.nullable(),
   assessment_instance: AssessmentInstanceSchema.nullable(),
   assessment: AssessmentSchema.nullable(),
@@ -90,7 +100,7 @@ const SubmissionInfoSchema = z.object({
   user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
   submission_count: z.coerce.number(),
-  question_number: z.string().nullable(),
+  group_config: GroupConfigSchema.nullable(),
 });
 
 /**
@@ -101,28 +111,26 @@ const MAX_RECENT_SUBMISSIONS = 3;
 
 /**
  * Renders the HTML for a variant.
- * @protected
  *
- * @param variant_course - The course for the variant.
- * @param renderSelection - Specify which panels should be rendered.
- * @param variant - The variant to submit to.
- * @param question - The question for the variant.
- * @param submission - The current submission to the variant.
- * @param submissions - The full list of submissions to the variant.
- * @param question_course - The course for the question.
- * @param locals - The current locals for the page response.
- * @type {(variant_course: import('./db-types.js').Course, ...a: Parameters<import('../question-servers/index.js').QuestionServer['render']>) => Promise<import('../question-servers/index.js').RenderResultData>}
+ * @param variant_course The course for the variant.
+ * @param renderSelection Specify which panels should be rendered.
+ * @param variant The variant to submit to.
+ * @param question The question for the variant.
+ * @param submission The current submission to the variant.
+ * @param submissions The full list of submissions to the variant.
+ * @param question_course The course for the question.
+ * @param locals The current locals for the page response.
  */
 async function render(
-  variant_course,
+  variant_course: Course,
   renderSelection,
-  variant,
-  question,
-  submission,
-  submissions,
-  question_course,
-  locals,
-) {
+  variant: Variant,
+  question: Question,
+  submission: Submission,
+  submissions: Submission[],
+  question_course: Course,
+  locals: Record<string, any>,
+): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 
   const { courseIssues, data } = await questionModule.render(
@@ -137,63 +145,94 @@ async function render(
 
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
-  // locals.authn_user may not be populated when rendering a panel
-  const user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
-  await writeCourseIssues(courseIssues, variant, user_id, studentMessage, courseData);
+  // user information may not be populated when rendering a panel.
+  const user_id = locals.user && locals.user.user_id ? locals.user.user_id : null;
+  const authn_user_id = locals && locals.authn_user ? locals.authn_user.user_id : null;
+  await writeCourseIssues(
+    courseIssues,
+    variant,
+    user_id,
+    authn_user_id,
+    studentMessage,
+    courseData,
+  );
   return data;
+}
+
+interface QuestionUrls {
+  questionUrl: string;
+  newVariantUrl: string;
+  tryAgainUrl: string;
+  reloadUrl: string;
+  clientFilesQuestionUrl: string;
+  calculationQuestionFileUrl: string;
+  calculationQuestionGeneratedFileUrl: string;
+  clientFilesCourseUrl: string;
+  clientFilesQuestionGeneratedFileUrl: string;
+  baseUrl: string;
+  workspaceUrl?: string;
 }
 
 /**
  * Internal helper function to generate URLs that are used to render
  * question panels.
  *
- * @param  {String} urlPrefix The prefix of the generated URLs.
- * @param  {import('./db-types.js').Variant} variant The variant object for this question.
- * @param  {import('./db-types.js').Question} question The question.
- * @param  {import('./db-types.js').InstanceQuestion?} instance_question The instance question.
- * @return {Record<string, any>} An object containing the named URLs.
+ * @param urlPrefix The prefix of the generated URLs.
+ * @param variant The variant object for this question.
+ * @param question The question.
+ * @param instance_question The instance question.
+ * @return An object containing the named URLs.
  */
-export function buildQuestionUrls(urlPrefix, variant, question, instance_question) {
-  const urls = {};
+export function buildQuestionUrls(
+  urlPrefix: string,
+  variant: Variant,
+  question: Question,
+  instance_question: InstanceQuestion | null,
+): QuestionUrls {
+  let urls: QuestionUrls;
 
   if (!instance_question) {
     // instructor question pages
     const questionUrl = urlPrefix + '/question/' + question.id + '/';
-    urls.questionUrl = questionUrl;
-    urls.newVariantUrl = questionUrl + 'preview/';
-    urls.tryAgainUrl = questionUrl + 'preview/';
-    urls.reloadUrl = questionUrl + 'preview/' + '?variant_id=' + variant.id;
-    urls.clientFilesQuestionUrl = questionUrl + 'clientFilesQuestion';
 
-    // necessary for backward compatibility
-    urls.calculationQuestionFileUrl = questionUrl + 'file';
+    urls = {
+      questionUrl,
+      newVariantUrl: questionUrl + 'preview/',
+      tryAgainUrl: questionUrl + 'preview/',
+      reloadUrl: questionUrl + 'preview/' + '?variant_id=' + variant.id,
+      clientFilesQuestionUrl: questionUrl + 'clientFilesQuestion',
 
-    urls.calculationQuestionGeneratedFileUrl =
-      questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
+      // necessary for backward compatibility
+      calculationQuestionFileUrl: questionUrl + 'file',
 
-    urls.clientFilesCourseUrl = questionUrl + 'clientFilesCourse';
-    urls.clientFilesQuestionGeneratedFileUrl =
-      questionUrl + 'generatedFilesQuestion/variant/' + variant.id;
-    urls.baseUrl = urlPrefix;
+      calculationQuestionGeneratedFileUrl:
+        questionUrl + 'generatedFilesQuestion/variant/' + variant.id,
+
+      clientFilesCourseUrl: questionUrl + 'clientFilesCourse',
+      clientFilesQuestionGeneratedFileUrl:
+        questionUrl + 'generatedFilesQuestion/variant/' + variant.id,
+      baseUrl: urlPrefix,
+    };
   } else {
     // student question pages
     const iqUrl = urlPrefix + '/instance_question/' + instance_question.id + '/';
-    urls.questionUrl = iqUrl;
-    urls.newVariantUrl = iqUrl;
-    urls.tryAgainUrl = iqUrl;
-    urls.reloadUrl = iqUrl + '?variant_id=' + variant.id;
-    urls.clientFilesQuestionUrl = iqUrl + 'clientFilesQuestion';
 
-    // necessary for backward compatibility
-    urls.calculationQuestionFileUrl = iqUrl + 'file';
+    urls = {
+      questionUrl: iqUrl,
+      newVariantUrl: iqUrl,
+      tryAgainUrl: iqUrl,
+      reloadUrl: iqUrl + '?variant_id=' + variant.id,
+      clientFilesQuestionUrl: iqUrl + 'clientFilesQuestion',
 
-    urls.calculationQuestionGeneratedFileUrl =
-      iqUrl + 'generatedFilesQuestion/variant/' + variant.id;
+      // necessary for backward compatibility
+      calculationQuestionFileUrl: iqUrl + 'file',
 
-    urls.clientFilesCourseUrl = iqUrl + 'clientFilesCourse';
-    urls.clientFilesQuestionGeneratedFileUrl =
-      iqUrl + 'generatedFilesQuestion/variant/' + variant.id;
-    urls.baseUrl = urlPrefix;
+      calculationQuestionGeneratedFileUrl: iqUrl + 'generatedFilesQuestion/variant/' + variant.id,
+
+      clientFilesCourseUrl: iqUrl + 'clientFilesCourse',
+      clientFilesQuestionGeneratedFileUrl: iqUrl + 'generatedFilesQuestion/variant/' + variant.id,
+      baseUrl: urlPrefix,
+    };
   }
 
   if (variant.workspace_id) {
@@ -203,34 +242,53 @@ export function buildQuestionUrls(urlPrefix, variant, question, instance_questio
   return urls;
 }
 
-export function buildLocals(
+function buildLocals({
   variant,
   question,
   instance_question,
+  group_role_permissions,
   assessment,
   assessment_instance,
   assessment_question,
+  group_config,
   authz_result,
-) {
-  const locals = {};
+}: {
+  variant: Variant;
+  question: Question;
+  instance_question?: InstanceQuestionWithAllowGrade | null;
+  group_role_permissions?: {
+    can_view: boolean;
+    can_submit: boolean;
+  } | null;
+  assessment?: Assessment | null;
+  assessment_instance?: AssessmentInstance | null;
+  assessment_question?: AssessmentQuestion | null;
+  group_config?: GroupConfig | null;
+  authz_result?: any;
+}) {
+  const locals = {
+    showGradeButton: false,
+    showSaveButton: false,
+    disableGradeButton: false,
+    disableSaveButton: false,
+    showNewVariantButton: false,
+    showTryAgainButton: false,
+    showSubmissions: false,
+    showFeedback: false,
+    showTrueAnswer: false,
+    showGradingRequested: false,
+    allowAnswerEditing: false,
+    hasAttemptsOtherVariants: false,
+    variantAttemptsLeft: 0,
+    variantAttemptsTotal: 0,
+    submissions: [],
 
-  locals.showGradeButton = false;
-  locals.showSaveButton = false;
-  locals.disableGradeButton = false;
-  locals.disableSaveButton = false;
-  locals.showNewVariantButton = false;
-  locals.showTryAgainButton = false;
-  locals.showSubmissions = false;
-  locals.showFeedback = false;
-  locals.showTrueAnswer = false;
-  locals.showGradingRequested = false;
-  locals.allowAnswerEditing = false;
-  locals.hasAttemptsOtherVariants = false;
-  locals.variantAttemptsLeft = 0;
-  locals.variantAttemptsTotal = 0;
-  locals.submissions = [];
+    // Used for "auth" for external grading realtime results
+    // ID is coerced to a string so that it matches what we get back from the client
+    variantToken: generateSignedToken({ variantId: variant.id.toString() }, config.secretKey),
+  };
 
-  if (!assessment) {
+  if (!assessment || !assessment_instance || !assessment_question || !instance_question) {
     // instructor question pages
     locals.showGradeButton = true;
     locals.showSaveButton = true;
@@ -244,10 +302,13 @@ export function buildLocals(
       locals.allowAnswerEditing = true;
       if (!question.single_variant) {
         locals.hasAttemptsOtherVariants = true;
-        locals.variantAttemptsLeft = assessment_question.tries_per_variant - variant.num_tries;
-        locals.variantAttemptsTotal = assessment_question.tries_per_variant;
+        // TODO: can get rid of the nullish coalescing if we mark `tries_per_variant` as `NOT NULL`.
+        locals.variantAttemptsLeft =
+          (assessment_question.tries_per_variant ?? 1) - variant.num_tries;
+        locals.variantAttemptsTotal = assessment_question.tries_per_variant ?? 1;
       }
-      if (question.single_variant && instance_question.score_perc >= 100.0) {
+      // TODO: can get rid of the nullish coalescing if we mark `score_perc` as `NOT NULL`.
+      if (question.single_variant && (instance_question.score_perc ?? 0) >= 100.0) {
         locals.showTrueAnswer = true;
       }
     }
@@ -256,8 +317,8 @@ export function buildLocals(
         locals.showGradeButton = true;
         locals.showSaveButton = true;
         locals.allowAnswerEditing = true;
-        locals.variantAttemptsLeft = instance_question.points_list.length;
-        locals.variantAttemptsTotal = instance_question.points_list_original.length;
+        locals.variantAttemptsLeft = (instance_question.points_list ?? []).length;
+        locals.variantAttemptsTotal = (instance_question.points_list_original ?? []).length;
       } else {
         locals.showTrueAnswer = true;
       }
@@ -284,10 +345,6 @@ export function buildLocals(
       locals.showTrueAnswer = true;
     }
   }
-
-  // Used for "auth" for external grading realtime results
-  // ID is coerced to a string so that it matches what we get back from the client
-  locals.variantToken = generateSignedToken({ variantId: variant.id.toString() }, config.secretKey);
 
   if (variant.broken_at) {
     locals.showGradeButton = false;
@@ -321,10 +378,7 @@ export function buildLocals(
     locals.showTrueAnswer = false;
   }
 
-  if (
-    assessment?.group_config?.has_roles &&
-    !instance_question?.group_role_permissions?.can_submit
-  ) {
+  if (group_config?.has_roles && !group_role_permissions?.can_submit) {
     locals.disableGradeButton = true;
     locals.disableSaveButton = true;
   }
@@ -335,11 +389,15 @@ export function buildLocals(
 /**
  * Render all information needed for a question.
  *
- * @param {string | null} variant_id - The variant to render, or null if it should be generated.
- * @param {string | null} variant_seed - Random seed for variant, or null if it should be generated.
- * @param {Object} locals - The current locals structure to read/write.
+ * @param variant_id The variant to render, or null if it should be generated.
+ * @param variant_seed Random seed for variant, or null if it should be generated.
+ * @param locals The current locals structure to read/write.
  */
-export async function getAndRenderVariant(variant_id, variant_seed, locals) {
+export async function getAndRenderVariant(
+  variant_id: string | null,
+  variant_seed: string | null,
+  locals: Record<string, any>,
+) {
   locals.question_course = await getQuestionCourse(locals.question, locals.course);
   locals.question_is_shared = await sqldb.queryRow(
     sql.select_is_shared,
@@ -387,21 +445,25 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
     assessment,
     assessment_instance,
     assessment_question,
+    group_config,
+    group_role_permissions,
     authz_result,
   } = locals;
 
   const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
   Object.assign(locals, urls);
 
-  const newLocals = buildLocals(
+  const newLocals = buildLocals({
     variant,
     question,
     instance_question,
+    group_role_permissions,
     assessment,
     assessment_instance,
     assessment_question,
+    group_config,
     authz_result,
-  );
+  });
   Object.assign(locals, newLocals);
   if (locals.manualGradingInterface && question?.show_correct_answer) {
     locals.showTrueAnswer = true;
@@ -436,15 +498,13 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
       SubmissionDetailedSchema,
     );
 
-    locals.submissions = /** @type {SubmissionForRender[]} */ (
-      submissions.map((s, idx) => ({
-        submission_number: submissionCount - idx,
-        ...s,
-        // Both queries order results consistently, so we can just use
-        // the array index to match up the basic and detailed results.
-        ...(idx < submissionDetails.length ? submissionDetails[idx] : {}),
-      }))
-    );
+    locals.submissions = submissions.map((s, idx) => ({
+      submission_number: submissionCount - idx,
+      ...s,
+      // Both queries order results consistently, so we can just use
+      // the array index to match up the basic and detailed results.
+      ...(idx < submissionDetails.length ? submissionDetails[idx] : {}),
+    })) satisfies SubmissionForRender[];
     locals.submission = locals.submissions[0]; // most recent submission
 
     locals.showSubmissions = true;
@@ -495,7 +555,7 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
 
   if (locals.instance_question) {
     await manualGrading.populateRubricData(locals);
-    await async.each(locals.submissions, manualGrading.populateManualGradingData);
+    await async.eachSeries(locals.submissions, manualGrading.populateManualGradingData);
   }
 
   if (locals.question.type !== 'Freeform') {
@@ -525,35 +585,36 @@ export async function getAndRenderVariant(variant_id, variant_seed, locals) {
  * Renders the panels that change when a grading job is completed; used to send real-time results
  * back to the client. This includes the submission panel by default, and if renderScorePanels is
  * set, also the side panels for score, navigation and the question footer.
- *
- * @param {Object} param
- * @param  {string} param.submission_id The id of the submission
- * @param  {string} param.question_id The id of the question (for authorization check)
- * @param  {string | null} param.instance_question_id The id of the instance question (for authorization check)
- * @param  {string | null} param.variant_id The id of the variant (for authorization check)
- * @param  {string} param.user_id The id of the authenticated user, used to identify group roles
- * @param  {String}  param.urlPrefix URL prefix to be used when rendering
- * @param  {import('../components/QuestionContainer.types.js').QuestionContext} param.questionContext The rendering context of this question
- * @param  {String?} param.csrfToken CSRF token for this question page
- * @param  {boolean?} param.authorizedEdit If true the user is authorized to edit the submission
- * @param  {boolean} param.renderScorePanels If true, render all side panels, otherwise only the submission panel
- * @returns {Promise<SubmissionPanels>}
  */
 export async function renderPanelsForSubmission({
   submission_id,
-  question_id,
-  instance_question_id,
+  question,
+  instance_question,
   variant_id,
-  user_id,
+  user,
   urlPrefix,
   questionContext,
-  csrfToken,
   authorizedEdit,
   renderScorePanels,
-}) {
+}: {
+  submission_id: string;
+  question: Question;
+  instance_question: InstanceQuestionWithAllowGrade | null;
+  variant_id: string | null;
+  user: User;
+  urlPrefix: string;
+  questionContext: QuestionContext;
+  authorizedEdit: boolean;
+  renderScorePanels: boolean;
+}): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
-    { submission_id, question_id, instance_question_id, variant_id },
+    {
+      submission_id,
+      question_id: question.id,
+      instance_question_id: instance_question?.id,
+      variant_id,
+    },
     SubmissionInfoSchema,
   );
   if (submissionInfo == null) throw new error.HttpStatusError(404, 'Not found');
@@ -561,9 +622,7 @@ export async function renderPanelsForSubmission({
   const {
     variant,
     submission,
-    instance_question,
     next_instance_question,
-    question,
     assessment_question,
     assessment_instance,
     assessment,
@@ -577,6 +636,7 @@ export async function renderPanelsForSubmission({
     formatted_date,
     user_uid,
     question_number,
+    group_config,
   } = submissionInfo;
   const previous_variants =
     variant.instance_question_id == null || assessment_instance == null
@@ -586,27 +646,38 @@ export async function renderPanelsForSubmission({
           instance_question_id: variant.instance_question_id,
         });
 
-  /** @type {SubmissionPanels} */
-  const panels = {
+  const group_role_permissions = await run(async () => {
+    if (!instance_question || !assessment_instance?.group_id || !group_config?.has_roles) {
+      return null;
+    }
+
+    return await getQuestionGroupPermissions(
+      instance_question?.id,
+      assessment_instance?.group_id,
+      user.user_id,
+    );
+  });
+
+  const panels: SubmissionPanels = {
     submissionPanel: null,
     extraHeadersHtml: null,
   };
 
-  // Fake locals. Yay!
-  const locals = {};
-  setLocalsFromConfig(locals);
-  Object.assign(
-    locals,
-    buildQuestionUrls(urlPrefix, variant, question, instance_question),
-    buildLocals(
+  const locals = {
+    urlPrefix,
+    plainUrlPrefix: config.urlPrefix,
+    ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
+    ...buildLocals({
       variant,
       question,
       instance_question,
+      group_role_permissions,
       assessment,
       assessment_instance,
       assessment_question,
-    ),
-  );
+      group_config,
+    }),
+  };
 
   await async.parallel([
     async () => {
@@ -627,7 +698,10 @@ export async function renderPanelsForSubmission({
       panels.answerPanel = locals.showTrueAnswer ? htmls.answerHtml : null;
       panels.extraHeadersHtml = htmls.extraHeadersHtml;
 
-      await manualGrading.populateRubricData(locals);
+      const rubric_data = await manualGrading.selectRubricData({
+        assessment_question,
+        submission,
+      });
       await manualGrading.populateManualGradingData(submission);
 
       panels.submissionPanel = SubmissionPanel({
@@ -646,7 +720,7 @@ export async function renderPanelsForSubmission({
         },
         submissionHtml: htmls.submissionHtmls[0],
         submissionCount: submission_count,
-        rubric_data: locals.rubric_data,
+        rubric_data,
         expanded: true,
         urlPrefix,
       }).toString();
@@ -665,20 +739,14 @@ export async function renderPanelsForSubmission({
       ) {
         return;
       }
-      if (csrfToken == null) {
-        // This should not happen in this context
-        throw new Error('CSRF token not provided in a context where the score panel is rendered.');
-      }
 
-      panels.questionScorePanel = QuestionScorePanel({
+      panels.questionScorePanel = QuestionScorePanelContent({
         instance_question,
         assessment_question,
         assessment_instance,
         assessment,
         question,
         variant,
-        csrfToken,
-        authz_result: { authorized_edit: authorizedEdit },
         urlPrefix,
         instance_question_info: { question_number, previous_variants },
       }).toString();
@@ -701,16 +769,24 @@ export async function renderPanelsForSubmission({
       // Render the question panel footer
       if (!renderScorePanels) return;
 
-      panels.questionPanelFooter = QuestionFooter({
+      const group_info = await run(async () => {
+        if (!assessment_instance?.group_id || !group_config) return null;
+
+        return await getGroupInfo(assessment_instance?.group_id, group_config);
+      });
+
+      panels.questionPanelFooter = QuestionFooterContent({
         resLocals: {
           variant,
           question,
           assessment_question,
           instance_question,
-          question_context: questionContext,
-          __csrf_token: csrfToken,
           authz_result: { authorized_edit: authorizedEdit },
           instance_question_info: { previous_variants },
+          group_config,
+          group_info,
+          group_role_permissions,
+          user,
           ...locals,
         },
         questionContext,
@@ -724,24 +800,19 @@ export async function renderPanelsForSubmission({
       // is disabled, so it does not need to be replaced.
       if (variant.instance_question_id == null || next_instance_question.id == null) return;
 
-      /** @type {{can_view: boolean} | null} */
-      let groupRolePermissions = null;
-      /** @type {string} */
+      let nextQuestionGroupRolePermissions: { can_view: boolean } | null = null;
       let userGroupRoles = 'None';
 
-      if (assessment?.group_work && assessment_instance?.group_id != null) {
-        const groupConfig = await getGroupConfig(assessment.id);
-        if (groupConfig.has_roles) {
-          groupRolePermissions = await getQuestionGroupPermissions(
-            next_instance_question.id,
-            assessment_instance.group_id,
-            user_id,
-          );
-          userGroupRoles =
-            (await getUserRoles(assessment_instance.group_id, user_id))
-              .map((role) => role.role_name)
-              .join(', ') || 'None';
-        }
+      if (assessment_instance?.group_id && group_config?.has_roles) {
+        nextQuestionGroupRolePermissions = await getQuestionGroupPermissions(
+          next_instance_question.id,
+          assessment_instance.group_id,
+          user.user_id,
+        );
+        userGroupRoles =
+          (await getUserRoles(assessment_instance.group_id, user.user_id))
+            .map((role) => role.role_name)
+            .join(', ') || 'None';
       }
 
       panels.questionNavNextButton = QuestionNavSideButton({
@@ -749,7 +820,7 @@ export async function renderPanelsForSubmission({
         sequenceLocked: next_instance_question.sequence_locked,
         urlPrefix,
         whichButton: 'next',
-        groupRolePermissions,
+        groupRolePermissions: nextQuestionGroupRolePermissions,
         advanceScorePerc: assessment_question?.advance_score_perc,
         userGroupRoles,
       }).toString();
@@ -761,10 +832,8 @@ export async function renderPanelsForSubmission({
 /**
  * Expose the renderer in use to the client so that we can easily see
  * which renderer was used for a given request.
- *
- * @param {import('express').Response} res
  */
-export function setRendererHeader(res) {
+export function setRendererHeader(res: Response) {
   const renderer = res.locals.question_renderer;
   if (renderer) {
     res.set('X-PrairieLearn-Question-Renderer', renderer);

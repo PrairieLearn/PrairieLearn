@@ -6,8 +6,10 @@ import byline from 'byline';
 import Docker from 'dockerode';
 import { execa } from 'execa';
 import fs from 'fs-extra';
+import * as shlex from 'shlex';
 
 import { logger } from '@prairielearn/logger';
+import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from './config.js';
@@ -64,6 +66,19 @@ export class ExternalGraderLocal {
         throw new Error('No external grading image specified.');
       }
 
+      if (question.external_grading_entrypoint == null) {
+        // The grader-host does not currently support a null entrypoint, and
+        // schema does not allow the entrypoint to be skipped if external
+        // grading options are provided. To avoid local code having a different
+        // behavior than production, we ensure that the local code throws an
+        // error if the entrypoint is null, which would also happen in
+        // production. A future implementation could allow the entrypoint to be
+        // skipped to use the default entrypoint from the image, but this would
+        // require equivalent changes to the grader-host; see
+        // https://github.com/PrairieLearn/PrairieLearn/issues/10940.
+        throw new Error('No external grading entrypoint specified.');
+      }
+
       await docker.ping();
 
       results.received_time = new Date().toISOString();
@@ -71,14 +86,18 @@ export class ExternalGraderLocal {
 
       await buildDirectory(dir, submission, variant, question, course);
 
-      if (question.external_grading_entrypoint?.includes('serverFilesCourse')) {
-        // Mark the entrypoint as executable if it lives in serverFilesCourse.
-        // If it is living in the docker container then we don't have access to it before
-        // we actually run it.
+      const entrypointFirstToken = shlex.split(question.external_grading_entrypoint)[0];
+      if (
+        path.isAbsolute(entrypointFirstToken) &&
+        contains('/grade', entrypointFirstToken, false)
+      ) {
+        // Mark the entrypoint as executable if it lives in the mounted volume.
+        // If it is living in the docker container then we don't have access to
+        // it before we actually run it.
         try {
           await execa('chmod', [
             '+x',
-            path.join(dir, question.external_grading_entrypoint.slice(6)),
+            path.resolve(dir, path.relative('/grade', entrypointFirstToken)),
           ]);
         } catch {
           logger.error('Could not make file executable; continuing execution anyways');
@@ -130,7 +149,7 @@ export class ExternalGraderLocal {
             },
           ],
         },
-        Entrypoint: question.external_grading_entrypoint?.split(' '),
+        Entrypoint: shlex.split(question.external_grading_entrypoint),
       });
 
       const stream = await container.attach({

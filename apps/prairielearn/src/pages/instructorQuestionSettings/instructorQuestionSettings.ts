@@ -14,7 +14,6 @@ import { generateSignedToken } from '@prairielearn/signed-token';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
-import { IdSchema } from '../../lib/db-types.js';
 import {
   FileModifyEditor,
   QuestionRenameEditor,
@@ -30,6 +29,8 @@ import { startTestQuestion } from '../../lib/question-testing.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
+import { selectQuestionByUuid } from '../../models/question.js';
+import { selectTopicsByCourseId } from '../../models/topics.js';
 
 import {
   InstructorQuestionSettings,
@@ -62,6 +63,7 @@ router.post(
         res.locals.question,
         res.locals.course_instance,
         res.locals.course,
+        res.locals.user.user_id,
         res.locals.authn_user.user_id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
@@ -78,6 +80,7 @@ router.post(
           res.locals.question,
           res.locals.course_instance,
           res.locals.course,
+          res.locals.user.user_id,
           res.locals.authn_user.user_id,
         );
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
@@ -112,6 +115,7 @@ router.post(
 
       const origHash = req.body.orig_hash;
       questionInfo.title = req.body.title;
+      questionInfo.topic = req.body.topic;
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
@@ -178,16 +182,17 @@ router.post(
         } catch {
           return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         }
-        const questionId = await sqldb.queryRow(
-          sql.select_question_id_from_uuid,
-          { uuid: editor.uuid, course_id: res.locals.course.id },
-          IdSchema,
-        );
+
+        const question = await selectQuestionByUuid({
+          course_id: res.locals.course.id,
+          uuid: editor.uuid,
+        });
+
         flash(
           'success',
           'Question copied successfully. You are now viewing your copy of the question.',
         );
-        res.redirect(res.locals.urlPrefix + '/question/' + questionId + '/settings');
+        res.redirect(res.locals.urlPrefix + '/question/' + question.id + '/settings');
       } else {
         await copyQuestionBetweenCourses(res, {
           fromCourse: res.locals.course,
@@ -253,6 +258,9 @@ router.get(
       { question_id: res.locals.question.id },
       SelectedAssessmentsSchema,
     );
+
+    const courseTopics = await selectTopicsByCourseId(res.locals.course.id);
+
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
     let sharingSetsIn;
@@ -298,6 +306,7 @@ router.get(
         infoPath,
         origHash,
         canEdit,
+        courseTopics,
       }),
     );
   }),

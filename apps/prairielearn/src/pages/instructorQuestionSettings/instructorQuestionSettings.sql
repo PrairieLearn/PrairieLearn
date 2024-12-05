@@ -8,16 +8,6 @@ WHERE
   AND q.deleted_at IS NULL
   AND q.qid IS NOT NULL;
 
--- BLOCK select_question_id_from_uuid
-SELECT
-  q.id AS question_id
-FROM
-  questions AS q
-WHERE
-  q.uuid = $uuid
-  AND q.course_id = $course_id
-  AND q.deleted_at IS NULL;
-
 -- BLOCK select_assessments_with_question_for_display
 SELECT
   jsonb_build_object(
@@ -85,3 +75,11 @@ FROM
   ) AS ssq ON ssq.sharing_set_id = ss.id
 WHERE
   ss.course_id = $course_id;
+
+-- BLOCK select_topics_by_course_id
+SELECT
+  t.*
+FROM
+  topics AS t
+WHERE
+  t.course_id = $course_id;

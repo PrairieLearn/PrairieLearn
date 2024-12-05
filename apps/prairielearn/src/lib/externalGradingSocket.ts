@@ -11,7 +11,6 @@ import { gradingJobStatus } from '../models/grading-job.js';
 import { config } from './config.js';
 import { GradingJobSchema, IdSchema } from './db-types.js';
 import type { StatusMessage } from './externalGradingSocket.types.js';
-import { renderPanelsForSubmission } from './question-render.js';
 import * as socketServer from './socket-server.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -60,47 +59,6 @@ export function connection(socket: Socket) {
       (err) => {
         logger.error('Error getting variant submissions status', err);
         Sentry.captureException(err);
-      },
-    );
-  });
-
-  socket.on('getResults', (msg, callback) => {
-    if (
-      !ensureProps(msg, [
-        'question_id',
-        'instance_question_id',
-        'variant_id',
-        'variant_token',
-        'submission_id',
-        'url_prefix',
-        'question_context',
-        'csrf_token',
-        'authorized_edit',
-      ])
-    ) {
-      return callback(null);
-    }
-    if (!checkToken(msg.variant_token, msg.variant_id)) {
-      return callback(null);
-    }
-
-    renderPanelsForSubmission({
-      submission_id: msg.submission_id,
-      question_id: msg.question_id,
-      instance_question_id: msg.instance_question_id,
-      variant_id: msg.variant_id,
-      user_id: msg.user_id,
-      urlPrefix: msg.url_prefix,
-      questionContext: msg.question_context,
-      csrfToken: msg.csrf_token,
-      authorizedEdit: msg.authorized_edit,
-      renderScorePanels: true,
-    }).then(
-      (panels) => callback(panels),
-      (err) => {
-        logger.error('Error rendering panels for submission', err);
-        Sentry.captureException(err);
-        callback(null);
       },
     );
   });
@@ -156,8 +114,8 @@ function checkToken(token: string, variantId: string): boolean {
   const data = { variantId };
   const valid = checkSignedToken(token, data, config.secretKey, { maxAge: 24 * 60 * 60 * 1000 });
   if (!valid) {
-    logger.error(`CSRF token for variant ${variantId} failed validation.`);
-    Sentry.captureException(new Error(`CSRF token for variant ${variantId} failed validation.`));
+    logger.error(`Token for variant ${variantId} failed validation.`);
+    Sentry.captureException(new Error(`Token for variant ${variantId} failed validation.`));
   }
   return valid;
 }

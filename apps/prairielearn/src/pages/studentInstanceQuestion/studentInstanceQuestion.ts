@@ -5,6 +5,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
+import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import {
   gradeAssessmentInstance,
   canDeleteAssessmentInstance,
@@ -22,7 +23,11 @@ import {
   setRendererHeader,
 } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
+import clientFingerprint from '../../middlewares/clientFingerprint.js';
+import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
+import selectAndAuthzInstanceQuestion from '../../middlewares/selectAndAuthzInstanceQuestion.js';
+import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
 import {
   validateVariantAgainstQuestion,
   selectVariantsByInstanceQuestion,
@@ -32,7 +37,12 @@ import { StudentInstanceQuestion } from './studentInstanceQuestion.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const router = Router();
+const router = Router({ mergeParams: true });
+
+router.use(selectAndAuthzInstanceQuestion);
+router.use(studentAssessmentAccess);
+router.use(clientFingerprint);
+router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
 
 /**
  * Get a validated variant ID from a request, or throw an exception.
@@ -142,10 +152,7 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(400, 'This assessment is not accepting submissions at this time.');
   }
-  if (
-    res.locals.assessment.group_config?.has_roles &&
-    !res.locals.instance_question.group_role_permissions.can_submit
-  ) {
+  if (res.locals.group_config?.has_roles && !res.locals.group_role_permissions.can_submit) {
     throw new HttpStatusError(
       403,
       'Your current group role does not give you permission to submit to this question.',
@@ -195,6 +202,7 @@ router.post(
       const overrideGradeRate = false;
       await gradeAssessmentInstance(
         res.locals.assessment_instance.id,
+        res.locals.user.user_id,
         res.locals.authn_user.user_id,
         requireOpen,
         closeExam,
@@ -246,19 +254,18 @@ router.post(
 router.get(
   '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const { submissionPanel, extraHeadersHtml } = await renderPanelsForSubmission({
+    const panels = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
-      question_id: res.locals.question.id,
-      instance_question_id: res.locals.instance_question.id,
+      question: res.locals.question,
+      instance_question: res.locals.instance_question,
       variant_id: req.params.variant_id,
-      user_id: res.locals.user.user_id,
+      user: res.locals.user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: res.locals.question.type === 'Exam' ? 'student_exam' : 'student_homework',
-      csrfToken: null,
-      authorizedEdit: null,
-      renderScorePanels: false,
+      authorizedEdit: res.locals.authz_result.authorized_edit,
+      renderScorePanels: req.query.render_score_panels === 'true',
     });
-    res.send({ submissionPanel, extraHeadersHtml });
+    res.json(panels);
   }),
 );
 
@@ -309,7 +316,7 @@ router.get(
     });
 
     if (
-      res.locals.assessment.group_config?.has_roles &&
+      res.locals.group_config?.has_roles &&
       !res.locals.authz_data.has_course_instance_permission_view
     ) {
       if (res.locals.instance_question_info.prev_instance_question.id != null) {

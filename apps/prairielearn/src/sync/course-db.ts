@@ -16,6 +16,7 @@ import { selectInstitutionForCourse } from '../models/institution.js';
 import * as schemas from '../schemas/index.js';
 
 import * as infofile from './infofile.js';
+import { isDraftQid } from './question.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
@@ -349,7 +350,7 @@ export interface Assessment {
 interface QuestionExternalGradingOptions {
   enabled: boolean;
   image: string;
-  entrypoint: string;
+  entrypoint: string | string[];
   serverFilesCourse: string[];
   timeout: number;
   enableNetworking: boolean;
@@ -360,7 +361,7 @@ interface QuestionWorkspaceOptions {
   image: string;
   port: number;
   home: string;
-  args: string;
+  args: string | string[];
   gradedFiles: string[];
   rewriteUrl: string;
   enableNetworking: boolean;
@@ -1112,6 +1113,7 @@ async function validateAssessment(
   const foundQids = new Set();
   const duplicateQids = new Set();
   const missingQids = new Set();
+  const draftQids = new Set();
   const checkAndRecordQid = (qid: string): void => {
     if (qid[0] === '@') {
       // Question is being imported from another course. We hold off on validating this until
@@ -1125,6 +1127,10 @@ async function validateAssessment(
       foundQids.add(qid);
     } else {
       duplicateQids.add(qid);
+    }
+
+    if (isDraftQid(qid)) {
+      draftQids.add(qid);
     }
   };
   (assessment.zones || []).forEach((zone) => {
@@ -1257,6 +1263,12 @@ async function validateAssessment(
   if (missingQids.size > 0) {
     errors.push(
       `The following questions do not exist in this course: ${[...missingQids].join(', ')}`,
+    );
+  }
+
+  if (draftQids.size > 0) {
+    errors.push(
+      `The following questions are marked as draft and therefore cannot be used in assessments: ${[...draftQids].join(', ')}`,
     );
   }
 
