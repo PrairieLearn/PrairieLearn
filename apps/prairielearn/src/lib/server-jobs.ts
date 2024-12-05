@@ -3,6 +3,7 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { AnsiUp } from 'ansi_up';
 import { execa } from 'execa';
 import _ from 'lodash';
+import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
@@ -121,7 +122,7 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
     args: string[] = [],
     options: ServerJobExecOptions,
   ): Promise<ServerJobResult> {
-    this.addToOutput(chalk.blueBright(`Command: ${file} ${args.join(' ')}\n`));
+    this.addToOutput(chalk.blueBright(`Command: ${shlex.join([file, ...args])}\n`));
     this.addToOutput(chalk.blueBright(`Working directory: ${options.cwd}\n`));
 
     const start = performance.now();
