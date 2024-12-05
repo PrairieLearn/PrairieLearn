@@ -33,7 +33,7 @@ const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
 
 export async function saveGeneratedQuestion(
-  res,
+  res: express.Response,
   htmlFileContents: string | undefined,
   pythonFileContents: string | undefined,
   title?: string,
@@ -94,7 +94,7 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     assertCanCreateQuestion(res.locals);
-    if (req.query?.qid) {
+    if (req.query?.qid && typeof req.query?.qid == 'string') {
       const qidFull = `__drafts__/${req.query?.qid}`;
       const prompts = await queryRows(
         sql.select_ai_question_generation_prompts,
@@ -115,12 +115,13 @@ router.get(
         await logPageView('instructorQuestionPreview', req, res);
         setRendererHeader(res);
       }
-      const queryUrl = req.originalUrl.split('?')[1]; //only the info after the query seperator
+      console.log(req);
+      const queryUrl = req.originalUrl.split('?')[1]; // Only the info after the query separator
       res.send(
         AiGeneratePage({
           resLocals: res.locals,
           prompts,
-          qid: typeof req.query?.qid == 'string' ? req.query?.qid : undefined,
+          qid: req.query?.qid,
           queryUrl,
         }),
       );

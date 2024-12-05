@@ -33,14 +33,14 @@ export function InstructorAIGenerateDrafts({
       </head>
       <body>
         ${Navbar({ navPage: 'course_admin', navSubPage: 'questions', resLocals })}
-        <main id="content" class="container-fluid">
+        <main id="content" class="container mb-4">
           <div class="mb-3">
             <a href="${resLocals.urlPrefix}/course_admin/questions" class="btn btn-sm btn-primary">
               <i class="fa fa-arrow-left" aria-hidden="true"></i>
               Back to all questions
             </a>
           </div>
-          <div class="card mb-4">
+          <div class="card">
             <div
               class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
             >
@@ -71,7 +71,7 @@ export function InstructorAIGenerateDrafts({
               <table class="table table-sm table-hover" aria-label="AI question generation jobs">
                 <thead>
                   <tr>
-                    <th>Draft ID</th>
+                    <th>QID</th>
                     <th>Created At</th>
                     <th>Created By</th>
                     <th>Actions</th>
@@ -89,16 +89,18 @@ export function InstructorAIGenerateDrafts({
                         </td>
                         <td>${row.uid ?? '(System)'}</td>
                         ${row.qid && row.id
-                          ? html`<td>
-                              <a
-                                href="${resLocals.urlPrefix}/ai_generate_question?qid=${row.qid.substring(
-                                  11,
-                                )}"
-                                class="btn btn-xs btn-info"
-                              >
-                                Keep Editing
-                              </a>
-                            </td>`
+                          ? html`
+                              <td>
+                                <a
+                                  href="${resLocals.urlPrefix}/ai_generate_question?qid=${row.qid.substring(
+                                    11,
+                                  )}"
+                                  class="btn btn-xs btn-primary"
+                                >
+                                  Continue editing
+                                </a>
+                              </td>
+                            `
                           : html`<td>Not available</td>`}
                       </tr>
                     `,
