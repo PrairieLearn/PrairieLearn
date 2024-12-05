@@ -25,6 +25,7 @@ import {
   AssessmentRowSchema,
   AssessmentStats,
   InstructorAssessments,
+  PreactInstructorAssessments,
 } from './instructorAssessments.html.js';
 
 const router = Router();
@@ -54,14 +55,43 @@ router.get(
       .filter((row) => row.needs_statistics_update)
       .map((row) => row.id);
 
-    res.send(
-      InstructorAssessments({
-        resLocals: res.locals,
-        rows,
-        assessmentIdsNeedingStatsUpdate,
-        csvFilename,
-      }),
-    );
+    function renderWithTiming(name: string, fn: () => string) {
+      const start = performance.now();
+      const result = fn();
+      const end = performance.now();
+
+      console.log(`Rendered with ${name} in ${end - start}ms`);
+
+      let serverTimingHeader = res.get('Server-Timing') || '';
+      if (serverTimingHeader) {
+        serverTimingHeader += ', ';
+      }
+      serverTimingHeader += `render;dur=${end - start}`;
+
+      res.set('Server-Timing', serverTimingHeader);
+      res.send(result);
+    }
+
+    // To test with JSX, append `?jsx` to the URL.
+    if ('jsx' in req.query) {
+      renderWithTiming('Preact', () =>
+        PreactInstructorAssessments({
+          resLocals: res.locals,
+          rows,
+          assessmentIdsNeedingStatsUpdate,
+          csvFilename,
+        }),
+      );
+    } else {
+      renderWithTiming('plain HTML', () =>
+        InstructorAssessments({
+          resLocals: res.locals,
+          rows,
+          assessmentIdsNeedingStatsUpdate,
+          csvFilename,
+        }),
+      );
+    }
   }),
 );
 
