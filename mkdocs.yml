@@ -1,14 +1,13 @@
 site_name: PrairieLearn Docs
 site_url: https://prairielearn.readthedocs.io
 repo_url: https://github.com/PrairieLearn/PrairieLearn
-edit_uri: edit/master/docs/
 theme:
   name: material
   logo: assets/PL-logo.svg
   favicon: assets/favicon.ico
   icon:
-      repo: fontawesome/brands/github
-      edit: material/pencil
+    repo: fontawesome/brands/github
+    edit: material/pencil
   palette:
     scheme: default
     primary: custom
