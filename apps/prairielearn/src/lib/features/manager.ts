@@ -4,14 +4,10 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
 
+import { selectCourseById } from '../../models/course.js';
 import { config } from '../config.js';
 
 const sql = loadSqlEquiv(import.meta.url);
-
-const IsFeatureEnabledSchema = z.object({
-  enabled: z.array(z.boolean()),
-  course_dev_mode_features: z.unknown(),
-});
 
 const CONTEXT_HIERARCHY = ['institution_id', 'course_id', 'course_instance_id'];
 const DEFAULT_CONTEXT = {
@@ -105,22 +101,27 @@ export class FeatureManager<FeatureName extends string> {
         ...DEFAULT_CONTEXT,
         ...context,
       },
-      IsFeatureEnabledSchema,
+      z.array(z.boolean()),
     );
 
-    if (featureIsEnabled.enabled.at(-1)) return true;
+    // The feature states are sorted in order of increasing specificity. If
+    // the last item is enabled, then the feature is enabled.
+    if (featureIsEnabled.at(-1)) return true;
 
     // Allow features to be enabled in dev mode via `options.devModeFeatures`
     // in `infoCourse.json`.
-    //
-    // We could check for the feature in the array in SQL, but it's easier to
-    // write this more defensively in JavaScript.
-    if (
-      config.devMode &&
-      Array.isArray(featureIsEnabled.course_dev_mode_features) &&
-      featureIsEnabled.course_dev_mode_features.includes(name)
-    ) {
-      return true;
+    if (config.devMode && 'course_id' in context) {
+      const course = await selectCourseById(context.course_id);
+      const devModeFeatures = course?.options?.devModeFeatures;
+
+      if (Array.isArray(devModeFeatures)) {
+        // Legacy support: `devModeFeatures` used to be an array, not an object.
+        if (devModeFeatures.includes(name)) return true;
+      } else if (devModeFeatures && name in devModeFeatures) {
+        // Features should now be configured with an object mapping feature
+        // names to booleans.
+        return devModeFeatures[name];
+      }
     }
 
     // Default to disabled if not explicitly enabled by a specific grant, config,

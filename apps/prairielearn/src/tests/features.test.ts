@@ -139,7 +139,7 @@ describe('features', () => {
 
     await queryAsync('UPDATE pl_courses SET options = $options WHERE id = 1', {
       options: {
-        devModeFeatures: ['test:example-feature-flag'],
+        devModeFeatures: { 'test:example-feature-flag': true },
       },
     });
     assert.isTrue(await features.enabled('test:example-feature-flag', context));

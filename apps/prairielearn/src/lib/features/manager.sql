@@ -33,22 +33,11 @@ WITH
         user_id IS NULL
         OR $user_id = user_id
       )
-  ),
-  course_dev_mode_features AS (
-    SELECT
-      c.options -> 'devModeFeatures' AS dev_mode_features
-    FROM
-      pl_courses AS c
-    WHERE
-      $course_id IS NOT NULL
-      AND c.id = $course_id
   )
 SELECT
-  has_feature_grant.enabled AS enabled,
-  course_dev_mode_features.dev_mode_features AS course_dev_mode_features
+  has_feature_grant.enabled AS enabled
 FROM
-  has_feature_grant
-  FULL JOIN course_dev_mode_features ON true;
+  has_feature_grant;
 
 -- BLOCK toggle_feature
 INSERT INTO
