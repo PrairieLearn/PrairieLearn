@@ -285,7 +285,7 @@ Note that this setting is not suitable in scenarios where multiple attempts are 
 
 ## Enabling group work for collaborative assessments
 
-By default, assessment instances are tied to only one user. By setting `groupWork: true`, multiple students will be able to work on the same assessment instance.
+By default, assessment instances are tied to only one user. By setting `"groupWork": true`, multiple students will be able to work on the same assessment instance.
 Information about the group configuration can be set in the `infoAssessment.json` file. For example:
 
 ```json
@@ -310,15 +310,13 @@ Information about the group configuration can be set in the `infoAssessment.json
 
 Please notice: changing an assessment from group -> individual or vice versa after students have started working on it will cause student work to be lost.
 
-### Instructor options for groupWork
+### Managing groups
 
-![Instructor group assignment page](groupwork_instructor_interface.png)
+Instructors can manage groups on the "Groups" tab of an assessment.
 
-Underneath the "Groups" tab in an assessment, instructors have three ways of assigning students to different groups:
+To create specific groups, upload a CSV file in the following format:
 
-1. Uploading a CSV file in the following format:
-
-```
+```csv
 groupName,UID
 groupA,one@example.com
 groupA,two@example.com
@@ -326,13 +324,11 @@ groupB,three@example.com
 groupB,four@example.com
 ```
 
-2. Automatically assigning students, either to fill out existing groups or to make entirely new ones.
+The assessment's "Downloads" tab has a `<assessment>_group_configs.csv` file that contains the current group assignments. This can be used to copy group assignments from one assessment to another.
 
-3. Copying the group assignments from another assessment.
+Alternatively, the "Auto" button can be used to automatically assign students to groups based on a desired minimum/maximum group size.
 
-A copy of the current group assignments can be saved from the "Downloads" tab, under `<assessment>_group_configs.csv`
-
-### Student options for groupWork
+### Student options for group work
 
 ![Student perspective for joining a group](groupwork_student_perspective_join.png)
 

@@ -19,7 +19,7 @@ build:
 	cd ../ && mkdocs build
 
 preview:
-	cd ../ && mkdocs serve
+	cd ../ && mkdocs serve -a localhost:8005
 
 %.png: %.pdf
 	convert -density 300 $< $@
