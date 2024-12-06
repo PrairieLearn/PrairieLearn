@@ -285,8 +285,7 @@ Note that this setting is not suitable in scenarios where multiple attempts are 
 
 ## Enabling group work for collaborative assessments
 
-By default, assessment instances are tied to only one user. By setting `"groupWork": true`, multiple students will be able to work on the same assessment instance.
-Information about the group configuration can be set in the `infoAssessment.json` file. For example:
+By default, assessment instances are tied to only one user. By setting `"groupWork": true`, multiple students will be able to work on the same assessment instance. Group configuration can be set in the `infoAssessment.json` file. For example:
 
 ```json
 {
@@ -308,7 +307,7 @@ Information about the group configuration can be set in the `infoAssessment.json
 | `studentGroupJoin`   | boolean | false   | Allow students to join other groups by join code.  |
 | `studentGroupLeave`  | boolean | false   | Allow students to leave groups.                    |
 
-Please notice: changing an assessment from group -> individual or vice versa after students have started working on it will cause student work to be lost.
+Note that changing an assessment from individual to group or vice versa after students have started working on it will cause student work to be lost.
 
 ### Managing groups
 
