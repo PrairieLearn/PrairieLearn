@@ -63,7 +63,10 @@ function EditQuestionPointsScoreForm({
   csrfToken: string;
 }) {
   const manualGradingUrl = `${urlPrefix}/assessment/${assessment_question.assessment_id}/manual_grading/instance_question/${instance_question.id}`;
-  if (assessment_question.manual_rubric_id != null) {
+  // If the question is configured to use rubrics, don't allow editing the
+  // points, unless there is no submission, in which case we allow editing the
+  // points manually since the manual grading page will not be available.
+  if (assessment_question.manual_rubric_id != null && instance_question.status !== 'unanswered') {
     return html`
       <div>
         <p>
@@ -110,9 +113,11 @@ function EditQuestionPointsScoreForm({
       <p>
         <small>
           This will also recalculate the total points and total score at 100% credit. This change
-          will be overwritten if the question is answered again by the student. You may also update
-          the score
-          <a href="${manualGradingUrl}">via the manual grading page</a>.
+          will be overwritten if the question is answered again by the student.
+          ${instance_question.status !== 'unanswered'
+            ? html`You may also update the score
+                <a href="${manualGradingUrl}">via the manual grading page</a>.`
+            : ''}
         </small>
       </p>
       <div class="text-right">
