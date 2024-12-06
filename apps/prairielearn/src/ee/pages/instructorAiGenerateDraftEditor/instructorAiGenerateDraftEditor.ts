@@ -111,7 +111,7 @@ router.get(
           resLocals: res.locals,
           prompts,
           question: res.locals.question,
-          variantId: req.query?.variant_id,
+          variantId: typeof req.query?.variant_id === 'string' ? req.query?.variant_id : undefined,
         }),
       );
     } else {

@@ -22,13 +22,11 @@ router.get(
       throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
-    const drafts = (
-      await queryRows(
-        sql.select_draft_generation_info_by_course_id,
-        { course_id: res.locals.course.id },
-        DraftMetadataWithQidSchema,
-      )
-    ).filter((x) => x.qid !== null);
+    const drafts = await queryRows(
+      sql.select_draft_generation_info_by_course_id,
+      { course_id: res.locals.course.id },
+      DraftMetadataWithQidSchema,
+    );
 
     res.send(InstructorAIGenerateDraftsPage({ resLocals: res.locals, drafts }));
   }),
@@ -64,13 +62,7 @@ router.post(
         }
       }
 
-      const drafts = await queryRows(
-        sql.select_draft_generation_info_by_course_id,
-        { course_id: res.locals.course.id },
-        DraftMetadataWithQidSchema,
-      );
-
-      res.send(InstructorAIGenerateDraftsPage({ resLocals: res.locals, drafts }));
+      res.redirect(`${res.locals.urlPrefix}/ai_generate_question_drafts`);
     }
   }),
 );

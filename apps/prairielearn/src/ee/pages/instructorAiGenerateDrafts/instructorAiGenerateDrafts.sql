@@ -10,7 +10,8 @@ FROM
 WHERE
   q.course_id = $course_id
   AND q.draft IS TRUE
-  AND q.deleted_at IS NULL;
+  AND q.deleted_at IS NULL
+  AND q.qid IS NOT NULL;
 
 -- BLOCK select_drafts_by_course_id
 SELECT

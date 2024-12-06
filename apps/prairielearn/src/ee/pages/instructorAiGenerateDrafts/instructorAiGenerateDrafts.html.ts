@@ -14,7 +14,7 @@ export const DraftMetadataWithQidSchema = z.object({
   uid: z.string().nullable(),
   question_id: IdSchema.nullable(),
   updated_by: IdSchema.nullable(),
-  qid: z.string().nullable(),
+  qid: z.string(),
 });
 export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
 
