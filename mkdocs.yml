@@ -21,6 +21,8 @@ theme:
     - navigation.tracking
     - search.suggest
     - content.action.edit
+    - content.code.copy
+    - content.tooltips
 plugins:
   - search
 docs_dir: docs
@@ -35,13 +37,17 @@ markdown_extensions:
 
   # allows indented code blocks inside lists
   - pymdownx.superfences
-
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
   - toc:
       permalink: true
 
   # Allows note/warning boxes
   - admonition
-
+  - tables
+  - attr_list
 extra_javascript:
   - mathjax-config.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
