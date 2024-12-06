@@ -311,9 +311,9 @@ Note that changing an assessment from individual to group or vice versa after st
 
 ### Managing groups
 
-Instructors can manage groups on the "Groups" tab of an assessment.
+Instructors can manage groups on the "Groups" tab of an assessment. This page allows instructors to create individual groups, delete existing groups, and add or remove users from groups.
 
-To create specific groups, upload a CSV file in the following format:
+To create groups in bulk, upload a CSV file in the following format:
 
 ```csv
 groupName,UID
