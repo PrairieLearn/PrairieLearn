@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Navbar } from '../../../components/Navbar.html.js';
 import { type LoadUserAuth } from '../../../lib/authn.js';
 import { type Lti13Instance } from '../../../lib/db-types.js';
 
@@ -41,6 +42,31 @@ export const Lti13Test = ({
           </ul>
           <h2>All LTI 1.3 claims</h1>
           <pre><code>${JSON.stringify(lti13_claims, null, 2)}</code></pre>
+        </main>
+      </body>
+    </html>
+  `.toString();
+};
+
+export const Lti13Iframe = ({
+  resLocals,
+  target_url,
+}: {
+  resLocals: Record<string, any>;
+  target_url: string;
+}) => {
+  return html`
+    <!doctype html>
+    <html lang="en">
+      <head>
+        ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 redirect' })}
+      </head>
+      <body>
+        ${Navbar({ resLocals })}
+        <main>
+          <a class="btn btn-primary btn-lg m-3" href="${target_url}" target="_blank"
+            >Open PrairieLearn in a new window</a
+          >
         </main>
       </body>
     </html>
