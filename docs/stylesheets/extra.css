@@ -1,3 +1,7 @@
+:root {
+  --md-primary-fg-color: #084298;
+}
+
 .rst-content div[class^='highlight'] {
   border: none;
 }

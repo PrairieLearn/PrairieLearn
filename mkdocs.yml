@@ -1,7 +1,31 @@
-site_name: PrairieLearn
-site_url: https://github.com/PrairieLearn/PrairieLearn
+site_name: PrairieLearn Docs
+site_url: https://prairielearn.readthedocs.io
 repo_url: https://github.com/PrairieLearn/PrairieLearn
-theme: readthedocs
+edit_uri: edit/master/docs/
+theme:
+  name: material
+  logo: assets/PL-logo.svg
+  favicon: assets/favicon.ico
+  icon:
+      repo: fontawesome/brands/github
+      edit: material/pencil
+  palette:
+    scheme: default
+    primary: custom
+  features:
+    - navigation.tabs
+    - navigation.tabs.sticky
+    - navigation.path
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.tracking
+    - search.suggest
+    - content.action.edit
+plugins:
+  - search
+  - git-revision-date-localized:
+      enable_creation_date: true
 docs_dir: docs
 # Fix "Edit on GitHub" link: (defaults to edit/master/docs/, note the s)
 edit_uri: blob/master/docs/
@@ -26,7 +50,14 @@ extra_javascript:
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
 
 extra_css:
-  - extra.css
+  - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/PrairieLearn/PrairieLearn
+    - icon: fontawesome/brands/slack
+      link: https://prairielearn.slack.com
 
 nav:
   - Main: 'index.md'
