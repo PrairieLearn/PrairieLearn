@@ -118,7 +118,7 @@ export async function uploadInstanceGroups(
 }
 
 /**
- * Auto generate group settings from input
+ * Randomly assign students to groups.
  *
  * @param assessment_id - The assessment to update.
  * @param user_id - The current user performing the update.
@@ -127,7 +127,7 @@ export async function uploadInstanceGroups(
  * @param min_group_size - min size of the group
  * @returns The job sequence ID.
  */
-export async function autoGroups(
+export async function randomGroups(
   assessment_id: string,
   user_id: string,
   authn_user_id: string,
@@ -150,8 +150,8 @@ export async function autoGroups(
     assessmentId: assessment_id,
     userId: user_id,
     authnUserId: authn_user_id,
-    type: 'auto_generate_groups',
-    description: `Auto generate group settings for ${assessment_label}`,
+    type: 'random_generate_groups',
+    description: `Randomly generate groups for ${assessment_label}`,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -167,7 +167,7 @@ export async function autoGroups(
       },
       async () => {
         job.verbose(`Acquired lock ${lockName}`);
-        job.verbose('Auto generate group settings for ' + assessment_label);
+        job.verbose('Randomly generate groups for ' + assessment_label);
         job.verbose('----------------------------------------');
         job.verbose('Fetching the enrollment lists...');
         const studentsToGroup = await queryRows(
