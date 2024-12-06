@@ -4,7 +4,7 @@ repo_url: https://github.com/PrairieLearn/PrairieLearn
 theme:
   name: material
   logo: assets/PL-logo.svg
-  favicon: assets/PL-logo.ico
+  favicon: assets/PL-logo-adaptive.svg
   icon:
     repo: fontawesome/brands/github
     edit: material/pencil
