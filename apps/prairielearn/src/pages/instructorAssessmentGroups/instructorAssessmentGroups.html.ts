@@ -134,7 +134,7 @@ export function InstructorAssessmentGroups({
                                 data-toggle="modal"
                                 data-target="#randomAssessmentGroupsModal"
                               >
-                                <i class="fas fa-robot" aria-hidden="true"></i> Random
+                                <i class="fas fa-shuffle" aria-hidden="true"></i> Random
                               </button>
                               <div class="mt-2">Randomly assign students to groups.</div>
                             </div>
