@@ -4,7 +4,7 @@ repo_url: https://github.com/PrairieLearn/PrairieLearn
 theme:
   name: material
   logo: assets/PL-logo.svg
-  favicon: assets/favicon.ico
+  favicon: assets/PL-logo.ico
   icon:
     repo: fontawesome/brands/github
     edit: material/pencil
@@ -12,8 +12,8 @@ theme:
     scheme: default
     primary: custom
   features:
-    - navigation.tabs
-    - navigation.tabs.sticky
+    - navigation.sections
+    - navigation.expand
     - navigation.path
     - navigation.instant
     - navigation.instant.prefetch
@@ -23,8 +23,6 @@ theme:
     - content.action.edit
 plugins:
   - search
-  - git-revision-date-localized:
-      enable_creation_date: true
 docs_dir: docs
 # Fix "Edit on GitHub" link: (defaults to edit/master/docs/, note the s)
 edit_uri: blob/master/docs/
