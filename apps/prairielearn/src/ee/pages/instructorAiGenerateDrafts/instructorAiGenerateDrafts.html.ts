@@ -7,7 +7,7 @@ import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { DateFromISOString, IdSchema } from '../../../lib/db-types.js';
 
-export const draftMetadataWithQidSchema = z.object({
+export const DraftMetadataWithQidSchema = z.object({
   created_at: DateFromISOString.nullable(),
   created_by: IdSchema.nullable(),
   id: IdSchema.nullable(),
@@ -16,9 +16,9 @@ export const draftMetadataWithQidSchema = z.object({
   updated_by: IdSchema.nullable(),
   qid: z.string().nullable(),
 });
-export type DraftMetadataWithQid = z.infer<typeof draftMetadataWithQidSchema>;
+export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
 
-export function InstructorAIGenerateDrafts({
+export function InstructorAIGenerateDraftsPage({
   resLocals,
   drafts,
 }: {
@@ -88,13 +88,11 @@ export function InstructorAIGenerateDrafts({
                             : formatDate(row.created_at, resLocals.course.display_timezone)}
                         </td>
                         <td>${row.uid ?? '(System)'}</td>
-                        ${row.qid && row.id
+                        ${row.question_id && row.id
                           ? html`
                               <td>
                                 <a
-                                  href="${resLocals.urlPrefix}/ai_generate_question?qid=${row.qid.substring(
-                                    11,
-                                  )}"
+                                  href="${resLocals.urlPrefix}/ai_generate_editor/${row.question_id}"
                                   class="btn btn-xs btn-primary"
                                 >
                                   Continue editing

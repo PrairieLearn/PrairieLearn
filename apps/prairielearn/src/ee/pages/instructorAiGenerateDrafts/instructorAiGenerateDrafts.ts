@@ -8,8 +8,8 @@ import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { QuestionSchema } from '../../../lib/db-types.js';
 
 import {
-  InstructorAIGenerateDrafts,
-  draftMetadataWithQidSchema,
+  InstructorAIGenerateDraftsPage,
+  DraftMetadataWithQidSchema,
 } from './instructorAiGenerateDrafts.html.js';
 
 const router = express.Router();
@@ -26,11 +26,11 @@ router.get(
       await queryRows(
         sql.select_draft_generation_info_by_course_id,
         { course_id: res.locals.course.id },
-        draftMetadataWithQidSchema,
+        DraftMetadataWithQidSchema,
       )
     ).filter((x) => x.qid !== null);
 
-    res.send(InstructorAIGenerateDrafts({ resLocals: res.locals, drafts }));
+    res.send(InstructorAIGenerateDraftsPage({ resLocals: res.locals, drafts }));
   }),
 );
 
@@ -67,10 +67,10 @@ router.post(
       const drafts = await queryRows(
         sql.select_draft_generation_info_by_course_id,
         { course_id: res.locals.course.id },
-        draftMetadataWithQidSchema,
+        DraftMetadataWithQidSchema,
       );
 
-      res.send(InstructorAIGenerateDrafts({ resLocals: res.locals, drafts }));
+      res.send(InstructorAIGenerateDraftsPage({ resLocals: res.locals, drafts }));
     }
   }),
 );
