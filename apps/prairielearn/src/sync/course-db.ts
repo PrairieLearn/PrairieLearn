@@ -16,6 +16,7 @@ import { selectInstitutionForCourse } from '../models/institution.js';
 import * as schemas from '../schemas/index.js';
 
 import * as infofile from './infofile.js';
+import { isDraftQid } from './question.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
@@ -192,6 +193,11 @@ interface Tag {
   description?: string;
 }
 
+interface SharingSet {
+  name: string;
+  description?: string;
+}
+
 interface Topic {
   name: string;
   color: string;
@@ -222,6 +228,7 @@ interface Course {
   topics: Topic[];
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
+  sharingSets?: SharingSet[];
 }
 
 interface CourseInstanceAllowAccess {
@@ -343,7 +350,7 @@ export interface Assessment {
 interface QuestionExternalGradingOptions {
   enabled: boolean;
   image: string;
-  entrypoint: string;
+  entrypoint: string | string[];
   serverFilesCourse: string[];
   timeout: number;
   enableNetworking: boolean;
@@ -354,7 +361,7 @@ interface QuestionWorkspaceOptions {
   image: string;
   port: number;
   home: string;
-  args: string;
+  args: string | string[];
   gradedFiles: string[];
   rewriteUrl: string;
   enableNetworking: boolean;
@@ -380,6 +387,10 @@ export interface Question {
   externalGradingOptions: QuestionExternalGradingOptions;
   workspaceOptions?: QuestionWorkspaceOptions;
   dependencies: Record<string, string>;
+  sharingSets?: string[];
+  sharePublicly: boolean;
+  sharedPublicly: boolean;
+  shareSourcePublicly: boolean;
 }
 
 export interface CourseInstanceData {
@@ -669,7 +680,7 @@ export async function loadCourseInfo(
    * @param entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
    */
   function getFieldWithoutDuplicates<
-    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules',
+    K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
   >(fieldName: K, entryIdentifier: string, defaults?: Course[K] | undefined): Course[K] {
     const known = new Map();
     const duplicateEntryIds = new Set();
@@ -711,6 +722,8 @@ export async function loadCourseInfo(
   );
   const tags = getFieldWithoutDuplicates('tags', 'name', DEFAULT_TAGS);
   const topics = getFieldWithoutDuplicates('topics', 'name');
+  const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
+
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
   const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
@@ -762,6 +775,7 @@ export async function loadCourseInfo(
     assessmentModules,
     tags,
     topics,
+    sharingSets,
     exampleCourse,
     options: {
       useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
@@ -1037,6 +1051,14 @@ async function validateQuestion(
     }
   }
 
+  if ('sharedPublicly' in question) {
+    if ('sharePublicly' in question) {
+      errors.push('Cannot specify both "sharedPublicly" and "sharePublicly" in one question.');
+    } else {
+      warnings.push('"sharedPublicly" is deprecated; use "sharePublicly" instead.');
+    }
+  }
+
   return { warnings, errors };
 }
 
@@ -1091,6 +1113,7 @@ async function validateAssessment(
   const foundQids = new Set();
   const duplicateQids = new Set();
   const missingQids = new Set();
+  const draftQids = new Set();
   const checkAndRecordQid = (qid: string): void => {
     if (qid[0] === '@') {
       // Question is being imported from another course. We hold off on validating this until
@@ -1104,6 +1127,10 @@ async function validateAssessment(
       foundQids.add(qid);
     } else {
       duplicateQids.add(qid);
+    }
+
+    if (isDraftQid(qid)) {
+      draftQids.add(qid);
     }
   };
   (assessment.zones || []).forEach((zone) => {
@@ -1206,10 +1233,21 @@ async function validateAssessment(
               'Cannot specify "maxPoints" for a question if "autoPoints", "manualPoints" or "maxAutoPoints" are specified',
             );
           }
+
           if (Array.isArray(alternative.autoPoints ?? alternative.points)) {
             errors.push(
               'Cannot specify "points" or "autoPoints" as a list for a question in a "Homework" assessment',
             );
+          }
+
+          if (!courseInstanceExpired) {
+            if (alternative.points === 0 && alternative.maxPoints > 0) {
+              errors.push('Cannot specify "points": 0 when "maxPoints" > 0');
+            }
+
+            if (alternative.autoPoints === 0 && alternative.maxAutoPoints > 0) {
+              errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
+            }
           }
         }
       });
@@ -1225,6 +1263,12 @@ async function validateAssessment(
   if (missingQids.size > 0) {
     errors.push(
       `The following questions do not exist in this course: ${[...missingQids].join(', ')}`,
+    );
+  }
+
+  if (draftQids.size > 0) {
+    errors.push(
+      `The following questions are marked as draft and therefore cannot be used in assessments: ${[...draftQids].join(', ')}`,
     );
   }
 

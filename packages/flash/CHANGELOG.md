@@ -1,5 +1,27 @@
 # @prairielearn/flash
 
+## 2.0.8
+
+### Patch Changes
+
+- 315d931: Upgrade all JavaScript dependencies
+- Updated dependencies [315d931]
+  - @prairielearn/html@4.0.7
+
+## 2.0.7
+
+### Patch Changes
+
+- 4b79275: Upgrade all JavaScript dependencies
+- Updated dependencies [4b79275]
+  - @prairielearn/html@4.0.6
+
+## 2.0.6
+
+### Patch Changes
+
+- 4ab7483: Remove remnants of `express-session` package
+
 ## 2.0.5
 
 ### Patch Changes

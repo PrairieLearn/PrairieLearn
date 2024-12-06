@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { escapeHtml, html } from '@prairielearn/html';
+import { escapeHtml, html, type HtmlValue } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
@@ -9,12 +9,17 @@ import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
-import { compiledScriptTag } from '../../lib/assets.js';
+import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
-import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
+import {
+  AssessmentSchema,
+  AssessmentSetSchema,
+  IdSchema,
+  type Question,
+  type Topic,
+} from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import { isEnterprise } from '../../lib/license.js';
-import { CourseWithPermissions } from '../../models/course.js';
+import { type CourseWithPermissions } from '../../models/course.js';
 
 export const SelectedAssessmentsSchema = z.object({
   short_name: z.string(),
@@ -48,11 +53,11 @@ export function InstructorQuestionSettings({
   assessmentsWithQuestion,
   sharingEnabled,
   sharingSetsIn,
-  sharingSetsOther,
   editableCourses,
   infoPath,
   origHash,
   canEdit,
+  courseTopics,
 }: {
   resLocals: Record<string, any>;
   questionTestPath: string;
@@ -62,11 +67,11 @@ export function InstructorQuestionSettings({
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
   sharingSetsIn: SharingSetRow[];
-  sharingSetsOther: SharingSetRow[];
   editableCourses: CourseWithPermissions[];
   infoPath: string;
   origHash: string;
   canEdit: boolean;
+  courseTopics: Topic[];
 }) {
   // Only show assessments on which this question is used when viewing the question
   // in the context of a course instance.
@@ -82,6 +87,14 @@ export function InstructorQuestionSettings({
             max-width: 50%;
           }
         </style>
+        <link
+          href="${nodeModulesAssetPath(
+            resLocals.use_bootstrap_4
+              ? 'tom-select/dist/css/tom-select.bootstrap4.css'
+              : 'tom-select/dist/css/tom-select.bootstrap5.css',
+          )}"
+          rel="stylesheet"
+        />
       </head>
       <body>
         ${Navbar({ resLocals })}
@@ -136,23 +149,42 @@ export function InstructorQuestionSettings({
                     slashes to separate directories.
                   </small>
                 </div>
-
-                <div class="table-responsive card mb-3">
+                <div class="table-responsive card mb-3 overflow-visible">
                   <table
                     class="table two-column-description"
                     aria-label="Question topic, tags, and assessments"
                   >
                     <tr>
-                      <th class="border-top-0">Topic</th>
-                      <td class="border-top-0">${TopicBadge(resLocals.topic)}</td>
+                      <th class="align-middle">Topic</th>
+                      <!-- The style attribute is necessary until we upgrade to Bootstrap 5.3 -->
+                      <!-- This is used by tom-select to style the active item in the dropdown -->
+                      <td style="--bs-tertiary-bg: #f8f9fa">
+                        ${canEdit
+                          ? html`
+                              <select id="topic" name="topic" placeholder="Select a topic">
+                                ${courseTopics.map((topic) => {
+                                  return html`
+                                    <option
+                                      value="${topic.name}"
+                                      data-color="${topic.color}"
+                                      data-name="${topic.name}"
+                                      data-description="${topic.description}"
+                                      ${topic.name === resLocals.topic.name ? 'selected' : ''}
+                                    ></option>
+                                  `;
+                                })}
+                              </select>
+                            `
+                          : TopicBadge(resLocals.topic)}
+                      </td>
                     </tr>
                     <tr>
-                      <th>Tags</th>
+                      <th class="align-middle">Tags</th>
                       <td>${TagBadgeList(resLocals.tags)}</td>
                     </tr>
                     ${shouldShowAssessmentsList
                       ? html`<tr>
-                          <th>Assessments</th>
+                          <th class="align-middle">Assessments</th>
                           <td>${AssessmentBadges({ assessmentsWithQuestion, resLocals })}</td>
                         </tr>`
                       : ''}
@@ -186,12 +218,8 @@ export function InstructorQuestionSettings({
                       <h2 class="h4">Sharing</h2>
                       <div data-testid="shared-with">
                         ${QuestionSharing({
-                          questionSharedPublicly: resLocals.question.shared_publicly,
+                          question: resLocals.question,
                           sharingSetsIn,
-                          hasCoursePermissionOwn: resLocals.authz_data.has_course_permission_own,
-                          sharingSetsOther,
-                          csrfToken: resLocals.__csrf_token,
-                          qid: resLocals.question.qid,
                         })}
                       </div>
                     </div>
@@ -336,41 +364,6 @@ function CopyForm({
   `;
 }
 
-function PubliclyShareModal({ csrfToken, qid }: { csrfToken: string; qid: string }) {
-  return Modal({
-    id: 'publiclyShareModal',
-    title: 'Confirm Publicly Share Question',
-    body: html`
-      <p>Are you sure you want to publicly share this question?</p>
-      <p>
-        Once this question is publicly shared, anyone will be able to view it or use it as a part of
-        their course. This operation cannot be undone.
-      </p>
-      ${isEnterprise()
-        ? html`
-            <p>
-              You retain full ownership of all shared content as described in the
-              <a href="https://www.prairielearn.com/legal/terms#2-user-content" target="_blank"
-                >Terms of Service</a
-              >. To allow PrairieLearn to share your content to other users you agree to the
-              <a
-                href="https://www.prairielearn.com/legal/terms#3-user-content-license-grant"
-                target="_blank"
-                >User Content License Grant</a
-              >.
-            </p>
-          `
-        : ''}
-    `,
-    footer: html`
-      <input type="hidden" name="__action" value="share_publicly" />
-      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      <button class="btn btn-primary" type="submit">Publicly Share "${qid}"</button>
-    `,
-  });
-}
-
 function DeleteQuestionModal({
   qid,
   assessmentsWithQuestion,
@@ -445,93 +438,51 @@ function QuestionTestsForm({
 }
 
 function QuestionSharing({
-  questionSharedPublicly,
+  question,
   sharingSetsIn,
-  hasCoursePermissionOwn,
-  sharingSetsOther,
-  csrfToken,
-  qid,
 }: {
-  questionSharedPublicly: boolean;
+  question: Question;
   sharingSetsIn: SharingSetRow[];
-  hasCoursePermissionOwn: boolean;
-  sharingSetsOther: SharingSetRow[];
-  csrfToken: string;
-  qid: string;
 }) {
-  if (questionSharedPublicly) {
-    return html`
-      <p>
-        <span class="badge color-green3 mr-1">Public</span>
-        This question is publicly shared.
-      </p>
-    `;
+  if (!question.shared_publicly && !question.share_source_publicly && sharingSetsIn.length === 0) {
+    return html`<p>This question is not being shared.</p>`;
   }
 
-  const sharedWithLabel =
-    sharingSetsIn.length === 1 ? '1 sharing set' : `${sharingSetsIn.length} sharing sets`;
+  const details: HtmlValue[] = [];
 
-  return html`
-    ${sharingSetsIn.length === 0
-      ? html`<p>This question is not being shared.</p>`
-      : html`
-          <p>
-            Shared with ${sharedWithLabel}:
-            ${sharingSetsIn.map((sharing_set) => {
-              return html` <span class="badge color-gray1">${sharing_set.name}</span> `;
-            })}
-          </p>
-        `}
-    ${hasCoursePermissionOwn
-      ? html`
-          ${sharingSetsOther.length > 0
-            ? html`
-                <form name="sharing-set-add" method="POST" class="d-inline">
-                  <input type="hidden" name="__action" value="sharing_set_add" />
-                  <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                  <div class="btn-group btn-group-sm" role="group">
-                    <button
-                      id="addSharingSet"
-                      type="button"
-                      class="btn btn-sm btn-outline-dark dropdown-toggle"
-                      data-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Add...
-                    </button>
-                    <div class="dropdown-menu" aria-labelledby="addSharingSet">
-                      ${sharingSetsOther.map(function (sharing_set) {
-                        return html`
-                          <button
-                            class="dropdown-item"
-                            name="unsafe_sharing_set_id"
-                            value="${sharing_set.id}"
-                          >
-                            ${sharing_set.name}
-                          </button>
-                        `;
-                      })}
-                    </div>
-                  </div>
-                </form>
-              `
-            : ''}
-          <button
-            class="btn btn-sm btn-outline-primary"
-            type="button"
-            data-toggle="modal"
-            data-target="#publiclyShareModal"
-          >
-            Share Publicly
-          </button>
-          ${PubliclyShareModal({
-            csrfToken,
-            qid,
-          })}
-        `
-      : ''}
-  `;
+  if (question.shared_publicly) {
+    details.push(html`
+      <p>
+        <span class="badge color-green3 mr-1">Public</span>
+        This question is publicly shared and can be imported by other courses.
+      </p>
+    `);
+  }
+
+  if (question.share_source_publicly) {
+    details.push(html`
+      <p>
+        <span class="badge color-green3 mr-1">Public source</span>
+        This question's source is publicly shared.
+      </p>
+    `);
+  }
+
+  if (sharingSetsIn.length > 0) {
+    const sharedWithLabel =
+      sharingSetsIn.length === 1 ? '1 sharing set' : `${sharingSetsIn.length} sharing sets`;
+
+    details.push(html`
+      <p>
+        Shared with ${sharedWithLabel}:
+        ${sharingSetsIn.map((sharing_set) => {
+          return html` <span class="badge color-gray1">${sharing_set.name}</span> `;
+        })}
+      </p>
+    `);
+  }
+
+  return details;
 }
 
 function AssessmentBadges({
@@ -562,7 +513,7 @@ function AssessmentBadges({
     return html`
       <a
         href="/pl/course_instance/${assessmentsInCourseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}"
-        class="badge color-${assessment.color}"
+        class="btn btn-badge color-${assessment.color}"
       >
         ${assessment.label}
       </a>

@@ -3,11 +3,10 @@ import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { QuestionAddEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
@@ -15,7 +14,6 @@ import { selectQuestionsForCourse } from '../../models/questions.js';
 import { QuestionsPage } from './instructorQuestions.html.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
@@ -71,22 +69,21 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_question') {
-      const editor = new QuestionAddEditor({
-        locals: res.locals,
+      const api = getCourseFilesClient();
+
+      const result = await api.createQuestion.mutate({
+        course_id: res.locals.course.id,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
       });
-      const serverJob = await editor.prepareServerJob();
-      try {
-        await editor.executeWithServerJob(serverJob);
-      } catch {
-        res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+
+      if (result.status === 'error') {
+        res.redirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
         return;
       }
 
-      const result = await sqldb.queryOneRowAsync(sql.select_question_id_from_uuid, {
-        uuid: editor.uuid,
-        course_id: res.locals.course.id,
-      });
-      res.redirect(res.locals.urlPrefix + '/question/' + result.rows[0].question_id + '/settings');
+      res.redirect(res.locals.urlPrefix + '/question/' + result.question_id + '/settings');
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

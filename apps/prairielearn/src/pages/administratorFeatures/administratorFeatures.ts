@@ -13,7 +13,7 @@ import {
   IdSchema,
   InstitutionSchema,
 } from '../../lib/db-types.js';
-import { FeatureName, features } from '../../lib/features/index.js';
+import { type FeatureName, features } from '../../lib/features/index.js';
 
 import {
   AdministratorFeatures,

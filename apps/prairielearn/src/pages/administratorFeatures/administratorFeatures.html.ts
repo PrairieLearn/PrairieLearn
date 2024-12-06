@@ -6,7 +6,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
-import { Course, CourseInstance, Institution } from '../../lib/db-types.js';
+import { type Course, type CourseInstance, type Institution } from '../../lib/db-types.js';
 
 export const FeatureGrantRowSchema = z.object({
   id: z.string(),

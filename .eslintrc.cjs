@@ -27,7 +27,14 @@ module.exports = {
     'plugin:@typescript-eslint/strict',
     'prettier',
   ],
-  plugins: ['@typescript-eslint', 'no-floating-promise', 'no-only-tests', 'mocha', '@prairielearn'],
+  plugins: [
+    '@typescript-eslint',
+    'no-floating-promise',
+    'no-only-tests',
+    'mocha',
+    'react',
+    '@prairielearn',
+  ],
   parserOptions: {
     ecmaVersion: 13,
   },
@@ -88,6 +95,8 @@ module.exports = {
     '@prairielearn/aws-client-mandatory-config': 'error',
     '@prairielearn/aws-client-shared-config': 'error',
 
+    '@typescript-eslint/consistent-type-imports': ['error', { fixStyle: 'inline-type-imports' }],
+
     // Replaces the standard `no-unused-vars` rule.
     '@typescript-eslint/no-unused-vars': [
       'error',
@@ -142,6 +151,15 @@ module.exports = {
       env: {
         browser: true,
         jquery: true,
+      },
+      settings: {
+        react: {
+          pragma: 'h',
+        },
+      },
+      rules: {
+        'react/jsx-uses-react': 'error',
+        'react/jsx-uses-vars': 'error',
       },
     },
   ],

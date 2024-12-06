@@ -1,7 +1,7 @@
 import { html, type HtmlValue } from '@prairielearn/html';
 
 import { IssueBadge } from './IssueBadge.html.js';
-import { NavPage, NavSubPage } from './Navbar.types.js';
+import { type NavPage, type NavSubPage } from './Navbar.types.js';
 
 interface TabInfo {
   activeSubPage: NavSubPage | NavSubPage[];

@@ -1,4 +1,5 @@
-import { type Request, type Response, Router } from 'express';
+import { type Request, type Response } from 'express';
+import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
 
 import { logger } from '@prairielearn/logger';
@@ -9,9 +10,7 @@ import { setCookie } from '../lib/cookie.js';
 
 import { StudentAssessmentAccess } from './studentAssessmentAccess.html.js';
 
-const router = Router();
-
-router.all('/', function (req, res, next) {
+export default asyncHandler(async (req, res, next) => {
   if (
     typeof res.locals.assessment_instance === 'undefined' &&
     !_.get(res.locals, 'authz_result.active', true)
@@ -48,8 +47,6 @@ router.all('/', function (req, res, next) {
   // Pass-through for everything else
   next();
 });
-
-export default router;
 
 /**
  * Checks if the given request has the correct password. If not, redirects to

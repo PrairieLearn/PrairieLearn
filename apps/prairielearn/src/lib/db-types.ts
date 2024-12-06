@@ -491,6 +491,36 @@ export const FileEditSchema = z.object({
 });
 export type FileEdit = z.infer<typeof FileEditSchema>;
 
+export const AiGenerationPromptSchema = z.object({
+  completion: z.any(),
+  system_prompt: z.string().nullable(),
+  errors: z.array(z.string()),
+  html: z.string().nullable(),
+  id: z.string(),
+  prompt_type: z.enum(['initial', 'human_revision', 'auto_revision']),
+  prompting_user_id: z.string(),
+  python: z.string().nullable(),
+  question_id: z.string(),
+  response: z.string(),
+  user_prompt: z.string(),
+  job_sequence_id: z.string().nullable(),
+});
+
+export type AiGenerationPrompt = z.infer<typeof AiGenerationPromptSchema>;
+
+export const FileTransferSchema = z.object({
+  created_at: DateFromISOString,
+  deleted_at: DateFromISOString.nullable(),
+  from_course_id: IdSchema,
+  from_filename: z.string(),
+  id: IdSchema,
+  storage_filename: z.string(),
+  to_course_id: IdSchema,
+  transfer_type: z.enum(['CopyQuestion']),
+  user_id: IdSchema,
+});
+export type FileTransfer = z.infer<typeof FileTransferSchema>;
+
 export const GradingJobSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   auto_points: z.number().nullable(),
@@ -823,12 +853,13 @@ export const QuestionSchema = z.object({
   external_grading_timeout: z.number().nullable(),
   grading_method: z.enum(['Internal', 'External', 'Manual']),
   id: IdSchema,
+  draft: z.boolean(),
   number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),
   qid: z.string().nullable(),
   shared_publicly: z.boolean(),
-  shared_publicly_with_source: z.boolean(),
+  share_source_publicly: z.boolean(),
   show_correct_answer: z.boolean().nullable(),
   single_variant: z.boolean().nullable(),
   sync_errors: z.string().nullable(),
@@ -942,6 +973,19 @@ export const StripeCheckoutSessionSchema = z.object({
   subject_user_id: IdSchema.nullable(),
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
+
+export const SubmissionGradingContextEmbeddingSchema = z.object({
+  id: IdSchema,
+  embedding: z.string(),
+  submission_id: IdSchema,
+  submission_text: z.string(),
+  created_at: DateFromISOString,
+  updated_at: DateFromISOString,
+  assessment_question_id: IdSchema,
+});
+export type SubmissionGradingContextEmbedding = z.infer<
+  typeof SubmissionGradingContextEmbeddingSchema
+>;
 
 export const SubmissionSchema = z.object({
   auth_user_id: IdSchema.nullable(),

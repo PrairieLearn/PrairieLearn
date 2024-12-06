@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
-import { Job } from '../../../lib/db-types.js';
+import { type Job } from '../../../lib/db-types.js';
 
 export function InstructorAiGenerateJob({
   resLocals,
@@ -33,6 +33,18 @@ export function InstructorAiGenerateJob({
               <pre class="bg-dark text-white rounded p-3">${job.data['generation']}</pre>
               <h2 class="card-title">Context Documents</h2>
               <pre class="bg-dark text-white rounded p-3">${job.data['context']}</pre>
+              ${job.data?.initialGenerationErrors
+                ? html`<h2 class="card-title">Initial Generation Errors</h2>
+                    <pre class="bg-dark text-white rounded p-3">
+${job.data['initialGenerationErrors'].join('\n')}</pre
+                    >`
+                : ''}
+              ${job.data?.finalGenerationErrors
+                ? html`<h2 class="card-title">Final Generation Errors</h2>
+                    <pre class="bg-dark text-white rounded p-3">
+${job.data['finalGenerationErrors'].join('\n')}</pre
+                    >`
+                : ''}
             </div>
           </div>
         </main>
