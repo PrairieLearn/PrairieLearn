@@ -99,7 +99,7 @@ router.post(
         res.locals.authn_user.user_id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
-    } else if (req.body.__action === 'auto_assessment_groups') {
+    } else if (req.body.__action === 'random_assessment_groups') {
       const job_sequence_id = await randomGroups(
         res.locals.assessment.id,
         res.locals.user.user_id,

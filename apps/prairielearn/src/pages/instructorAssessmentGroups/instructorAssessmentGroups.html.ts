@@ -439,7 +439,7 @@ function RandomAssessmentGroupsModal({
       </div>
     `,
     footer: html`
-      <input type="hidden" name="__action" value="auto_assessment_groups" />
+      <input type="hidden" name="__action" value="random_assessment_groups" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Group</button>
