@@ -73,7 +73,7 @@ export function InstructorAssessmentGroups({
                 ${resLocals.authz_data.has_course_instance_permission_edit
                   ? html`
                       ${UploadAssessmentGroupsModal({ csrfToken: resLocals.__csrf_token })}
-                      ${AutoAssessmentGroupsModal({
+                      ${RandomAssessmentGroupsModal({
                         groupMin: groupConfigInfo.minimum ? groupConfigInfo.minimum : 2,
                         groupMax: groupConfigInfo.maximum ? groupConfigInfo.maximum : 5,
                         csrfToken: resLocals.__csrf_token,
@@ -132,11 +132,11 @@ export function InstructorAssessmentGroups({
                                 type="button"
                                 class="btn btn-primary text-nowrap"
                                 data-toggle="modal"
-                                data-target="#autoAssessmentGroupsModal"
+                                data-target="#randomAssessmentGroupsModal"
                               >
-                                <i class="fas fa-robot" aria-hidden="true"></i> Auto
+                                <i class="fas fa-robot" aria-hidden="true"></i> Random
                               </button>
-                              <div class="mt-2">Automatically assign students to groups.</div>
+                              <div class="mt-2">Randomly assign students to groups.</div>
                             </div>
                           </div>
                         </div>
@@ -404,7 +404,7 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
   });
 }
 
-function AutoAssessmentGroupsModal({
+function RandomAssessmentGroupsModal({
   groupMin,
   groupMax,
   csrfToken,
@@ -414,8 +414,8 @@ function AutoAssessmentGroupsModal({
   csrfToken: string;
 }) {
   return Modal({
-    id: 'autoAssessmentGroupsModal',
-    title: 'Auto new group setting',
+    id: 'randomAssessmentGroupsModal',
+    title: 'Random group assignments',
     body: html`
       <div class="form-group">
         <label for="formMin">Min number of members in a group</label>

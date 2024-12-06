@@ -325,7 +325,7 @@ groupB,four@example.com
 
 The assessment's "Downloads" tab has an `<assessment>_group_configs.csv` file that contains the current group assignments. This can be used to copy group assignments from one assessment to another.
 
-Alternatively, the "Auto" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
+Alternatively, the "Random" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
 
 ### Student options for group work
 
