@@ -39,3 +39,4 @@ types-lxml==2024.9.16
 types-Pygments==2.18.0.20240506
 typing-extensions==4.12.2
 tzlocal==5.2
+moviepy==2.1.1
