@@ -56,4 +56,6 @@ docker run --rm -v /path/to/course:/course prairielearn/prairielearn python /Pra
 
 ## Bulk replacement of UUIDs
 
-**Danger warning:** To change all UUIDs in a course, you can use the above `generate_uuids.py` script with the `--new` argument. **This can delete your entire course.**
+!!! danger
+
+    To change all UUIDs in a course, you can use the above `generate_uuids.py` script with the `--new` argument. **This can delete your entire course.**
