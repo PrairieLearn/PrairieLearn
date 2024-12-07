@@ -278,6 +278,9 @@ Modules are optional and do not affect any behavior by default. The order in whi
 The above configuration can result in the following view for students:
 
 ![Assessments grouped by module on the student assessments overview.](assessment-units.png)
+/// caption
+Assessments grouped by module on the student assessments overview.
+///
 
 Properties for assessmentModules are as follows.
 
@@ -408,7 +411,6 @@ You can add sharing sets to your course by listing them in the `infoCourse.json`
       "description": "Questions that can be used on a final exam"
     }
   ]
-}
 ```
 
 At this time, sharing sets cannot be renamed or removed from `infoCourse.json` once they have been added, because deleting a sharing set shared to another course could break assessments in that course.
