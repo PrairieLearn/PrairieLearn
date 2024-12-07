@@ -1,0 +1,128 @@
+import java.util.*;
+
+class AStarSearch {
+
+    static class Node {
+        int x, y;
+        int gCost, hCost, fCost;
+        Node parent;
+
+        Node(int x, int y) {
+            this.x = x;
+            this.y = y;
+            this.gCost = Integer.MAX_VALUE;
+            this.hCost = Integer.MAX_VALUE;
+            this.fCost = Integer.MAX_VALUE;
+            this.parent = null;
+        }
+
+        int getFCost() {
+            return gCost + hCost;
+        }
+    }
+
+    static class Grid {
+        static final int[][] directions = {{-1, 0}, {1, 0}, {0, -1}, {0, 1}}; // Up, Down, Left, Right
+
+        int[][] grid;
+        int rows, cols;
+
+        Grid(int rows, int cols) {
+            this.rows = rows;
+            this.cols = cols;
+            this.grid = new int[rows][cols];
+        }
+
+        void setWall(int x, int y) {
+            grid[x][y] = -1; // Mark as a wall
+        }
+
+        boolean isValid(int x, int y) {
+            return x >= 0 && x < rows && y >= 0 && y < cols && grid[x][y] != -1;
+        }
+
+        int heuristic(int x1, int y1, int x2, int y2) {
+            return Math.abs(x1 - x2) + Math.abs(y1 - y2); // Manhattan distance
+        }
+    }
+
+    static List<Node> getNeighbors(Node current, Grid grid) {
+        List<Node> neighbors = new ArrayList<>();
+        for (int[] direction : Grid.directions) {
+            int newX = current.x + direction[0];
+            int newY = current.y + direction[1];
+            if (grid.isValid(newX, newY)) {
+                neighbors.add(new Node(newX, newY));
+            }
+        }
+        return neighbors;
+    }
+
+    static List<Node> reconstructPath(Node endNode) {
+        List<Node> path = new ArrayList<>();
+        Node current = endNode;
+        while (current != null) {
+            path.add(current);
+            current = current.parent;
+        }
+        Collections.reverse(path);
+        return path;
+    }
+
+    static List<Node> aStarSearch(Grid grid, Node start, Node goal) {
+        PriorityQueue<Node> openList = new PriorityQueue<>(Comparator.comparingInt(Node::getFCost));
+        Set<Node> closedList = new HashSet<>();
+
+        start.gCost = 0;
+        start.hCost = grid.heuristic(start.x, start.y, goal.x, goal.y);
+        openList.add(start);
+
+        while (!openList.isEmpty()) {
+            Node current = openList.poll();
+
+            if (current.x == goal.x && current.y == goal.y) {
+                return reconstructPath(current); // Goal reached
+            }
+
+            closedList.add(current);
+
+            for (Node neighbor : getNeighbors(current, grid)) {
+                if (closedList.contains(neighbor)) continue;
+
+                int tentativeGCost = current.gCost + 1; // Assume cost between neighbors is 1
+                if (tentativeGCost < neighbor.gCost) {
+                    neighbor.parent = current;
+                    neighbor.gCost = tentativeGCost;
+                    neighbor.hCost = grid.heuristic(neighbor.x, neighbor.y, goal.x, goal.y);
+                    openList.add(neighbor);
+                }
+            }
+        }
+        return null; // No path found
+    }
+
+    public static void main(String[] args) {
+        int rows = 5;
+        int cols = 5;
+        Grid grid = new Grid(rows, cols);
+
+        // Set walls (represented by -1)
+        grid.setWall(1, 1);
+        grid.setWall(2, 1);
+        grid.setWall(3, 1);
+
+        Node start = new Node(0, 0);
+        Node goal = new Node(4, 4);
+
+        List<Node> path = aStarSearch(grid, start, goal);
+
+        if (path != null) {
+            System.out.println("Path found:");
+            for (Node node : path) {
+                System.out.println("(" + node.x + ", " + node.y + ")");
+            }
+        } else {
+            System.out.println("No path found.");
+        }
+    }
+}
