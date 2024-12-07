@@ -136,7 +136,7 @@ Before a student can do the exam, a proctor will need to type the phrase `mysecr
 
 To require that students take a particular exam in a testing center or a course-managed PrairieTest session, the `examUuid` should be set to the UUID value from PrairieTest. For example:
 
-```
+```json
 "allowAccess": [
     {
         "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",

@@ -12,7 +12,7 @@ See an [example of how to use `serverFilesCourse`](python-grader/index.md#exampl
 
 A `clientFiles*` subdirectory can be associated with the course, a question, a course instance, or an assessment, as shown below. The `serverFilesCourse` subdirectory is associated with the course as a whole.
 
-```text
+```bash
 exampleCourse
 +-- clientFilesCourse                     # client files for the entire course
 |   +-- library.js

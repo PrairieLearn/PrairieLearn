@@ -20,9 +20,9 @@ Regrading an assessment instance while the student is still working on it will n
 
 ## Setting `forceMaxPoints` for a question
 
-To award some or all students maximum points for a question during a regrade, edit the [`infoAssessment.json`] file and set `"forceMaxPoints": true` for any broken questions. For example:
+To award some or all students maximum points for a question during a regrade, edit the `infoAssessment.json` file and set `"forceMaxPoints": true` for any broken questions. For example:
 
-```json
+```json title="infoAssessment.json" hl_lines="5 19"
 "zones": [
     {
         "title": "Easy questions",
