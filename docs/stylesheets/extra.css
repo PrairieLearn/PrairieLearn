@@ -1,3 +1,13 @@
 :root {
   --md-primary-fg-color: #084298;
 }
+
+/* Allow captioned code blocks to function */
+code {
+  text-align: left;
+}
+
+/* Prevent wrapping attributes inside tables */
+td code {
+  white-space: nowrap;
+}
