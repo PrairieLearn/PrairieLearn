@@ -6,7 +6,7 @@
 
 Each assessment is a single directory in the `assessments` folder or any subfolder. Assessments may be nested in subdirectories of the `assessments` folder. The assessment directory must contain a single file called `infoAssessment.json` that describes the assessment and looks like:
 
-```json
+```json title="infoAssessment.json"
 {
   "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
   "type": "Exam",
@@ -22,7 +22,11 @@ Each assessment is a single directory in the `assessments` folder or any subfold
 
 The assessment ID is the full path relative to `assessments`.
 
-- [Format specification for assessment `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoAssessment.json)
+??? example "Format specification for assessment `infoAssessment.json`"
+
+    ```json
+    --8<-- "apps/prairielearn/src/schemas/schemas/infoAssessment.json"
+    ```
 
 ## Assessment naming
 
@@ -69,7 +73,7 @@ On `Exam` assessments, questions are randomized by default, but this can be disa
 
 An assessment is broken down in to a list of zones, like this:
 
-```json
+```json title="infoAssessment.json"
 "zones": [
     {
         "title": "Easy questions",
@@ -260,13 +264,10 @@ PrairieLearn distinguishes between _assessments_ and _assessment instances_. An 
 
 A student's percentage score will be determined by the number of points they have obtained, divided by the value of `maxPoints` for the assessment (subject to the rules associated to [`credit`](accessControl.md#credit) in assessment access rules).
 
-```json
-{
+```json title="infoAssessment.json"
     "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
     "maxPoints": 50,
     "maxBonusPoints": 5,
-    ...
-}
 ```
 
 In the assessment configuration, the `maxPoints` determines the number of points a student is required to obtain to get a score of 100%. The percentage score will thus be computed based on the points the student obtained divided by the value of `maxPoints`. If not provided, `maxPoints` is computed based on the maximum number of points that can be obtained from all questions in all zones.
@@ -288,15 +289,13 @@ Note that this setting is not suitable in scenarios where multiple attempts are 
 By default, assessment instances are tied to only one user. By setting `groupWork: true`, multiple students will be able to work on the same assessment instance.
 Information about the group configuration can be set in the `infoAssessment.json` file. For example:
 
-```json
-{
+```json title="infoAssessment.json"
   "groupWork": true,
   "groupMaxSize": 6,
   "groupMinSize": 2,
   "studentGroupCreate": true,
   "studentGroupJoin": true,
   "studentGroupLeave": true
-}
 ```
 
 | Attribute            | Type    | Default | Description                                        |
@@ -340,7 +339,9 @@ If an instructor does not assign a student to a group, the student will need to 
 
 When calculating a student's grade for a group assessment, PrairieLearn will always use the score of their group's assessment instance.
 
-> Note: Students cannot see each other's edits in real-time, although this is planned for a future version of PrairieLearn.
+!!! info
+
+    Students cannot see each other's edits in real-time, although this is planned for a future version of PrairieLearn.
 
 ![Student view of assessment with groupwork enabled](groupwork_student_perspective_assessment.png)
 
@@ -358,8 +359,7 @@ Although in most cases each student is expected to take one role, students are a
 
 To opt-in to custom group roles, group roles must be defined at the root of the `infoAssessment.json` file. For example:
 
-```json
-{
+```json title="infoAssessment.json"
   "groupRoles": [
     {
       "name": "Manager",
@@ -381,7 +381,6 @@ To opt-in to custom group roles, group roles must be defined at the root of the 
       "name": "Contributor"
     }
   ]
-}
 ```
 
 | Attribute        | Type    | Default | Description                                                                  |
@@ -464,7 +463,9 @@ When a role configuration is invalid, which may occur when a user leaves the gro
 
 ## Forcing students to complete questions in-order
 
-**WARNING:** We **strongly** discourage the use of this option during high-stakes exams, as it can be very detrimental to student success. See below for more details.
+!!! warning
+
+    We **strongly** discourage the use of this option during high-stakes exams, as it can be very detrimental to student success. See below for more details.
 
 Certain assessments might be designed to be done linearly, where each question assumes that the student has completed and understood the previous question (e.g., lab worksheets). By default, PrairieLearn allows students to complete questions in any order that they like, but assessments can be configured to not allow students to view future unsolved questions.
 
@@ -511,15 +512,17 @@ An `advanceScorePerc` can also be set on the `zone` or `assessment` level, which
 
 In the example above, `q2` and `q5` will have an `advanceScorePerc` of 100 because the zone-level attribute is used as a default.
 
-Note that an `advanceScorePerc` of 0 is equivalent to not having the attribute at all.
+!!! note
+
+    An `advanceScorePerc` of 0 is equivalent to not having the attribute at all.
 
 For assessments that randomize the order of questions as seen by students, the `advanceScorePerc` restrictions apply for each student using the question order that they were given. If a specific question order is desired then see [Changing question-order randomization](#changing-question-order-randomization).
 
 If a student uses all of their attempts on a question and cannot submit any more attempts, that question will automatically unblock, no matter what score they earned on it. This is to prevent students from getting permanently stuck on an assessment, unable to receive further credit.
 
-### Warning about in-order questions and high-stakes exams
+### :warning: Warning about in-order questions and high-stakes exams
 
-The `advanceScorePerc` attribute is intended to be used in [group work](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in high-stakes exams where the student cannot receive help from course staff.
+    The `advanceScorePerc` attribute is intended to be used in [group work](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in high-stakes exams where the student cannot receive help from course staff.
 
 ## Auto-closing Exam assessments
 
