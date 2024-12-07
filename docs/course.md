@@ -317,7 +317,6 @@ For example, topics could be listed like:
       "description": "Calculating the center of mass for irregular bodies and systems."
     }
   ]
-}
 ```
 
 ## Tags
@@ -422,7 +421,6 @@ The default timezone for courses is `America/Chicago` (U.S. Central Time). This 
 ```json title="infoCourse.json"
 {
   "timezone": "America/New_York"
-}
 ```
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
