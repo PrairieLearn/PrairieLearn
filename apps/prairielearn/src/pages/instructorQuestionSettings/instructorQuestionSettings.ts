@@ -117,7 +117,12 @@ router.post(
       const origHash = req.body.orig_hash;
       questionInfo.title = req.body.title;
       questionInfo.topic = req.body.topic;
-      questionInfo.tags = req.body.tags;
+      // If only a single tag is provided, it will be a string. If multiple tags are provided, it will be an array.
+      if (Array.isArray(req.body.tags)) {
+        questionInfo.tags = req.body.tags;
+      } else {
+        questionInfo.tags = [req.body.tags];
+      }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 

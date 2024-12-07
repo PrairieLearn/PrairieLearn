@@ -79,10 +79,7 @@ export function InstructorQuestionSettings({
   // Only show assessments on which this question is used when viewing the question
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
-  let selectedTags: (string | null)[] = [];
-  if (resLocals.tags) {
-    selectedTags = resLocals.tags.map((tag) => tag.name);
-  }
+  const selectedTags = new Set(resLocals.tags?.map((tag) => tag.name) ?? []);
   return html`
     <!doctype html>
     <html lang="en">
@@ -92,6 +89,16 @@ export function InstructorQuestionSettings({
         <style>
           .popover {
             max-width: 50%;
+          }
+
+          .ts-wrapper.multi .ts-control > span {
+            cursor: pointer;
+          }
+
+          .ts-wrapper.multi .ts-control > span.active {
+            /* Fallback for Bootstrap 4; we can remove when we drop support for it. */
+            background-color: var(--bs-primary, #0d6efd) !important;
+            color: white !important;
           }
         </style>
         <link
@@ -199,7 +206,7 @@ export function InstructorQuestionSettings({
                                           data-color="${tag.color}"
                                           data-name="${tag.name}"
                                           data-description="${tag.description}"
-                                          ${selectedTags.includes(tag.name) ? 'selected' : ''}
+                                          ${selectedTags.has(tag.name) ? 'selected' : ''}
                                         ></option>
                                       `;
                                     })
