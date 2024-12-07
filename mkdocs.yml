@@ -1,7 +1,35 @@
-site_name: PrairieLearn
-site_url: https://github.com/PrairieLearn/PrairieLearn
+site_name: PrairieLearn Docs
+site_url: https://prairielearn.readthedocs.io
 repo_url: https://github.com/PrairieLearn/PrairieLearn
-theme: readthedocs
+theme:
+  name: material
+  logo: assets/PL-logo.svg
+  favicon: assets/PL-logo-adaptive.svg
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    admonition:
+      example: material/code-block-tags
+    annotation: material/plus-circle
+  palette:
+    scheme: default
+    primary: custom
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.tracking
+    - search.suggest
+    - content.action.edit
+    - content.code.copy
+    - content.tooltips
+    - content.code.annotate
+    # - toc.integrate
+plugins:
+  - search
 docs_dir: docs
 # Fix "Edit on GitHub" link: (defaults to edit/master/docs/, note the s)
 edit_uri: blob/master/docs/
@@ -12,21 +40,45 @@ markdown_extensions:
   # https://pypi.org/project/mdx-truly-sane-lists/
   - mdx_truly_sane_lists
 
+  # Embed external content
+  - pymdownx.snippets
+
   # allows indented code blocks inside lists
-  - pymdownx.superfences
+  - pymdownx.superfences:
+      custom_fences:
+        - name: mermaid
+          class: mermaid
+          format: !!python/name:pymdownx.superfences.fence_code_format
+
+  - pymdownx.details
 
   - toc:
       permalink: true
-
+  - pymdownx.blocks.caption
+  - tables
+  - attr_list
+  # Allows tabbed content (e.g. for showing the effect of alternative config options)
+  - pymdownx.tabbed:
+      alternate_style: true
   # Allows note/warning boxes
   - admonition
-
+  # Allows shortcodes for emojis
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 extra_javascript:
   - mathjax-config.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
 
 extra_css:
-  - extra.css
+  - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/PrairieLearn/PrairieLearn
+    - icon: fontawesome/brands/slack
+      link: https://prairielearn.slack.com
 
 nav:
   - Main: 'index.md'

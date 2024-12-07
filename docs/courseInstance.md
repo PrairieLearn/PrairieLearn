@@ -6,7 +6,7 @@
 
 A _course instance_ corresponds to a single offering of a [course](course.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](assessment.md). The `assessments` directory should always exist, but may be empty if no assessments have been added. A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
 
-```text
+```bash
 exampleCourse
 `-- courseInstances
     +-- Fa16                          # Fall 2016 course instance
@@ -16,25 +16,27 @@ exampleCourse
     |   |   |   `-- ...               # files for Homework 1
     |   |   `-- hw02                  # second homework for Fa16
     |   |       `-- ...               # files for Homework 2
-    |   +-- clientFilesCourseInstance
+    |   +-- clientFilesCourseInstance # (1)!
     |   |   `-- Fa16_rules.pdf        # files for Fall 2016
     `-- Sp17
         +-- infoCourseInstance.json   # Spring 2017 configuration
         +-- assessments
         |   `-- ...                   # Spring 2017 assessments
-        +-- clientFilesCourseInstance
+        +-- clientFilesCourseInstance # (2)!
         |   `-- ...                   # files for Spring 2017
 ```
 
-- See an [example course instances directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances) in PrairieLearn
+1. See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` directory.
 
-- See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` directory.
+2. See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` directory.
+
+- See an [example course instances directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances) in PrairieLearn
 
 ## `infoCourseInstance.json`
 
 This file specifies basic information about the course instance:
 
-```json
+```json title="infoCourseInstance.json"
 {
   "uuid": "62fbe2a4-8c22-471a-98fe-19e5d5da1bbe",
   "longName": "Spring 2015",
@@ -47,17 +49,25 @@ This file specifies basic information about the course instance:
 }
 ```
 
-- Example [infoCourseInstance.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/infoCourseInstance.json)
+??? example "Example `infoCourseInstance.json`"
 
-- [Format specification for `infoCourseInstance.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoCourseInstance.json)
+    ```json title="infoCourseInstance.json"
+    --8<-- "exampleCourse/courseInstances/SectionA/infoCourseInstance.json"
+    ```
+
+??? example "Format specification for `infoCourseInstance.json`"
+
+    ```json
+    --8<-- "apps/prairielearn/src/schemas/schemas/infoCourseInstance.json"
+    ```
 
 ## Course instance `allowAccess`
 
-See [Access control](accessControl.md) for details.
+See the [access control](accessControl.md) for more details on `allowAccess` rules.
 
 The course instance `allowAccess` rules determine who can access the course instance and when they can do so. Course staff always have access. The simple example below gives students access between the start (Jan 19th) and end (May 13th) of the semester, as follows.
 
-```json
+```json title="infoCourseInstance.json"
     "allowAccess": [
         {
             "startDate": "2015-01-19T00:00:01",
@@ -70,10 +80,8 @@ The course instance `allowAccess` rules determine who can access the course inst
 
 Instructors can group assessments by course modules (topics, sections or chapters in a course) or by assessment sets (homework, exam, etc). By default, all assessments in a course instance are grouped by `"Set"`. Setting the property `"groupAssessmentsBy"` to `"Module"` will group assessments together by module on the student assessments overview page.
 
-```json
-{
+```json title="infoCourseInstance.json"
   "groupAssessmentsBy": "Module"
-}
 ```
 
 For more information about assessment modules, see [Course configuration](course.md#assessment-modules).
@@ -82,10 +90,8 @@ For more information about assessment modules, see [Course configuration](course
 
 The default timezone for course instances is the timezone of the course. This can be changed with the `timezone` property in `infoCourseInstance.json`. For example:
 
-```json
-{
+```json title="infoCourseInstance.json"
   "timezone": "America/New_York"
-}
 ```
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
@@ -100,10 +106,8 @@ Students can enroll in a course instance through one of two ways:
 
 Some instructors may wish to hide their course from the list of available course instances in the Enroll page. This may be done to provide a small level of control over which students get access to the course, or to avoid confusion in case of course instances that are not expected to be visible to students in general. For these instances, the following setting will hide the course instance from the list of instances in the Enroll page, even if the instance is available for enrollment.
 
-```json
-{
+```json title="infoCourseInstance.json"
   "hideInEnrollPage": true
-}
 ```
 
 Note that _this is not a security setting_. Students may still enroll in the course instance if they get access to the URL, either through friends or by [Forced Browsing Attacks](https://owasp.org/www-community/attacks/Forced_browsing). Instructors that wish to actually restrict course enrollment to a specific list of students should instead use well-defined access rules with restrictions by UIDs, Institution, or through LTI support.

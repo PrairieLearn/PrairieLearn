@@ -6,13 +6,13 @@
 
 A course is specified by a single directory, with the following structure:
 
-```text
+```bash
 exampleCourse
-+-- infoCourse.json     # course specification (see below)
-+-- questions           # all questions for the course (see other doc)
++-- infoCourse.json     # (1)!
++-- questions           # (2)!
 |   `-- ...
 |   `-- ...
-+-- courseInstances     # instances of the course (see other doc)
++-- courseInstances     # (3)!
 |   +-- Fa16
 |   |   `-- ...
 |   `-- Sp17
@@ -20,13 +20,19 @@ exampleCourse
 +-- elements            # custom HTML elements for the course
 |   +-- element1
 |       `-- ...
-+-- clientFilesCourse   # files available from the client at all times (see other doc)
++-- clientFilesCourse   # files available from the client at all times (4)
 |   `-- library.js
 |   `-- refs.html
 |   `-- formulas.pdf
-`-- serverFilesCourse   # files only accessible from code on the server (see other doc)
+`-- serverFilesCourse   # files only accessible from code on the server (5)
     `-- secret1.js
 ```
+
+1. course specification (see below)
+2. See the [questions documentation](question.md) for more information.
+3. See the [course instance documentation](courseInstance.md) for more information.
+4. See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourse` directory.
+5. See [clientFiles and serverFiles](clientServerFiles.md) for information on the `serverFilesCourse` directory.
 
 - See an [example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse) in PrairieLearn
 
@@ -38,14 +44,14 @@ exampleCourse
 
 This file specifies basic information about the course:
 
-```json
+```json title="infoCourse.json"
 {
   "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
   "name": "TAM 212",
   "title": "Introductory Dynamics",
   "comment": "The assessment set order used here will be the one shown within PrairieLearn",
   "options": {
-    "useNewQuestionRenderer": true
+    "useNewQuestionRenderer": true // (1)!
   },
   "assessmentSets": [
     {
@@ -108,9 +114,19 @@ This file specifies basic information about the course:
 }
 ```
 
-- Example [infoCourse.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/infoCourse.json)
+1. Feature flag to enable the new question renderer
 
-- [Format specification for `infoCourse.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoCourse.json)
+??? example "Example `infoCourse.json`"
+
+    ```json title="infoCourseInstance.json"
+    --8<-- "exampleCourse/infoCourse.json"
+    ```
+
+??? example "Format specification for `infoCourse.json`"
+
+    ```json
+    --8<-- "apps/prairielearn/src/schemas/schemas/infoCourse.json"
+    ```
 
 ## Course-wide options
 
@@ -150,7 +166,7 @@ The following list of standardized assessments sets is automatically included in
 
 You can add more assessment sets by listing them in the `infoCourse.json` file as follows. Note that HW and Q don't need to be listed because they are automatically available as standardized sets (see above).
 
-```json
+```json title="infoCourse.json"
 {
   "assessmentSets": [
     {
@@ -171,7 +187,7 @@ You can add more assessment sets by listing them in the `infoCourse.json` file a
 
 The assessment set order in `infoCourse.json` is the order in which the assessments will be shown within PrairieLearn (for both instructors and students). If you want to change the order of standardized assessment sets then you can re-list them in whatever order you like. For example, to put Exams and Quizzes first, you could use:
 
-```json
+```json title="infoCourse.json"
 {
   "assessmentSets": [
     {
@@ -232,7 +248,7 @@ Each assessment in the course belongs to a _module_ defined in `infoCourse.json`
 
 Modules are optional and do not affect any behavior by default. The order in which the modules are defined in `infoCourse.json` will be the order in which they are displayed in the student page. This can let students view their list of assessments in a chronological order, rather than simply grouped by set.
 
-```json
+```json title="infoCourse.json"
 {
   "assessmentModules": [
     {
@@ -254,6 +270,9 @@ Modules are optional and do not affect any behavior by default. The order in whi
 The above configuration can result in the following view for students:
 
 ![Assessments grouped by module on the student assessments overview.](assessment-units.png)
+/// caption
+Assessments grouped by module on the student assessments overview.
+///
 
 Properties for assessmentModules are as follows.
 
@@ -276,8 +295,7 @@ Each question in the course has a topic from the list specified in the `infoCour
 
 For example, topics could be listed like:
 
-```json
-{
+```json title="infoCourse.json"
   "topics": [
     {
       "name": "Vectors",
@@ -290,7 +308,6 @@ For example, topics could be listed like:
       "description": "Calculating the center of mass for irregular bodies and systems."
     }
   ]
-}
 ```
 
 ## Tags
@@ -340,7 +357,7 @@ The following list of standardized tags is automatically included in every cours
 
 You can add more tags to your course by listing them in the `infoCourse.json` file. For example:
 
-```json
+```json title="infoCourse.json"
 {
   "tags": [
     {
@@ -372,8 +389,7 @@ Questions can be added to sharing sets to enable other courses to use your quest
 
 You can add sharing sets to your course by listing them in the `infoCourse.json` file. For example:
 
-```json
-{
+```json title="infoCourse.json"
   "sharingSets": [
     {
       "name": "python-exercises",
@@ -384,7 +400,6 @@ You can add sharing sets to your course by listing them in the `infoCourse.json`
       "description": "Questions that can be used on a final exam"
     }
   ]
-}
 ```
 
 At this time, sharing sets cannot be renamed or removed from `infoCourse.json` once they have been added, because deleting a sharing set shared to another course could break assessments in that course.
@@ -393,10 +408,8 @@ At this time, sharing sets cannot be renamed or removed from `infoCourse.json` o
 
 The default timezone for courses is `America/Chicago` (U.S. Central Time). This can be changed with the `timezone` property in `infoCourse.json`. For example:
 
-```json
-{
+```json title="infoCourse.json"
   "timezone": "America/New_York"
-}
 ```
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
@@ -405,7 +418,7 @@ Allowable timezones are those in the TZ column in the [list of tz database time 
 
 You can add comments to JSON files using the `"comment"` key on any object. You can only use this key once for each object. For example:
 
-```json
+```json title="infoCourse.json" hl_lines="2"
 {
   "comment": "assessments that are shared among a group of students",
   "assessmentSets": [

@@ -24,7 +24,11 @@ The default course directories to be loaded by PrairieLearn can be overridden wi
 }
 ```
 
-Note that these directories are paths in the container, not on your local computer. To mount a directory on your computer so that it is accessible in the container, you can add the following to your Docker run command:
+!!! note
+
+    These directories are paths in the container, not on your local computer.
+
+To mount a directory on your computer so that it is accessible in the container, you can add the following to your Docker run command:
 
 ```sh
 -v /path/to/myCourse:/myCourse

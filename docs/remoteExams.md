@@ -50,12 +50,21 @@ Some notes about this configuration:
 
 ## Synchronous, timed exams
 
-**We recommend that exams held outside a controlled testing center should be run using a synchronous, timed configuration.** Below is an example of an assessment configured to have students taking the exam at the same time with a time limit.
+!!! tip
+
+    We recommend that exams held outside a controlled testing center should be run using a synchronous, timed configuration.
+
+Below is an example of an assessment configured to have students taking the exam at the same time with a time limit.
 
 This configuration is good when:
 
 - Almost all students take the exam at the same time
-- Some students have accommodations, such as 1.5x time — **these students must be listed first in the access rules**
+- Some students have accommodations, such as 1.5x time
+
+  !!! warning
+
+        These students must be listed *first* in the access rules for these to take effect.
+
 - Some students take the exam at a later "conflict" time, mainly because they are in a different timezone
 
 ```json
@@ -109,7 +118,12 @@ This configuration is good when:
 
 - Students can choose when to take the exam over a long period (typically about 24 hours)
 - Once a student starts working on the exam, they have limited time (1 hour in the example below)
-- Some students have accommodations, such as 1.5x time — **these students must be listed first in the access rules**
+- Some students have accommodations, such as 1.5x time
+
+  !!! warning
+
+        These students must be listed *first* in the access rules for these to take effect.
+
 - There is no need for conflict exams because students can choose their own time
 
 ```json
