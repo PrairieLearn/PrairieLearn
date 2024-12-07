@@ -79,6 +79,7 @@ describe('Editing question settings', () => {
           title: 'New title',
           qid: 'question',
           topic: 'Test2',
+          tags: 'test2',
         },
       },
     );
@@ -110,6 +111,7 @@ describe('Editing question settings', () => {
           title: 'New title',
           qid: 'test/question1',
           topic: 'Test',
+          tags: 'test1,test2',
         },
       },
     );

@@ -4,5 +4,6 @@
     "title": "Broken course configs",
     "topics": [
         {"name": "basic", "color": "blue3", "description": "Basic topic"}
-    ]
+    ],
+    "tags": ["test1", "test2"]
 }
