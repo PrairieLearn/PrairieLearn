@@ -130,7 +130,7 @@ then the feature can be disabled by specifying in the `infoAsssement.json`:
 "autoClose": false
 ```
 
-See [Auto-closing Exam assessments](assessment.md#auto-closing-exam-assessments)
+See [Auto-closing Exam assessments](assessment/index.md#auto-closing-exam-assessments)
 for more details.
 
 ## How can we provide a cheat sheet for exams held in a testing center?
@@ -243,7 +243,7 @@ For example, this error would be triggered under:
 }
 ```
 
-See [Question Specification](assessment.md#question-specification) for more details.
+See [Question Specification](assessment/index.md#question-specification) for more details.
 
 ## Why is the UUID used in multiple questions?
 
