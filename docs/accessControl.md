@@ -106,7 +106,7 @@ For students taking remote exams it can be helpful to have an enforced time limi
 
 The above example will give students 90 minutes for this exam, and they must start (and complete) within the date limits. If a student starts the exam close enough to `endDate` such that the remaining time to `endDate` is less than `timeLimitMin`, then the exam's countdown timer will be initialized with the remaining time to `endDate` (minus a 1-minute buffer), not `timeLimitMin`. See the following diagram for an illustration of this.
 
-![Time limit illustrations](exam_timer.svg)
+![Time limit illustrations](img/exam_timer.svg)
 
 **Note that time limits should not be set for exams in a testing center or course session managed by PrairieTest. Instead, such exams should set `"examUuid"` to the value associated to the PrairieTest exam, in which case `timeLimitMin` will have no effect and the time limits will be enforced by PrairieTest.**
 
