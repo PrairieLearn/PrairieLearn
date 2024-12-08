@@ -4,7 +4,7 @@
 
 ## Directory layout
 
-A _course instance_ corresponds to a single offering of a [course](course.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](assessment.md). The `assessments` directory should always exist, but may be empty if no assessments have been added. A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
+A _course instance_ corresponds to a single offering of a [course](course.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](assessment/index.md). The `assessments` directory should always exist, but may be empty if no assessments have been added. A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
 
 ```bash
 exampleCourse
@@ -100,7 +100,7 @@ Allowable timezones are those in the TZ column in the [list of tz database time 
 
 Students can enroll in a course instance through one of two ways:
 
-1. They can use a URL specific to the course instance or [to one of its assessments](assessment.md#linking-to-assessments). The appropriate link to provide to students can be found by opening the "Settings" tab of the Course Instance. This page includes, among other useful information, a Student Link that can be provided to students. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
+1. They can use a URL specific to the course instance or [to one of its assessments](assessment/index.md#linking-to-assessments). The appropriate link to provide to students can be found by opening the "Settings" tab of the Course Instance. This page includes, among other useful information, a Student Link that can be provided to students. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
 
 2. They can use the "Enroll" button in PrairieLearn's main page. This button opens a page listing all course instances that are currently available for enrollment, giving students the option to Add new courses.
 
