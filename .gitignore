@@ -107,3 +107,6 @@ packages/*/coverage
 ## Question HTML snapshots
 /new-renderer/
 /old-renderer/
+
+## d2 cache
+.cache

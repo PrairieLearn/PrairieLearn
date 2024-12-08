@@ -4,7 +4,9 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 ## High level view
 
-![High level system structure](high-level.png)
+```d2
+--8<-- "docs/high-level.d2"
+```
 
 - The questions and assessments for a course are stored in a git repository. This is synced into the database by the course instructor and DB data is updated or added to represent the course. Students then interact with the course website by doing questions, with the results being stored in the DB. The instructor can view the student results on the website and download CSV files with the data.
 
@@ -196,9 +198,11 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 ## DB schema (simplified overview)
 
-- The most important tables in the database are shown in the diagram below (also as a [PDF image](simplified-models.pdf)).
+- The most important tables in the database are shown in the diagram below
 
-![Simplified DB Schema](simplified-models.png)
+```d2
+--8<-- "docs/models.d2"
+```
 
 - Detailed descriptions of the format of each table are in the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
 
@@ -229,9 +233,11 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 ## DB schema (full data)
 
-- See the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below ([PDF ER diagram](models.pdf)).
+- See the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below:
 
-![DB Schema](models.png)
+```d2 layout="elk"
+--8<-- "docs/models.d2"
+```
 
 ## DB schema conventions
 
@@ -536,9 +542,11 @@ To automatically fix lint and formatting errors, run `make format`.
 
 - Note that `submission.format_errors` stores information about student errors, while the `issues` table stores information about question code errors.
 
-- The question flow is shown in the diagram below (also as a [PDF image](question-flow.pdf)).
+- The question flow is shown in the diagram below:
 
-  ![Question flow](question-flow.png)
+```d2
+--8<-- "docs/question-flow.d2"
+```
 
 ## JavaScript equality operator
 
