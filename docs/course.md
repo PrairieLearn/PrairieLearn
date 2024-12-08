@@ -452,7 +452,7 @@ Comments can be strings, arrays, or JSON objects, but for most uses strings are 
 
 The possible colors for assessment sets, topic, and tags are:
 
-![Colors](colors.png)
+--8<-- "docs/diagrams/colors.html"
 
 ## Course staff
 
