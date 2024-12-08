@@ -30,6 +30,10 @@ theme:
     - content.code.annotate
 plugins:
   - search
+  - d2:
+      layout: dagre
+      pad: 20
+      theme: 1
 docs_dir: docs
 # Fix "Edit on GitHub" link: (defaults to edit/master/docs/, note the s)
 edit_uri: blob/master/docs/
@@ -43,16 +47,7 @@ markdown_extensions:
   - pymdownx.snippets
 
   # allows indented code blocks inside lists
-  - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format:
-            !!python/name:pymdownx.superfences.fence_code_format # https://facelessuser.github.io/pymdown-extensions/extensions/details/#details
-
-
-  - tables
-  # https://facelessuser.github.io/pymdown-extensions/extensions/snippets/#snippets
+  - pymdownx.superfences
   - pymdownx.details
 
   - toc:
@@ -71,11 +66,12 @@ markdown_extensions:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
 extra_javascript:
-  - mathjax-config.js
+  - assets/mathjax-config.js
+  - assets/d2-zoom.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
 
 extra_css:
-  - stylesheets/extra.css
+  - assets/extra.css
 
 extra:
   social:
@@ -97,7 +93,7 @@ nav:
       - 'Editing and syncing course content': 'sync.md'
       - 'Course configuration': 'course.md'
       - 'Course instance configuration': 'courseInstance.md'
-      - 'Assessment configuration': 'assessment.md'
+      - 'Assessment configuration': 'assessment/index.md'
       - 'Question configuration': 'question.md'
       - 'Question runtime environment': 'questionRuntime/index.md'
       - 'Elements for writing questions': 'elements.md'

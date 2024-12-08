@@ -2,7 +2,13 @@
 
 All course content in PrairieLearn lives in a [Git](https://git-scm.com/) repository, typically hosted on [GitHub](https://github.com/). That repository is synced to/from PrairieLearn.
 
-![High level system structure](high-level.png)
+```d2
+--8<-- "docs/high-level.d2"
+```
+
+/// caption
+High level overview of syncing content between PrairieLearn and GitHub.
+///
 
 There are two ways to edit your content: through the in-browser editor in PrairieLearn, and by interacting directly with the repository.
 
