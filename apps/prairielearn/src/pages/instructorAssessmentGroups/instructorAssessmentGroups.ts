@@ -104,8 +104,8 @@ router.post(
         res.locals.assessment.id,
         res.locals.user.user_id,
         res.locals.authn_user.user_id,
-        req.body.max_group_size,
-        req.body.min_group_size,
+        Number(req.body.max_group_size),
+        Number(req.body.min_group_size),
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'delete_all') {

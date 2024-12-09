@@ -181,7 +181,7 @@ export async function randomGroups(
           `There are ${numStudents} students enrolled in ${assessment_label} without a group`,
         );
         job.verbose('----------------------------------------');
-        job.verbose(`Creating groups with a max size of ${max_group_size}`);
+        job.verbose(`Creating groups with a size between ${min_group_size} and ${max_group_size}`);
 
         let groupsCreated = 0,
           studentsGrouped = 0;
@@ -192,10 +192,34 @@ export async function randomGroups(
             { assessment_id },
             z.number(),
           );
+
           // Create groups using the groups of maximum size where possible
-          for (let i = unusedGroupNameSuffix ?? 1; studentsToGroup.length > 0; i++) {
+          const userGroups = _.chunk(
+            studentsToGroup.map((user) => user.uid),
+            max_group_size,
+          );
+          // If there are groups that are too small, move students from larger groups to smaller groups
+          let smallGroup: string[] | undefined;
+          while ((smallGroup = userGroups.find((group) => group.length < min_group_size)) != null) {
+            // Choose a student from the largest group that has more than the minimum number of students
+            const user = userGroups
+              .filter((group) => group.length > min_group_size)
+              .reduce((a, b) => (a.length > b.length ? a : b), [])
+              ?.pop();
+            // If there are no more groups with extra students, warn the instructor and break
+            if (user == null) {
+              job.warn(
+                `Could not create groups with the desired sizes. One group will have a size of ${smallGroup.length}`,
+              );
+              break;
+            }
+            smallGroup.push(user);
+          }
+
+          let i = unusedGroupNameSuffix ?? 1;
+          for (const users of userGroups) {
             const groupName = `group${i}`;
-            const users = studentsToGroup.splice(0, max_group_size).map((user) => user.uid);
+            i++;
             await createGroup(groupName, assessment_id, users, authn_user_id).then(
               () => {
                 groupsCreated++;
