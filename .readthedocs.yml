@@ -5,11 +5,13 @@ build:
   tools:
     python: '3.10'
   commands:
+    - python -mvirtualenv $READTHEDOCS_VIRTUALENV_PATH
     - curl -fsSL https://d2lang.com/install.sh | sh -s -- # Install D2
     - python -m pip install --upgrade --no-cache-dir pip setuptools
     - python -m pip install --upgrade --no-cache-dir mkdocs
     - python -m pip install --exists-action=w --no-cache-dir -r docs/requirements.txt
     - cat mkdocs.yml
+    - python -m mkdocs build --clean --site-dir $READTHEDOCS_OUTPUT/html --config-file mkdocs.yml
 
 mkdocs:
   configuration: mkdocs.yml
