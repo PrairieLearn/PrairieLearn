@@ -9,10 +9,10 @@ A course is specified by a single directory, with the following structure:
 ```bash
 exampleCourse
 +-- infoCourse.json     # Course configuration (see below)
-+-- questions           # (2)!
++-- questions # (1)!
 |   `-- ...
 |   `-- ...
-+-- courseInstances     # (3)!
++-- courseInstances # (2)!
 |   +-- Fa16
 |   |   `-- ...
 |   `-- Sp17
@@ -20,18 +20,18 @@ exampleCourse
 +-- elements            # custom HTML elements for the course
 |   +-- element1
 |       `-- ...
-+-- clientFilesCourse   # files available from the client at all times (4)
++-- clientFilesCourse   # files available from the client at all times (3)
 |   `-- library.js
 |   `-- refs.html
 |   `-- formulas.pdf
-`-- serverFilesCourse   # files only accessible from code on the server (5)
+`-- serverFilesCourse   # files only accessible from code on the server (4)
     `-- secret1.js
 ```
 
-2. See the [questions documentation](question.md) for more information.
-3. See the [course instance documentation](courseInstance.md) for more information.
+1. See the [questions documentation](question.md) for more information.
+2. See the [course instance documentation](courseInstance.md) for more information.
+3. See the [`clientFiles` and `serverFiles` documentation](clientServerFiles.md) for information.
 4. See the [`clientFiles` and `serverFiles` documentation](clientServerFiles.md) for information.
-5. See the [`clientFiles` and `serverFiles` documentation](clientServerFiles.md) for information.
 
 - See an [example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse) in PrairieLearn
 
