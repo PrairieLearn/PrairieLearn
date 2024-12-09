@@ -63,7 +63,7 @@ This file specifies basic information about the course instance:
 
 ## Course instance `allowAccess`
 
-See the [access control](accessControl.md) for more details on `allowAccess` rules.
+See the [access control documentation](accessControl.md) for more details on `allowAccess` rules.
 
 The course instance `allowAccess` rules determine who can access the course instance and when they can do so. Course staff always have access. The simple example below gives students access between the start (Jan 19th) and end (May 13th) of the semester, as follows.
 
