@@ -201,7 +201,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 - The most important tables in the database are shown in the diagram below
 
 ```d2
---8<-- "docs/diagrams/models.d2"
+--8<-- "docs/diagrams/simplified-models.d2"
 ```
 
 - Detailed descriptions of the format of each table are in the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
