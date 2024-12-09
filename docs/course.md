@@ -48,75 +48,87 @@ This file specifies basic information about the course:
   "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
   "name": "TAM 212",
   "title": "Introductory Dynamics",
-  "comment": "The assessment set order used here will be the one shown within PrairieLearn",
   "options": {
     "useNewQuestionRenderer": true
   },
-  "assessmentSets": [
-    {
-      "abbreviation": "HW",
-      "name": "Homework",
-      "heading": "Homeworks",
-      "color": "green1"
-    },
-    {
-      "abbreviation": "E",
-      "name": "Exam",
-      "heading": "Exams",
-      "color": "red1"
-    }
-  ],
-  "assessmentModules": [
-    {
-      "name": "vectors-coords",
-      "heading": "Vectors and coordinates"
-    },
-    {
-      "name": "moments",
-      "heading": "Moments of inertia"
-    }
-  ],
-  "topics": [
-    {
-      "name": "Vectors",
-      "color": "blue3",
-      "description": "Vector algebra in 3D"
-    },
-    {
-      "name": "Center of mass",
-      "color": "green3",
-      "description": "Finding and using the center of mass of irregular bodies."
-    }
-  ],
-  "tags": [
-    {
-      "name": "drawing",
-      "color": "gray2",
-      "description": "The answer requires drawing."
-    },
-    {
-      "name": "estimation",
-      "color": "orange2",
-      "description": "Answering requires estimating a quantity."
-    }
-  ],
-  "sharingSets": [
-    {
-      "name": "python-exercises",
-      "description": "Python exercises for sharing"
-    },
-    {
-      "name": "final-exam",
-      "description": "Questions that can be used on a final exam"
-    }
-  ]
+  "assessmentSets": [],
+  "assessmentModules": [],
+  "topics": [],
+  "tags": [],
+  "sharingSets": []
 }
 ```
 
 ??? example "Example `infoCourse.json`"
 
-    ```json title="infoCourseInstance.json"
-    --8<-- "exampleCourse/infoCourse.json"
+    ```json title="infoCourse.json"
+    {
+      "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
+      "name": "TAM 212",
+      "title": "Introductory Dynamics",
+      "comment": "The assessment set order used here will be the one shown within PrairieLearn",
+      "options": {
+        "useNewQuestionRenderer": true
+      },
+      "assessmentSets": [
+        {
+          "abbreviation": "HW",
+          "name": "Homework",
+          "heading": "Homeworks",
+          "color": "green1"
+        },
+        {
+          "abbreviation": "E",
+          "name": "Exam",
+          "heading": "Exams",
+          "color": "red1"
+        }
+      ],
+      "assessmentModules": [
+        {
+          "name": "vectors-coords",
+          "heading": "Vectors and coordinates"
+        },
+        {
+          "name": "moments",
+          "heading": "Moments of inertia"
+        }
+      ],
+      "topics": [
+        {
+          "name": "Vectors",
+          "color": "blue3",
+          "description": "Vector algebra in 3D"
+        },
+        {
+          "name": "Center of mass",
+          "color": "green3",
+          "description": "Finding and using the center of mass of irregular bodies."
+        }
+      ],
+      "tags": [
+        {
+          "name": "drawing",
+          "color": "gray2",
+          "description": "The answer requires drawing."
+        },
+        {
+          "name": "estimation",
+          "color": "orange2",
+          "description": "Answering requires estimating a quantity."
+        }
+      ],
+      "sharingSets": [
+        {
+          "name": "python-exercises",
+          "description": "Python exercises for sharing"
+        },
+        {
+          "name": "final-exam",
+          "description": "Questions that can be used on a final exam"
+        }
+      ]
+    }
     ```
 
 ??? example "Format specification for `infoCourse.json`"
