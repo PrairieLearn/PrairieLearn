@@ -59,7 +59,6 @@ export async function init() {
       'submissions_lock.sql',
       'assessment_instances_update.sql',
       'grading_jobs_lock.sql',
-      'grading_jobs_insert.sql',
       'grading_jobs_update_after_grading.sql',
       'ip_to_mode.sql',
       'users_select_or_insert.sql',
