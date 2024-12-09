@@ -293,6 +293,7 @@ Each question in the course has a topic from the list specified in the `infoCour
 For example, topics could be listed like:
 
 ```json title="infoCourse.json"
+{
   "topics": [
     {
       "name": "Vectors",
@@ -305,6 +306,7 @@ For example, topics could be listed like:
       "description": "Calculating the center of mass for irregular bodies and systems."
     }
   ]
+}
 ```
 
 ## Tags
@@ -387,6 +389,7 @@ Questions can be added to sharing sets to enable other courses to use your quest
 You can add sharing sets to your course by listing them in the `infoCourse.json` file. For example:
 
 ```json title="infoCourse.json"
+{
   "sharingSets": [
     {
       "name": "python-exercises",
@@ -397,6 +400,7 @@ You can add sharing sets to your course by listing them in the `infoCourse.json`
       "description": "Questions that can be used on a final exam"
     }
   ]
+}
 ```
 
 At this time, sharing sets cannot be renamed or removed from `infoCourse.json` once they have been added, because deleting a sharing set shared to another course could break assessments in that course.
@@ -406,7 +410,9 @@ At this time, sharing sets cannot be renamed or removed from `infoCourse.json` o
 The default timezone for courses is `America/Chicago` (U.S. Central Time). This can be changed with the `timezone` property in `infoCourse.json`. For example:
 
 ```json title="infoCourse.json"
+{
   "timezone": "America/New_York"
+}
 ```
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
