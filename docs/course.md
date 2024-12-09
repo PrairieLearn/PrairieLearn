@@ -66,7 +66,6 @@ This file specifies basic information about the course:
       "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
       "name": "TAM 212",
       "title": "Introductory Dynamics",
-      "comment": "The assessment set order used here will be the one shown within PrairieLearn",
       "options": {
         "useNewQuestionRenderer": true
       },
@@ -279,9 +278,6 @@ Modules are optional and do not affect any behavior by default. The order in whi
 The above configuration can result in the following view for students:
 
 ![Assessments grouped by module on the student assessments overview.](assessment-units.png)
-/// caption
-Assessments grouped by module on the student assessments overview.
-///
 
 Properties for assessmentModules are as follows.
 
