@@ -596,6 +596,7 @@ export async function renderPanelsForSubmission({
   questionContext,
   authorizedEdit,
   renderScorePanels,
+  groupRolePermissions,
 }: {
   submission_id: string;
   question: Question;
@@ -606,6 +607,8 @@ export async function renderPanelsForSubmission({
   questionContext: QuestionContext;
   authorizedEdit: boolean;
   renderScorePanels: boolean;
+  // groupRolePermissions is only used for student instance question pages
+  groupRolePermissions?: { can_view: boolean; can_submit: boolean } | null;
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
@@ -646,18 +649,6 @@ export async function renderPanelsForSubmission({
           instance_question_id: variant.instance_question_id,
         });
 
-  const group_role_permissions = await run(async () => {
-    if (!instance_question || !assessment_instance?.group_id || !group_config?.has_roles) {
-      return null;
-    }
-
-    return await getQuestionGroupPermissions(
-      instance_question?.id,
-      assessment_instance?.group_id,
-      user.user_id,
-    );
-  });
-
   const panels: SubmissionPanels = {
     submissionPanel: null,
     extraHeadersHtml: null,
@@ -671,7 +662,7 @@ export async function renderPanelsForSubmission({
       variant,
       question,
       instance_question,
-      group_role_permissions,
+      group_role_permissions: groupRolePermissions,
       assessment,
       assessment_instance,
       assessment_question,
@@ -785,7 +776,7 @@ export async function renderPanelsForSubmission({
           instance_question_info: { previous_variants },
           group_config,
           group_info,
-          group_role_permissions,
+          group_role_permissions: groupRolePermissions,
           user,
           ...locals,
         },
