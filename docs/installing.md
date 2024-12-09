@@ -146,6 +146,6 @@ docker run -it --rm -p 3000:3000 --pull=always [other args] prairielearn/prairie
 
 !!! tip
 
-    the command above uses the `--pull=always` option, which will update the local version of the image every time the docker command is restarted. If you keep a long-running container locally, make sure to restart the container when updates in the production servers are announced in the [PrairieLearn GitHub Discussions page](https://github.com/PrairieLearn/PrairieLearn/discussions/categories/announcements).
+    The command above uses the `--pull=always` option, which will update the local version of the image every time the docker command is restarted. If you keep a long-running container locally, make sure to restart the container when updates in the production servers are announced in the [PrairieLearn GitHub Discussions page](https://github.com/PrairieLearn/PrairieLearn/discussions/categories/announcements).
 
 Additional tags are available for older versions. The list of available versions is viewable on the [Docker Hub build page](https://hub.docker.com/r/prairielearn/prairielearn/builds/).
