@@ -86,7 +86,7 @@ You can view a list of all the available elements in the [Elements documentation
 
 ### Assessments
 
-A course contains a collection of questions, which are composed together to create [**Assessments**](./assessment/). Each course instance contains a collection of assessments. There are **Exam Assessments** and **Homework Assessments**.
+A course contains a collection of questions, which are composed together to create [**Assessments**](./assessment/index.md). Each course instance contains a collection of assessments. There are **Exam Assessments** and **Homework Assessments**.
 
 Asssessments are organized into **Assessment Sets** based on the type of assessment (e.g. `Homework`, `Quiz`, `Exam`). Optionally, each assessment can be a part of a **Module** (e.g. `Introduction`, `Review`, `Linked Lists`) that represent a segment of a course. Your assessments can then be shown to students grouped by module or by assessment set.
 
