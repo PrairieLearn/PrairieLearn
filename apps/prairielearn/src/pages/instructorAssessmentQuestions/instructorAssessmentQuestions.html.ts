@@ -1,5 +1,4 @@
-import { z } from 'zod';
-
+import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
@@ -13,49 +12,22 @@ import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import {
-  AlternativeGroupSchema,
-  AssessmentQuestionSchema,
-  AssessmentsFormatForQuestionSchema,
-  QuestionSchema,
-  TagSchema,
-  TopicSchema,
-  ZoneSchema,
-} from '../../lib/db-types.js';
 
-export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
-  alternative_group_number_choose: AlternativeGroupSchema.shape.number_choose,
-  alternative_group_number: AlternativeGroupSchema.shape.number,
-  alternative_group_size: z.number(),
-  assessment_question_advance_score_perc: AlternativeGroupSchema.shape.advance_score_perc,
-  display_name: z.string().nullable(),
-  number: z.string().nullable(),
-  open_issue_count: z.coerce.number().nullable(),
-  other_assessments: AssessmentsFormatForQuestionSchema.nullable(),
-  sync_errors: QuestionSchema.shape.sync_errors,
-  sync_warnings: QuestionSchema.shape.sync_warnings,
-  topic: TopicSchema,
-  qid: QuestionSchema.shape.qid,
-  start_new_zone: z.boolean().nullable(),
-  start_new_alternative_group: z.boolean().nullable(),
-  tags: TagSchema.pick({ color: true, id: true, name: true }).array().nullable(),
-  title: QuestionSchema.shape.title,
-  zone_best_questions: ZoneSchema.shape.best_questions,
-  zone_has_best_questions: z.boolean().nullable(),
-  zone_has_max_points: z.boolean().nullable(),
-  zone_max_points: ZoneSchema.shape.max_points,
-  zone_number_choose: ZoneSchema.shape.number_choose,
-  zone_number: ZoneSchema.shape.number,
-  zone_title: ZoneSchema.shape.title,
-});
-type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
+import { DeleteQuestionModal } from './deleteQuestionModal.html.js';
+import { EditQuestionModal } from './editQuestionModal.html.js';
+import { EditZoneModal } from './editZoneModal.html.js';
+import { type AssessmentQuestionRow } from './instructorAssessmentQuestions.types.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,
   questions,
+  origHash,
+  assessmentQuestionEditorEnabled,
 }: {
   resLocals: Record<string, any>;
   questions: AssessmentQuestionRow[];
+  origHash: string;
+  assessmentQuestionEditorEnabled: boolean;
 }) {
   return html`
     <!doctype html>
@@ -65,7 +37,7 @@ export function InstructorAssessmentQuestions({
         ${compiledScriptTag('instructorAssessmentQuestionsClient.ts')}
       </head>
       <body>
-        ${Navbar({ resLocals })}
+        ${EncodedData(questions, 'assessment-questions-data')} ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${Modal({
             id: 'resetQuestionVariantsModal',
@@ -90,6 +62,21 @@ export function InstructorAssessmentQuestions({
               <button type="submit" class="btn btn-danger">Reset question variants</button>
             `,
           })}
+          ${DeleteQuestionModal({ zoneIndex: 0, questionIndex: 0 })}
+          ${EditQuestionModal({
+            newQuestion: true,
+            zoneIndex: 0,
+            questionIndex: 0,
+            assessmentType: resLocals.assessment.type,
+          })}
+          ${EditZoneModal({ zone: {}, newZone: false, zoneIndex: 0 })}
+          <div id="findQIDModal"></div>
+          <form method="POST" id="zonesForm">
+            <input type="hidden" name="__action" value="edit_assessment_questions" />
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <input type="hidden" name="__orig_hash" value="${origHash}" />
+            <input type="hidden" name="zones" value="" />
+          </form>
           ${AssessmentSyncErrorsAndWarnings({
             authz_data: resLocals.authz_data,
             assessment: resLocals.assessment,
@@ -101,15 +88,41 @@ export function InstructorAssessmentQuestions({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions</h1>
+              ${resLocals.authz_data.has_course_instance_permission_edit &&
+              assessmentQuestionEditorEnabled
+                ? html`
+                    <div class="ml-auto">
+                      <button class="btn btn-sm btn-light js-enable-edit-button">
+                        <i class="fa fa-edit" aria-hidden="true"></i> Edit assessment questions
+                      </button>
+                      <span class="js-edit-mode-buttons" style="display: none">
+                        <button class="btn btn-sm btn-light js-save-and-sync-button" type="button">
+                          <i class="fa fa-save" aria-hidden="true"></i> Save and sync
+                        </button>
+                        <button class="btn btn-sm btn-light" onclick="window.location.reload()">
+                          Cancel
+                        </button>
+                      </span>
+                    </div>
+                  `
+                : ''}
             </div>
             ${AssessmentQuestionsTable({
               questions,
               assessmentType: resLocals.assessment.type,
               urlPrefix: resLocals.urlPrefix,
+              csrfToken: resLocals.__csrf_token,
+              assessmentInstanceId: resLocals.assessment.id,
               hasCoursePermissionPreview: resLocals.authz_data.has_course_permission_preview,
               hasCourseInstancePermissionEdit:
                 resLocals.authz_data.has_course_instance_permission_edit,
             })}
+            <div class="card-footer">
+              For more information on question settings, see the
+              <a href="https://prairielearn.readthedocs.io/en/latest/assessment/" target="_blank"
+                >documentation</a
+              >.
+            </div>
           </div>
         </main>
       </body>
@@ -121,12 +134,16 @@ function AssessmentQuestionsTable({
   questions,
   urlPrefix,
   assessmentType,
+  csrfToken,
+  assessmentInstanceId,
   hasCoursePermissionPreview,
   hasCourseInstancePermissionEdit,
 }: {
   questions: AssessmentQuestionRow[];
   assessmentType: string;
   urlPrefix: string;
+  csrfToken: string;
+  assessmentInstanceId: string;
   hasCoursePermissionPreview: boolean;
   hasCourseInstancePermissionEdit: boolean;
 }) {
@@ -148,9 +165,14 @@ function AssessmentQuestionsTable({
       return html`&mdash;`;
     }
   }
-
   return html`
-    <div class="table-responsive">
+    <div
+      class="table-responsive js-assessment-questions-table"
+      data-assessment-type="${assessmentType}"
+      data-url-prefix="${urlPrefix}"
+      data-csrfToken="${csrfToken}"
+      data-assessment-instance-id="${assessmentInstanceId}"
+    >
       <table class="table table-sm table-hover" aria-label="Assessment questions">
         <thead>
           <tr>
@@ -245,7 +267,7 @@ function AssessmentQuestionsTable({
                       : ''}
                   ${question.display_name}
                 </td>
-                <td>${TopicBadge(question.topic)}</td>
+                <td>${question.topic === null ? '' : TopicBadge(question.topic)}</td>
                 <td>${TagBadgeList(question.tags)}</td>
                 <td>
                   ${maxPoints({
