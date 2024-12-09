@@ -30,7 +30,7 @@ exampleCourse
 
 2. See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` directory.
 
-- See an [example course instances directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances) in PrairieLearn
+See an [example `courseInstances` directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances) in the PrairieLearn example course.
 
 ## `infoCourseInstance.json`
 
