@@ -74,40 +74,39 @@ On `Exam` assessments, questions are randomized by default, but this can be disa
 An assessment is broken down in to a list of zones, like this:
 
 ```json title="infoAssessment.json"
-"zones": [
+{
+  "zones": [
     {
-        "title": "Easy questions",
-        "comment": "These are new questions created for this exam",
-        "questions": [
-            {"id": "anEasyQ", "autoPoints": [10, 5, 3, 1, 0.5, 0.25]},
-            {"id": "aSlightlyHarderQ", "autoPoints": [10, 9, 7, 5]}
-        ]
+      "title": "Easy questions",
+      "comment": "These are new questions created for this exam",
+      "questions": [
+        { "id": "anEasyQ", "autoPoints": [10, 5, 3, 1, 0.5, 0.25] },
+        { "id": "aSlightlyHarderQ", "autoPoints": [10, 9, 7, 5] }
+      ]
     },
     {
-        "title": "Hard questions",
-        "comment": "These are new questions created for this exam",
-        "questions": [
-            {"id": "hardQV1", "autoPoints": 10},
-            {"id": "reallyHardQ", "autoPoints": [10, 10, 10]},
-            {
-                "numberChoose": 1,
-                "autoPoints": 5,
-                "alternatives": [
-                    {"id": "FirstAltQ", "autoPoints": 10},
-                    {"id": "SecondAltQ"}
-                ]
-            }
-        ]
+      "title": "Hard questions",
+      "comment": "These are new questions created for this exam",
+      "questions": [
+        { "id": "hardQV1", "autoPoints": 10 },
+        { "id": "reallyHardQ", "autoPoints": [10, 10, 10] },
+        {
+          "numberChoose": 1,
+          "autoPoints": 5,
+          "alternatives": [{ "id": "FirstAltQ", "autoPoints": 10 }, { "id": "SecondAltQ" }]
+        }
+      ]
     },
     {
-        "title": "Manually graded questions",
-        "comment": "These are questions that include manual grading components",
-        "questions": [
-            {"id": "essayQ", "manualPoints": 10},
-            {"id": "autoPlusManualQ", "autoPoints": [10, 7, 5], "manualPoints": 15},
-        ]
+      "title": "Manually graded questions",
+      "comment": "These are questions that include manual grading components",
+      "questions": [
+        { "id": "essayQ", "manualPoints": 10 },
+        { "id": "autoPlusManualQ", "autoPoints": [10, 7, 5], "manualPoints": 15 }
+      ]
     }
-],
+  ]
+}
 ```
 
 - Each zone appears in the given order in the assessment. Zone titles are optional and are displayed to the student if present.
@@ -135,13 +134,17 @@ To encourage students to solve the same question correctly more than once (to em
 By default, when using `maxAutoPoints`, PrairieLearn provides an incentive for students to answer a specific question correctly multiple times in a row. This is done by increasing the value of each submission for every consecutive correct answer, while setting it back to the original value if the answer is incorrect or partially correct. So, for example, if `autoPoints` is 3 and `maxAutoPoints` is 30, then the first correct answer is worth 3 points. If the next submission is also fully correct, it will be worth 6 points; a following answer is worth 9 points if correct — for a total of 3+6+9=18 points earned; and so on. If any answer is incorrect or partially correct, the value earned for a new correctly-solved variant is reset to 3 points. To disable this behavior and keep the question value at a constant value of 3, set `"constantQuestionValue": true` in the assessment settings, like this:
 
 ```json
-"constantQuestionValue": true,
-"zones": [
+{
+  "constantQuestionValue": true,
+  "zones": [
     {
-        "questions": [ ... ]
-    },
-    ...
-],
+      "questions": [
+        /* ... */
+      ]
+    }
+    // ...
+  ]
+}
 ```
 
 When using `maxAutoPoints`, the number of correct answers needed to obtain the full points available for a question can vary depending on how many consecutive correct answers the student is able to submit. If we use `"constantQuestionValue": true` then the question value never changes and so the number of correct answers needed is just `maxAutoPoints / autoPoints`. However, in the default case when `constantQuestionValue` is false, repeated correct answers will allow a student to reach the `maxAutoPoints` more quickly. For example, with `autoPoints` of 3 and `maxAutoPoints` of 30, a student who answers the question correctly just 4 times in a row will receive the full 3+6+9+12=30 points. This means that a student who has achieved mastery can quickly complete the question. In contrast, a student who is struggling with the question may have to answer it correctly up to 30/3=10 times if they make repeated mistakes along the way to keep resetting the question value back to 3.
@@ -612,15 +615,17 @@ For assessments with type "Homework", students will be presented with an unlimit
 - the `triesPerVariant` setting is set as below. In this case, the student will have the set number of attempts to correctly answer the question. Once the student answers the question correctly, or the number of tries per variant is exhausted, the student will be given the option to try a new variant.
 
   ```json
-  "zones": [
+  {
+    "zones": [
       {
-          "questions": [
-              {"id": "singleAttemptQ", "points": 10},
-              {"id": "tryOncePerVar", "points": 10},
-              {"id": "tryThreeTimesPerVar", "points": 10, "triesPerVariant": 3}
-          ]
+        "questions": [
+          { "id": "singleAttemptQ", "points": 10 },
+          { "id": "tryOncePerVar", "points": 10 },
+          { "id": "tryThreeTimesPerVar", "points": 10, "triesPerVariant": 3 }
+        ]
       }
-  ],
+    ]
+  }
   ```
 
 ## Limiting the rate at which answers can be graded
@@ -632,16 +637,18 @@ One way to limit the amount of feedback provided to students is to limit the rat
 The `gradeRateMinutes` value can be set for each specific question in the assessment. It can also be set for a zone or the full assessment, in which case it will apply individually to each question in the zone or assessment. In other words, if the assessment has a grading rate set, once a student submits an answer for grading in one question, they have to wait to submit new answers to that question, but they are able to grade other questions in the meantime.
 
 ```json
-"zones": [
+{
+  "zones": [
     {
-        "gradeRateMinutes": 30,
-        "questions": [
-            {"id": "canOnlySubmitEvery30minutes", "points": 10},
-            {"id": "canOnlySubmitEvery60minutes", "points": 10, "gradeRateMinutes": 60},
-            {"id": "canSubmitAnytime", "points": 10, "gradeRateMinutes": 0}
-        ]
+      "gradeRateMinutes": 30,
+      "questions": [
+        { "id": "canOnlySubmitEvery30minutes", "points": 10 },
+        { "id": "canOnlySubmitEvery60minutes", "points": 10, "gradeRateMinutes": 60 },
+        { "id": "canSubmitAnytime", "points": 10, "gradeRateMinutes": 0 }
+      ]
     }
-],
+  ]
+}
 ```
 
 ## Honor code
