@@ -31,7 +31,7 @@ exampleCourse
 1. course specification (see below)
 2. See the [questions documentation](question.md) for more information.
 3. See the [course instance documentation](courseInstance.md) for more information.
-4. See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourse` directory.
+4. See the [`clientFiles` and `serverFiles` documentation](clientServerFiles.md) for information.
 5. See [clientFiles and serverFiles](clientServerFiles.md) for information on the `serverFilesCourse` directory.
 
 - See an [example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse) in PrairieLearn
