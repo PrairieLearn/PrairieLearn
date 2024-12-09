@@ -26,8 +26,8 @@ theme:
     - content.action.edit
     - content.code.copy
     - content.tooltips
+    # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/#adding-annotations
     - content.code.annotate
-    # - toc.integrate
 plugins:
   - search
 docs_dir: docs
@@ -40,7 +40,6 @@ markdown_extensions:
   # https://pypi.org/project/mdx-truly-sane-lists/
   - mdx_truly_sane_lists
 
-  # Embed external content
   - pymdownx.snippets
 
   # allows indented code blocks inside lists
@@ -48,21 +47,26 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_code_format
+          format:
+            !!python/name:pymdownx.superfences.fence_code_format # https://facelessuser.github.io/pymdown-extensions/extensions/details/#details
 
+
+  - tables
+  # https://facelessuser.github.io/pymdown-extensions/extensions/snippets/#snippets
   - pymdownx.details
 
   - toc:
       permalink: true
+  # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=pymdownx+blocks+caption#caption
   - pymdownx.blocks.caption
-  - tables
+  # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown/?h=attribute+list#attribute-lists
   - attr_list
-  # Allows tabbed content (e.g. for showing the effect of alternative config options)
+  # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=tabbed#tabbed
   - pymdownx.tabbed:
       alternate_style: true
-  # Allows note/warning boxes
+  # https://squidfunk.github.io/mkdocs-material/reference/admonitions/
   - admonition
-  # Allows shortcodes for emojis
+  # https://squidfunk.github.io/mkdocs-material/reference/icons-emojis
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg

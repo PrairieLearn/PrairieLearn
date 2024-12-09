@@ -76,10 +76,6 @@ When running the image, you may get an error like `pg_ctl: could not start serve
 
 If Docker's Rosetta option isn't enabled, first check Apple's instructions to [install Rosetta](https://support.apple.com/en-us/102527).
 
-!!! warning
-
-    The use of R in `server.py` is not currently supported on ARM64 hardware.
-
 ### Support for external graders and workspaces
 
 In production, PrairieLearn runs external grading jobs and workspaces on a distributed system that uses a variety of AWS services to efficiently run many jobs in parallel. When developing questions locally, you won't have access to this infrastructure, but PrairieLearn allows you to still run external grading jobs and workspaces locally with a few workarounds.
