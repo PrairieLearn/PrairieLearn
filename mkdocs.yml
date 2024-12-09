@@ -59,17 +59,20 @@ markdown_extensions:
   # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=tabbed#tabbed
   - pymdownx.tabbed:
       alternate_style: true
+  - pymdownx.tasklist:
+      custom_checkbox: true
   # https://squidfunk.github.io/mkdocs-material/reference/admonitions/
   - admonition
   # https://squidfunk.github.io/mkdocs-material/reference/icons-emojis
   - pymdownx.emoji:
       emoji_index: !!python/name:material.extensions.emoji.twemoji
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
+  - md_in_html
+
 extra_javascript:
   - assets/mathjax-config.js
   - assets/d2-zoom.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
-
 extra_css:
   - assets/extra.css
 
@@ -81,7 +84,7 @@ extra:
       link: https://prairielearn.slack.com
 
 nav:
-  - Main: 'index.md'
+  - Overview: 'index.md'
   - Getting Started:
       - 'Requesting your course space': 'requestCourse.md'
       - 'Creating content in the browser': 'getStarted.md'

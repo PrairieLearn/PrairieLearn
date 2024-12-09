@@ -11,3 +11,18 @@ code {
 td code {
   white-space: nowrap;
 }
+
+.grid.wide-grid {
+  grid-template-columns: repeat(auto-fit,minmax(min(100%,8rem),1fr));
+}
+
+.wide-grid ul li {
+  aspect-ratio: 1;
+}
+
+.wide-grid ul li img {
+  display: block;
+  object-fit: scale-down;
+  width: 100%;
+  height: 100%;
+}

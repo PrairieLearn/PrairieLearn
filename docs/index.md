@@ -6,7 +6,27 @@ PrairieLearn is an online problem-driven learning system for creating homeworks 
 
 Paid hosting and support: [https://www.prairielearn.com/](https://www.prairielearn.com/)
 
+## Why PrairieLearn?
+
+- [x] **Homework and Exam Support** - Compose your questions into homework sets and exams. [Learn more](./assessment/)
+- [x] **Randomized, custom questions** - Questions variants can be generated and autograded using a Python script, with easily customizable partial credit rules. [Learn more](./question/#options-for-grading-student-answers)
+- [x] **Custom HTML-based questions** - Create questions using arbitrary HTML, CSS, and JavaScript. [Learn more](question/#question-questionhtml)
+- [x] **Rich standard library of question elements** - Include graphs, symbolic algebra, common question types, and more. [Learn more](./elements.md)
+- [x] **Flexible access controls** - Granular control over who can access course content, student submissions, etc. [Learn more](./accessControl.md)
+- [x] **Support for code autograding** - Run student code in a sandbox, with support for C, C++, Java, Python, etc. [Learn more](./externalGrading.md)
+
 ## Getting started
 
 - [Request a course](requestCourse.md)
 - [Create content](getStarted.md)
+
+## Who is using PrairieLearn?
+
+<div class="grid wide-grid cards" markdown>
+- ![](img/university-of-illinois-urbana-champaign.png)
+- ![](img/university-of-british-columbia.png)
+- ![](img/university-of-michigan.png)
+- ![](img/university-of-california-berkeley.png)
+- ![](img/university-of-california-san-diego.png)
+- And more!
+</div>
