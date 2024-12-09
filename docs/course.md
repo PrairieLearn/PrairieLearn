@@ -8,7 +8,7 @@ A course is specified by a single directory, with the following structure:
 
 ```bash
 exampleCourse
-+-- infoCourse.json     # (1)!
++-- infoCourse.json     # Course configuration (see below)
 +-- questions           # (2)!
 |   `-- ...
 |   `-- ...
@@ -28,7 +28,6 @@ exampleCourse
     `-- secret1.js
 ```
 
-1. course specification (see below)
 2. See the [questions documentation](question.md) for more information.
 3. See the [course instance documentation](courseInstance.md) for more information.
 4. See the [`clientFiles` and `serverFiles` documentation](clientServerFiles.md) for information.
@@ -51,7 +50,7 @@ This file specifies basic information about the course:
   "title": "Introductory Dynamics",
   "comment": "The assessment set order used here will be the one shown within PrairieLearn",
   "options": {
-    "useNewQuestionRenderer": true // (1)!
+    "useNewQuestionRenderer": true
   },
   "assessmentSets": [
     {
@@ -113,8 +112,6 @@ This file specifies basic information about the course:
   ]
 }
 ```
-
-1. Feature flag to enable the new question renderer
 
 ??? example "Example `infoCourse.json`"
 
