@@ -15,10 +15,12 @@ Paid hosting and support: [https://www.prairielearn.com/](https://www.prairielea
 - [x] **Flexible access controls** - Granular control over who can access course content, student submissions, etc. [Learn more](./accessControl.md)
 - [x] **Support for code autograding** - Run student code in a sandbox, with support for C, C++, Java, Python, etc. [Learn more](./externalGrading.md)
 
+You can view a comprehensive list of features on the [PrairieLearn homepage](https://www.prairielearn.com/).
+
 ## Getting started
 
-- [Request a course](requestCourse.md)
-- [Create content](getStarted.md)
+- [Request a course space](requestCourse.md)
+- [Quick start](getStarted.md)
 
 ## Who is using PrairieLearn?
 
