@@ -336,7 +336,7 @@ When calculating a student's grade for a group assessment, PrairieLearn will alw
 
 !!! info
 
-    Students cannot see each other's edits in real-time, although this is planned for a future version of PrairieLearn.
+    Students cannot see each other's edits in real-time.
 
 ![Student view of assessment with groupwork enabled](groupwork_student_perspective_assessment.png)
 
