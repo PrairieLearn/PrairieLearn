@@ -40,15 +40,14 @@ This file specifies basic information about the course instance:
 {
   "uuid": "62fbe2a4-8c22-471a-98fe-19e5d5da1bbe",
   "longName": "Spring 2015",
-  "allowAccess": []
+  "allowAccess": [
+    {
+      "startDate": "2015-01-19T00:00:01",
+      "endDate": "2015-05-13T23:59:59"
+    }
+  ]
 }
 ```
-
-??? example "Example `infoCourseInstance.json`"
-
-    ```json title="infoCourseInstance.json"
-    --8<-- "exampleCourse/courseInstances/SectionA/infoCourseInstance.json"
-    ```
 
 ??? example "Format specification for `infoCourseInstance.json`"
 
