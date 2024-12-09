@@ -77,7 +77,7 @@ def render(element_html, data):
 
 The extension could then access `STATIC_VARIABLE` by importing the host script:
 
-```python hl_lines="3 3"
+```python hl_lines="3"
 import prairielearn as pl
 
 host_element = pl.load_host_script("pl-host-element.py")
