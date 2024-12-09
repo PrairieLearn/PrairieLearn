@@ -1,0 +1,105 @@
+direction: right
+
+course: PrairieLearn 101 {
+    shape: rectangle
+    style: {
+        fill: "#e6f3ff"
+        stroke: "#0066cc"
+    }
+
+    instance: Fall 2024 {
+        shape: rectangle
+        style: {
+            fill: "#fff0e6"
+            stroke: "#cc6600"
+        }
+
+
+        exam: Exams {
+            shape: rectangle
+            assessment: Midterm {
+                shape: rectangle
+                style: {
+                    fill: "#e6ffe6"
+                    stroke: "#006600"
+                }
+            }
+        }
+        hw: Homeworks {
+            shape: rectangle
+            assessment: HW 1 {
+                shape: rectangle
+                style: {
+                    fill: "#e6ffe6"
+                    stroke: "#006600"
+                }
+            }
+        }
+    }
+
+    question1: PL Question 1 {
+        shape: rectangle
+        style: {
+            fill: "#ffe6e6"
+            stroke: "#cc0000"
+        }
+        element: Numeric Input {
+            shape: rectangle
+            style: {
+                fill: "#e6e6ff"
+                stroke: "#0000cc"
+            }
+        }
+    }
+
+    question2: PL Question 2 {
+        shape: rectangle
+        style: {
+            fill: "#ffe6e6"
+            stroke: "#cc0000"
+        }
+        element: Multiple Choice {
+            shape: rectangle
+            style: {
+                fill: "#e6e6ff"
+                stroke: "#0000cc"
+            }
+        }
+        element: Numeric Input {
+            shape: rectangle
+            style: {
+                fill: "#e6e6ff"
+                stroke: "#0000cc"
+            }
+        }
+    }
+
+    question4: PL Question 4 {
+        shape: rectangle
+        style: {
+            fill: "#ffe6e6"
+            stroke: "#cc0000"
+        }
+        element: PL Diagram {
+            shape: rectangle
+            style: {
+                fill: "#e6e6ff"
+                stroke: "#0000cc"
+            }
+        }
+    }
+
+    custom: PL Diagram {
+        shape: rectangle
+        style: {
+            fill: "#e6e6ff"
+            stroke: "#0000cc"
+        }
+    }
+
+    instance.exam.assessment -> question1
+    instance.exam.assessment -> question2
+    instance.hw.assessment -> question1
+    instance.hw.assessment -> question4
+    question4.element -> custom: "uses"
+}
