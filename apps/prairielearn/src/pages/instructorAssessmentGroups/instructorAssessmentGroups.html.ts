@@ -420,7 +420,9 @@ function RandomAssessmentGroupsModal({
       <div class="form-group">
         <label for="formMin">Min number of members in a group</label>
         <input
-          type="text"
+          type="number"
+          required
+          min="1"
           value="${groupMin}"
           class="form-control"
           id="formMin"
@@ -430,7 +432,9 @@ function RandomAssessmentGroupsModal({
       <div class="form-group">
         <label for="formMax">Max number of members in a group</label>
         <input
-          type="text"
+          type="number"
+          required
+          min="1"
           value="${groupMax}"
           class="form-control"
           id="formMax"
