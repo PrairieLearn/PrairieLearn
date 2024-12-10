@@ -7,6 +7,7 @@ import debugfn from 'debug';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
@@ -14,6 +15,7 @@ import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
 import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { escapeRegExp } from '@prairielearn/sanitize';
 
 import {
@@ -917,33 +919,71 @@ export class CourseInstanceAddEditor extends Editor {
 export class QuestionAddEditor extends Editor {
   public readonly uuid: string;
 
-  files?: Record<string, string>;
+  private qid?: string;
+  private title?: string;
+  private files?: Record<string, string>;
+  private isDraft?: boolean;
 
-  constructor(params: BaseEditorOptions & { files?: Record<string, string> }) {
+  constructor(
+    params: BaseEditorOptions & {
+      qid?: string;
+      title?: string;
+      files?: Record<string, string>;
+      isDraft?: boolean;
+    },
+  ) {
     super(params);
 
     this.description = 'Add question';
 
     this.uuid = uuidv4();
+    this.qid = params.qid;
+    this.title = params.title;
     this.files = params.files;
+    this.isDraft = params.isDraft;
   }
 
   async write() {
     debug('QuestionAddEditor: write()');
     const questionsPath = path.join(this.course.path, 'questions');
 
-    debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-      course_id: this.course.id,
+    const { qid, title } = await run(async () => {
+      if (this.qid && this.title) {
+        return { qid: this.qid, title: this.title };
+      } else if (this.isDraft) {
+        let draftNumber = await sqldb.queryRow(
+          sql.update_draft_number,
+          { course_id: this.course.id },
+          z.number(),
+        );
+
+        while (fs.existsSync(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))) {
+          //increment and sync to postgres
+          draftNumber = await sqldb.queryRow(
+            sql.update_draft_number,
+            { course_id: this.course.id },
+            z.number(),
+          );
+        }
+
+        return { qid: `__drafts__/draft_${draftNumber}`, title: `draft #${draftNumber}` };
+      }
+
+      debug('Get all existing long names');
+      const result = await sqldb.queryAsync(sql.select_questions_with_course, {
+        course_id: this.course.id,
+      });
+      const oldNamesLong = _.map(result.rows, 'title');
+
+      debug('Get all existing short names');
+      const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
+
+      debug('Generate qid and title');
+      const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
+
+      return { qid: names.shortName, title: names.longName };
     });
-    const oldNamesLong = _.map(result.rows, 'title');
 
-    debug('Get all existing short names');
-    const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
-
-    debug('Generate qid and title');
-    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
-    const qid = names.shortName;
     const questionPath = path.join(questionsPath, qid);
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
@@ -989,7 +1029,7 @@ export class QuestionAddEditor extends Editor {
     const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
 
     debug('Write info.json with new title and uuid');
-    infoJson.title = names.longName;
+    infoJson.title = title;
     infoJson.uuid = this.uuid;
     // The template question contains tags that shouldn't be copied to the new question.
     delete infoJson.tags;
@@ -998,6 +1038,53 @@ export class QuestionAddEditor extends Editor {
     return {
       pathsToAdd: [questionPath],
       commitMessage: `add question ${qid}`,
+    };
+  }
+}
+
+export class QuestionModifyEditor extends Editor {
+  private question: Question;
+  private origHash: string;
+  private files: Record<string, string>;
+
+  constructor(
+    params: BaseEditorOptions & {
+      files: Record<string, string>;
+    },
+  ) {
+    super(params);
+
+    this.question = params.locals.question;
+    this.files = params.files;
+    this.description = `Modify question ${this.question.qid}`;
+  }
+
+  async write() {
+    assert(this.question.qid, 'question.qid is required');
+
+    const questionPath = path.join(this.course.path, 'questions', this.question.qid);
+
+    // Validate that all file paths don't escape the question directory.
+    for (const filePath of Object.keys(this.files)) {
+      if (!contains(questionPath, filePath)) {
+        throw new Error(`Invalid file path: ${filePath}`);
+      }
+    }
+
+    // Note that we deliberately only modify files that were provided. We don't
+    // try to delete "excess" files that aren't in the `files` object because the
+    // user might have added extra files of their own, e.g. in the `tests` or
+    // `clientFilesQuestion` directory. We don't want to remove them, and we also
+    // don't want to mandate that the caller must always read all existing files
+    // and provide them in the `files` object.
+    for (const [filePath, contents] of Object.entries(this.files)) {
+      const resolvedPath = path.join(questionPath, filePath);
+      await fs.writeFile(resolvedPath, b64Util.b64DecodeUnicode(contents));
+    }
+
+    return {
+      pathsToAdd: [questionPath],
+      commitMessage: this.description,
     };
   }
 }
@@ -1045,6 +1132,7 @@ export class QuestionRenameEditor extends Editor {
     assert(this.question.qid, 'question.qid is required');
 
     debug('QuestionRenameEditor: write()');
+
     const questionsPath = path.join(this.course.path, 'questions');
     const oldPath = path.join(questionsPath, this.question.qid);
     const newPath = path.join(questionsPath, this.qid_new);
@@ -1167,6 +1255,7 @@ export class QuestionCopyEditor extends Editor {
     delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
+
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1178,7 +1267,7 @@ export class QuestionCopyEditor extends Editor {
 
 export class QuestionTransferEditor extends Editor {
   private from_qid: string;
-  private from_course_short_name: string;
+  private from_course: string;
   private from_path: string;
 
   public readonly uuid: string;
@@ -1186,16 +1275,19 @@ export class QuestionTransferEditor extends Editor {
   constructor(
     params: BaseEditorOptions & {
       from_qid: string;
-      from_course_short_name: string;
+      from_course_short_name: Course['short_name'];
       from_path: string;
     },
   ) {
     super(params);
 
     this.from_qid = params.from_qid;
-    this.from_course_short_name = params.from_course_short_name;
+    this.from_course =
+      params.from_course_short_name == null
+        ? 'unknown course'
+        : `course ${params.from_course_short_name}`;
     this.from_path = params.from_path;
-    this.description = `Copy question ${this.from_qid} from course ${this.from_course_short_name}`;
+    this.description = `Copy question ${this.from_qid} from ${this.from_course}`;
 
     this.uuid = uuidv4();
   }
@@ -1250,11 +1342,12 @@ export class QuestionTransferEditor extends Editor {
     delete infoJson['sharePublicly'];
     delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
+
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `copy question ${this.from_qid} (from course ${this.from_course_short_name}) to ${qid}`,
+      commitMessage: `copy question ${this.from_qid} (from ${this.from_course}) to ${qid}`,
     };
   }
 }

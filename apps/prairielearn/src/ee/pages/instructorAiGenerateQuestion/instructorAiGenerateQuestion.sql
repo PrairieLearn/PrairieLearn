@@ -1,9 +1,12 @@
--- BLOCK select_added_question
+-- BLOCK select_ai_question_generation_prompts
 SELECT
-  *
+  ai_question_generation_prompts.*
 FROM
-  questions AS q
+  ai_question_generation_prompts
+  JOIN questions ON ai_question_generation_prompts.question_id = questions.id
 WHERE
-  q.uuid = $uuid
-  AND q.course_id = $course_id
-  AND q.deleted_at IS NULL;
+  questions.qid = $qid
+  AND questions.course_id = $course_id
+  AND questions.deleted_at IS NULL
+ORDER BY
+  ai_question_generation_prompts.id;

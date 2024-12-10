@@ -118,7 +118,7 @@ export async function uploadInstanceGroups(
 }
 
 /**
- * Auto generate group settings from input
+ * Randomly assign students to groups.
  *
  * @param assessment_id - The assessment to update.
  * @param user_id - The current user performing the update.
@@ -127,7 +127,7 @@ export async function uploadInstanceGroups(
  * @param min_group_size - min size of the group
  * @returns The job sequence ID.
  */
-export async function autoGroups(
+export async function randomGroups(
   assessment_id: string,
   user_id: string,
   authn_user_id: string,
@@ -150,8 +150,8 @@ export async function autoGroups(
     assessmentId: assessment_id,
     userId: user_id,
     authnUserId: authn_user_id,
-    type: 'auto_generate_groups',
-    description: `Auto generate group settings for ${assessment_label}`,
+    type: 'random_generate_groups',
+    description: `Randomly generate groups for ${assessment_label}`,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -167,7 +167,7 @@ export async function autoGroups(
       },
       async () => {
         job.verbose(`Acquired lock ${lockName}`);
-        job.verbose('Auto generate group settings for ' + assessment_label);
+        job.verbose('Randomly generate groups for ' + assessment_label);
         job.verbose('----------------------------------------');
         job.verbose('Fetching the enrollment lists...');
         const studentsToGroup = await queryRows(
@@ -181,7 +181,7 @@ export async function autoGroups(
           `There are ${numStudents} students enrolled in ${assessment_label} without a group`,
         );
         job.verbose('----------------------------------------');
-        job.verbose(`Creating groups with a max size of ${max_group_size}`);
+        job.verbose(`Creating groups with a size between ${min_group_size} and ${max_group_size}`);
 
         let groupsCreated = 0,
           studentsGrouped = 0;
@@ -192,10 +192,33 @@ export async function autoGroups(
             { assessment_id },
             z.number(),
           );
+
           // Create groups using the groups of maximum size where possible
-          for (let i = unusedGroupNameSuffix ?? 1; studentsToGroup.length > 0; i++) {
+          const userGroups = _.chunk(
+            studentsToGroup.map((user) => user.uid),
+            max_group_size,
+          );
+          // If the last group is too small, move students from larger groups to the last group
+          const smallGroup = userGroups.at(-1);
+          while (smallGroup && smallGroup.length < min_group_size) {
+            // Take one student from each large group and add them to the small group
+            const usersToMove = userGroups
+              .filter((group) => group.length > min_group_size)
+              .slice(smallGroup.length - min_group_size) // This will be negative (get the last n groups)
+              .map((group) => group.pop() as string);
+            if (usersToMove.length === 0) {
+              job.warn(
+                `Could not create groups with the desired sizes. One group will have a size of ${smallGroup.length}`,
+              );
+              break;
+            }
+            smallGroup.push(...usersToMove);
+          }
+
+          let i = unusedGroupNameSuffix ?? 1;
+          for (const users of userGroups) {
             const groupName = `group${i}`;
-            const users = studentsToGroup.splice(0, max_group_size).map((user) => user.uid);
+            i++;
             await createGroup(groupName, assessment_id, users, authn_user_id).then(
               () => {
                 groupsCreated++;
