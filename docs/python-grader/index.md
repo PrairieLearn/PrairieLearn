@@ -213,13 +213,7 @@ Now, any time the student tries to use the functions, their code will raise an e
 
 ## Overview
 
-```mermaid
-flowchart LR
-    setup[setup_code.py] --> |names_for_user| student[Student Answer]
-    setup --> |All Variables| reference["Reference Answer<br>(ans.py)"]
-    student --> |"names_from_user<br>(self.st)"| test["Test Cases<br>(test.py)"]
-    reference --> |"All Variables<br>(self.ref)"| test
-```
+![Grader Flow](grader-structure.png)
 
 ## Course-specific libraries
 

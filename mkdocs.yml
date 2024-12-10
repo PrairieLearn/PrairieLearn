@@ -44,12 +44,6 @@ markdown_extensions:
 
   # allows indented code blocks inside lists
   - pymdownx.superfences:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format:
-            !!python/name:pymdownx.superfences.fence_code_format # https://facelessuser.github.io/pymdown-extensions/extensions/details/#details
-
 
   - tables
   # https://facelessuser.github.io/pymdown-extensions/extensions/snippets/#snippets
