@@ -43,7 +43,7 @@ markdown_extensions:
   - pymdownx.snippets
 
   # allows indented code blocks inside lists
-  - pymdownx.superfences:
+  - pymdownx.superfences
 
   - tables
   # https://facelessuser.github.io/pymdown-extensions/extensions/snippets/#snippets
