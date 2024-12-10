@@ -19,8 +19,8 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
-    "@sentry/node": "^8.36.0",
-    "@sentry/utils": "^8.36.0",
+    "@sentry/node": "^8.43.0",
+    "@sentry/utils": "^8.43.0",
     "execa": "^9.5.1"
   }
 }
