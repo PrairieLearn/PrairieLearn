@@ -2,9 +2,12 @@ import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
 
+import { HttpStatusError } from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import { logger } from '@prairielearn/logger';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
+import { canDeleteAssessmentInstance, deleteAssessmentInstance } from '../lib/assessment.js';
 import { config } from '../lib/config.js';
 import { setCookie } from '../lib/cookie.js';
 
@@ -20,6 +23,28 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
+  // This POST request is handled in the middleware instead of in the individual
+  // pages because it may be received from the page served directly by the
+  // middleware. Since the other pages where this action is possible are served
+  // by the middleware as well, they are not needed there.
+  if (req.method === 'POST' && req.body.__action === 'regenerate_instance') {
+    if (!canDeleteAssessmentInstance(res.locals)) {
+      throw new HttpStatusError(
+        403,
+        'You do not have permission to delete this assessment instance.',
+      );
+    }
+    await deleteAssessmentInstance(
+      res.locals.assessment.id,
+      res.locals.assessment_instance.id,
+      res.locals.authn_user.user_id,
+    );
+
+    flash('success', 'Your previous assessment instance was deleted.');
+    res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
+    return;
+  }
+
   if (
     !_.get(res.locals, 'authz_result.show_closed_assessment', true) &&
     (!_.get(res.locals, 'assessment_instance.open', true) ||
@@ -31,6 +56,7 @@ export default asyncHandler(async (req, res, next) => {
         resLocals: res.locals,
         showClosedScore: res.locals.authz_result?.show_closed_assessment_score ?? true,
         showTimeLimitExpiredModal: req.query.timeLimitExpired === 'true',
+        userCanDeleteAssessmentInstance: canDeleteAssessmentInstance(res.locals),
       }),
     );
     return;
