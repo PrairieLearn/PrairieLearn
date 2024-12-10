@@ -97,7 +97,9 @@ describe('Course syncing', () => {
       const syncedCourse = syncedCourses[0];
       assert.match(
         syncedCourse?.sync_warnings,
-        new RegExp(`Feature "${sampleFeature2}" is not enabled for this course.`),
+        new RegExp(
+          `Feature "${sampleFeature2}" is enabled in devModeFeatures, but is actually disabled.`,
+        ),
       );
       assert.notMatch(syncedCourse?.sync_warnings, new RegExp(sampleFeature1));
       assert.isNotOk(syncedCourse?.sync_errors);
