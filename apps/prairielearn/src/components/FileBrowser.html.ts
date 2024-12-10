@@ -9,6 +9,7 @@ import { isBinaryFile } from 'isbinaryfile';
 
 import { escapeHtml, html, type HtmlValue, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
+import { run } from '@prairielearn/run';
 
 import { compiledScriptTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { config } from '../lib/config.js';
@@ -316,6 +317,14 @@ export function FileBrowser({
             ? `Files (${resLocals.question.qid})`
             : 'Files';
 
+  const breadcrumbPaths = run(() => {
+    // We only include the root path if it's viewable on the current page.
+    // Otherwise we hide it to keep the breadcrumb more concise.
+    if (paths.branch[0].canView) return paths.branch;
+
+    return paths.branch.slice(1);
+  });
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -339,7 +348,7 @@ export function FileBrowser({
               <div class="row align-items-center justify-content-between">
                 <div class="col-auto text-monospace d-flex">
                   ${joinHtml(
-                    paths.branch.map(
+                    breadcrumbPaths.map(
                       (dir) => html`
                         ${dir.canView
                           ? html`
