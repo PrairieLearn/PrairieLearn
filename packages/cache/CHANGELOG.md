@@ -1,5 +1,14 @@
 # @prairielearn/cache
 
+## 2.0.9
+
+### Patch Changes
+
+- 315d931: Upgrade all JavaScript dependencies
+- Updated dependencies [315d931]
+  - @prairielearn/logger@2.0.7
+  - @prairielearn/sentry@2.0.9
+
 ## 2.0.8
 
 ### Patch Changes
