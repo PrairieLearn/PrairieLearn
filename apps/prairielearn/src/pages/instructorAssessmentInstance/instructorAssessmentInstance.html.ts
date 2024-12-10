@@ -1,3 +1,4 @@
+import Bowser from 'bowser';
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
@@ -11,7 +12,12 @@ import { Scorebar } from '../../components/Scorebar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentQuestionSchema, IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
+import {
+  AssessmentQuestionSchema,
+  type ClientFingerprint,
+  IdSchema,
+  InstanceQuestionSchema,
+} from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
@@ -591,20 +597,11 @@ export function InstructorAssessmentInstance({
                                   data-html="true"
                                   data-placement="auto"
                                   title="Fingerprint ${row.client_fingerprint_number}"
-                                  data-content="${escapeHtml(html`
-                                    <div>
-                                      IP Address:
-                                      <a
-                                        href="https://client.rdap.org/?type=ip&object=${row
-                                          .client_fingerprint.ip_address}"
-                                        target="_blank"
-                                      >
-                                        ${row.client_fingerprint.ip_address}
-                                      </a>
-                                    </div>
-                                    <div>Session ID: ${row.client_fingerprint.user_session_id}</div>
-                                    <div>User Agent: ${row.client_fingerprint.user_agent}</div>
-                                  `)}"
+                                  data-content="${escapeHtml(
+                                    ClientFingerprintContent({
+                                      clientFingerprint: row.client_fingerprint,
+                                    }),
+                                  )}"
                                 >
                                   ${row.client_fingerprint_number}
                                 </button>
@@ -686,6 +683,33 @@ export function InstructorAssessmentInstance({
       </body>
     </html>
   `.toString();
+}
+
+function ClientFingerprintContent({ clientFingerprint }: { clientFingerprint: ClientFingerprint }) {
+  const parsedAgent = clientFingerprint.user_agent
+    ? Bowser.getParser(clientFingerprint.user_agent).getResult()
+    : null;
+  return html`
+    <div>
+      IP Address:
+      <a
+        href="https://client.rdap.org/?type=ip&object=${clientFingerprint.ip_address}"
+        target="_blank"
+      >
+        ${clientFingerprint.ip_address}
+      </a>
+    </div>
+    <div>Session ID: ${clientFingerprint.user_session_id}</div>
+    <div>User Agent:</div>
+    <ul>
+      <li>
+        Browser: ${parsedAgent?.browser.name ?? 'Unknown'} ${parsedAgent?.browser.version ?? ''}
+      </li>
+      <li>OS: ${parsedAgent?.os.name ?? 'Unknown'} ${parsedAgent?.os.version ?? ''}</li>
+      <li>Platform: ${parsedAgent?.platform.type ?? 'Unknown'}</li>
+      <li>Raw: <code>${clientFingerprint.user_agent}</code></li>
+    </ul>
+  `;
 }
 
 function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) {
