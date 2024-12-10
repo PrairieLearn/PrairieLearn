@@ -36,9 +36,12 @@ export async function selectAndAuthzInstanceQuestion(req, res) {
         );
       }
 
-      // Get the role permissions. If the authorized user has course instance
-      // permission, then role restrictions don't apply.
-      if (!res.locals.authz_data.has_course_instance_permission_view) {
+      // Get the role permissions. If the current user has course instance
+      // permission and is viewing in "Student view without access permissions",
+      // then role restrictions don't apply.
+      if (res.locals.authz_data.has_course_instance_permission_view) {
+        res.locals.group_role_permissions = { can_view: true, can_submit: true };
+      } else {
         res.locals.group_role_permissions = await getQuestionGroupPermissions(
           res.locals.instance_question.id,
           res.locals.assessment_instance.group_id,

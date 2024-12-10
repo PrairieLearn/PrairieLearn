@@ -53,6 +53,8 @@ router.get(
       authorizedEdit: false,
       // score panels are never rendered on the instructor question preview page.
       renderScorePanels: false,
+      // Group role permissions are not used in this context.
+      groupRolePermissions: null,
     });
     res.json(panels);
   }),
