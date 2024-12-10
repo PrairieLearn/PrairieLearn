@@ -277,7 +277,7 @@ Modules are optional and do not affect any behavior by default. The order in whi
 
 The above configuration can result in the following view for students:
 
-![Assessments grouped by module on the student assessments overview.](assessment-units.png)
+![Assessments grouped by module on the student assessments overview.](./img/assessment-units.png)
 
 Properties for assessmentModules are as follows.
 
@@ -452,7 +452,7 @@ Comments can be strings, arrays, or JSON objects, but for most uses strings are 
 
 The possible colors for assessment sets, topic, and tags are:
 
-![Colors](colors.png)
+--8<-- "docs/diagrams/colors.html"
 
 ## Course staff
 
