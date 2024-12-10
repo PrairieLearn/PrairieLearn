@@ -607,8 +607,7 @@ export async function renderPanelsForSubmission({
   questionContext: QuestionContext;
   authorizedEdit: boolean;
   renderScorePanels: boolean;
-  // groupRolePermissions is only used for student instance question pages
-  groupRolePermissions?: { can_view: boolean; can_submit: boolean } | null;
+  groupRolePermissions: { can_view: boolean; can_submit: boolean } | null;
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
