@@ -92,6 +92,8 @@ nav:
       - 'Concepts': 'concepts.md'
       - 'Quick start': 'getStarted.md'
       - 'Workshop': 'workshop/index.md'
+  - Student Guide:
+      - 'Accessibility': 'student-guide/accessibility.md'
   - Instructor Guide:
       - 'Installing and running locally': 'installing.md'
       - 'Editing and syncing course content': 'sync.md'
@@ -115,7 +117,6 @@ nav:
       - 'Manual grading': 'manualGrading/index.md'
       - 'Question sharing': 'questionSharing.md'
       - 'What to tell students': 'whatToTellStudents.md'
-      - 'Accessibility': 'accessibility.md'
       - 'FAQ': 'faq.md'
       - 'API': 'api.md'
       - 'LMS Integration': 'lmsIntegrationInstructor.md'
