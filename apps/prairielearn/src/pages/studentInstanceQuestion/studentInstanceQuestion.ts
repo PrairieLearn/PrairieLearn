@@ -2,15 +2,10 @@ import { Router, type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
-import {
-  gradeAssessmentInstance,
-  canDeleteAssessmentInstance,
-  deleteAssessmentInstance,
-} from '../../lib/assessment.js';
+import { gradeAssessmentInstance, canDeleteAssessmentInstance } from '../../lib/assessment.js';
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { uploadFile, deleteFile } from '../../lib/file-store.js';
