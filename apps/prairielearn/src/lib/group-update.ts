@@ -198,22 +198,25 @@ export async function randomGroups(
             studentsToGroup.map((user) => user.uid),
             max_group_size,
           );
-          // If there are groups that are too small, move students from larger groups to smaller groups
-          let smallGroup: string[] | undefined;
-          while ((smallGroup = userGroups.find((group) => group.length < min_group_size)) != null) {
-            // Choose a student from the largest group that has more than the minimum number of students
-            const user = userGroups
-              .filter((group) => group.length > min_group_size)
-              .reduce((a, b) => (a.length > b.length ? a : b), [])
-              ?.pop();
-            // If there are no more groups with extra students, warn the instructor and break
-            if (user == null) {
+          // If the last group is too small, move students from larger groups to the last group
+          const smallGroup = userGroups.at(-1);
+          while (smallGroup && smallGroup.length < min_group_size) {
+            // Select groups with the largest number of students
+            const maxLength = Math.max(...userGroups.map((group) => group.length));
+            const largeGroups = userGroups.filter(
+              (group) => group.length > min_group_size && group.length === maxLength,
+            );
+            // Take one student from each large group and add them to the small group
+            const usersToMove = largeGroups
+              .slice(smallGroup.length - min_group_size) // This will be negative (get the last n groups)
+              .map((group) => group.pop() as string);
+            if (usersToMove.length === 0) {
               job.warn(
                 `Could not create groups with the desired sizes. One group will have a size of ${smallGroup.length}`,
               );
               break;
             }
-            smallGroup.push(user);
+            smallGroup.push(...usersToMove);
           }
 
           let i = unusedGroupNameSuffix ?? 1;
