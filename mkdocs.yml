@@ -1,7 +1,35 @@
-site_name: PrairieLearn
-site_url: https://github.com/PrairieLearn/PrairieLearn
+site_name: PrairieLearn Docs
+site_url: https://prairielearn.readthedocs.io
 repo_url: https://github.com/PrairieLearn/PrairieLearn
-theme: readthedocs
+theme:
+  name: material
+  logo: assets/PL-logo.svg
+  favicon: assets/PL-logo-adaptive.svg
+  icon:
+    repo: fontawesome/brands/github
+    edit: material/pencil
+    admonition:
+      example: material/code-block-tags
+    annotation: material/plus-circle
+  palette:
+    scheme: default
+    primary: custom
+  features:
+    - navigation.sections
+    - navigation.expand
+    - navigation.path
+    - navigation.instant
+    - navigation.instant.prefetch
+    - navigation.instant.progress
+    - navigation.tracking
+    - search.suggest
+    - content.action.edit
+    - content.code.copy
+    - content.tooltips
+    # https://squidfunk.github.io/mkdocs-material/reference/code-blocks/#adding-annotations
+    - content.code.annotate
+plugins:
+  - search
 docs_dir: docs
 # Fix "Edit on GitHub" link: (defaults to edit/master/docs/, note the s)
 edit_uri: blob/master/docs/
@@ -12,21 +40,43 @@ markdown_extensions:
   # https://pypi.org/project/mdx-truly-sane-lists/
   - mdx_truly_sane_lists
 
+  - pymdownx.snippets
+
   # allows indented code blocks inside lists
   - pymdownx.superfences
 
+  - tables
+  # https://facelessuser.github.io/pymdown-extensions/extensions/snippets/#snippets
+  - pymdownx.details
+
   - toc:
       permalink: true
-
-  # Allows note/warning boxes
+  # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=pymdownx+blocks+caption#caption
+  - pymdownx.blocks.caption
+  # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown/?h=attribute+list#attribute-lists
+  - attr_list
+  # https://squidfunk.github.io/mkdocs-material/setup/extensions/python-markdown-extensions/?h=tabbed#tabbed
+  - pymdownx.tabbed:
+      alternate_style: true
+  # https://squidfunk.github.io/mkdocs-material/reference/admonitions/
   - admonition
-
+  # https://squidfunk.github.io/mkdocs-material/reference/icons-emojis
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg
 extra_javascript:
   - mathjax-config.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
 
 extra_css:
-  - extra.css
+  - stylesheets/extra.css
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/PrairieLearn/PrairieLearn
+    - icon: fontawesome/brands/slack
+      link: https://prairielearn.slack.com
 
 nav:
   - Main: 'index.md'

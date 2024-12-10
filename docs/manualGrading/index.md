@@ -11,11 +11,11 @@ For questions that require manual grading, the question can be set up for manual
 
 ```json
 {
-    "questions": [
-        {"id": "manualGradingOnly", "manualPoints": 2},
-        {"id": "combinedManualAndAutoGrading", "autoPoints": 2, "manualPoints": 6}
-    ]
-    ...
+  "questions": [
+    { "id": "manualGradingOnly", "manualPoints": 2 },
+    { "id": "combinedManualAndAutoGrading", "autoPoints": 2, "manualPoints": 6 }
+  ]
+  // ...
 }
 ```
 
@@ -25,9 +25,9 @@ It is recommended to also mark manually-graded questions as `"singleVariant": tr
 
 ```json
 {
-    "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
-    "singleVariant": true,
-    ...
+  "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
+  "singleVariant": true
+  // ...
 }
 ```
 
