@@ -130,7 +130,7 @@ export function InstructorCourseAdminInstances({
                       "Fall 2024, Section M".
                     </p>
                     <p class="text-center">
-                      To create one, click <code>Add course instance</code>.
+                      To create one, click <strong>Add course instance</strong>.
                     </p>
                     <p class="text-center">
                       Learn more in the
