@@ -368,7 +368,7 @@ export async function initExpress() {
       // response before replying with an error 500
       if (res && !res.headersSent) {
         res
-          .status?.(/** @type {any} */ (err).status ?? 500)
+          .status?.(/** @type {any} */(err).status ?? 500)
           ?.send?.('Error proxying workspace request');
       }
     },
@@ -1534,7 +1534,12 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/assessments',
     (await import('./pages/studentAssessments/studentAssessments.js')).default,
   );
-  // Client files for assessments
+
+  // Client files for assessments - These routes must come before the 
+  // assessment route (.../assessment/:assessment_id) to avoid hitting the 
+  // middleware on that route first. The middleware on that route will redirect
+  // to the student assessment instance if an instance exists and will prevent
+  // reaching the client file route.
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourse',
     [
