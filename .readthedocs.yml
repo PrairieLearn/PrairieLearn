@@ -7,7 +7,7 @@ build:
   jobs:
     pre_build:
       - curl -fsSL https://d2lang.com/install.sh | sh -s --
-      - cp $HOME/.local/bin/d2 $READTHEDOCS_OUTPUT/bin/d2
+      - cp $HOME/.local/bin/d2 $READTHEDOCS_VIRTUALENV_PATH/bin/d2
 
 mkdocs:
   configuration: mkdocs.yml

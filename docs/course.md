@@ -278,9 +278,6 @@ Modules are optional and do not affect any behavior by default. The order in whi
 The above configuration can result in the following view for students:
 
 ![Assessments grouped by module on the student assessments overview.](./img/assessment-units.png)
-/// caption
-Assessments grouped by module on the student assessments overview.
-///
 
 Properties for assessmentModules are as follows.
 
@@ -317,6 +314,7 @@ For example, topics could be listed like:
       "description": "Calculating the center of mass for irregular bodies and systems."
     }
   ]
+}
 ```
 
 ## Tags
@@ -410,6 +408,7 @@ You can add sharing sets to your course by listing them in the `infoCourse.json`
       "description": "Questions that can be used on a final exam"
     }
   ]
+}
 ```
 
 At this time, sharing sets cannot be renamed or removed from `infoCourse.json` once they have been added, because deleting a sharing set shared to another course could break assessments in that course.
@@ -421,6 +420,7 @@ The default timezone for courses is `America/Chicago` (U.S. Central Time). This 
 ```json title="infoCourse.json"
 {
   "timezone": "America/New_York"
+}
 ```
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
