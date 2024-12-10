@@ -118,10 +118,15 @@ router.post(
       questionInfo.title = req.body.title;
       questionInfo.topic = req.body.topic;
       // If only a single tag is provided, it will be a string. If multiple tags are provided, it will be an array.
-      if (Array.isArray(req.body.tags)) {
-        questionInfo.tags = req.body.tags;
+      if (req.body.tags) {
+        if (Array.isArray(req.body.tags)) {
+          questionInfo.tags = req.body.tags;
+        } else {
+          questionInfo.tags = [req.body.tags];
+        }
       } else {
-        questionInfo.tags = [req.body.tags];
+        // If no tags are provided, we remove this propoerty from questionInfo.
+        delete questionInfo.tags;
       }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
