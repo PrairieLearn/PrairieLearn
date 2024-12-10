@@ -2,6 +2,7 @@ import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { logger } from '@prairielearn/logger';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
@@ -22,12 +23,17 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  if (
-    req.method === 'POST' &&
-    req.body.__action === 'regenerate_instance' &&
-    // Only handle regenerating POST requests if the user can delete the assessment instance
-    canDeleteAssessmentInstance(res.locals)
-  ) {
+  // This POST request is handled in the middleware instead of in the individual
+  // pages because it may be received from the page served directly by the
+  // middleware. Since the other pages where this action is possible are served
+  // by the middleware as well, they are not needed there.
+  if (req.method === 'POST' && req.body.__action === 'regenerate_instance') {
+    if (!canDeleteAssessmentInstance(res.locals)) {
+      throw new HttpStatusError(
+        403,
+        'You do not have permission to delete this assessment instance.',
+      );
+    }
     await deleteAssessmentInstance(
       res.locals.assessment.id,
       res.locals.assessment_instance.id,
