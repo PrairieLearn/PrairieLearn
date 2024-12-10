@@ -277,7 +277,7 @@ Modules are optional and do not affect any behavior by default. The order in whi
 
 The above configuration can result in the following view for students:
 
-![Assessments grouped by module on the student assessments overview.](assessment-units.png)
+![Assessments grouped by module on the student assessments overview.](./img/assessment-units.png)
 /// caption
 Assessments grouped by module on the student assessments overview.
 ///
