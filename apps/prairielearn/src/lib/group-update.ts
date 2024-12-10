@@ -201,13 +201,9 @@ export async function randomGroups(
           // If the last group is too small, move students from larger groups to the last group
           const smallGroup = userGroups.at(-1);
           while (smallGroup && smallGroup.length < min_group_size) {
-            // Select groups with the largest number of students
-            const maxLength = Math.max(...userGroups.map((group) => group.length));
-            const largeGroups = userGroups.filter(
-              (group) => group.length > min_group_size && group.length === maxLength,
-            );
             // Take one student from each large group and add them to the small group
-            const usersToMove = largeGroups
+            const usersToMove = userGroups
+              .filter((group) => group.length > min_group_size)
               .slice(smallGroup.length - min_group_size) // This will be negative (get the last n groups)
               .map((group) => group.pop() as string);
             if (usersToMove.length === 0) {
