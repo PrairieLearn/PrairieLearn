@@ -121,6 +121,28 @@ export function InstructorCourseAdminInstances({
                 </tbody>
               </table>
             </div>
+            ${courseInstances.length === 0
+              ? html`
+                  <div class="my-4">
+                    <p class="text-center font-weight-bold">No course instances found.</p>
+                    <p class="text-center mb-0">
+                      A course instance is a single offering of a course, such as "Fall 2024" or
+                      "Fall 2024, Section M".
+                    </p>
+                    <p class="text-center">
+                      To create one, click <code>Add course instance</code>.
+                    </p>
+                    <p class="text-center">
+                      Learn more in the
+                      <a
+                        href="https://prairielearn.readthedocs.io/en/latest/getStarted/#creating-a-course-instance"
+                        target="_blank"
+                        >course instance documentation</a
+                      >.
+                    </p>
+                  </div>
+                `
+              : ''}
           </div>
         </main>
       </body>
