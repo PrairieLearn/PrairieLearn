@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryAsync, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
 
 import { selectCourseById } from '../../models/course.js';
 import { config } from '../config.js';
@@ -94,19 +94,17 @@ export class FeatureManager<FeatureName extends string> {
     // Allow config to globally override a feature.
     if (name in config.features) return config.features[name];
 
-    const featureIsEnabled = await queryRow(
+    const featureIsEnabled = await queryOptionalRow(
       sql.is_feature_enabled,
       {
         name,
         ...DEFAULT_CONTEXT,
         ...context,
       },
-      z.array(z.boolean()),
+      z.boolean(),
     );
 
-    // The feature states are sorted in order of increasing specificity. If
-    // the last item is enabled, then the feature is enabled.
-    if (featureIsEnabled.at(-1)) return true;
+    if (featureIsEnabled) return true;
 
     // Allow features to be enabled in dev mode via `options.devModeFeatures`
     // in `infoCourse.json`.

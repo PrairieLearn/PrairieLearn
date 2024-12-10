@@ -1,16 +1,6 @@
 -- BLOCK is_feature_enabled
 SELECT
-  COALESCE(
-    ARRAY_AGG(
-      enabled
-      ORDER BY
-        institution_id NULLS FIRST,
-        course_id NULLS FIRST,
-        course_instance_id NULLS FIRST,
-        user_id NULLS FIRST
-    ),
-    '{}'::boolean[]
-  ) AS enabled
+  enabled
 FROM
   feature_grants
 WHERE
@@ -30,7 +20,15 @@ WHERE
   AND (
     user_id IS NULL
     OR $user_id = user_id
-  );
+  )
+ORDER BY
+  -- This ordering occurs that feature flag precedence works correctly.
+  institution_id NULLS LAST,
+  course_id NULLS LAST,
+  course_instance_id NULLS LAST,
+  user_id NULLS LAST
+LIMIT
+  1;
 
 -- BLOCK toggle_feature
 INSERT INTO
