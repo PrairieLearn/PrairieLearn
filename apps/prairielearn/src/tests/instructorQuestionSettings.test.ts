@@ -111,7 +111,7 @@ describe('Editing question settings', () => {
           title: 'New title',
           qid: 'test/question1',
           topic: 'Test',
-          tags: 'test1,test2',
+          tags: ['test1', 'test2'],
         },
       },
     );
