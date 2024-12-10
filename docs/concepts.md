@@ -115,7 +115,7 @@ Asssessments are organized into **assessment sets** based on the type of assessm
 
 Each item in PrairieLearn (questions, assessments, etc.) has associated metadata that describes the item. This metadata is stored in JSON files and describes the relationships between items, the item's properties, and other information. The metadata files are used to generate the user interface for editing and viewing the items, as well as the interface for students to complete the items.
 
-| Item            | Metadata file             |
+| Item            | Configuration file        |
 | --------------- | ------------------------- |
 | Question        | `info.json`               |
 | Course          | `infoCourse.json`         |
