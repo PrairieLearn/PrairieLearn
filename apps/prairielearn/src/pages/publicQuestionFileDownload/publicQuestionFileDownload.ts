@@ -28,7 +28,7 @@ router.get(
   '/*',
   asyncHandler(async (req, res) => {
     await setLocals(req, res);
-    // Calling this only to catch illegal paths (e.g., working path ourside question path)
+    // Calling this only to catch illegal paths (e.g., working path outside question path)
     getPaths(req.params[0], res.locals);
 
     if (req.query.type) res.type(req.query.type.toString());
