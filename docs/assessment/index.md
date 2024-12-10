@@ -327,9 +327,9 @@ groupB,three@example.com
 groupB,four@example.com
 ```
 
-The assessment's "Downloads" tab has an `<assessment>_group_configs.csv` file that contains the current group assignments. This can be used to copy group assignments from one assessment to another.
+The assessment's "Downloads" tab has an `<assessment>_groups.csv` file that contains the current group assignments. This can be used to copy group assignments from one assessment to another. The same file is also listed at the bottom of the groups page.
 
-Alternatively, the "Auto" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
+Alternatively, the "Random" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
 
 ### Student options for group work
 
@@ -524,7 +524,7 @@ If a student uses all of their attempts on a question and cannot submit any more
 
 ### :warning: Warning about in-order questions and high-stakes exams
 
-    The `advanceScorePerc` attribute is intended to be used in [group work](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in high-stakes exams where the student cannot receive help from course staff.
+The `advanceScorePerc` attribute is intended to be used in [group work](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in high-stakes exams where the student cannot receive help from course staff.
 
 ## Auto-closing Exam assessments
 

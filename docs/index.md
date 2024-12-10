@@ -20,15 +20,5 @@ You can view a comprehensive list of features on the [PrairieLearn homepage](htt
 ## Getting started
 
 - [Request a course space](requestCourse.md)
+- [Concepts](concepts.md)
 - [Quick start](getStarted.md)
-
-## Who is using PrairieLearn?
-
-<div class="grid wide-grid cards" markdown>
-- ![](img/university-of-illinois-urbana-champaign.png)
-- ![](img/university-of-british-columbia.png)
-- ![](img/university-of-michigan.png)
-- ![](img/university-of-california-berkeley.png)
-- ![](img/university-of-california-san-diego.png)
-- And more!
-</div>

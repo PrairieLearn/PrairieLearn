@@ -12,6 +12,7 @@ td code {
   white-space: nowrap;
 }
 
+/* "wide-grid" can be used to display a 4-wide grid of images */
 .grid.wide-grid {
   grid-template-columns: repeat(auto-fit, minmax(min(100%, 8rem), 1fr));
 }
