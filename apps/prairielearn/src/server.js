@@ -1535,8 +1535,8 @@ export async function initExpress() {
     (await import('./pages/studentAssessments/studentAssessments.js')).default,
   );
 
-  // Client files for assessments - These routes must come before the 
-  // assessment route (.../assessment/:assessment_id) to avoid hitting the 
+  // Client files for assessments - These routes must come before the
+  // assessment route (.../assessment/:assessment_id) to avoid hitting the
   // middleware on that route first. The middleware on that route will redirect
   // to the student assessment instance if an instance exists and will prevent
   // reaching the client file route.
