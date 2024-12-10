@@ -204,7 +204,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 --8<-- "docs/diagrams/simplified-models.d2"
 ```
 
-- Detailed descriptions of the format of each table are in the [list of Database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
+- Detailed descriptions of the format of each table are in the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
 
 - Each table has an `id` number that is used for cross-referencing. For example, each row in the `questions` table has an `id` and other tables will refer to this as a `question_id`. For legacy reasons, there are two exceptions to this rule:
 
@@ -233,7 +233,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 ## Database schema (full data)
 
-- See the [list of Database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below:
+- See the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below:
 
 ```d2 layout="elk"
 --8<-- "docs/diagrams/models.d2"
@@ -255,7 +255,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
     AND ai.deleted_at IS NULL;
   ```
 
-- We (almost) never delete student data from the Database. To avoid having rows with broken or missing foreign keys, course configuration tables (e.g. `assessments`) can't be actually deleted. Instead they are "soft-deleted" by setting the `deleted_at` column to non-NULL. This means that when using any soft-deletable table we need to have a `WHERE deleted_at IS NULL` to get only the active rows.
+- We (almost) never delete student data from the database. To avoid having rows with broken or missing foreign keys, course configuration tables (e.g. `assessments`) can't be actually deleted. Instead they are "soft-deleted" by setting the `deleted_at` column to non-NULL. This means that when using any soft-deletable table we need to have a `WHERE deleted_at IS NULL` to get only the active rows.
 
 ## Database schema modification
 
