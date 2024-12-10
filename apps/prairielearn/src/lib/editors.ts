@@ -493,13 +493,15 @@ export abstract class Editor {
   getNamesForAdd(
     shortNames: string[],
     longNames: string[],
+    shortName: string,
+    longName: string,
   ): { shortName: string; longName: string } {
     function getNumberShortName(oldnames: string[]): number {
       let number = 1;
       oldnames.forEach((oldname) => {
-        const found = oldname.match(new RegExp('^New_([0-9]+)$'));
+        const found = oldname === shortName || oldname.match(new RegExp(`^${shortName}_([0-9]+)$`));
         if (found) {
-          const foundNumber = parseInt(found[1]);
+          const foundNumber = parseInt(found[1]) || 1;
           if (foundNumber >= number) {
             number = foundNumber + 1;
           }
@@ -512,9 +514,10 @@ export abstract class Editor {
       let number = 1;
       oldnames.forEach((oldname) => {
         if (!_.isString(oldname)) return;
-        const found = oldname.match(new RegExp('^New \\(([0-9]+)\\)$'));
+        const found =
+          oldname === longName || oldname.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
         if (found) {
-          const foundNumber = parseInt(found[1]);
+          const foundNumber = parseInt(found[1]) || 1;
           if (foundNumber >= number) {
             number = foundNumber + 1;
           }
@@ -526,10 +529,17 @@ export abstract class Editor {
     const numberShortName = getNumberShortName(shortNames);
     const numberLongName = getNumberLongName(longNames);
     const number = numberShortName > numberLongName ? numberShortName : numberLongName;
-    return {
-      shortName: `New_${number}`,
-      longName: `New (${number})`,
-    };
+    if (number === 1) {
+      return {
+        shortName,
+        longName,
+      };
+    } else {
+      return {
+        shortName: `${shortName}_${number}`,
+        longName: `${longName} (${number})`,
+      };
+    }
   }
 }
 
@@ -863,13 +873,28 @@ export class CourseInstanceRenameEditor extends Editor {
 
 export class CourseInstanceAddEditor extends Editor {
   public readonly uuid: string;
+  private short_name: string;
+  private long_name: string;
+  private start_access_date?: string;
+  private end_access_date?: string;
 
-  constructor(params: BaseEditorOptions) {
+  constructor(
+    params: BaseEditorOptions & {
+      short_name: string;
+      long_name: string;
+      start_access_date?: string;
+      end_access_date?: string;
+    },
+  ) {
     super(params);
 
-    this.description = 'Add course instance';
-
     this.uuid = uuidv4();
+
+    this.description = 'Add course instance';
+    this.short_name = params.short_name;
+    this.long_name = params.long_name;
+    this.start_access_date = params.start_access_date;
+    this.end_access_date = params.end_access_date;
   }
 
   async write() {
@@ -889,16 +914,32 @@ export class CourseInstanceAddEditor extends Editor {
     );
 
     debug('Generate short_name and long_name');
-    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
+    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong, this.short_name, this.long_name);
     const short_name = names.shortName;
     const courseInstancePath = path.join(courseInstancesPath, short_name);
 
     debug('Write infoCourseInstance.json');
 
+    let allowAccess: { startDate?: string; endDate?: string } | null = null;
+
+    if (this.start_access_date || this.end_access_date) {
+      if (this.start_access_date && this.end_access_date) {
+        const startDate = new Date(this.start_access_date);
+        const endDate = new Date(this.end_access_date);
+        if (startDate > endDate) {
+          throw new HttpStatusError(400, 'Start date must be before end date');
+        }
+      }
+      allowAccess = {
+        startDate: this.start_access_date ? this.start_access_date + ':00' : undefined,
+        endDate: this.end_access_date ? this.end_access_date + ':00' : undefined,
+      };
+    }
+
     const infoJson = {
       uuid: this.uuid,
       longName: names.longName,
-      allowAccess: [],
+      allowAccess: allowAccess !== null ? [allowAccess] : [],
     };
 
     // We use outputJson to create the directory this.courseInstancePath if it

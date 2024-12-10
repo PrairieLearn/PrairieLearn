@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
@@ -29,24 +30,28 @@ export function InstructorCourseAdminInstances({
             course: resLocals.course,
             urlPrefix: resLocals.urlPrefix,
           })}
+          ${CreateCourseInstanceModal({
+            csrfToken: resLocals.__csrf_token,
+          })}
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
+            <div
+              class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+            >
               <h1>Course instances</h1>
               ${resLocals.authz_data.has_course_permission_edit &&
               !resLocals.course.example_course &&
               !resLocals.needToSync
                 ? html`
-                    <form class="ml-auto" name="add-course-instance-form" method="POST">
-                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                      <button
-                        name="__action"
-                        value="add_course_instance"
-                        class="btn btn-sm btn-light"
-                      >
-                        <i class="fa fa-plus" aria-hidden="true"></i>
-                        <span class="d-none d-sm-inline">Add course instance</span>
-                      </button>
-                    </form>
+                    <button
+                      name="__action"
+                      value="add_course_instance"
+                      class="btn btn-sm btn-light"
+                      data-toggle="modal"
+                      data-target="#createCourseInstanceModal"
+                    >
+                      <i class="fa fa-plus" aria-hidden="true"></i>
+                      <span class="d-none d-sm-inline">Add course instance</span>
+                    </button>
                   `
                 : ''}
             </div>
@@ -166,4 +171,61 @@ function PopoverEndDate() {
       >.
     </p>
   `.toString();
+}
+
+function CreateCourseInstanceModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    id: 'createCourseInstanceModal',
+    title: 'Create Course Instance',
+    formMethod: 'POST',
+    body: html`
+      <div class="form-group">
+        <label for="short_name">CIID (Course Instance Identifier)</label>
+        <input type="text" class="form-control" id="short_name" name="short_name" required />
+        <small class="form-text text-muted"
+          >The recommended format is <code>Fa19</code> or <code>Fall2019</code>. Use only letters,
+          numbers, dashes, and underscores, with no spaces.
+        </small>
+      </div>
+      <div class="form-group">
+        <label for="long_name">Long Name</label>
+        <input type="text" class="form-control" id="long_name" name="long_name" required />
+        <small class="form-text text-muted">
+          This is the full name of the course instance, such as "Fall 2019" or "Spring 2020".
+        </small>
+      </div>
+      <div class="form-group">
+        <label for="start_access_date">Start Access Date</label>
+        <input
+          class="form-control date-picker"
+          type="datetime-local"
+          id="start_access_date"
+          name="start_access_date"
+          value=""
+        />
+        <small class="form-text text-muted">
+          The date when students can access the course instance.
+        </small>
+      </div>
+      <div class="form-group">
+        <label for="end_access_date">End Access Date</label>
+        <input
+          class="form-control date-picker"
+          type="datetime-local"
+          id="end_access_date"
+          name="end_access_date"
+          value=""
+        />
+        <small class="form-text text-muted">
+          The date when students can no longer access the course instance.
+        </small>
+      </div>
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="add_course_instance" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Create</button>
+    `,
+  });
 }

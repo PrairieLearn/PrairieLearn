@@ -59,6 +59,10 @@ router.post(
     if (req.body.__action === 'add_course_instance') {
       const editor = new CourseInstanceAddEditor({
         locals: res.locals,
+        short_name: req.body.short_name,
+        long_name: req.body.long_name,
+        start_access_date: req.body.start_access_date,
+        end_access_date: req.body.end_access_date,
       });
       const serverJob = await editor.prepareServerJob();
       try {
