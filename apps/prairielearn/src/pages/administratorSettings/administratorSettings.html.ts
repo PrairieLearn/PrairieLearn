@@ -92,7 +92,7 @@ export function AdministratorSettings({ resLocals }) {
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white">LLM Context Documents</div>
                   <div class="card-body">
-                    <form class="" name="sync-context-form" method="POST">
+                    <form method="POST">
                       <input type="hidden" name="__action" value="sync_context_documents" />
                       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                       <button class="btn btn-primary">Resync Documents</button>
