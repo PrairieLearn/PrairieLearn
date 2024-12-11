@@ -4,6 +4,7 @@ import { assert } from 'chai';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
 import * as tmp from 'tmp';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
@@ -68,20 +69,17 @@ describe('Editing question settings', () => {
     );
     assert.equal(settingsPageResponse.status, 200);
 
-    const response = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
-      {
-        method: 'POST',
-        form: {
-          __action: 'update_question',
-          __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val(),
-          orig_hash: settingsPageResponse.$('input[name=orig_hash]').val(),
-          title: 'New title',
-          qid: 'question',
-          topic: 'Test2',
-        },
-      },
-    );
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: 'New title',
+        qid: 'question',
+        topic: 'Test2',
+      }),
+    });
 
     assert.equal(response.status, 200);
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
@@ -99,20 +97,17 @@ describe('Editing question settings', () => {
     );
     assert.equal(settingsPageResponse.status, 200);
 
-    const response = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
-      {
-        method: 'POST',
-        form: {
-          __action: 'update_question',
-          __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val(),
-          orig_hash: settingsPageResponse.$('input[name=orig_hash]').val(),
-          title: 'New title',
-          qid: 'test/question1',
-          topic: 'Test',
-        },
-      },
-    );
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: 'New title',
+        qid: 'test/question1',
+        topic: 'Test',
+      }),
+    });
 
     assert.equal(response.status, 200);
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
@@ -154,17 +149,17 @@ describe('Editing question settings', () => {
       );
       assert.equal(settingsPageResponse.status, 200);
 
-      const response = await fetchCheerio(
+      const response = await fetch(
         `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
         {
           method: 'POST',
-          form: {
+          body: new URLSearchParams({
             __action: 'update_question',
-            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
-            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
             title: 'Test Title - Unauthorized',
             qid: 'test/question',
-          },
+          }),
         },
       );
       assert.equal(response.status, 403);
@@ -180,17 +175,17 @@ describe('Editing question settings', () => {
       );
       assert.equal(settingsPageResponse.status, 200);
 
-      const response = await fetchCheerio(
+      const response = await fetch(
         `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
         {
           method: 'POST',
-          form: {
+          body: new URLSearchParams({
             __action: 'update_question',
-            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
-            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
+            __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+            orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
             title: 'Test title - no info file',
             qid: 'test/question',
-          },
+          }),
         },
       );
       assert.equal(response.status, 400);
@@ -215,19 +210,16 @@ describe('Editing question settings', () => {
     });
     await execa('git', ['push', 'origin', 'master'], { cwd: courseLiveDir, env: process.env });
 
-    const response = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
-      {
-        method: 'POST',
-        form: {
-          __action: 'update_question',
-          __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val(),
-          orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val(),
-          title: 'Test title - changed',
-          qid: 'test/question',
-        },
-      },
-    );
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name="__csrf_token"]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name="orig_hash"]').val() as string,
+        title: 'Test title - changed',
+        qid: 'test/question',
+      }),
+    });
     assert.equal(response.status, 200);
     assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/);
   });
