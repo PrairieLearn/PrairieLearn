@@ -3,7 +3,6 @@ import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { ECRClient } from '@aws-sdk/client-ecr';
-import { Mutex } from 'async-mutex';
 import debugfn from 'debug';
 import Docker from 'dockerode';
 import { execa } from 'execa';
@@ -111,6 +110,12 @@ async function ensureImage() {
   }
 }
 
+/**
+ * @typedef {Object} CodeCallerContainerOptions
+ * @property {number} questionTimeoutMilliseconds
+ * @property {number} pingTimeoutMilliseconds
+ */
+
 /** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
 /** @typedef {import('./code-caller-shared.js').CallType} CallType */
 
@@ -118,7 +123,24 @@ async function ensureImage() {
  * @implements {CodeCaller}
  */
 export class CodeCallerContainer {
-  constructor(options = { questionTimeoutMilliseconds: 5_000, pingTimeoutMilliseconds: 60_000 }) {
+  /**
+   * Creating a new {@link CodeCallerContainer} instance requires some async work,
+   * so we use this static method to create a new instance since a constructor
+   * cannot be async.
+   *
+   * @param {CodeCallerContainerOptions} options
+   * @returns {Promise<CodeCallerContainer>}
+   */
+  static async create(options) {
+    const codeCaller = new CodeCallerContainer(options);
+    await codeCaller.ensureChild();
+    return codeCaller;
+  }
+
+  /**
+   * @param {CodeCallerContainerOptions} options
+   */
+  constructor(options) {
     /** @type {CallerState} */
     this.state = CREATED;
     this.uuid = uuidv4();
@@ -130,7 +152,6 @@ export class CodeCallerContainer {
     this.callback = null;
     this.timeoutID = null;
     this.callCount = 0;
-    this.ensureChildMutex = new Mutex();
     this.hasBindMount = false;
 
     this.options = options;
@@ -333,34 +354,25 @@ export class CodeCallerContainer {
     this.debug('exit done()');
   }
 
+  /** @private */
   async ensureChild() {
     this.debug('enter ensureChild()');
     this._checkState();
 
-    // Since container creation is async, it's possible that ensureChild()
-    // could be called again while it's already executing. For instance, we
-    // could be inside a call that was made to warm up this worker, but then
-    // we might have call() invoked, which will also call ensureChild(). We
-    // need to ensure that we're only ever inside this function once at a time,
-    // so we'll use a "mutex" (even though we're in a single-threaded environment).
-    await this.ensureChildMutex.runExclusive(async () => {
-      if (this.container) {
-        this.debug('exit ensureChild() - existing container');
-        return;
-      }
-      this.hostDirectory = await tmp.dir({ unsafeCleanup: true, prefix: MOUNT_DIRECTORY_PREFIX });
-      await ensureImage();
-      await this._createAndAttachContainer(this.hostDirectory.path);
+    if (this.container) {
+      this.debug('exit ensureChild() - existing container');
+      return;
+    }
 
-      // Transition to the WAITING state before pinging the container, as we
-      // need to be in that state in order to make a call.
-      this.state = WAITING;
+    this.hostDirectory = await tmp.dir({ unsafeCleanup: true, prefix: MOUNT_DIRECTORY_PREFIX });
+    await ensureImage();
+    await this._createAndAttachContainer(this.hostDirectory.path);
 
-      await this.call('ping', null, null, 'ping', []);
+    // Transition to the WAITING state before pinging the container, as we
+    // need to be in that state in order to make a call.
+    this.state = WAITING;
 
-      this._checkState();
-      this.debug('exit _ensureChild()');
-    });
+    await this.call('ping', null, null, 'ping', []);
 
     this._checkState();
     this.debug('exit ensureChild()');

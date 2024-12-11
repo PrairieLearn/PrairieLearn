@@ -71,6 +71,7 @@ yarn-error.log
 ## Programming languages
 
 ### Python
+.venv/
 __pycache__/
 *.py[cod]
 *$py.class
