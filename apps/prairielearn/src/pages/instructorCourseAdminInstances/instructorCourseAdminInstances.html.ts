@@ -1,4 +1,5 @@
 import { html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
@@ -142,41 +143,42 @@ export function InstructorCourseAdminInstances({
                         >course instance documentation</a
                       >.
                     </p>
-                    ${resLocals.authz_data.has_course_permission_edit &&
-                    !resLocals.course.example_course &&
-                    !resLocals.needToSync
-                      ? html`
-                          <form class="ml-auto" name="add-course-instance-form" method="POST">
-                            <input
-                              type="hidden"
-                              name="__csrf_token"
-                              value="${resLocals.__csrf_token}"
-                            />
-                            <button
-                              name="__action"
-                              value="add_course_instance"
-                              class="btn btn-sm btn-primary"
-                            >
-                              <i class="fa fa-plus" aria-hidden="true"></i>
-                              <span>Add course instance</span>
-                            </button>
-                          </form>
-                        `
-                      : ''}
-                    ${!resLocals.authz_data.has_course_permission_edit
-                      ? html` <p>Course Editors can create new course instances.</p> `
-                      : ''}
-                    ${resLocals.course.example_course
-                      ? html` <p>You can't add course instances to the Example Course.</p> `
-                      : ''}
-                    ${resLocals.needToSync
-                      ? html`
+                    ${run(() => {
+                      if (resLocals.course.example_course) {
+                        return html`<p>You can't add course instances to the example course.</p>`;
+                      }
+
+                      if (!resLocals.authz_data.has_course_permission_edit) {
+                        return html`<p>Course Editors can create new course instances.</p>`;
+                      }
+
+                      if (resLocals.needToSync) {
+                        return html`
                           <p>
-                            Sync the course from the <strong>Sync</strong> page before creating a
-                            new course instance.
+                            You must
+                            <a href="${resLocals.urlPrefix}/course_admin/syncs">sync</a> the course
+                            before creating a new course instance.
                           </p>
-                        `
-                      : ''}
+                        `;
+                      }
+                      return html`
+                        <form class="ml-auto" name="add-course-instance-form" method="POST">
+                          <input
+                            type="hidden"
+                            name="__csrf_token"
+                            value="${resLocals.__csrf_token}"
+                          />
+                          <button
+                            name="__action"
+                            value="add_course_instance"
+                            class="btn btn-sm btn-primary"
+                          >
+                            <i class="fa fa-plus" aria-hidden="true"></i>
+                            <span>Add course instance</span>
+                          </button>
+                        </form>
+                      `;
+                    })}
                   </div>
                 `}
           </div>
