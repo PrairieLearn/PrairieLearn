@@ -4,6 +4,7 @@ build-sequential:
 	@yarn turbo run --concurrency 1 build
 node-deps:
 	@yarn
+	build
 python-deps:
 	@python3.12 -m venv .venv
 	.venv/bin/python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
@@ -11,7 +12,7 @@ python-deps-uv:
 	@uv venv
 	@uv pip install -r images/plbase/python-requirements.txt
 deps:
-	@$(MAKE) node-deps python-deps build
+	@$(MAKE) node-deps python-deps
 
 migrate:
 	@yarn migrate
