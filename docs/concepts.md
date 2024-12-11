@@ -98,7 +98,7 @@ Both of these features can be setup by modifying the `info.json` file for the qu
 
 ### Elements
 
-Questions can use [**elements**](./elements.md) to accept student input, display diagrams, control how questions are displayed. Elements are pre-built interface elements for common questions, like numerical inputs, multiple choice, and more. If you require more flexibility ,[**custom elements**](./devElements.md) are reusable components that can be tailored to your course to create more complex questions.
+Questions can use [**elements**](./elements.md) to accept student input, display diagrams, control how questions are displayed. Elements are pre-built interface elements for common questions, like numerical inputs, multiple choice, and more. If you require more flexibility, [**custom elements**](./devElements.md) are reusable components that can be tailored to your course to create more complex questions.
 
 === "Integer input element"
 

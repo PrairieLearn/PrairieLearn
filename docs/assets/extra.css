@@ -1,5 +1,6 @@
 :root {
   --md-primary-fg-color: #052c65;
+  --md-accent-fg-color: #084298;
 }
 
 /* Allow captioned code blocks to function */
@@ -10,4 +11,10 @@ code {
 /* Prevent wrapping attributes inside tables */
 td code {
   white-space: nowrap;
+}
+
+.md-nav__item--section > .md-nav__link[for],
+.md-nav__title {
+  /* color: var(--md-primary-fg-color); */
+  text-decoration: underline;
 }
