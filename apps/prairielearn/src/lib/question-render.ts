@@ -18,7 +18,6 @@ import {
   SubmissionDetailedSchema,
 } from '../components/SubmissionPanel.html.js';
 import type { SubmissionForRender } from '../components/SubmissionPanel.html.js';
-import { selectUserById } from '../models/user.js';
 import { selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -34,7 +33,6 @@ import {
   type Course,
   CourseInstanceSchema,
   CourseSchema,
-  DateFromISOString,
   GradingJobSchema,
   type GroupConfig,
   GroupConfigSchema,
@@ -43,9 +41,9 @@ import {
   InstanceQuestionSchema,
   IssueSchema,
   type Question,
-  QuestionSchema,
   type Submission,
   SubmissionSchema,
+  type User,
   type Variant,
   VariantSchema,
 } from './db-types.js';
@@ -76,23 +74,21 @@ const IssueRenderDataSchema = IssueSchema.extend({
   user_email: z.string().nullable(),
 });
 
-const InstanceQuestionWithAllowGradeSchema = InstanceQuestionSchema.extend({
-  allow_grade_left_ms: z.coerce.number(),
-  allow_grade_date: DateFromISOString.nullable(),
-  allow_grade_interval: z.string(),
-});
-type InstanceQuestionWithAllowGrade = z.infer<typeof InstanceQuestionWithAllowGradeSchema>;
+type InstanceQuestionWithAllowGrade = InstanceQuestion & {
+  allow_grade_left_ms: number;
+  allow_grade_date: Date | null;
+  allow_grade_interval: string;
+};
 
 const SubmissionInfoSchema = z.object({
   grading_job: GradingJobSchema.nullable(),
   submission: SubmissionSchema,
   variant: VariantSchema,
-  instance_question: InstanceQuestionWithAllowGradeSchema.nullable(),
+  question_number: z.string().nullable(),
   next_instance_question: z.object({
     id: IdSchema.nullable(),
     sequence_locked: z.boolean().nullable(),
   }),
-  question: QuestionSchema,
   assessment_question: AssessmentQuestionSchema.nullable(),
   assessment_instance: AssessmentInstanceSchema.nullable(),
   assessment: AssessmentSchema.nullable(),
@@ -104,7 +100,6 @@ const SubmissionInfoSchema = z.object({
   user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
   submission_count: z.coerce.number(),
-  question_number: z.string().nullable(),
   group_config: GroupConfigSchema.nullable(),
 });
 
@@ -593,28 +588,35 @@ export async function getAndRenderVariant(
  */
 export async function renderPanelsForSubmission({
   submission_id,
-  question_id,
-  instance_question_id,
+  question,
+  instance_question,
   variant_id,
-  user_id,
+  user,
   urlPrefix,
   questionContext,
   authorizedEdit,
   renderScorePanels,
+  groupRolePermissions,
 }: {
   submission_id: string;
-  question_id: string;
-  instance_question_id: string | null;
+  question: Question;
+  instance_question: InstanceQuestionWithAllowGrade | null;
   variant_id: string | null;
-  user_id: string;
+  user: User;
   urlPrefix: string;
   questionContext: QuestionContext;
   authorizedEdit: boolean;
   renderScorePanels: boolean;
+  groupRolePermissions: { can_view: boolean; can_submit: boolean } | null;
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
-    { submission_id, question_id, instance_question_id, variant_id },
+    {
+      submission_id,
+      question_id: question.id,
+      instance_question_id: instance_question?.id,
+      variant_id,
+    },
     SubmissionInfoSchema,
   );
   if (submissionInfo == null) throw new error.HttpStatusError(404, 'Not found');
@@ -622,9 +624,7 @@ export async function renderPanelsForSubmission({
   const {
     variant,
     submission,
-    instance_question,
     next_instance_question,
-    question,
     assessment_question,
     assessment_instance,
     assessment,
@@ -648,18 +648,6 @@ export async function renderPanelsForSubmission({
           instance_question_id: variant.instance_question_id,
         });
 
-  const group_role_permissions = await run(async () => {
-    if (!instance_question || !assessment_instance?.group_id || !group_config?.has_roles) {
-      return null;
-    }
-
-    return await getQuestionGroupPermissions(
-      instance_question?.id,
-      assessment_instance?.group_id,
-      user_id,
-    );
-  });
-
   const panels: SubmissionPanels = {
     submissionPanel: null,
     extraHeadersHtml: null,
@@ -673,7 +661,7 @@ export async function renderPanelsForSubmission({
       variant,
       question,
       instance_question,
-      group_role_permissions,
+      group_role_permissions: groupRolePermissions,
       assessment,
       assessment_instance,
       assessment_question,
@@ -777,8 +765,6 @@ export async function renderPanelsForSubmission({
         return await getGroupInfo(assessment_instance?.group_id, group_config);
       });
 
-      const user = await selectUserById(user_id);
-
       panels.questionPanelFooter = QuestionFooterContent({
         resLocals: {
           variant,
@@ -789,7 +775,7 @@ export async function renderPanelsForSubmission({
           instance_question_info: { previous_variants },
           group_config,
           group_info,
-          group_role_permissions,
+          group_role_permissions: groupRolePermissions,
           user,
           ...locals,
         },
@@ -811,10 +797,10 @@ export async function renderPanelsForSubmission({
         nextQuestionGroupRolePermissions = await getQuestionGroupPermissions(
           next_instance_question.id,
           assessment_instance.group_id,
-          user_id,
+          user.user_id,
         );
         userGroupRoles =
-          (await getUserRoles(assessment_instance.group_id, user_id))
+          (await getUserRoles(assessment_instance.group_id, user.user_id))
             .map((role) => role.role_name)
             .join(', ') || 'None';
       }

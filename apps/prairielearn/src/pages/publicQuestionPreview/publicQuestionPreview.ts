@@ -69,16 +69,18 @@ router.get(
     await setLocals(req, res);
     const panels = await renderPanelsForSubmission({
       submission_id: req.params.submission_id,
-      question_id: res.locals.question.id,
-      instance_question_id: null,
+      question: res.locals.question,
+      instance_question: null,
       variant_id: req.params.variant_id,
-      user_id: res.locals.user.user_id,
+      user: res.locals.user,
       urlPrefix: res.locals.urlPrefix,
       questionContext: 'public',
       // This is only used by score panels, which are not rendered in this context.
       authorizedEdit: false,
       // Score panels are never rendered on the public question preview page.
       renderScorePanels: false,
+      // Group role permissions are not used in this context.
+      groupRolePermissions: null,
     });
     res.json(panels);
   }),

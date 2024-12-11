@@ -285,8 +285,7 @@ Note that this setting is not suitable in scenarios where multiple attempts are 
 
 ## Enabling group work for collaborative assessments
 
-By default, assessment instances are tied to only one user. By setting `groupWork: true`, multiple students will be able to work on the same assessment instance.
-Information about the group configuration can be set in the `infoAssessment.json` file. For example:
+By default, assessment instances are tied to only one user. By setting `"groupWork": true`, multiple students will be able to work on the same assessment instance. Group configuration can be set in the `infoAssessment.json` file. For example:
 
 ```json
 {
@@ -308,17 +307,15 @@ Information about the group configuration can be set in the `infoAssessment.json
 | `studentGroupJoin`   | boolean | false   | Allow students to join other groups by join code.  |
 | `studentGroupLeave`  | boolean | false   | Allow students to leave groups.                    |
 
-Please notice: changing an assessment from group -> individual or vice versa after students have started working on it will cause student work to be lost.
+Note that changing an assessment from individual to group or vice versa after students have started working on it will cause student work to be lost.
 
-### Instructor options for groupWork
+### Managing groups
 
-![Instructor group assignment page](groupwork_instructor_interface.png)
+Instructors can manage groups on the "Groups" tab of an assessment. This page allows instructors to create individual groups, delete existing groups, and add or remove users from groups.
 
-Underneath the "Groups" tab in an assessment, instructors have three ways of assigning students to different groups:
+To create groups in bulk, upload a CSV file in the following format:
 
-1. Uploading a CSV file in the following format:
-
-```
+```csv
 groupName,UID
 groupA,one@example.com
 groupA,two@example.com
@@ -326,13 +323,11 @@ groupB,three@example.com
 groupB,four@example.com
 ```
 
-2. Automatically assigning students, either to fill out existing groups or to make entirely new ones.
+The assessment's "Downloads" tab has an `<assessment>_groups.csv` file that contains the current group assignments. This can be used to copy group assignments from one assessment to another. The same file is also listed at the bottom of the groups page.
 
-3. Copying the group assignments from another assessment.
+Alternatively, the "Random" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
 
-A copy of the current group assignments can be saved from the "Downloads" tab, under `<assessment>_group_configs.csv`
-
-### Student options for groupWork
+### Student options for group work
 
 ![Student perspective for joining a group](groupwork_student_perspective_join.png)
 
