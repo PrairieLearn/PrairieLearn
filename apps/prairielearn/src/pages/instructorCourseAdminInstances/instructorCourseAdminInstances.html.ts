@@ -147,16 +147,14 @@ export function InstructorCourseAdminInstances({
                       if (resLocals.course.example_course) {
                         return html`<p>You can't add course instances to the example course.</p>`;
                       }
-
                       if (!resLocals.authz_data.has_course_permission_edit) {
                         return html`<p>Course Editors can create new course instances.</p>`;
                       }
-
                       if (resLocals.needToSync) {
                         return html`
                           <p>
                             You must
-                            <a href="${resLocals.urlPrefix}/course_admin/syncs">sync</a> the course
+                            <a href="${resLocals.urlPrefix}/course_admin/syncs">sync the course</a>
                             before creating a new course instance.
                           </p>
                         `;
