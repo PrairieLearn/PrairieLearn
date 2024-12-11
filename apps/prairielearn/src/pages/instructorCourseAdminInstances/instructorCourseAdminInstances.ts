@@ -59,6 +59,10 @@ router.post(
     if (req.body.__action === 'add_course_instance') {
       const editor = new CourseInstanceAddEditor({
         locals: res.locals,
+        short_name: req.body.short_name,
+        long_name: req.body.long_name,
+        start_access_date: req.body.start_access_date,
+        end_access_date: req.body.end_access_date,
       });
       const serverJob = await editor.prepareServerJob();
       try {
@@ -81,7 +85,7 @@ router.post(
         res.locals.plainUrlPrefix +
           '/course_instance/' +
           courseInstanceId +
-          '/instructor/instance_admin/settings',
+          '/instructor/instance_admin/assessments',
       );
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
