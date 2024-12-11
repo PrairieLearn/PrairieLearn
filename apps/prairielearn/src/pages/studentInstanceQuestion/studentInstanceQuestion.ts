@@ -2,15 +2,10 @@ import { Router, type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
-import {
-  gradeAssessmentInstance,
-  canDeleteAssessmentInstance,
-  deleteAssessmentInstance,
-} from '../../lib/assessment.js';
+import { gradeAssessmentInstance, canDeleteAssessmentInstance } from '../../lib/assessment.js';
 import { setQuestionCopyTargets } from '../../lib/copy-question.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { uploadFile, deleteFile } from '../../lib/file-store.js';
@@ -232,20 +227,10 @@ router.post(
       res.redirect(
         `${res.locals.urlPrefix}/instance_question/${res.locals.instance_question.id}/?variant_id=${variant_id}`,
       );
-    } else if (req.body.__action === 'regenerate_instance') {
-      if (!canDeleteAssessmentInstance(res.locals)) {
-        throw new HttpStatusError(403, 'Access denied');
-      }
-
-      await deleteAssessmentInstance(
-        res.locals.assessment.id,
-        res.locals.assessment_instance.id,
-        res.locals.authn_user.user_id,
-      );
-
-      flash('success', 'Your previous assessment instance was deleted.');
-      res.redirect(`${res.locals.urlPrefix}/assessment/${res.locals.assessment.id}`);
     } else {
+      // The 'regenerate_instance' action is handled in the
+      // studentAssessmentAccess middleware, so it doesn't need to be handled
+      // here.
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
