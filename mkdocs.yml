@@ -3,7 +3,7 @@ site_url: https://prairielearn.readthedocs.io
 repo_url: https://github.com/PrairieLearn/PrairieLearn
 theme:
   name: material
-  logo: img/PL-logo.svg
+  logo: img/PL-logo-white.svg
   favicon: img/PL-logo-adaptive.svg
   icon:
     repo: fontawesome/brands/github
