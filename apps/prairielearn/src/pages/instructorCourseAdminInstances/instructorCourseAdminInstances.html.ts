@@ -34,7 +34,8 @@ export function InstructorCourseAdminInstances({
               <h1>Course instances</h1>
               ${resLocals.authz_data.has_course_permission_edit &&
               !resLocals.course.example_course &&
-              !resLocals.needToSync
+              !resLocals.needToSync &&
+              courseInstances.length > 0
                 ? html`
                     <form class="ml-auto" name="add-course-instance-form" method="POST">
                       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
@@ -50,99 +51,134 @@ export function InstructorCourseAdminInstances({
                   `
                 : ''}
             </div>
-
-            <div class="table-responsive">
-              <table class="table table-sm table-hover table-striped" aria-label="Course instances">
-                <thead>
-                  <tr>
-                    <th>Long Name</th>
-                    <th>CIID</th>
-                    <th id="earliest-access-date">
-                      Earliest Access Date
-                      <button
-                        class="btn btn-xs btn-light"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-placement="bottom"
-                        data-html="true"
-                        title="Earliest Access Date"
-                        data-content="${PopoverStartDate()}"
-                        aria-label="Information about Earliest Access Date"
-                      >
-                        <i class="far fa-question-circle" aria-hidden="true"></i>
-                      </button>
-                    </th>
-                    <th id="latest-access-date">
-                      Latest Access Date
-                      <button
-                        class="btn btn-xs btn-light"
-                        data-toggle="popover"
-                        data-container="body"
-                        data-placement="bottom"
-                        data-html="true"
-                        title="Latest Access Date"
-                        data-content="${PopoverEndDate()}"
-                        aria-label="Information about Latest Access Date"
-                      >
-                        <i class="far fa-question-circle" aria-hidden="true"></i>
-                      </button>
-                    </th>
-                    <th>Students</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${courseInstances.map((row) => {
-                    return html`
-                      <tr>
-                        <td class="align-left">
-                          ${row.sync_errors
-                            ? SyncProblemButton({
-                                type: 'error',
-                                output: row.sync_errors,
-                              })
-                            : row.sync_warnings
-                              ? SyncProblemButton({
-                                  type: 'warning',
-                                  output: row.sync_warnings,
-                                })
-                              : ''}
-                          <a
-                            href="${resLocals.plainUrlPrefix}/course_instance/${row.id}/instructor/instance_admin"
-                            >${row.long_name}</a
-                          >
-                        </td>
-                        <td class="align-left">${row.short_name}</td>
-                        <td class="align-left">${row.formatted_start_date}</td>
-                        <td class="align-left">${row.formatted_end_date}</td>
-                        <td class="align-middle">${row.enrollment_count}</td>
-                      </tr>
-                    `;
-                  })}
-                </tbody>
-              </table>
-            </div>
-            ${courseInstances.length === 0
+            ${courseInstances.length > 0
               ? html`
-                  <div class="my-4">
-                    <p class="text-center font-weight-bold">No course instances found.</p>
-                    <p class="text-center mb-0">
+                  <div class="table-responsive">
+                    <table
+                      class="table table-sm table-hover table-striped"
+                      aria-label="Course instances"
+                    >
+                      <thead>
+                        <tr>
+                          <th>Long Name</th>
+                          <th>CIID</th>
+                          <th id="earliest-access-date">
+                            Earliest Access Date
+                            <button
+                              class="btn btn-xs btn-light"
+                              data-toggle="popover"
+                              data-container="body"
+                              data-placement="bottom"
+                              data-html="true"
+                              title="Earliest Access Date"
+                              data-content="${PopoverStartDate()}"
+                              aria-label="Information about Earliest Access Date"
+                            >
+                              <i class="far fa-question-circle" aria-hidden="true"></i>
+                            </button>
+                          </th>
+                          <th id="latest-access-date">
+                            Latest Access Date
+                            <button
+                              class="btn btn-xs btn-light"
+                              data-toggle="popover"
+                              data-container="body"
+                              data-placement="bottom"
+                              data-html="true"
+                              title="Latest Access Date"
+                              data-content="${PopoverEndDate()}"
+                              aria-label="Information about Latest Access Date"
+                            >
+                              <i class="far fa-question-circle" aria-hidden="true"></i>
+                            </button>
+                          </th>
+                          <th>Students</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${courseInstances.map((row) => {
+                          return html`
+                            <tr>
+                              <td class="align-left">
+                                ${row.sync_errors
+                                  ? SyncProblemButton({
+                                      type: 'error',
+                                      output: row.sync_errors,
+                                    })
+                                  : row.sync_warnings
+                                    ? SyncProblemButton({
+                                        type: 'warning',
+                                        output: row.sync_warnings,
+                                      })
+                                    : ''}
+                                <a
+                                  href="${resLocals.plainUrlPrefix}/course_instance/${row.id}/instructor/instance_admin"
+                                  >${row.long_name}</a
+                                >
+                              </td>
+                              <td class="align-left">${row.short_name}</td>
+                              <td class="align-left">${row.formatted_start_date}</td>
+                              <td class="align-left">${row.formatted_end_date}</td>
+                              <td class="align-middle">${row.enrollment_count}</td>
+                            </tr>
+                          `;
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                `
+              : html`
+                  <div class="my-4 card-body text-center" style="text-wrap: balance;">
+                    <p class="font-weight-bold">No course instances found.</p>
+                    <p class="mb-0">
                       A course instance is a single offering of a course, such as "Fall 2024" or
                       "Fall 2024, Section M".
                     </p>
-                    <p class="text-center">
-                      To create one, click <strong>Add course instance</strong>.
-                    </p>
-                    <p class="text-center">
+                    <p>
                       Learn more in the
                       <a
-                        href="https://prairielearn.readthedocs.io/en/latest/getStarted/#creating-a-course-instance"
+                        href="https://prairielearn.readthedocs.io/en/latest/courseInstance/"
                         target="_blank"
                         >course instance documentation</a
                       >.
                     </p>
+                    ${resLocals.authz_data.has_course_permission_edit &&
+                    !resLocals.course.example_course &&
+                    !resLocals.needToSync
+                      ? html`
+                          <form class="ml-auto" name="add-course-instance-form" method="POST">
+                            <input
+                              type="hidden"
+                              name="__csrf_token"
+                              value="${resLocals.__csrf_token}"
+                            />
+                            <button
+                              name="__action"
+                              value="add_course_instance"
+                              class="btn btn-sm btn-primary"
+                            >
+                              <i class="fa fa-plus" aria-hidden="true"></i>
+                              <span>Add course instance</span>
+                            </button>
+                          </form>
+                        `
+                      : ''}
+                    ${!resLocals.authz_data.has_course_permission_edit
+                      ? html` <p>Course Editors can create new course instances.</p> `
+                      : ''}
+                    ${resLocals.course.example_course
+                      ? html` <p>You can't add course instances to the Example Course.</p> `
+                      : ''}
+                    ${resLocals.needToSync
+                      ? html`
+                          <p>
+                            Sync the course from the <strong>Sync</strong> page before creating a
+                            new course instance.
+                          </p>
+                        `
+                      : ''}
                   </div>
-                `
-              : ''}
+                `}
           </div>
         </main>
       </body>
