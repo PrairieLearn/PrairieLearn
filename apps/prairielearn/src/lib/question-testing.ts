@@ -431,7 +431,7 @@ export async function startTestQuestion(
   authn_user_id: string,
 ): Promise<string> {
   let success = true;
-  const test_types: TestType[] = ['correct', 'incorrect', 'invalid'] as const;
+  const test_types: readonly TestType[] = ['correct', 'incorrect', 'invalid'] as const;
 
   const serverJob = await createServerJob({
     courseId: course.id,
