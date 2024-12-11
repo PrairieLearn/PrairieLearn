@@ -1,6 +1,9 @@
-import { html } from '@prairielearn/html';
+import { Fragment, h } from 'preact';
+import { render } from 'preact-render-to-string';
 
-import { compiledScriptTag, nodeModulesAssetPath, assetPath } from '../lib/assets.js';
+import { unsafeHtml } from '@prairielearn/html';
+
+import { nodeModulesAssetPath, assetPath, compiledScriptPath } from '../lib/assets.js';
 import { config } from '../lib/config.js';
 import {
   type Assessment,
@@ -25,35 +28,40 @@ interface TitleOptions {
   pageNote?: string;
 }
 
+export function PreactHeadContents(props: TitleOptions) {
+  const bootstrapModule = props.resLocals.use_bootstrap_4 ? 'bootstrap-4' : 'bootstrap';
+  const bootstrapVersion = props.resLocals.use_bootstrap_4 ? '4' : '5';
+  return (
+    <Fragment>
+      <meta charset="utf-8" />
+      <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+      <meta name="viewport" content="width=device-width, initial-scale=1" />
+      <meta name="bootstrap-version" content={bootstrapVersion} />
+      {config.cookieDomain && <meta name="cookie-domain" content={config.cookieDomain} />}
+      <title>{getTitle(props)}</title>
+      <link
+        href={nodeModulesAssetPath(`${bootstrapModule}/dist/css/bootstrap.min.css`)}
+        rel="stylesheet"
+      />
+      <link
+        href={nodeModulesAssetPath('bootstrap-icons/font/bootstrap-icons.css')}
+        rel="stylesheet"
+      />
+      <link href={assetPath('stylesheets/colors.css')} rel="stylesheet" />
+      <link href={assetPath('stylesheets/local.css')} rel="stylesheet" />
+      <script src={nodeModulesAssetPath('jquery/dist/jquery.min.js')}></script>
+      <script
+        src={nodeModulesAssetPath(`${bootstrapModule}/dist/js/bootstrap.bundle.min.js`)}
+      ></script>
+      <script src={nodeModulesAssetPath('@fortawesome/fontawesome-free/js/all.min.js')}></script>
+      <script src={compiledScriptPath('application.ts')}></script>
+      <script src={compiledScriptPath('navbarClient.ts')}></script>
+    </Fragment>
+  );
+}
+
 export function HeadContents(titleOptions: TitleOptions) {
-  const bootstrapModule = titleOptions.resLocals.use_bootstrap_4 ? 'bootstrap-4' : 'bootstrap';
-  const bootstrapVersion = titleOptions.resLocals.use_bootstrap_4 ? '4' : '5';
-  return html`
-    <meta charset="utf-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="bootstrap-version" content="${bootstrapVersion}" />
-    ${config.cookieDomain
-      ? html`<meta name="cookie-domain" content="${config.cookieDomain}" />`
-      : ''}
-    <title>${getTitle(titleOptions)}</title>
-    <link
-      href="${nodeModulesAssetPath(`${bootstrapModule}/dist/css/bootstrap.min.css`)}"
-      rel="stylesheet"
-    />
-    <link
-      href="${nodeModulesAssetPath('bootstrap-icons/font/bootstrap-icons.css')}"
-      rel="stylesheet"
-    />
-    <link href="${assetPath('stylesheets/colors.css')}" rel="stylesheet" />
-    <link href="${assetPath('stylesheets/local.css')}" rel="stylesheet" />
-    <script src="${nodeModulesAssetPath('jquery/dist/jquery.min.js')}"></script>
-    <script src="${nodeModulesAssetPath(
-        `${bootstrapModule}/dist/js/bootstrap.bundle.min.js`,
-      )}"></script>
-    <script src="${nodeModulesAssetPath('@fortawesome/fontawesome-free/js/all.min.js')}"></script>
-    ${compiledScriptTag('application.ts')} ${compiledScriptTag('navbarClient.ts')}
-  `;
+  return unsafeHtml(render(<PreactHeadContents {...titleOptions} />));
 }
 
 // e.g. "hello_world" => "Hello World"
