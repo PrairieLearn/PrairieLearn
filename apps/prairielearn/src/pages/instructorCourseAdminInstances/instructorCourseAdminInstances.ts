@@ -85,7 +85,7 @@ router.post(
         res.locals.plainUrlPrefix +
           '/course_instance/' +
           courseInstanceId +
-          '/instructor/instance_admin/settings',
+          '/instructor/instance_admin/assessments',
       );
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

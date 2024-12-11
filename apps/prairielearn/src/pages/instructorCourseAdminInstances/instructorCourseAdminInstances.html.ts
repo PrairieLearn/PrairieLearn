@@ -5,6 +5,7 @@ import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { type CourseInstanceAuthz } from '../../models/course-instances.js';
 
 export type CourseInstanceAuthzRow = CourseInstanceAuthz & { enrollment_count?: number };
@@ -21,6 +22,7 @@ export function InstructorCourseAdminInstances({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals, pageTitle: 'Course Instances' })}
+        ${compiledScriptTag('instructorCourseAdminInstancesClient.ts')}
       </head>
       <body>
         ${Navbar({ resLocals })}
@@ -181,7 +183,15 @@ function CreateCourseInstanceModal({ csrfToken }: { csrfToken: string }) {
     body: html`
       <div class="form-group">
         <label for="short_name">CIID (Course Instance Identifier)</label>
-        <input type="text" class="form-control" id="short_name" name="short_name" required />
+        <input
+          type="text"
+          class="form-control"
+          id="short_name"
+          name="short_name"
+          required
+          pattern="[\\-A-Za-z0-9_\\/]+"
+          title="Please enter a valid format: only letters, numbers, hyphens, underscores, backslashes, and forward slashes."
+        />
         <small class="form-text text-muted"
           >The recommended format is <code>Fa19</code> or <code>Fall2019</code>. Use only letters,
           numbers, dashes, and underscores, with no spaces.
