@@ -1,28 +1,27 @@
 // @ts-check
 import { createInterface } from 'node:readline';
 
-import { CodeCallerNative } from './lib/code-caller/code-caller-native.js';
+import { CodeCallerNative, type ErrorData } from './lib/code-caller/code-caller-native.js';
+import { type CallType } from './lib/code-caller/code-caller-shared.js';
 import { FunctionMissingError } from './lib/code-caller/index.js';
 
-/**
- * @typedef {Object} Request
- * @property {import('./lib/code-caller/code-caller-native.js').CallType} type
- * @property {string} directory
- * @property {string} file
- * @property {string} fcn
- * @property {any[]} args
- * @property {string[]} forbidden_modules
- */
+interface ExecutorRequest {
+  type: CallType;
+  directory: string;
+  file: string;
+  fcn: string;
+  args: any[];
+  forbidden_modules: string[];
+}
 
-/**
- * @typedef {Object} Results
- * @property {string} [error]
- * @property {import('./lib/code-caller/code-caller-native.js').ErrorData} [errorData]
- * @property {any} [data]
- * @property {string} [output]
- * @property {boolean} [functionMissing]
- * @property {boolean} needsFullRestart
- */
+interface ExecutorResults {
+  error?: string;
+  errorData?: ErrorData;
+  data?: any;
+  output?: string;
+  functionMissing?: boolean;
+  needsFullRestart: boolean;
+}
 
 /**
  * Receives a single line of input and executes the instructions contained in
@@ -35,9 +34,8 @@ import { FunctionMissingError } from './lib/code-caller/index.js';
  * @param {CodeCallerNative} codeCaller
  * @returns {Promise<Results>}
  */
-async function handleInput(line, codeCaller) {
-  /** @type {Request} */
-  let request;
+async function handleInput(line: string, codeCaller: CodeCallerNative): Promise<ExecutorResults> {
+  let request: ExecutorRequest;
   try {
     request = JSON.parse(line);
   } catch (err) {

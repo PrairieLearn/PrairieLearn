@@ -1,8 +1,9 @@
 // @ts-check
 import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
+import { type Readable } from 'stream';
 
-import { S3 } from '@aws-sdk/client-s3';
+import { S3, type CompleteMultipartUploadCommandOutput } from '@aws-sdk/client-s3';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { Upload } from '@aws-sdk/lib-storage';
 import debugfn from 'debug';
@@ -53,7 +54,13 @@ export const makeAwsClientConfig = awsConfigProvider.makeAwsClientConfig;
  * @param {Buffer | null} buffer - A file buffer if local source path falsy.
  * @returns {Promise<import('@aws-sdk/client-s3').CompleteMultipartUploadCommandOutput>}
  */
-export async function uploadToS3(s3Bucket, s3Path, localPath, isDirectory = false, buffer = null) {
+export async function uploadToS3(
+  s3Bucket: string,
+  s3Path: string,
+  localPath: string | null,
+  isDirectory = false,
+  buffer: Buffer | null = null,
+): Promise<CompleteMultipartUploadCommandOutput> {
   const s3 = new S3(makeS3ClientConfig());
 
   let body;
@@ -94,11 +101,21 @@ export async function uploadToS3(s3Bucket, s3Path, localPath, isDirectory = fals
  * @param {string} localPath - The local target path.
  * @param {object?} options - Optional parameters, including owner and group (optional, defaults to {}).
  */
-export async function downloadFromS3(s3Bucket, s3Path, localPath, options = {}) {
+interface DownloadFromS3Options {
+  owner?: number;
+  group?: number;
+}
+
+export async function downloadFromS3(
+  s3Bucket: string,
+  s3Path: string,
+  localPath: string,
+  options: DownloadFromS3Options = {},
+) {
   if (localPath.endsWith('/')) {
     debug(`downloadFromS3: bypassing S3 and creating directory localPath=${localPath}`);
     await fs.promises.mkdir(localPath, { recursive: true });
-    if (options.owner != null && options.group != null) {
+    if (options.owner !== undefined && options.group !== undefined) {
       await fs.promises.chown(localPath, options.owner, options.group);
     }
     return;
@@ -106,7 +123,7 @@ export async function downloadFromS3(s3Bucket, s3Path, localPath, options = {}) 
 
   debug(`downloadFromS3: creating containing directory for file localPath=${localPath}`);
   await fs.promises.mkdir(path.dirname(localPath), { recursive: true });
-  if (options.owner != null && options.group != null) {
+  if (options.owner !== undefined && options.group !== undefined) {
     await fs.promises.chown(path.dirname(localPath), options.owner, options.group);
   }
 
@@ -115,7 +132,10 @@ export async function downloadFromS3(s3Bucket, s3Path, localPath, options = {}) 
     Bucket: s3Bucket,
     Key: s3Path,
   });
-  const s3Stream = /** @type {import('stream').Readable} */ (res.Body);
+  if (res.Body == null) {
+    throw new Error('No data returned from S3');
+  }
+  const s3Stream = res.Body as Readable; /* StreamingBlobPayloadOutputTypes -> Readable ? */
   const fileStream = fs.createWriteStream(localPath);
 
   await pipeline(s3Stream, fileStream);

@@ -1,4 +1,5 @@
 // @ts-check
+import type { Request, Response } from 'express';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -33,14 +34,32 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * @param {LoadUserAuth} authnParams
  * @param {LoadUserOptions} [optionsParams]
  */
-export async function loadUser(req, res, authnParams, optionsParams = {}) {
-  let options = { redirect: false, ...optionsParams };
+interface LoadUserOptions {
+  redirect?: boolean;
+}
+export interface LoadUserAuth {
+  uid?: string;
+  uin?: string | null;
+  name?: string | null;
+  email?: string | null;
+  provider: string;
+  user_id?: number;
+  institution_id?: number | string | null;
+}
 
-  let user_id;
-  if ('user_id' in authnParams) {
+export async function loadUser(
+  req: Request,
+  res: Response,
+  authnParams: LoadUserAuth,
+  optionsParams: LoadUserOptions = {},
+) {
+  const options = { redirect: false, ...optionsParams };
+
+  let user_id: number;
+  if (authnParams.user_id) {
     user_id = authnParams.user_id;
   } else {
-    let params = [
+    const params = [
       authnParams.uid,
       authnParams.name,
       authnParams.uin,
@@ -49,7 +68,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
       authnParams.institution_id,
     ];
 
-    let userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
+    const userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
 
     user_id = userSelectOrInsertRes.rows[0].user_id;
     const { result, user_institution_id } = userSelectOrInsertRes.rows[0];
