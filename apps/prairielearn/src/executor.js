@@ -114,14 +114,12 @@ if (Number.isNaN(pingTimeoutMilliseconds)) {
 }
 
 async function prepareCodeCaller() {
-  const codeCaller = new CodeCallerNative({
+  return await CodeCallerNative.create({
     dropPrivileges: true,
     questionTimeoutMilliseconds,
     pingTimeoutMilliseconds,
     errorLogger: console.error,
   });
-  await codeCaller.ensureChild();
-  return codeCaller;
 }
 
 (async () => {

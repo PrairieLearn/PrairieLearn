@@ -5,7 +5,7 @@ build-sequential:
 node-deps:
 	@yarn
 python-deps:
-	@python3 -m venv .venv
+	@python3.12 -m venv .venv
 	.venv/bin/python3 -m pip install -r images/plbase/python-requirements.txt --root-user-action=ignore
 python-deps-uv:
 	@uv venv
