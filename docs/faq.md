@@ -122,7 +122,7 @@ As a built-in security measure, assessments are automatically closed after 6 hou
 of inactivity by the student. Once an assessment is closed, the student is
 unable to provide new submissions. This is regardless of whether the end date
 specified in an access control is reached. If the examination is a take-home exam,
-then the feature can be disabled by specifying in the `infoAsssement.json`:
+then the feature can be disabled by specifying in the `infoAssessment.json`:
 
 ```
 "autoClose": false
@@ -201,7 +201,7 @@ During the sync process, all `.json` files are validated. If any syntax issues
 arise, then an error message will be triggered.
 
 The most common error is there is a missing a comma after the prior entry
-in a `infoAssessment.json` file. As a result, an unexpect token would be found.
+in a `infoAssessment.json` file. As a result, an unexpected token would be found.
 
 ```bash
 Error: Error in JSON file format: file.json (line 55, column 17)
