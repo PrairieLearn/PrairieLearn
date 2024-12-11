@@ -18,6 +18,7 @@ DECLARE
     correct boolean;
     current_auto_value double precision;
     init_auto_points double precision;
+    auto_points_accumulator numeric;
     constant_question_value boolean;
     length integer;
     var_points_old double precision;
@@ -67,11 +68,13 @@ BEGIN
 
     -- points is the sum of all elements in variants_points_list (which now must be non-empty)
     length := cardinality(variants_points_list);
-    auto_points := 0;
+    auto_points_accumulator := 0;
     FOR i in 1..length LOOP
-        auto_points := auto_points + variants_points_list[i];
+        -- We convert values to `numeric` to avoid accumulating floating-point
+        -- errors when summing non-integer points.
+        auto_points_accumulator := auto_points_accumulator + variants_points_list[i]::numeric;
     END LOOP;
-    auto_points := least(auto_points, aq.max_auto_points);
+    auto_points := least(auto_points_accumulator, aq.max_auto_points);
 
     -- status
     IF auto_points >= aq.max_auto_points AND aq.max_manual_points = 0 THEN
