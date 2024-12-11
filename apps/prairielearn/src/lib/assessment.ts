@@ -16,6 +16,7 @@ import {
   type AssessmentInstance,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
+import { getGroupId } from './groups.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -100,31 +101,56 @@ export function renderText(
  * @param date - The date of creation for the new assessment instance.
  * @returns The ID of the new assessment instance.
  */
-export async function makeAssessmentInstance(
-  assessment_id: string,
-  user_id: string,
-  group_work: boolean,
-  authn_user_id: string,
-  mode: AssessmentInstance['mode'],
-  time_limit_min: number | null,
-  date: Date,
-  client_fingerprint_id: string | null,
-): Promise<string> {
-  const assessment_instance_id = await sqldb.callRow(
-    'assessment_instances_insert',
-    [
-      assessment_id,
-      user_id,
-      group_work,
-      authn_user_id,
-      mode,
-      time_limit_min,
-      date,
-      client_fingerprint_id,
-    ],
-    IdSchema,
-  );
-  return assessment_instance_id;
+export async function makeAssessmentInstance({
+  assessment_id,
+  user_id,
+  group_work,
+  authn_user_id,
+  mode,
+  time_limit_min,
+  date,
+  client_fingerprint_id,
+}: {
+  assessment_id: string;
+  user_id: string;
+  group_work: boolean;
+  authn_user_id: string;
+  mode: AssessmentInstance['mode'];
+  time_limit_min: number | null;
+  date: Date;
+  client_fingerprint_id: string | null;
+}): Promise<string> {
+  return await sqldb.runInTransactionAsync(async () => {
+    let group_id: string | null = null;
+    if (group_work) {
+      group_id = await getGroupId(assessment_id, user_id);
+      if (group_id == null) {
+        throw new error.HttpStatusError(403, 'No group found for this user in this assessment');
+      }
+    }
+
+    const { assessment_instance_id, created } = await sqldb.queryRow(
+      sql.insert_assessment_instance,
+      {
+        assessment_id,
+        group_id,
+        user_id,
+        mode,
+        time_limit_min,
+        date,
+        client_fingerprint_id,
+        authn_user_id,
+      },
+      z.object({ assessment_instance_id: IdSchema, created: z.boolean() }),
+    );
+
+    // Only update the assessment instance if a new instance was created.
+    if (created) {
+      await updateAssessmentInstance(assessment_instance_id, authn_user_id, false);
+    }
+
+    return assessment_instance_id;
+  });
 }
 
 /**
