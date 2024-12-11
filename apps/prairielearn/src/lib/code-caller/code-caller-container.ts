@@ -5,7 +5,7 @@ import * as path from 'node:path';
 import { ECRClient } from '@aws-sdk/client-ecr';
 import { Mutex } from 'async-mutex';
 import debugfn from 'debug';
-import Docker from 'dockerode';
+import Docker, { type Container } from 'dockerode';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import MemoryStream from 'memorystream';
@@ -21,14 +21,16 @@ import { makeAwsClientConfig } from '../aws.js';
 import { config } from '../config.js';
 import { deferredPromise } from '../deferred.js';
 
-import { FunctionMissingError } from './code-caller-shared.js';
-
-/** @typedef {typeof CREATED | typeof WAITING | typeof IN_CALL | typeof EXITING | typeof EXITED} CallerState */
-const CREATED = Symbol('CREATED');
-const WAITING = Symbol('WAITING');
-const IN_CALL = Symbol('IN_CALL');
-const EXITING = Symbol('EXITING');
-const EXITED = Symbol('EXITED');
+import {
+  FunctionMissingError,
+  type CallType,
+  CREATED,
+  IN_CALL,
+  EXITING,
+  EXITED,
+  WAITING,
+  type CallerState,
+} from './code-caller-shared.js';
 
 const MOUNT_DIRECTORY_PREFIX = 'prairielearn-worker-';
 
@@ -118,6 +120,25 @@ async function ensureImage() {
  * @implements {CodeCaller}
  */
 export class CodeCallerContainer {
+  state: CallerState;
+  uuid: string;
+  container: Container | null;
+  callback: ((err: Error | null, data: any, output: string) => void) | null;
+  timeoutID: NodeJS.Timeout | null;
+  callCount: number;
+  ensureChildMutex: Mutex;
+  hasBindMount: boolean;
+  options: { questionTimeoutMilliseconds: number; pingTimeoutMilliseconds: number };
+  stdinStream: MemoryStream | null;
+  stdoutStream: MemoryStream | null;
+  stderrStream: MemoryStream | null;
+  outputStdout: string[];
+  outputStderr: string[];
+  outputBoth: string;
+  lastCallData: any;
+  coursePath: string | null;
+  forbiddenModules: string[];
+  hostDirectory: tmp.DirectoryResult | null;
   constructor(options = { questionTimeoutMilliseconds: 5_000, pingTimeoutMilliseconds: 60_000 }) {
     /** @type {CallerState} */
     this.state = CREATED;
@@ -148,7 +169,7 @@ export class CodeCallerContainer {
     this.coursePath = null;
     this.forbiddenModules = [];
 
-    this._checkState();
+    this._checkState(undefined);
 
     this.debug(`exit constructor(), state: ${String(this.state)}, uuid: ${this.uuid}`);
   }
@@ -231,7 +252,13 @@ export class CodeCallerContainer {
    * @param {any[]} args
    * @returns {Promise<{ result: any, output: string }>}
    */
-  async call(type, directory, file, fcn, args) {
+  async call(
+    type: CallType,
+    directory: string | null,
+    file: string | null,
+    fcn: string,
+    args: any[],
+  ): Promise<{ result: any; output: string }> {
     this.debug(`enter call(${type}, ${directory}, ${file}, ${fcn})`);
     this.callCount += 1;
 
@@ -280,10 +307,10 @@ export class CodeCallerContainer {
     this.stdinStream?.write('\n');
 
     this.state = IN_CALL;
-    this._checkState();
+    this._checkState(undefined);
     this.debug('exit call()');
 
-    return deferred.promise;
+    return deferred.promise as any as { result: any; output: string };
   }
 
   async restart() {
@@ -329,13 +356,13 @@ export class CodeCallerContainer {
       this._cleanup();
       this.state = EXITING;
     }
-    this._checkState();
+    this._checkState(undefined);
     this.debug('exit done()');
   }
 
   async ensureChild() {
     this.debug('enter ensureChild()');
-    this._checkState();
+    this._checkState(undefined);
 
     // Since container creation is async, it's possible that ensureChild()
     // could be called again while it's already executing. For instance, we
@@ -358,11 +385,11 @@ export class CodeCallerContainer {
 
       await this.call('ping', null, null, 'ping', []);
 
-      this._checkState();
+      this._checkState(undefined);
       this.debug('exit _ensureChild()');
     });
 
-    this._checkState();
+    this._checkState(undefined);
     this.debug('exit ensureChild()');
   }
 
@@ -439,7 +466,7 @@ export class CodeCallerContainer {
     this.container
       .wait()
       .then((status) => this._handleContainerExit(null, status))
-      .catch((err) => this._handleContainerExit(err));
+      .catch((err) => this._handleContainerExit(err, 999));
     this.debug('exit _createAndAttachContainer');
   }
 
@@ -470,7 +497,11 @@ export class CodeCallerContainer {
     this.timeoutID = null;
     this._cleanup();
     this.state = EXITING;
-    this._callCallback(new Error('timeout exceeded, killing CodeCallerContainer container'));
+    this._callCallback(
+      new Error('timeout exceeded, killing CodeCallerContainer container'),
+      undefined,
+      '',
+    );
     this.debug('exit _timeout()');
   }
 
@@ -508,6 +539,8 @@ export class CodeCallerContainer {
             code,
           )}, err = ${err}`,
         ),
+        undefined,
+        '',
       );
     } else if (this.state === EXITING) {
       // no error, this is the good case
@@ -522,7 +555,7 @@ export class CodeCallerContainer {
    * @param {any} [data]
    * @param {string} [output]
    */
-  _callCallback(err, data, output) {
+  _callCallback(err: (Error & { data?: any }) | null, data: any, output: string) {
     this.debug('enter _callCallback()');
     if (err) err.data = this._errorData();
     const c = this.callback;
@@ -535,11 +568,17 @@ export class CodeCallerContainer {
     this.debug('enter _callIsFinished()');
     if (!this._checkState([IN_CALL])) return;
     this._clearTimeout();
-    let data = null;
-    let err = null;
+    let data: {
+      error?: string;
+      errorData?: { outputBoth: string };
+      functionMissing?: boolean;
+      data: any;
+      output: string;
+    } | null = null;
+    let err: Error | null = null;
     try {
       data = JSON.parse(this.outputStdout.join(''));
-      if (data.error) {
+      if (data && data.error) {
         err = new Error(data.error);
         if (data.errorData && data.errorData.outputBoth) {
           this.outputBoth = data.errorData.outputBoth;
@@ -550,12 +589,12 @@ export class CodeCallerContainer {
     }
     this.state = WAITING;
     if (err) {
-      this._callCallback(err);
+      this._callCallback(err, undefined, '');
     } else {
-      if (data.functionMissing) {
-        this._callCallback(new FunctionMissingError('Function not found in module'));
+      if (data?.functionMissing) {
+        this._callCallback(new FunctionMissingError('Function not found in module'), undefined, '');
       } else {
-        this._callCallback(null, data.data, data.output);
+        this._callCallback(null, data?.data, data?.output || '');
       }
     }
 
@@ -656,7 +695,7 @@ export class CodeCallerContainer {
    *
    * @param {CallerState[]} [allowedStates]
    */
-  _checkState(allowedStates) {
+  _checkState(allowedStates: CallerState[] | undefined) {
     if (allowedStates && !allowedStates.includes(this.state)) {
       const allowedStatesList = allowedStates.map(String).join(', ');
       return this._logError(
