@@ -62,7 +62,7 @@ export function InstructorAssessmentQuestions({
     <html lang="en">
       <head>
         ${HeadContents({ resLocals })}
-        ${compiledScriptTag('instructorAssessmentQuestionsClient.ts')}
+        ${compiledScriptTag('instructorAssessmentQuestionsClient.tsx')}
       </head>
       <body>
         ${Navbar({ resLocals })}
@@ -101,6 +101,9 @@ export function InstructorAssessmentQuestions({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions</h1>
+              ${resLocals.authz_data.has_course_instance_permission_edit
+                ? html` <div class="js-edit-mode-buttons ml-auto"></div> `
+                : ''}
             </div>
             ${AssessmentQuestionsTable({
               questions,
