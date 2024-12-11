@@ -11,13 +11,14 @@ import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
 
 onDocumentReady(() => {
-  const {
+  let {
     course_instance_ids,
     showAddQuestionButton,
     showAiGenerateQuestionButton,
     qidPrefix,
     urlPrefix,
     plainUrlPrefix,
+    currentQid,
   } = decodeData('questions-table-data');
   window.topicList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
@@ -42,6 +43,10 @@ onDocumentReady(() => {
   window.versionList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.display_type));
+  };
+
+  window.radioFormatter = function (radio, question) {
+    return question.qid === currentQid;
   };
 
   window.qidFormatter = function (qid, question) {
@@ -183,6 +188,10 @@ onDocumentReady(() => {
           $('#questionsTable').bootstrapTable('clearFilterControl');
         },
       },
+    },
+
+    onCheck(row) {
+      currentQid = row.qid;
     },
 
     onResetView() {

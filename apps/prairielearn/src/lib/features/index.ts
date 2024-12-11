@@ -12,6 +12,7 @@ const featureNames = [
   'bootstrap-4',
   // Should only be applied to institutions.
   'lti13',
+  'assessment-questions-editor',
 ] as const;
 
 const features = new FeatureManager(featureNames);
