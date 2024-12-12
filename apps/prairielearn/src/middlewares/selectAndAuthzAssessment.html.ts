@@ -15,20 +15,22 @@ export function AccessDenied({ resLocals }: { resLocals: Record<string, any> }) 
       <body>
         ${Navbar({ resLocals, navPage: 'assessment_instance' })}
         <main id="content" class="container">
-          <h1>Assessment Unavailable</h1>
-          <p>
-            This assessment's configuration does not allow you to access it right now. This is the
-            intended behavior (and not an error) based on your current time, location, or other
-            parameters.
-          </p>
-          <div>
-            <a href="/pl/course_instance/${courseInstance}/assessments" class="btn btn-primary">
-              Go to Assessments
-            </a>
-            <a href="${config.urlPrefix}" class="btn btn-primary">
-              <i class="fa fa-home" aria-hidden="true"></i>
-              PrairieLearn home
-            </a>
+          <div class="card mb-4">
+            <div class="card-header bg-primary text-white">Assessment Unavailable</div>
+            <div class="card-body">
+              <p>This assessment's configuration does not allow you to access it right now.</p>
+              <p>
+                This is the intended behavior (and not an error) based on your current time,
+                location, or other parameters.
+              </p>
+              <a href="/pl/course_instance/${courseInstance}/assessments" class="btn btn-primary">
+                Go to Assessments
+              </a>
+              <a href="${config.urlPrefix}" class="btn btn-primary">
+                <i class="fa fa-home" aria-hidden="true"></i>
+                PrairieLearn home
+              </a>
+            </div>
           </div>
         </main>
       </body>
