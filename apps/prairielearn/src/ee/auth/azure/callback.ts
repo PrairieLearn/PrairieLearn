@@ -45,7 +45,6 @@ router.post(
       uin: null,
       email: user._json.email || null,
       provider: 'Azure',
-      institution_id: null,
     };
 
     await authnLib.loadUser(req, res, authnParams, {

@@ -39,7 +39,7 @@ export async function loadUser(
   const options = { redirect: false, ...optionsParams };
 
   let user_id: number;
-  if (authnParams.user_id) {
+  if (authnParams.user_id !== undefined) {
     user_id = authnParams.user_id;
   } else {
     const params = [

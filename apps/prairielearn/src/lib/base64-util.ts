@@ -1,4 +1,3 @@
-// @ts-check
 import { logger } from '@prairielearn/logger';
 
 const atob = (s: string) => String.fromCharCode(...Buffer.from(s, 'base64'));

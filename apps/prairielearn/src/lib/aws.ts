@@ -1,15 +1,14 @@
-// @ts-check
 import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
-import { type Readable } from 'stream';
 
 import {
-  type GetObjectOutput,
   S3,
+  type GetObjectOutput,
   type CompleteMultipartUploadCommandOutput,
 } from '@aws-sdk/client-s3';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { Upload } from '@aws-sdk/lib-storage';
+import { type NodeJsClient } from '@smithy/types';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 
@@ -96,56 +95,35 @@ export async function uploadToS3(
   return res;
 }
 
-interface DownloadFromS3Options {
-  owner?: number;
-  group?: number;
-}
-
 /**
  * Download a file or directory from S3.
  *
  * @param s3Bucket - The S3 bucket name.
  * @param s3Path - The S3 source path.
  * @param localPath - The local target path.
- * @param options - Optional parameters, including owner and group (optional, defaults to {}).
  */
-export async function downloadFromS3(
-  s3Bucket: string,
-  s3Path: string,
-  localPath: string,
-  options: DownloadFromS3Options = {},
-) {
+export async function downloadFromS3(s3Bucket: string, s3Path: string, localPath: string) {
   if (localPath.endsWith('/')) {
     debug(`downloadFromS3: bypassing S3 and creating directory localPath=${localPath}`);
     await fs.promises.mkdir(localPath, { recursive: true });
-    if (options.owner !== undefined && options.group !== undefined) {
-      await fs.promises.chown(localPath, options.owner, options.group);
-    }
     return;
   }
 
   debug(`downloadFromS3: creating containing directory for file localPath=${localPath}`);
   await fs.promises.mkdir(path.dirname(localPath), { recursive: true });
-  if (options.owner !== undefined && options.group !== undefined) {
-    await fs.promises.chown(path.dirname(localPath), options.owner, options.group);
-  }
 
-  const s3 = new S3(makeS3ClientConfig());
+  const s3 = new S3(makeS3ClientConfig()) as NodeJsClient<S3>;
   const res = await s3.getObject({
     Bucket: s3Bucket,
     Key: s3Path,
   });
-  if (res.Body == null) {
+  if (res.Body === undefined) {
     throw new Error('No data returned from S3');
   }
-  const s3Stream = res.Body as Readable; /* StreamingBlobPayloadOutputTypes -> Readable ? */
+  const s3Stream = res.Body;
   const fileStream = fs.createWriteStream(localPath);
 
   await pipeline(s3Stream, fileStream);
-
-  if (options.owner != null && options.group != null) {
-    await fs.chown(localPath, options.owner, options.group);
-  }
 }
 
 /**

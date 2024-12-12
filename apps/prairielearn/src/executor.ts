@@ -1,4 +1,3 @@
-// @ts-check
 import { createInterface } from 'node:readline';
 
 import {
@@ -93,7 +92,7 @@ async function handleInput(line: string, codeCaller: CodeCallerNative): Promise<
     // `FunctionMissingError` shouldn't be propagated as an actual error
     // we'll report it via `functionMissing`
     error: callErr && !functionMissing ? callErr.message : undefined,
-    errorData: callErr && !functionMissing ? callErr.data : undefined,
+    errorData: callErr && !functionMissing ? (callErr as CodeCallerError).data : undefined,
     data: result,
     output,
     functionMissing,
