@@ -1,4 +1,3 @@
-// @ts-check
 import { parseISO, isValid } from 'date-fns';
 import debugfn from 'debug';
 import { type Request, type Response } from 'express';
@@ -20,9 +19,12 @@ const debug = debugfn('prairielearn:authzCourseOrInstance');
 /**
  * Removes all override cookies from the response.
  */
-function clearOverrideCookies(res: Response, overrides: {
-  cookie: string;
-}[]) {
+function clearOverrideCookies(
+  res: Response,
+  overrides: {
+    cookie: string;
+  }[],
+) {
   overrides.forEach((override) => {
     debug(`clearing cookie: ${override.cookie}`);
     const newName = override.cookie.replace(/^pl2_/, 'pl_');

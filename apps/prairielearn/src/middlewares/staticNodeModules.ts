@@ -1,4 +1,3 @@
-// @ts-check
 import * as path from 'node:path';
 
 import * as express from 'express';

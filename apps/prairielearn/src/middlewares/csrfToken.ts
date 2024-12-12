@@ -1,4 +1,3 @@
-// @ts-check
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -12,7 +11,7 @@ interface TokenData {
 }
 
 export default asyncHandler(async (req, res, next) => {
-  const tokenData : TokenData = {
+  const tokenData: TokenData = {
     url: req.originalUrl,
   };
 

@@ -1,4 +1,3 @@
-// @ts-check
 import { type NextFunction, type Request, type Response } from 'express';
 
 import { config } from '../lib/config.js';

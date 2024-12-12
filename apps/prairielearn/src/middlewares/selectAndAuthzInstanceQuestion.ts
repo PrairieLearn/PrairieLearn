@@ -1,4 +1,3 @@
-// @ts-check
 import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 

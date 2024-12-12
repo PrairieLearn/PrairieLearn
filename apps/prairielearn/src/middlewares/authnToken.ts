@@ -1,4 +1,3 @@
-// @ts-check
 import * as crypto from 'node:crypto';
 
 import asyncHandler from 'express-async-handler';
