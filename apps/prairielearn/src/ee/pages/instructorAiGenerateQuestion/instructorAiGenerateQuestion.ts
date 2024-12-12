@@ -3,17 +3,18 @@ import asyncHandler from 'express-async-handler';
 import { OpenAI } from 'openai';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
-import { QuestionSchema } from '../../../lib/db-types.js';
-import { QuestionAddEditor } from '../../../lib/editors.js';
+import { getCourseFilesClient } from '../../../lib/course-files-api.js';
+import { AiGenerationPromptSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { selectJobsByJobSequenceId } from '../../../lib/server-jobs.js';
 import { generateQuestion, regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
 
+const sql = loadSqlEquiv(import.meta.url);
 import {
   AiGeneratePage,
   GenerationFailure,
@@ -21,8 +22,6 @@ import {
 } from './instructorAiGenerateQuestion.html.js';
 
 const router = express.Router();
-
-const sql = loadSqlEquiv(import.meta.url);
 
 export async function saveGeneratedQuestion(
   res,
@@ -39,26 +38,21 @@ export async function saveGeneratedQuestion(
     files['server.py'] = pythonFileContents;
   }
 
-  const editor = new QuestionAddEditor({
-    locals: res.locals,
+  const client = getCourseFilesClient();
+
+  const result = await client.createQuestion.mutate({
+    course_id: res.locals.course.id,
+    user_id: res.locals.user.user_id,
+    authn_user_id: res.locals.authn_user.user_id,
+    has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
     files,
   });
 
-  const serverJob = await editor.prepareServerJob();
-
-  try {
-    await editor.executeWithServerJob(serverJob);
-  } catch {
-    throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+  if (result.status === 'error') {
+    throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
   }
 
-  const result = await queryRow(
-    sql.select_added_question,
-    { uuid: editor.uuid, course_id: res.locals.course.id.toString() },
-    QuestionSchema,
-  );
-
-  return result.id;
+  return result.question_id;
 }
 
 function assertCanCreateQuestion(resLocals: Record<string, any>) {
@@ -114,6 +108,8 @@ router.post(
         promptGeneral: req.body.prompt,
         promptUserInput: req.body.prompt_user_input,
         promptGrading: req.body.prompt_grading,
+        userId: res.locals.authn_user.user_id,
+        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });
 
       if (result.htmlResult) {
@@ -146,14 +142,29 @@ router.post(
         );
       }
 
+      const qid = genJobs[0]?.data['questionQid'];
+
+      const prompts = await queryRows(
+        sql.select_ai_question_generation_prompts,
+        { qid, course_id: res.locals.course.id.toString() },
+        AiGenerationPromptSchema,
+      );
+
+      if (prompts.length < 1) {
+        throw new error.HttpStatusError(403, `Prompts for question ${qid} not found.`);
+      }
+
       const result = await regenerateQuestion(
         client,
         res.locals.course.id,
         res.locals.authn_user.user_id,
-        genJobs[0]?.data?.prompt,
+        prompts[0]?.user_prompt,
         req.body.prompt,
-        genJobs[0]?.data?.html,
-        genJobs[0]?.data?.python,
+        prompts[prompts.length - 1].html || '',
+        prompts[prompts.length - 1].python || '',
+        qid,
+        res.locals.authn_user.user_id,
+        res.locals.authz_data.has_course_permission_edit,
       );
 
       if (result.htmlResult) {

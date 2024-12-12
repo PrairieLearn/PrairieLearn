@@ -350,14 +350,13 @@ function testEdit(params) {
 
   describe(`POST to ${params.url} with action ${params.action}`, function () {
     it('should load successfully', async () => {
-      const form = {
-        __action: params.action,
-        __csrf_token: locals.__csrf_token,
-        ...(params?.data ?? {}),
-      };
       const res = await fetch(params.url || locals.url, {
         method: 'POST',
-        body: new URLSearchParams(form),
+        body: new URLSearchParams({
+          __action: params.action,
+          __csrf_token: locals.__csrf_token,
+          ...(params?.data ?? {}),
+        }),
       });
       assert.isOk(res.ok);
       locals.url = res.url;

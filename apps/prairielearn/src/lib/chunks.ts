@@ -907,8 +907,23 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       chunkExists = true;
     }
   } catch (err) {
-    // Allow ENOENT errors to continue, because they mean we don't have the chunk
-    if (err.code !== 'ENOENT') throw err;
+    // If we encounter an EINVAL error, chances are that we're trying to `readlink`
+    // on a directory. This can occur if a question is renamed to a parent directory,
+    // e.g. renamed from `foo/bar/baz` to `foo/bar`. In this case, we should remove
+    // the existing target path and continue.
+    //
+    // Our syncing code guarantees that if a question `foo/bar` exists, then no
+    // question with that same prefix will exist, so we can always safely remove
+    // the existing target directory.
+    //
+    // If the target path isn't a directory, who knows what state we're in, so we
+    // allow the error to propagate.
+    if (err.code === 'EINVAL' && (await fs.stat(targetPath)).isDirectory()) {
+      await fs.remove(targetPath);
+    } else if (err.code !== 'ENOENT') {
+      // Allow ENOENT errors to continue, because they mean we don't have the chunk
+      throw err;
+    }
   }
   if (chunkExists) {
     // If we have the correct link then this chunk is unpacked and

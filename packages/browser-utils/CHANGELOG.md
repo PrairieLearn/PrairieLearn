@@ -1,5 +1,13 @@
 # @prairielearn/browser-utils
 
+## 2.2.3
+
+### Patch Changes
+
+- 315d931: Upgrade all JavaScript dependencies
+- Updated dependencies [315d931]
+  - @prairielearn/html@4.0.7
+
 ## 2.2.2
 
 ### Patch Changes

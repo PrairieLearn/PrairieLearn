@@ -230,6 +230,30 @@ Some courses may use libraries that are common across multiple questions. For su
 }
 ```
 
+### Example Usage of `serverFilesCourse` for static data
+
+The Python autograder is able to retrieve information from `serverFilesCourse`. This can be used when there are files and other static data that can be shared across multiple questions. For example, assume there is a data file called `chem.json` used in multiple questions. The file can be saved in the `serverFilesCourse` directory within the course root directory, for example at `serverFilesCourse/compounds/chem.json`.
+
+To access `serverFilesCourse` from the autograder, specify the file or its containing directory in the question `info.json`. For example, to copy the `compounds` directory to the autograder, use:
+
+```json
+    "externalGradingOptions": {
+        "enabled": true,
+        "image": "prairielearn/grader-python",
+        "entrypoint": "/python_autograder/run.sh",
+        "serverFilesCourse": ["compounds"]
+    }
+```
+
+The tests in `test.py` can then load the `chem.json` file using code such as the following:
+
+```python
+import json
+
+with open("/grade/serverFilesCourse/compounds/chem.json", "r") as f:
+    list_of_compounds = json.load(f)
+```
+
 ## Security
 
 At the start of a grading job, the script `run.sh` is run with `root` privileges. This will initialise directories and copy grading files into the correct location, delete itself, and generate a secret filename for the grading results using `uuidgen` which is passed into the grading code via command-line argument. Then the actual grading script will then be run (`pltest.py`) as the user `ag`.
