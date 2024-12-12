@@ -199,7 +199,6 @@ export class CodeCallerContainer {
   /**
    * Wrapper around `removeBindMount` that includes instance-specific logs.
    *
-   * @param mountpoint
    */
   async removeBindMountIfNeeded(mountpoint: string) {
     if (!this.hasBindMount) return;
@@ -235,14 +234,6 @@ export class CodeCallerContainer {
     await this.createBindMount(coursePath, this.hostDirectory.path);
   }
 
-  /**
-   * @param {CallType} type
-   * @param {string | null} directory
-   * @param {string | null} file
-   * @param {string} fcn
-   * @param {any[]} args
-   * @returns {Promise<{ result: any, output: string }>}
-   */
   async call(
     type: CallType,
     directory: string | null,
@@ -498,8 +489,8 @@ export class CodeCallerContainer {
   /**
    * Can be called asynchronously at any time if the container exits.
    *
-   * @param {Error | null | undefined} err An error that occurred while waiting for the container to exit.
-   * @param {number} [code] The status code that the container exited with
+   * @param err An error that occurred while waiting for the container to exit.
+   * @param code The status code that the container exited with
    */
   async _handleContainerExit(err: Error | null | undefined, code: number) {
     this.debug('enter _handleContainerExit()');
