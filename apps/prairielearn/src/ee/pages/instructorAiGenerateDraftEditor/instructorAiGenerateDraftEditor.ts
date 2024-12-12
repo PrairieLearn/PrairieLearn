@@ -25,7 +25,7 @@ import { GenerationFailure } from '../instructorAiGenerateQuestion/instructorAiG
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 
-const router = express.Router();
+const router = express.Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
 
 export async function saveGeneratedQuestion(
@@ -88,16 +88,24 @@ router.use(
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    assertCanCreateQuestion(res.locals);
-    if (!res.locals.question_id) {
-      // There wasn't a `question_id` in the URL, so redirect to the question list.
-      // TODO: is this actually necessary anymore?
-      res.redirect(`${res.locals.urlPrefix}/ai_generate_question_drafts`);
+    res.locals.question = await selectQuestionById(req.params.question_id);
+
+    // Ensure the question belongs to this course and that it's a draft question.
+    if (
+      !idsEqual(res.locals.question.course_id, res.locals.course.id) ||
+      !res.locals.question.draft
+    ) {
+      throw new error.HttpStatusError(404, 'Draft question not found');
     }
+
+    assertCanCreateQuestion(res.locals);
 
     const prompts = await queryRows(
       sql.select_ai_question_generation_prompts,
-      { question_id: res.locals.question_id, course_id: res.locals.course.id.toString() },
+      {
+        question_id: req.params.question_id,
+        course_id: res.locals.course.id,
+      },
       AiGenerationPromptSchema,
     );
 
@@ -109,15 +117,19 @@ router.get(
       //
       // TODO: We should pull the HTML and Python off disk instead of relying on
       // the prompt history.
-      throw new error.HttpStatusError(404, 'No prompt history found.');
+      throw new error.HttpStatusError(404, 'No prompt history found');
     }
-
-    res.locals.question = await selectQuestionById(res.locals.question_id);
 
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
     // Render the preview.
-    await getAndRenderVariant(variant_id, null, res.locals);
+    await getAndRenderVariant(variant_id, null, res.locals, {
+      urlOverrides: {
+        // By default, this would be the URL to the instructor question preview page.
+        // We need to redirect to this same page instead.
+        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`,
+      },
+    });
     await setQuestionCopyTargets(res);
     await logPageView('instructorQuestionPreview', req, res);
     setRendererHeader(res);
@@ -136,6 +148,13 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    const question = await selectQuestionById(req.params.question_id);
+
+    // Ensure the question belongs to this course and that it's a draft question.
+    if (!idsEqual(question.course_id, res.locals.course.id) || !question.draft || !question.qid) {
+      throw new error.HttpStatusError(404, 'Draft question not found');
+    }
+
     assertCanCreateQuestion(res.locals);
 
     if (!config.openAiApiKey || !config.openAiOrganization) {
@@ -148,25 +167,17 @@ router.post(
     });
 
     if (req.body.__action === 'regenerate_question') {
-      const question = await selectQuestionById(res.locals.question_id);
-      if (!idsEqual(question.course_id, res.locals.course.id) || !question.qid) {
-        throw new error.HttpStatusError(
-          403,
-          `Draft question with id ${res.locals.question_id} not found.`,
-        );
-      }
-
       const prompts = await queryRows(
         sql.select_ai_question_generation_prompts,
-        { question_id: res.locals.question_id, course_id: res.locals.course.id.toString() },
+        {
+          question_id: req.params.question_id,
+          course_id: res.locals.course.id,
+        },
         AiGenerationPromptSchema,
       );
 
       if (prompts.length < 1) {
-        throw new error.HttpStatusError(
-          403,
-          `Prompts for question ${req.body.unsafe_qid} not found.`,
-        );
+        throw new error.HttpStatusError(403, 'Prompt history not found.');
       }
 
       const result = await regenerateQuestion(
@@ -198,14 +209,18 @@ router.post(
     } else if (req.body.__action === 'save_question') {
       const prompts = await queryRows(
         sql.select_ai_question_generation_prompts,
-        { question_id: res.locals.question_id, course_id: res.locals.course.id.toString() },
+        {
+          question_id: question.id,
+          course_id: res.locals.course.id,
+        },
         AiGenerationPromptSchema,
       );
 
       if (prompts.length === 0) {
-        throw new error.HttpStatusError(403, `Draft question ${req.body.unsafe_qid} not found.`);
+        throw new error.HttpStatusError(403, 'Prompt history not found.');
       }
 
+      // TODO: any membership checks needed here?
       const qid = await saveGeneratedQuestion(
         res,
         prompts[prompts.length - 1].html || undefined,
@@ -216,16 +231,10 @@ router.post(
 
       res.redirect(res.locals.urlPrefix + '/question/' + qid + '/settings');
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
-      res.locals.question = await selectQuestionById(res.locals.question_id);
-      if (!idsEqual(res.locals.question.course_id, res.locals.course.id)) {
-        throw new error.HttpStatusError(
-          403,
-          `Draft question with id ${res.locals.question_id} not found.`,
-        );
-      }
+      res.locals.question = question;
       const variantId = await processSubmission(req, res);
       res.redirect(
-        `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question_id}?variant_id=${variantId}`,
+        `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}?variant_id=${variantId}`,
       );
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
@@ -233,23 +242,4 @@ router.post(
   }),
 );
 
-router.get(
-  '/variant/:variant_id(\\d+)/submission/:submission_id(\\d+)',
-  asyncHandler(async (req, res) => {
-    const panels = await renderPanelsForSubmission({
-      submission_id: req.params.submission_id,
-      question: res.locals.question,
-      instance_question: null,
-      variant_id: req.params.variant_id,
-      user: res.locals.user,
-      urlPrefix: res.locals.urlPrefix,
-      questionContext: 'instructor',
-      // This is only used by score panels, which are not rendered in this context.
-      authorizedEdit: false,
-      // Score panels are never rendered on this page.
-      renderScorePanels: false,
-    });
-    res.json(panels);
-  }),
-);
 export default router;

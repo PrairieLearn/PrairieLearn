@@ -1299,17 +1299,9 @@ export async function initExpress() {
   ]);
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
-    [
-      function (req, res, next) {
-        res.locals.question_id = req.params.question_id;
-        next();
-      },
-      (
-        await import(
-          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
-        )
-      ).default,
-    ],
+
+    (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
+      .default,
   );
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts', [
     (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
@@ -1827,14 +1819,11 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
-  app.use('/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)', [
-    function (req, res, next) {
-      res.locals.question_id = req.params.question_id;
-      next();
-    },
+  app.use(
+    '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
     (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
       .default,
-  ]);
+  );
   app.use('/pl/course/:course_id(\\d+)/ai_generate_question_drafts', [
     (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
   ]);
