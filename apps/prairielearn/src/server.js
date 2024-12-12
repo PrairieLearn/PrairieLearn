@@ -1297,13 +1297,15 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_jobs', [
-    (await import('./ee/pages/instructorAiGenerateJobs/instructorAiGenerateJobs.js')).default,
-  ]);
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_job/:job_sequence_id(\\d+)',
-    [(await import('./ee/pages/instructorAiGenerateJob/instructorAiGenerateJob.js')).default],
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
+
+    (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
+      .default,
   );
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts', [
+    (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
+  ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question', [
     function (req, res, next) {
       res.locals.navSubPage = 'questions';
@@ -1822,11 +1824,13 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
-  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_jobs', [
-    (await import('./ee/pages/instructorAiGenerateJobs/instructorAiGenerateJobs.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_job/:job_sequence_id(\\d+)', [
-    (await import('./ee/pages/instructorAiGenerateJob/instructorAiGenerateJob.js')).default,
+  app.use(
+    '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
+    (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
+      .default,
+  );
+  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_drafts', [
+    (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/ai_generate_question', [
     function (req, res, next) {
