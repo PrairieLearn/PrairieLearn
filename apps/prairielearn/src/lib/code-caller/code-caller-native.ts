@@ -1,4 +1,3 @@
-// @ts-check
 import * as child_process from 'node:child_process';
 import { type SpawnOptions, type IOType } from 'node:child_process';
 import * as path from 'node:path';
