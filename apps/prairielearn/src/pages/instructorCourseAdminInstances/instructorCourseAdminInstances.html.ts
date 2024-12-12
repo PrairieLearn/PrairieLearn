@@ -160,7 +160,7 @@ export function InstructorCourseAdminInstances({
                         `;
                       }
                       return html`
-                        <form class="ml-auto" name="add-course-instance-form" method="POST">
+                        <form method="POST">
                           <input
                             type="hidden"
                             name="__csrf_token"
