@@ -36,7 +36,7 @@ pl-my-element
 
 And an `info.json` with the following contents:
 
-```json
+```json title="info.json"
 {
   "controller": "pl-my-element.py",
   "dependencies": {
@@ -111,7 +111,7 @@ It's likely that your element will depend on certain client-side assets, such as
 
 Dependencies are listed in your element's `info.json`. You can configure them for your element as follows:
 
-```json
+```json title="info.json"
 {
   "controller": "pl-my-element.py",
   "dependencies": {

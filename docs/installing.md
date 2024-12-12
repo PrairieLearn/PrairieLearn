@@ -14,7 +14,9 @@ Here are the instructions to install WSL 2 and enable its integration with Docke
 - Enable the Docker Desktop WSL 2 backend. For current instructions, [follow the Docker documentation](https://docs.docker.com/desktop/windows/wsl/).
 - On the shell of your WSL 2 instance, make sure Docker Engine is installed. The installation process may depend on the distribution of your WSL 2 instance. For current instructions, [follow the Docker documentation](https://docs.docker.com/engine/install/).
 
-**NOTE**: We do not currently support a Windows environment without WSL 2, due to extreme performance issues, limitations related to file permissions in job folders, as well as issues associated to file formats. While there are ways to run PrairieLearn in this environment, it may not provide the same experience that a student would see in a production environment, and as such it is discouraged and not documented. In all cases below, the Windows examples assume that WSL 2 is installed.
+!!! warning
+
+    We do not currently support a Windows environment without WSL 2, due to extreme performance issues, limitations related to file permissions in job folders, as well as issues associated to file formats. While there are ways to run PrairieLearn in this environment, it may not provide the same experience that a student would see in a production environment, and as such it is discouraged and not documented. In all cases below, the Windows examples assume that WSL 2 is installed.
 
 ## Cloning your course repository
 
@@ -73,8 +75,6 @@ docker run -it --rm -p 3000:3000 --platform linux/amd64 prairielearn/prairielear
 When running the image, you may get an error like `pg_ctl: could not start server`. To fix this, open Docker Desktop settings, click on "General", check the option to use the virtualization framework, and check "Use Rosetta for x86/amd64 emulation on Apple Silicon". Then, click "Apply & Restart". After Docker Desktop restarts, try the above `docker run ...` command again.
 
 If Docker's Rosetta option isn't enabled, first check Apple's instructions to [install Rosetta](https://support.apple.com/en-us/102527).
-
-_Note that the use of R in `server.py` is not currently supported on ARM64 hardware._
 
 ### Support for external graders and workspaces
 
@@ -140,6 +140,8 @@ The commands above will always run the very latest version of PrairieLearn, whic
 docker run -it --rm -p 3000:3000 --pull=always [other args] prairielearn/prairielearn:us-prod-live
 ```
 
-Note that the command above uses the `--pull=always` option, which will update the local version of the image every time the docker command is restarted. If you keep a long-running container locally, make sure to restart the container when updates in the production servers are announced in the [PrairieLearn GitHub Discussions page](https://github.com/PrairieLearn/PrairieLearn/discussions/categories/announcements).
+!!! tip
+
+    The command above uses the `--pull=always` option, which will update the local version of the image every time the docker command is restarted. If you keep a long-running container locally, make sure to restart the container when updates in the production servers are announced in the [PrairieLearn GitHub Discussions page](https://github.com/PrairieLearn/PrairieLearn/discussions/categories/announcements).
 
 Additional tags are available for older versions. The list of available versions is viewable on the [Docker Hub build page](https://hub.docker.com/r/prairielearn/prairielearn/builds/).

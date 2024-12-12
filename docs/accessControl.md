@@ -15,11 +15,19 @@ In PrairieLearn there are two levels of access control for students to gain acce
 The general format of `allowAccess` is:
 
 ```json
-"allowAccess": [
-    { <accessRule1> },
-    { <accessRule2> },
-    { <accessRule3> }
-],
+{
+  "allowAccess": [
+    {
+      /* <accessRule1> */
+    },
+    {
+      /* <accessRule2> */
+    },
+    {
+      /* <accessRule3> */
+    }
+  ]
+}
 ```
 
 Each `accessRule` is an object that specifies a set of circumstances under which the assessment is accessible to students. If any of the access rules gives access, then the assessment is accessible. Each access rule can have one or more restrictions as follows. The "courseInstance" and "assessment" columns indicate whether the restriction is available for the respective objects.
@@ -84,14 +92,16 @@ When the available credit is more than 100%, then the percentage score is calcul
 For students taking remote exams it can be helpful to have an enforced time limit. This can be done with an access rule like:
 
 ```json
-"allowAccess": [
+{
+  "allowAccess": [
     {
-        "startDate": "2015-01-19T16:00:00",
-        "endDate": "2015-01-19T18:00:00",
-        "timeLimitMin": 90,
-        "credit": 100
+      "startDate": "2015-01-19T16:00:00",
+      "endDate": "2015-01-19T18:00:00",
+      "timeLimitMin": 90,
+      "credit": 100
     }
-]
+  ]
+}
 ```
 
 The above example will give students 90 minutes for this exam, and they must start (and complete) within the date limits. If a student starts the exam close enough to `endDate` such that the remaining time to `endDate` is less than `timeLimitMin`, then the exam's countdown timer will be initialized with the remaining time to `endDate` (minus a 1-minute buffer), not `timeLimitMin`. See the following diagram for an illustration of this.
@@ -120,14 +130,16 @@ It is also possible to change the time limit for all instances, using the **Acti
 Remote or online exams sometimes use a “proctor password” to control access to Exams. This can be enabled with an access rule like:
 
 ```json
-"allowAccess": [
+{
+  "allowAccess": [
     {
-        "startDate": "2015-01-19T00:00:01",
-        "endDate": "2015-05-13T23:59:59",
-        "password": "mysecret",
-        "credit": 100
+      "startDate": "2015-01-19T00:00:01",
+      "endDate": "2015-05-13T23:59:59",
+      "password": "mysecret",
+      "credit": 100
     }
-]
+  ]
+}
 ```
 
 Before a student can do the exam, a proctor will need to type the phrase `mysecret` into the password field on the exam start page. Alternatively, the proctor may provide this phrase to students during the session.
@@ -136,13 +148,15 @@ Before a student can do the exam, a proctor will need to type the phrase `mysecr
 
 To require that students take a particular exam in a testing center or a course-managed PrairieTest session, the `examUuid` should be set to the UUID value from PrairieTest. For example:
 
-```
-"allowAccess": [
+```json
+{
+  "allowAccess": [
     {
-        "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
-        "credit": 100
+      "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871",
+      "credit": 100
     }
-]
+  ]
+}
 ```
 
 Note that in this case the `startDate` and `endDate` should _NOT_ be specified. These will be automatically determined by PrairieTest and should not be set in PrairieLearn.
@@ -154,19 +168,21 @@ When using [time limits](#time-limits), an assessment will "close" when the time
 To block students from viewing closed assessment details, set `"showClosedAssessment": false` in the `allowAccess` rule, like this:
 
 ```json
-"allowAccess": [
+{
+  "allowAccess": [
     {
-        "startDate": "2015-01-19T00:00:01",
-        "endDate": "2015-05-13T23:59:59",
-        "timeLimitMin": 50,
-        "showClosedAssessment": false,
-        "credit": 100
+      "startDate": "2015-01-19T00:00:01",
+      "endDate": "2015-05-13T23:59:59",
+      "timeLimitMin": 50,
+      "showClosedAssessment": false,
+      "credit": 100
     },
     {
-        "active": false,
-        "showClosedAssessment": false
+      "active": false,
+      "showClosedAssessment": false
     }
-]
+  ]
+}
 ```
 
 Note that the `showClosedAssessment` statement is listed twice above, once while the assessment is in progress (`startDate` to `endDate`) and once in a second rule that will take effect after the `endDate`. The additional `"active": false` restriction prevents students from starting the exam after the `endDate`.
@@ -180,21 +196,23 @@ When setting `showClosedAssessment` to `false` students will still by default st
 To block students from viewing closed assessment scores, set `"showClosedAssessmentScore": false` in the `allowAccess` rule, like this:
 
 ```json
-"allowAccess": [
+{
+  "allowAccess": [
     {
-        "startDate": "2015-01-19T00:00:01",
-        "endDate": "2015-05-13T23:59:59",
-        "timeLimitMin": 50,
-        "showClosedAssessment": false,
-        "showClosedAssessmentScore": false,
-        "credit": 100
+      "startDate": "2015-01-19T00:00:01",
+      "endDate": "2015-05-13T23:59:59",
+      "timeLimitMin": 50,
+      "showClosedAssessment": false,
+      "showClosedAssessmentScore": false,
+      "credit": 100
     },
     {
-        "active": false,
-        "showClosedAssessment": false,
-        "showClosedAssessmentScore": false
+      "active": false,
+      "showClosedAssessment": false,
+      "showClosedAssessmentScore": false
     }
-]
+  ]
+}
 ```
 
 Note that the `showClosedAssessment` and `showClosedAssessmentScore` statements are listed twice above, once while the assessment is in progress (`startDate` to `endDate`) and once in a second rule that will take effect after the `endDate`. The additional `"active": false` restriction prevents students from starting the exam after the `endDate`.
@@ -218,19 +236,21 @@ Note that when `"active": false` is used to allow students to review their work 
 An example of the `active` access rule restriction is shown below:
 
 ```json
-"allowAccess": [
+{
+  "allowAccess": [
     {
-        "startDate": "2015-02-16T00:00:01",
-        "endDate": "2015-02-16T23:59:59",
-        "timeLimitMin": 50,
-        "credit": 100
+      "startDate": "2015-02-16T00:00:01",
+      "endDate": "2015-02-16T23:59:59",
+      "timeLimitMin": 50,
+      "credit": 100
     },
     {
-        "startDate": "2015-01-01T00:00:01",
-        "endDate": "2015-02-15T23:59:59",
-        "active": false
+      "startDate": "2015-01-01T00:00:01",
+      "endDate": "2015-02-15T23:59:59",
+      "active": false
     }
-]
+  ]
+}
 ```
 
 In the example above, from January 1st to February 15th, students can see the assessment on the Assessments page but cannot begin the assessment. They will see a message saying that the assessment will be available on February 16th. The first access rule applies on February 16th, and since `active` is `true` (by default), students can start the assessment and submit answers to questions on that day.
@@ -238,12 +258,14 @@ In the example above, from January 1st to February 15th, students can see the as
 ## Course instance example
 
 ```json
-"allowAccess": [
+{
+  "allowAccess": [
     {
-        "startDate": "2014-08-19T00:00:01",
-        "endDate": "2014-12-22T23:59:59"
+      "startDate": "2014-08-19T00:00:01",
+      "endDate": "2014-12-22T23:59:59"
     }
-]
+  ]
+}
 ```
 
 The above `allowAccess` rule is appropriate for an `infoCourseInstance.json` file. It says that students have access from Aug 19th to Dec 22nd.
@@ -251,19 +273,21 @@ The above `allowAccess` rule is appropriate for an `infoCourseInstance.json` fil
 ## Exam example
 
 ```json
-"allowAccess": [
+{
+  "allowAccess": [
     {
-        "uids": ["student1@example.com", "student2@example.com"],
-        "credit": 100,
-        "startDate": "2014-09-12T00:00:01",
-        "endDate": "2014-09-12T23:59:59"
+      "uids": ["student1@example.com", "student2@example.com"],
+      "credit": 100,
+      "startDate": "2014-09-12T00:00:01",
+      "endDate": "2014-09-12T23:59:59"
     },
     {
-        "credit": 100,
-        "startDate": "2014-09-07T00:00:01",
-        "endDate": "2014-09-10T23:59:59"
+      "credit": 100,
+      "startDate": "2014-09-07T00:00:01",
+      "endDate": "2014-09-10T23:59:59"
     }
-],
+  ]
+}
 ```
 
 The above `allowAccess` directive means that this assessment is available under two different circumstances and always for full credit. First, there are two specific students who have access to take the exam on Sept 12th. Second, any student can access this assessment from Sept 7th to Sept 10th. Note that exception rules are typically listed first, so that they take priority when access is determined. Also note that because the second rule does not overlap the first one, the two specific students listed in the first rule also have access to the exam during the range set in the second rule.
@@ -273,19 +297,21 @@ The above `allowAccess` directive means that this assessment is available under 
 **See [Remote Exams](remoteExams.md) for more detailed examples.**
 
 ```json
-"allowAccess": [
+{
+  "allowAccess": [
     {
-        "credit": 100,
-        "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"
+      "credit": 100,
+      "examUuid": "5719ebfe-ad20-42b1-b0dc-c47f0f714871"
     },
     {
-        "uids": ["student1@example.com", "student2@example.com"],
-        "credit": 100,
-        "startDate": "2014-09-31T11:00:00",
-        "endDate": "2014-09-31T11:59:59",
-        "timeLimitMin": 50
+      "uids": ["student1@example.com", "student2@example.com"],
+      "credit": 100,
+      "startDate": "2014-09-31T11:00:00",
+      "endDate": "2014-09-31T11:59:59",
+      "timeLimitMin": 50
     }
-],
+  ]
+}
 ```
 
 The above `allowAccess` directive is appropriate for an exam being taken by on-campus students in a testing center (or a course-managed PrairieTest session) and by remote students. First, anyone (i.e., on-campus students) can access the assessment in a testing center (the `"examUuid"` rule) for full credit. Second, a defined set of students (remote students) can take the exam for full credit on Sept 10th. For the off-campus students we set a time limit (50 minutes). For on-campus students no time limit should be given because the time limit is enforced by PrairieTest.
@@ -295,30 +321,32 @@ The student's access will expire if they exceed the `timeLimitMin` minute durati
 ## Homework example
 
 ```json
-"allowAccess": [
+{
+  "allowAccess": [
     {
-        "active": false,
-        "endDate": "2014-10-11T23:59:59"
+      "active": false,
+      "endDate": "2014-10-11T23:59:59"
     },
     {
-        "credit": 110,
-        "startDate": "2014-10-12T00:00:01",
-        "endDate": "2014-10-15T23:59:59"
+      "credit": 110,
+      "startDate": "2014-10-12T00:00:01",
+      "endDate": "2014-10-15T23:59:59"
     },
     {
-        "credit": 100,
-        "startDate": "2014-10-16T00:00:01",
-        "endDate": "2014-10-18T23:59:59"
+      "credit": 100,
+      "startDate": "2014-10-16T00:00:01",
+      "endDate": "2014-10-18T23:59:59"
     },
     {
-        "credit": 80,
-        "startDate": "2014-10-19T00:00:01",
-        "endDate": "2014-10-25T23:59:59"
+      "credit": 80,
+      "startDate": "2014-10-19T00:00:01",
+      "endDate": "2014-10-25T23:59:59"
     },
     {
-        "startDate": "2014-10-26T00:00:01"
+      "startDate": "2014-10-26T00:00:01"
     }
-],
+  ]
+}
 ```
 
 This `allowAccess` directive is suitable for a `Homework` assessment. Students can see that the homework exists before Oct 12th, but because it is `"active": false` they won't be able to see the questions or start the homework. They can start the homework anytime from Oct 12th onwards, and the homework goes through four different stages: (1) they will earn a bonus 10% if they complete the homework with full points before Oct 15th, (2) they get full credit until the due date of Oct 18th, (3) they can complete the homework up to a week late (Oct 25th) for 80% credit, and (4) they will be able to see the homework and submit answers for feedback, but not earn more points, at any time after that. The homework visibility will also be limited by the [course instance access rules](#course-instance-example), so the homework won't be accessible in any way outside of the course instance date range.

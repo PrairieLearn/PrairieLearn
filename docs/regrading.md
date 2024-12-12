@@ -20,33 +20,32 @@ Regrading an assessment instance while the student is still working on it will n
 
 ## Setting `forceMaxPoints` for a question
 
-To award some or all students maximum points for a question during a regrade, edit the [`infoAssessment.json`] file and set `"forceMaxPoints": true` for any broken questions. For example:
+To award some or all students maximum points for a question during a regrade, edit the `infoAssessment.json` file and set `"forceMaxPoints": true` for any broken questions. For example:
 
-```json
-"zones": [
+```json title="infoAssessment.json" hl_lines="6 20"
+{
+  "zones": [
     {
-        "title": "Easy questions",
-        "questions": [
-            {"id": "anEasyQ", "points": [10, 5, 3, 1, 0.5, 0.25], "forceMaxPoints": true},
-            {"id": "aSlightlyHarderQ", "points": [10, 9, 7, 5]}
-        ]
+      "title": "Easy questions",
+      "questions": [
+        { "id": "anEasyQ", "points": [10, 5, 3, 1, 0.5, 0.25], "forceMaxPoints": true },
+        { "id": "aSlightlyHarderQ", "points": [10, 9, 7, 5] }
+      ]
     },
     {
-        "title": "Hard questions",
-        "questions": [
-            {"id": "hardQV1", "points": 10},
-            {"id": "reallyHardQ", "points": [10, 10, 10]},
-            {
-                "numberChoose": 1,
-                "points": 10,
-                "alternatives": [
-                    {"id": "FirstAltQ"},
-                    {"id": "SecondAltQ", "forceMaxPoints": true}
-                ]
-            }
-        ]
+      "title": "Hard questions",
+      "questions": [
+        { "id": "hardQV1", "points": 10 },
+        { "id": "reallyHardQ", "points": [10, 10, 10] },
+        {
+          "numberChoose": 1,
+          "points": 10,
+          "alternatives": [{ "id": "FirstAltQ" }, { "id": "SecondAltQ", "forceMaxPoints": true }]
+        }
+      ]
     }
-],
+  ]
+}
 ```
 
 In the example above, the questions `anEasyQ` and `SecondAltQ` will award maximum points to any student who has these questions and is regraded.
