@@ -5,22 +5,6 @@ export class FunctionMissingError extends Error {
   }
 }
 
-export const CREATED = Symbol('CREATED');
-export const WAITING = Symbol('WAITING');
-export const IN_CALL = Symbol('IN_CALL');
-export const EXITING = Symbol('EXITING');
-export const EXITED = Symbol('EXITED');
-
-export type CallerState =
-  | typeof CREATED
-  | typeof WAITING
-  | typeof IN_CALL
-  | typeof EXITING
-  | typeof EXITED;
-
-export const RESTARTING = Symbol('RESTARTING');
-
-export type CodeCallerState = CallerState | typeof RESTARTING;
 export type CallType =
   | 'question'
   | 'v2-question'

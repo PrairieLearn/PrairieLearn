@@ -52,13 +52,12 @@ export async function init() {
     {
       create: async () => {
         const codeCallerOptions = {
-          dropPrivileges: false,
           questionTimeoutMilliseconds: config.questionTimeoutMilliseconds,
           pingTimeoutMilliseconds: config.workerPingTimeoutMilliseconds,
           errorLogger: logger.error.bind(logger),
         };
 
-        const codeCaller: CodeCallerContainer | CodeCallerNative = run(() => {
+        const codeCaller = run(() => {
           if (workersExecutionMode === 'container') {
             return new CodeCallerContainer(codeCallerOptions);
           } else if (workersExecutionMode === 'native') {
@@ -70,7 +69,7 @@ export async function init() {
 
         await codeCaller.ensureChild();
         load.startJob('python_worker_idle', codeCaller.uuid);
-        return codeCaller as CodeCaller;
+        return codeCaller;
       },
       destroy: async (codeCaller) => {
         logger.info(
