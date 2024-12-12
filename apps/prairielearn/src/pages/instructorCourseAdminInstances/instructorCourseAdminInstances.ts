@@ -57,6 +57,12 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_course_instance') {
+      if (!req.body.short_name) {
+        throw new error.HttpStatusError(400, 'short_name is required');
+      }
+      if (!req.body.long_name) {
+        throw new error.HttpStatusError(400, 'long_name is required');
+      }
       const editor = new CourseInstanceAddEditor({
         locals: res.locals,
         short_name: req.body.short_name,

@@ -926,6 +926,7 @@ export class CourseInstanceAddEditor extends Editor {
       if (this.start_access_date && this.end_access_date) {
         const startDate = new Date(this.start_access_date);
         const endDate = new Date(this.end_access_date);
+
         if (startDate > endDate) {
           throw new HttpStatusError(400, 'Start date must be before end date');
         }
