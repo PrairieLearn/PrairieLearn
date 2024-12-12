@@ -14,11 +14,12 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from './config.js';
 import type { Course, GradingJob, Question, Submission, Variant } from './db-types.js';
+import { type Grader } from './externalGrader.js';
 import { buildDirectory, makeGradingResult } from './externalGraderCommon.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export class ExternalGraderLocal {
+export class ExternalGraderLocal implements Grader {
   handleGradingRequest(
     grading_job: GradingJob,
     submission: Submission,

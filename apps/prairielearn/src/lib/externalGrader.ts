@@ -9,7 +9,7 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
-import { config } from './config.js';
+import { type Config, config } from './config.js';
 import {
   IdSchema,
   CourseSchema,
@@ -38,13 +38,14 @@ const GradingJobInfoSchema = z.object({
   course: CourseSchema,
 });
 
-interface Grader {
+export interface Grader {
   handleGradingRequest(
     grading_job: GradingJob,
     submission: Submission,
     variant: Variant,
     question: Question,
     course: Course,
+    configOverrides?: Partial<Config>,
   ): EventEmitter;
 }
 
