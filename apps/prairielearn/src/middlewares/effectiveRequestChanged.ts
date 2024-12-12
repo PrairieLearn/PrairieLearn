@@ -1,12 +1,9 @@
 // @ts-check
+import { type NextFunction, type Request, type Response } from 'express';
+
 import { clearCookie } from '../lib/cookie.js';
 
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
- */
-export default function (req, res, next) {
+export default function (req: Request, res: Response, next: NextFunction) {
   // We use the pl_requested_data_changed cookie to detect when we
   // have attempted to change the effective user (or other emulation
   // data). This cookie is set in components/Navbar.html.ts and

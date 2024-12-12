@@ -6,8 +6,13 @@ import { generateSignedToken, checkSignedToken } from '@prairielearn/signed-toke
 
 import { config } from '../lib/config.js';
 
+interface TokenData {
+  url: string;
+  authn_user_id?: string;
+}
+
 export default asyncHandler(async (req, res, next) => {
-  const tokenData = {
+  const tokenData : TokenData = {
     url: req.originalUrl,
   };
 

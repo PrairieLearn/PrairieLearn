@@ -1,4 +1,5 @@
 // @ts-check
+import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
 
@@ -7,7 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export async function selectAndAuthzInstructorQuestion(req, res) {
+export async function selectAndAuthzInstructorQuestion(req: Request, res: Response) {
   if (res.locals.course_instance) {
     const result = await sqldb.queryZeroOrOneRowAsync(sql.select_and_auth_with_course_instance, {
       question_id: req.params.question_id,

@@ -46,7 +46,7 @@ export default asyncHandler(async (req, res, next) => {
 
     const uuid = data.uuid;
 
-    let authnParams = {
+    const authnParams = {
       uid: `loadtest+${uuid}@prairielearn.com`,
       uin: `loadtest+${uuid}`,
       name: `Load Test ${uuid}`,
@@ -79,9 +79,9 @@ export default asyncHandler(async (req, res, next) => {
   //   the user configured by `config.authUid` etc (see `pages/authLoginDev`).
   // - Log in as a specific UID/name/UIN (see `pages/authLogin`).
   if (config.devMode && !req.cookies.pl2_disable_auto_authn && req.session.user_id == null) {
-    var uid = config.authUid;
-    var name = config.authName;
-    var uin = config.authUin;
+    let uid = config.authUid;
+    let name = config.authName;
+    let uin = config.authUin;
 
     // We allow unit tests to override the user. Unit tests may also override the req_date
     // (middlewares/date.js) and the req_mode (middlewares/authzCourseOrInstance.js).
@@ -97,7 +97,7 @@ export default asyncHandler(async (req, res, next) => {
 
     if (!uid) throw new Error('Missing uid');
 
-    let authnParams = {
+    const authnParams = {
       uid,
       uin,
       name,
@@ -153,7 +153,7 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  let authnParams = {
+  const authnParams = {
     user_id: req.session.user_id,
     provider: req.session.authn_provider_name,
   };

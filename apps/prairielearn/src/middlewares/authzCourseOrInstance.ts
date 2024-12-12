@@ -1,6 +1,7 @@
 // @ts-check
 import { parseISO, isValid } from 'date-fns';
 import debugfn from 'debug';
+import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
 
@@ -18,11 +19,10 @@ const debug = debugfn('prairielearn:authzCourseOrInstance');
 
 /**
  * Removes all override cookies from the response.
- *
- * @param {import('express').Response} res
- * @param {{ cookie: string }[]} overrides
  */
-function clearOverrideCookies(res, overrides) {
+function clearOverrideCookies(res: Response, overrides: {
+  cookie: string;
+}[]) {
   overrides.forEach((override) => {
     debug(`clearing cookie: ${override.cookie}`);
     const newName = override.cookie.replace(/^pl2_/, 'pl_');
@@ -30,7 +30,7 @@ function clearOverrideCookies(res, overrides) {
   });
 }
 
-export async function authzCourseOrInstance(req, res) {
+export async function authzCourseOrInstance(req: Request, res: Response) {
   const isCourseInstance = Boolean(req.params.course_instance_id);
 
   // Note that req.params.course_id and req.params.course_instance_id are strings and not
@@ -120,7 +120,11 @@ export async function authzCourseOrInstance(req, res) {
   res.locals.use_bootstrap_4 = await features.enabledFromLocals('bootstrap-4', res.locals);
 
   // Check if it is necessary to request a user data override - if not, return
-  let overrides = [];
+  const overrides: {
+    name: string;
+    value: string;
+    cookie: string;
+  }[] = [];
   if (req.cookies.pl2_requested_uid) {
     // If the requested uid is the same as the authn user uid, then silently clear the cookie and continue
     if (req.cookies.pl2_requested_uid === res.locals.authn_user.uid) {
