@@ -30,6 +30,7 @@ import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
+import { selectTagsByCourseId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
 
 import {
@@ -116,6 +117,17 @@ router.post(
       const origHash = req.body.orig_hash;
       questionInfo.title = req.body.title;
       questionInfo.topic = req.body.topic;
+      // If only a single tag is provided, it will be a string. If multiple tags are provided, it will be an array.
+      if (req.body.tags) {
+        if (Array.isArray(req.body.tags)) {
+          questionInfo.tags = req.body.tags;
+        } else {
+          questionInfo.tags = [req.body.tags];
+        }
+      } else {
+        // If no tags are provided, we remove this propoerty from questionInfo.
+        delete questionInfo.tags;
+      }
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(questionInfo));
 
@@ -260,6 +272,7 @@ router.get(
     );
 
     const courseTopics = await selectTopicsByCourseId(res.locals.course.id);
+    const courseTags = await selectTagsByCourseId(res.locals.course.id);
 
     const sharingEnabled = await features.enabledFromLocals('question-sharing', res.locals);
 
@@ -307,6 +320,7 @@ router.get(
         origHash,
         canEdit,
         courseTopics,
+        courseTags,
       }),
     );
   }),
