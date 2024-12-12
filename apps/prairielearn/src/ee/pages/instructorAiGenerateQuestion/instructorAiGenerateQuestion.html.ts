@@ -37,7 +37,7 @@ const examplePrompts = [
   },
 ];
 
-export function AiGeneratePage({ resLocals }: { resLocals: Record<string, any> }) {
+export function InstructorAiGenerateQuestion({ resLocals }: { resLocals: Record<string, any> }) {
   return html`
     <!doctype html>
     <html lang="en">

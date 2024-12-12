@@ -1,6 +1,7 @@
 -- BLOCK select_draft_generation_info_by_course_id
 SELECT
-  dqm.*,
+  to_jsonb(dqm.*) AS draft_question_metadata,
+  q.id AS question_id,
   q.qid,
   u.uid
 FROM

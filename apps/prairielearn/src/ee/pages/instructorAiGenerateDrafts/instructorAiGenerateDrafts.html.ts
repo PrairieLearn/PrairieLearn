@@ -5,20 +5,20 @@ import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
-import { DateFromISOString, IdSchema } from '../../../lib/db-types.js';
+import { DraftQuestionMetadataSchema, IdSchema } from '../../../lib/db-types.js';
 
+// We show all draft questions, even those without associated metadata, because we
+// won't have metadata for a draft question if it was created on and synced from
+// another instance of PrairieLearn, including from local dev.
 export const DraftMetadataWithQidSchema = z.object({
-  created_at: DateFromISOString.nullable(),
-  created_by: IdSchema.nullable(),
-  id: IdSchema.nullable(),
-  uid: z.string().nullable(),
-  question_id: IdSchema.nullable(),
-  updated_by: IdSchema.nullable(),
+  draft_question_metadata: DraftQuestionMetadataSchema.nullable(),
+  question_id: IdSchema,
   qid: z.string(),
+  uid: z.string().nullable(),
 });
 export type DraftMetadataWithQid = z.infer<typeof DraftMetadataWithQidSchema>;
 
-export function InstructorAIGenerateDraftsPage({
+export function InstructorAIGenerateDrafts({
   resLocals,
   drafts,
 }: {
@@ -81,25 +81,24 @@ export function InstructorAIGenerateDraftsPage({
                   ${drafts.map(
                     (row) => html`
                       <tr>
-                        <td>${row.qid ?? html`&mdash;`}</td>
+                        <td>${row.qid}</td>
                         <td>
-                          ${row.created_at == null
+                          ${row.draft_question_metadata?.created_at == null
                             ? html`&mdash;`
-                            : formatDate(row.created_at, resLocals.course.display_timezone)}
+                            : formatDate(
+                                row.draft_question_metadata.created_at,
+                                resLocals.course.display_timezone,
+                              )}
                         </td>
                         <td>${row.uid ?? '(System)'}</td>
-                        ${row.question_id && row.id
-                          ? html`
-                              <td>
-                                <a
-                                  href="${resLocals.urlPrefix}/ai_generate_editor/${row.question_id}"
-                                  class="btn btn-xs btn-primary"
-                                >
-                                  Continue editing
-                                </a>
-                              </td>
-                            `
-                          : html`<td>Not available</td>`}
+                        <td>
+                          <a
+                            href="${resLocals.urlPrefix}/ai_generate_editor/${row.question_id}"
+                            class="btn btn-xs btn-primary"
+                          >
+                            Continue editing
+                          </a>
+                        </td>
                       </tr>
                     `,
                   )}

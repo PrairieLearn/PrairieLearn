@@ -8,7 +8,10 @@ import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { generateQuestion } from '../../lib/aiQuestionGeneration.js';
 
-import { AiGeneratePage, GenerationFailure } from './instructorAiGenerateQuestion.html.js';
+import {
+  InstructorAiGenerateQuestion,
+  GenerationFailure,
+} from './instructorAiGenerateQuestion.html.js';
 
 const router = express.Router();
 
@@ -40,7 +43,7 @@ router.get(
     assertCanCreateQuestion(res.locals);
 
     res.send(
-      AiGeneratePage({
+      InstructorAiGenerateQuestion({
         resLocals: res.locals,
       }),
     );

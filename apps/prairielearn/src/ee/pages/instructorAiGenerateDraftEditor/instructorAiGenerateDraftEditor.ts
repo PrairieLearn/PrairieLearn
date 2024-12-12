@@ -23,7 +23,7 @@ import { selectQuestionById } from '../../../models/question.js';
 import { regenerateQuestion } from '../../lib/aiQuestionGeneration.js';
 import { GenerationFailure } from '../instructorAiGenerateQuestion/instructorAiGenerateQuestion.html.js';
 
-import { AiGenerateEditorPage } from './instructorAiGenerateDraftEditor.html.js';
+import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -89,35 +89,47 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     assertCanCreateQuestion(res.locals);
-    if (res.locals.question_id) {
-      const prompts = await queryRows(
-        sql.select_ai_question_generation_prompts,
-        { question_id: res.locals.question_id, course_id: res.locals.course.id.toString() },
-        AiGenerationPromptSchema,
-      );
-
-      if (prompts && prompts.length > 0) {
-        res.locals.question = await selectQuestionById(res.locals.question_id);
-        const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
-
-        await getAndRenderVariant(variant_id, null, res.locals);
-        await setQuestionCopyTargets(res);
-        await logPageView('instructorQuestionPreview', req, res);
-        setRendererHeader(res);
-      }
-
-      res.send(
-        AiGenerateEditorPage({
-          resLocals: res.locals,
-          prompts,
-          question: res.locals.question,
-          variantId: typeof req.query?.variant_id === 'string' ? req.query?.variant_id : undefined,
-        }),
-      );
-    } else {
-      //can't find question, redirect to list of all drafts page.
+    if (!res.locals.question_id) {
+      // There wasn't a `question_id` in the URL, so redirect to the question list.
+      // TODO: is this actually necessary anymore?
       res.redirect(`${res.locals.urlPrefix}/ai_generate_question_drafts`);
     }
+
+    const prompts = await queryRows(
+      sql.select_ai_question_generation_prompts,
+      { question_id: res.locals.question_id, course_id: res.locals.course.id.toString() },
+      AiGenerationPromptSchema,
+    );
+
+    if (prompts.length === 0) {
+      // This is probably a draft question that was created on a different server
+      // and thus doesn't have any prompt history. We currently rely on the prompt
+      // history to know which HTML and Python to display and adjust, so we can't
+      // render this page.
+      //
+      // TODO: We should pull the HTML and Python off disk instead of relying on
+      // the prompt history.
+      throw new error.HttpStatusError(404, 'No prompt history found.');
+    }
+
+    res.locals.question = await selectQuestionById(res.locals.question_id);
+
+    const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
+
+    // Render the preview.
+    await getAndRenderVariant(variant_id, null, res.locals);
+    await setQuestionCopyTargets(res);
+    await logPageView('instructorQuestionPreview', req, res);
+    setRendererHeader(res);
+
+    res.send(
+      InstructorAiGenerateDraftEditor({
+        resLocals: res.locals,
+        prompts,
+        question: res.locals.question,
+        variantId: typeof req.query?.variant_id === 'string' ? req.query?.variant_id : undefined,
+      }),
+    );
   }),
 );
 

@@ -8,7 +8,7 @@ import { QuestionContainer } from '../../../components/QuestionContainer.html.js
 import { compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
 import { type Question, type AiGenerationPrompt } from '../../../lib/db-types.js';
 
-export function AiGenerateEditorPage({
+export function InstructorAiGenerateDraftEditor({
   resLocals,
   prompts,
   question,

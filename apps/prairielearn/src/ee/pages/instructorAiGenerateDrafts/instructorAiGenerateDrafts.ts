@@ -8,7 +8,7 @@ import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { QuestionSchema } from '../../../lib/db-types.js';
 
 import {
-  InstructorAIGenerateDraftsPage,
+  InstructorAIGenerateDrafts,
   DraftMetadataWithQidSchema,
 } from './instructorAiGenerateDrafts.html.js';
 
@@ -28,7 +28,7 @@ router.get(
       DraftMetadataWithQidSchema,
     );
 
-    res.send(InstructorAIGenerateDraftsPage({ resLocals: res.locals, drafts }));
+    res.send(InstructorAIGenerateDrafts({ resLocals: res.locals, drafts }));
   }),
 );
 
