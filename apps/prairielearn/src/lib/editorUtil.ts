@@ -6,17 +6,35 @@ import * as sqldb from '@prairielearn/postgres';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-/** @typedef {{ type: 'course' }} CourseInfo */
-/** @typedef {{ type: 'question', qid: string }} QuestionInfo */
-/** @typedef {{ type: 'courseInstance', ciid: string }} CourseInstanceInfo */
-/** @typedef {{ type: 'assessment', ciid: string, aid: string }} AssessmentInfo */
-/** @typedef {{ type: 'file' }} File */
+interface CourseInfo {
+  type: 'course';
+}
+interface QuestionInfo {
+  type: 'question';
+  qid: string;
+}
+interface CourseInstanceInfo {
+  type: 'courseInstance';
+  ciid: string;
+}
+interface AssessmentInfo {
+  type: 'assessment';
+  ciid: string;
+  aid: string;
+}
+interface File {
+  type: 'file';
+}
 
-/**
- * @param {string} filePath
- * @returns {CourseInfo | QuestionInfo | CourseInstanceInfo | AssessmentInfo | File}
- */
-export function getDetailsForFile(filePath) {
+type FileDetails = CourseInfo | QuestionInfo | CourseInstanceInfo | AssessmentInfo | File;
+interface QueryParams {
+  course_id: string;
+  qid?: string;
+  ciid?: string;
+  aid?: string;
+}
+
+export function getDetailsForFile(filePath: string): FileDetails {
   const normalizedPath = path.normalize(filePath);
   const pathComponents = normalizedPath.split(path.posix.sep);
   if (pathComponents.length === 1 && pathComponents[0] === 'infoCourse.json') {
@@ -53,15 +71,13 @@ export function getDetailsForFile(filePath) {
   }
 }
 
-/**
- * @param {any} courseId
- * @param {string} filePath
- * @returns {Promise<{ errors: string | null, warnings: string | null }>}
- */
-export async function getErrorsAndWarningsForFilePath(courseId, filePath) {
+export async function getErrorsAndWarningsForFilePath(
+  courseId: any,
+  filePath: string,
+): Promise<{ errors: string | null; warnings: string | null }> {
   const details = getDetailsForFile(filePath);
-  let queryName = null;
-  let queryParams = { course_id: courseId };
+  let queryName: string | null = null;
+  const queryParams: QueryParams = { course_id: courseId };
   switch (details.type) {
     case 'course':
       queryName = 'select_errors_and_warnings_for_course';
