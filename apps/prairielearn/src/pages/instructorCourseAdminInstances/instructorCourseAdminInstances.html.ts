@@ -154,7 +154,7 @@ export function InstructorCourseAdminInstances({
                         return html`
                           <p>
                             You must
-                            <a href="${resLocals.urlPrefix}/course_admin/syncs">sync the course</a>
+                            <a href="${resLocals.urlPrefix}/course_admin/syncs">sync this course</a>
                             before creating a new course instance.
                           </p>
                         `;
