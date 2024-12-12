@@ -64,15 +64,15 @@ describe('Create course instance', () => {
       `${siteUrl}/pl/course/1/course_admin/instances`,
       {
         method: 'POST',
-        form: {
+        body: new URLSearchParams({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val(),
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val(),
+          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
           short_name: 'Fa19',
           long_name: 'Fall 2019',
           start_access_date: '2021-01-01T00:00',
           end_access_date: '2021-01-02T00:00',
-        },
+        }),
       },
     );
     assert.equal(courseInstanceCreationResponse.status, 200);
@@ -108,15 +108,15 @@ describe('Create course instance', () => {
       `${siteUrl}/pl/course/1/course_admin/instances`,
       {
         method: 'POST',
-        form: {
+        body: new URLSearchParams({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val(),
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val(),
+          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
           short_name: 'Fa19',
           long_name: 'Fall 2019',
           start_access_date: '2021-01-01T00:00',
           end_access_date: '2021-01-02T00:00',
-        },
+        }),
       },
     );
     assert.equal(courseInstanceCreationResponse.status, 200);
@@ -149,15 +149,15 @@ describe('Create course instance', () => {
       `${siteUrl}/pl/course/1/course_admin/instances`,
       {
         method: 'POST',
-        form: {
+        body: new URLSearchParams({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val(),
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val(),
+          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
           short_name: 'Fa19',
           long_name: 'Fall 2019',
           start_access_date: '2021-01-01T00:00',
           end_access_date: '2021-01-02T00:00',
-        },
+        }),
       },
     );
     assert.equal(courseInstanceCreationResponse.status, 200);
@@ -190,15 +190,15 @@ describe('Create course instance', () => {
       `${siteUrl}/pl/course/1/course_admin/instances`,
       {
         method: 'POST',
-        form: {
+        body: new URLSearchParams({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val(),
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val(),
+          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
           short_name: 'Fa19',
           long_name: 'Fall 2019',
           start_access_date: '2021-01-02T00:00',
           end_access_date: '2021-01-01T00:00',
-        },
+        }),
       },
     );
 
@@ -216,14 +216,14 @@ describe('Create course instance', () => {
       `${siteUrl}/pl/course/1/course_admin/instances`,
       {
         method: 'POST',
-        form: {
+        body: new URLSearchParams({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val(),
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val(),
+          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
           long_name: 'Fall 2019',
           start_access_date: '2021-01-01T00:00',
           end_access_date: '2021-01-02T00:00',
-        },
+        }),
       },
     );
 
@@ -245,14 +245,14 @@ describe('Create course instance', () => {
       `${siteUrl}/pl/course/1/course_admin/instances`,
       {
         method: 'POST',
-        form: {
+        body: new URLSearchParams({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val(),
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val(),
+          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
           short_name: 'Fa19',
           start_access_date: '2021-01-01T00:00',
           end_access_date: '2021-01-02T00:00',
-        },
+        }),
       },
     );
 

@@ -489,12 +489,11 @@ export abstract class Editor {
       longName: `${baseLongName} (copy ${number})`,
     };
   }
-
   getNamesForAdd(
     shortNames: string[],
     longNames: string[],
-    shortName: string,
-    longName: string,
+    shortName = 'New',
+    longName = 'New',
   ): { shortName: string; longName: string } {
     function getNumberShortName(oldnames: string[]): number {
       let number = 1;
