@@ -1,6 +1,6 @@
 // @ts-check
 import * as child_process from 'node:child_process';
-import { type IOType } from 'node:child_process';
+import { type SpawnOptions, type IOType } from 'node:child_process';
 import * as path from 'node:path';
 
 import debugfn from 'debug';
@@ -23,36 +23,20 @@ import {
   RESTARTING,
   EXITING,
   EXITED,
+  type CodeCaller,
+  type PrepareForCourseOptions,
+  type CallType,
 } from './code-caller-shared.js';
 
 const debug = debugfn('prairielearn:code-caller-native');
 
-/**
- * @typedef {Object} CodeCallerNativeOptions
- * @property {boolean} [dropPrivileges]
- * @property {number} [questionTimeoutMilliseconds]
- * @property {number} [pingTimeoutMilliseconds]
- * @property {(msg: string, data?: any) => void} errorLogger
- */
 interface CodeCallerNativeOptions {
   dropPrivileges: boolean;
   questionTimeoutMilliseconds: number;
   pingTimeoutMilliseconds: number;
   errorLogger: (msg: string, data?: any) => void;
 }
-/**
- * @typedef {Object} ErrorData
- * @property {CodeCallerState} state
- * @property {boolean} childIsNull
- * @property {boolean} callbackIsNull
- * @property {boolean} timeoutIDIsNull
- * @property {string} outputStdout
- * @property {string} outputStderr
- * @property {string} outputBoth
- * @property {string} outputData
- * @property {string} stack
- * @property {any} lastCallData
- */
+
 export interface ErrorData {
   state: CodeCallerState;
   childIsNull: boolean;
@@ -66,8 +50,7 @@ export interface ErrorData {
   lastCallData: any;
 }
 
-/** @typedef {Error & { data?: ErrorData }} CodeCallerError */
-type CodeCallerError = Error & { data?: ErrorData };
+export type CodeCallerError = Error & { data?: ErrorData };
 /**
   Internal state machine
   ======================
@@ -94,18 +77,7 @@ type CodeCallerError = Error & { data?: ErrorData };
 
 */
 
-/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
-/** @typedef {import('./code-caller-shared.js').CallType} CallType */
-
-/**
- * @implements {CodeCaller}
- */
-export class CodeCallerNative {
-  /**
-   * Creates a new {@link CodeCallerNative} with the specified options.
-   *
-   * @param {CodeCallerNativeOptions} [options]
-   */
+export class CodeCallerNative implements CodeCaller {
   state: CodeCallerState;
   uuid: string;
   child: CodeCallerNativeChildProcess | null;
@@ -120,8 +92,11 @@ export class CodeCallerNative {
   lastCallData: any;
   coursePath: string | null;
   forbiddenModules: string[];
+  /**
+   * Creates a new {@link CodeCallerNative} with the specified options.
+   */
   constructor(
-    options = {
+    options: CodeCallerNativeOptions = {
       dropPrivileges: false,
       questionTimeoutMilliseconds: 5_000,
       pingTimeoutMilliseconds: 60_000,
@@ -134,7 +109,6 @@ export class CodeCallerNative {
       errorLogger: logger.error.bind(logger),
     },
   ) {
-    /** @type {CodeCallerState} */
     this.state = CREATED;
     this.uuid = uuidv4();
 
@@ -148,13 +122,9 @@ export class CodeCallerNative {
     this.options = options;
 
     // Accumulators for output from the child process.
-    /** @type {string[]} */
     this.outputStdout = [];
-    /** @type {string[]} */
     this.outputStderr = [];
-    /** @type {string[]} */
     this.outputBoth = [];
-    /** @type {string[]} */
     this.outputData = [];
     this.outputRestart = '';
 
@@ -175,18 +145,13 @@ export class CodeCallerNative {
 
   /**
    * Wrapper around `debug` that automatically includes UUID and the caller state.
-   *
-   * @param {string} message
    */
-  debug(message) {
+  debug(message: string) {
     const paddedState = this.state.toString().padEnd(18);
     debug(`[${this.uuid} ${paddedState}] ${message}`);
   }
 
-  /**
-   * @param {import('./code-caller-shared.js').PrepareForCourseOptions} options
-   */
-  async prepareForCourse({ coursePath, forbiddenModules }) {
+  async prepareForCourse({ coursePath, forbiddenModules }: PrepareForCourseOptions) {
     this.debug('enter prepareForCourse()');
     this.coursePath = coursePath;
     this.forbiddenModules = forbiddenModules;
@@ -195,15 +160,14 @@ export class CodeCallerNative {
 
   /**
    * Calls the function in the specified Python file.
-   *
-   * @param {CallType} type
-   * @param {string | null} directory
-   * @param {string | null} file
-   * @param {string | null} fcn
-   * @param {any[]} args
-   * @returns {Promise<{ result: any, output: string }>}
    */
-  async call(type, directory, file, fcn, args): Promise<{ result: any; output: string }> {
+  async call(
+    type: CallType,
+    directory: string | null,
+    file: string | null,
+    fcn: string | null,
+    args: any[],
+  ): Promise<{ result: any; output: string }> {
     this.debug('enter call()');
 
     // Reset this so that we don't include old data if the checks below fail.
@@ -213,7 +177,7 @@ export class CodeCallerNative {
       throw new Error(`Invalid CodeCallerNative state: ${String(this.state)}`);
     }
 
-    let cwd;
+    let cwd: string | undefined;
     const paths = [path.join(APP_ROOT_PATH, 'python')];
     if (type === 'question') {
       if (!directory) throw new Error('Missing directory');
@@ -278,10 +242,8 @@ export class CodeCallerNative {
   /**
    * Instructs the caller to restart, which means exiting the forked process
    * and forking a new one from the zygote.
-   *
-   * @returns {Promise<boolean>}
    */
-  async restart() {
+  async restart(): Promise<boolean> {
     debug(`enter restart(), state: ${String(this.state)}, uuid: ${this.uuid}`);
     this._checkState([CREATED, WAITING, EXITING, EXITED]);
 
@@ -374,8 +336,7 @@ export class CodeCallerNative {
       env.DROP_PRIVILEGES = '1';
     }
 
-    /** @type {import('child_process').SpawnOptions} */
-    const options = {
+    const options: SpawnOptions = {
       cwd: import.meta.dirname,
       // stdin, stdout, stderr, data, and restart confirmations
       stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe'] as IOType[],
@@ -407,7 +368,7 @@ export class CodeCallerNative {
     this.debug('exit _startChild()');
   }
 
-  _handleStdoutData(data) {
+  _handleStdoutData(data: string) {
     this.debug('enter _handleStdoutData()');
     this._checkState([IN_CALL, EXITING]);
     if (this.state === IN_CALL) {
@@ -419,7 +380,7 @@ export class CodeCallerNative {
     this.debug('exit _handleStdoutData()');
   }
 
-  _handleStderrData(data) {
+  _handleStderrData(data: string) {
     this.debug('enter _handleStderrData()');
     this.debug(`_handleStderrData(), data: ${data}`);
     this._checkState([IN_CALL, EXITING, WAITING]);
@@ -432,7 +393,7 @@ export class CodeCallerNative {
     this.debug('exit _handleStderrData()');
   }
 
-  _handleStdio3Data(data) {
+  _handleStdio3Data(data: string) {
     this.debug('enter _handleStdio3Data()');
     this._checkState([IN_CALL, EXITING]);
     if (this.state === IN_CALL) {
@@ -446,7 +407,7 @@ export class CodeCallerNative {
     this.debug('exit _handleStdio3Data()');
   }
 
-  _handleStdio4Data(data) {
+  _handleStdio4Data(data: string) {
     this.debug('enter _handleStdio4Data()');
     // Unlike in other calls, we'll allow data in any state since this data
     // will come in outside the normal "call" flow and isn't guaranteed to
@@ -461,7 +422,7 @@ export class CodeCallerNative {
     this.debug('exit _handleStdio4Data()');
   }
 
-  _handleChildExit(code, signal) {
+  _handleChildExit(code: number, signal: number) {
     this.debug('enter _handleChildExit()');
     this._checkState([WAITING, IN_CALL, EXITING]);
     if (this.state === WAITING) {
@@ -495,7 +456,7 @@ export class CodeCallerNative {
     this.debug('exit _handleChildExit()');
   }
 
-  _handleChildError(error) {
+  _handleChildError(error: Error) {
     this.debug('enter _handleChildError()');
     this._checkState([WAITING, IN_CALL, EXITING]);
     if (this.state === WAITING) {
@@ -638,10 +599,6 @@ export class CodeCallerNative {
     this.debug('exit _restartIsFinished()');
   }
 
-  /**
-   *
-   * @returns {ErrorData}
-   */
   _errorData(): ErrorData {
     const errForStack = new Error();
     return {
@@ -658,7 +615,7 @@ export class CodeCallerNative {
     };
   }
 
-  _logError(msg) {
+  _logError(msg: string) {
     this.debug('enter _logError()');
     const errData = this._errorData();
     this.options.errorLogger(msg, errData);
@@ -677,7 +634,7 @@ export class CodeCallerNative {
       );
     }
 
-    let childNull, callbackNull, timeoutIDNull;
+    let childNull: boolean, callbackNull: boolean, timeoutIDNull: boolean;
     if (this.state === CREATED) {
       childNull = true;
       callbackNull = true;

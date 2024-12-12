@@ -3,7 +3,11 @@ import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
 import { type Readable } from 'stream';
 
-import { S3, type CompleteMultipartUploadCommandOutput } from '@aws-sdk/client-s3';
+import {
+  type GetObjectOutput,
+  S3,
+  type CompleteMultipartUploadCommandOutput,
+} from '@aws-sdk/client-s3';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { Upload } from '@aws-sdk/lib-storage';
 import debugfn from 'debug';
@@ -47,12 +51,11 @@ export const makeAwsClientConfig = awsConfigProvider.makeAwsClientConfig;
 /**
  * Upload a local file or directory to S3.
  *
- * @param {string} s3Bucket - The S3 bucket name.
- * @param {string} s3Path - The S3 destination path.
- * @param {string | null} localPath - The local source path.
- * @param {boolean=} isDirectory - Whether the upload source is a directory (defaults to false).
- * @param {Buffer | null} buffer - A file buffer if local source path falsy.
- * @returns {Promise<import('@aws-sdk/client-s3').CompleteMultipartUploadCommandOutput>}
+ * @param s3Bucket - The S3 bucket name.
+ * @param s3Path - The S3 destination path.
+ * @param localPath - The local source path.
+ * @param isDirectory - Whether the upload source is a directory (defaults to false).
+ * @param buffer - A file buffer if local source path falsy.
  */
 export async function uploadToS3(
   s3Bucket: string,
@@ -63,7 +66,7 @@ export async function uploadToS3(
 ): Promise<CompleteMultipartUploadCommandOutput> {
   const s3 = new S3(makeS3ClientConfig());
 
-  let body;
+  let body: fs.ReadStream | string | Buffer;
   if (isDirectory) {
     body = '';
     s3Path += s3Path.endsWith('/') ? '' : '/';
@@ -93,19 +96,19 @@ export async function uploadToS3(
   return res;
 }
 
-/**
- * Download a file or directory from S3.
- *
- * @param {string} s3Bucket - The S3 bucket name.
- * @param {string} s3Path - The S3 source path.
- * @param {string} localPath - The local target path.
- * @param {object?} options - Optional parameters, including owner and group (optional, defaults to {}).
- */
 interface DownloadFromS3Options {
   owner?: number;
   group?: number;
 }
 
+/**
+ * Download a file or directory from S3.
+ *
+ * @param s3Bucket - The S3 bucket name.
+ * @param s3Path - The S3 source path.
+ * @param localPath - The local target path.
+ * @param options - Optional parameters, including owner and group (optional, defaults to {}).
+ */
 export async function downloadFromS3(
   s3Bucket: string,
   s3Path: string,
@@ -148,11 +151,11 @@ export async function downloadFromS3(
 /**
  * Delete a file or directory from S3.
  *
- * @param {string} s3Bucket - The S3 bucket name.
- * @param {string} s3Path - The S3 target path.
- * @param {boolean=} isDirectory - Whether the deletion target is a directory (defaults to false).
+ * @param s3Bucket - The S3 bucket name.
+ * @param s3Path - The S3 target path.
+ * @param isDirectory - Whether the deletion target is a directory (defaults to false).
  */
-export async function deleteFromS3(s3Bucket, s3Path, isDirectory = false) {
+export async function deleteFromS3(s3Bucket: string, s3Path: string, isDirectory = false) {
   const s3 = new S3(makeS3ClientConfig());
 
   if (isDirectory) {
@@ -168,12 +171,16 @@ export async function deleteFromS3(s3Bucket, s3Path, isDirectory = false) {
 /**
  * Get a file from S3.
  *
- * @param {string} bucket - S3 bucket name.
- * @param {string} key - The S3 target path.
- * @param {boolean} buffer - Defaults to true to return buffer.
- * @return {Promise<Buffer | import('@aws-sdk/client-s3').GetObjectOutput['Body']>} Buffer or ReadableStream type from S3 file contents.
+ * @param bucket - S3 bucket name.
+ * @param key - The S3 target path.
+ * @param buffer - Defaults to true to return buffer.
+ * @return Buffer or ReadableStream type from S3 file contents.
  */
-export async function getFromS3(bucket, key, buffer = true) {
+export async function getFromS3(
+  bucket: string,
+  key: string,
+  buffer = true,
+): Promise<Buffer | GetObjectOutput['Body']> {
   const s3 = new S3(makeS3ClientConfig());
   const res = await s3.getObject({ Bucket: bucket, Key: key });
   if (!res.Body) throw new Error('No data returned from S3');

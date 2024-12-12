@@ -14,35 +14,18 @@ import { HttpRedirect } from './redirect.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-/**
- * @typedef {Object} LoadUserOptions
- * @property {boolean} [redirect] - Redirect after processing?
- */
-/**
- * @typedef {Object} LoadUserAuth
- * @property {string} [uid]
- * @property {string | null} [uin]
- * @property {string | null} [name]
- * @property {string | null} [email]
- * @property {string} [provider]
- * @property {number} [user_id] - If present, skip the users_select_or_insert call
- * @property {number | string | null} [institution_id]
- */
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {LoadUserAuth} authnParams
- * @param {LoadUserOptions} [optionsParams]
- */
 interface LoadUserOptions {
+  /** Redirect after processing? */
   redirect?: boolean;
 }
+
 export interface LoadUserAuth {
   uid?: string;
   uin?: string | null;
   name?: string | null;
   email?: string | null;
   provider: string;
+  /** If present, skip the users_select_or_insert call */
   user_id?: number;
   institution_id?: number | string | null;
 }
