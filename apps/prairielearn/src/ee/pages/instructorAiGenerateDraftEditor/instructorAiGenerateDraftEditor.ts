@@ -11,11 +11,7 @@ import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import { AiGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
-import {
-  getAndRenderVariant,
-  renderPanelsForSubmission,
-  setRendererHeader,
-} from '../../../lib/question-render.js';
+import { getAndRenderVariant, setRendererHeader } from '../../../lib/question-render.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
