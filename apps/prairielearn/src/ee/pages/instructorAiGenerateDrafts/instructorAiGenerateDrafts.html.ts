@@ -46,21 +46,6 @@ export function InstructorAIGenerateDrafts({
             >
               AI Generation Draft Questions
               <div class="d-flex flex-row">
-                ${drafts.length > 0
-                  ? html`
-                      <form method="POST" class="mr-2">
-                        <input
-                          type="hidden"
-                          name="__csrf_token"
-                          value="${resLocals.__csrf_token}"
-                        />
-                        <button class="btn btn-sm btn-light" name="__action" value="delete_drafts">
-                          <i class="fa fa-trash" aria-hidden="true"></i>
-                          <span class="d-none d-sm-inline">Delete all drafts</span>
-                        </button>
-                      </form>
-                    `
-                  : ''}
                 <a href="${resLocals.urlPrefix}/ai_generate_question" class="btn btn-sm btn-light">
                   <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
                   <span class="d-none d-sm-inline">Generate question with AI</span>
