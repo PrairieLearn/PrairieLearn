@@ -98,17 +98,20 @@ describe('Editing question settings', () => {
     );
     assert.equal(settingsPageResponse.status, 200);
 
+    const body = new URLSearchParams({
+      __action: 'update_question',
+      __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+      orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+      title: 'New title',
+      qid: 'test/question1',
+      topic: 'Test',
+    });
+    body.append('tags', 'test1');
+    body.append('tags', 'test2');
+
     const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
       method: 'POST',
-      body: new URLSearchParams({
-        __action: 'update_question',
-        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
-        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
-        title: 'New title',
-        qid: 'test/question1',
-        topic: 'Test',
-        tags: ['test1', 'test2'],
-      }),
+      body,
     });
 
     assert.equal(response.status, 200);
