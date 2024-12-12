@@ -5,7 +5,7 @@ FROM
   ai_question_generation_prompts
   JOIN questions ON ai_question_generation_prompts.question_id = questions.id
 WHERE
-  questions.qid = $qid
+  questions.id = $question_id
   AND questions.course_id = $course_id
   AND questions.deleted_at IS NULL
 ORDER BY
