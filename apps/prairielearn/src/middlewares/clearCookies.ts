@@ -1,4 +1,6 @@
 // @ts-check
+import { type NextFunction, type Request, type Response } from 'express';
+
 import { clearCookie } from '../lib/cookie.js';
 
 const cookies_to_ignore = [
@@ -14,12 +16,7 @@ const cookies_to_ignore = [
   'pl2_session',
 ];
 
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
- */
-export default function (req, res, next) {
+export default function (req: Request, res: Response, next: NextFunction) {
   Object.keys(req.cookies).forEach((key) => {
     if (/^pl2?_/.test(key)) {
       if (cookies_to_ignore.includes(key)) {

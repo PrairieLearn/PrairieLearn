@@ -1,9 +1,9 @@
 // @ts-check
-import { Router } from 'express';
+import { Router, type Request, type Response, type NextFunction } from 'express';
 
 const router = Router();
 
-router.all('/*', function (req, res, next) {
+router.all('/*', function (req: Request, res: Response, next: NextFunction) {
   // enable CORS on all requests, see http://enable-cors.org/server_expressjs.html
   res.header('Access-Control-Allow-Origin', '*');
   res.header('Access-Control-Allow-Methods', 'POST, PUT, PATCH, GET, OPTIONS');
@@ -19,7 +19,7 @@ router.all('/*', function (req, res, next) {
 });
 
 // needed for CORS pre-flight checks
-router.options('/*', function (req, res) {
+router.options('/*', function (req: Request, res: Response) {
   res.json({});
 });
 

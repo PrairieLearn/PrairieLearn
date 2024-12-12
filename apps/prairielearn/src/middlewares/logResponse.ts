@@ -1,14 +1,11 @@
 // @ts-check
+import { type NextFunction, type Request, type Response } from 'express';
+
 import { logger } from '@prairielearn/logger';
 
 import { canonicalLogger } from '../lib/canonical-logger.js';
 
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
- */
-export default function (req, res, next) {
+export default function (req: Request, res: Response, next: NextFunction) {
   // Capture the path at the start of the request; it may have been rewritten
   // by the time the finish handler executes.
   const path = req.path;

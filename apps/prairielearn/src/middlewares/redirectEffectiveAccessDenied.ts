@@ -1,12 +1,10 @@
 // @ts-check
+import { type ErrorRequestHandler  } from 'express';
+
 import { idsEqual } from '../lib/id.js';
 
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
- */
-export default function (err, req, res, next) {
+
+const accessDeniedRedirect : ErrorRequestHandler = (err, req, res, next) => {
   // This middleware tries to handle the case where an instructor
   // starts emulating another effective user, but they are currently
   // on a page to which the effective user doesn't have
@@ -56,3 +54,5 @@ export default function (err, req, res, next) {
   // give up, we couldn't figure out a useful redirect
   next(err);
 }
+
+export default accessDeniedRedirect

@@ -1,4 +1,5 @@
 // @ts-check
+import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
@@ -6,9 +7,9 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { getGroupConfig, getGroupInfo, getQuestionGroupPermissions } from '../lib/groups.js';
 
-var sql = sqldb.loadSqlEquiv(import.meta.url);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export async function selectAndAuthzInstanceQuestion(req, res) {
+export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {
   const result = await sqldb.queryAsync(sql.select_and_auth, {
     instance_question_id: req.params.instance_question_id,
     assessment_id: req.params.assessment_id,

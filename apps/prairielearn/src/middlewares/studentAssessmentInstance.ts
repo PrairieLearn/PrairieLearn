@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 
 import * as sqldb from '@prairielearn/postgres';
 
-var sql = sqldb.loadSqlEquiv(import.meta.url);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export default asyncHandler(async (req, res, next) => {
   const result = await sqldb.queryOneRowAsync(sql.all, {
