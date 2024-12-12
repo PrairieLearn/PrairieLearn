@@ -88,8 +88,8 @@ async function browseDirectory({
     },
   );
   return {
-    files: all_files.filter((f) => f?.isFile === true),
-    dirs: all_files.filter((f) => f?.isFile === false),
+    files: all_files.filter((f) => f?.isFile === true) as DirectoryEntryFile[],
+    dirs: all_files.filter((f) => f?.isFile === false) as DirectoryEntryDirectory[],
   };
 }
 

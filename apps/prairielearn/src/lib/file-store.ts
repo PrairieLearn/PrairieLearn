@@ -8,8 +8,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { uploadToS3, getFromS3 } from '../lib/aws.js';
-
+import { uploadToS3, getFromS3 } from './aws.js';
 import { config } from './config.js';
 import { IdSchema } from './db-types.js';
 
@@ -21,20 +20,32 @@ const StorageTypes = Object.freeze({
   FileSystem: 'FileSystem',
 });
 
+interface UploadFileOptions {
+  /** The display_filename of the file. */
+  display_filename: string;
+  /** The file contents. */
+  contents: Buffer;
+  /** The file type. */
+  type: string;
+  /** The assessment for the file. */
+  assessment_id: string | null;
+  /** The assessment instance for the file. */
+  assessment_instance_id: string | null;
+  /** The instance question for the file. */
+  instance_question_id: string | null;
+  /** The current user performing the update. */
+  user_id: string;
+  /** The current authenticated user. */
+  authn_user_id: string;
+  /** AWS 'S3' or 'FileSystem' storage options. */
+  storage_type: string;
+}
+
 /**
  * Upload a file into the file store.
  *
- * @param {object} options - The options for the file upload.
- * @param {string} options.display_filename - The display_filename of the file.
- * @param {Buffer} options.contents - The file contents.
- * @param {string} options.type - The file type.
- * @param {string|null} options.assessment_id = The assessment for the file.
- * @param {string|null} options.assessment_instance_id - The assessment instance for the file.
- * @param {string|null} options.instance_question_id - The instance question for the file.
- * @param {string} options.user_id - The current user performing the update.
- * @param {string} options.authn_user_id - The current authenticated user.
- * @param {string} [options.storage_type] - AWS 'S3' or 'FileSystem' storage options.
- * @return {Promise<string>} The file_id of the newly created file.
+ * @param options - The options for the file upload.
+ * @return The file_id of the newly created file.
  */
 export async function uploadFile({
   display_filename,
@@ -46,7 +57,7 @@ export async function uploadFile({
   user_id,
   authn_user_id,
   storage_type,
-}) {
+}: UploadFileOptions): Promise<string> {
   storage_type = storage_type || config.fileStoreStorageTypeDefault;
   debug(`upload(): storage_type=${storage_type}`);
 
