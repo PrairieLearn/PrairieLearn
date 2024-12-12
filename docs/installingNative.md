@@ -27,6 +27,24 @@ This page describes the procedure to install and run PrairieLearn without any us
   cd PrairieLearn
   ```
 
+- Set up a Python virtual environment:
+
+  ```sh
+  python3 -m venv venv
+  source venv/bin/activate
+  ```
+
+  You can run `deactivate` to exit the virtual environment, and `source venv/bin/activate` to re-enter it.
+
+- If you are on macOS and installed Graphviz with Homebrew, you should manually install `pygraphviz` to specify the location of the Graphviz headers (see [the Graphviz install docs](https://github.com/pygraphviz/pygraphviz/blob/main/INSTALL.txt) for details):
+
+  ```sh
+  pip install --config-settings="--global-option=build_ext" \
+                     --config-settings="--global-option=-I$(brew --prefix graphviz)/include/" \
+                     --config-settings="--global-option=-L$(brew --prefix graphviz)/lib/" \
+                     pygraphviz
+  ```
+
 - Install all dependencies and transpile local packages:
 
   ```sh
