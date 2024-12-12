@@ -2,9 +2,13 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+
 import * as chunks from '../../lib/chunks.js';
 import * as filePaths from '../../lib/file-paths.js';
 
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 const router = Router();
 
 router.get(
@@ -12,33 +16,37 @@ router.get(
   asyncHandler(async (req, res) => {
     const question = res.locals.question;
     const course = res.locals.course;
-    const filename = 'text/' + req.params.filename;
+    const filename = req.params.filename;
+    const result = await sqldb.queryOneRowAsync(sql.check_client_files, {
+      question_id: question.id,
+      filename,
+    });
+    if (!result.rows[0].access_allowed) {
+      throw new error.HttpStatusError(403, 'Access denied');
+    }
+
     const coursePath = chunks.getRuntimeDirectoryForCourse(course);
 
     const questionIds = await chunks.getTemplateQuestionIds(question);
 
-    /** @type {chunks.Chunk[]} */
     const templateQuestionChunks = questionIds.map((id) => ({
-      type: 'question',
+      type: 'question' as const,
       questionId: id,
     }));
-    const chunksToLoad =
-      /** @type {chunks.Chunk[]} */
-      ([
-        {
-          type: 'question',
-          questionId: question.id,
-        },
-      ]).concat(templateQuestionChunks);
+    const chunksToLoad: chunks.Chunk[] = ([
+      {
+        type: 'question' as const,
+        questionId: question.id as string,
+      },
+    ]).concat(templateQuestionChunks);
     await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 
-    const { rootPath, effectiveFilename } = await filePaths.questionFilePath(
+    const { effectiveFilename, rootPath } = await filePaths.questionFilePath(
       filename,
       question.directory,
       coursePath,
       question,
     );
-
     res.sendFile(effectiveFilename, { root: rootPath });
   }),
 );

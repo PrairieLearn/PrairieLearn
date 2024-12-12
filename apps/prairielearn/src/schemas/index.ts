@@ -4,14 +4,15 @@ import * as path from 'node:path';
 
 /**
  * Reads a JSON file from the schemas directory.
- * @param {string} filePath
+ * @param filePath
  */
-function readSchema(filePath) {
+function readSchema(filePath: string) {
   return JSON.parse(
     fs.readFileSync(path.resolve(import.meta.dirname, 'schemas', filePath), 'utf8'),
   );
 }
 
+// TODO: Add TypeScript types for each schema automatically
 export const infoNewsItem = readSchema('./infoNewsItem.json');
 export const infoAssessment = readSchema('./infoAssessment.json');
 export const infoCourse = readSchema('./infoCourse.json');

@@ -60,7 +60,7 @@ router.post(
       ltiRedirectUrl,
       parameters,
       // TODO: column should be `NOT NULL`
-      /** @type {string} */ (ltiResult.secret),
+      (ltiResult.secret as string),
       undefined,
       { encodeSignature: false },
     );
