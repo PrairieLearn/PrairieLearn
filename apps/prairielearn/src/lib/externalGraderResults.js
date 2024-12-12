@@ -5,7 +5,6 @@ import {
   GetQueueUrlCommand,
   ReceiveMessageCommand,
   DeleteMessageCommand,
-  type ReceiveMessageResult,
 } from '@aws-sdk/client-sqs';
 
 import * as error from '@prairielearn/error';
@@ -39,8 +38,8 @@ export async function init() {
     // eslint-disable-next-line no-constant-condition
     while (true) {
       // Spin until we can get at least one message from the queue.
-      let messages: ReceiveMessageResult['Messages'];
-      while (messages === undefined) {
+      let messages = null;
+      while (messages == null) {
         // Only attempt to abort before we receive any messages. Once we
         // receive them, we should not mark ourselves as finished until we've
         // actually processed all of them.
@@ -110,9 +109,10 @@ export async function stop() {
 }
 
 /**
- * @returns The URL of the results queue.
+ * @param {SQSClient} sqs
+ * @returns {Promise<string>} The URL of the results queue.
  */
-async function loadQueueUrl(sqs: SQSClient): Promise<string> {
+async function loadQueueUrl(sqs) {
   logger.verbose(
     `External grading results queue ${config.externalGradingResultsQueueName}: getting URL...`,
   );
@@ -129,14 +129,9 @@ async function loadQueueUrl(sqs: SQSClient): Promise<string> {
   return queueUrl;
 }
 
-async function processMessage(data: {
-  jobId: string;
-  event: string;
-  data: {
-    receivedTime: string;
-  };
-}) {
-  let jobId: string;
+async function processMessage(data) {
+  /** @type {string} */
+  let jobId;
   try {
     jobId = IdSchema.parse(data.jobId);
   } catch {
@@ -187,6 +182,6 @@ async function processMessage(data: {
   }
 }
 
-async function processResults(jobId: string, data: Record<string, any> | string | Buffer) {
+async function processResults(jobId, data) {
   await processGradingResult(externalGraderCommon.makeGradingResult(jobId, data));
 }

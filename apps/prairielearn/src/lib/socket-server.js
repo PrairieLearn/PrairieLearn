@@ -1,6 +1,4 @@
 // @ts-check
-import type http from 'http';
-
 import { createAdapter } from '@socket.io/redis-adapter';
 import debugfn from 'debug';
 import { Redis } from 'ioredis';
@@ -12,7 +10,11 @@ import { config } from './config.js';
 
 const debug = debugfn('prairielearn:socket-server');
 
-function attachEventListeners(client: Redis, type: string) {
+/**
+ * @param {Redis} client
+ * @param {string} type
+ */
+function attachEventListeners(client, type) {
   client.on('error', (err) => {
     logger.error(`redis client event for ${type}: error`, err);
   });
@@ -41,13 +43,19 @@ function attachEventListeners(client: Redis, type: string) {
   });
 }
 
-export let io: Server;
+/** @type {Server} */
+export let io;
 
-let pub: Redis;
+/** @type {Redis} */
+let pub;
 
-let sub: Redis;
+/** @type {Redis} */
+let sub;
 
-export async function init(server: http.Server) {
+/**
+ * @param {import('http').Server} server
+ */
+export async function init(server) {
   debug('init(): creating socket server');
   io = new Server(server);
   if (config.redisUrl) {

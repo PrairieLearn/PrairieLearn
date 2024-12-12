@@ -19,7 +19,7 @@ import { getJobDirectory, buildDirectory } from './externalGraderCommon.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-let QUEUE_URL: string | undefined = undefined;
+let QUEUE_URL = null;
 
 export class ExternalGraderSqs {
   handleGradingRequest(grading_job, submission, variant, question, course, configOverrides) {
@@ -38,7 +38,7 @@ export class ExternalGraderSqs {
 
           // Now that we've built up our directory, let's zip it up and send
           // it off to S3
-          const tarball = tar.create({ gzip: true, cwd: dir }, ['.']);
+          let tarball = tar.create({ gzip: true, cwd: dir }, ['.']);
 
           const passthrough = new PassThrough();
           tarball.pipe(passthrough);

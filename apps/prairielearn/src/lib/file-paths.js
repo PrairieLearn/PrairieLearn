@@ -11,14 +11,12 @@ import { APP_ROOT_PATH } from './paths.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const QUESTION_DEFAULTS_PATH = path.resolve(APP_ROOT_PATH, 'v2-question-servers');
 
-interface QuestionFilePathInfo {
-  /** The full path, including the filename, of the file to load */
-  fullPath: string;
-  /** The filename, excluding the path */
-  effectiveFilename: string;
-  /** The path, excluding the filename. */
-  rootPath: string;
-}
+/**
+ * @typedef {Object} QuestionFilePathInfo
+ * @property {string} fullPath The full path, including the filename, of the file to load
+ * @property {string} effectiveFilename The filename, excluding the path
+ * @property {string} rootPath The path, excluding the filename.
+ */
 
 /**
  * Returns the full path for a file, as well as the effective filename and
@@ -32,14 +30,20 @@ interface QuestionFilePathInfo {
  * res.sendFile(effectiveFilename, { root: rootPath });
  * ```
  *
+ * @param {string} filename
+ * @param {string} questionDirectory
+ * @param {string} coursePath
+ * @param {any} question
+ * @param {number} nTemplates
+ * @returns {Promise<QuestionFilePathInfo>}
  */
 export async function questionFilePath(
-  filename: string,
-  questionDirectory: string,
-  coursePath: string,
-  question: any,
+  filename,
+  questionDirectory,
+  coursePath,
+  question,
   nTemplates = 0,
-): Promise<QuestionFilePathInfo> {
+) {
   const rootPath = path.join(coursePath, 'questions', questionDirectory);
   const fullPath = path.join(rootPath, filename);
 
