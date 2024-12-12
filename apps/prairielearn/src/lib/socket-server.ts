@@ -1,4 +1,3 @@
-// @ts-check
 import type http from 'http';
 
 import { createAdapter } from '@socket.io/redis-adapter';
@@ -22,7 +21,7 @@ function attachEventListeners(client: Redis, type: string) {
   client.on('ready', () => {
     logger.verbose(`redis client event for ${type}: ready`);
   });
-  client.on('reconnecting', (reconnectTimeMilliseconds) => {
+  client.on('reconnecting', (reconnectTimeMilliseconds: number) => {
     logger.verbose(
       `redis client event for ${type}: reconnecting in ${reconnectTimeMilliseconds} milliseconds`,
     );

@@ -1,5 +1,3 @@
-// @ts-check
-
 /**
  * Replace special characters in string with underscores.
  *

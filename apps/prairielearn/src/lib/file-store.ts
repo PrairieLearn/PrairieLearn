@@ -1,8 +1,9 @@
-// @ts-check
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
+import type stream from 'stream';
 
+import { type GetObjectOutput } from '@aws-sdk/client-s3';
 import debugfn from 'debug';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -117,10 +118,10 @@ export async function uploadFile({
 /**
  * Soft-delete a file from the file store, leaving the physical file on disk.
  *
- * @param {string} file_id - The file to delete.
- * @param {string} authn_user_id - The current authenticated user.
+ * @param file_id - The file to delete.
+ * @param authn_user_id - The current authenticated user.
  */
-export async function deleteFile(file_id, authn_user_id) {
+export async function deleteFile(file_id: string, authn_user_id: string) {
   debug(`delete(): file_id=${file_id}`);
   debug(`delete(): authn_user_id=${authn_user_id}`);
 
@@ -131,28 +132,28 @@ export async function deleteFile(file_id, authn_user_id) {
 /**
  * Option of returning a stream instead of a file
  *
- * @param {number | string} file_id - The file to get.
- * @return {Promise<(import('stream'))>} - Requested file stream.
+ * @param file_id - The file to get.
+ * @return Requested file stream.
  */
-export async function getStream(file_id) {
+export async function getStream(file_id: number | string): Promise<stream> {
   debug(`getStream(): file_id=${file_id}`);
   const file = await getFile(file_id, 'stream');
-  return file.contents;
+  return file.contents as stream /* Strange conversion */;
 }
 
 /**
  * Get a file from the file store.
  *
- * @param {number | string} file_id - The file to get.
- * @return {Promise<object>} An object with a buffer (of the file contents) and a file object.
+ * @param file_id - The file to get.
+ * @return An object with a buffer (of the file contents) and a file object.
  */
-export async function getFile(file_id, data_type = 'buffer') {
+export async function getFile(file_id: number | string, data_type = 'buffer') {
   debug(`get(): file_id=${file_id}`);
   const params = { file_id };
   const result = await sqldb.queryZeroOrOneRowAsync(sql.select_file, params);
   debug('get(): got row from DB');
 
-  let buffer, readStream;
+  let buffer: Buffer | GetObjectOutput['Body'], readStream: Buffer | GetObjectOutput['Body'];
 
   if (result.rows.length < 1) {
     throw new Error(`No file with file_id ${file_id}`);
@@ -202,8 +203,12 @@ export async function getFile(file_id, data_type = 'buffer') {
     }
   }
 
+  const contents = buffer || readStream;
+  if (contents === undefined) {
+    throw new Error(`No contents for file_id ${file_id}`);
+  }
   return {
-    contents: buffer || readStream,
+    contents,
     file: result.rows[0],
   };
 }

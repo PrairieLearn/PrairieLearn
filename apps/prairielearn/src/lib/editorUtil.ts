@@ -1,5 +1,3 @@
-// @ts-check
-// const sqldb = require('@prairielearn/postgres')
 import * as path from 'path';
 
 import * as sqldb from '@prairielearn/postgres';

@@ -1,5 +1,3 @@
-// @ts-check
-
 interface DeferredPromise<T> {
   promise: Promise<T>;
   resolve: (value: T) => void;
