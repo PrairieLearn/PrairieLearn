@@ -1,7 +1,11 @@
 // @ts-check
 import { createInterface } from 'node:readline';
 
-import { CodeCallerNative, type ErrorData } from './lib/code-caller/code-caller-native.js';
+import {
+  CodeCallerNative,
+  type ErrorData,
+  type CodeCallerError,
+} from './lib/code-caller/code-caller-native.js';
 import { type CallType } from './lib/code-caller/code-caller-shared.js';
 import { FunctionMissingError } from './lib/code-caller/index.js';
 
@@ -29,10 +33,6 @@ interface ExecutorResults {
  *
  * The Promise returned from this function should never reject - errors will
  * be indicated by the `error` property on the result.
- *
- * @param {string} line
- * @param {CodeCallerNative} codeCaller
- * @returns {Promise<Results>}
  */
 async function handleInput(line: string, codeCaller: CodeCallerNative): Promise<ExecutorResults> {
   let request: ExecutorRequest;
@@ -48,8 +48,8 @@ async function handleInput(line: string, codeCaller: CodeCallerNative): Promise<
   }
 
   if (request.fcn === 'restart') {
-    let restartErr;
-    let success;
+    let restartErr: Error | undefined;
+    let success: boolean | undefined;
 
     try {
       success = await codeCaller.restart();
@@ -75,7 +75,7 @@ async function handleInput(line: string, codeCaller: CodeCallerNative): Promise<
     return { needsFullRestart: true };
   }
 
-  let result, output, callErr;
+  let result: any, output: string | undefined, callErr: Error | CodeCallerError | undefined;
   try {
     ({ result, output } = await codeCaller.call(
       request.type,
