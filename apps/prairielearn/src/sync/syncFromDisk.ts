@@ -108,7 +108,7 @@ export async function syncDiskToSqlWithLock(
   }
 
   const sharingConfigurationValid = await timed('Validated sharing configuration', () =>
-    checkSharingConfigurationValid(courseId, courseData as courseDB.CourseData, logger),
+    checkSharingConfigurationValid(courseId, courseData, logger),
   );
   if (!sharingConfigurationValid) {
     return {
@@ -120,36 +120,28 @@ export async function syncDiskToSqlWithLock(
   logger.info('Syncing info to database');
 
   await timed('Synced all course data', async () => {
-    await timed('Synced course info', () =>
-      syncCourseInfo.sync(courseData as courseDB.CourseData, courseId),
-    );
+    await timed('Synced course info', () => syncCourseInfo.sync(courseData, courseId));
     const courseInstanceIds = await timed('Synced course instances', () =>
-      syncCourseInstances.sync(courseId, courseData as courseDB.CourseData),
+      syncCourseInstances.sync(courseId, courseData),
     );
-    await timed('Synced topics', () =>
-      syncTopics.sync(courseId, courseData as courseDB.CourseData),
-    );
+    await timed('Synced topics', () => syncTopics.sync(courseId, courseData));
     const questionIds = await timed('Synced questions', () =>
-      syncQuestions.sync(courseId, courseData as courseDB.CourseData),
+      syncQuestions.sync(courseId, courseData),
     );
 
     await timed('Synced sharing sets', () =>
-      syncSharingSets.sync(courseId, courseData as courseDB.CourseData, questionIds),
+      syncSharingSets.sync(courseId, courseData, questionIds),
     );
-    await timed('Synced tags', () =>
-      syncTags.sync(courseId, courseData as courseDB.CourseData, questionIds),
-    );
-    await timed('Synced assessment sets', () =>
-      syncAssessmentSets.sync(courseId, courseData as courseDB.CourseData),
-    );
+    await timed('Synced tags', () => syncTags.sync(courseId, courseData, questionIds));
+    await timed('Synced assessment sets', () => syncAssessmentSets.sync(courseId, courseData));
     await timed('Synced assessment modules', () =>
-      syncAssessmentModules.sync(courseId, courseData as courseDB.CourseData),
+      syncAssessmentModules.sync(courseId, courseData),
     );
     await timed('Synced all assessments', async () => {
       // Ensure that a single course with a ton of course instances can't
       // monopolize the database connection pool.
       await async.eachLimit(
-        Object.entries((courseData as courseDB.CourseData).courseInstances),
+        Object.entries(courseData.courseInstances),
         3,
         async ([ciid, courseInstanceData]) => {
           const courseInstanceId = courseInstanceIds[ciid];
