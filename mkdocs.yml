@@ -3,8 +3,8 @@ site_url: https://prairielearn.readthedocs.io
 repo_url: https://github.com/PrairieLearn/PrairieLearn
 theme:
   name: material
-  logo: img/PL-logo-white.svg
-  favicon: img/PL-logo-adaptive.svg
+  logo: img/flower-square-nobg.svg
+  favicon: img/flower-square-256.png
   icon:
     repo: fontawesome/brands/github
     edit: material/pencil
