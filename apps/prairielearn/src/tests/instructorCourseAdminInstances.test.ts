@@ -7,7 +7,12 @@ import * as tmp from 'tmp';
 
 import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 
+import { config } from '../lib/config.js';
+
+import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
+
+const siteUrl = `http://localhost:${config.serverPort}`;
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -45,7 +50,10 @@ describe('Create course instance', () => {
 
   after(helperServer.after);
 
-  step('create a course instance', async () => {});
+  step('create a course instance', async () => {
+    const courseInstanceCreationResponse = await fetchCheerio(`${siteUrl}`, 'POST');
+    
+  });
 
   step('verify course instance has the correct info', async () => {});
 
