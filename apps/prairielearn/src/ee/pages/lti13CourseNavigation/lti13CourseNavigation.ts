@@ -53,6 +53,8 @@ router.get(
     const courseName = prettyCourseName(ltiClaim);
     const role_instructor = ltiClaim.isRoleInstructor();
 
+    console.log(ltiClaim.roles);
+
     // Get lti13_course_instance info, if present
     const lti13_course_instance = await queryOptionalRow(
       sql.select_lti13_course_instance,
@@ -100,6 +102,7 @@ router.get(
         Lti13CourseNavigationNotReady({
           resLocals: res.locals,
           courseName,
+          ltiRoles: ltiClaim.roles,
         }),
       );
       return;
