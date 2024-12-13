@@ -7,15 +7,15 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 interface CourseInfo {
   type: 'course';
 }
-interface QuestionInfo {
+export interface QuestionInfo {
   type: 'question';
   qid: string;
 }
-interface CourseInstanceInfo {
+export interface CourseInstanceInfo {
   type: 'courseInstance';
   ciid: string;
 }
-interface AssessmentInfo {
+export interface AssessmentInfo {
   type: 'assessment';
   ciid: string;
   aid: string;

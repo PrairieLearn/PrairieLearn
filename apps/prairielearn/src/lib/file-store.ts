@@ -39,7 +39,7 @@ interface UploadFileOptions {
   /** The current authenticated user. */
   authn_user_id: string;
   /** AWS 'S3' or 'FileSystem' storage options. */
-  storage_type: string;
+  storage_type?: string;
 }
 
 /**
