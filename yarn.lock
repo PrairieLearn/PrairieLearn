@@ -5553,19 +5553,19 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/mime@npm:*, @types/mime@npm:^4.0.0":
+"@types/mime@npm:^1":
+  version: 1.3.2
+  resolution: "@types/mime@npm:1.3.2"
+  checksum: 10c0/61d144e5170c6cdf6de334ec0ee4bb499b1a0fb0233834a9e8cec6d289b0e3042bedf35cbc1c995d71a247635770dae3f13a9ddae69098bb54b933429bc08d35
+  languageName: node
+  linkType: hard
+
+"@types/mime@npm:^4.0.0":
   version: 4.0.0
   resolution: "@types/mime@npm:4.0.0"
   dependencies:
     mime: "npm:*"
   checksum: 10c0/c544ca670c2cb53b96c7e4a1b4ecfdf3777dad4b74f7bb305680eed82c753a7ccfdf03c8b06c9fba48bb10d2a96ae95c9a4007b6c83bc5fdc9cfa7250c07b85b
-  languageName: node
-  linkType: hard
-
-"@types/mime@npm:^1":
-  version: 1.3.2
-  resolution: "@types/mime@npm:1.3.2"
-  checksum: 10c0/61d144e5170c6cdf6de334ec0ee4bb499b1a0fb0233834a9e8cec6d289b0e3042bedf35cbc1c995d71a247635770dae3f13a9ddae69098bb54b933429bc08d35
   languageName: node
   linkType: hard
 
@@ -5821,17 +5821,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/serve-static@npm:*":
-  version: 1.15.0
-  resolution: "@types/serve-static@npm:1.15.0"
-  dependencies:
-    "@types/mime": "npm:*"
-    "@types/node": "npm:*"
-  checksum: 10c0/2bdf7561c74175cc57c912d360fe763af0fc77a078f67d22cb515fa5b23db937314ffe1b5f96ca77c5e9de55b9d94277b7a3d288ff07067d6b2f83d004027430
-  languageName: node
-  linkType: hard
-
-"@types/serve-static@npm:^1.15.7":
+"@types/serve-static@npm:*, @types/serve-static@npm:^1.15.7":
   version: 1.15.7
   resolution: "@types/serve-static@npm:1.15.7"
   dependencies:
