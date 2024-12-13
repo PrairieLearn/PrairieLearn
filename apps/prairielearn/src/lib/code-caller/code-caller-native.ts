@@ -15,7 +15,6 @@ import { type CodeCallerNativeChildProcess } from './code-caller-native-types.js
 import {
   FunctionMissingError,
   type CodeCallerState,
-  // type CallType,
   CREATED,
   WAITING,
   IN_CALL,
@@ -24,8 +23,11 @@ import {
   EXITED,
   type CodeCaller,
   type PrepareForCourseOptions,
-  type CallType,
+  type CallType as CallTypeShared,
 } from './code-caller-shared.js';
+
+/* Re-export types until executor is in TypeScript are merged */
+export type CallType = CallTypeShared;
 
 const debug = debugfn('prairielearn:code-caller-native');
 
