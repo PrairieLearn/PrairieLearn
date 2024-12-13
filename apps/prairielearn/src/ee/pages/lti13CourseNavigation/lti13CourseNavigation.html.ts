@@ -160,9 +160,9 @@ export function Lti13CourseNavigationNotReady({
                   <div class="card-header bg-info">Debugging information</div>
                   <div class="card-body">
                     <p>
-                      We see that you are not a student, but you do not have the permissions to
-                      integrate PrairieLearn course instances. An instructor or designer (and not
-                      Teaching Assistant) LMS role is needed to do this.
+                      You do not have the permissions to integrate PrairieLearn course instances. An
+                      instructor or designer (and not Teaching Assistant) LMS role is needed to do
+                      this.
                     </p>
                     <p>Here are your roles that we received from your LMS:</p>
                     <pre>${ltiRoles.join('\n')}</pre>
