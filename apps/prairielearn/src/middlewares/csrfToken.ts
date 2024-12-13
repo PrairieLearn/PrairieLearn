@@ -5,19 +5,14 @@ import { generateSignedToken, checkSignedToken } from '@prairielearn/signed-toke
 
 import { config } from '../lib/config.js';
 
-interface TokenData {
-  url: string;
-  authn_user_id?: string;
-}
-
 export default asyncHandler(async (req, res, next) => {
-  const tokenData: TokenData = {
+  const tokenData: {
+    url: string;
+    authn_user_id?: string;
+  } = {
     url: req.originalUrl,
+    authn_user_id: res.locals.authn_user?.user_id,
   };
-
-  if (res.locals.authn_user && res.locals.authn_user.user_id) {
-    tokenData.authn_user_id = res.locals.authn_user.user_id;
-  }
 
   res.locals.__csrf_token = generateSignedToken(tokenData, config.secretKey);
 

@@ -16,15 +16,15 @@ import { idsEqual } from '../lib/id.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:authzCourseOrInstance');
 
+interface Override {
+  name: string;
+  value: string;
+  cookie: string;
+}
 /**
  * Removes all override cookies from the response.
  */
-function clearOverrideCookies(
-  res: Response,
-  overrides: {
-    cookie: string;
-  }[],
-) {
+function clearOverrideCookies(res: Response, overrides: Override[]) {
   overrides.forEach((override) => {
     debug(`clearing cookie: ${override.cookie}`);
     const newName = override.cookie.replace(/^pl2_/, 'pl_');
@@ -122,11 +122,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.use_bootstrap_4 = await features.enabledFromLocals('bootstrap-4', res.locals);
 
   // Check if it is necessary to request a user data override - if not, return
-  const overrides: {
-    name: string;
-    value: string;
-    cookie: string;
-  }[] = [];
+  const overrides: Override[] = [];
   if (req.cookies.pl2_requested_uid) {
     // If the requested uid is the same as the authn user uid, then silently clear the cookie and continue
     if (req.cookies.pl2_requested_uid === res.locals.authn_user.uid) {

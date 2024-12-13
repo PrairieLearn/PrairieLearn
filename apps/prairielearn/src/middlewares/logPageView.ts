@@ -7,7 +7,16 @@ import * as Sentry from '@prairielearn/sentry';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export async function logPageView(pageType: string, req: Request, res: Response) {
+type PageType =
+  | 'studentAssessment'
+  | 'instructorQuestionPreview'
+  | 'publicQuestionPreview'
+  | 'studentAssessmentInstance'
+  | 'studentAssessmentInstanceFile'
+  | 'studentAssessments'
+  | 'studentGradebook'
+  | 'studentInstanceQuestion';
+export async function logPageView(pageType: PageType, req: Request, res: Response) {
   const user_id = res.locals.user ? res.locals.user.user_id : res.locals.authn_user.user_id;
 
   // Originally, we opted to only record page views for assessments if
@@ -39,7 +48,7 @@ export async function logPageView(pageType: string, req: Request, res: Response)
   });
 }
 
-export default function (pageType: string) {
+export default function (pageType: PageType) {
   return asyncHandler(async (req, res, next) => {
     if (req.method !== 'GET' || !res.locals.user || !res.locals.authn_user) {
       next();

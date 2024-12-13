@@ -2,7 +2,7 @@ import { type ErrorRequestHandler } from 'express';
 
 import { idsEqual } from '../lib/id.js';
 
-const accessDeniedRedirect: ErrorRequestHandler = (err, req, res, next) => {
+const redirectEffectiveAccessDenied: ErrorRequestHandler = (err, req, res, next) => {
   // This middleware tries to handle the case where an instructor
   // starts emulating another effective user, but they are currently
   // on a page to which the effective user doesn't have
@@ -53,4 +53,4 @@ const accessDeniedRedirect: ErrorRequestHandler = (err, req, res, next) => {
   next(err);
 };
 
-export default accessDeniedRedirect;
+export default redirectEffectiveAccessDenied;

@@ -4,6 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
 import * as authnLib from '../lib/authn.js';
+import { type LoadUserAuth } from '../lib/authn.js';
 import { config } from '../lib/config.js';
 import { clearCookie, setCookie } from '../lib/cookie.js';
 
@@ -45,7 +46,7 @@ export default asyncHandler(async (req, res, next) => {
 
     const uuid = data.uuid;
 
-    const authnParams = {
+    const authnParams: LoadUserAuth = {
       uid: `loadtest+${uuid}@prairielearn.com`,
       uin: `loadtest+${uuid}`,
       name: `Load Test ${uuid}`,
@@ -96,7 +97,7 @@ export default asyncHandler(async (req, res, next) => {
 
     if (!uid) throw new Error('Missing uid');
 
-    const authnParams = {
+    const authnParams: LoadUserAuth = {
       uid,
       uin,
       name,
@@ -152,7 +153,7 @@ export default asyncHandler(async (req, res, next) => {
     return;
   }
 
-  const authnParams = {
+  const authnParams: LoadUserAuth = {
     user_id: req.session.user_id,
     provider: req.session.authn_provider_name,
   };
