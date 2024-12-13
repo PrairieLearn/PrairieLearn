@@ -58,9 +58,6 @@ interface InitOptions {
   errorIfLockNotAcquired?: boolean;
 }
 
-/**
- * @param options
- */
 export async function init({
   notifyIfPreviouslyEmpty,
   errorIfLockNotAcquired = false,
@@ -89,7 +86,6 @@ export async function init({
 
 /**
  * Initializes news
- * @param options
  */
 export async function initInBackground(options: InitOptions) {
   init(options).catch((err) => {

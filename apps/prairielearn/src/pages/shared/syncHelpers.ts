@@ -20,9 +20,9 @@ const docker = new Docker();
 /**
  *
  * @param locals res.locals
- * @returns jobSequenceId
+ * @returns The ID of the job sequence created for this process
  */
-export async function pullAndUpdate(locals: any) {
+export async function pullAndUpdate(locals: Record<string, any>): Promise<string> {
   const { jobSequenceId } = await pullAndUpdateCourse({
     courseId: locals.course.id,
     userId: locals.user.user_id,
@@ -35,9 +35,9 @@ export async function pullAndUpdate(locals: any) {
 /**
  *
  * @param locals res.locals
- * @returns jobSequenceId
+ * @returns The ID of the job sequence created for this process
  */
-export async function gitStatus(locals: any) {
+export async function gitStatus(locals: Record<string, any>): Promise<string> {
   const serverJob = await createServerJob({
     courseId: locals.course.id,
     userId: locals.user.user_id,
@@ -65,10 +65,6 @@ export async function gitStatus(locals: any) {
   return serverJob.jobSequenceId;
 }
 
-/**
- * @param repo
- * @param job
- */
 async function ensureECRRepo(repo: string, job: ServerJob) {
   const ecr = new ECR(makeAwsClientConfig());
   job.info(`Describing repositories with name: ${repo}`);
@@ -110,7 +106,7 @@ async function ensureECRRepo(repo: string, job: ServerJob) {
 }
 
 function logProgressOutput(output: any, job: ServerJob, printedInfos: Set<string>, prefix: string) {
-  let info: string | undefined;
+  let info: string | null = null;
   if (
     'status' in output &&
     'id' in output &&
@@ -123,18 +119,12 @@ function logProgressOutput(output: any, job: ServerJob, printedInfos: Set<string
   } else if ('status' in output) {
     info = `${output.status}`;
   }
-  if (info !== undefined && !printedInfos.has(info)) {
+  if (info !== null && !printedInfos.has(info)) {
     printedInfos.add(info);
     job.info(prefix + info);
   }
 }
 
-/**
- *
- * @param image
- * @param dockerAuth
- * @param job
- */
 async function pullAndPushToECR(image: string, dockerAuth: DockerAuth, job: ServerJob) {
   const { cacheImageRegistry } = config;
   if (!cacheImageRegistry) {
@@ -209,10 +199,14 @@ async function pullAndPushToECR(image: string, dockerAuth: DockerAuth, job: Serv
 }
 
 /**
- * @param images
- * @param locals
+ *
+ * @returns The ID of the job sequence created for this process
  */
-export async function ecrUpdate(images: { image: string }[], locals: any) {
+
+export async function ecrUpdate(
+  images: { image: string }[],
+  locals: Record<string, any>,
+): Promise<string> {
   if (!config.cacheImageRegistry) {
     throw new Error('cacheImageRegistry not defined');
   }
