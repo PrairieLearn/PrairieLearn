@@ -1,5 +1,3 @@
-// @ts-check
-
 /* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
@@ -21,9 +19,16 @@ import bodyParser from 'body-parser';
 import Bowser from 'bowser';
 import cookieParser from 'cookie-parser';
 import esMain from 'es-main';
-import express from 'express';
+import express, {
+  type RequestHandler,
+  type Express,
+  type Request,
+  type Response,
+  type NextFunction,
+} from 'express';
 import asyncHandler from 'express-async-handler';
 import { createProxyMiddleware } from 'http-proxy-middleware';
+import type * as httpProxyMiddleware from 'http-proxy-middleware';
 import _ from 'lodash';
 import multer from 'multer';
 import onFinished from 'on-finished';
@@ -76,13 +81,12 @@ import staticNodeModules from './middlewares/staticNodeModules.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
-
 process.on('warning', (e) => console.warn(e));
 
 const argv = yargsParser(process.argv.slice(2));
 
 if ('h' in argv || 'help' in argv) {
-  var msg = `PrairieLearn command line options:
+  const msg = `PrairieLearn command line options:
     -h, --help                          Display this help and exit
     --config <filename>
     <filename> and no other args        Load an alternative config filename
@@ -95,8 +99,8 @@ if ('h' in argv || 'help' in argv) {
   process.exit(0);
 }
 
-function excludeRoutes(routes, handler) {
-  return (req, res, next) => {
+function excludeRoutes(routes: string[], handler: RequestHandler) {
+  return (req: Request, res: Response, next: NextFunction) => {
     if (routes.some((route) => req.path.startsWith(route))) {
       next();
     } else {
@@ -107,9 +111,9 @@ function excludeRoutes(routes, handler) {
 
 /**
  * Creates the express application and sets up all PrairieLearn routes.
- * @return {Promise<import('express').Express>} The express "app" object that was created.
+ * @return The express "app" object that was created.
  */
-export async function initExpress() {
+export async function initExpress(): Promise<Express> {
   const app = express();
   app.set('views', path.join(import.meta.dirname, 'pages'));
   app.set('trust proxy', config.trustProxy);
@@ -276,11 +280,11 @@ export async function initExpress() {
    * Function to strip "sensitive" cookies from requests that will be proxied
    * to workspace hosts.
    */
-  function stripSensitiveCookies(proxyReq) {
+  function stripSensitiveCookies(proxyReq: http.ClientRequest) {
     const cookies = proxyReq.getHeader('cookie');
     if (!cookies) return;
 
-    const items = cookies.split(';');
+    const items = (cookies as string).split(';');
     const filteredItems = items.filter((item) => {
       const name = item.split('=')[0].trim();
       return (
@@ -310,8 +314,7 @@ export async function initExpress() {
 
   // proxy workspaces to remote machines
   const workspaceUrlRewriteCache = new LocalCache(config.workspaceUrlRewriteCacheMaxAgeSec);
-  /** @type {import('http-proxy-middleware').Options} */
-  const workspaceProxyOptions = {
+  const workspaceProxyOptions: httpProxyMiddleware.Options = {
     target: 'invalid',
     ws: true,
     pathRewrite: async (path) => {
@@ -334,7 +337,7 @@ export async function initExpress() {
         if (!workspace_url_rewrite) {
           return path;
         }
-        var pathSuffix = match[2];
+        const pathSuffix = match[2];
         const newPath = '/' + pathSuffix;
         return newPath;
       } catch (err) {
@@ -377,9 +380,7 @@ export async function initExpress() {
       // Check to make sure we weren't already in the middle of sending a
       // response before replying with an error 500
       if (res && !res.headersSent) {
-        res
-          .status?.(/** @type {any} */ (err).status ?? 500)
-          ?.send?.('Error proxying workspace request');
+        res.status?.((err as any).status ?? 500)?.send?.('Error proxying workspace request');
       }
     },
   };
@@ -405,13 +406,13 @@ export async function initExpress() {
   ]);
   app.use('/pl/workspace/:workspace_id(\\d+)/container', [
     cookieParser(),
-    (req, res, next) => {
+    (req: Request, res: Response, next: NextFunction) => {
       // Needed for workspaceAuthRouter.
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
     workspaceAuthRouter,
-    (req, res, next) => {
+    (req: Request, res: Response, next: NextFunction) => {
       workspaceProxySocketActivityMetrics.addSocket(req.socket);
       next();
     },
@@ -519,7 +520,7 @@ export async function initExpress() {
     app.use('/pl/dev_login', (await import('./pages/authLoginDev/authLoginDev.js')).default);
   }
   app.use('/pl/logout', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'logout';
       next();
     },
@@ -579,25 +580,25 @@ export async function initExpress() {
   app.use('/pl/settings', (await import('./pages/userSettings/userSettings.js')).default);
   app.use('/pl/enroll', (await import('./pages/enroll/enroll.js')).default);
   app.use('/pl/password', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'password';
       next();
     },
     (await import('./pages/authPassword/authPassword.js')).default,
   ]);
   app.use('/pl/news_items', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'news';
       next();
     },
     (await import('./pages/newsItems/newsItems.js')).default,
   ]);
   app.use('/pl/news_item', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'news';
       next();
     },
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'news_item';
       next();
     },
@@ -630,7 +631,7 @@ export async function initExpress() {
   );
 
   app.use('/pl/workspace/:workspace_id(\\d+)', [
-    (req, res, next) => {
+    (req: Request, res: Response, next: NextFunction) => {
       res.locals.workspace_id = req.params.workspace_id;
       next();
     },
@@ -695,11 +696,11 @@ export async function initExpress() {
   app.use('/pl/course_instance/:course_instance_id(\\d+)', [
     await enterpriseOnly(async () => (await import('./ee/middlewares/checkPlanGrants.js')).default),
     (await import('./middlewares/autoEnroll.js')).default,
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id;
       next();
     },
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'student';
       next();
     },
@@ -725,11 +726,11 @@ export async function initExpress() {
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor', [
     (await import('./middlewares/authzAuthnHasCoursePreviewOrInstanceView.js')).default,
     (await import('./middlewares/selectOpenIssueCount.js')).default,
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
       next();
     },
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.urlPrefix = '/pl/course_instance/' + req.params.course_instance_id + '/instructor';
       next();
     },
@@ -765,11 +766,11 @@ export async function initExpress() {
   app.use('/pl/course/:course_id(\\d+)', [
     (await import('./middlewares/authzCourseOrInstance.js')).default, // set res.locals.course
     (await import('./middlewares/selectOpenIssueCount.js')).default,
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'instructor';
       next();
     },
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.urlPrefix = '/pl/course/' + req.params.course_id;
       next();
     },
@@ -902,7 +903,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/settings',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'settings';
         next();
       },
@@ -913,7 +914,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/questions',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'questions';
         next();
       },
@@ -924,7 +925,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/groups',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'groups';
         next();
       },
@@ -934,7 +935,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/access',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'access';
         next();
       },
@@ -944,7 +945,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/assessment_statistics',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'assessment_statistics';
         next();
       },
@@ -955,7 +956,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/question_statistics',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'question_statistics';
         next();
       },
@@ -969,7 +970,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/downloads',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'downloads';
         next();
       },
@@ -980,7 +981,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/uploads',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'uploads';
         next();
       },
@@ -990,7 +991,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/regrading',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'regrading';
         next();
       },
@@ -1001,7 +1002,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/instances',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'instances';
         next();
       },
@@ -1012,7 +1013,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_edit',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'file_edit';
         next();
       },
@@ -1022,7 +1023,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_view',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'file_view';
         next();
       },
@@ -1037,7 +1038,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/assessment_question/:assessment_question_id(\\d+)',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'manual_grading';
         next();
       },
@@ -1052,7 +1053,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading/instance_question/:instance_question_id(\\d+)',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'manual_grading';
         next();
       },
@@ -1111,7 +1112,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/manual_grading',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'manual_grading';
         next();
       },
@@ -1150,7 +1151,7 @@ export async function initExpress() {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)',
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'question';
       next();
     },
@@ -1158,7 +1159,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/settings',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'settings';
         next();
       },
@@ -1168,7 +1169,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/preview',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'preview';
         next();
       },
@@ -1178,7 +1179,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/statistics',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'statistics';
         next();
       },
@@ -1189,7 +1190,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_edit',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'file_edit';
         next();
       },
@@ -1199,7 +1200,7 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_view',
     [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'file_view';
         next();
       },
@@ -1240,7 +1241,7 @@ export async function initExpress() {
     },
   );
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/settings', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'settings';
       next();
     },
@@ -1248,35 +1249,35 @@ export async function initExpress() {
       .default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/sharing', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'sharing';
       next();
     },
     (await import('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/staff', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'staff';
       next();
     },
     (await import('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/sets', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'sets';
       next();
     },
     (await import('./pages/instructorCourseAdminSets/instructorCourseAdminSets.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/modules', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'modules';
       next();
     },
     (await import('./pages/instructorCourseAdminModules/instructorCourseAdminModules.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/instances', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'instances';
       next();
     },
@@ -1284,14 +1285,14 @@ export async function initExpress() {
       .default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/issues', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'issues';
       next();
     },
     (await import('./pages/instructorIssues/instructorIssues.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/questions', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'questions';
       next();
     },
@@ -1307,7 +1308,7 @@ export async function initExpress() {
     (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'questions';
       next();
     },
@@ -1315,35 +1316,35 @@ export async function initExpress() {
       .default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/syncs', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'syncs';
       next();
     },
     (await import('./pages/courseSyncs/courseSyncs.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/topics', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'topics';
       next();
     },
     (await import('./pages/instructorCourseAdminTopics/instructorCourseAdminTopics.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/tags', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'tags';
       next();
     },
     (await import('./pages/instructorCourseAdminTags/instructorCourseAdminTags.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_edit', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'file_edit';
       next();
     },
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_view', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'file_view';
       next();
     },
@@ -1379,7 +1380,7 @@ export async function initExpress() {
     }),
   );
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/settings', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'settings';
       next();
     },
@@ -1387,7 +1388,7 @@ export async function initExpress() {
       .default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/access', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'access';
       next();
     },
@@ -1395,35 +1396,35 @@ export async function initExpress() {
       .default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'assessments';
       next();
     },
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/gradebook', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'gradebook';
       next();
     },
     (await import('./pages/instructorGradebook/instructorGradebook.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/lti', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'lti';
       next();
     },
     (await import('./pages/instructorInstanceAdminLti/instructorInstanceAdminLti.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_edit', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'file_edit';
       next();
     },
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_view', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'file_view';
       next();
     },
@@ -1435,7 +1436,7 @@ export async function initExpress() {
   );
   if (isEnterprise()) {
     app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/billing', [
-      function (req, res, next) {
+      function (req: Request, res: Response, next: NextFunction) {
         res.locals.navSubPage = 'billing';
         next();
       },
@@ -1702,7 +1703,7 @@ export async function initExpress() {
     res.redirect(
       url.format({
         pathname: `${req.params[0]}/preview`,
-        search: url.parse(req.originalUrl).search,
+        search: new URL(req.originalUrl, `${req.protocol}://${req.headers.host}/`).search,
       }),
     );
   });
@@ -1711,35 +1712,35 @@ export async function initExpress() {
     next();
   });
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/settings', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'settings';
       next();
     },
     (await import('./pages/instructorQuestionSettings/instructorQuestionSettings.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/preview', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'preview';
       next();
     },
     (await import('./pages/instructorQuestionPreview/instructorQuestionPreview.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/statistics', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'statistics';
       next();
     },
     (await import('./pages/instructorQuestionStatistics/instructorQuestionStatistics.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_edit', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'file_edit';
       next();
     },
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'file_view';
       next();
     },
@@ -1767,7 +1768,7 @@ export async function initExpress() {
     next();
   });
   app.use('/pl/course/:course_id(\\d+)/course_admin/settings', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'settings';
       next();
     },
@@ -1775,35 +1776,35 @@ export async function initExpress() {
       .default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/sharing', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'sharing';
       next();
     },
     (await import('./pages/instructorCourseAdminSharing/instructorCourseAdminSharing.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/staff', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'staff';
       next();
     },
     (await import('./pages/instructorCourseAdminStaff/instructorCourseAdminStaff.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/sets', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'sets';
       next();
     },
     (await import('./pages/instructorCourseAdminSets/instructorCourseAdminSets.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/modules', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'modules';
       next();
     },
     (await import('./pages/instructorCourseAdminModules/instructorCourseAdminModules.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/instances', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'instances';
       next();
     },
@@ -1811,14 +1812,14 @@ export async function initExpress() {
       .default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/issues', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'issues';
       next();
     },
     (await import('./pages/instructorIssues/instructorIssues.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/questions', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'questions';
       next();
     },
@@ -1833,7 +1834,7 @@ export async function initExpress() {
     (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/ai_generate_question', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'questions';
       next();
     },
@@ -1841,35 +1842,35 @@ export async function initExpress() {
       .default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/syncs', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'syncs';
       next();
     },
     (await import('./pages/courseSyncs/courseSyncs.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/topics', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'topics';
       next();
     },
     (await import('./pages/instructorCourseAdminTopics/instructorCourseAdminTopics.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/tags', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'tags';
       next();
     },
     (await import('./pages/instructorCourseAdminTags/instructorCourseAdminTags.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/file_edit', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'file_edit';
       next();
     },
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/file_view', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'file_view';
       next();
     },
@@ -1961,14 +1962,14 @@ export async function initExpress() {
   // Public course pages ///////////////////////////////////////////////
 
   app.use('/pl/public/course/:course_id(\\d+)', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navbarType = 'public';
       res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
       next();
     },
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/preview', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'public_question';
       res.locals.navSubPage = 'preview';
       next();
@@ -1976,7 +1977,7 @@ export async function initExpress() {
     (await import('./pages/publicQuestionPreview/publicQuestionPreview.js')).default,
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/questions', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'public_questions';
       res.locals.navSubPage = 'questions';
       next();
@@ -2117,10 +2118,10 @@ export async function initExpress() {
    *
    * RAISE EXCEPTION 'Entity not found' USING ERRCODE = 'ST404';
    *
-   * @param {any} err
-   * @returns {number | null} The extracted HTTP status code
+   * @param err
+   * @returns The extracted HTTP status code
    */
-  function maybeGetStatusCodeFromSqlError(err) {
+  function maybeGetStatusCodeFromSqlError(err: any): number | null {
     const rawCode = err?.data?.sqlError?.code;
     if (!rawCode?.startsWith('ST')) return null;
 
@@ -2132,7 +2133,7 @@ export async function initExpress() {
 
   // This should come first so that both Sentry and our own error page can
   // read the error ID and any status code.
-  app.use((err, req, res, next) => {
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
 
     res.locals.error_id = _.times(12, () => _.sample(chars)).join('');
@@ -2155,15 +2156,13 @@ export async function initExpress() {
 //////////////////////////////////////////////////////////////////////
 // Server startup ////////////////////////////////////////////////////
 
-/** @type {import('http').Server | import('https').Server} */
-var server;
+let server: http.Server | https.Server;
 
 export async function startServer() {
   const app = await initExpress();
 
   if (config.serverType === 'https') {
-    /** @type { import('https').ServerOptions} */
-    const options = {};
+    const options: https.ServerOptions = {};
     if (config.sslKeyFile) {
       options.key = await fs.promises.readFile(config.sslKeyFile);
     }
@@ -2428,14 +2427,14 @@ if (esMain(import.meta) && config.startServer) {
           ssl: config.postgresqlSsl,
           errorOnUnusedParameters: config.devMode,
         };
-        function idleErrorHandler(err) {
+        function idleErrorHandler(err: Error, _client: sqldb.PoolClient) {
           logger.error('idle client error', err);
           Sentry.captureException(err, {
             level: 'fatal',
             tags: {
               // This may have been set by `sql-db.js`. We include this in the
               // Sentry tags to more easily debug idle client errors.
-              last_query: err?.data?.lastQuery ?? undefined,
+              last_query: (err as any)?.data?.lastQuery ?? undefined,
             },
           });
           Sentry.close().finally(() => process.exit(1));
