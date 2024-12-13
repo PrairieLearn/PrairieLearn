@@ -1,5 +1,3 @@
-// @ts-check
-
 import {
   ECR,
   ECRClient,
@@ -20,7 +18,7 @@ import { createServerJob, type ServerJob } from '../../lib/server-jobs.js';
 const docker = new Docker();
 
 /**
- * 
+ *
  * @param locals res.locals
  * @returns jobSequenceId
  */
@@ -35,7 +33,7 @@ export async function pullAndUpdate(locals: any) {
 }
 
 /**
- * 
+ *
  * @param locals res.locals
  * @returns jobSequenceId
  */
@@ -214,7 +212,7 @@ async function pullAndPushToECR(image: string, dockerAuth: DockerAuth, job: Serv
  * @param images
  * @param locals
  */
-export async function ecrUpdate(images: { image: string}[], locals: any) {
+export async function ecrUpdate(images: { image: string }[], locals: any) {
   if (!config.cacheImageRegistry) {
     throw new Error('cacheImageRegistry not defined');
   }

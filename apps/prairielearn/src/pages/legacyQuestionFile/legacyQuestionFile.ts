@@ -1,4 +1,3 @@
-// @ts-check
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
@@ -33,12 +32,12 @@ router.get(
       type: 'question' as const,
       questionId: id,
     }));
-    const chunksToLoad: chunks.Chunk[] = ([
+    const chunksToLoad: chunks.Chunk[] = [
       {
         type: 'question' as const,
         questionId: question.id as string,
       },
-    ]).concat(templateQuestionChunks);
+    ].concat(templateQuestionChunks);
     await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 
     const { effectiveFilename, rootPath } = await filePaths.questionFilePath(

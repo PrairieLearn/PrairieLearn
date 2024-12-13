@@ -1,4 +1,3 @@
-// @ts-check
 import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
@@ -62,7 +61,10 @@ interface InitOptions {
 /**
  * @param options
  */
-export async function init({ notifyIfPreviouslyEmpty, errorIfLockNotAcquired = false } : InitOptions) {
+export async function init({
+  notifyIfPreviouslyEmpty,
+  errorIfLockNotAcquired = false,
+}: InitOptions) {
   await namedLocks.doWithLock(
     'news_items',
     {

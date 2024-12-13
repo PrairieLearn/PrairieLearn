@@ -1,4 +1,3 @@
-// @ts-check
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
@@ -60,7 +59,7 @@ router.post(
       ltiRedirectUrl,
       parameters,
       // TODO: column should be `NOT NULL`
-      (ltiResult.secret as string),
+      ltiResult.secret as string,
       undefined,
       { encodeSignature: false },
     );
