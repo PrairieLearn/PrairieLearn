@@ -148,6 +148,51 @@ describe('Creating a course instance', () => {
     assert.equal(courseInstanceInfo.longName, 'Fall 2019 (2)');
   });
 
+  step('add course instance without start_access_date and end_access_date', async () => {
+    const courseInstancePageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course/1/course_admin/instances`,
+    );
+
+    assert.equal(courseInstancePageResponse.status, 200);
+
+    // Create the new course instance without a start_access_date and end_access_date
+    const courseInstanceCreationResponse = await fetchCheerio(
+      `${siteUrl}/pl/course/1/course_admin/instances`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_course_instance',
+          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
+          short_name: 'Fa20',
+          long_name: 'Fall 2020',
+        }),
+      },
+    );
+
+    assert.equal(courseInstanceCreationResponse.status, 200);
+
+    // Verify that the user is redirected to the assessments page for the new course instance
+    assert.equal(
+      courseInstanceCreationResponse.url,
+      `${siteUrl}/pl/course_instance/4/instructor/instance_admin/assessments`,
+    );
+  });
+
+  step('verify course instance is created with an empty allowAccess array', async () => {
+    const courseInstanceInfoPath = path.join(
+      courseInstancesCourseLiveDir,
+      'Fa20',
+      'infoCourseInstance.json',
+    );
+
+    const courseInstanceInfo = JSON.parse(await fs.readFile(courseInstanceInfoPath, 'utf8'));
+
+    assert.equal(courseInstanceInfo.longName, 'Fall 2020');
+
+    assert.equal(courseInstanceInfo.allowAccess.length, 0);
+  });
+
   step('should not be able to create course instance with no short_name', async () => {
     const courseInstancePageResponse = await fetchCheerio(
       `${siteUrl}/pl/course/1/course_admin/instances`,

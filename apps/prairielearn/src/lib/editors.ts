@@ -953,18 +953,20 @@ export class CourseInstanceAddEditor extends Editor {
       throw new HttpStatusError(400, 'Start date must be before end date');
     }
 
-    allowAccess = {
-      startDate: startDate
-        ? formatDate(new Date(startDate.epochMilliseconds), this.course.display_timezone, {
-            includeTz: false,
-          })
-        : undefined,
-      endDate: endDate
-        ? formatDate(new Date(endDate.epochMilliseconds), this.course.display_timezone, {
-            includeTz: false,
-          })
-        : undefined,
-    };
+    if (startDate || endDate) {
+      allowAccess = {
+        startDate: startDate
+          ? formatDate(new Date(startDate.epochMilliseconds), this.course.display_timezone, {
+              includeTz: false,
+            })
+          : undefined,
+        endDate: endDate
+          ? formatDate(new Date(endDate.epochMilliseconds), this.course.display_timezone, {
+              includeTz: false,
+            })
+          : undefined,
+      };
+    }
 
     const infoJson = {
       uuid: this.uuid,
