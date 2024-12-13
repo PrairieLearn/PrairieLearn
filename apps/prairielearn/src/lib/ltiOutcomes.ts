@@ -1,4 +1,3 @@
-// @ts-check
 import * as crypto from 'node:crypto';
 
 import _ from 'lodash';
@@ -33,7 +32,7 @@ const exampleRequest = {
     },
   },
 };
-function xmlReplaceResult(sourcedId, score, identifier) {
+function xmlReplaceResult(sourcedId: string, score: number, identifier: string) {
   const Obj = _.clone(exampleRequest);
 
   Obj.imsx_POXEnvelopeRequest.imsx_POXHeader.imsx_POXRequestHeaderInfo.imsx_messageIdentifier =
@@ -41,7 +40,7 @@ function xmlReplaceResult(sourcedId, score, identifier) {
   Obj.imsx_POXEnvelopeRequest.imsx_POXBody.replaceResultRequest.resultRecord.sourcedGUID.sourcedId =
     sourcedId;
   Obj.imsx_POXEnvelopeRequest.imsx_POXBody.replaceResultRequest.resultRecord.result.resultScore.textString =
-    score;
+    score.toString();
 
   const xml = builder.buildObject(Obj);
   return xml;
@@ -50,9 +49,9 @@ function xmlReplaceResult(sourcedId, score, identifier) {
 /**
  * Check if LTI needs updating for this assessment.
  *
- * @param {string} assessment_instance_id - The assessment instance ID
+ * @param assessment_instance_id - The assessment instance ID
  */
-export async function updateScore(assessment_instance_id) {
+export async function updateScore(assessment_instance_id: string) {
   if (assessment_instance_id == null) return;
 
   const scoreResult = await sqldb.queryZeroOrOneRowAsync(sql.get_score, {
@@ -77,7 +76,15 @@ export async function updateScore(assessment_instance_id) {
   shasum.update(body || '');
   const sha1 = shasum.digest('hex');
 
-  const oauthParams = {
+  const oauthParams: {
+    oauth_consumer_key: string;
+    oauth_version: string;
+    oauth_timestamp: string;
+    oauth_nonce: string;
+    oauth_signature_method: string;
+    oauth_body_hash: string;
+    oauth_signature?: string;
+  } = {
     oauth_consumer_key: info.consumer_key,
     oauth_version: '1.0',
     oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
