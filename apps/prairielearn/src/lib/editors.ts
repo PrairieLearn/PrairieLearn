@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
@@ -495,45 +496,55 @@ export abstract class Editor {
     shortName = 'New',
     longName = 'New',
   ): { shortName: string; longName: string } {
-    function getNumberShortName(oldnames: string[]): number {
-      let number = 1;
-      oldnames.forEach((oldname) => {
-        const found = oldname === shortName || oldname.match(new RegExp(`^${shortName}_([0-9]+)$`));
+    function getNumberShortName(oldShortNames: string[]): number {
+      let numberOfMostRecentCopy = 1;
+      oldShortNames.forEach((oldShortName) => {
+        // shortName is a copy of oldShortName if:
+        // it matches exactly, or
+        // if oldShortName matches {shortName}_{number from 0-9}
+        const found =
+          oldShortName === shortName || oldShortName.match(new RegExp(`^${shortName}_([0-9]+)$`));
         if (found) {
           const foundNumber = parseInt(found[1]) || 1;
-          if (foundNumber >= number) {
-            number = foundNumber + 1;
+          if (foundNumber >= numberOfMostRecentCopy) {
+            numberOfMostRecentCopy = foundNumber + 1;
           }
         }
       });
-      return number;
+      return numberOfMostRecentCopy;
     }
 
-    function getNumberLongName(oldnames: string[]): number {
-      let number = 1;
-      oldnames.forEach((oldname) => {
-        if (!_.isString(oldname)) return;
+    function getNumberLongName(oldLongNames: string[]): number {
+      let numberOfMostRecentCopy = 1;
+      // longName is a copy of oldLongName if:
+      // it matches exactly, or
+      // if oldLongName matches {longName} ({number from 0-9})
+      oldLongNames.forEach((oldLongName) => {
+        if (!_.isString(oldLongName)) return;
         const found =
-          oldname === longName || oldname.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
+          oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
         if (found) {
           const foundNumber = parseInt(found[1]) || 1;
-          if (foundNumber >= number) {
-            number = foundNumber + 1;
+          if (foundNumber >= numberOfMostRecentCopy) {
+            numberOfMostRecentCopy = foundNumber + 1;
           }
         }
       });
-      return number;
+      return numberOfMostRecentCopy;
     }
 
     const numberShortName = getNumberShortName(shortNames);
     const numberLongName = getNumberLongName(longNames);
     const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+
     if (number === 1) {
+      // If there are no existing copies, we don't need to add a number
       return {
         shortName,
         longName,
       };
     } else {
+      // If there are existing copies, we need to add a number
       return {
         shortName: `${shortName}_${number}`,
         longName: `${longName} (${number})`,
@@ -914,32 +925,43 @@ export class CourseInstanceAddEditor extends Editor {
 
     debug('Generate short_name and long_name');
     const names = this.getNamesForAdd(oldNamesShort, oldNamesLong, this.short_name, this.long_name);
+
     const short_name = names.shortName;
     const courseInstancePath = path.join(courseInstancesPath, short_name);
 
     debug('Write infoCourseInstance.json');
 
-    let allowAccess: { startDate?: string; endDate?: string } | null = null;
+    let allowAccess: { startDate?: string; endDate?: string } | undefined = undefined;
 
-    if (this.start_access_date || this.end_access_date) {
-      if (this.start_access_date && this.end_access_date) {
-        const startDate = new Date(this.start_access_date);
-        const endDate = new Date(this.end_access_date);
+    let startDate: Date | undefined;
+    let endDate: Date | undefined;
 
-        if (startDate > endDate) {
-          throw new HttpStatusError(400, 'Start date must be before end date');
-        }
-      }
-      allowAccess = {
-        startDate: this.start_access_date ? this.start_access_date + ':00' : undefined,
-        endDate: this.end_access_date ? this.end_access_date + ':00' : undefined,
-      };
+    if (this.start_access_date) {
+      startDate = new Date(this.start_access_date);
     }
+
+    if (this.end_access_date) {
+      endDate = new Date(this.end_access_date);
+    }
+
+    // Throw an error if the start date is after the end date
+    if (startDate && endDate && startDate > endDate) {
+      throw new HttpStatusError(400, 'Start date must be before end date');
+    }
+
+    allowAccess = {
+      startDate: startDate
+        ? formatDate(startDate, this.course.display_timezone, { includeTz: false })
+        : undefined,
+      endDate: endDate
+        ? formatDate(endDate, this.course.display_timezone, { includeTz: false })
+        : undefined,
+    };
 
     const infoJson = {
       uuid: this.uuid,
       longName: names.longName,
-      allowAccess: allowAccess !== null ? [allowAccess] : [],
+      allowAccess: allowAccess !== undefined ? [allowAccess] : [],
     };
 
     // We use outputJson to create the directory this.courseInstancePath if it
