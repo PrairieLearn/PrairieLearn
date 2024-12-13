@@ -3,7 +3,6 @@ import * as path from 'node:path';
 
 /**
  * Reads a JSON file from the schemas directory.
- * @param filePath
  */
 function readSchema(filePath: string) {
   return JSON.parse(
@@ -11,7 +10,6 @@ function readSchema(filePath: string) {
   );
 }
 
-// TODO: Add TypeScript types for each schema automatically
 export const infoNewsItem = readSchema('./infoNewsItem.json');
 export const infoAssessment = readSchema('./infoAssessment.json');
 export const infoCourse = readSchema('./infoCourse.json');

@@ -18,7 +18,6 @@ import { createServerJob, type ServerJob } from '../../lib/server-jobs.js';
 const docker = new Docker();
 
 /**
- *
  * @param locals res.locals
  * @returns The ID of the job sequence created for this process
  */
@@ -33,7 +32,6 @@ export async function pullAndUpdate(locals: Record<string, any>): Promise<string
 }
 
 /**
- *
  * @param locals res.locals
  * @returns The ID of the job sequence created for this process
  */
@@ -199,7 +197,6 @@ async function pullAndPushToECR(image: string, dockerAuth: DockerAuth, job: Serv
 }
 
 /**
- *
  * @returns The ID of the job sequence created for this process
  */
 
