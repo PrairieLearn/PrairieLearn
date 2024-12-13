@@ -504,9 +504,9 @@ export abstract class Editor {
         // it matches exactly, or
         // if oldShortName matches {shortName}_{number from 0-9}
         const found =
-          oldShortName === shortName || oldShortName.match(new RegExp(`^${shortName}_([0-9]+)$`));
+          shortName === oldShortName || oldShortName.match(new RegExp(`^${shortName}_([0-9]+)$`));
         if (found) {
-          const foundNumber = parseInt(found[1]) || 1;
+          const foundNumber = shortName === oldShortName ? 1 : parseInt(found[1]);
           if (foundNumber >= numberOfMostRecentCopy) {
             numberOfMostRecentCopy = foundNumber + 1;
           }
@@ -525,7 +525,7 @@ export abstract class Editor {
         const found =
           oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
         if (found) {
-          const foundNumber = parseInt(found[1]) || 1;
+          const foundNumber = oldLongName === longName ? 1 : parseInt(found[1]);
           if (foundNumber >= numberOfMostRecentCopy) {
             numberOfMostRecentCopy = foundNumber + 1;
           }
@@ -539,13 +539,13 @@ export abstract class Editor {
     const number = numberShortName > numberLongName ? numberShortName : numberLongName;
 
     if (number === 1 && shortName !== 'New' && longName !== 'New') {
-      // If there are no existing copies, and the shortName/longName aren't the default ones, we don't need to add a number
+      // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
       return {
         shortName,
         longName,
       };
     } else {
-      // If there are existing copies, we need to add a number
+      // If there are existing copies, a number is needed at the end of the names
       return {
         shortName: `${shortName}_${number}`,
         longName: `${longName} (${number})`,

@@ -12,7 +12,11 @@ const editor = new CourseInstanceAddEditor({
 });
 
 describe('Editor getNamesForAdd Tests', () => {
-  step('No specified short_name should default to New', () => {});
+  step('No specified short_name and long_name should default them to New_1', () => {
+    const names = editor.getNamesForAdd(['Fa18', 'Fa19'], ['Fall 2018', 'Fall 2019']);
+    assert.equal(names['shortName'], 'New_1');
+    assert.equal(names['longName'], 'New (1)');
+  });
   step('Unique short_name, long_name', () => {
     const names = editor.getNamesForAdd(
       ['Fa18', 'Fa19'],

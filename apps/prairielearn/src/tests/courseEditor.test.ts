@@ -39,7 +39,7 @@ const questionsUrl = `${courseInstanceUrl}/course_admin/questions`;
 const assessmentsUrl = `${courseInstanceUrl}/instance_admin/assessments`;
 
 const newCourseInstanceUrl = baseUrl + '/course_instance/2/instructor';
-const settingsUrl = `${newCourseInstanceUrl}/instance_admin/settings`;
+const newCourseInstanceSettingsUrl = `${newCourseInstanceUrl}/instance_admin/settings`;
 
 const testEditData = [
   {
@@ -187,7 +187,7 @@ const testEditData = [
     ]),
   },
   {
-    url: settingsUrl,
+    url: newCourseInstanceSettingsUrl,
     button: '.js-change-id-button',
     formSelector: 'form[name="change-id-form"]',
     data: {
