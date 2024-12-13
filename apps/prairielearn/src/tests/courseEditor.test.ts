@@ -34,9 +34,12 @@ const courseUrl = baseUrl + '/course/1';
 const courseInstancesUrl = `${courseUrl}/course_admin/instances`;
 
 const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
+
 const questionsUrl = `${courseInstanceUrl}/course_admin/questions`;
 const assessmentsUrl = `${courseInstanceUrl}/instance_admin/assessments`;
-const settingsUrl = `${courseInstanceUrl}/instance_admin/settings`;
+
+const newCourseInstanceUrl = baseUrl + '/course_instance/2/instructor';
+const settingsUrl = `${newCourseInstanceUrl}/instance_admin/settings`;
 
 const testEditData = [
   {
