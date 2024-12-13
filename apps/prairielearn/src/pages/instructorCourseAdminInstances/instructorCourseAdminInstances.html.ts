@@ -1,3 +1,6 @@
+import { Temporal } from '@js-temporal/polyfill';
+
+import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
@@ -18,6 +21,27 @@ export function InstructorCourseAdminInstances({
   resLocals: Record<string, any>;
   courseInstances: CourseInstanceAuthzRow[];
 }) {
+  const startDate = Temporal.Now.zonedDateTimeISO(resLocals.course.timeZone).with({
+    hour: 0,
+    minute: 1,
+    second: 0,
+  });
+  const initialStartDateFormatted = formatDateYMDHM(
+    new Date(startDate.epochMilliseconds),
+    resLocals.course.time_zone,
+  );
+
+  const endDate = startDate.add({ months: 4 }).with({
+    hour: 23,
+    minute: 59,
+    second: 0,
+  });
+
+  const initialEndDateFormatted = formatDateYMDHM(
+    new Date(endDate.epochMilliseconds),
+    resLocals.course.time_zone,
+  );
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -35,6 +59,8 @@ export function InstructorCourseAdminInstances({
           })}
           ${CreateCourseInstanceModal({
             csrfToken: resLocals.__csrf_token,
+            initialStartDateFormatted,
+            initialEndDateFormatted,
           })}
           <div class="card mb-4">
             <div
@@ -230,7 +256,15 @@ function PopoverEndDate() {
   `.toString();
 }
 
-function CreateCourseInstanceModal({ csrfToken }: { csrfToken: string }) {
+function CreateCourseInstanceModal({
+  csrfToken,
+  initialStartDateFormatted,
+  initialEndDateFormatted,
+}: {
+  csrfToken: string;
+  initialStartDateFormatted?: string;
+  initialEndDateFormatted?: string;
+}) {
   return Modal({
     id: 'createCourseInstanceModal',
     title: 'Create Course Instance',
@@ -266,7 +300,8 @@ function CreateCourseInstanceModal({ csrfToken }: { csrfToken: string }) {
           type="datetime-local"
           id="start_access_date"
           name="start_access_date"
-          value=""
+          value="${initialStartDateFormatted}"
+          max="${initialEndDateFormatted}"
         />
         <small class="form-text text-muted">
           The date when students can access the course instance.
@@ -279,7 +314,8 @@ function CreateCourseInstanceModal({ csrfToken }: { csrfToken: string }) {
           type="datetime-local"
           id="end_access_date"
           name="end_access_date"
-          value=""
+          value="${initialEndDateFormatted}"
+          min="${initialStartDateFormatted}"
         />
         <small class="form-text text-muted">
           The date when students can no longer access the course instance.

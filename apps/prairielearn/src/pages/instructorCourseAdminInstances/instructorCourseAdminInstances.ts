@@ -39,11 +39,13 @@ router.get(
       is_administrator: res.locals.is_administrator,
       authn_is_administrator: res.locals.authz_data.authn_is_administrator,
     });
+
     const enrollmentCounts = await sqldb.queryRows(
       sql.select_enrollment_counts,
       { course_id: res.locals.course.id },
       z.object({ course_instance_id: CourseInstanceSchema.shape.id, enrollment_count: z.number() }),
     );
+
     courseInstances.forEach((ci) => {
       const row = enrollmentCounts.find((row) => idsEqual(row.course_instance_id, ci.id));
       ci.enrollment_count = row?.enrollment_count || 0;
@@ -73,7 +75,8 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-      } catch {
+      } catch (e) {
+        console.error(e);
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         return;
       }

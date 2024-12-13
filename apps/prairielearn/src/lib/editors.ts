@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import * as path from 'path';
 
+import { Temporal } from '@js-temporal/polyfill';
 import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
@@ -933,28 +934,35 @@ export class CourseInstanceAddEditor extends Editor {
 
     let allowAccess: { startDate?: string; endDate?: string } | undefined = undefined;
 
-    let startDate: Date | undefined;
-    let endDate: Date | undefined;
+    let startDate: Temporal.ZonedDateTime | undefined;
+    let endDate: Temporal.ZonedDateTime | undefined;
 
     if (this.start_access_date) {
-      startDate = new Date(this.start_access_date);
+      startDate = Temporal.PlainDateTime.from(this.start_access_date).toZonedDateTime(
+        this.course.display_timezone,
+      );
     }
 
     if (this.end_access_date) {
-      endDate = new Date(this.end_access_date);
+      endDate = Temporal.PlainDateTime.from(this.end_access_date).toZonedDateTime(
+        this.course.display_timezone,
+      );
     }
 
-    // Throw an error if the start date is after the end date
-    if (startDate && endDate && startDate > endDate) {
+    if (startDate && endDate && startDate.epochMilliseconds > endDate.epochMilliseconds) {
       throw new HttpStatusError(400, 'Start date must be before end date');
     }
 
     allowAccess = {
       startDate: startDate
-        ? formatDate(startDate, this.course.display_timezone, { includeTz: false })
+        ? formatDate(new Date(startDate.epochMilliseconds), this.course.display_timezone, {
+            includeTz: false,
+          })
         : undefined,
       endDate: endDate
-        ? formatDate(endDate, this.course.display_timezone, { includeTz: false })
+        ? formatDate(new Date(endDate.epochMilliseconds), this.course.display_timezone, {
+            includeTz: false,
+          })
         : undefined,
     };
 
