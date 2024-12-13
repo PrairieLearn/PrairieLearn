@@ -18,7 +18,7 @@ There are three different ways to let a student re-attempt or continue an exam:
 
 To allow students to see their entire exam after it is over, you can add an [access rule](accessControl.md) like this:
 
-```json
+```json title="infoAssessment.json"
 {
   "allowAccess": [
     {
@@ -148,7 +148,7 @@ the following:
 
 For cheatsheets in `clientFilesCourse`, use:
 
-```json
+```json title="infoAssessment.json"
 {
   "text": "The following formula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesCourse %>/formulas.pdf\">PDF version</a></li>"
 }
@@ -156,7 +156,7 @@ For cheatsheets in `clientFilesCourse`, use:
 
 Otherwise, for cheatsheets in `clientFilesAssessment`, use:
 
-```json
+```json title="infoAssessment.json"
 {
   "text": "The following formula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesAssessment %>/formulas.pdf\">PDF version</a></li>"
 }
@@ -213,7 +213,7 @@ SyntaxError: Unexpected token '{' at 55:17
 
 For example, this error would be triggered under:
 
-```json
+```json title="infoAssessment.json"
 {
 "zones": [
     {

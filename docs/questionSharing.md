@@ -28,7 +28,7 @@ In order to allow someone to share their questions with your course, you must pr
 
 To refer to a question from another course, use the question id (qid) prefixed by the `@` symbol and the sharing name of the other course. For example, to use the question `addNumbers` from the course with sharing name `test-course`, you would put `@test-course/addNumbers` into your `assessmentInfo.json`. In the context of the `assessmentInfo.json`, this may look like:
 
-```json
+```json title="assessmentInfo.json"
 {
   "zones": [
     {

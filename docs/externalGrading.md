@@ -76,7 +76,7 @@ External grading configuration is done on a per-question basis. All configuratio
 
 Here's an example of a complete `externalGradingOptions` portion of a question's `info.json`:
 
-```json
+```json title="info.json"
 {
   "externalGradingOptions": {
     "enabled": true,

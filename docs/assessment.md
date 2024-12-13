@@ -133,7 +133,7 @@ To encourage students to solve the same question correctly more than once (to em
 
 By default, when using `maxAutoPoints`, PrairieLearn provides an incentive for students to answer a specific question correctly multiple times in a row. This is done by increasing the value of each submission for every consecutive correct answer, while setting it back to the original value if the answer is incorrect or partially correct. So, for example, if `autoPoints` is 3 and `maxAutoPoints` is 30, then the first correct answer is worth 3 points. If the next submission is also fully correct, it will be worth 6 points; a following answer is worth 9 points if correct — for a total of 3+6+9=18 points earned; and so on. If any answer is incorrect or partially correct, the value earned for a new correctly-solved variant is reset to 3 points. To disable this behavior and keep the question value at a constant value of 3, set `"constantQuestionValue": true` in the assessment settings, like this:
 
-```json
+```json title="infoAssessment.json"
 {
   "constantQuestionValue": true,
   "zones": [
@@ -417,7 +417,7 @@ Setting either `canView` or `canSubmit` to `[]` (empty array) means that **no ro
 
 Permissions defined at a higher level are propagated down the assessment hierarchy (assessment -> zone -> question), but permissions defined at lower levels will override those from the higher level. For example:
 
-```json
+```json title="infoAssessment.json"
 {
   "canView": ["Manager", "Reflector", "Recorder"],
   "zones": [
@@ -474,7 +474,7 @@ Certain assessments might be designed to be done linearly, where each question a
 
 To enable these features, set `advanceScorePerc` for any question to a number between 0 and 100. An example of what this looks like is below, with boilerplate attributes omitted:
 
-```json
+```json title="infoAssessment.json"
 {
   "zones": [
     {
@@ -496,7 +496,7 @@ The relevant score for comparing to `advanceScorePerc` is the student's _highest
 
 An `advanceScorePerc` can also be set on the `zone` or `assessment` level, which will act as a default for all questions in that zone or assessment. For example, the following configuration is equivalent to the above:
 
-```json
+```json title="infoAssessment.json"
 {
   "zones": [
     {
@@ -555,7 +555,7 @@ Access control options can also be used to control the open/close dates of asses
 
 You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. You can use EJS syntax to access `clientFilesCourse`, `clientFilesCourseInstance`, and `clientFilesAssessment`.
 
-```json
+```json title="infoAssessment.json"
 {
   "text": "<a href=\"<%= clientFilesAssessment %>/formulas.pdf\">Formula sheet</a>"
 }
@@ -619,7 +619,7 @@ For assessments with type "Homework", students will be presented with an unlimit
 
 - the `triesPerVariant` setting is set as below. In this case, the student will have the set number of attempts to correctly answer the question. Once the student answers the question correctly, or the number of tries per variant is exhausted, the student will be given the option to try a new variant.
 
-  ```json
+  ```json title="infoAssessment.json"
   {
     "zones": [
       {
@@ -641,7 +641,7 @@ One way to limit the amount of feedback provided to students is to limit the rat
 
 The `gradeRateMinutes` value can be set for each specific question in the assessment. It can also be set for a zone or the full assessment, in which case it will apply individually to each question in the zone or assessment. In other words, if the assessment has a grading rate set, once a student submits an answer for grading in one question, they have to wait to submit new answers to that question, but they are able to grade other questions in the meantime.
 
-```json
+```json title="infoAssessment.json"
 {
   "zones": [
     {

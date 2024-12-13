@@ -67,7 +67,7 @@ This configuration is good when:
 
   !!! warning
 
-        These students must be listed *first* in the access rules for these to take effect.
+        Students with custom accommodations must be listed *first* in the access rules for these to take effect.
 
 - Some students take the exam at a later "conflict" time, mainly because they are in a different timezone
 
@@ -128,7 +128,7 @@ This configuration is good when:
 
   !!! warning
 
-        These students must be listed *first* in the access rules for these to take effect.
+        Students with custom accommodations must be listed *first* in the access rules for these to take effect.
 
 - There is no need for conflict exams because students can choose their own time
 

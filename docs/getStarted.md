@@ -26,7 +26,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - in `longName`, add your course instance name. For example:
 
-  ```json
+  ```json title="infoCourseInstance.json"
   {
     "longName": "Fall 2024, Section M"
   }
@@ -34,7 +34,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - in `allowAccess`, you should set the dates in which you want your course to be available (other [access options](courseInstance.md#course-instance-allowaccess)). For example:
 
-  ```json
+  ```json title="infoCourseInstance.json"
   {
     "allowAccess": [
       {
@@ -65,7 +65,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - change the question `title`. For example:
 
-  ```json
+  ```json title="info.json"
   {
     "title": "Find the area"
   }
@@ -73,7 +73,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - change the question `topic`. This will be very helpful when using the filter to find questions under a specific topic. For example:
 
-  ```json
+  ```json title="info.json"
   {
     "topic": "Geometric properties"
   }
@@ -81,7 +81,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
 
 - you can use [tags](course.md/#tags) to add more levels to your filter. For example, you can add the email of the question author, the semester when the question was created, and the type of question. Tags are optional.
 
-  ```json
+  ```json title="info.json"
   {
     "tags": ["author@email.com", "fa24", "MC"]
   }
@@ -101,7 +101,7 @@ To provide a simple example, here we first create a question without any randomi
 
 - Modify the content of the file. You may want to start by copying this simple example:
 
-  ```html
+  ```html title="question.html"
   <pl-question-panel>
     <p>What is the area of a rectangle that has sides 4 and 5?</p>
   </pl-question-panel>
@@ -149,7 +149,7 @@ We will add randomization to the previous question, using the file [server.py](q
 
 - click the `Edit` button next to `server.py`. Here is where you can define the question variables, and add randomization. Here is a how we can modify the original area example:
 
-  ```python
+  ```python title="server.py"
   import random
   def generate(data):
       # define the sides of the rectangle as random integers
@@ -173,7 +173,7 @@ We will add randomization to the previous question, using the file [server.py](q
 
 - click the `Edit` button next to `question.html`.
 
-  ```html
+  ```html title="question.html"
   <pl-question-panel>
     <p>What is the area of a rectangle that has sides {{params.a}} and {{params.b}}?</p>
   </pl-question-panel>
@@ -231,7 +231,7 @@ Before you create an assessment, make sure you are in the desired course instanc
 
 - change the `title`. For example:
 
-  ```json
+  ```json title="infoAssessment.json"
   {
     "title": "Geometric properties and applications"
   }
@@ -243,7 +243,7 @@ Before you create an assessment, make sure you are in the desired course instanc
 
 - in `allowAccess` you should set the dates in which you want the assessment to be available. Read the documentation about [Access controls](https://prairielearn.readthedocs.io/en/latest/accessControl/) to learn about the different configurations available. In this example, we will use:
 
-  ```json
+  ```json title="infoAssessment.json"
   {
     "allowAccess": [
       {
@@ -257,7 +257,7 @@ Before you create an assessment, make sure you are in the desired course instanc
 
 - in `zones` you should enter the questions to be included in that assessment. We will add the two questions that we just created:
 
-  ```json
+  ```json title="infoAssessment.json"
   {
     "zones": [
       {

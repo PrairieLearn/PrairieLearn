@@ -22,7 +22,7 @@ Regrading an assessment instance while the student is still working on it will n
 
 To award some or all students maximum points for a question during a regrade, edit the `infoAssessment.json` file and set `"forceMaxPoints": true` for any broken questions. For example:
 
-```json title="infoAssessment.json" hl_lines="6 20"
+```json title="infoAssessment.json" hl_lines="6 18"
 {
   "zones": [
     {
@@ -54,12 +54,18 @@ In the example above, the questions `anEasyQ` and `SecondAltQ` will award maximu
 
 For questions that all students get on their assessment the above system is straightforward. For questions with alternatives it is less clear. For example, consider the case when `SecondAltQ` is broken in the assessment above. In the above example, we only awarded maximum points to those students who received `SecondAltQ`, while students with `FirstAltQ` did not receive automatic maximum points. However, it is probably a better idea to give maximum points to all students irrespective of which alternative they received, as follows:
 
-```json
+```json title="infoAssessment.json" hl_lines="8"
 {
-  "numberChoose": 1,
-  "points": 10,
-  "forceMaxPoints": true,
-  "alternatives": [{ "id": "FirstAltQ" }, { "id": "SecondAltQ" }]
+  "zones": {
+    "questions": [
+      {
+        "numberChoose": 1,
+        "points": 10,
+        "forceMaxPoints": true,
+        "alternatives": [{ "id": "FirstAltQ" }, { "id": "SecondAltQ" }]
+      }
+    ]
+  }
 }
 ```
 
