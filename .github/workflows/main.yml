@@ -5,7 +5,7 @@ on:
     branches:
       - master
       # Build on all code freeze branches since we will deploy from them.
-      - "**-code-freeze"
+      - '**-code-freeze'
   pull_request:
   merge_group:
 
