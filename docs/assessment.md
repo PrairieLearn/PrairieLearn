@@ -142,7 +142,6 @@ By default, when using `maxAutoPoints`, PrairieLearn provides an incentive for s
         /* ... */
       ]
     }
-    // ...
   ]
 }
 ```
@@ -268,9 +267,11 @@ PrairieLearn distinguishes between _assessments_ and _assessment instances_. An 
 A student's percentage score will be determined by the number of points they have obtained, divided by the value of `maxPoints` for the assessment (subject to the rules associated to [`credit`](accessControl.md#credit) in assessment access rules).
 
 ```json title="infoAssessment.json"
-    "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
-    "maxPoints": 50,
-    "maxBonusPoints": 5,
+{
+  "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
+  "maxPoints": 50,
+  "maxBonusPoints": 5
+}
 ```
 
 In the assessment configuration, the `maxPoints` determines the number of points a student is required to obtain to get a score of 100%. The percentage score will thus be computed based on the points the student obtained divided by the value of `maxPoints`. If not provided, `maxPoints` is computed based on the maximum number of points that can be obtained from all questions in all zones.
@@ -292,12 +293,14 @@ Note that this setting is not suitable in scenarios where multiple attempts are 
 By default, assessment instances are tied to only one user. By setting `"groupWork": true`, multiple students will be able to work on the same assessment instance. Group configuration can be set in the `infoAssessment.json` file. For example:
 
 ```json title="infoAssessment.json"
+{
   "groupWork": true,
   "groupMaxSize": 6,
   "groupMinSize": 2,
   "studentGroupCreate": true,
   "studentGroupJoin": true,
   "studentGroupLeave": true
+}
 ```
 
 | Attribute            | Type    | Default | Description                                        |
@@ -358,6 +361,7 @@ Although in most cases each student is expected to take one role, students are a
 To opt-in to custom group roles, group roles must be defined at the root of the `infoAssessment.json` file. For example:
 
 ```json title="infoAssessment.json"
+{
   "groupRoles": [
     {
       "name": "Manager",
@@ -379,6 +383,7 @@ To opt-in to custom group roles, group roles must be defined at the root of the 
       "name": "Contributor"
     }
   ]
+}
 ```
 
 | Attribute        | Type    | Default | Description                                                                  |
