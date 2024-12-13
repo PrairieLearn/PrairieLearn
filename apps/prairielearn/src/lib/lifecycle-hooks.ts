@@ -1,4 +1,3 @@
-// @ts-check
 import {
   AutoScalingClient,
   CompleteLifecycleActionCommand,
@@ -13,10 +12,9 @@ import { config } from './config.js';
 /**
  * Gets the lifecycle state of the current EC2 instance.
  *
- * @param {AutoScalingClient} client
- * @returns {Promise<string | undefined>}
+ * @param client
  */
-async function getInstanceLifecycleState(client) {
+async function getInstanceLifecycleState(client: AutoScalingClient): Promise<string | undefined> {
   const res = await client.send(
     new DescribeAutoScalingInstancesCommand({
       InstanceIds: [config.instanceId],
