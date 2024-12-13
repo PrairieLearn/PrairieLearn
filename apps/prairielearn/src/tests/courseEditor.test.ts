@@ -29,11 +29,14 @@ const courseDir = courseLiveDir;
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
-const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 
+const courseUrl = baseUrl + '/course/1';
+const courseInstancesUrl = `${courseUrl}/course_admin/instances`;
+
+const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 const questionsUrl = `${courseInstanceUrl}/course_admin/questions`;
 const assessmentsUrl = `${courseInstanceUrl}/instance_admin/assessments`;
-const courseInstancesUrl = `${courseInstanceUrl}/course_admin/instances`;
+const settingsUrl = `${courseInstanceUrl}/instance_admin/settings`;
 
 const testEditData = [
   {
@@ -162,9 +165,13 @@ const testEditData = [
   },
   {
     url: courseInstancesUrl,
-    formSelector: 'form[name="add-course-instance-form"]',
+    formSelector: '#createCourseInstanceModal',
     action: 'add_course_instance',
     info: 'courseInstances/New_1/infoCourseInstance.json',
+    data: {
+      short_name: 'New',
+      long_name: 'New',
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -177,6 +184,7 @@ const testEditData = [
     ]),
   },
   {
+    url: settingsUrl,
     button: '.js-change-id-button',
     formSelector: 'form[name="change-id-form"]',
     data: {

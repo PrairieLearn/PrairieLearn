@@ -537,8 +537,8 @@ export abstract class Editor {
     const numberLongName = getNumberLongName(longNames);
     const number = numberShortName > numberLongName ? numberShortName : numberLongName;
 
-    if (number === 1) {
-      // If there are no existing copies, we don't need to add a number
+    if (number === 1 && shortName !== 'New' && longName !== 'New') {
+      // If there are no existing copies, and the shortName/longName aren't the default ones, we don't need to add a number
       return {
         shortName,
         longName,
