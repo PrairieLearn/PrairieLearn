@@ -1,13 +1,8 @@
-// @ts-check
+import { type NextFunction, type Response, type Request } from 'express';
+
 import { AugmentedError } from '@prairielearn/error';
 
-/**
- *
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
- */
-export default function (req, res, next) {
+export default function (req: Request, res: Response, next: NextFunction) {
   next(
     new AugmentedError('Not Found', {
       status: 404,

@@ -1,12 +1,8 @@
-// @ts-check
+import { type NextFunction, type Request, type Response } from 'express';
+
 import { logger } from '@prairielearn/logger';
 
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
- */
-export default function (req, res, next) {
+export default function (req: Request, res: Response, next: NextFunction) {
   if (req.method !== 'OPTIONS') {
     logger.verbose('request', {
       timestamp: new Date().toISOString(),

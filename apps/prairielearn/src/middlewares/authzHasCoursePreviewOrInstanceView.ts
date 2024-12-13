@@ -1,9 +1,9 @@
-// @ts-check
+import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
-export async function authzHasCoursePreviewOrInstanceView(req, res) {
+export async function authzHasCoursePreviewOrInstanceView(req: Request, res: Response) {
   if (
     !res.locals.authz_data.has_course_permission_preview &&
     !res.locals.authz_data.has_course_instance_permission_view

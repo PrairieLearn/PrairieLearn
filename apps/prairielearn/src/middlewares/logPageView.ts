@@ -1,4 +1,4 @@
-// @ts-check
+import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { logger } from '@prairielearn/logger';
@@ -7,12 +7,16 @@ import * as Sentry from '@prairielearn/sentry';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-/**
- * @param {string} pageType
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- */
-export async function logPageView(pageType, req, res) {
+type PageType =
+  | 'studentAssessment'
+  | 'instructorQuestionPreview'
+  | 'publicQuestionPreview'
+  | 'studentAssessmentInstance'
+  | 'studentAssessmentInstanceFile'
+  | 'studentAssessments'
+  | 'studentGradebook'
+  | 'studentInstanceQuestion';
+export async function logPageView(pageType: PageType, req: Request, res: Response) {
   const user_id = res.locals.user ? res.locals.user.user_id : res.locals.authn_user.user_id;
 
   // Originally, we opted to only record page views for assessments if
@@ -44,7 +48,7 @@ export async function logPageView(pageType, req, res) {
   });
 }
 
-export default function (pageType) {
+export default function (pageType: PageType) {
   return asyncHandler(async (req, res, next) => {
     if (req.method !== 'GET' || !res.locals.user || !res.locals.authn_user) {
       next();
