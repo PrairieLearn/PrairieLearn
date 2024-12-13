@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const schema = z
+export default z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])

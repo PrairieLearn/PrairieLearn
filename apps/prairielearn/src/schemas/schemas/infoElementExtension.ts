@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const schema = z
+export default z
   .object({
     controller: z
       .string()
