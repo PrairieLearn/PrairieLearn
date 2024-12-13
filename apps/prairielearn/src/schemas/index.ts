@@ -1,12 +1,10 @@
-// @ts-check
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
 /**
  * Reads a JSON file from the schemas directory.
- * @param {string} filePath
  */
-function readSchema(filePath) {
+function readSchema(filePath: string) {
   return JSON.parse(
     fs.readFileSync(path.resolve(import.meta.dirname, 'schemas', filePath), 'utf8'),
   );

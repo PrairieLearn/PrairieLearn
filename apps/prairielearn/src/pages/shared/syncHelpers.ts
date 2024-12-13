@@ -1,5 +1,3 @@
-// @ts-check
-
 import {
   ECR,
   ECRClient,
@@ -9,17 +7,21 @@ import {
 import * as async from 'async';
 import Docker from 'dockerode';
 
-import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
+import { type DockerAuth, DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import * as Sentry from '@prairielearn/sentry';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
 import { pullAndUpdateCourse } from '../../lib/course.js';
-import { createServerJob } from '../../lib/server-jobs.js';
+import { createServerJob, type ServerJob } from '../../lib/server-jobs.js';
 
 const docker = new Docker();
 
-export async function pullAndUpdate(locals) {
+/**
+ * @param locals res.locals
+ * @returns The ID of the job sequence created for this process
+ */
+export async function pullAndUpdate(locals: Record<string, any>): Promise<string> {
   const { jobSequenceId } = await pullAndUpdateCourse({
     courseId: locals.course.id,
     userId: locals.user.user_id,
@@ -29,7 +31,11 @@ export async function pullAndUpdate(locals) {
   return jobSequenceId;
 }
 
-export async function gitStatus(locals) {
+/**
+ * @param locals res.locals
+ * @returns The ID of the job sequence created for this process
+ */
+export async function gitStatus(locals: Record<string, any>): Promise<string> {
   const serverJob = await createServerJob({
     courseId: locals.course.id,
     userId: locals.user.user_id,
@@ -57,11 +63,7 @@ export async function gitStatus(locals) {
   return serverJob.jobSequenceId;
 }
 
-/**
- * @param {string} repo
- * @param {import('../../lib/server-jobs.js').ServerJob} job
- */
-async function ensureECRRepo(repo, job) {
+async function ensureECRRepo(repo: string, job: ServerJob) {
   const ecr = new ECR(makeAwsClientConfig());
   job.info(`Describing repositories with name: ${repo}`);
 
@@ -101,8 +103,8 @@ async function ensureECRRepo(repo, job) {
   job.info('Successfully created repository');
 }
 
-function logProgressOutput(output, job, printedInfos, prefix) {
-  let info = null;
+function logProgressOutput(output: any, job: ServerJob, printedInfos: Set<string>, prefix: string) {
+  let info: string | null = null;
   if (
     'status' in output &&
     'id' in output &&
@@ -115,19 +117,13 @@ function logProgressOutput(output, job, printedInfos, prefix) {
   } else if ('status' in output) {
     info = `${output.status}`;
   }
-  if (info != null && !printedInfos.has(info)) {
+  if (info !== null && !printedInfos.has(info)) {
     printedInfos.add(info);
     job.info(prefix + info);
   }
 }
 
-/**
- *
- * @param {string} image
- * @param {import('@prairielearn/docker-utils').DockerAuth} dockerAuth
- * @param {import('../../lib/server-jobs.js').ServerJob} job
- */
-async function pullAndPushToECR(image, dockerAuth, job) {
+async function pullAndPushToECR(image: string, dockerAuth: DockerAuth, job: ServerJob) {
   const { cacheImageRegistry } = config;
   if (!cacheImageRegistry) {
     throw new Error('cacheImageRegistry not defined');
@@ -141,7 +137,7 @@ async function pullAndPushToECR(image, dockerAuth, job) {
   });
 
   await new Promise((resolve, reject) => {
-    const printedInfos = new Set();
+    const printedInfos = new Set<string>();
     docker.modem.followProgress(
       pullStream,
       (err) => {
@@ -184,7 +180,7 @@ async function pullAndPushToECR(image, dockerAuth, job) {
   const pushStream = await pushImage.push({ authconfig: dockerAuth });
 
   await new Promise((resolve, reject) => {
-    const printedInfos = new Set();
+    const printedInfos = new Set<string>();
     docker.modem.followProgress(
       pushStream,
       (err) => {
@@ -201,10 +197,13 @@ async function pullAndPushToECR(image, dockerAuth, job) {
 }
 
 /**
- * @param {{ image: string }[]} images
- * @param {any} locals
+ * @returns The ID of the job sequence created for this process
  */
-export async function ecrUpdate(images, locals) {
+
+export async function ecrUpdate(
+  images: { image: string }[],
+  locals: Record<string, any>,
+): Promise<string> {
   if (!config.cacheImageRegistry) {
     throw new Error('cacheImageRegistry not defined');
   }

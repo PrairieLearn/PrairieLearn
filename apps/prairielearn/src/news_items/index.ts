@@ -1,4 +1,3 @@
-// @ts-check
 import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
@@ -9,13 +8,14 @@ import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
+import { type NewsItem } from '../lib/db-types.js';
 import * as jsonLoad from '../lib/json-load.js';
 import * as schemas from '../schemas/index.js';
 
 const DIRECTORY_REGEX = /^([0-9]+)_.+$/;
 
 async function loadNewsItems() {
-  const news_items = [];
+  const news_items: NewsItem[] = [];
   const dirs = await fs.readdir(import.meta.dirname);
   for (const dir of dirs) {
     // Skip anything that doesn't match the expected directory name format.
@@ -53,16 +53,15 @@ async function loadNewsItems() {
   return _.sortBy(news_items, 'directory');
 }
 
-/**
- * @typedef {Object} InitOptions
- * @property {boolean} notifyIfPreviouslyEmpty
- * @property {boolean} [errorIfLockNotAcquired]
- */
+interface InitOptions {
+  notifyIfPreviouslyEmpty: boolean;
+  errorIfLockNotAcquired?: boolean;
+}
 
-/**
- * @param {InitOptions} options
- */
-export async function init({ notifyIfPreviouslyEmpty, errorIfLockNotAcquired = false }) {
+export async function init({
+  notifyIfPreviouslyEmpty,
+  errorIfLockNotAcquired = false,
+}: InitOptions) {
   await namedLocks.doWithLock(
     'news_items',
     {
@@ -87,9 +86,8 @@ export async function init({ notifyIfPreviouslyEmpty, errorIfLockNotAcquired = f
 
 /**
  * Initializes news
- * @param {InitOptions} options
  */
-export async function initInBackground(options) {
+export async function initInBackground(options: InitOptions) {
   init(options).catch((err) => {
     logger.error('Error initializing news items', err);
     Sentry.captureException(err);
