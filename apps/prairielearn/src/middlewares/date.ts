@@ -1,12 +1,8 @@
-// @ts-check
+import { type NextFunction, type Request, type Response } from 'express';
+
 import { config } from '../lib/config.js';
 
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
- */
-export default function (req, res, next) {
+export default function (req: Request, res: Response, next: NextFunction) {
   res.locals.req_date = new Date();
   res.locals.true_req_date = res.locals.req_date;
 

@@ -1,4 +1,3 @@
-// @ts-check
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -9,11 +8,8 @@ import { config } from '../lib/config.js';
 export default asyncHandler(async (req, res, next) => {
   const tokenData = {
     url: req.originalUrl,
+    authn_user_id: res.locals.authn_user?.user_id,
   };
-
-  if (res.locals.authn_user && res.locals.authn_user.user_id) {
-    tokenData.authn_user_id = res.locals.authn_user.user_id;
-  }
 
   res.locals.__csrf_token = generateSignedToken(tokenData, config.secretKey);
 

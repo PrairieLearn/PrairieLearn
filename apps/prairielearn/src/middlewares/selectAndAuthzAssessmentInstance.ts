@@ -1,13 +1,13 @@
-// @ts-check
+import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-var sql = sqldb.loadSqlEquiv(import.meta.url);
+const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-export async function selectAndAuthzAssessmentInstance(req, res) {
+export async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
   const result = await sqldb.queryAsync(sql.select_and_auth, {
     assessment_instance_id: req.params.assessment_instance_id,
     course_instance_id: res.locals.course_instance.id,

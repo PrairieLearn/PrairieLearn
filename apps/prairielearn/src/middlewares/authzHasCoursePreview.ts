@@ -1,12 +1,8 @@
-// @ts-check
+import { type NextFunction, type Request, type Response } from 'express';
+
 import { HttpStatusError } from '@prairielearn/error';
 
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {import('express').NextFunction} next
- */
-export default function (req, res, next) {
+export default function (req: Request, res: Response, next: NextFunction) {
   if (!res.locals.authz_data.has_course_permission_preview) {
     return next(new HttpStatusError(403, 'Requires course preview access'));
   }

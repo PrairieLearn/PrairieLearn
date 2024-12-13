@@ -1,4 +1,3 @@
-// @ts-check
 import * as crypto from 'node:crypto';
 
 import asyncHandler from 'express-async-handler';
@@ -10,10 +9,10 @@ import * as Sentry from '@prairielearn/sentry';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export default asyncHandler(async (req, res, next) => {
-  let token;
+  let token: string | undefined;
   if (req.query.private_token !== undefined) {
     // Token was provided in a query param
-    token = req.query.private_token;
+    token = req.query.private_token as string;
   } else if (req.header('Private-Token') !== undefined) {
     // Token was provided in a header
     token = req.header('Private-Token');
