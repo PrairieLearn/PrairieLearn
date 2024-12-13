@@ -21,7 +21,7 @@ import {
   type Submission,
   type Variant,
 } from './db-types.js';
-import { type Grader } from './externalGrader.js';
+import { type Grader } from './externalGraderCommon.js';
 import { getJobDirectory, buildDirectory } from './externalGraderCommon.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
