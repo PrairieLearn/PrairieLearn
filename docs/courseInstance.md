@@ -49,7 +49,7 @@ This file specifies basic information about the course instance:
 }
 ```
 
-??? example "Format specification for `infoCourseInstance.json`"
+??? note "Format specification for `infoCourseInstance.json`"
 
     ```json
     --8<-- "apps/prairielearn/src/schemas/schemas/infoCourseInstance.json"

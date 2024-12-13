@@ -130,7 +130,7 @@ This file specifies basic information about the course:
     }
     ```
 
-??? example "Format specification for `infoCourse.json`"
+??? note "Format specification for `infoCourse.json`"
 
     ```json
     --8<-- "apps/prairielearn/src/schemas/schemas/infoCourse.json"
