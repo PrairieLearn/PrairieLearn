@@ -145,6 +145,7 @@ function deepDiff(fromObject, toObject) {
   return changes;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 const doTest = () => {
   // properties and additionalProperties are always set
   // deprecated is not supported in Zod
@@ -170,4 +171,4 @@ const doTest = () => {
   console.log(deepDiff(questionOptionsv3, readSchema('questionOptionsv3.json')));
 };
 
-doTest();
+// doTest();
