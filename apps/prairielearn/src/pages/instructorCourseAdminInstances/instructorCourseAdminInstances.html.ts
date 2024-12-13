@@ -73,7 +73,6 @@ export function InstructorCourseAdminInstances({
               courseInstances.length > 0
                 ? html`
                     <button
-                      id="add-course-instance-button"
                       name="__action"
                       value="add_course_instance"
                       class="btn btn-sm btn-light"
@@ -195,7 +194,6 @@ export function InstructorCourseAdminInstances({
                       }
                       return html`
                         <button
-                          id="add-course-instance-button"
                           name="__action"
                           value="add_course_instance"
                           class="btn btn-sm btn-primary"
