@@ -1297,13 +1297,15 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
-  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_jobs', [
-    (await import('./ee/pages/instructorAiGenerateJobs/instructorAiGenerateJobs.js')).default,
-  ]);
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_job/:job_sequence_id(\\d+)',
-    [(await import('./ee/pages/instructorAiGenerateJob/instructorAiGenerateJob.js')).default],
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
+
+    (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
+      .default,
   );
+  app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question_drafts', [
+    (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
+  ]);
   app.use('/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_question', [
     function (req, res, next) {
       res.locals.navSubPage = 'questions';
@@ -1548,6 +1550,37 @@ export async function initExpress() {
     '/pl/course_instance/:course_instance_id(\\d+)/assessments',
     (await import('./pages/studentAssessments/studentAssessments.js')).default,
   );
+
+  // Client files for assessments - These routes must come before the
+  // assessment route (.../assessment/:assessment_id) to avoid hitting the
+  // middleware on that route first. The middleware on that route will redirect
+  // to the student assessment instance if an instance exists and will prevent
+  // reaching the client file route.
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourse',
+    [
+      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+      (await import('./middlewares/studentAssessmentAccess.js')).default,
+      (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
+    ],
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourseInstance',
+    [
+      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+      (await import('./middlewares/studentAssessmentAccess.js')).default,
+      (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
+    ],
+  );
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesAssessment',
+    [
+      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+      (await import('./middlewares/studentAssessmentAccess.js')).default,
+      (await import('./pages/clientFilesAssessment/clientFilesAssessment.js')).default,
+    ],
+  );
+
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)',
     (await import('./pages/studentAssessment/studentAssessment.js')).default,
@@ -1593,32 +1626,6 @@ export async function initExpress() {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/clientFilesCourseInstance',
     (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
-  );
-
-  // Client files for assessments
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourse',
-    [
-      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
-      (await import('./middlewares/studentAssessmentAccess.js')).default,
-      (await import('./pages/clientFilesCourse/clientFilesCourse.js')).default,
-    ],
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesCourseInstance',
-    [
-      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
-      (await import('./middlewares/studentAssessmentAccess.js')).default,
-      (await import('./pages/clientFilesCourseInstance/clientFilesCourseInstance.js')).default,
-    ],
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/clientFilesAssessment',
-    [
-      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
-      (await import('./middlewares/studentAssessmentAccess.js')).default,
-      (await import('./pages/clientFilesAssessment/clientFilesAssessment.js')).default,
-    ],
   );
 
   // Client files for questions
@@ -1817,11 +1824,13 @@ export async function initExpress() {
     },
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   ]);
-  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_jobs', [
-    (await import('./ee/pages/instructorAiGenerateJobs/instructorAiGenerateJobs.js')).default,
-  ]);
-  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_job/:job_sequence_id(\\d+)', [
-    (await import('./ee/pages/instructorAiGenerateJob/instructorAiGenerateJob.js')).default,
+  app.use(
+    '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
+    (await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'))
+      .default,
+  );
+  app.use('/pl/course/:course_id(\\d+)/ai_generate_question_drafts', [
+    (await import('./ee/pages/instructorAiGenerateDrafts/instructorAiGenerateDrafts.js')).default,
   ]);
   app.use('/pl/course/:course_id(\\d+)/ai_generate_question', [
     function (req, res, next) {
