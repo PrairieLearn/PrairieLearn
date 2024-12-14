@@ -52,7 +52,6 @@ markdown_extensions:
   - pymdownx.superfences
   - tables
   # https://facelessuser.github.io/pymdown-extensions/extensions/snippets/#snippets
-  - pymdownx.snippets
   - pymdownx.details
 
   - tables
