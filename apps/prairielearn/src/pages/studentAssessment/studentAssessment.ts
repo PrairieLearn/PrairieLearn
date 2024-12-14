@@ -19,6 +19,7 @@ import {
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessment from '../../middlewares/selectAndAuthzAssessment.js';
+import { StudentAssessmentAccess } from '../../middlewares/studentAssessmentAccess.html.js';
 import studentAssessmentAccess, {
   checkPasswordOrRedirect,
 } from '../../middlewares/studentAssessmentAccess.js';
@@ -36,6 +37,15 @@ router.use(logPageView('studentAssessment'));
 router.get(
   '/',
   asyncHandler(async function (req, res) {
+    if (!(res.locals.authz_result?.active ?? true)) {
+      // Student did not start the assessment, and the assessment is not active.
+      //
+      // This check means that students will be unable to join a group if an
+      // assessment is inactive, which we're deeming to be sensible behavior.
+      res.status(403).send(StudentAssessmentAccess({ resLocals: res.locals }));
+      return;
+    }
+
     if (res.locals.assessment.multiple_instance && res.locals.assessment.type === 'Homework') {
       throw new AugmentedError('"Homework" assessments do not support multiple instances', {
         data: { assessment: res.locals.assessment },
