@@ -6,7 +6,7 @@
 
 Each assessment is a single directory in the `assessments` folder or any subfolder. Assessments may be nested in subdirectories of the `assessments` folder. The assessment directory must contain a single file called `infoAssessment.json` that describes the assessment and looks like:
 
-```json
+```json title="infoAssessment.json"
 {
   "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
   "type": "Exam",
@@ -22,7 +22,11 @@ Each assessment is a single directory in the `assessments` folder or any subfold
 
 The assessment ID is the full path relative to `assessments`.
 
-- [Format specification for assessment `infoAssessment.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoAssessment.json)
+??? note "Format specification for assessment `infoAssessment.json`"
+
+    ```json
+    --8<-- "apps/prairielearn/src/schemas/schemas/infoAssessment.json"
+    ```
 
 ## Assessment naming
 
@@ -69,41 +73,40 @@ On `Exam` assessments, questions are randomized by default, but this can be disa
 
 An assessment is broken down in to a list of zones, like this:
 
-```json
-"zones": [
+```json title="infoAssessment.json"
+{
+  "zones": [
     {
-        "title": "Easy questions",
-        "comment": "These are new questions created for this exam",
-        "questions": [
-            {"id": "anEasyQ", "autoPoints": [10, 5, 3, 1, 0.5, 0.25]},
-            {"id": "aSlightlyHarderQ", "autoPoints": [10, 9, 7, 5]}
-        ]
+      "title": "Easy questions",
+      "comment": "These are new questions created for this exam",
+      "questions": [
+        { "id": "anEasyQ", "autoPoints": [10, 5, 3, 1, 0.5, 0.25] },
+        { "id": "aSlightlyHarderQ", "autoPoints": [10, 9, 7, 5] }
+      ]
     },
     {
-        "title": "Hard questions",
-        "comment": "These are new questions created for this exam",
-        "questions": [
-            {"id": "hardQV1", "autoPoints": 10},
-            {"id": "reallyHardQ", "autoPoints": [10, 10, 10]},
-            {
-                "numberChoose": 1,
-                "autoPoints": 5,
-                "alternatives": [
-                    {"id": "FirstAltQ", "autoPoints": 10},
-                    {"id": "SecondAltQ"}
-                ]
-            }
-        ]
+      "title": "Hard questions",
+      "comment": "These are new questions created for this exam",
+      "questions": [
+        { "id": "hardQV1", "autoPoints": 10 },
+        { "id": "reallyHardQ", "autoPoints": [10, 10, 10] },
+        {
+          "numberChoose": 1,
+          "autoPoints": 5,
+          "alternatives": [{ "id": "FirstAltQ", "autoPoints": 10 }, { "id": "SecondAltQ" }]
+        }
+      ]
     },
     {
-        "title": "Manually graded questions",
-        "comment": "These are questions that include manual grading components",
-        "questions": [
-            {"id": "essayQ", "manualPoints": 10},
-            {"id": "autoPlusManualQ", "autoPoints": [10, 7, 5], "manualPoints": 15},
-        ]
+      "title": "Manually graded questions",
+      "comment": "These are questions that include manual grading components",
+      "questions": [
+        { "id": "essayQ", "manualPoints": 10 },
+        { "id": "autoPlusManualQ", "autoPoints": [10, 7, 5], "manualPoints": 15 }
+      ]
     }
-],
+  ]
+}
 ```
 
 - Each zone appears in the given order in the assessment. Zone titles are optional and are displayed to the student if present.
@@ -130,14 +133,17 @@ To encourage students to solve the same question correctly more than once (to em
 
 By default, when using `maxAutoPoints`, PrairieLearn provides an incentive for students to answer a specific question correctly multiple times in a row. This is done by increasing the value of each submission for every consecutive correct answer, while setting it back to the original value if the answer is incorrect or partially correct. So, for example, if `autoPoints` is 3 and `maxAutoPoints` is 30, then the first correct answer is worth 3 points. If the next submission is also fully correct, it will be worth 6 points; a following answer is worth 9 points if correct — for a total of 3+6+9=18 points earned; and so on. If any answer is incorrect or partially correct, the value earned for a new correctly-solved variant is reset to 3 points. To disable this behavior and keep the question value at a constant value of 3, set `"constantQuestionValue": true` in the assessment settings, like this:
 
-```json
-"constantQuestionValue": true,
-"zones": [
+```json title="infoAssessment.json"
+{
+  "constantQuestionValue": true,
+  "zones": [
     {
-        "questions": [ ... ]
-    },
-    ...
-],
+      "questions": [
+        /* ... */
+      ]
+    }
+  ]
+}
 ```
 
 When using `maxAutoPoints`, the number of correct answers needed to obtain the full points available for a question can vary depending on how many consecutive correct answers the student is able to submit. If we use `"constantQuestionValue": true` then the question value never changes and so the number of correct answers needed is just `maxAutoPoints / autoPoints`. However, in the default case when `constantQuestionValue` is false, repeated correct answers will allow a student to reach the `maxAutoPoints` more quickly. For example, with `autoPoints` of 3 and `maxAutoPoints` of 30, a student who answers the question correctly just 4 times in a row will receive the full 3+6+9+12=30 points. This means that a student who has achieved mastery can quickly complete the question. In contrast, a student who is struggling with the question may have to answer it correctly up to 30/3=10 times if they make repeated mistakes along the way to keep resetting the question value back to 3.
@@ -260,12 +266,11 @@ PrairieLearn distinguishes between _assessments_ and _assessment instances_. An 
 
 A student's percentage score will be determined by the number of points they have obtained, divided by the value of `maxPoints` for the assessment (subject to the rules associated to [`credit`](accessControl.md#credit) in assessment access rules).
 
-```json
+```json title="infoAssessment.json"
 {
-    "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
-    "maxPoints": 50,
-    "maxBonusPoints": 5,
-    ...
+  "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
+  "maxPoints": 50,
+  "maxBonusPoints": 5
 }
 ```
 
@@ -287,7 +292,7 @@ Note that this setting is not suitable in scenarios where multiple attempts are 
 
 By default, assessment instances are tied to only one user. By setting `"groupWork": true`, multiple students will be able to work on the same assessment instance. Group configuration can be set in the `infoAssessment.json` file. For example:
 
-```json
+```json title="infoAssessment.json"
 {
   "groupWork": true,
   "groupMaxSize": 6,
@@ -335,7 +340,9 @@ If an instructor does not assign a student to a group, the student will need to 
 
 When calculating a student's grade for a group assessment, PrairieLearn will always use the score of their group's assessment instance.
 
-> Note: Students cannot see each other's edits in real-time, although this is planned for a future version of PrairieLearn.
+!!! info
+
+    Students cannot see each other's edits in real-time.
 
 ![Student view of assessment with groupwork enabled](groupwork_student_perspective_assessment.png)
 
@@ -353,7 +360,7 @@ Although in most cases each student is expected to take one role, students are a
 
 To opt-in to custom group roles, group roles must be defined at the root of the `infoAssessment.json` file. For example:
 
-```json
+```json title="infoAssessment.json"
 {
   "groupRoles": [
     {
@@ -410,7 +417,7 @@ Setting either `canView` or `canSubmit` to `[]` (empty array) means that **no ro
 
 Permissions defined at a higher level are propagated down the assessment hierarchy (assessment -> zone -> question), but permissions defined at lower levels will override those from the higher level. For example:
 
-```json
+```json title="infoAssessment.json"
 {
   "canView": ["Manager", "Reflector", "Recorder"],
   "zones": [
@@ -459,13 +466,15 @@ When a role configuration is invalid, which may occur when a user leaves the gro
 
 ## Forcing students to complete questions in-order
 
-**WARNING:** We **strongly** discourage the use of this option during high-stakes exams, as it can be very detrimental to student success. See below for more details.
+!!! warning
+
+    We **strongly** discourage the use of this option during high-stakes exams, as it can be very detrimental to student success. See below for more details.
 
 Certain assessments might be designed to be done linearly, where each question assumes that the student has completed and understood the previous question (e.g., lab worksheets). By default, PrairieLearn allows students to complete questions in any order that they like, but assessments can be configured to not allow students to view future unsolved questions.
 
 To enable these features, set `advanceScorePerc` for any question to a number between 0 and 100. An example of what this looks like is below, with boilerplate attributes omitted:
 
-```json
+```json title="infoAssessment.json"
 {
   "zones": [
     {
@@ -487,7 +496,7 @@ The relevant score for comparing to `advanceScorePerc` is the student's _highest
 
 An `advanceScorePerc` can also be set on the `zone` or `assessment` level, which will act as a default for all questions in that zone or assessment. For example, the following configuration is equivalent to the above:
 
-```json
+```json title="infoAssessment.json"
 {
   "zones": [
     {
@@ -506,13 +515,15 @@ An `advanceScorePerc` can also be set on the `zone` or `assessment` level, which
 
 In the example above, `q2` and `q5` will have an `advanceScorePerc` of 100 because the zone-level attribute is used as a default.
 
-Note that an `advanceScorePerc` of 0 is equivalent to not having the attribute at all.
+!!! note
+
+    An `advanceScorePerc` of 0 is equivalent to not having the attribute at all.
 
 For assessments that randomize the order of questions as seen by students, the `advanceScorePerc` restrictions apply for each student using the question order that they were given. If a specific question order is desired then see [Changing question-order randomization](#changing-question-order-randomization).
 
 If a student uses all of their attempts on a question and cannot submit any more attempts, that question will automatically unblock, no matter what score they earned on it. This is to prevent students from getting permanently stuck on an assessment, unable to receive further credit.
 
-### Warning about in-order questions and high-stakes exams
+### :warning: Warning about in-order questions and high-stakes exams
 
 The `advanceScorePerc` attribute is intended to be used in [group work](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in high-stakes exams where the student cannot receive help from course staff.
 
@@ -544,7 +555,7 @@ Access control options can also be used to control the open/close dates of asses
 
 You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. You can use EJS syntax to access `clientFilesCourse`, `clientFilesCourseInstance`, and `clientFilesAssessment`.
 
-```json
+```json title="infoAssessment.json"
 {
   "text": "<a href=\"<%= clientFilesAssessment %>/formulas.pdf\">Formula sheet</a>"
 }
@@ -608,16 +619,18 @@ For assessments with type "Homework", students will be presented with an unlimit
 
 - the `triesPerVariant` setting is set as below. In this case, the student will have the set number of attempts to correctly answer the question. Once the student answers the question correctly, or the number of tries per variant is exhausted, the student will be given the option to try a new variant.
 
-  ```json
-  "zones": [
+  ```json title="infoAssessment.json"
+  {
+    "zones": [
       {
-          "questions": [
-              {"id": "singleAttemptQ", "points": 10},
-              {"id": "tryOncePerVar", "points": 10},
-              {"id": "tryThreeTimesPerVar", "points": 10, "triesPerVariant": 3}
-          ]
+        "questions": [
+          { "id": "singleAttemptQ", "points": 10 },
+          { "id": "tryOncePerVar", "points": 10 },
+          { "id": "tryThreeTimesPerVar", "points": 10, "triesPerVariant": 3 }
+        ]
       }
-  ],
+    ]
+  }
   ```
 
 ## Limiting the rate at which answers can be graded
@@ -628,17 +641,19 @@ One way to limit the amount of feedback provided to students is to limit the rat
 
 The `gradeRateMinutes` value can be set for each specific question in the assessment. It can also be set for a zone or the full assessment, in which case it will apply individually to each question in the zone or assessment. In other words, if the assessment has a grading rate set, once a student submits an answer for grading in one question, they have to wait to submit new answers to that question, but they are able to grade other questions in the meantime.
 
-```json
-"zones": [
+```json title="infoAssessment.json"
+{
+  "zones": [
     {
-        "gradeRateMinutes": 30,
-        "questions": [
-            {"id": "canOnlySubmitEvery30minutes", "points": 10},
-            {"id": "canOnlySubmitEvery60minutes", "points": 10, "gradeRateMinutes": 60},
-            {"id": "canSubmitAnytime", "points": 10, "gradeRateMinutes": 0}
-        ]
+      "gradeRateMinutes": 30,
+      "questions": [
+        { "id": "canOnlySubmitEvery30minutes", "points": 10 },
+        { "id": "canOnlySubmitEvery60minutes", "points": 10, "gradeRateMinutes": 60 },
+        { "id": "canSubmitAnytime", "points": 10, "gradeRateMinutes": 0 }
+      ]
     }
-],
+  ]
+}
 ```
 
 ## Honor code

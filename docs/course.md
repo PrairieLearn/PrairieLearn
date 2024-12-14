@@ -6,13 +6,13 @@
 
 A course is specified by a single directory, with the following structure:
 
-```text
+```bash
 exampleCourse
-+-- infoCourse.json     # course specification (see below)
-+-- questions           # all questions for the course (see other doc)
++-- infoCourse.json     # Course configuration (see below)
++-- questions # (1)!
 |   `-- ...
 |   `-- ...
-+-- courseInstances     # instances of the course (see other doc)
++-- courseInstances # (2)!
 |   +-- Fa16
 |   |   `-- ...
 |   `-- Sp17
@@ -20,13 +20,18 @@ exampleCourse
 +-- elements            # custom HTML elements for the course
 |   +-- element1
 |       `-- ...
-+-- clientFilesCourse   # files available from the client at all times (see other doc)
++-- clientFilesCourse   # files available from the client at all times (3)
 |   `-- library.js
 |   `-- refs.html
 |   `-- formulas.pdf
-`-- serverFilesCourse   # files only accessible from code on the server (see other doc)
+`-- serverFilesCourse   # files only accessible from code on the server (4)
     `-- secret1.js
 ```
+
+1. See the [questions documentation](question.md) for more information.
+2. See the [course instance documentation](courseInstance.md) for more information.
+3. See the [`clientFiles` and `serverFiles` documentation](clientServerFiles.md) for information.
+4. See the [`clientFiles` and `serverFiles` documentation](clientServerFiles.md) for information.
 
 - See an [example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse) in PrairieLearn
 
@@ -38,79 +43,98 @@ exampleCourse
 
 This file specifies basic information about the course:
 
-```json
+```json title="infoCourse.json"
 {
   "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
   "name": "TAM 212",
   "title": "Introductory Dynamics",
-  "comment": "The assessment set order used here will be the one shown within PrairieLearn",
   "options": {
     "useNewQuestionRenderer": true
   },
-  "assessmentSets": [
-    {
-      "abbreviation": "HW",
-      "name": "Homework",
-      "heading": "Homeworks",
-      "color": "green1"
-    },
-    {
-      "abbreviation": "E",
-      "name": "Exam",
-      "heading": "Exams",
-      "color": "red1"
-    }
-  ],
-  "assessmentModules": [
-    {
-      "name": "vectors-coords",
-      "heading": "Vectors and coordinates"
-    },
-    {
-      "name": "moments",
-      "heading": "Moments of inertia"
-    }
-  ],
-  "topics": [
-    {
-      "name": "Vectors",
-      "color": "blue3",
-      "description": "Vector algebra in 3D"
-    },
-    {
-      "name": "Center of mass",
-      "color": "green3",
-      "description": "Finding and using the center of mass of irregular bodies."
-    }
-  ],
-  "tags": [
-    {
-      "name": "drawing",
-      "color": "gray2",
-      "description": "The answer requires drawing."
-    },
-    {
-      "name": "estimation",
-      "color": "orange2",
-      "description": "Answering requires estimating a quantity."
-    }
-  ],
-  "sharingSets": [
-    {
-      "name": "python-exercises",
-      "description": "Python exercises for sharing"
-    },
-    {
-      "name": "final-exam",
-      "description": "Questions that can be used on a final exam"
-    }
-  ]
+  "assessmentSets": [],
+  "assessmentModules": [],
+  "topics": [],
+  "tags": [],
+  "sharingSets": []
 }
 ```
 
-- Example [infoCourse.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/infoCourse.json)
+??? example "Example `infoCourse.json`"
 
-- [Format specification for `infoCourse.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoCourse.json)
+    ```json title="infoCourse.json"
+    {
+      "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
+      "name": "TAM 212",
+      "title": "Introductory Dynamics",
+      "options": {
+        "useNewQuestionRenderer": true
+      },
+      "assessmentSets": [
+        {
+          "abbreviation": "HW",
+          "name": "Homework",
+          "heading": "Homeworks",
+          "color": "green1"
+        },
+        {
+          "abbreviation": "E",
+          "name": "Exam",
+          "heading": "Exams",
+          "color": "red1"
+        }
+      ],
+      "assessmentModules": [
+        {
+          "name": "vectors-coords",
+          "heading": "Vectors and coordinates"
+        },
+        {
+          "name": "moments",
+          "heading": "Moments of inertia"
+        }
+      ],
+      "topics": [
+        {
+          "name": "Vectors",
+          "color": "blue3",
+          "description": "Vector algebra in 3D"
+        },
+        {
+          "name": "Center of mass",
+          "color": "green3",
+          "description": "Finding and using the center of mass of irregular bodies."
+        }
+      ],
+      "tags": [
+        {
+          "name": "drawing",
+          "color": "gray2",
+          "description": "The answer requires drawing."
+        },
+        {
+          "name": "estimation",
+          "color": "orange2",
+          "description": "Answering requires estimating a quantity."
+        }
+      ],
+      "sharingSets": [
+        {
+          "name": "python-exercises",
+          "description": "Python exercises for sharing"
+        },
+        {
+          "name": "final-exam",
+          "description": "Questions that can be used on a final exam"
+        }
+      ]
+    }
+    ```
+
+??? note "Format specification for `infoCourse.json`"
+
+    ```json
+    --8<-- "apps/prairielearn/src/schemas/schemas/infoCourse.json"
+    ```
 
 ## Course-wide options
 
@@ -150,7 +174,7 @@ The following list of standardized assessments sets is automatically included in
 
 You can add more assessment sets by listing them in the `infoCourse.json` file as follows. Note that HW and Q don't need to be listed because they are automatically available as standardized sets (see above).
 
-```json
+```json title="infoCourse.json"
 {
   "assessmentSets": [
     {
@@ -171,7 +195,7 @@ You can add more assessment sets by listing them in the `infoCourse.json` file a
 
 The assessment set order in `infoCourse.json` is the order in which the assessments will be shown within PrairieLearn (for both instructors and students). If you want to change the order of standardized assessment sets then you can re-list them in whatever order you like. For example, to put Exams and Quizzes first, you could use:
 
-```json
+```json title="infoCourse.json"
 {
   "assessmentSets": [
     {
@@ -232,7 +256,7 @@ Each assessment in the course belongs to a _module_ defined in `infoCourse.json`
 
 Modules are optional and do not affect any behavior by default. The order in which the modules are defined in `infoCourse.json` will be the order in which they are displayed in the student page. This can let students view their list of assessments in a chronological order, rather than simply grouped by set.
 
-```json
+```json title="infoCourse.json"
 {
   "assessmentModules": [
     {
@@ -276,7 +300,7 @@ Each question in the course has a topic from the list specified in the `infoCour
 
 For example, topics could be listed like:
 
-```json
+```json title="infoCourse.json"
 {
   "topics": [
     {
@@ -340,7 +364,7 @@ The following list of standardized tags is automatically included in every cours
 
 You can add more tags to your course by listing them in the `infoCourse.json` file. For example:
 
-```json
+```json title="infoCourse.json"
 {
   "tags": [
     {
@@ -372,7 +396,7 @@ Questions can be added to sharing sets to enable other courses to use your quest
 
 You can add sharing sets to your course by listing them in the `infoCourse.json` file. For example:
 
-```json
+```json title="infoCourse.json"
 {
   "sharingSets": [
     {
@@ -393,7 +417,7 @@ At this time, sharing sets cannot be renamed or removed from `infoCourse.json` o
 
 The default timezone for courses is `America/Chicago` (U.S. Central Time). This can be changed with the `timezone` property in `infoCourse.json`. For example:
 
-```json
+```json title="infoCourse.json"
 {
   "timezone": "America/New_York"
 }
@@ -405,7 +429,7 @@ Allowable timezones are those in the TZ column in the [list of tz database time 
 
 You can add comments to JSON files using the `"comment"` key on any object. You can only use this key once for each object. For example:
 
-```json
+```json title="infoCourse.json" hl_lines="2"
 {
   "comment": "assessments that are shared among a group of students",
   "assessmentSets": [
