@@ -99,7 +99,6 @@ build-docs:
 	@d2 --version 2>/dev/null || (curl -fsSL https://d2lang.com/install.sh | sh -s --)
 	@/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt
 	@cp ${HOME}/.local/bin/d2 /tmp/pldocs/venv/bin/d2
-	echo ${PATH}
 	@/tmp/pldocs/venv/bin/python3 -m mkdocs build --strict
 
 ci: lint typecheck check-dependencies test build-docs
