@@ -74,7 +74,8 @@ On `Exam` assessments, questions are randomized by default, but this can be disa
 An assessment is broken down in to a list of zones, like this:
 
 ```json title="infoAssessment.json"
-"zones": [
+{
+  "zones": [
     {
       "title": "Easy questions",
       "comment": "These are new questions created for this exam",

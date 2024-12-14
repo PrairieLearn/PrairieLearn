@@ -46,11 +46,17 @@ markdown_extensions:
   # https://pypi.org/project/mdx-truly-sane-lists/
   - mdx_truly_sane_lists
 
+  - pymdownx.snippets
+
   # allows indented code blocks inside lists
   - pymdownx.superfences
   - tables
   # https://facelessuser.github.io/pymdown-extensions/extensions/snippets/#snippets
   - pymdownx.snippets
+  - pymdownx.details
+
+  - tables
+  # https://facelessuser.github.io/pymdown-extensions/extensions/snippets/#snippets
   - pymdownx.details
 
   - toc:
