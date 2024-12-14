@@ -229,44 +229,30 @@ export class Lti13Claim {
       'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
       'http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant',
       'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
-    ]
+     ]
     Student roles
     [
-  'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
-  'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student',
-  'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner',
-  'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
-]
-  Designer roles
-  [
-  'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
-  'http://purl.imsglobal.org/vocab/lis/v2/membership#ContentDeveloper',
-  'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
-]
-
-
-  'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner',
-    don't not ready
-
-    'http://purl.imsglobal.org/vocab/lis/v2/membership#ContentDeveloper',
-    or
-    'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
-
-    probably OK to allow
-
-    if
-        'http://purl.imsglobal.org/vocab/lis/v2/membership/Instructor#TeachingAssistant',
-
-
-
-
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Student',
+      'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner',
+      'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
+    ]
+    Designer roles
+    [
+      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
+      'http://purl.imsglobal.org/vocab/lis/v2/membership#ContentDeveloper',
+      'http://purl.imsglobal.org/vocab/lis/v2/system/person#User'
+    ]
     */
 
     let role_instructor = this.roles.some((val: string) =>
-      ['Instructor', 'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor'].includes(val),
+      [
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+        'http://purl.imsglobal.org/vocab/lis/v2/membership#ContentDeveloper',
+      ].includes(val),
     );
 
-    // Rearrange logic in case person has both teacher and TA roles that teacher sticks
+    // TA roles may also have Instructor roles, so check this next
     if (
       !taIsInstructor &&
       this.roles.includes(
