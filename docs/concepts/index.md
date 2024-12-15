@@ -88,7 +88,7 @@ def generate(data):
 
 #### External Graders
 
-For coding questions, you can use an [**external grader**](../externalGrading.md) to grade a submission instead of a `server.py` file. This lets you grade student-submitted code for computer science courses in a sandboxed environment. There are currently external graders for C, C++, Java, Python, and more.
+For coding questions, you can use an [**external grader**](../externalGrading.md) to grade a submission instead of a `server.py` file. This lets you grade student-submitted code in a sandboxed environment. There are currently external graders for C, C++, Java, Python, and more.
 
 #### Workspaces
 
@@ -99,7 +99,7 @@ Both of these features can be setup by modifying the `info.json` file for the qu
 
 ### Elements
 
-Questions can use [**elements**](../elements.md) to accept student input, display diagrams, control how questions are displayed. Elements are pre-built interface elements for common questions, like numerical inputs, multiple choice, and more. If you require more flexibility, [**custom elements**](../devElements.md) are reusable components that can be tailored to your course to create more complex questions.
+Questions can use [**elements**](../elements.md) to accept student input, display diagrams, control how questions are displayed. Elements are pre-built interface components for common questions types, including numerical inputs, multiple choice, and more. If you require more flexibility, [**custom elements**](../devElements.md) are reusable components that can be tailored to your course to create more complex questions.
 
 === "Integer input element"
 
@@ -115,7 +115,7 @@ You can view a list of all the available elements in the [elements documentation
 
 ### Assessments
 
-A course contains a collection of questions, which are composed together to create [**assessments**](../assessment/index.md). Each course instance contains a collection of assessments. There are **exam assessments** and **homework assessments**. Homeworks are formative assessments designed for mastery learning: they give unlimited retries with different variants, and incentivize repeated correct answers. Exams are summative assessments designed for measure learning: they give limited attempts with the same variant, and incentivize getting the correct answer on the first try.
+A course contains a collection of questions, which are composed together to create [**assessments**](./assessment/index.md). Each course instance contains a collection of assessments. There are **homework assessments** and **exam assessments**. Homeworks are formative assessments designed for mastery learning: they give unlimited retries with different variants, and incentivize repeated correct answers. Exams are summative assessments designed to measure learning: they give limited attempts with the same variant, and incentivize getting the correct answer on the first try.
 
 ![Homework Assessment](./hw-assessment.png)
 
@@ -146,9 +146,9 @@ Now that you have an understanding of the key concepts in PrairieLearn, you can 
 
 You can also:
 
-- learn how to [develop locally](../installing.md)
-- learn more about the workflow for [syncing content](../sync.md) to PrairieLearn
-- learn more about [courses](../course.md) or [course instances](../courseInstance.md)
-- learn more about [questions](../question.md), [elements](../elements.md), or [custom elements](../devElements.md)
-- learn more about [assessments](../assessment/index.md)
-- learn more about [external grading](../externalGrading.md) or [workspaces](../workspaces/index.md)
+- learn more about [courses](./course.md) or [course instances](./courseInstance.md)
+- learn more about [questions](./question.md), [elements](./elements.md), or [custom elements](./devElements.md)
+- learn more about [assessments](./assessment/index.md)
+- learn more about [external grading](./externalGrading.md) or [workspaces](./workspaces/index.md)
+- learn how to [develop locally](./installing.md)
+- learn more about the workflow for [syncing content](./sync.md) to PrairieLearn

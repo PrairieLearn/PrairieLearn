@@ -2,7 +2,7 @@
 
 All course content in PrairieLearn lives in a [Git](https://git-scm.com/) repository, typically hosted on [GitHub](https://github.com/). That repository is synced to/from PrairieLearn.
 
-```d2
+```d2 pad="100" scale="1.0"
 --8<-- "docs/diagrams/high-level.d2"
 ```
 
