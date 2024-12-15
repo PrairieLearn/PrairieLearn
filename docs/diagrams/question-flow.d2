@@ -33,33 +33,41 @@ question_update: "question points update" {class: process}
 # Code nodes
 generating: "generate() code" {class: code; shape: oval }
 preparing: "prepare() code" {class: code; shape: oval}
-rendering_editable.explanation: |md
-    ```
-    render() code
-    editable = true
-    ```
-|
-rendering_editable: "Editable Render" {class: code}
-rendering_uneditable: "Uneditable Render" {class: code}
-rendering_uneditable.explanation: |md
+rendering_uneditable: "Uneditable Render" {
+  explanation: ||md
     ```
     render() code
     editable = false
     ```
-|
-parsing: "parse() code" {class: code}
-grading: "grade() code" {class: code}
+  ||
+}
+rendering_editable: "Editable Render" {
+  explanation: ||md
+    ```
+    render() code
+    editable = true
+    ```
+  ||
+}
 
-# State nodes
+
 broken_variant: "Broken variant" {
-    explanation: |md
+  explanation: |md
     ```
     variant.broken_at != null
     variant.open = true
     ```
-    |
-    class: state
+  |
 }
+
+parsing: "parse() code" {
+  class: code
+}
+grading: "grade() code" {
+  class: code
+}
+
+
 open_variant: "Open variant" {
     explanation: |md
     ```

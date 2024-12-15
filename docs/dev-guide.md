@@ -4,9 +4,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 ## High level view
 
-```d2
---8<-- "docs/diagrams/high-level.d2"
-```
+![](./diagrams/high-level.d2)
 
 - The questions and assessments for a course are stored in a git repository. This is synced into the database by the course instructor and database data is updated or added to represent the course. Students then interact with the course website by doing questions, with the results being stored in the database. The instructor can view the student results on the website and download CSV files with the data.
 
@@ -200,9 +198,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - The most important tables in the database are shown in the diagram below:
 
-```d2
---8<-- "docs/diagrams/simplified-models.d2"
-```
+![](./diagrams/simplified-models.d2)
 
 - Detailed descriptions of the format of each table are in the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
 
@@ -235,9 +231,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - See the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below:
 
-```d2 layout="elk"
---8<-- "docs/diagrams/models.d2"
-```
+![](./diagrams/models.d2){layout="elk"}
 
 ## Database schema conventions
 
@@ -544,9 +538,7 @@ To automatically fix lint and formatting errors, run `make format`.
 
 - The question flow is shown in the diagram below:
 
-```d2
---8<-- "docs/diagrams/question-flow.d2"
-```
+![](./diagrams/question-flow.d2){force_appendix="true"}
 
 ## JavaScript equality operator
 

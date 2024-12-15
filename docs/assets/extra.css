@@ -24,7 +24,7 @@ td code {
 }
 
 @media (max-width: 1220px) {
-  .md-header__button[for='__palette_0'] {
+  .md-header__button[for='__palette_0'] .md-header__button[for='__palette_1'] {
     display: none;
   }
 }
@@ -35,4 +35,9 @@ td code {
   .md-header__inner {
     max-width: 100%;
   }
+}
+
+/* Fix for Safari -- mkdocs styling interferes with the pre tag in d2 diagrams */
+.md-typeset pre {
+  position: static;
 }

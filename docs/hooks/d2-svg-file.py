@@ -42,7 +42,7 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
             # Remove the XML declaration as it is no longer at the start of the entity
             result = result.replace('<?xml version="1.0" encoding="utf-8"?>', "")
 
-            result = f'<div data-svg-file="{key.hex()}">{result}</div>'
+            result = f'<data data-svg-file="{key.hex()}">{result}</data>'
         return result, ok
 
     # Replace the superfences renderer with the new one
@@ -57,7 +57,7 @@ def on_page_content(html: str, page: Page, config, files):
     # Replace data-svg-file with a href to the svg file.
     # This has to be done after we check for missing file references
     return re.sub(
-        r'<div data-svg-file="([a-f0-9]+)">([\s\S]*?)</div>',
+        r'<data data-svg-file="([a-f0-9]+)">([\s\S]*?)</data>',
         r'<a href="{relative_route}\1.svg">\2</a>'.format(
             relative_route=relative_route
         ),
