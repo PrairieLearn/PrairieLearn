@@ -20,5 +20,5 @@ You can view a comprehensive list of features on the [PrairieLearn homepage](htt
 ## Getting started
 
 - [Request a course space](requestCourse.md)
-- [Concepts](concepts.md)
+- [Concepts](./concepts/index.md)
 - [Quick start](getStarted.md)

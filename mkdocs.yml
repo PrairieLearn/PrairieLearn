@@ -91,7 +91,7 @@ nav:
   - Overview: 'index.md'
   - Getting Started:
       - 'Requesting your course space': 'requestCourse.md'
-      - 'Concepts': 'concepts.md'
+      - 'Concepts': 'concepts/index.md'
       - 'Quick start': 'getStarted.md'
       - 'Workshop': 'workshop/index.md'
   - Student Guide:

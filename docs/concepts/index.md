@@ -4,7 +4,7 @@ PrairieLearn is extremely flexible and powerful, but this flexibility can appear
 
 ## High-level overview
 
-A [**course**](./course.md) in PrairieLearn is composed of **course instances** and **questions**. Each [course instance](./courseInstance.md) is an offering of a course in a particular semester/term. For example, a course "CS 225" might have instances "CS 225 Spring 2022" and "CS 225 Fall 2022". A course instance contains all the **assessments** for that particular term. The course itself contains the questions that are shared across all instances. You can think of the course as containing a bank of questions that are then used to create assessments for each instance of the course, and a way to organize every instance of the course.
+A [**course**](../course.md) in PrairieLearn is composed of **course instances** and **questions**. Each [course instance](../courseInstance.md) is an offering of a course in a particular semester/term. For example, a course "CS 225" might have instances "CS 225 Spring 2022" and "CS 225 Fall 2022". A course instance contains all the **assessments** for that particular term. The course itself contains the questions that are shared across all instances. You can think of the course as containing a bank of questions that are then used to create assessments for each instance of the course, and a way to organize every instance of the course.
 
 ### Concept Map
 
@@ -21,9 +21,9 @@ A [**course**](./course.md) in PrairieLearn is composed of **course instances** 
 
 ### Questions
 
-[**Questions**](./question.md) are all independent, and a given question can be used on many different assessments across many different course instances. They are written in HTML (as a [Mustache template](https://mustache.github.io/mustache.5.html)) and use [elements](./elements.md) to accept student input. Python code can be used to generate random parameters and grade questions. Every time a question is shown to a student with randomly generated parameters, that is called a **variant** of the question.
+[**Questions**](../question.md) are all independent, and a given question can be used on many different assessments across many different course instances. They are written in HTML (as a [Mustache template](https://mustache.github.io/mustache.5.html)) and use [elements](../elements.md) to accept student input. Python code can be used to generate random parameters and grade questions. Every time a question is shown to a student with randomly generated parameters, that is called a **variant** of the question.
 
-![An example HW question](img/hw-question.png)
+![An example HW question](./hw-question.png)
 
 #### Example `question.html`
 
@@ -88,22 +88,22 @@ def generate(data):
 
 #### External Graders
 
-For coding questions, you can use an [**external grader**](./externalGrading.md) to grade a submission instead of a `server.py` file. This lets you grade student-submitted code for computer science courses in a sandboxed environment. There are currently external graders for C, C++, Java, Python, and more.
+For coding questions, you can use an [**external grader**](../externalGrading.md) to grade a submission instead of a `server.py` file. This lets you grade student-submitted code for computer science courses in a sandboxed environment. There are currently external graders for C, C++, Java, Python, and more.
 
 #### Workspaces
 
-Additionally, it may be useful for students to work in a consistent development [**workspace**](./workspaces/index.md) to reduce the likelihood of issues with their environment, and provide a code editor with syntax highlighting, autocompletion, and other features. Workspaces provide a seamless coding experience for students when used with an external autograder. Workspaces use [Docker](https://docker.com) to ensure a consistent environment, with premade workspace for popular languages (e.g. Python, C++). Workspaces based on custom Docker images are also supported.
+Additionally, it may be useful for students to work in a consistent development [**workspace**](../workspaces/index.md) to reduce the likelihood of issues with their environment, and provide a code editor with syntax highlighting, autocompletion, and other features. Workspaces provide a seamless coding experience for students when used with an external autograder. Workspaces use [Docker](https://docker.com) to ensure a consistent environment, with premade workspace for popular languages (e.g. Python, C++). Workspaces based on custom Docker images are also supported.
 
-![workspace screenshot](img/workspace.png)
+![workspace screenshot](./workspace.png)
 Both of these features can be setup by modifying the `info.json` file for the question.
 
 ### Elements
 
-Questions can use [**elements**](./elements.md) to accept student input, display diagrams, control how questions are displayed. Elements are pre-built interface elements for common questions, like numerical inputs, multiple choice, and more. If you require more flexibility, [**custom elements**](./devElements.md) are reusable components that can be tailored to your course to create more complex questions.
+Questions can use [**elements**](../elements.md) to accept student input, display diagrams, control how questions are displayed. Elements are pre-built interface elements for common questions, like numerical inputs, multiple choice, and more. If you require more flexibility, [**custom elements**](../devElements.md) are reusable components that can be tailored to your course to create more complex questions.
 
 === "Integer input element"
 
-    ![Integer input element](elements/pl-integer-input.png)
+    ![Integer input element](../elements/pl-integer-input.png)
 
 === "HTML for element"
 
@@ -111,23 +111,23 @@ Questions can use [**elements**](./elements.md) to accept student input, display
     <pl-integer-input answers-name="int_value" label="$y =$"></pl-integer-input>
     ```
 
-You can view a list of all the available elements in the [elements documentation](./elements.md).
+You can view a list of all the available elements in the [elements documentation](../elements.md).
 
 ### Assessments
 
-A course contains a collection of questions, which are composed together to create [**assessments**](./assessment/index.md). Each course instance contains a collection of assessments. There are **exam assessments** and **homework assessments**. Homeworks are formative assessments designed for mastery learning: they give unlimited retries with different variants, and incentivize repeated correct answers. Exams are summative assessments designed for measure learning: they give limited attempts with the same variant, and incentivize getting the correct answer on the first try.
+A course contains a collection of questions, which are composed together to create [**assessments**](../assessment/index.md). Each course instance contains a collection of assessments. There are **exam assessments** and **homework assessments**. Homeworks are formative assessments designed for mastery learning: they give unlimited retries with different variants, and incentivize repeated correct answers. Exams are summative assessments designed for measure learning: they give limited attempts with the same variant, and incentivize getting the correct answer on the first try.
 
-![Homework Assessment](img/hw-assessment.png)
+![Homework Assessment](./hw-assessment.png)
 
 Asssessments are organized into **assessment sets** based on the type of assessment (e.g. `Homework`, `Quiz`, `Exam`). Optionally, each assessment can be a part of a **module** (e.g. `Introduction`, `Review`, `Linked Lists`). Your assessments can then be shown to students grouped by module or by assessment set.
 
 === "Assessments (Set Grouping)"
 
-    ![Assessments grouped by set](img/set-grouping.png)
+    ![Assessments grouped by set](./set-grouping.png)
 
 === "Assessments (Module Grouping)"
 
-    ![Assessments grouped by module](img/module-grouping.png)
+    ![Assessments grouped by module](./module-grouping.png)
 
 ### JSON configuration files
 
@@ -142,13 +142,13 @@ Each item in PrairieLearn (questions, assessments, etc.) has associated metadata
 
 ## Next steps
 
-Now that you have an understanding of the key concepts in PrairieLearn, you can learn more about how to [:star: get started :star:](./getStarted.md) creating your course.
+Now that you have an understanding of the key concepts in PrairieLearn, you can learn more about how to [:star: get started :star:](../getStarted.md) creating your course.
 
 You can also:
 
-- learn how to [develop locally](./installing.md)
-- learn more about the workflow for [syncing content](./sync.md) to PrairieLearn
-- learn more about [courses](./course.md) or [course instances](./courseInstance.md)
-- learn more about [questions](./question.md), [elements](./elements.md), or [custom elements](./devElements.md)
-- learn more about [assessments](./assessment/index.md)
-- learn more about [external grading](./externalGrading.md) or [workspaces](./workspaces/index.md)
+- learn how to [develop locally](../installing.md)
+- learn more about the workflow for [syncing content](../sync.md) to PrairieLearn
+- learn more about [courses](../course.md) or [course instances](../courseInstance.md)
+- learn more about [questions](../question.md), [elements](../elements.md), or [custom elements](../devElements.md)
+- learn more about [assessments](../assessment/index.md)
+- learn more about [external grading](../externalGrading.md) or [workspaces](../workspaces/index.md)
