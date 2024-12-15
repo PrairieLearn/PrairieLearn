@@ -115,7 +115,7 @@ You can view a list of all the available elements in the [elements documentation
 
 ### Assessments
 
-A course contains a collection of questions, which are composed together to create [**assessments**](./assessment/index.md). Each course instance contains a collection of assessments. There are **homework assessments** and **exam assessments**. Homeworks are formative assessments designed for mastery learning: they give unlimited retries with different variants, and incentivize repeated correct answers. Exams are summative assessments designed to measure learning: they give limited attempts with the same variant, and incentivize getting the correct answer on the first try.
+A course contains a collection of questions, which are composed together to create [**assessments**](../assessment/index.md). Each course instance contains a collection of assessments. There are **homework assessments** and **exam assessments**. Homeworks are formative assessments designed for mastery learning: they give unlimited retries with different variants, and incentivize repeated correct answers. Exams are summative assessments designed to measure learning: they give limited attempts with the same variant, and incentivize getting the correct answer on the first try.
 
 ![Homework Assessment](./hw-assessment.png)
 
@@ -146,9 +146,9 @@ Now that you have an understanding of the key concepts in PrairieLearn, you can 
 
 You can also:
 
-- learn more about [courses](./course.md) or [course instances](./courseInstance.md)
-- learn more about [questions](./question.md), [elements](./elements.md), or [custom elements](./devElements.md)
-- learn more about [assessments](./assessment/index.md)
-- learn more about [external grading](./externalGrading.md) or [workspaces](./workspaces/index.md)
-- learn how to [develop locally](./installing.md)
-- learn more about the workflow for [syncing content](./sync.md) to PrairieLearn
+- learn more about [courses](../course.md) or [course instances](../courseInstance.md)
+- learn more about [questions](../question.md), [elements](../elements.md), or [custom elements](../devElements.md)
+- learn more about [assessments](../assessment/index.md)
+- learn more about [external grading](../externalGrading.md) or [workspaces](../workspaces/index.md)
+- learn how to [develop locally](../installing.md)
+- learn more about the workflow for [syncing content](../sync.md) to PrairieLearn
