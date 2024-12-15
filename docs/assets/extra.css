@@ -37,13 +37,23 @@ td code {
   }
 }
 
-div.d2 {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-  height: min(600px, 70vh);
+.d2 {
+  a {
+    width: 100%;
+    display: flex;
+    flex-direction: row;
+    justify-content: center;
+  }
   a svg {
-    height: 100%;
+    max-height: min(600px, 70vh);
+  }
+}
+
+.d2-shift-50 {
+  overflow: hidden;
+  height: calc(min(600px, 70vh) - 75px + 25px);
+  .d2 {
+    transform: translateY(-75px);
   }
 }
 /* Fix for Safari -- mkdocs styling interferes with the pre tag in d2 diagrams */
