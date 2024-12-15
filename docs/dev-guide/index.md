@@ -5,7 +5,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 ## High level view
 
 <div style="max-width: 500px;" markdown>
-![](./diagrams/high-level.d2){pad="0"}
+![](./high-level.d2){pad="0"}
 </div>
 
 - The questions and assessments for a course are stored in a git repository. This is synced into the database by the course instructor and database data is updated or added to represent the course. Students then interact with the course website by doing questions, with the results being stored in the database. The instructor can view the student results on the website and download CSV files with the data.
@@ -19,7 +19,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 - Integration tests are stored in the `apps/prairielearn/src/tests/` directory.
 - Unit tests are typically located next to the file under test, with the filename ending in `.test.ts`. For instance, tests for `foo.ts` would be in `foo.test.ts` in the same directory.
 
-- To run the tests during development, see [Running the test suite](./installingLocal.md#running-the-test-suite).
+- To run the tests during development, see [Running the test suite](../installingLocal.md#running-the-test-suite).
 
 - The tests are run by GitHub Actions on every push to GitHub.
 
@@ -200,7 +200,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - The most important tables in the database are shown in the diagram below:
 
-![](./diagrams/simplified-models.d2)
+![](./simplified-models.d2)
 
 - Detailed descriptions of the format of each table are in the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
 
@@ -233,7 +233,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - See the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below:
 
-![](./diagrams/models.d2){layout="elk"}
+![](./models.d2){layout="elk"}
 
 ## Database schema conventions
 
@@ -540,7 +540,7 @@ To automatically fix lint and formatting errors, run `make format`.
 
 - The question flow is shown in the diagram below:
 
-![](./diagrams/question-flow.d2){force_appendix="true"}
+![](./question-flow.d2)
 
 ## JavaScript equality operator
 

@@ -28,16 +28,16 @@ exampleCourse
     `-- secret1.js
 ```
 
-1. See the [questions documentation](question.md) for more information.
-2. See the [course instance documentation](courseInstance.md) for more information.
-3. See the [`clientFiles` and `serverFiles` documentation](clientServerFiles.md) for information.
-4. See the [`clientFiles` and `serverFiles` documentation](clientServerFiles.md) for information.
+1. See the [questions documentation](../question.md) for more information.
+2. See the [course instance documentation](../courseInstance.md) for more information.
+3. See the [`clientFiles` and `serverFiles` documentation](../clientServerFiles.md) for information.
+4. See the [`clientFiles` and `serverFiles` documentation](../clientServerFiles.md) for information.
 
 - See an [example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse) in PrairieLearn
 
-- See [HTML element list](elements.md) for a list of elements provided by PrairieLearn to all courses; PrairieLearn will use a course version of an element whenever it exists.
+- See [HTML element list](../elements.md) for a list of elements provided by PrairieLearn to all courses; PrairieLearn will use a course version of an element whenever it exists.
 
-- See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourse` and `serverFilesCourse` directories.
+- See [clientFiles and serverFiles](../clientServerFiles.md) for information on the `clientFilesCourse` and `serverFilesCourse` directories.
 
 ## `infoCourse.json`
 
@@ -140,9 +140,9 @@ This file specifies basic information about the course:
 
 These options, which apply to all instances of your course, can be set in the `infoCourse.json` file. The properties should be set within an object named `options` as shown in the example above.
 
-| Property                 | Default | Description                                                                                                                                                                                                                                                                                                                                                |
-| ------------------------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `useNewQuestionRenderer` | `false` | This controls whether to use the legacy renderer or the "new" renderer, as described in the [question configuration documentation](question.md#the-new-renderer). Although the default is `false` currently to avoid issues with longstanding courses on the platform, most courses will want to set this to `true`, especially if they are newly created. |
+| Property                 | Default | Description                                                                                                                                                                                                                                                                                                                                                   |
+| ------------------------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `useNewQuestionRenderer` | `false` | This controls whether to use the legacy renderer or the "new" renderer, as described in the [question configuration documentation](../question.md#the-new-renderer). Although the default is `false` currently to avoid issues with longstanding courses on the platform, most courses will want to set this to `true`, especially if they are newly created. |
 
 ## Assessment sets
 
@@ -277,7 +277,7 @@ Modules are optional and do not affect any behavior by default. The order in whi
 
 The above configuration can result in the following view for students:
 
-![Assessments grouped by module on the student assessments overview.](./img/assessment-units.png)
+![Assessments grouped by module on the student assessments overview.](./assessment-units.png)
 
 Properties for assessmentModules are as follows.
 
@@ -286,7 +286,7 @@ Properties for assessmentModules are as follows.
 | `name`    | Brief name for the module. Shorter is better.    |
 | `heading` | Longer title for the module, displayed to users. |
 
-The organization of the assessment page is configured at the course instance level. In the same PrairieLearn course, some course instances may group assessments by `"Module"`, and some others may group assessments by `"Set"`. See [Course Instance](courseInstance.md#assessment-page-organization) for more details.
+The organization of the assessment page is configured at the course instance level. In the same PrairieLearn course, some course instances may group assessments by `"Module"`, and some others may group assessments by `"Set"`. See [Course Instance](../courseInstance.md#assessment-page-organization) for more details.
 
 ## Topics
 
@@ -385,7 +385,7 @@ The tag order in `infoCourse.json` is the order in which the tags will be listed
 
 ## Sharing Sets
 
-Questions can be added to sharing sets to enable other courses to use your questions in their assessments. Sharing sets are designed for sharing questions only to specific courses, if you would like to make questions available for anyone to uses, you should make them publicly shared as explained in the [question documentation](question.md), or the [sharing documentation](questionSharing.md).
+Questions can be added to sharing sets to enable other courses to use your questions in their assessments. Sharing sets are designed for sharing questions only to specific courses, if you would like to make questions available for anyone to uses, you should make them publicly shared as explained in the [question documentation](../question.md), or the [sharing documentation](../questionSharing.md).
 
 | Property      | Description                                                                                                                                                                                          |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -452,7 +452,7 @@ Comments can be strings, arrays, or JSON objects, but for most uses strings are 
 
 The possible colors for assessment sets, topic, and tags are:
 
---8<-- "docs/diagrams/colors.html"
+--8<-- "docs/course/colors.html"
 
 ## Course staff
 

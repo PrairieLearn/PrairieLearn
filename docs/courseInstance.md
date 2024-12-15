@@ -4,7 +4,7 @@
 
 ## Directory layout
 
-A _course instance_ corresponds to a single offering of a [course](course.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](assessment/index.md). The `assessments` directory should always exist, but may be empty if no assessments have been added. A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
+A _course instance_ corresponds to a single offering of a [course](course/index.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](assessment/index.md). The `assessments` directory should always exist, but may be empty if no assessments have been added. A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
 
 ```bash
 exampleCourse
@@ -57,7 +57,7 @@ This file specifies basic information about the course instance:
 
 ## Course instance `allowAccess`
 
-See the [access control documentation](accessControl.md) for more details on `allowAccess` rules.
+See the [access control documentation](accessControl/index.md) for more details on `allowAccess` rules.
 
 The course instance `allowAccess` rules determine who can access the course instance and when they can do so. Course staff always have access. The simple example below gives students access between the start (Jan 19th) and end (May 13th) of the semester, as follows.
 
@@ -82,7 +82,7 @@ Instructors can group assessments by course modules (topics, sections or chapter
 }
 ```
 
-For more information about assessment modules, see [Course configuration](course.md#assessment-modules).
+For more information about assessment modules, see [Course configuration](course/index.md#assessment-modules).
 
 ## Timezone
 
@@ -120,7 +120,7 @@ Note that _this is not a security setting_. Students may still enroll in the cou
 
 LTI, or Learning Tools Interoperability, is the ability for Learning Management Systems (LMSes) to link together. In our context, it means that sites like Coursera can link into assessments in PrairieLearn, give the student a PrairieLearn experience, and report the assessment score back to Coursera automatically.
 
-PrairieLearn LTI support enables a new authentication source (that creates the user in PL and enrolls them in the appropriate course instance) with a grade reporting functionality. Everything else (course instance, assessment and question configuration and workflows) are the same. Assessment [access control](accessControl.md) rules still apply for LTI linked assessments.
+PrairieLearn LTI support enables a new authentication source (that creates the user in PL and enrolls them in the appropriate course instance) with a grade reporting functionality. Everything else (course instance, assessment and question configuration and workflows) are the same. Assessment [access control](accessControl/index.md) rules still apply for LTI linked assessments.
 
 ### Enabling LTI support in a course instance
 
@@ -138,7 +138,7 @@ A single LMS course should use the same credential. If multiple courses need to 
 
 PrairieLearn logins via LTI are unique to their LMS course. For example, if an Illinois student is taking a Coursera LTI course they will have two different user accounts in PrairieLearn.
 
-It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"institution": "LTI"`. See [Access control](accessControl.md) for more details.
+It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"institution": "LTI"`. See [Access control](accessControl/index.md) for more details.
 
 ### LTI linking into an assessment
 

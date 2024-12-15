@@ -4,7 +4,7 @@ PrairieLearn is extremely flexible and powerful, but this flexibility can appear
 
 ## High-level overview
 
-A [**course**](../course.md) in PrairieLearn is composed of **course instances** and **questions**. Each [course instance](../courseInstance.md) is an offering of a course in a particular semester/term. For example, a course "CS 225" might have instances "CS 225 Spring 2022" and "CS 225 Fall 2022". A course instance contains all the **assessments** for that particular term. The course itself contains the questions that are shared across all instances. You can think of the course as containing a bank of questions that are then used to create assessments for each instance of the course, and a way to organize every instance of the course.
+A [**course**](../course/index.md) in PrairieLearn is composed of **course instances** and **questions**. Each [course instance](../courseInstance.md) is an offering of a course in a particular semester/term. For example, a course "CS 225" might have instances "CS 225 Spring 2022" and "CS 225 Fall 2022". A course instance contains all the **assessments** for that particular term. The course itself contains the questions that are shared across all instances. You can think of the course as containing a bank of questions that are then used to create assessments for each instance of the course, and a way to organize every instance of the course.
 
 ### Concept Map
 
@@ -139,7 +139,7 @@ Now that you have an understanding of the key concepts in PrairieLearn, you can 
 
 You can also:
 
-- learn more about [courses](../course.md) or [course instances](../courseInstance.md)
+- learn more about [courses](../course/index.md) or [course instances](../courseInstance.md)
 - learn more about [questions](../question.md), [elements](../elements.md), or [custom elements](../devElements.md)
 - learn more about [assessments](../assessment/index.md)
 - learn more about [external grading](../externalGrading.md) or [workspaces](../workspaces/index.md)

@@ -79,7 +79,7 @@ A course instance corresponds to a single offering of a course, such as "Fall 20
   }
   ```
 
-- you can use [tags](course.md/#tags) to add more levels to your filter. For example, you can add the email of the question author, the semester when the question was created, and the type of question. Tags are optional.
+- you can use [tags](course/index.md/#tags) to add more levels to your filter. For example, you can add the email of the question author, the semester when the question was created, and the type of question. Tags are optional.
 
   ```json title="info.json"
   {
@@ -237,7 +237,7 @@ Before you create an assessment, make sure you are in the desired course instanc
   }
   ```
 
-- you can change the assessment `set`, which is used for better organization of the course instance. PrairieLearn has some standardized sets (eg. Homework, Quiz, Exam), and you can also [create your own](course.md#assessment-sets).
+- you can change the assessment `set`, which is used for better organization of the course instance. PrairieLearn has some standardized sets (eg. Homework, Quiz, Exam), and you can also [create your own](course/index.md#assessment-sets).
 
 - change the number of the assessment (within its set). This number will be used to sort the assessments in the `Assessment` page.
 

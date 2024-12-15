@@ -1,14 +1,14 @@
 # Access control to course instances and assessments
 
-By default, course instances and assessments are only accessible to [course staff](course.md#course-staff). To grant access to students, the `allowAccess` option can be used in the `infoCourseInstance.json` or `infoAssessment.json` files.
+By default, course instances and assessments are only accessible to [course staff](../course/index.md#course-staff). To grant access to students, the `allowAccess` option can be used in the `infoCourseInstance.json` or `infoAssessment.json` files.
 
 ## Two level of access control for assessments
 
 In PrairieLearn there are two levels of access control for students to gain access to assessments:
 
-1. First, a student must have access to the **course instance**. This access is granted with the `allowAccess` rules in [infoCourseInstance.json](courseInstance.md). Giving a student access to a course instance allows the student to enroll in the course instance, but does not by itself grant them access to any assessments in the course instance.
+1. First, a student must have access to the **course instance**. This access is granted with the `allowAccess` rules in [infoCourseInstance.json](../courseInstance.md). Giving a student access to a course instance allows the student to enroll in the course instance, but does not by itself grant them access to any assessments in the course instance.
 
-2. Second, a student must also have access to the specific **assessment**. This access is granted with the `allowAccess` rules in [infoAssessment.json](assessment/index.md). Even if a student has been granted access to an assessment, however, they will only be able to actually access it if they also have access to the course instance (see previous item).
+2. Second, a student must also have access to the specific **assessment**. This access is granted with the `allowAccess` rules in [infoAssessment.json](../assessment/index.md). Even if a student has been granted access to an assessment, however, they will only be able to actually access it if they also have access to the course instance (see previous item).
 
 ## `allowAccess` format
 
@@ -58,11 +58,11 @@ allowAccess is True if (accessRule1 OR accessRule2 OR accessRule3)
 
 If multiple access rules are satisfied then the highest `credit` value is taken from them. Access rules without an explicit `credit` value have credit of 0, meaning they allow viewing of the assessment but not doing questions for credit.
 
-Access rules can also contain the deprecated `role` property. This is now ignored and has no effect. Any access rules containing a `role` of `TA` or `Instructor` should be deleted. Course staff are now managed on the ["Staff" tab](course.md#course-staff).
+Access rules can also contain the deprecated `role` property. This is now ignored and has no effect. Any access rules containing a `role` of `TA` or `Instructor` should be deleted. Course staff are now managed on the ["Staff" tab](../course/index.md#course-staff).
 
 ## Dates
 
-All dates are specified in the format "YYYY-MM-DDTHH:MM:SS" using 24-hour times (this is the [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) profile of [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)). All times are in the [timezone of the course instance](courseInstance.md#timezone).
+All dates are specified in the format "YYYY-MM-DDTHH:MM:SS" using 24-hour times (this is the [RFC 3339](https://www.ietf.org/rfc/rfc3339.txt) profile of [ISO 8601](https://en.wikipedia.org/wiki/ISO_8601)). All times are in the [timezone of the course instance](../courseInstance.md#timezone).
 
 If you want to include full days, then it is generally best to start at 1 second after midnight, and end at 1 second before midnight. This avoids any confusion around the meaning of times exactly at midnight. For example, start at `2015-04-05T00:00:01` and end at `2015-04-07T23:59:59` for the 3-day window from April 5th to April 7th inclusive.
 
@@ -85,7 +85,7 @@ In general usage it is best to keep the default Public mode for any homework (as
 
 When the available credit is less than 100%, the percentage score is calculated as `min(credit, points / maxPoints * 100)`. However, the student's percentage score will never decrease, so if they've already earned a higher percentage score then they will keep it. For example, if `credit = 80` and `maxPoints = 10`, then when a student has `points = 8` then they will have a percentage score of 80%, and when they have `points = 9` or `points = 10` they will still have a percentage score of 80%.
 
-When the available credit is more than 100%, then the percentage score is calculated as `points / maxPoints * 100` when `points < maxPoints`. However, if `points = maxPoints` then the percentage score is taken to be the credit value. For example, if `credit = 120` then the student will see their percentage score rise towards 100% as their `points` increase towards `maxPoints`, and then when their `points` reaches `maxPoints` their percentage score will suddenly jump to 120%. If [`maxBonusPoints`](assessment/index.md#assessment-points) is used, and the student is able to obtain points above `maxPoints`, then the student's percentage score will be based on this credit as a percentage, i.e., their score will be computed as `credit * points / maxPoints`. For example, if `maxPoints = 10`, `maxBonusPoints = 2`, `credit = 120` and the student obtained 11 points, their score will be `120 * 11 / 10 = 132%`.
+When the available credit is more than 100%, then the percentage score is calculated as `points / maxPoints * 100` when `points < maxPoints`. However, if `points = maxPoints` then the percentage score is taken to be the credit value. For example, if `credit = 120` then the student will see their percentage score rise towards 100% as their `points` increase towards `maxPoints`, and then when their `points` reaches `maxPoints` their percentage score will suddenly jump to 120%. If [`maxBonusPoints`](../assessment/index.md#assessment-points) is used, and the student is able to obtain points above `maxPoints`, then the student's percentage score will be based on this credit as a percentage, i.e., their score will be computed as `credit * points / maxPoints`. For example, if `maxPoints = 10`, `maxBonusPoints = 2`, `credit = 120` and the student obtained 11 points, their score will be `120 * 11 / 10 = 132%`.
 
 ## Time limits
 
@@ -106,7 +106,7 @@ For students taking remote exams it can be helpful to have an enforced time limi
 
 The above example will give students 90 minutes for this exam, and they must start (and complete) within the date limits. If a student starts the exam close enough to `endDate` such that the remaining time to `endDate` is less than `timeLimitMin`, then the exam's countdown timer will be initialized with the remaining time to `endDate` (minus a 1-minute buffer), not `timeLimitMin`. See the following diagram for an illustration of this.
 
-![Time limit illustrations](img/exam_timer.svg)
+![Time limit illustrations](./exam_timer.svg)
 
 **Note that time limits should not be set for exams in a testing center or course session managed by PrairieTest. Instead, such exams should set `"examUuid"` to the value associated to the PrairieTest exam, in which case `timeLimitMin` will have no effect and the time limits will be enforced by PrairieTest.**
 
@@ -116,7 +116,7 @@ Changes to the time limits in the `infoAssessment.json` file only take effect be
 
 On the Staff View for the assessment, select the Students tab. This tab will show a list of all students that have started the assessment. The "Remaining" column will include one of the following values:
 
-- The value "Closed" indicates that the student has already finished the assessment, that their time ran out, or ([for exam assessments with `autoClose` set as `true`](assessment/index.md#auto-closing-exam-assessments)) that the student was inactive for over six hours. Students do not have the ability to submit answers for these assessments.
+- The value "Closed" indicates that the student has already finished the assessment, that their time ran out, or ([for exam assessments with `autoClose` set as `true`](../assessment/index.md#auto-closing-exam-assessments)) that the student was inactive for over six hours. Students do not have the ability to submit answers for these assessments.
 - The value "Open (no time limit)" indicates that the assessment is open and has no time limit (other than the `autoClose` setting listed above). Students are able to submit answers for these assessments.
 - The value "Expired" indicates that the student's time limit has ran out, but the assessment was not yet closed. This may be due to the student having closed the assessment without selecting the Finished button, or because the time limit was recently changed and the student's browser has not yet updated its time limit. Students will get a message that their timer has run out as soon as they try to open the assessment, and will be unable to submit further answers.
 - A value indicating a number of minutes indicates the remaining time until the exam is automatically closed. Students are able to submit answers until this time expires. Note that this time is computed when the page is loaded, so to get an updated time, the page must be refreshed.
@@ -187,7 +187,7 @@ To block students from viewing closed assessment details, set `"showClosedAssess
 
 Note that the `showClosedAssessment` statement is listed twice above, once while the assessment is in progress (`startDate` to `endDate`) and once in a second rule that will take effect after the `endDate`. The additional `"active": false` restriction prevents students from starting the exam after the `endDate`.
 
-The `showClosedAssessment` access rule restriction is only really useful in conjunction with [time limits](#time-limits). It is common to pair `"showClosedAssessment": false` with [disabled real-time grading](assessment/index.md#disabling-real-time-grading).
+The `showClosedAssessment` access rule restriction is only really useful in conjunction with [time limits](#time-limits). It is common to pair `"showClosedAssessment": false` with [disabled real-time grading](../assessment/index.md#disabling-real-time-grading).
 
 ## Showing/hiding all score information
 
@@ -217,11 +217,11 @@ To block students from viewing closed assessment scores, set `"showClosedAssessm
 
 Note that the `showClosedAssessment` and `showClosedAssessmentScore` statements are listed twice above, once while the assessment is in progress (`startDate` to `endDate`) and once in a second rule that will take effect after the `endDate`. The additional `"active": false` restriction prevents students from starting the exam after the `endDate`.
 
-The `showClosedAssessmentScore` access rule restriction is often used in conjunction with [disabling real-time grading](assessment/index.md#disabling-real-time-grading) and setting `"showClosedAssessment": false`. It may also be used in assessments with [manual grading](manualGrading/index.md), to hide the assessment grade until all students have been graded.
+The `showClosedAssessmentScore` access rule restriction is often used in conjunction with [disabling real-time grading](../assessment/index.md#disabling-real-time-grading) and setting `"showClosedAssessment": false`. It may also be used in assessments with [manual grading](../manualGrading/index.md), to hide the assessment grade until all students have been graded.
 
 ## Active assessments
 
-The `active` access rule restriction is useful for allowing students to see what assessments they have coming up. It should also be used when [returning exams to students](faq.md#how-do-i-give-students-access-to-view-their-exams-after-they-are-over).
+The `active` access rule restriction is useful for allowing students to see what assessments they have coming up. It should also be used when [returning exams to students](../faq.md#how-do-i-give-students-access-to-view-their-exams-after-they-are-over).
 
 By default, the `active` property in an access rule is `true`. This means that, if there is an access rule that applies at a particular time/context, students can start the assessment, create new assessment instances, and submit answers to questions.
 
@@ -231,7 +231,7 @@ If `active` is set to `false` in an access rule, students will still be able to 
 
 If `active` is set to `false` in an access rule, the available `credit` cannot be set to any value other than 0 (the default value).
 
-Note that when `"active": false` is used to allow students to review their work after they've finished the assessment, students can still access and modify files in any [workspaces](workspaces/index.md) associated with questions on the assessment. However, they will not be able to submit any changed workspace files for grading.
+Note that when `"active": false` is used to allow students to review their work after they've finished the assessment, students can still access and modify files in any [workspaces](../workspaces/index.md) associated with questions on the assessment. However, they will not be able to submit any changed workspace files for grading.
 
 An example of the `active` access rule restriction is shown below:
 
@@ -294,7 +294,7 @@ The above `allowAccess` directive means that this assessment is available under 
 
 ## Exam with remote students example
 
-**See [Remote Exams](remoteExams.md) for more detailed examples.**
+**See [Remote Exams](../remoteExams.md) for more detailed examples.**
 
 ```json
 {

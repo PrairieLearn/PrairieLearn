@@ -12,13 +12,13 @@ Paid hosting and support: [https://www.prairielearn.com/](https://www.prairielea
 - [x] **Randomized, custom questions** - Questions variants can be generated and autograded using a Python script, with easily customizable partial credit rules. [Learn more](./question.md/#options-for-grading-student-answers)
 - [x] **Custom HTML-based questions** - Create questions using arbitrary HTML, CSS, and JavaScript. [Learn more](question.md/#question-questionhtml)
 - [x] **Rich standard library of question elements** - Include graphs, symbolic algebra, common question types, and more. [Learn more](./elements.md)
-- [x] **Flexible access controls** - Granular control over who can access course content, student submissions, etc. [Learn more](./accessControl.md)
+- [x] **Flexible access controls** - Granular control over who can access course content, student submissions, etc. [Learn more](./accessControl/index.md)
 - [x] **Support for code autograding** - Run student code in a sandbox, with support for C, C++, Java, Python, etc. [Learn more](./externalGrading.md)
 
 You can view a comprehensive list of features on the [PrairieLearn homepage](https://www.prairielearn.com/).
 
 ## Getting started
 
-- [Request a course space](requestCourse.md)
+- [Request a course space](requestCourse/index.md)
 - [Concepts](./concepts/index.md)
 - [Quick start](getStarted.md)
