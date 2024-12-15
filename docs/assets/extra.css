@@ -18,3 +18,9 @@ td code {
   /* color: var(--md-primary-fg-color); */
   text-decoration: underline;
 }
+
+[data-md-color-scheme='full-width'] {
+  .md-main__inner {
+    max-width: 100%;
+  }
+}

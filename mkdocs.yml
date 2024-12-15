@@ -12,9 +12,20 @@ theme:
       example: material/code-block-tags
     annotation: material/plus-circle
   palette:
-    scheme: default
-    primary: custom
-    accent: custom
+    - scheme: default
+      toggle:
+        icon: material/arrow-collapse
+        name: Default width
+      primary: custom
+      accent: custom
+
+    - scheme: full-width
+      toggle:
+        icon: material/arrow-expand
+        name: Full width
+      primary: custom
+      accent: custom
+
   features:
     - navigation.sections
     - navigation.expand
