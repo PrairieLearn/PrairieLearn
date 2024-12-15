@@ -279,8 +279,8 @@ function CreateCourseInstanceModal({
           pattern="[\\-A-Za-z0-9_\\/]+"
           title="Please enter a valid format: only letters, numbers, hyphens, underscores, backslashes, and forward slashes."
         />
-        <small class="form-text text-muted"
-          >The recommended format is <code>Fa19</code> or <code>Fall2019</code>. Use only letters,
+        <small class="form-text text-muted">
+          The recommended format is <code>Fa19</code> or <code>Fall2019</code>. Use only letters,
           numbers, dashes, and underscores, with no spaces.
         </small>
       </div>
