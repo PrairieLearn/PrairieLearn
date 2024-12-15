@@ -260,8 +260,8 @@ function CreateCourseInstanceModal({
   initialEndDateFormatted,
 }: {
   csrfToken: string;
-  initialStartDateFormatted?: string;
-  initialEndDateFormatted?: string;
+  initialStartDateFormatted: string;
+  initialEndDateFormatted: string;
 }) {
   return Modal({
     id: 'createCourseInstanceModal',
@@ -277,17 +277,24 @@ function CreateCourseInstanceModal({
           name="short_name"
           required
           pattern="[\\-A-Za-z0-9_\\/]+"
-          title="Please enter a valid format: only letters, numbers, hyphens, underscores, backslashes, and forward slashes."
+          aria-describedby="short_name_help"
         />
-        <small class="form-text text-muted">
+        <small id="short_name_help" class="form-text text-muted">
           The recommended format is <code>Fa19</code> or <code>Fall2019</code>. Use only letters,
           numbers, dashes, and underscores, with no spaces.
         </small>
       </div>
       <div class="form-group">
         <label for="long_name">Long Name</label>
-        <input type="text" class="form-control" id="long_name" name="long_name" required />
-        <small class="form-text text-muted">
+        <input
+          type="text"
+          class="form-control"
+          id="long_name"
+          name="long_name"
+          required
+          aria-describedby="long_name_help"
+        />
+        <small id="long_name_help" class="form-text text-muted">
           This is the full name of the course instance, such as "Fall 2019" or "Spring 2020".
         </small>
       </div>
@@ -301,8 +308,9 @@ function CreateCourseInstanceModal({
           value="${initialStartDateFormatted}"
           max="${initialEndDateFormatted}"
           step="1"
+          aria-describedby="start_access_date_help"
         />
-        <small class="form-text text-muted">
+        <small id="start_access_date_help" class="form-text text-muted">
           The date when students can access the course instance.
         </small>
       </div>
@@ -316,8 +324,9 @@ function CreateCourseInstanceModal({
           value="${initialEndDateFormatted}"
           min="${initialStartDateFormatted}"
           step="1"
+          aria-describedby="end_access_date_help"
         />
-        <small class="form-text text-muted">
+        <small id="end_access_date_help" class="form-text text-muted">
           The date when students can no longer access the course instance.
         </small>
       </div>

@@ -1,0 +1,10 @@
+{
+    "uuid": "6a999af6-a05a-4bc8-8174-da2765f99ca0",
+    "longName": "tset1234",
+    "allowAccess": [
+        {
+            "startDate": "2024-12-13 00:01:00",
+            "endDate": "2025-04-13 23:59:00"
+        }
+    ]
+}
