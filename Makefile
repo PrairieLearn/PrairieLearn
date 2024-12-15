@@ -96,7 +96,7 @@ changeset:
 
 build-docs:
 	@python3 -m venv /tmp/pldocs/venv
-	@d2 --version 2>/dev/null || (curl -fsSL https://d2lang.com/install.sh | sh -s --)
+	@d2 --version >/dev/null
 	@/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt
 	@cp ${HOME}/.local/bin/d2 /tmp/pldocs/venv/bin/d2
 	@/tmp/pldocs/venv/bin/python3 -m mkdocs build --strict

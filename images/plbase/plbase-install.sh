@@ -64,6 +64,13 @@ rm -rf /tmp/pgvector
 dnf -y remove postgresql15-server-devel
 dnf -y autoremove
 
+# Install d2
+echo "installing d2..."
+VERSION=v0.6.8 OS=linux ARCH=amd64 curl -fsSLO \
+    "https://github.com/terrastruct/d2/releases/download/$VERSION/d2-$VERSION-$OS-$ARCH.tar.gz" \
+    && tar -xzf "d2-$VERSION-$OS-$ARCH.tar.gz" \
+    && make -sC "d2-$VERSION" install PREFIX=/usr/local/bin
+
 # TODO: use standard OS Python installation? The only reason we switched to Conda
 # was to support R and `rpy2`, but now that we've removed those, we might not
 # get any benefit from Conda.
