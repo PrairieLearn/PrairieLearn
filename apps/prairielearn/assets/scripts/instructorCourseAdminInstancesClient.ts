@@ -1,15 +1,25 @@
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
 onDocumentReady(() => {
-  const startAccessDate = document.querySelector<HTMLInputElement>('#start_access_date');
-  const endAccessDate = document.querySelector<HTMLInputElement>('#end_access_date');
-  if (!startAccessDate || !endAccessDate) return;
+  const startAccessDateInput = document.querySelector<HTMLInputElement>('#start_access_date');
+  const endAccessDateInput = document.querySelector<HTMLInputElement>('#end_access_date');
+  const createButton = document.querySelector<HTMLButtonElement>(
+    '#add_course_instance_create_button',
+  );
 
-  // This ensures that the start access date is always before or equal to the end access date
-  startAccessDate.addEventListener('change', () => {
-    endAccessDate.min = startAccessDate.value;
-  });
-  endAccessDate.addEventListener('change', () => {
-    startAccessDate.max = endAccessDate.value;
-  });
+  if (!startAccessDateInput || !endAccessDateInput || !createButton) return;
+
+  createButton.onclick = () => {
+    // Ensure that the end access date is after the start access date
+
+    const startAccessDate = new Date(startAccessDateInput.value);
+    const endAccessDate = new Date(endAccessDateInput.value);
+    if (startAccessDate >= endAccessDate) {
+      // Set custom validity only on the endAccessDateInput to trigger the error message
+      // on the last input of the form
+      endAccessDateInput.setCustomValidity('End access date must be after start access date');
+    } else {
+      endAccessDateInput.setCustomValidity('');
+    }
+  };
 });

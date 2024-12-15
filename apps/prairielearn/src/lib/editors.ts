@@ -1,7 +1,7 @@
 import assert from 'node:assert';
 import * as path from 'path';
 
-import { Temporal } from '@js-temporal/polyfill';
+import { type Temporal } from '@js-temporal/polyfill';
 import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
@@ -96,6 +96,68 @@ async function cleanAndResetRepository(
     cwd: course.path,
     env,
   });
+}
+
+export function getNamesForAdd(
+  shortNames: string[],
+  longNames: string[],
+  shortName = 'New',
+  longName = 'New',
+): { shortName: string; longName: string } {
+  function getNumberShortName(oldShortNames: string[]): number {
+    let numberOfMostRecentCopy = 1;
+    oldShortNames.forEach((oldShortName) => {
+      // shortName is a copy of oldShortName if:
+      // it matches exactly, or
+      // if oldShortName matches {shortName}_{number from 0-9}
+      const found =
+        shortName === oldShortName || oldShortName.match(new RegExp(`^${shortName}_([0-9]+)$`));
+      if (found) {
+        const foundNumber = shortName === oldShortName ? 1 : parseInt(found[1]);
+        if (foundNumber >= numberOfMostRecentCopy) {
+          numberOfMostRecentCopy = foundNumber + 1;
+        }
+      }
+    });
+    return numberOfMostRecentCopy;
+  }
+
+  function getNumberLongName(oldLongNames: string[]): number {
+    let numberOfMostRecentCopy = 1;
+    // longName is a copy of oldLongName if:
+    // it matches exactly, or
+    // if oldLongName matches {longName} ({number from 0-9})
+    oldLongNames.forEach((oldLongName) => {
+      if (!_.isString(oldLongName)) return;
+      const found =
+        oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
+      if (found) {
+        const foundNumber = oldLongName === longName ? 1 : parseInt(found[1]);
+        if (foundNumber >= numberOfMostRecentCopy) {
+          numberOfMostRecentCopy = foundNumber + 1;
+        }
+      }
+    });
+    return numberOfMostRecentCopy;
+  }
+
+  const numberShortName = getNumberShortName(shortNames);
+  const numberLongName = getNumberLongName(longNames);
+  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+
+  if (number === 1 && shortName !== 'New' && longName !== 'New') {
+    // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
+    return {
+      shortName,
+      longName,
+    };
+  } else {
+    // If there are existing copies, a number is needed at the end of the names
+    return {
+      shortName: `${shortName}_${number}`,
+      longName: `${longName} (${number})`,
+    };
+  }
 }
 
 interface BaseEditorOptions {
@@ -491,68 +553,6 @@ export abstract class Editor {
       longName: `${baseLongName} (copy ${number})`,
     };
   }
-  
-  getNamesForAdd(
-    shortNames: string[],
-    longNames: string[],
-    shortName = 'New',
-    longName = 'New',
-  ): { shortName: string; longName: string } {
-    function getNumberShortName(oldShortNames: string[]): number {
-      let numberOfMostRecentCopy = 1;
-      oldShortNames.forEach((oldShortName) => {
-        // shortName is a copy of oldShortName if:
-        // it matches exactly, or
-        // if oldShortName matches {shortName}_{number from 0-9}
-        const found =
-          shortName === oldShortName || oldShortName.match(new RegExp(`^${shortName}_([0-9]+)$`));
-        if (found) {
-          const foundNumber = shortName === oldShortName ? 1 : parseInt(found[1]);
-          if (foundNumber >= numberOfMostRecentCopy) {
-            numberOfMostRecentCopy = foundNumber + 1;
-          }
-        }
-      });
-      return numberOfMostRecentCopy;
-    }
-
-    function getNumberLongName(oldLongNames: string[]): number {
-      let numberOfMostRecentCopy = 1;
-      // longName is a copy of oldLongName if:
-      // it matches exactly, or
-      // if oldLongName matches {longName} ({number from 0-9})
-      oldLongNames.forEach((oldLongName) => {
-        if (!_.isString(oldLongName)) return;
-        const found =
-          oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
-        if (found) {
-          const foundNumber = oldLongName === longName ? 1 : parseInt(found[1]);
-          if (foundNumber >= numberOfMostRecentCopy) {
-            numberOfMostRecentCopy = foundNumber + 1;
-          }
-        }
-      });
-      return numberOfMostRecentCopy;
-    }
-
-    const numberShortName = getNumberShortName(shortNames);
-    const numberLongName = getNumberLongName(longNames);
-    const number = numberShortName > numberLongName ? numberShortName : numberLongName;
-
-    if (number === 1 && shortName !== 'New' && longName !== 'New') {
-      // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
-      return {
-        shortName,
-        longName,
-      };
-    } else {
-      // If there are existing copies, a number is needed at the end of the names
-      return {
-        shortName: `${shortName}_${number}`,
-        longName: `${longName} (${number})`,
-      };
-    }
-  }
 }
 
 export class AssessmentCopyEditor extends Editor {
@@ -731,7 +731,7 @@ export class AssessmentAddEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
-    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
+    const names = getNamesForAdd(oldNamesShort, oldNamesLong);
     const tid = names.shortName;
     const assessmentTitle = names.longName;
     const assessmentPath = path.join(assessmentsPath, tid);
@@ -887,15 +887,15 @@ export class CourseInstanceAddEditor extends Editor {
   public readonly uuid: string;
   private short_name: string;
   private long_name: string;
-  private start_access_date?: string;
-  private end_access_date?: string;
+  private start_access_date?: Temporal.ZonedDateTime;
+  private end_access_date?: Temporal.ZonedDateTime;
 
   constructor(
     params: BaseEditorOptions & {
       short_name: string;
       long_name: string;
-      start_access_date?: string;
-      end_access_date?: string;
+      start_access_date?: Temporal.ZonedDateTime;
+      end_access_date?: Temporal.ZonedDateTime;
     },
   ) {
     super(params);
@@ -926,7 +926,7 @@ export class CourseInstanceAddEditor extends Editor {
     );
 
     debug('Generate short_name and long_name');
-    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong, this.short_name, this.long_name);
+    const names = getNamesForAdd(oldNamesShort, oldNamesLong, this.short_name, this.long_name);
 
     const short_name = names.shortName;
     const courseInstancePath = path.join(courseInstancesPath, short_name);
@@ -935,36 +935,33 @@ export class CourseInstanceAddEditor extends Editor {
 
     let allowAccess: { startDate?: string; endDate?: string } | undefined = undefined;
 
-    let startDate: Temporal.ZonedDateTime | undefined;
-    let endDate: Temporal.ZonedDateTime | undefined;
-
-    if (this.start_access_date) {
-      startDate = Temporal.PlainDateTime.from(this.start_access_date).toZonedDateTime(
-        this.course.display_timezone,
-      );
-    }
-
-    if (this.end_access_date) {
-      endDate = Temporal.PlainDateTime.from(this.end_access_date).toZonedDateTime(
-        this.course.display_timezone,
-      );
-    }
-
-    if (startDate && endDate && startDate.epochMilliseconds > endDate.epochMilliseconds) {
+    if (
+      this.start_access_date &&
+      this.end_access_date &&
+      this.start_access_date.epochMilliseconds > this.end_access_date.epochMilliseconds
+    ) {
       throw new HttpStatusError(400, 'Start date must be before end date');
     }
 
-    if (startDate || endDate) {
+    if (this.start_access_date || this.end_access_date) {
       allowAccess = {
-        startDate: startDate
-          ? formatDate(new Date(startDate.epochMilliseconds), this.course.display_timezone, {
-              includeTz: false,
-            })
+        startDate: this.start_access_date
+          ? formatDate(
+              new Date(this.start_access_date.epochMilliseconds),
+              this.course.display_timezone,
+              {
+                includeTz: false,
+              },
+            )
           : undefined,
-        endDate: endDate
-          ? formatDate(new Date(endDate.epochMilliseconds), this.course.display_timezone, {
-              includeTz: false,
-            })
+        endDate: this.end_access_date
+          ? formatDate(
+              new Date(this.end_access_date.epochMilliseconds),
+              this.course.display_timezone,
+              {
+                includeTz: false,
+              },
+            )
           : undefined,
       };
     }
@@ -1053,7 +1050,7 @@ export class QuestionAddEditor extends Editor {
       const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
       debug('Generate qid and title');
-      const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
+      const names = getNamesForAdd(oldNamesShort, oldNamesLong);
 
       return { qid: names.shortName, title: names.longName };
     });

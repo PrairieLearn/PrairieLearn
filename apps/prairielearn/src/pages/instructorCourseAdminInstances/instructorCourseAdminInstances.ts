@@ -1,3 +1,4 @@
+import { Temporal } from '@js-temporal/polyfill';
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -65,13 +66,34 @@ router.post(
       if (!req.body.long_name) {
         throw new error.HttpStatusError(400, 'long_name is required');
       }
+
+      let startAccessDate: Temporal.ZonedDateTime | undefined;
+      let endAccessDate: Temporal.ZonedDateTime | undefined;
+
+      if (req.body.start_access_date) {
+        startAccessDate = Temporal.PlainDateTime.from(req.body.start_access_date).toZonedDateTime(
+          res.locals.course.display_timezone,
+        );
+      }
+
+      if (req.body.end_access_date) {
+        endAccessDate = Temporal.PlainDateTime.from(req.body.end_access_date).toZonedDateTime(
+          res.locals.course.display_timezone,
+        );
+      }
+
+      if (startAccessDate && endAccessDate && startAccessDate >= endAccessDate) {
+        throw new error.HttpStatusError(400, 'end_access_date must be after start_access_date');
+      }
+
       const editor = new CourseInstanceAddEditor({
         locals: res.locals,
         short_name: req.body.short_name,
         long_name: req.body.long_name,
-        start_access_date: req.body.start_access_date,
-        end_access_date: req.body.end_access_date,
+        start_access_date: startAccessDate,
+        end_access_date: endAccessDate,
       });
+
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);

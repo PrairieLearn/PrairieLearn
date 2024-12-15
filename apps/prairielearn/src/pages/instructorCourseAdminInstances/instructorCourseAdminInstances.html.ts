@@ -61,6 +61,7 @@ export function InstructorCourseAdminInstances({
             csrfToken: resLocals.__csrf_token,
             initialStartDateFormatted,
             initialEndDateFormatted,
+            timezone: resLocals.course.display_timezone,
           })}
           <div class="card mb-4">
             <div
@@ -258,10 +259,12 @@ function CreateCourseInstanceModal({
   csrfToken,
   initialStartDateFormatted,
   initialEndDateFormatted,
+  timezone,
 }: {
   csrfToken: string;
   initialStartDateFormatted: string;
   initialEndDateFormatted: string;
+  timezone: string;
 }) {
   return Modal({
     id: 'createCourseInstanceModal',
@@ -300,32 +303,36 @@ function CreateCourseInstanceModal({
       </div>
       <div class="form-group">
         <label for="start_access_date">Start Access Date</label>
-        <input
-          class="form-control date-picker"
-          type="datetime-local"
-          id="start_access_date"
-          name="start_access_date"
-          value="${initialStartDateFormatted}"
-          max="${initialEndDateFormatted}"
-          step="1"
-          aria-describedby="start_access_date_help"
-        />
+        <div class="input-group date-picker">
+          <input
+            class="form-control date-picker"
+            type="datetime-local"
+            id="start_access_date"
+            name="start_access_date"
+            value="${initialStartDateFormatted}"
+            step="1"
+            aria-describedby="start_access_date_help"
+          />
+          <span class="input-group-text date-picker">${timezone}</span>
+        </div>
         <small id="start_access_date_help" class="form-text text-muted">
           The date when students can access the course instance.
         </small>
       </div>
       <div class="form-group">
         <label for="end_access_date">End Access Date</label>
-        <input
-          class="form-control date-picker"
-          type="datetime-local"
-          id="end_access_date"
-          name="end_access_date"
-          value="${initialEndDateFormatted}"
-          min="${initialStartDateFormatted}"
-          step="1"
-          aria-describedby="end_access_date_help"
-        />
+        <div class="input-group date-picker">
+          <input
+            class="form-control date-picker"
+            type="datetime-local"
+            id="end_access_date"
+            name="end_access_date"
+            value="${initialEndDateFormatted}"
+            step="1"
+            aria-describedby="end_access_date_help"
+          />
+          <span class="input-group-text date-picker">${timezone}</span>
+        </div>
         <small id="end_access_date_help" class="form-text text-muted">
           The date when students can no longer access the course instance.
         </small>
@@ -335,7 +342,9 @@ function CreateCourseInstanceModal({
       <input type="hidden" name="__action" value="add_course_instance" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-primary">Create</button>
+      <button id="add_course_instance_create_button" type="submit" class="btn btn-primary">
+        Create
+      </button>
     `,
   });
 }
