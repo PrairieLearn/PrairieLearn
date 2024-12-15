@@ -265,7 +265,7 @@ function CreateCourseInstanceModal({
 }) {
   return Modal({
     id: 'createCourseInstanceModal',
-    title: 'Create Course Instance',
+    title: 'Create course instance',
     formMethod: 'POST',
     body: html`
       <div class="form-group">
