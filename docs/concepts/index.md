@@ -8,9 +8,11 @@ A [**course**](../course.md) in PrairieLearn is composed of **course instances**
 
 ### Concept Map
 
-```d2
+![](../diagrams/concept-map.d2)
+
+<!-- ```d2
 --8<-- "docs/diagrams/concept-map.d2"
-```
+``` -->
 
 ??? example "Example dependency graph"
 
