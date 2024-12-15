@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { IssueBadge } from '../../components/IssueBadge.html.js';
@@ -65,7 +66,7 @@ export function InstructorAssessments({
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <h1>Assessments</h1>
-              ${authz_data.has_course_permission_edit && !course.example_course
+              ${authz_data.has_course_permission_edit && !course.example_course && rows.length > 0
                 ? html`
                     <form class="ml-auto" name="add-assessment-form" method="POST">
                       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
@@ -77,72 +78,107 @@ export function InstructorAssessments({
                   `
                 : ''}
             </div>
+            ${rows.length > 0
+              ? html`
+                  <div class="table-responsive">
+                    <table class="table table-sm table-hover" aria-label="Assessments">
+                      <thead>
+                        <tr>
+                          <th style="width: 1%"><span class="sr-only">Label</span></th>
+                          <th><span class="sr-only">Title</span></th>
+                          <th>AID</th>
+                          <th class="text-center">Students</th>
+                          <th class="text-center">Scores</th>
+                          <th class="text-center">Mean Score</th>
+                          <th class="text-center">Mean Duration</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        ${rows.map(
+                          (row) => html`
+                            ${row.start_new_assessment_group
+                              ? html`
+                                  <tr>
+                                    <th colspan="7" scope="row">${row.assessment_group_heading}</th>
+                                  </tr>
+                                `
+                              : ''}
+                            <tr id="row-${row.id}">
+                              <td class="align-middle" style="width: 1%">
+                                <span class="badge color-${row.color}">${row.label}</span>
+                              </td>
+                              <td class="align-middle">
+                                ${row.sync_errors
+                                  ? SyncProblemButton({
+                                      type: 'error',
+                                      output: row.sync_errors,
+                                    })
+                                  : row.sync_warnings
+                                    ? SyncProblemButton({
+                                        type: 'warning',
+                                        output: row.sync_warnings,
+                                      })
+                                    : ''}
+                                <a href="${urlPrefix}/assessment/${row.id}/">
+                                  ${row.title}
+                                  ${row.group_work
+                                    ? html` <i class="fas fa-users" aria-hidden="true"></i> `
+                                    : ''}
+                                </a>
+                                ${IssueBadge({ count: row.open_issue_count, urlPrefix })}
+                              </td>
 
-            <div class="table-responsive">
-              <table class="table table-sm table-hover" aria-label="Assessments">
-                <thead>
-                  <tr>
-                    <th style="width: 1%"><span class="sr-only">Label</span></th>
-                    <th><span class="sr-only">Title</span></th>
-                    <th>AID</th>
-                    <th class="text-center">Students</th>
-                    <th class="text-center">Scores</th>
-                    <th class="text-center">Mean Score</th>
-                    <th class="text-center">Mean Duration</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  ${rows.map(
-                    (row) => html`
-                      ${row.start_new_assessment_group
-                        ? html`
-                            <tr>
-                              <th colspan="7" scope="row">${row.assessment_group_heading}</th>
+                              <td class="align-middle">${row.tid}</td>
+
+                              ${AssessmentStats({ row })}
                             </tr>
-                          `
-                        : ''}
-                      <tr id="row-${row.id}">
-                        <td class="align-middle" style="width: 1%">
-                          <span class="badge color-${row.color}">${row.label}</span>
-                        </td>
-                        <td class="align-middle">
-                          ${row.sync_errors
-                            ? SyncProblemButton({
-                                type: 'error',
-                                output: row.sync_errors,
-                              })
-                            : row.sync_warnings
-                              ? SyncProblemButton({
-                                  type: 'warning',
-                                  output: row.sync_warnings,
-                                })
-                              : ''}
-                          <a href="${urlPrefix}/assessment/${row.id}/">
-                            ${row.title}
-                            ${row.group_work
-                              ? html` <i class="fas fa-users" aria-hidden="true"></i> `
-                              : ''}
-                          </a>
-                          ${IssueBadge({ count: row.open_issue_count, urlPrefix })}
-                        </td>
-
-                        <td class="align-middle">${row.tid}</td>
-
-                        ${AssessmentStats({ row })}
-                      </tr>
-                    `,
-                  )}
-                </tbody>
-              </table>
-            </div>
-
-            <div class="card-footer">
-              Download
-              <a href="${urlPrefix}/instance_admin/assessments/file/${csvFilename}">
-                ${csvFilename}
-              </a>
-              (includes more statistics columns than displayed above)
-            </div>
+                          `,
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div class="card-footer">
+                    Download
+                    <a href="${urlPrefix}/instance_admin/assessments/file/${csvFilename}">
+                      ${csvFilename}
+                    </a>
+                    (includes more statistics columns than displayed above)
+                  </div>
+                `
+              : html`
+                  <div class="my-4 card-body text-center" style="text-wrap: balance;">
+                    <p class="font-weight-bold">No assessments found.</p>
+                    <p>
+                      Learn more in the
+                      <a
+                        href="https://prairielearn.readthedocs.io/en/latest/assessment/"
+                        target="_blank"
+                        >assessments documentation</a
+                      >.
+                    </p>
+                    ${run(() => {
+                      if (course.example_course) {
+                        return html`<p>You can't add assessments to the example course.</p>`;
+                      }
+                      if (!authz_data.has_course_permission_edit) {
+                        return html`<p>Course Editors can create new assessments.</p>`;
+                      }
+                      return html`
+                        <form class="ml-auto" name="add-assessment-form" method="POST">
+                          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                          <button
+                            name="__action"
+                            value="add_assessment"
+                            class="btn btn-sm btn-primary"
+                          >
+                            <i class="fa fa-plus" aria-hidden="true"></i>
+                            <span class="d-none d-sm-inline">Add assessment</span>
+                          </button>
+                        </form>
+                      `;
+                    })}
+                  </div>
+                `}
           </div>
         </main>
       </body>
