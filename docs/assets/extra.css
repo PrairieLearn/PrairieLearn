@@ -42,13 +42,10 @@ a svg {
   width: 100%;
 }
 
-.flex-center {
-  display: flex;
-  flex-direction: row;
-  justify-content: center;
-}
-
-/* Fix for Safari -- mkdocs styling interferes with the pre tag in d2 diagrams */
-.md-typeset pre {
+/* mkdocs styles interferes with d2 code styles */
+foreignObject .md pre {
   position: static;
+  .md-clipboard {
+    display: none;
+  }
 }

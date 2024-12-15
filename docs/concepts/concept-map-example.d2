@@ -1,13 +1,13 @@
 direction: right
 
-course: PrairieLearn 101 {
+course: PrairieLearn 101 (Course) {
     shape: rectangle
     style: {
         fill: "#e6f3ff"
         stroke: "#0066cc"
     }
 
-    instance: Fall 2024 {
+    instance: Fall 2024 (Course Instance) {
         shape: rectangle
         style: {
             fill: "#fff0e6"
@@ -15,24 +15,20 @@ course: PrairieLearn 101 {
         }
 
 
-        exam: Exams {
+        exam: Midterm (Exam) {
+            height: 100
             shape: rectangle
-            assessment: Midterm {
-                shape: rectangle
-                style: {
-                    fill: "#e6ffe6"
-                    stroke: "#006600"
-                }
+            style: {
+                fill: "#e6ffe6"
+                stroke: "#006600"
             }
         }
-        hw: Homeworks {
+        hw: HW 1 (Homework) {
+            height: 100
             shape: rectangle
-            assessment: HW 1 {
-                shape: rectangle
-                style: {
-                    fill: "#e6ffe6"
-                    stroke: "#006600"
-                }
+            style: {
+                fill: "#e6ffe6"
+                stroke: "#006600"
             }
         }
     }
@@ -69,37 +65,7 @@ course: PrairieLearn 101 {
                     stroke: "#0000cc"
                 }
             }
-            element2: Numeric Input {
-                shape: rectangle
-                style: {
-                    fill: "#e6e6ff"
-                    stroke: "#0000cc"
-                }
-            }
-        }
-
-        question3: PL Question 3 {
-            shape: rectangle
-            style: {
-                fill: "#ffe6e6"
-                stroke: "#cc0000"
-            }
-            element: Multiple Choice {
-                shape: rectangle
-                style: {
-                    fill: "#e6e6ff"
-                    stroke: "#0000cc"
-                }
-            }
-        }
-
-        question4: PL Question 4 {
-            shape: rectangle
-            style: {
-                fill: "#ffe6e6"
-                stroke: "#cc0000"
-            }
-            element: PL Diagram {
+            element2: PL Diagram {
                 shape: rectangle
                 style: {
                     fill: "#e6e6ff"
@@ -117,12 +83,10 @@ course: PrairieLearn 101 {
         }
     }
 
-    instance.exam.assessment -> q.question1
-    instance.exam.assessment -> q.question2
-    instance.hw.assessment -> q.question1
-    instance.hw.assessment -> q.question4
-    q.question4.element -> custom {
-        label: "composed of"
+    instance.hw -> q.question1
+    instance.hw -> q.question2
+    instance.exam -> q.question1
+    q.question2.element2 <- custom {
         style: {
             bold: true;
         }
