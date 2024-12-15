@@ -162,30 +162,30 @@ graded_submission: {
 
 # Connections with labels
 start -> generating
-generating -> broken_variant: "question\ncode error"
-generating -> preparing: success
-preparing -> broken_variant: "question\ncode error"
-preparing -> open_variant.explanation: success
-broken_variant -> display_broken
-open_variant.explanation -> rendering_editable
-rendering_editable -> display_broken: "question\ncode error"
-rendering_editable -> display_editable: success
-display_editable -> submission_received: "student submits\nan answer"
+generating -> broken_variant: "question\ncode error" { style.bold: true }
+generating -> preparing: success { style.bold: true }
+preparing -> broken_variant: "question\ncode error" { style.bold: true }
+preparing -> open_variant.explanation: success { style.bold: true }
+broken_variant -> display_broken { style.bold: true }
+open_variant.explanation -> rendering_editable { style.bold: true }
+rendering_editable -> display_broken: "question\ncode error" { style.bold: true }
+rendering_editable -> display_editable: success { style.bold: true }
+display_editable -> submission_received: "student submits\nan answer" { style.bold: true }
 submission_received -> parsing
-parsing -> broken_submission: "question\ncode error"
+parsing -> broken_submission: "question\ncode error" { style.bold: true }
 broken_submission -> display_broken
-parsing -> ungradable_no_grading_job: "invalid format for\nsubmitted_answer"
-parsing -> gradable_submission: success
+parsing -> ungradable_no_grading_job: "invalid format for\nsubmitted_answer" { style.bold: true }
+parsing -> gradable_submission: success { style.bold: true }
 ungradable_submission -> open_variant.explanation
 gradable_submission -> grading
-grading -> ungradable_grading_job: "invalid format for\nsubmitted_answer"
-grading -> gradable_grading_job: success
+grading -> ungradable_grading_job: "invalid format for\nsubmitted_answer" { style.bold: true }
+grading -> gradable_grading_job: success { style.bold: true }
 ungradable_grading_job -> ungradable_submission
 ungradable_no_grading_job -> ungradable_submission
 gradable_grading_job -> graded_submission
 graded_submission -> question_update
-question_update -> open_variant.explanation: "more submissions are\nallowed for this variant"
-question_update -> closed_variant: "submissions are no longer\nallowed for this variant"
+question_update -> open_variant.explanation: "more submissions are\nallowed for this variant" { style.bold: true }
+question_update -> closed_variant: "submissions are no longer\nallowed for this variant" { style.bold: true }
 closed_variant -> rendering_uneditable
-rendering_uneditable -> display_broken: "question\ncode error"
-rendering_uneditable -> display_uneditable: success
+rendering_uneditable -> display_broken: "question\ncode error" { style.bold: true }
+rendering_uneditable -> display_uneditable: success { style.bold: true }
