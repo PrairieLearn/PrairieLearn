@@ -75,7 +75,6 @@ markdown_extensions:
 
 extra_javascript:
   - assets/mathjax-config.js
-  - assets/d2-zoom.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
 extra_css:
   - assets/extra.css
@@ -158,4 +157,4 @@ validation:
   unrecognized_links: warn
   anchors: warn
 hooks:
-  - docs/hooks/render.py
+  - docs/hooks/d2-svg-file.py
