@@ -6,14 +6,15 @@ PrairieLearn is extremely flexible and powerful, but this flexibility can appear
 
 A [**course**](./course.md) in PrairieLearn is composed of **course instances** and **questions**. Each [course instance](./courseInstance.md) is an offering of a course in a particular semester/term. For example, a course "CS 225" might have instances "CS 225 Spring 2022" and "CS 225 Fall 2022". A course instance contains all the **assessments** for that particular term. The course itself contains the questions that are shared across all instances. You can think of the course as containing a bank of questions that are then used to create assessments for each instance of the course, and a way to organize every instance of the course.
 
-=== "Concept Map"
+### Concept Map
 
-    ```d2
-    --8<-- "docs/diagrams/concept-map.d2"
-    ```
+```d2
+--8<-- "docs/diagrams/concept-map.d2"
+```
 
-=== "Example for the `PrairieLearn 101` course"
+??? example "Example dependency graph"
 
+    This dependency graph highlights that you can group assessments, and reuse questions across multiple assessments.
     ```d2
     --8<-- "docs/diagrams/concept-map-example.d2"
     ```
