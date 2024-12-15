@@ -8,18 +8,12 @@ A [**course**](../course.md) in PrairieLearn is composed of **course instances**
 
 ### Concept Map
 
-![](../diagrams/concept-map.d2)
-
-<!-- ```d2
---8<-- "docs/diagrams/concept-map.d2"
-``` -->
+![](./concept-map.d2)
 
 ??? example "Example dependency graph"
 
     This dependency graph highlights that you can group assessments, and reuse questions across multiple assessments.
-    ```d2
-    --8<-- "docs/diagrams/concept-map-example.d2"
-    ```
+    ![](./concept-map-example.d2)
 
 ### Questions
 

@@ -220,10 +220,30 @@ student: "Student Answer"
 reference: "Reference Answer\n(ans.py)"
 test: "Test Cases\n(test.py)"
 
-setup -> student { label: "names_for_user"}
-setup -> reference { label: "All Variables"}
-student -> test { label: "names_from_user\n(self.st)"}
-reference -> test { label: "All Variables\n(self.ref)"}
+setup -> student {
+  label: "names_for_user"
+  style: {
+    bold: true
+  }
+}
+setup -> reference {
+  label: "All Variables"
+  style: {
+    bold: true
+  }
+}
+student -> test {
+  label: "names_from_user\n(self.st)"
+  style: {
+    bold: true
+  }
+}
+reference -> test {
+  label: "All Variables\n(self.ref)"
+  style: {
+    bold: true
+  }
+}
 ```
 
 ## Course-specific libraries

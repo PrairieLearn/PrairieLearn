@@ -46,7 +46,7 @@ plugins:
   - d2:
       layout: dagre
       pad: 20
-      theme: 1
+      theme: 0
 docs_dir: docs
 # Fix "Edit on GitHub" link: (defaults to edit/master/docs/, note the s)
 edit_uri: blob/master/docs/

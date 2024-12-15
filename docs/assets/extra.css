@@ -23,8 +23,16 @@ td code {
   text-decoration: underline;
 }
 
+@media (max-width: 1220px) {
+  .md-header__button[for='__palette_0'] {
+    display: none;
+  }
+}
 [data-md-color-scheme='full-width'] {
   .md-main__inner {
+    max-width: 100%;
+  }
+  .md-header__inner {
     max-width: 100%;
   }
 }

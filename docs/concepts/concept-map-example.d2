@@ -121,5 +121,10 @@ course: PrairieLearn 101 {
     instance.exam.assessment -> q.question2
     instance.hw.assessment -> q.question1
     instance.hw.assessment -> q.question4
-    q.question4.element -> custom: "uses"
+    q.question4.element -> custom {
+        label: "composed of"
+        style: {
+            bold: true;
+        }
+    }
 }
