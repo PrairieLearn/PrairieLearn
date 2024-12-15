@@ -491,6 +491,7 @@ export abstract class Editor {
       longName: `${baseLongName} (copy ${number})`,
     };
   }
+  
   getNamesForAdd(
     shortNames: string[],
     longNames: string[],

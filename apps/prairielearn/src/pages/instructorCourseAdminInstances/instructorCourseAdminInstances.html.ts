@@ -300,6 +300,7 @@ function CreateCourseInstanceModal({
           name="start_access_date"
           value="${initialStartDateFormatted}"
           max="${initialEndDateFormatted}"
+          step="1"
         />
         <small class="form-text text-muted">
           The date when students can access the course instance.
@@ -314,6 +315,7 @@ function CreateCourseInstanceModal({
           name="end_access_date"
           value="${initialEndDateFormatted}"
           min="${initialStartDateFormatted}"
+          step="1"
         />
         <small class="form-text text-muted">
           The date when students can no longer access the course instance.
