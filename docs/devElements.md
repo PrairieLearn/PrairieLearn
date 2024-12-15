@@ -36,7 +36,7 @@ pl-my-element
 
 And an `info.json` with the following contents:
 
-```json
+```json title="info.json"
 {
   "controller": "pl-my-element.py",
   "dependencies": {
@@ -111,7 +111,7 @@ It's likely that your element will depend on certain client-side assets, such as
 
 Dependencies are listed in your element's `info.json`. You can configure them for your element as follows:
 
-```json
+```json title="info.json"
 {
   "controller": "pl-my-element.py",
   "dependencies": {
@@ -140,7 +140,7 @@ While the use of node module dependencies in course elements is supported, it is
 
 In addition to static dependencies, elements can also declare dynamic dependencies, corresponding to scripts that are loaded only if they are deemed necessary. For example, if an element may use the `d3` library, but only in certain cases, it can declare a dependency on `d3`:
 
-```json
+```json title="info.json"
 {
   "controller": "pl-my-element.py",
   "dependencies": {

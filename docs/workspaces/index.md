@@ -72,7 +72,7 @@ The question's `info.json` should set the `singleVariant` and `workspaceOptions`
 
 For an ungraded workspace, a full `info.json` file should look something like:
 
-```json
+```json title="info.json"
 {
     "uuid": "...",
     "title": "...",
@@ -93,7 +93,7 @@ For an ungraded workspace, a full `info.json` file should look something like:
 
 For an externally graded workspace, a full `info.json` file should look something like:
 
-```json
+```json title="info.json"
 {
     "uuid": "...",
     "title": "...",

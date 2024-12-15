@@ -10,7 +10,7 @@ The question should be first set up to enable [external grading](../externalGrad
 
 A full `info.json` file should look something like:
 
-```json
+```json title="info.json"
 {
   "uuid": "...",
   "title": "...",

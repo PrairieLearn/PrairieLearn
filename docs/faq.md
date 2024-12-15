@@ -18,14 +18,15 @@ There are three different ways to let a student re-attempt or continue an exam:
 
 To allow students to see their entire exam after it is over, you can add an [access rule](accessControl.md) like this:
 
-```json
-"allowAccess": [
-    ...
+```json title="infoAssessment.json"
+{
+  "allowAccess": [
     {
-        "startDate": "2015-01-19T00:00:01",
-        "active": false
+      "startDate": "2015-01-19T00:00:01",
+      "active": false
     }
-]
+  ]
+}
 ```
 
 Students who took the exam will then have public access to their exams after the `startDate` until the end of the course instance, while students who did not take the exam will not be able to view it. Students will not be able to answer questions for further credit (due to `"active": false`), but they will be able to see the entire exam in exactly the same state as when they were doing the exam originally. Because students have public access to the exam, it should be assumed that all the questions will be posted to websites such as Chegg and Course Hero. To let students see their exams with some additional security, consider only allowing [limited access post-exam under controlled conditions](faq.md#should-students-be-able-to-review-their-exams-after-they-are-over) (although this requires in-person access by students and doesn't work online).
@@ -147,7 +148,7 @@ the following:
 
 For cheatsheets in `clientFilesCourse`, use:
 
-```json
+```json title="infoAssessment.json"
 {
   "text": "The following formula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesCourse %>/formulas.pdf\">PDF version</a></li>"
 }
@@ -155,7 +156,7 @@ For cheatsheets in `clientFilesCourse`, use:
 
 Otherwise, for cheatsheets in `clientFilesAssessment`, use:
 
-```json
+```json title="infoAssessment.json"
 {
   "text": "The following formula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesAssessment %>/formulas.pdf\">PDF version</a></li>"
 }
@@ -212,7 +213,8 @@ SyntaxError: Unexpected token '{' at 55:17
 
 For example, this error would be triggered under:
 
-```json
+```json title="infoAssessment.json"
+{
 "zones": [
     {
         "title": "Easy questions",
@@ -224,7 +226,7 @@ For example, this error would be triggered under:
     {
         "title": "Hard questions",
         "questions": [
-            {"id": "hardQV1", "points": 10}     # <----- No comma, but another question
+            {"id": "hardQV1", "points": 10} // <----- No comma, but another question
             {"id": "question_name", "points": [2, 1]},
             {
                 "numberChoose": 1,
@@ -237,6 +239,7 @@ For example, this error would be triggered under:
         ]
     }
 ],
+}
 ```
 
 See [Question Specification](assessment.md#question-specification) for more details.
