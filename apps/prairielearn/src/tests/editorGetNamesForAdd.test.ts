@@ -1,5 +1,4 @@
 import { assert } from 'chai';
-import { step } from 'mocha-steps';
 
 import { CourseInstanceAddEditor } from '../lib/editors.js';
 
@@ -12,12 +11,12 @@ const editor = new CourseInstanceAddEditor({
 });
 
 describe('Editor getNamesForAdd Tests', () => {
-  step('No specified short_name and long_name should default them to New_1', () => {
+  it('No specified short_name and long_name should default them to New_1', () => {
     const names = editor.getNamesForAdd(['Fa18', 'Fa19'], ['Fall 2018', 'Fall 2019']);
     assert.equal(names['shortName'], 'New_1');
     assert.equal(names['longName'], 'New (1)');
   });
-  step('Unique short_name, long_name', () => {
+  it('Unique short_name, long_name', () => {
     const names = editor.getNamesForAdd(
       ['Fa18', 'Fa19'],
       ['Fall 2018', 'Fall 2019'],
@@ -27,7 +26,7 @@ describe('Editor getNamesForAdd Tests', () => {
     assert.equal(names['shortName'], 'Fa20');
     assert.equal(names['longName'], 'Fall 2020');
   });
-  step('Duplicated short_name without number, unique long_name', () => {
+  it('Duplicated short_name without number, unique long_name', () => {
     const names = editor.getNamesForAdd(
       ['Fa18', 'Fa19'],
       ['Fall 2018', 'Fall 2019'],
@@ -37,7 +36,7 @@ describe('Editor getNamesForAdd Tests', () => {
     assert.equal(names['shortName'], 'Fa19_2');
     assert.equal(names['longName'], 'Fall 2019 Section 1 (2)');
   });
-  step('Duplicated short_name with number, unique long_name', () => {
+  it('Duplicated short_name with number, unique long_name', () => {
     const names = editor.getNamesForAdd(
       ['Fa18', 'Fa19', 'Fa19_2', 'Fa19_3', 'Fa19_4'],
       [
@@ -53,7 +52,7 @@ describe('Editor getNamesForAdd Tests', () => {
     assert.equal(names['shortName'], 'Fa19_5');
     assert.equal(names['longName'], 'Fall 2019 Section 2 (5)');
   });
-  step('Unique short_name, duplicated long_name without number', () => {
+  it('Unique short_name, duplicated long_name without number', () => {
     const names = editor.getNamesForAdd(
       ['Fa18', 'Fa19'],
       ['Fall 2018', 'Fall 2019'],
@@ -63,7 +62,7 @@ describe('Editor getNamesForAdd Tests', () => {
     assert.equal(names['shortName'], 'Fall19_2');
     assert.equal(names['longName'], 'Fall 2019 (2)');
   });
-  step('Unique short_name, duplicated long_name with number', () => {
+  it('Unique short_name, duplicated long_name with number', () => {
     const names = editor.getNamesForAdd(
       ['Fa18', 'Fa19', 'Fall19_2', 'Fall19_3'],
       ['Fall 2018', 'Fall 2019', 'Fall 2019 (2)', 'Fall 2019 (3)'],
@@ -73,7 +72,7 @@ describe('Editor getNamesForAdd Tests', () => {
     assert.equal(names['shortName'], 'Fall_19_4');
     assert.equal(names['longName'], 'Fall 2019 (4)');
   });
-  step('Duplicated short_name without number, duplicated long_name without number', () => {
+  it('Duplicated short_name without number, duplicated long_name without number', () => {
     const names = editor.getNamesForAdd(
       ['Fa18', 'Fa19'],
       ['Fall 2018', 'Fall 2019'],
@@ -83,43 +82,34 @@ describe('Editor getNamesForAdd Tests', () => {
     assert.equal(names['shortName'], 'Fa19_2');
     assert.equal(names['longName'], 'Fall 2019 (2)');
   });
-  step(
-    'Duplicated short_name with number, duplicated long_name with number, numbers the same',
-    () => {
-      const names = editor.getNamesForAdd(
-        ['Fa18', 'Fa19', 'Fa19_2', 'Fa19_3'],
-        ['Fall 2018', 'Fall 2019', 'Fall 2019 (2)', 'Fall 2019 (3)'],
-        'Fa19',
-        'Fall 2019',
-      );
-      assert.equal(names['shortName'], 'Fa19_4');
-      assert.equal(names['longName'], 'Fall 2019 (4)');
-    },
-  );
-  step(
-    'Duplicated short_name with number, duplicated long_name with number, short_name number > long_name number',
-    () => {
-      const names = editor.getNamesForAdd(
-        ['Fa18', 'Fa19', 'Fa19_2', 'Fa19_3'],
-        ['Fall 2018', 'Fall 2019', 'Fall 2019 (2)'],
-        'Fa19',
-        'Fall 2019',
-      );
-      assert.equal(names['shortName'], 'Fa19_4');
-      assert.equal(names['longName'], 'Fall 2019 (4)');
-    },
-  );
-  step(
-    'Duplicated short_name with number, duplicated long_name with number, short_name number < long_name number',
-    () => {
-      const names = editor.getNamesForAdd(
-        ['Fa18', 'Fa19', 'Fa19_2'],
-        ['Fall 2018', 'Fall 2019', 'Fall 2019 (2)', 'Fall 2019 (3)'],
-        'Fa19',
-        'Fall 2019',
-      );
-      assert.equal(names['shortName'], 'Fa19_4');
-      assert.equal(names['longName'], 'Fall 2019 (4)');
-    },
-  );
+  it('Duplicated short_name with number, duplicated long_name with number, numbers the same', () => {
+    const names = editor.getNamesForAdd(
+      ['Fa18', 'Fa19', 'Fa19_2', 'Fa19_3'],
+      ['Fall 2018', 'Fall 2019', 'Fall 2019 (2)', 'Fall 2019 (3)'],
+      'Fa19',
+      'Fall 2019',
+    );
+    assert.equal(names['shortName'], 'Fa19_4');
+    assert.equal(names['longName'], 'Fall 2019 (4)');
+  });
+  it('Duplicated short_name with number, duplicated long_name with number, short_name number > long_name number', () => {
+    const names = editor.getNamesForAdd(
+      ['Fa18', 'Fa19', 'Fa19_2', 'Fa19_3'],
+      ['Fall 2018', 'Fall 2019', 'Fall 2019 (2)'],
+      'Fa19',
+      'Fall 2019',
+    );
+    assert.equal(names['shortName'], 'Fa19_4');
+    assert.equal(names['longName'], 'Fall 2019 (4)');
+  });
+  it('Duplicated short_name with number, duplicated long_name with number, short_name number < long_name number', () => {
+    const names = editor.getNamesForAdd(
+      ['Fa18', 'Fa19', 'Fa19_2'],
+      ['Fall 2018', 'Fall 2019', 'Fall 2019 (2)', 'Fall 2019 (3)'],
+      'Fa19',
+      'Fall 2019',
+    );
+    assert.equal(names['shortName'], 'Fa19_4');
+    assert.equal(names['longName'], 'Fall 2019 (4)');
+  });
 });
