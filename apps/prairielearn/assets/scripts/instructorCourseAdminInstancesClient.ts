@@ -16,7 +16,7 @@ onDocumentReady(() => {
     const endAccessDate = new Date(endAccessDateInput.value);
     if (startAccessDate >= endAccessDate) {
       // Set custom validity only on the endAccessDateInput to trigger the error message
-      // on the last input of the form
+      // on the last input of the form instead of the second to last (startAccessDateInput)
       endAccessDateInput.setCustomValidity('End access date must be after start access date');
     } else {
       endAccessDateInput.setCustomValidity('');
