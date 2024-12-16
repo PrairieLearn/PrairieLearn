@@ -284,8 +284,8 @@ function CreateCourseInstanceModal({
           aria-describedby="long_name_help"
         />
         <small id="long_name_help" class="form-text text-muted">
-          The full course instance name, such as "Fall 2019". Users see it joined to the course
-          name, e.g. "${courseShortName} Fall 2019".
+          The full course instance name, such as "Fall 2025". Users see it joined to the course
+          name, e.g. "${courseShortName} Fall 2025".
         </small>
       </div>
       <div class="form-group">
@@ -329,7 +329,6 @@ function CreateCourseInstanceModal({
               id="start_access_date"
               name="start_access_date"
               value="${initialStartDateFormatted}"
-              step="1"
               aria-describedby="start_access_date_help"
             />
             <span class="input-group-text date-picker">${timezone}</span>
@@ -347,7 +346,6 @@ function CreateCourseInstanceModal({
               id="end_access_date"
               name="end_access_date"
               value="${initialEndDateFormatted}"
-              step="1"
               aria-describedby="end_access_date_help"
             />
             <span class="input-group-text date-picker">${timezone}</span>
