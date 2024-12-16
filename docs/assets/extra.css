@@ -20,7 +20,7 @@ td code {
 
 .md-nav__item--section > .md-nav__link[for],
 .md-nav__title {
-  text-decoration: underline;
+  text-transform: uppercase;
 }
 
 /* CSS for width selection */
@@ -32,9 +32,6 @@ td code {
 
 [data-md-color-media='full-width'] {
   .md-main__inner {
-    max-width: 100%;
-  }
-  .md-header__inner {
     max-width: 100%;
   }
 }

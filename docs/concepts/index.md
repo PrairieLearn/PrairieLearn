@@ -29,7 +29,7 @@ Each assessment contains:
 
 [**Questions**](../question.md) are all independent, and a given question can be used on many different assessments across many different course instances. They are written in HTML (as a [Mustache template](https://mustache.github.io/mustache.5.html)) and use [elements](../elements.md) to accept student input. Python code can be used to generate random parameters and grade questions. Every time a question is shown to a student with randomly generated parameters, that is called a **variant** of the question.
 
-![An example HW question](./hw-question.png)
+![An example homework question](./hw-question.png)
 
 #### Example `question.html`
 
