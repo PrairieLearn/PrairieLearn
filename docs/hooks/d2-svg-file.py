@@ -8,8 +8,6 @@ from mkdocs.plugins import get_plugin_logger
 from mkdocs.structure.pages import Page
 from mkdocs.utils import write_file
 
-tracked_renders = {}
-
 
 def on_config(config: MkDocsConfig) -> MkDocsConfig:
     plugin = next(
@@ -22,14 +20,12 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
     original_render = plugin.renderer
     plugin.keys = set()
 
-    def new_render(source, opts, *args, **kwargs):
+    def new_render(source, opts, alt):
         """
         Hook into the renderer to provide a link to the rendered SVG.
         This only hooks into the renderer for superfences, not for images.
         """
-        values = original_render(source, opts, *args, **kwargs)
-        values = list(values)
-        result, ok = values[0], values[-1]
+        result, svg, ok = original_render(source, opts, alt)
         if ok:
             is_file = isinstance(source, Path)
             if is_file:
@@ -40,11 +36,10 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
                 key = f"{key}.{opt}"
             key = sha1(key.encode()).digest()
             plugin.keys.add(key)
-            # Remove the XML declaration as it is no longer at the start of the entity
-            result = result.replace('<?xml version="1.0" encoding="utf-8"?>', "")
 
-            values[0] = f'<data data-svg-file="{key.hex()}">{result}</data>'
-        return tuple(values)
+            svg.root.set("data-svg-file", key.hex())
+            return result, svg, ok
+        return result, svg, ok
 
     # Replace the superfences renderer with the new one
     plugin.renderer = new_render
@@ -58,8 +53,8 @@ def on_page_content(html: str, page: Page, config, files):
     # Replace data-svg-file with a href to the svg file.
     # This has to be done after we check for missing file references
     return re.sub(
-        r'<data data-svg-file="([a-f0-9]+)">([\s\S]*?)</data>',
-        r'<a href="{relative_route}\1.svg">\2</a>'.format(
+        r'<svg(.*?)data-svg-file="([a-f0-9]+)"(.*?)><svg([\s\S]*?)<\/svg><\/svg>',
+        r'<a href="{relative_route}\2.svg"><svg\1 data-svg-file="\2"\3><svg\4</svg></svg></a>'.format(
             relative_route=relative_route
         ),
         html,
