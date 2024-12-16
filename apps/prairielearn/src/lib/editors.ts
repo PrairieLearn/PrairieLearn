@@ -905,6 +905,15 @@ export class CourseInstanceAddEditor extends Editor {
     this.description = 'Add course instance';
     this.short_name = params.short_name;
     this.long_name = params.long_name;
+
+    if (
+      params.start_access_date &&
+      params.end_access_date &&
+      params.start_access_date.epochMilliseconds > params.end_access_date.epochMilliseconds
+    ) {
+      throw new HttpStatusError(400, 'Start date must be before end date');
+    }
+
     this.start_access_date = params.start_access_date;
     this.end_access_date = params.end_access_date;
   }
@@ -934,14 +943,6 @@ export class CourseInstanceAddEditor extends Editor {
     debug('Write infoCourseInstance.json');
 
     let allowAccess: { startDate?: string; endDate?: string } | undefined = undefined;
-
-    if (
-      this.start_access_date &&
-      this.end_access_date &&
-      this.start_access_date.epochMilliseconds > this.end_access_date.epochMilliseconds
-    ) {
-      throw new HttpStatusError(400, 'Start date must be before end date');
-    }
 
     if (this.start_access_date || this.end_access_date) {
       allowAccess = {
