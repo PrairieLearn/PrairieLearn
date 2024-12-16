@@ -30,7 +30,7 @@ onDocumentReady(() => {
   );
   if (!accessDatesEnabledInput || !accessDatesDiv || !accessDatesEnabledHelpText) return;
 
-  accessDatesEnabledInput.onchange = () => {
+  accessDatesEnabledInput.addEventListener('click', () => {
     const accessDatesEnabled = accessDatesEnabledInput.checked;
 
     // If access dates are not enabled, disable the inputs; otherwise, enable them
@@ -42,5 +42,5 @@ onDocumentReady(() => {
 
     // If access dates are enabled, hide the access date checkbox help text; otherwise, show it
     accessDatesEnabledHelpText.hidden = accessDatesEnabled;
-  };
+  });
 });

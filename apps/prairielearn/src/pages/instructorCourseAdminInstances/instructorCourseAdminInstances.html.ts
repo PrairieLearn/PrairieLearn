@@ -289,7 +289,7 @@ function CreateCourseInstanceModal({
         </small>
       </div>
       <div class="form-group">
-        <label for="short_name">Course Instance Identifier (CIID)</label>
+        <label for="short_name">Short name</label>
         <input
           type="text"
           class="form-control"
@@ -300,9 +300,8 @@ function CreateCourseInstanceModal({
           aria-describedby="short_name_help"
         />
         <small id="short_name_help" class="form-text text-muted">
-          ID for internal use, e.g.
-          <code>Fa19</code> or <code>Fall2019</code>. Use only letters, numbers, dashes, and
-          underscores, with no spaces.
+          A short name (less than 8 letters), such as "Fa25" or "W25b". This is used in menus and
+          headers where a short description is required.
         </small>
       </div>
       <div class="form-check mb-3">
