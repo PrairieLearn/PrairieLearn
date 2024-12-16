@@ -4,7 +4,20 @@ PrairieLearn is extremely flexible and powerful, but this flexibility can appear
 
 ## High-level overview
 
-A [**course**](../course/index.md) in PrairieLearn is composed of **course instances** and **questions**. Each [course instance](../courseInstance.md) is an offering of a course in a particular semester/term. For example, a course "CS 225" might have instances "CS 225 Spring 2022" and "CS 225 Fall 2022". A course instance contains all the **assessments** for that particular term. The course itself contains the questions that are shared across all instances. You can think of the course as containing a bank of questions that are then used to create assessments for each instance of the course, and a way to organize every instance of the course.
+A [**course**](../course/index.md) in PrairieLearn is composed of **course instances** and **questions**. Each [course instance](../courseInstance.md) is an offering of a course in a particular semester/term. For example, a course "CS 225" might have instances "CS 225 Spring 2022" and "CS 225 Fall 2022".
+
+The course itself contains:
+
+- A list of questions (i.e. a question bank)
+- A list of course instances
+
+Each course instance contains:
+
+- All assessments for that term, for example, Homework 1, Homework 2, and Exam 1
+
+Each assessment contains:
+
+- A list of questions used in that assessment (taken from the course)
 
 ### Concept Map
 
@@ -108,7 +121,7 @@ You can view a list of all the available elements in the [elements documentation
 
 ### Assessments
 
-A course contains a collection of questions, which are composed together to create [**assessments**](../assessment/index.md). Each course instance contains a collection of assessments. There are **homework assessments** and **exam assessments**. Homeworks are formative assessments designed for mastery learning: they give unlimited retries with different variants, and incentivize repeated correct answers. Exams are summative assessments designed to measure learning: they give limited attempts with the same variant, and incentivize getting the correct answer on the first try.
+A course contains a collection of questions, which are composed together to create [**assessments**](../assessment/index.md). Each course instance contains a collection of **homework assessments** and **exam assessments**. Homeworks are formative assessments designed for mastery learning: they give unlimited retries with different variants, and incentivize repeated correct answers. Exams are summative assessments designed to measure learning: they give limited attempts with the same variant, and incentivize getting the correct answer on the first try.
 
 ![Homework Assessment](./hw-assessment.png)
 
