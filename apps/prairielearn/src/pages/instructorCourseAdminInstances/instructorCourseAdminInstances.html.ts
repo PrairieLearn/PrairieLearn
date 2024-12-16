@@ -274,7 +274,7 @@ function CreateCourseInstanceModal({
     formMethod: 'POST',
     body: html`
       <div class="form-group">
-        <label for="long_name">Long Name</label>
+        <label for="long_name">Long name</label>
         <input
           type="text"
           class="form-control"
