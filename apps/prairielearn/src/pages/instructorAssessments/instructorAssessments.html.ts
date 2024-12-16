@@ -68,7 +68,7 @@ export function InstructorAssessments({
               <h1>Assessments</h1>
               ${authz_data.has_course_permission_edit && !course.example_course && rows.length > 0
                 ? html`
-                    <form name="add-assessment-form" method="POST">
+                    <form class="ml-auto" name="add-assessment-form" method="POST">
                       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                       <button name="__action" value="add_assessment" class="btn btn-sm btn-light">
                         <i class="fa fa-plus" aria-hidden="true"></i>
