@@ -21,24 +21,23 @@ export function InstructorCourseAdminInstances({
   resLocals: Record<string, any>;
   courseInstances: CourseInstanceAuthzRow[];
 }) {
-  const startDate = Temporal.Now.zonedDateTimeISO(resLocals.course.timeZone).with({
+  const initialStartDate = Temporal.Now.zonedDateTimeISO(resLocals.course.timeZone).with({
     hour: 0,
     minute: 1,
     second: 0,
   });
   const initialStartDateFormatted = formatDateYMDHM(
-    new Date(startDate.epochMilliseconds),
+    new Date(initialStartDate.epochMilliseconds),
     resLocals.course.time_zone,
   );
 
-  const endDate = startDate.add({ months: 4 }).with({
+  const initialEndDate = initialStartDate.add({ months: 4 }).with({
     hour: 23,
     minute: 59,
     second: 0,
   });
-
   const initialEndDateFormatted = formatDateYMDHM(
-    new Date(endDate.epochMilliseconds),
+    new Date(initialEndDate.epochMilliseconds),
     resLocals.course.time_zone,
   );
 
