@@ -21,6 +21,7 @@ td code {
 .md-nav__item--section > .md-nav__link[for],
 .md-nav__title {
   text-transform: uppercase;
+  color: var(--md-primary-fg-color);
 }
 
 /* CSS for width selection */
