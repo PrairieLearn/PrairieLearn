@@ -9,7 +9,7 @@ onDocumentReady(() => {
 
   if (!startAccessDateInput || !endAccessDateInput || !createButton) return;
 
-  createButton.onclick = () => {
+  createButton.addEventListener('click', () => {
     // Ensure that the end access date is after the start access date
     const startAccessDate = new Date(startAccessDateInput.value);
     const endAccessDate = new Date(endAccessDateInput.value);
@@ -21,7 +21,7 @@ onDocumentReady(() => {
     } else {
       endAccessDateInput.setCustomValidity('');
     }
-  };
+  });
 
   const accessDatesEnabledInput = document.querySelector<HTMLInputElement>('#access_dates_enabled');
   const accessDatesDiv = document.querySelector<HTMLDivElement>('#accessDates');
@@ -30,7 +30,7 @@ onDocumentReady(() => {
   );
   if (!accessDatesEnabledInput || !accessDatesDiv || !accessDatesEnabledHelpText) return;
 
-  accessDatesEnabledInput.addEventListener('click', () => {
+  accessDatesEnabledInput.addEventListener('change', () => {
     const accessDatesEnabled = accessDatesEnabledInput.checked;
 
     // If access dates are not enabled, disable the inputs; otherwise, enable them
