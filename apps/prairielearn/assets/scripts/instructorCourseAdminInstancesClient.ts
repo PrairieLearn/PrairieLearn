@@ -11,9 +11,9 @@ onDocumentReady(() => {
 
   createButton.onclick = () => {
     // Ensure that the end access date is after the start access date
-
     const startAccessDate = new Date(startAccessDateInput.value);
     const endAccessDate = new Date(endAccessDateInput.value);
+
     if (startAccessDate >= endAccessDate) {
       // Set custom validity only on the endAccessDateInput to trigger the error message
       // on the last input of the form instead of the second to last (startAccessDateInput)
