@@ -82,7 +82,11 @@ router.post(
         );
       }
 
-      if (startAccessDate && endAccessDate && startAccessDate >= endAccessDate) {
+      if (
+        startAccessDate &&
+        endAccessDate &&
+        startAccessDate.epochMilliseconds >= endAccessDate.epochMilliseconds
+      ) {
         throw new error.HttpStatusError(400, 'end_access_date must be after start_access_date');
       }
 

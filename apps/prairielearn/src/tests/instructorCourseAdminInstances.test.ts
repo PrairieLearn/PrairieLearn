@@ -73,8 +73,8 @@ describe('Creating a course instance', () => {
           orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
           short_name: 'Fa19',
           long_name: 'Fall 2019',
-          start_access_date: '2021-01-01T00:00',
-          end_access_date: '2021-01-02T00:00',
+          start_access_date: '2021-01-01T00:00:00',
+          end_access_date: '2021-01-02T00:00:00',
         }),
       },
     );
@@ -121,8 +121,8 @@ describe('Creating a course instance', () => {
           orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
           short_name: 'Fa19', // Same short_name as the first course instance
           long_name: 'Fall 2019', // Same long_name as the first course instance
-          start_access_date: '2021-01-01T00:00',
-          end_access_date: '2021-01-02T00:00',
+          start_access_date: '2021-01-01T00:00:00',
+          end_access_date: '2021-01-02T00:00:00',
         }),
       },
     );
@@ -210,8 +210,8 @@ describe('Creating a course instance', () => {
           orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
           // No short_name specified
           long_name: 'Fall 2019',
-          start_access_date: '2021-01-01T00:00',
-          end_access_date: '2021-01-02T00:00',
+          start_access_date: '2021-01-01T00:00:00',
+          end_access_date: '2021-01-02T00:00:00',
         }),
       },
     );
@@ -240,8 +240,8 @@ describe('Creating a course instance', () => {
           orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
           short_name: 'Fa19',
           // No long_name specified
-          start_access_date: '2021-01-01T00:00',
-          end_access_date: '2021-01-02T00:00',
+          start_access_date: '2021-01-01T00:00:00',
+          end_access_date: '2021-01-02T00:00:00',
         }),
       },
     );

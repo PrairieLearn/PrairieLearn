@@ -39,7 +39,7 @@ describe('editors', () => {
     });
 
     describe('Duplicated short_name with number, unique long_name', () => {
-      it('should increment the short_name number append it to the short_name and long_name', () => {
+      it('should increment the number for the short_name and append it to both short_name and long_name', () => {
         const names = getNamesForAdd(
           ['Fa18', 'Fa19', 'Fa19_2', 'Fa19_3', 'Fa19_4'],
           [
@@ -71,7 +71,7 @@ describe('editors', () => {
     });
 
     describe('Unique short_name, duplicated long_name with number', () => {
-      it('should increment the number in the long_name and append it to the short_name and long_name', () => {
+      it('should increment the number for the long_name and append it to both short_name and long_name', () => {
         const names = getNamesForAdd(
           ['Fa18', 'Fa19', 'Fall19_2', 'Fall19_3'],
           ['Fall 2018', 'Fall 2019', 'Fall 2019 (2)', 'Fall 2019 (3)'],
@@ -97,7 +97,7 @@ describe('editors', () => {
     });
 
     describe('Duplicated short_name with number, duplicated long_name with number, numbers the same', () => {
-      it('should increment the short_name number and long_name number consistently', () => {
+      it('should increment both the short_name number and long_name number', () => {
         const names = getNamesForAdd(
           ['Fa18', 'Fa19', 'Fa19_2', 'Fa19_3'],
           ['Fall 2018', 'Fall 2019', 'Fall 2019 (2)', 'Fall 2019 (3)'],
