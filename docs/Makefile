@@ -5,6 +5,7 @@
 all: build
 
 # fmt doesn't check if the formatting changed, it just formats everything
+# PR: https://github.com/terrastruct/d2/pull/2253
 d2-fmt:
 	$(eval OLD_STATE=$(shell find . -name '*.d2' | xargs sha1sum | cut -d ' ' -f 1 | sort | sha1sum | cut -d ' ' -f 1))
 	$(eval NEW_STATE=$(shell find . -name '*.d2' | xargs d2 fmt && find . -name '*.d2' | xargs sha1sum | cut -d ' ' -f 1 | sort | sha1sum | cut -d ' ' -f 1))
