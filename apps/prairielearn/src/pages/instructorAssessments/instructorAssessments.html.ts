@@ -68,7 +68,7 @@ export function InstructorAssessments({
               <h1>Assessments</h1>
               ${authz_data.has_course_permission_edit && !course.example_course && rows.length > 0
                 ? html`
-                    <form class="ml-auto" name="add-assessment-form" method="POST">
+                    <form name="add-assessment-form" method="POST">
                       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                       <button name="__action" value="add_assessment" class="btn btn-sm btn-light">
                         <i class="fa fa-plus" aria-hidden="true"></i>
@@ -148,6 +148,10 @@ export function InstructorAssessments({
               : html`
                   <div class="my-4 card-body text-center" style="text-wrap: balance;">
                     <p class="font-weight-bold">No assessments found.</p>
+                    <p class="mb-0">
+                      An assessment is a collection of questions to build or assess a student's
+                      knowledge.
+                    </p>
                     <p>
                       Learn more in the
                       <a
@@ -164,7 +168,7 @@ export function InstructorAssessments({
                         return html`<p>Course Editors can create new assessments.</p>`;
                       }
                       return html`
-                        <form class="ml-auto" name="add-assessment-form" method="POST">
+                        <form name="add-assessment-form" method="POST">
                           <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
                           <button
                             name="__action"
