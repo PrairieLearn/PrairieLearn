@@ -300,8 +300,8 @@ function CreateCourseInstanceModal({
           aria-describedby="short_name_help"
         />
         <small id="short_name_help" class="form-text text-muted">
-          A short name (less than 8 letters), such as "Fa25" or "W25b". This is used in menus and
-          headers where a short description is required.
+          A short name, such as "Fa25" or "W25b". This is used in menus and headers where a short
+          description is required.
         </small>
       </div>
       <div class="form-check mb-3">
