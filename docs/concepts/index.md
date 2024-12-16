@@ -4,7 +4,7 @@ PrairieLearn is extremely flexible and powerful, but this flexibility can appear
 
 ## High-level overview
 
-A [**course**](../course/index.md) in PrairieLearn is composed of **course instances** and **questions**. Each [course instance](../courseInstance.md) is an offering of a course in a particular semester/term. For example, a course "CS 225" might have instances "CS 225 Spring 2022" and "CS 225 Fall 2022".
+A [**course**](../course/index.md) in PrairieLearn is composed of **course instances** and **questions**. Each [course instance](../courseInstance.md) is an offering of a course in a particular semester/term. For example, a course "CS 225" might have instances "Spring 2022" and "Fall 2022".
 
 The course itself contains:
 
@@ -94,18 +94,18 @@ def generate(data):
 
 #### External Graders
 
-For coding questions, you can use an [**external grader**](../externalGrading.md) to grade a submission instead of a `server.py` file. This lets you grade student-submitted code in a sandboxed environment. There are currently external graders for C, C++, Java, Python, and more.
+For coding questions, you can use an [**external grader**](../externalGrading.md) to grade a submission instead of a `server.py` file. This lets you grade student-submitted code in a sandboxed environment. There are currently external graders for C, C++, Java, Python, and more. You can also make a custom external grader for any language.
 
 #### Workspaces
 
-Additionally, it may be useful for students to work in a consistent development [**workspace**](../workspaces/index.md) to reduce the likelihood of issues with their environment, and provide a code editor with syntax highlighting, autocompletion, and other features. Workspaces provide a seamless coding experience for students when used with an external autograder. Workspaces use [Docker](https://docker.com) to ensure a consistent environment, with premade workspace for popular languages (e.g. Python, C++). Workspaces based on custom Docker images are also supported.
+You can use [**workspaces**](../workspaces/index.md) to provide an in-browser development environment. Workspaces ensure all students are using a consistent environment and can provide a code editor with syntax highlighting, autocompletion, and other features. Workspaces provide a seamless coding experience for students when used with an external autograder. Workspaces use [Docker](https://docker.com) images to ensure a consistent environment, with premade workspace for popular languages (e.g. Python, C++). Workspaces based on custom Docker images are also supported.
 
-![workspace screenshot](./workspace.png)
+![Screenshot of a JupyterLab workspace](./workspace.png)
 Both of these features can be setup by modifying the `info.json` file for the question.
 
 ### Elements
 
-Questions can use [**elements**](../elements.md) to accept student input, display diagrams, control how questions are displayed. Elements are pre-built interface components for common questions types, including numerical inputs, multiple choice, and more. If you require more flexibility, [**custom elements**](../devElements.md) are reusable components that can be tailored to your course to create more complex questions.
+Questions can use [**elements**](../elements.md) to accept student input, display diagrams, control how questions are displayed, and more. You can use built-in elements for common questions types, including numerical inputs, multiple choice, and more. If you require more flexibility, you can create reusable [**custom elements**](../devElements.md) that can be tailored to your course to create more complex questions.
 
 === "Integer input element"
 
@@ -141,10 +141,10 @@ Each item in PrairieLearn (questions, assessments, etc.) has associated metadata
 
 | Item            | Configuration file        |
 | --------------- | ------------------------- |
-| Question        | `info.json`               |
 | Course          | `infoCourse.json`         |
 | Course Instance | `infoCourseInstance.json` |
 | Assessment      | `infoAssessment.json`     |
+| Question        | `info.json`               |
 
 ## Next steps
 
