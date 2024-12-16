@@ -322,7 +322,7 @@ function CreateCourseInstanceModal({
       </div>
       <div id="accessDates" hidden="true">
         <div class="form-group">
-          <label for="start_access_date">Start Access Date</label>
+          <label for="start_access_date">Access Start Date</label>
           <div class="input-group date-picker">
             <input
               class="form-control date-picker"
