@@ -75,6 +75,7 @@ describe('Creating a course instance', () => {
           long_name: 'Fall 2019',
           start_access_date: '2021-01-01T00:00:00',
           end_access_date: '2021-01-02T00:00:00',
+          access_dates_enabled: 'on',
         }),
       },
     );
@@ -123,6 +124,7 @@ describe('Creating a course instance', () => {
           long_name: 'Fall 2019', // Same long_name as the first course instance
           start_access_date: '2021-01-01T00:00:00',
           end_access_date: '2021-01-02T00:00:00',
+          access_dates_enabled: 'on',
         }),
       },
     );
@@ -166,6 +168,7 @@ describe('Creating a course instance', () => {
           orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
           short_name: 'Fa20',
           long_name: 'Fall 2020',
+          access_dates_enabled: 'on',
         }),
       },
     );
@@ -193,6 +196,53 @@ describe('Creating a course instance', () => {
     assert.equal(courseInstanceInfo.allowAccess.length, 0);
   });
 
+  step('add course instance with access_dates_enabled unchecked', async () => {
+    const courseInstancePageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course/1/course_admin/instances`,
+    );
+
+    assert.equal(courseInstancePageResponse.status, 200);
+
+    // Create the new course instance with access_dates_enabled not specified (unchecked)
+    const courseInstanceCreationResponse = await fetchCheerio(
+      `${siteUrl}/pl/course/1/course_admin/instances`,
+      {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_course_instance',
+          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
+          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
+          short_name: 'Sp21',
+          long_name: 'Spring 2021',
+          start_access_date: '2021-01-01T00:00:00',
+          end_access_date: '2021-01-02T00:00:00',
+        }),
+      },
+    );
+
+    assert.equal(courseInstanceCreationResponse.status, 200);
+
+    // Verify that the user is redirected to the assessments page for the new course instance
+    assert.equal(
+      courseInstanceCreationResponse.url,
+      `${siteUrl}/pl/course_instance/5/instructor/instance_admin/assessments`,
+    );
+  });
+
+  step('verify course instance is created with an empty allowAccess array', async () => {
+    const courseInstanceInfoPath = path.join(
+      courseInstancesCourseLiveDir,
+      'Sp21',
+      'infoCourseInstance.json',
+    );
+
+    const courseInstanceInfo = JSON.parse(await fs.readFile(courseInstanceInfoPath, 'utf8'));
+
+    assert.equal(courseInstanceInfo.longName, 'Spring 2021');
+
+    assert.equal(courseInstanceInfo.allowAccess.length, 0);
+  });
+
   step('should not be able to create course instance with no short_name', async () => {
     const courseInstancePageResponse = await fetchCheerio(
       `${siteUrl}/pl/course/1/course_admin/instances`,
@@ -212,6 +262,7 @@ describe('Creating a course instance', () => {
           long_name: 'Fall 2019',
           start_access_date: '2021-01-01T00:00:00',
           end_access_date: '2021-01-02T00:00:00',
+          access_dates_enabled: 'on',
         }),
       },
     );
@@ -242,6 +293,7 @@ describe('Creating a course instance', () => {
           // No long_name specified
           start_access_date: '2021-01-01T00:00:00',
           end_access_date: '2021-01-02T00:00:00',
+          access_dates_enabled: 'on',
         }),
       },
     );

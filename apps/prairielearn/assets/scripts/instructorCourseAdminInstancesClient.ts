@@ -22,4 +22,30 @@ onDocumentReady(() => {
       endAccessDateInput.setCustomValidity('');
     }
   };
+
+  const accessDatesEnabledInput = document.querySelector<HTMLInputElement>('#access_dates_enabled');
+  const accessDatesDiv = document.querySelector<HTMLDivElement>('#accessDates');
+  const accessDatesEnabledHelpText = document.querySelector<HTMLDivElement>(
+    '#access_dates_enabled_help',
+  );
+  if (!accessDatesEnabledInput || !accessDatesDiv || !accessDatesEnabledHelpText) return;
+
+  accessDatesEnabledInput.onchange = () => {
+    const accessDatesEnabled = accessDatesEnabledInput.checked;
+
+    // If access dates are not enabled, disable the inputs; otherwise, enable them
+    startAccessDateInput.disabled = !accessDatesEnabled;
+    endAccessDateInput.disabled = !accessDatesEnabled;
+
+    // If access dates are not enabled, hide the parent div of the access date inputs; otherwise, show it
+    accessDatesDiv.hidden = !accessDatesEnabled;
+
+    if (accessDatesEnabled) {
+      // If access dates are enabled, clear the help text
+      accessDatesEnabledHelpText.textContent = '';
+    } else {
+      // If access dates are not enabled, show a message indicating that they can be enabled later
+      accessDatesEnabledHelpText.textContent = 'This can be enabled later.';
+    }
+  };
 });

@@ -70,16 +70,17 @@ router.post(
       let startAccessDate: Temporal.ZonedDateTime | undefined;
       let endAccessDate: Temporal.ZonedDateTime | undefined;
 
-      if (req.body.start_access_date) {
-        startAccessDate = Temporal.PlainDateTime.from(req.body.start_access_date).toZonedDateTime(
-          res.locals.course.display_timezone,
-        );
-      }
-
-      if (req.body.end_access_date) {
-        endAccessDate = Temporal.PlainDateTime.from(req.body.end_access_date).toZonedDateTime(
-          res.locals.course.display_timezone,
-        );
+      if (req.body.access_dates_enabled === 'on') {
+        if (req.body.start_access_date) {
+          startAccessDate = Temporal.PlainDateTime.from(req.body.start_access_date).toZonedDateTime(
+            res.locals.course.display_timezone,
+          );
+        }
+        if (req.body.end_access_date) {
+          endAccessDate = Temporal.PlainDateTime.from(req.body.end_access_date).toZonedDateTime(
+            res.locals.course.display_timezone,
+          );
+        }
       }
 
       if (
