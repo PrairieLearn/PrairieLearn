@@ -5,6 +5,7 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import { CourseInstanceSchema, IdSchema } from '../../lib/db-types.js';
@@ -116,6 +117,8 @@ router.post(
         },
         IdSchema,
       );
+
+      flash('success', 'Course instance created successfully');
 
       res.redirect(
         res.locals.plainUrlPrefix +
