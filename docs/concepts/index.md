@@ -121,7 +121,7 @@ You can view a list of all the available elements in the [elements documentation
 
 ### Assessments
 
-A course contains a collection of questions, which are composed together to create [**assessments**](../assessment/index.md). Each course instance contains a collection of **homework assessments** and **exam assessments**. Homeworks are formative assessments designed for mastery learning: they give unlimited retries with different variants, and incentivize repeated correct answers. Exams are summative assessments designed to measure learning: they give limited attempts with the same variant, and incentivize getting the correct answer on the first try.
+A course's questions are composed together to create homework and exam [**assessments**](../assessment/index.md) in a course instance. Homeworks are formative assessments designed for mastery learning: they give unlimited retries with different variants, and incentivize repeated correct answers. Exams are summative assessments designed to measure learning: they give limited attempts with the same variant, and incentivize getting the correct answer on the first try.
 
 ![Homework Assessment](./hw-assessment.png)
 
