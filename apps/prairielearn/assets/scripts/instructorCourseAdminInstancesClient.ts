@@ -40,12 +40,7 @@ onDocumentReady(() => {
     // If access dates are not enabled, hide the parent div of the access date inputs; otherwise, show it
     accessDatesDiv.hidden = !accessDatesEnabled;
 
-    if (accessDatesEnabled) {
-      // If access dates are enabled, clear the help text
-      accessDatesEnabledHelpText.textContent = '';
-    } else {
-      // If access dates are not enabled, show a message indicating that they can be enabled later
-      accessDatesEnabledHelpText.textContent = 'This can be enabled later.';
-    }
+    //If access dates are enabled, hide the access date checkbox help text; otherwise, show it
+    accessDatesEnabledHelpText.hidden = accessDatesEnabled;
   };
 });
