@@ -4,6 +4,7 @@ repo_url: https://github.com/PrairieLearn/PrairieLearn
 theme:
   name: material
   logo: assets/flower-square-nobg.svg
+  custom_dir: docs/overrides
   favicon: assets/flower-square-256.png
   icon:
     repo: fontawesome/brands/github
@@ -14,18 +15,33 @@ theme:
   palette:
     - scheme: default
       toggle:
-        icon: material/arrow-collapse
-        name: Default width
+        icon: material/brightness-7
+        icon2: material/arrow-collapse
+        name: Light mode, default width
       primary: custom
       accent: custom
 
-    - scheme: full-width
+    - scheme: slate
       toggle:
-        icon: material/arrow-expand
-        name: Full width
+        icon: material/brightness-4
+        icon2: material/arrow-collapse
+        name: Dark mode, default width
+
+    - scheme: default
+      toggle:
+        icon: material/brightness-7
+        icon2: material/arrow-expand
+        name: Light mode, full width
+      media: full-width
       primary: custom
       accent: custom
 
+    - scheme: slate
+      toggle:
+        icon: material/brightness-4
+        icon2: material/arrow-expand
+        name: Dark mode, full width
+      media: full-width
   features:
     - navigation.sections
     - navigation.expand

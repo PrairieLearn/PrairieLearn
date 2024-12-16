@@ -1,12 +1,12 @@
 :root {
-  --md-primary-fg-color: #084298;
-  --md-accent-fg-color: #42a5f5;
+  --md-primary-fg-color: #084298; /* PrairieLearn blue */
+  --md-accent-fg-color: #106eb0; /* arbitrary darker blue */
 }
 
 /* Custom CSS for the link color */
 [data-md-color-scheme='default'],
 [data-md-color-scheme='full-width'] {
-  --md-typeset-a-color: #28b5f6;
+  --md-typeset-a-color: #127ac4; /* arbitrary blue */
 }
 /* Allow captioned code blocks to function */
 code {
@@ -23,12 +23,14 @@ td code {
   text-decoration: underline;
 }
 
+/* CSS for width selection */
 @media (max-width: 1220px) {
-  form.md-header__option {
+  .width-icon {
     display: none;
   }
 }
-[data-md-color-scheme='full-width'] {
+
+[data-md-color-media='full-width'] {
   .md-main__inner {
     max-width: 100%;
   }
@@ -49,4 +51,12 @@ foreignObject .md pre {
   .md-clipboard {
     display: none;
   }
+}
+
+.palette-icon {
+  display: flex;
+  gap: 8px;
+  flex-direction: row;
+  align-items: center;
+  font-size: 1.5em;
 }
