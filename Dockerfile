@@ -32,6 +32,12 @@ COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/
 # https://github.com/yarnpkg/berry/issues/6339
 RUN cd /PrairieLearn && yarn dlx node-gyp install && yarn install --immutable --inline-builds && yarn cache clean
 
+# Install d2 to build documentation diagrams
+RUN VERSION=v0.6.8 OS=linux ARCH=amd64 curl -fsSLO \
+    "https://github.com/terrastruct/d2/releases/download/$VERSION/d2-$VERSION-$OS-$ARCH.tar.gz" \
+    && tar -xzf "d2-$VERSION-$OS-$ARCH.tar.gz" \
+    && make -sC "d2-$VERSION" install PREFIX=/usr/local/bin
+
 # NOTE: Modify .dockerignore to allowlist files/directories to copy.
 COPY . /PrairieLearn/
 
