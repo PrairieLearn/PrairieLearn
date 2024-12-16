@@ -313,9 +313,9 @@ function CreateCourseInstanceModal({
           name="access_dates_enabled"
           aria-describedby="access_dates_enabled_help"
         />
-        <label class="form-check-label" for="access_dates_enabled"
-          >Make course instance available to students</label
-        >
+        <label class="form-check-label" for="access_dates_enabled">
+          Make course instance available to students
+        </label>
         <small id="access_dates_enabled_help" class="form-text text-muted">
           This can be enabled later.
         </small>
