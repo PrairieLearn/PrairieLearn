@@ -30,7 +30,7 @@ ORDER BY
 LIMIT
   1;
 
--- BLOCK toggle_feature
+-- BLOCK update_feature_grant_enabled
 INSERT INTO
   feature_grants (
     name,

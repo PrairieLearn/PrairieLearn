@@ -167,7 +167,7 @@ router.post(
       }
 
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'toggle_feature_grant') {
+    } else if (req.body.__action === 'update_feature_grant_enabled') {
       const enabled = z
         .union([z.literal('enabled'), z.literal('disabled')])
         .transform((val) => val === 'enabled')

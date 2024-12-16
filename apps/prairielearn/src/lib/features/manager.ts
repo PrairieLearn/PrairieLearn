@@ -177,7 +177,12 @@ export class FeatureManager<FeatureName extends string> {
    */
   async enable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
-    await queryAsync(sql.toggle_feature, { name, enabled: true, ...DEFAULT_CONTEXT, ...context });
+    await queryAsync(sql.update_feature_grant_enabled, {
+      name,
+      enabled: true,
+      ...DEFAULT_CONTEXT,
+      ...context,
+    });
   }
 
   /**
@@ -188,7 +193,12 @@ export class FeatureManager<FeatureName extends string> {
    */
   async disable(name: FeatureName, context: FeatureContext = {}) {
     this.validateFeature(name, context);
-    await queryAsync(sql.toggle_feature, { name, enabled: false, ...DEFAULT_CONTEXT, ...context });
+    await queryAsync(sql.update_feature_grant_enabled, {
+      name,
+      enabled: false,
+      ...DEFAULT_CONTEXT,
+      ...context,
+    });
   }
 
   /**

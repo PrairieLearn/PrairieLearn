@@ -237,7 +237,7 @@ function FeatureGrant({
         >
           <input type="hidden" name="__csrf_token" value="${csrfToken}" />
           <input type="hidden" name="feature_grant_id" value="${featureGrant.id}" />
-          <input type="hidden" name="__action" value="toggle_feature_grant" />
+          <input type="hidden" name="__action" value="update_feature_grant_enabled" />
           <select
             class="form-select form-select-sm"
             aria-label="Enable or disable feature"
