@@ -42,8 +42,8 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
             # Remove the XML declaration as it is no longer at the start of the entity
             result = result.replace('<?xml version="1.0" encoding="utf-8"?>', "")
 
-            result = f'<data data-svg-file="{key.hex()}">{result}</data>'
-        return result, ok
+            values[0] = f'<data data-svg-file="{key.hex()}">{result}</data>'
+        return values
 
     # Replace the superfences renderer with the new one
     plugin.renderer = new_render
