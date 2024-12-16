@@ -300,7 +300,7 @@ function CreateCourseInstanceModal({
           aria-describedby="short_name_help"
         />
         <small id="short_name_help" class="form-text text-muted">
-          ID for internal use, of format
+          ID for internal use, e.g.
           <code>Fa19</code> or <code>Fall2019</code>. Use only letters, numbers, dashes, and
           underscores, with no spaces.
         </small>
