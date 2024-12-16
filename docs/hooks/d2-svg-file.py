@@ -28,6 +28,7 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
         This only hooks into the renderer for superfences, not for images.
         """
         values = original_render(source, opts, *args, **kwargs)
+        values = list(values)
         result, ok = values[0], values[-1]
         if ok:
             is_file = isinstance(source, Path)
@@ -43,7 +44,7 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
             result = result.replace('<?xml version="1.0" encoding="utf-8"?>', "")
 
             values[0] = f'<data data-svg-file="{key.hex()}">{result}</data>'
-        return values
+        return tuple(values)
 
     # Replace the superfences renderer with the new one
     plugin.renderer = new_render
