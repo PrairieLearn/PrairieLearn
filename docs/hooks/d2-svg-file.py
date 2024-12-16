@@ -22,13 +22,13 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
     original_render = plugin.renderer
     plugin.keys = set()
 
-    def new_render(source, opts):
+    def new_render(source, opts, **kwargs):
         """
         Hook into the renderer to provide a link to the rendered SVG.
         This only hooks into the renderer for superfences, not for images.
         """
-        result, ok = original_render(source, opts)
-
+        values = original_render(source, opts, **kwargs)
+        result, ok = values[0], values[-1]
         if ok:
             is_file = isinstance(source, Path)
             if is_file:
