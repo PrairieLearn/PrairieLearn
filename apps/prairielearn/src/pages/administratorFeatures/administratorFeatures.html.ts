@@ -322,13 +322,25 @@ export function AddFeatureGrantModalBody({
     >
       <div class="form-check">
         <input
-          type="checkbox"
+          type="radio"
           class="form-check-input"
           id="feature-grant-enabled"
           name="enabled"
+          value="true"
           ${enabled ? 'checked' : ''}
         />
         <label class="form-check-label" for="feature-grant-enabled">Enable feature</label>
+      </div>
+      <div class="form-check">
+        <input
+          type="radio"
+          class="form-check-input"
+          id="feature-grant-disabled"
+          name="enabled"
+          value="false"
+          ${enabled ? '' : 'checked'}
+        />
+        <label class="form-check-label" for="feature-grant-disabled">Disable feature</label>
         <div class="small text-muted">
           Enabling or disabling a feature overrides any settings from a parent institution, course,
           and so on.

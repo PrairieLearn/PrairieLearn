@@ -4,7 +4,6 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
-import { BooleanFromCheckboxSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import {
@@ -74,7 +73,7 @@ const OptionalIdSchema = z
   .transform((val) => val || undefined);
 
 const AddFeatureGrantModalParamsSchema = z.object({
-  enabled: BooleanFromCheckboxSchema,
+  enabled: z.union([z.literal('true'), z.literal('false')]).transform((val) => val === 'true'),
   institution_id: OptionalIdSchema,
   course_id: OptionalIdSchema,
   course_instance_id: OptionalIdSchema,
