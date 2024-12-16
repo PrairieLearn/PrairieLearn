@@ -71,6 +71,7 @@ router.post(
       let endAccessDate: Temporal.ZonedDateTime | undefined;
 
       if (req.body.access_dates_enabled === 'on') {
+        // Only parse the dates if access dates are enabled (the corresponding checkbox is checked)
         if (req.body.start_access_date) {
           startAccessDate = Temporal.PlainDateTime.from(req.body.start_access_date).toZonedDateTime(
             res.locals.course.display_timezone,
