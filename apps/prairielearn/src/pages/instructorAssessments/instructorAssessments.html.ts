@@ -176,7 +176,7 @@ export function InstructorAssessments({
                             class="btn btn-sm btn-primary"
                           >
                             <i class="fa fa-plus" aria-hidden="true"></i>
-                            <span class="d-none d-sm-inline">Add assessment</span>
+                            <span class="d-sm-inline">Add assessment</span>
                           </button>
                         </form>
                       `;
