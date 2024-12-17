@@ -25,10 +25,7 @@ onDocumentReady(() => {
 
   const accessDatesEnabledInput = document.querySelector<HTMLInputElement>('#access_dates_enabled');
   const accessDatesDiv = document.querySelector<HTMLDivElement>('#accessDates');
-  const accessDatesEnabledHelpText = document.querySelector<HTMLDivElement>(
-    '#access_dates_enabled_help',
-  );
-  if (!accessDatesEnabledInput || !accessDatesDiv || !accessDatesEnabledHelpText) return;
+  if (!accessDatesEnabledInput || !accessDatesDiv) return;
 
   accessDatesEnabledInput.addEventListener('change', () => {
     const accessDatesEnabled = accessDatesEnabledInput.checked;
@@ -39,8 +36,5 @@ onDocumentReady(() => {
 
     // If access dates are not enabled, hide the parent div of the access date inputs; otherwise, show it
     accessDatesDiv.hidden = !accessDatesEnabled;
-
-    // If access dates are enabled, hide the access date checkbox help text; otherwise, show it
-    accessDatesEnabledHelpText.hidden = accessDatesEnabled;
   });
 });

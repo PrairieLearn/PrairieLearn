@@ -118,7 +118,7 @@ router.post(
         IdSchema,
       );
 
-      flash('success', 'Course instance created successfully');
+      flash('success', 'Course instance created successfully.');
 
       res.redirect(
         res.locals.plainUrlPrefix +

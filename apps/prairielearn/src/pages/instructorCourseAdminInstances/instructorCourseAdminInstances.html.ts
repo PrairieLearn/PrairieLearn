@@ -301,7 +301,8 @@ function CreateCourseInstanceModal({
         />
         <small id="short_name_help" class="form-text text-muted">
           A short name, such as "Fa25" or "W25b". This is used in menus and headers where a short
-          description is required.
+          description is required. Use only letters, numbers, dashes, and underscores, with no
+          spaces.
         </small>
       </div>
       <div class="form-check mb-3">
@@ -314,10 +315,11 @@ function CreateCourseInstanceModal({
         />
         <label class="form-check-label" for="access_dates_enabled">
           Make course instance available to students
+          <br />
+          <small id="access_dates_enabled_help" class="form-text text-muted mt-0">
+            This can be enabled later.
+          </small>
         </label>
-        <small id="access_dates_enabled_help" class="form-text text-muted">
-          This can be enabled later.
-        </small>
       </div>
       <div id="accessDates" hidden="true">
         <div class="form-group">
