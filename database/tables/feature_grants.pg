@@ -16,8 +16,8 @@ indexes
     feature_grants_user_id_name_idx: USING btree (user_id, name)
 
 check constraints
-    feature_grants_course_id_not_null: CHECK (NOT (institution_id IS NOT NULL AND course_id IS NULL))
-    feature_grants_course_instance_id_not_null: CHECK (NOT (course_id IS NOT NULL AND course_instance_id IS NULL))
+    feature_grants_course_id_not_null: CHECK (NOT (institution_id IS NULL AND course_id IS NOT NULL))
+    feature_grants_course_instance_id_not_null: CHECK (NOT (course_id IS NULL AND course_instance_id IS NOT NULL))
 
 foreign-key constraints
     feature_grants_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
