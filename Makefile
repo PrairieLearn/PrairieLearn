@@ -96,6 +96,7 @@ changeset:
 
 build-docs:
 	@python3 -m venv /tmp/pldocs/venv
+	@d2 --version >/dev/null
 	@/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt
 	@/tmp/pldocs/venv/bin/python3 -m mkdocs build --strict
 
