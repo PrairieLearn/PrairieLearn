@@ -1,6 +1,6 @@
 # Running natively
 
-This page describes the procedure to install and run PrairieLearn without any use of Docker. This means that PrairieLearn is running fully natively on the local OS.
+This page describes the procedure to install and run PrairieLearn without any use of Docker. This means that PrairieLearn is running fully natively on the local OS. PrairieLearn supports native execution on macOS and Linux.
 
 - Install the prerequisites:
 
