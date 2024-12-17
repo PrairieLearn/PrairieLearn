@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { IdSchema, QuestionSchema } from '../../../../lib/db-types.js';
-import { QuestionBatchDeleteEditor } from '../../../../lib/editors.js';
+import { QuestionDeleteEditor } from '../../../../lib/editors.js';
 import { selectCourseById } from '../../../../models/course.js';
 import { privateProcedure, selectUsers } from '../../trpc.js';
 
@@ -42,7 +42,7 @@ export const batchDeleteQuestions = privateProcedure
       QuestionSchema,
     );
 
-    const editor = new QuestionBatchDeleteEditor({
+    const editor = new QuestionDeleteEditor({
       locals: {
         authz_data: {
           has_course_permission_edit: opts.input.has_course_permission_edit,
@@ -51,7 +51,7 @@ export const batchDeleteQuestions = privateProcedure
         course,
         user,
       },
-      questions,
+      questionBatch: questions,
     });
 
     const serverJob = await editor.prepareServerJob();

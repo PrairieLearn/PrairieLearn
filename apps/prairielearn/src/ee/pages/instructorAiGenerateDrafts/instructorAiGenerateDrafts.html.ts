@@ -4,6 +4,7 @@ import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
+import { Modal } from '../../../components/Modal.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { DraftQuestionMetadataSchema, IdSchema } from '../../../lib/db-types.js';
 
@@ -48,17 +49,14 @@ export function InstructorAIGenerateDrafts({
               <div class="d-flex flex-row">
                 ${drafts.length > 0
                   ? html`
-                      <form method="POST" class="mr-2">
-                        <input
-                          type="hidden"
-                          name="__csrf_token"
-                          value="${resLocals.__csrf_token}"
-                        />
-                        <button class="btn btn-sm btn-light" name="__action" value="delete_drafts">
-                          <i class="fa fa-trash" aria-hidden="true"></i>
-                          <span class="d-none d-sm-inline">Delete all drafts</span>
-                        </button>
-                      </form>
+                      <button
+                        class="btn btn-sm btn-light mr-2"
+                        data-toggle="modal"
+                        data-target="#destroyModal"
+                      >
+                        <i class="fa fa-trash" aria-hidden="true"></i>
+                        <span class="d-none d-sm-inline">Delete all drafts</span>
+                      </button>
                     `
                   : ''}
                 <a href="${resLocals.urlPrefix}/ai_generate_question" class="btn btn-sm btn-light">
@@ -104,10 +102,30 @@ export function InstructorAIGenerateDrafts({
                   )}
                 </tbody>
               </table>
+
+              ${DestroyQuestionsModal(resLocals)}
             </div>
           </div>
         </main>
       </body>
     </html>
   `.toString();
+}
+
+function DestroyQuestionsModal(resLocals) {
+  return Modal({
+    id: 'destroyModal',
+    title: 'Delete all draft questions',
+    body: html` This will permamently and unrecoverably delete all of the draft questions. `,
+    footer: html`
+      <form method="POST" class="mr-2">
+        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+        <button class="btn btn-danger" name="__action" value="delete_drafts">
+          <i class="fa fa-trash" aria-hidden="true"></i>
+          <span class="d-none d-sm-inline">Delete all drafts</span>
+        </button>
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </form>
+    `,
+  });
 }

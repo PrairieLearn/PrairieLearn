@@ -1090,47 +1090,31 @@ export class QuestionModifyEditor extends Editor {
 }
 
 export class QuestionDeleteEditor extends Editor {
-  private question: Question;
-
-  constructor(params: BaseEditorOptions) {
-    super(params);
-
-    this.question = params.locals.question;
-    this.description = `Delete question ${this.question.qid}`;
-  }
-
-  async write() {
-    assert(this.question.qid, 'question.qid is required');
-
-    debug('QuestionDeleteEditor: write()');
-    await fs.remove(path.join(this.course.path, 'questions', this.question.qid));
-    await this.removeEmptyPrecedingSubfolders(
-      path.join(this.course.path, 'questions'),
-      this.question.qid,
-    );
-
-    return {
-      pathsToAdd: [path.join(this.course.path, 'questions', this.question.qid)],
-      commitMessage: `delete question ${this.question.qid}`,
-    };
-  }
-}
-
-export class QuestionBatchDeleteEditor extends Editor {
   private questions: Question[];
 
-  constructor(params: BaseEditorOptions & { questions: Question[] }) {
+  constructor(params: BaseEditorOptions & { questionBatch?: Question[] }) {
     super(params);
 
-    this.questions = params.questions;
-    this.description = `Delete questions ${this.questions.map((x) => x.qid).join(', ')}`;
+    if (params.questionBatch !== undefined) {
+      this.questions = params.questionBatch;
+    } else {
+      this.questions = [params.locals.question];
+    }
+
+    this.description =
+      this.questions.length === 1
+        ? `Delete question ${this.questions[0].qid}`
+        : `Delete questions ${this.questions.map((x) => x.qid).join(', ')}`;
   }
 
   async write() {
-    debug('QuestionBatchDeleteEditor: write()');
+    this.questions.forEach((question) => assert(question.qid, 'question.qid is required'));
+
+    debug('QuestionDeleteEditor: write()');
 
     await this.questions.forEach(async (question) => {
       if (question.qid) {
+        //never will be false, but this is to placate typechecks
         await fs.remove(path.join(this.course.path, 'questions', question.qid));
         await this.removeEmptyPrecedingSubfolders(
           path.join(this.course.path, 'questions'),
@@ -1144,8 +1128,11 @@ export class QuestionBatchDeleteEditor extends Editor {
         .map((question) =>
           question.qid ? path.join(this.course.path, 'questions', question.qid) : undefined,
         )
-        .filter((x) => x !== undefined), //ignore non-existent qids
-      commitMessage: `delete questions ${this.questions.map((x) => x.qid).join(', ')}`,
+        .filter((x) => x !== undefined), //never will be false, but this is to placate typechecks
+      commitMessage:
+        this.questions.length === 1
+          ? `delete question ${this.questions[0].qid}`
+          : `delete questions (${this.questions.map((x) => x.qid).join(', ')})`,
     };
   }
 }

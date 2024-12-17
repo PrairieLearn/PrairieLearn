@@ -16,11 +16,13 @@ WHERE
 ORDER BY
   qid ASC;
 
--- BLOCK select_drafts_by_course_id
+-- BLOCK select_draft_questions_by_course_id
 SELECT
-  *
+  q.id,
+  q.qid
 FROM
   questions as q
 WHERE
   q.course_id = $course_id
-  AND q.draft IS TRUE;
+  AND q.draft IS TRUE
+  AND q.deleted_at IS NULL;
