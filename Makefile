@@ -4,7 +4,7 @@ build-sequential:
 	@yarn turbo run --concurrency 1 build
 node-deps:
 	@yarn
-	build
+	@$(MAKE) build
 python-deps:
 	@python3.12 -m venv .venv
 	.venv/bin/python3 -m pip install --upgrade pip
