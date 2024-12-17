@@ -123,6 +123,8 @@ Now you can install the other dependencies.
 
 ---
 
+On Linux, most of these prerequisites should be standard packages from the OS distribution, though in some cases the distribution may not include the latest version by default. In cases where your distribution does not include the corresponding package or it is outdated, you should follow the instructions in the corresponding page above.
+
 - Clone the latest code:
 
   ```sh
