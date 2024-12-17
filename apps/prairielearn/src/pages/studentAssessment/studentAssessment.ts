@@ -38,7 +38,11 @@ router.get(
   '/',
   asyncHandler(async function (req, res) {
     if (!(res.locals.authz_result?.active ?? true)) {
-      // Student did not start the assessment, and the assessment is not active.
+      // If the student had started the assessment already, they would have been
+      // redirected to the assessment instance by the `studentAssessmentRedirect`
+      // middleware. So, if we're here, it means that the student did not start
+      // the assessment (or that they're trying to start a new instance of a
+      // multi-instance assessment), and the assessment is not active.
       //
       // This check means that students will be unable to join a group if an
       // assessment is inactive, which we're deeming to be sensible behavior.
