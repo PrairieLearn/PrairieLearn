@@ -4,20 +4,22 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 ## High level view
 
-![High level system structure](high-level.png)
+<div style="max-width: 500px;" markdown>
+![](./high-level.d2){pad="0"}
+</div>
 
-- The questions and assessments for a course are stored in a git repository. This is synced into the database by the course instructor and DB data is updated or added to represent the course. Students then interact with the course website by doing questions, with the results being stored in the DB. The instructor can view the student results on the website and download CSV files with the data.
+- The questions and assessments for a course are stored in a git repository. This is synced into the database by the course instructor and database data is updated or added to represent the course. Students then interact with the course website by doing questions, with the results being stored in the database. The instructor can view the student results on the website and download CSV files with the data.
 
 - The majority of course content and configuration is done via plain text files in the git repository, which is the master source for this data.
 
-- All student data is all stored in the DB and is not pushed back into the git repository or disk at any point.
+- All student data is all stored in the database and is not pushed back into the git repository or disk at any point.
 
 ## Unit tests and integration tests
 
 - Integration tests are stored in the `apps/prairielearn/src/tests/` directory.
 - Unit tests are typically located next to the file under test, with the filename ending in `.test.ts`. For instance, tests for `foo.ts` would be in `foo.test.ts` in the same directory.
 
-- To run the tests during development, see [Running the test suite](./installingLocal.md#running-the-test-suite).
+- To run the tests during development, see [Running the test suite](../installingLocal.md#running-the-test-suite).
 
 - The tests are run by GitHub Actions on every push to GitHub.
 
@@ -172,7 +174,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
     second_preliminary_table AS spt;
   ```
 
-## DB stored procedures (sprocs)
+## Database stored procedures (sprocs)
 
 - Stored procedures are created by the files in `sprocs/`. To call a stored procedure from JavaScript, use code like:
 
@@ -194,13 +196,13 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - For more details see `sprocs/array_and_number.sql` and comments in `server.js` near the call to `sqldb.setRandomSearchSchemaAsync()`.
 
-## DB schema (simplified overview)
+## Database schema (simplified overview)
 
-- The most important tables in the database are shown in the diagram below (also as a [PDF image](simplified-models.pdf)).
+- The most important tables in the database are shown in the diagram below:
 
-![Simplified DB Schema](simplified-models.png)
+![](./simplified-models.d2)
 
-- Detailed descriptions of the format of each table are in the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
+- Detailed descriptions of the format of each table are in the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
 
 - Each table has an `id` number that is used for cross-referencing. For example, each row in the `questions` table has an `id` and other tables will refer to this as a `question_id`. For legacy reasons, there are two exceptions to this rule:
 
@@ -227,13 +229,13 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 
 - For each variant of a question that a student sees they will have submitted zero or more `submissions` with a `variant_id` to show what it belongs to. The submissions row also contains information the submitted answer and whether it was correct.
 
-## DB schema (full data)
+## Database schema (full data)
 
-- See the [list of DB tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below ([PDF ER diagram](models.pdf)).
+- See the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/), with the ER (entity relationship) diagram below:
 
-![DB Schema](models.png)
+![](./models.d2){layout="elk"}
 
-## DB schema conventions
+## Database schema conventions
 
 - Tables have plural names (e.g. `assessments`) and always have a primary key called `id`. The foreign keys pointing to this table are non-plural, like `assessment_id`. When referring to this use an abbreviation of the first letters of each word, like `ai` in this case. The only exceptions are `aset` for `assessment_sets` (to avoid conflicting with the SQL `AS` keyword), `top` for `topics`, and `tag` for `tags` (to avoid conflicts). This gives code like:
 
@@ -249,15 +251,15 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
     AND ai.deleted_at IS NULL;
   ```
 
-- We (almost) never delete student data from the DB. To avoid having rows with broken or missing foreign keys, course configuration tables (e.g. `assessments`) can't be actually deleted. Instead they are "soft-deleted" by setting the `deleted_at` column to non-NULL. This means that when using any soft-deletable table we need to have a `WHERE deleted_at IS NULL` to get only the active rows.
+- We (almost) never delete student data from the database. To avoid having rows with broken or missing foreign keys, course configuration tables (e.g. `assessments`) can't be actually deleted. Instead they are "soft-deleted" by setting the `deleted_at` column to non-NULL. This means that when using any soft-deletable table we need to have a `WHERE deleted_at IS NULL` to get only the active rows.
 
-## DB schema modification
+## Database schema modification
 
 See [`migrations/README.md`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/migrations/README.md)
 
 ## Database access
 
-- DB access is via the `@prairielearn/postgres` package. This wraps the [node-postgres](https://github.com/brianc/node-postgres) library.
+- Database access is via the `@prairielearn/postgres` package. This wraps the [node-postgres](https://github.com/brianc/node-postgres) library.
 
 - For single queries we normally use the following pattern, which automatically uses connection pooling from node-postgres and safe variable interpolation with named parameters and [prepared statements](https://github.com/brianc/node-postgres/wiki/Parameterized-queries-and-Prepared-Statements):
 
@@ -536,9 +538,9 @@ To automatically fix lint and formatting errors, run `make format`.
 
 - Note that `submission.format_errors` stores information about student errors, while the `issues` table stores information about question code errors.
 
-- The question flow is shown in the diagram below (also as a [PDF image](question-flow.pdf)).
+- The question flow is shown in the diagram below:
 
-  ![Question flow](question-flow.png)
+![](./question-flow.d2)
 
 ## JavaScript equality operator
 

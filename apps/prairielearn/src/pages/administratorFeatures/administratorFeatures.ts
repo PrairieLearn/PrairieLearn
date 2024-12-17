@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import {
@@ -73,6 +73,7 @@ const OptionalIdSchema = z
   .transform((val) => val || undefined);
 
 const AddFeatureGrantModalParamsSchema = z.object({
+  enabled: z.union([z.literal('true'), z.literal('false')]).transform((val) => val === 'true'),
   institution_id: OptionalIdSchema,
   course_id: OptionalIdSchema,
   course_instance_id: OptionalIdSchema,
@@ -131,6 +132,7 @@ router.get(
     res.send(
       AddFeatureGrantModalBody({
         feature,
+        enabled: query.enabled,
         institutions,
         institution_id: institution?.id,
         courses,
@@ -145,21 +147,42 @@ router.get(
 router.post(
   '/:feature',
   asyncHandler(async (req, res) => {
-    const feature = validateFeature(req.params.feature);
+    if (req.body.__action === 'add_feature_grant') {
+      const feature = validateFeature(req.params.feature);
 
-    const params = AddFeatureGrantModalParamsSchema.parse(req.body);
-    const { institution, course, course_instance } = await getEntitiesFromParams(params);
+      const params = AddFeatureGrantModalParamsSchema.parse(req.body);
+      const { institution, course, course_instance } = await getEntitiesFromParams(params);
 
-    await features.enable(
-      feature,
-      features.validateContext({
+      const context = features.validateContext({
         institution_id: institution?.id ?? null,
         course_id: course?.id ?? null,
         course_instance_id: course_instance?.id ?? null,
-      }),
-    );
+      });
 
-    res.redirect(req.originalUrl);
+      if (params.enabled) {
+        await features.enable(feature, context);
+      } else {
+        await features.disable(feature, context);
+      }
+
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'update_feature_grant_enabled') {
+      const enabled = z
+        .union([z.literal('enabled'), z.literal('disabled')])
+        .transform((val) => val === 'enabled')
+        .parse(req.body.feature_grant_enabled);
+
+      await queryAsync(sql.update_feature_grant_enabled, {
+        id: IdSchema.parse(req.body.feature_grant_id),
+        enabled,
+      });
+      res.redirect(req.originalUrl);
+    } else if (req.body.__action === 'revoke_feature_grant') {
+      await queryAsync(sql.delete_feature_grant, { id: IdSchema.parse(req.body.feature_grant_id) });
+      res.redirect(req.originalUrl);
+    } else {
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+    }
   }),
 );
 
