@@ -3683,7 +3683,6 @@ __metadata:
     bootstrap-4: "npm:bootstrap@^4.6.2"
     bootstrap-icons: "npm:^1.11.3"
     bootstrap-table: "npm:1.21.2"
-    bowser: "npm:^2.11.0"
     byline: "npm:^5.0.0"
     c8: "npm:^10.1.2"
     chai: "npm:^5.1.2"
@@ -3799,6 +3798,7 @@ __metadata:
     typescript: "npm:^5.7.2"
     typescript-cp: "npm:^0.1.9"
     tzientist: "npm:^3.2.0"
+    ua-parser-js: "npm:^2.0.0"
     unified: "npm:^11.0.5"
     unist-util-visit: "npm:^5.0.0"
     unzipper: "npm:^0.12.3"
@@ -8326,6 +8326,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"detect-europe-js@npm:^0.1.2":
+  version: 0.1.2
+  resolution: "detect-europe-js@npm:0.1.2"
+  checksum: 10c0/46fccf2a9ddeec8ecb7a369be1452f84856cbd0ccdeb3c47e41fe6c9d69f63d6bd75f91b5aa1ae310e56d8fbcbff0e802b1504cdcc3a92f3327c94408e6d07a2
+  languageName: node
+  linkType: hard
+
 "detect-indent@npm:^6.0.0":
   version: 6.1.0
   resolution: "detect-indent@npm:6.1.0"
@@ -10930,6 +10937,13 @@ __metadata:
   dependencies:
     call-bind: "npm:^1.0.7"
   checksum: 10c0/adc11ab0acbc934a7b9e5e9d6c588d4ec6682f6fea8cda5180721704fa32927582ede5b123349e32517fdadd07958973d24716c80e7ab198970c47acc09e59c7
+  languageName: node
+  linkType: hard
+
+"is-standalone-pwa@npm:^0.1.1":
+  version: 0.1.1
+  resolution: "is-standalone-pwa@npm:0.1.1"
+  checksum: 10c0/af1a11edef4a8f00c24014576285070fb73eebb3583cae790c0a825e338e19f05048a26e5fd5ef10f6056032d6a4520054ff824532c15df784933c0fcc5e13fd
   languageName: node
   linkType: hard
 
@@ -16125,6 +16139,26 @@ __metadata:
   version: 3.2.0
   resolution: "tzientist@npm:3.2.0"
   checksum: 10c0/3318aa3696a3aaad31b9ff060467dd9ecd5306c93bedc7aca812c502a3f16ffd926aa7e399fa36e79145dd95375913335a2ba86062034eadf35c136663bd090f
+  languageName: node
+  linkType: hard
+
+"ua-is-frozen@npm:^0.1.2":
+  version: 0.1.2
+  resolution: "ua-is-frozen@npm:0.1.2"
+  checksum: 10c0/fb41929bd4924c9676391e6d7197d30580749a96697a83c8b6e77fb137e3ff8492dcd1e6f871f6a9517848651a93af37bfefb25385f16d90e19678ade22d30b7
+  languageName: node
+  linkType: hard
+
+"ua-parser-js@npm:^2.0.0":
+  version: 2.0.0
+  resolution: "ua-parser-js@npm:2.0.0"
+  dependencies:
+    detect-europe-js: "npm:^0.1.2"
+    is-standalone-pwa: "npm:^0.1.1"
+    ua-is-frozen: "npm:^0.1.2"
+  bin:
+    ua-parser-js: script/cli.js
+  checksum: 10c0/f82ef8d493f079f1fea885ae25733d02788125f1a75210936610c804d5c22bd2368282070471931ae8b9ad1a5fb31165f1188c4c27887f33aceffb97d629aa9f
   languageName: node
   linkType: hard
 

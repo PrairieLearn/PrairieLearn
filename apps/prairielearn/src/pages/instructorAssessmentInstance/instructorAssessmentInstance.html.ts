@@ -1,4 +1,4 @@
-import Bowser from 'bowser';
+import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
@@ -686,9 +686,7 @@ export function InstructorAssessmentInstance({
 }
 
 function ClientFingerprintContent({ clientFingerprint }: { clientFingerprint: ClientFingerprint }) {
-  const parsedAgent = clientFingerprint.user_agent
-    ? Bowser.getParser(clientFingerprint.user_agent).getResult()
-    : null;
+  const parsedAgent = clientFingerprint.user_agent ? UAParser(clientFingerprint.user_agent) : null;
   return html`
     <div>
       IP Address:
@@ -706,7 +704,10 @@ function ClientFingerprintContent({ clientFingerprint }: { clientFingerprint: Cl
         Browser: ${parsedAgent?.browser.name ?? 'Unknown'} ${parsedAgent?.browser.version ?? ''}
       </li>
       <li>OS: ${parsedAgent?.os.name ?? 'Unknown'} ${parsedAgent?.os.version ?? ''}</li>
-      <li>Platform: ${parsedAgent?.platform.type ?? 'Unknown'}</li>
+      <li>
+        Device: ${parsedAgent?.device.vendor ?? parsedAgent?.device.type ?? 'Unknown'}
+        ${parsedAgent?.device.model ?? ''}
+      </li>
       <li>Raw: <code>${clientFingerprint.user_agent}</code></li>
     </ul>
   `;
