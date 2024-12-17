@@ -8,15 +8,15 @@ Consider **[adding the question or issue](https://github.com/PrairieLearn/Prairi
 
 There are three different ways to let a student re-attempt or continue an exam:
 
-1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using a PrairieTest session and have a new reservation, otherwise they will need a custom [access rule](accessControl.md) with their UID.
+1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using a PrairieTest session and have a new reservation, otherwise they will need a custom [access rule](accessControl/index.md) with their UID.
 
-2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using PrairieTest they need to sign up for a new reservation, or outside a PrairieTest environment they will need a custom [access rule](accessControl.md) with their UID.
+2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using PrairieTest they need to sign up for a new reservation, or outside a PrairieTest environment they will need a custom [access rule](accessControl/index.md) with their UID.
 
 3. **Make a custom retry exam with a different selection of questions on it:** This is normally used if many students are going to take a second-chance exam. You can copy the original exam to a new assessment in PrairieLearn (use the "Copy" button on the "Settings" tab for the assessment) and adjust the question selection and access controls as appropriate.
 
 ## How do I give students access to view their exams after they are over?
 
-To allow students to see their entire exam after it is over, you can add an [access rule](accessControl.md) like this:
+To allow students to see their entire exam after it is over, you can add an [access rule](accessControl/index.md) like this:
 
 ```json title="infoAssessment.json"
 {
@@ -107,7 +107,7 @@ Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/inf
     ]
 ```
 
-See [Access control](accessControl.md) for more details.
+See [Access control](accessControl/index.md) for more details.
 
 ## Why does a user have the role of None?
 
@@ -129,7 +129,7 @@ then the feature can be disabled by specifying in the `infoAsssement.json`:
 "autoClose": false
 ```
 
-See [Auto-closing Exam assessments](assessment.md#auto-closing-exam-assessments)
+See [Auto-closing Exam assessments](assessment/index.md#auto-closing-exam-assessments)
 for more details.
 
 ## How can we provide a cheat sheet for exams held in a testing center?
@@ -242,7 +242,7 @@ For example, this error would be triggered under:
 }
 ```
 
-See [Question Specification](assessment.md#question-specification) for more details.
+See [Question Specification](assessment/index.md#question-specification) for more details.
 
 ## Why is the UUID used in multiple questions?
 
@@ -395,7 +395,7 @@ For more information on this granular technique, see [the documentation for pl-h
 
 ## I forgot to set `"credit":100` and now my students all have 0%. How do I fix this?
 
-PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](accessControl.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
+PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](accessControl/index.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
 
 To fix student scores without requiring them to answer another question you can:
 
