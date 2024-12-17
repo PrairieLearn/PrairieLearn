@@ -3,6 +3,7 @@ import * as child_process from 'node:child_process';
 import * as path from 'node:path';
 
 import debugfn from 'debug';
+import fs from 'fs-extra';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -24,10 +25,10 @@ const EXITED = Symbol('EXITED');
 
 /**
  * @typedef {Object} CodeCallerNativeOptions
- * @property {boolean} [dropPrivileges]
- * @property {number} [questionTimeoutMilliseconds]
- * @property {number} [pingTimeoutMilliseconds]
- * @property {(msg: string, data?: any) => void} errorLogger
+ * @property {boolean} dropPrivileges
+ * @property {number} questionTimeoutMilliseconds
+ * @property {number} pingTimeoutMilliseconds
+ * @property {(msg: string, data?: any) => void} [errorLogger]
  */
 
 /** @typedef {CREATED | WAITING | IN_CALL | RESTARTING | EXITING | EXITED} CodeCallerState */
@@ -84,24 +85,39 @@ const EXITED = Symbol('EXITED');
  */
 export class CodeCallerNative {
   /**
+   * Creating a new {@link CodeCallerNative} instance requires some async work,
+   * so we use this static method to create a new instance since a constructor
+   * cannot be async.
+   *
+   * @param {CodeCallerNativeOptions} options
+   * @returns {Promise<CodeCallerNative>}
+   */
+  static async create(options) {
+    // Determine which Python executable to use. If there's a `.venv` directory
+    // at the root of the repository, use the Python executable in that
+    // directory. Otherwise, use the system Python executable.
+    let pythonExecutable = 'python3.12';
+    const venvPython = path.join(REPOSITORY_ROOT_PATH, '.venv', 'bin', 'python3.10');
+    if (await fs.pathExists(venvPython)) {
+      pythonExecutable = venvPython;
+    }
+
+    const codeCaller = new CodeCallerNative({
+      pythonExecutable,
+      errorLogger: logger.error.bind(logger),
+      ...options,
+    });
+    await codeCaller.ensureChild();
+    return codeCaller;
+  }
+
+  /**
    * Creates a new {@link CodeCallerNative} with the specified options.
    *
-   * @param {CodeCallerNativeOptions} [options]
+   * @private
+   * @param {Required<CodeCallerNativeOptions> & { pythonExecutable: string }} options
    */
-  constructor(
-    options = {
-      dropPrivileges: false,
-      questionTimeoutMilliseconds: 5_000,
-      pingTimeoutMilliseconds: 60_000,
-      // `CodeCallerNative` is used both directly by the server and also inside of
-      // the `prairielearn/executor` Docker image. When used inside Docker, the
-      // error output *must* be sent via stderr, as we use stdout for data
-      // communication. This is incompatible with the default behavior of our
-      // logger, which will only write to stdout. So, we allow a different
-      // logging function to be provided.
-      errorLogger: logger.error.bind(logger),
-    },
-  ) {
+  constructor(options) {
     /** @type {CodeCallerState} */
     this.state = CREATED;
     this.uuid = uuidv4();
@@ -218,6 +234,7 @@ export class CodeCallerNative {
       }
     };
 
+    /** @type {number} */
     const timeout =
       type === 'ping'
         ? this.options.pingTimeoutMilliseconds
@@ -311,6 +328,7 @@ export class CodeCallerNative {
     this.debug('exit done()');
   }
 
+  /** @private */
   async ensureChild() {
     this.debug('enter ensureChild()');
     this._checkState();
@@ -328,7 +346,7 @@ export class CodeCallerNative {
     this.debug('enter _startChild()');
     this._checkState([CREATED]);
 
-    const cmd = 'python3';
+    const cmd = this.options.pythonExecutable;
     const pythonZygote = path.join(APP_ROOT_PATH, 'python', 'zygote.py');
     const args = ['-B', pythonZygote];
     const env = _.clone(process.env);

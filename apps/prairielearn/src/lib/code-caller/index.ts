@@ -54,20 +54,22 @@ export async function init() {
         const codeCallerOptions = {
           questionTimeoutMilliseconds: config.questionTimeoutMilliseconds,
           pingTimeoutMilliseconds: config.workerPingTimeoutMilliseconds,
-          errorLogger: logger.error.bind(logger),
         };
 
-        const codeCaller = run(() => {
+        const codeCaller = await run(async () => {
           if (workersExecutionMode === 'container') {
-            return new CodeCallerContainer(codeCallerOptions);
+            return await CodeCallerContainer.create(codeCallerOptions);
           } else if (workersExecutionMode === 'native') {
-            return new CodeCallerNative(codeCallerOptions);
+            return await CodeCallerNative.create({
+              ...codeCallerOptions,
+              // We can only drop privileges if this code caller is running in a container.
+              dropPrivileges: false,
+            });
           } else {
             throw new Error(`Unexpected workersExecutionMode: ${workersExecutionMode}`);
           }
         });
 
-        await codeCaller.ensureChild();
         load.startJob('python_worker_idle', codeCaller.uuid);
         return codeCaller;
       },
