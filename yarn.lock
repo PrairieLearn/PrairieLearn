@@ -3618,6 +3618,7 @@ __metadata:
     "@prairielearn/signed-token": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
+    "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.1"
     "@sa11y/format": "npm:^6.10.1"
     "@socket.io/redis-adapter": "npm:^8.3.0"
@@ -3986,6 +3987,17 @@ __metadata:
     socket.io: "npm:^4.8.1"
     typescript: "npm:^5.7.2"
     typescript-cp: "npm:^0.1.9"
+  languageName: unknown
+  linkType: soft
+
+"@prairielearn/zod@workspace:^, @prairielearn/zod@workspace:packages/zod":
+  version: 0.0.0-use.local
+  resolution: "@prairielearn/zod@workspace:packages/zod"
+  dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/node": "npm:^20.17.9"
+    typescript: "npm:^5.7.2"
+    zod: "npm:^3.23.8"
   languageName: unknown
   linkType: soft
 
@@ -13565,9 +13577,9 @@ __metadata:
   linkType: hard
 
 "path-to-regexp@npm:^6.1.0":
-  version: 6.3.0
-  resolution: "path-to-regexp@npm:6.3.0"
-  checksum: 10c0/73b67f4638b41cde56254e6354e46ae3a2ebc08279583f6af3d96fe4664fc75788f74ed0d18ca44fa4a98491b69434f9eee73b97bb5314bd1b5adb700f5c18d6
+  version: 6.2.2
+  resolution: "path-to-regexp@npm:6.2.2"
+  checksum: 10c0/4b60852d3501fd05ca9dd08c70033d73844e5eca14e41f499f069afa8364f780f15c5098002f93bd42af8b3514de62ac6e82a53b5662de881d2b08c9ef21ea6b
   languageName: node
   linkType: hard
 

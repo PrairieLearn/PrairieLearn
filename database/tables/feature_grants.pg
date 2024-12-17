@@ -2,6 +2,7 @@ columns
     course_id: bigint
     course_instance_id: bigint
     created_at: timestamp with time zone not null default now()
+    enabled: boolean not null default true
     id: bigint not null default nextval('feature_grants_id_seq'::regclass)
     institution_id: bigint
     name: text not null
@@ -13,6 +14,10 @@ indexes
     feature_grants_by_entity_idx: USING btree (institution_id, course_id, course_instance_id, user_id, name)
     feature_grants_name_user_id_idx: USING btree (name, user_id)
     feature_grants_user_id_name_idx: USING btree (user_id, name)
+
+check constraints
+    feature_grants_course_id_not_null: CHECK (NOT (institution_id IS NULL AND course_id IS NOT NULL))
+    feature_grants_course_instance_id_not_null: CHECK (NOT (course_id IS NULL AND course_instance_id IS NOT NULL))
 
 foreign-key constraints
     feature_grants_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
