@@ -213,7 +213,38 @@ Now, any time the student tries to use the functions, their code will raise an e
 
 ## Overview
 
-![Grader Flow](grader-structure.png)
+```d2
+direction: right
+setup: "setup_code.py"
+student: "Student Answer"
+reference: "Reference Answer\n(ans.py)"
+test: "Test Cases\n(test.py)"
+
+setup -> student {
+  label: "names_for_user"
+  style: {
+    bold: true
+  }
+}
+setup -> reference {
+  label: "All Variables"
+  style: {
+    bold: true
+  }
+}
+student -> test {
+  label: "names_from_user\n(self.st)"
+  style: {
+    bold: true
+  }
+}
+reference -> test {
+  label: "All Variables\n(self.ref)"
+  style: {
+    bold: true
+  }
+}
+```
 
 ## Course-specific libraries
 

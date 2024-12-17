@@ -324,6 +324,9 @@ jobs:
       - name: Install OS packages
         run: sudo apt-get install -y graphviz graphviz-dev
 
+      - name: Install additional dependencies
+        run: sudo curl -fsSL https://d2lang.com/install.sh | sh -s --
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
