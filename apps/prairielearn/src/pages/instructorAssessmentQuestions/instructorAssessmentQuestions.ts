@@ -6,10 +6,8 @@ import { queryRows, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
-import {
-  InstructorAssessmentQuestions,
-  AssessmentQuestionRowSchema,
-} from './instructorAssessmentQuestions.html.js';
+import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';
+import { AssessmentQuestionRowSchema } from './instructorAssessmentQuestions.types.js';
 
 const router = express.Router();
 const sql = loadSqlEquiv(import.meta.url);

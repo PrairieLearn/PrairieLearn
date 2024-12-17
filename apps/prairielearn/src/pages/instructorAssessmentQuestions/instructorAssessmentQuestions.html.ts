@@ -1,5 +1,6 @@
 import { z } from 'zod';
 
+import { EncodedData } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
@@ -22,33 +23,7 @@ import {
   TopicSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
-
-export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
-  alternative_group_number_choose: AlternativeGroupSchema.shape.number_choose,
-  alternative_group_number: AlternativeGroupSchema.shape.number,
-  alternative_group_size: z.number(),
-  assessment_question_advance_score_perc: AlternativeGroupSchema.shape.advance_score_perc,
-  display_name: z.string().nullable(),
-  number: z.string().nullable(),
-  open_issue_count: z.coerce.number().nullable(),
-  other_assessments: AssessmentsFormatForQuestionSchema.nullable(),
-  sync_errors: QuestionSchema.shape.sync_errors,
-  sync_warnings: QuestionSchema.shape.sync_warnings,
-  topic: TopicSchema,
-  qid: QuestionSchema.shape.qid,
-  start_new_zone: z.boolean().nullable(),
-  start_new_alternative_group: z.boolean().nullable(),
-  tags: TagSchema.pick({ color: true, id: true, name: true }).array().nullable(),
-  title: QuestionSchema.shape.title,
-  zone_best_questions: ZoneSchema.shape.best_questions,
-  zone_has_best_questions: z.boolean().nullable(),
-  zone_has_max_points: z.boolean().nullable(),
-  zone_max_points: ZoneSchema.shape.max_points,
-  zone_number_choose: ZoneSchema.shape.number_choose,
-  zone_number: ZoneSchema.shape.number,
-  zone_title: ZoneSchema.shape.title,
-});
-type AssessmentQuestionRow = z.infer<typeof AssessmentQuestionRowSchema>;
+import { AssessmentQuestionRow } from './instructorAssessmentQuestions.types.js';
 
 export function InstructorAssessmentQuestions({
   resLocals,
@@ -65,7 +40,7 @@ export function InstructorAssessmentQuestions({
         ${compiledScriptTag('instructorAssessmentQuestionsClient.tsx')}
       </head>
       <body>
-        ${Navbar({ resLocals })}
+        ${EncodedData(questions, 'assessment-questions-data')} ${Navbar({ resLocals })}
         <main id="content" class="container-fluid">
           ${Modal({
             id: 'resetQuestionVariantsModal',
@@ -105,14 +80,15 @@ export function InstructorAssessmentQuestions({
                 ? html` <div class="js-edit-mode-buttons ml-auto"></div> `
                 : ''}
             </div>
-            ${AssessmentQuestionsTable({
-              questions,
-              assessmentType: resLocals.assessment.type,
-              urlPrefix: resLocals.urlPrefix,
-              hasCoursePermissionPreview: resLocals.authz_data.has_course_permission_preview,
-              hasCourseInstancePermissionEdit:
-                resLocals.authz_data.has_course_instance_permission_edit,
-            })}
+            <div
+              class="table-responsive js-assessment-questions-table"
+              data-assessment-type="${resLocals.assessment.type}"
+              data-url-prefix="${resLocals.urlPrefix}"
+              data-has-course-permission-preview="${resLocals.authz_data
+                .has_course_permission_preview}"
+              data-has-course-instance-permission-edit="${resLocals.authz_data
+                .has_course_instance_permission_edit}"
+            ></div>
           </div>
         </main>
       </body>
@@ -153,7 +129,13 @@ function AssessmentQuestionsTable({
   }
 
   return html`
-    <div class="table-responsive">
+    <div
+      class="table-responsive js-assessment-questions-table"
+      data-assessment-type="${assessmentType}"
+      data-url-prefix="${urlPrefix}"
+      data-has-course-permission-preview="${hasCoursePermissionPreview}"
+      data-has-course-instance-permission-edit="${hasCourseInstancePermissionEdit}"
+    >
       <table class="table table-sm table-hover" aria-label="Assessment questions">
         <thead>
           <tr>
