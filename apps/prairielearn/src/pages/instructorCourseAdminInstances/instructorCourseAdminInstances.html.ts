@@ -1,10 +1,15 @@
+import { Temporal } from '@js-temporal/polyfill';
+
+import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
+import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
+import { compiledScriptTag } from '../../lib/assets.js';
 import { type CourseInstanceAuthz } from '../../models/course-instances.js';
 
 export type CourseInstanceAuthzRow = CourseInstanceAuthz & { enrollment_count?: number };
@@ -16,11 +21,32 @@ export function InstructorCourseAdminInstances({
   resLocals: Record<string, any>;
   courseInstances: CourseInstanceAuthzRow[];
 }) {
+  const initialStartDate = Temporal.Now.zonedDateTimeISO(resLocals.course.timeZone).with({
+    hour: 0,
+    minute: 1,
+    second: 0,
+  });
+  const initialStartDateFormatted = formatDateYMDHM(
+    new Date(initialStartDate.epochMilliseconds),
+    resLocals.course.time_zone,
+  );
+
+  const initialEndDate = initialStartDate.add({ months: 4 }).with({
+    hour: 23,
+    minute: 59,
+    second: 0,
+  });
+  const initialEndDateFormatted = formatDateYMDHM(
+    new Date(initialEndDate.epochMilliseconds),
+    resLocals.course.time_zone,
+  );
+
   return html`
     <!doctype html>
     <html lang="en">
       <head>
         ${HeadContents({ resLocals, pageTitle: 'Course Instances' })}
+        ${compiledScriptTag('instructorCourseAdminInstancesClient.ts')}
       </head>
       <body>
         ${Navbar({ resLocals })}
@@ -30,25 +56,33 @@ export function InstructorCourseAdminInstances({
             course: resLocals.course,
             urlPrefix: resLocals.urlPrefix,
           })}
+          ${CreateCourseInstanceModal({
+            courseShortName: resLocals.course.short_name,
+            csrfToken: resLocals.__csrf_token,
+            initialStartDateFormatted,
+            initialEndDateFormatted,
+            timezone: resLocals.course.display_timezone,
+          })}
           <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
+            <div
+              class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
+            >
               <h1>Course instances</h1>
               ${resLocals.authz_data.has_course_permission_edit &&
               !resLocals.course.example_course &&
               !resLocals.needToSync &&
               courseInstances.length > 0
                 ? html`
-                    <form class="ml-auto" name="add-course-instance-form" method="POST">
-                      <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-                      <button
-                        name="__action"
-                        value="add_course_instance"
-                        class="btn btn-sm btn-light"
-                      >
-                        <i class="fa fa-plus" aria-hidden="true"></i>
-                        <span class="d-none d-sm-inline">Add course instance</span>
-                      </button>
-                    </form>
+                    <button
+                      name="__action"
+                      value="add_course_instance"
+                      class="btn btn-sm btn-light"
+                      data-toggle="modal"
+                      data-target="#createCourseInstanceModal"
+                    >
+                      <i class="fa fa-plus" aria-hidden="true"></i>
+                      <span class="d-none d-sm-inline">Add course instance</span>
+                    </button>
                   `
                 : ''}
             </div>
@@ -160,21 +194,16 @@ export function InstructorCourseAdminInstances({
                         `;
                       }
                       return html`
-                        <form method="POST">
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <button
-                            name="__action"
-                            value="add_course_instance"
-                            class="btn btn-sm btn-primary"
-                          >
-                            <i class="fa fa-plus" aria-hidden="true"></i>
-                            <span>Add course instance</span>
-                          </button>
-                        </form>
+                        <button
+                          name="__action"
+                          value="add_course_instance"
+                          class="btn btn-sm btn-primary"
+                          data-toggle="modal"
+                          data-target="#createCourseInstanceModal"
+                        >
+                          <i class="fa fa-plus" aria-hidden="true"></i>
+                          <span class="d-none d-sm-inline">Add course instance</span>
+                        </button>
                       `;
                     })}
                   </div>
@@ -224,4 +253,118 @@ function PopoverEndDate() {
       >.
     </p>
   `.toString();
+}
+
+function CreateCourseInstanceModal({
+  courseShortName,
+  csrfToken,
+  initialStartDateFormatted,
+  initialEndDateFormatted,
+  timezone,
+}: {
+  courseShortName: string;
+  csrfToken: string;
+  initialStartDateFormatted: string;
+  initialEndDateFormatted: string;
+  timezone: string;
+}) {
+  return Modal({
+    id: 'createCourseInstanceModal',
+    title: 'Create course instance',
+    formMethod: 'POST',
+    body: html`
+      <div class="form-group">
+        <label for="long_name">Long name</label>
+        <input
+          type="text"
+          class="form-control"
+          id="long_name"
+          name="long_name"
+          required
+          aria-describedby="long_name_help"
+        />
+        <small id="long_name_help" class="form-text text-muted">
+          The full course instance name, such as "Fall 2025". Users see it joined to the course
+          name, e.g. "${courseShortName} Fall 2025".
+        </small>
+      </div>
+      <div class="form-group">
+        <label for="short_name">Short name</label>
+        <input
+          type="text"
+          class="form-control"
+          id="short_name"
+          name="short_name"
+          required
+          pattern="[\\-A-Za-z0-9_\\/]+"
+          aria-describedby="short_name_help"
+        />
+        <small id="short_name_help" class="form-text text-muted">
+          A short name, such as "Fa25" or "W25b". This is used in menus and headers where a short
+          description is required. Use only letters, numbers, dashes, and underscores, with no
+          spaces.
+        </small>
+      </div>
+      <div class="form-check mb-3">
+        <input
+          type="checkbox"
+          class="form-check-input"
+          id="access_dates_enabled"
+          name="access_dates_enabled"
+          aria-describedby="access_dates_enabled_help"
+        />
+        <label class="form-check-label" for="access_dates_enabled">
+          Make course instance available to students
+          <br />
+          <small id="access_dates_enabled_help" class="form-text text-muted mt-0">
+            This can be enabled later.
+          </small>
+        </label>
+      </div>
+      <div id="accessDates" hidden="true">
+        <div class="form-group">
+          <label for="start_access_date">Access start date</label>
+          <div class="input-group date-picker">
+            <input
+              class="form-control date-picker"
+              type="datetime-local"
+              id="start_access_date"
+              name="start_access_date"
+              value="${initialStartDateFormatted}"
+              aria-describedby="start_access_date_help"
+            />
+            <span class="input-group-text date-picker">${timezone}</span>
+          </div>
+          <small id="start_access_date_help" class="form-text text-muted">
+            The date when students can access the course instance. Can be edited later.
+          </small>
+        </div>
+        <div class="form-group">
+          <label for="end_access_date">Access end date</label>
+          <div class="input-group date-picker">
+            <input
+              class="form-control date-picker"
+              type="datetime-local"
+              id="end_access_date"
+              name="end_access_date"
+              value="${initialEndDateFormatted}"
+              aria-describedby="end_access_date_help"
+            />
+            <span class="input-group-text date-picker">${timezone}</span>
+          </div>
+          <small id="end_access_date_help" class="form-text text-muted">
+            The date when students can no longer access the course instance. Can be edited later.
+          </small>
+        </div>
+      </div>
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="add_course_instance" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button id="add_course_instance_create_button" type="submit" class="btn btn-primary">
+        Create
+      </button>
+    `,
+  });
 }

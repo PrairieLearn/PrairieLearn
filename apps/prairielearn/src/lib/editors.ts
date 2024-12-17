@@ -1,6 +1,7 @@
 import assert from 'node:assert';
 import * as path from 'path';
 
+import { type Temporal } from '@js-temporal/polyfill';
 import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
@@ -10,6 +11,7 @@ import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
@@ -94,6 +96,68 @@ async function cleanAndResetRepository(
     cwd: course.path,
     env,
   });
+}
+
+export function getNamesForAdd(
+  shortNames: string[],
+  longNames: string[],
+  shortName = 'New',
+  longName = 'New',
+): { shortName: string; longName: string } {
+  function getNumberShortName(oldShortNames: string[]): number {
+    let numberOfMostRecentCopy = 1;
+    oldShortNames.forEach((oldShortName) => {
+      // shortName is a copy of oldShortName if:
+      // it matches exactly, or
+      // if oldShortName matches {shortName}_{number from 0-9}
+      const found =
+        shortName === oldShortName || oldShortName.match(new RegExp(`^${shortName}_([0-9]+)$`));
+      if (found) {
+        const foundNumber = shortName === oldShortName ? 1 : parseInt(found[1]);
+        if (foundNumber >= numberOfMostRecentCopy) {
+          numberOfMostRecentCopy = foundNumber + 1;
+        }
+      }
+    });
+    return numberOfMostRecentCopy;
+  }
+
+  function getNumberLongName(oldLongNames: string[]): number {
+    let numberOfMostRecentCopy = 1;
+    // longName is a copy of oldLongName if:
+    // it matches exactly, or
+    // if oldLongName matches {longName} ({number from 0-9})
+    oldLongNames.forEach((oldLongName) => {
+      if (!_.isString(oldLongName)) return;
+      const found =
+        oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
+      if (found) {
+        const foundNumber = oldLongName === longName ? 1 : parseInt(found[1]);
+        if (foundNumber >= numberOfMostRecentCopy) {
+          numberOfMostRecentCopy = foundNumber + 1;
+        }
+      }
+    });
+    return numberOfMostRecentCopy;
+  }
+
+  const numberShortName = getNumberShortName(shortNames);
+  const numberLongName = getNumberLongName(longNames);
+  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+
+  if (number === 1 && shortName !== 'New' && longName !== 'New') {
+    // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
+    return {
+      shortName,
+      longName,
+    };
+  } else {
+    // If there are existing copies, a number is needed at the end of the names
+    return {
+      shortName: `${shortName}_${number}`,
+      longName: `${longName} (${number})`,
+    };
+  }
 }
 
 interface BaseEditorOptions {
@@ -489,48 +553,6 @@ export abstract class Editor {
       longName: `${baseLongName} (copy ${number})`,
     };
   }
-
-  getNamesForAdd(
-    shortNames: string[],
-    longNames: string[],
-  ): { shortName: string; longName: string } {
-    function getNumberShortName(oldnames: string[]): number {
-      let number = 1;
-      oldnames.forEach((oldname) => {
-        const found = oldname.match(new RegExp('^New_([0-9]+)$'));
-        if (found) {
-          const foundNumber = parseInt(found[1]);
-          if (foundNumber >= number) {
-            number = foundNumber + 1;
-          }
-        }
-      });
-      return number;
-    }
-
-    function getNumberLongName(oldnames: string[]): number {
-      let number = 1;
-      oldnames.forEach((oldname) => {
-        if (!_.isString(oldname)) return;
-        const found = oldname.match(new RegExp('^New \\(([0-9]+)\\)$'));
-        if (found) {
-          const foundNumber = parseInt(found[1]);
-          if (foundNumber >= number) {
-            number = foundNumber + 1;
-          }
-        }
-      });
-      return number;
-    }
-
-    const numberShortName = getNumberShortName(shortNames);
-    const numberLongName = getNumberLongName(longNames);
-    const number = numberShortName > numberLongName ? numberShortName : numberLongName;
-    return {
-      shortName: `New_${number}`,
-      longName: `New (${number})`,
-    };
-  }
 }
 
 export class AssessmentCopyEditor extends Editor {
@@ -709,7 +731,7 @@ export class AssessmentAddEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
-    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
+    const names = getNamesForAdd(oldNamesShort, oldNamesLong);
     const tid = names.shortName;
     const assessmentTitle = names.longName;
     const assessmentPath = path.join(assessmentsPath, tid);
@@ -863,13 +885,37 @@ export class CourseInstanceRenameEditor extends Editor {
 
 export class CourseInstanceAddEditor extends Editor {
   public readonly uuid: string;
+  private short_name: string;
+  private long_name: string;
+  private start_access_date?: Temporal.ZonedDateTime;
+  private end_access_date?: Temporal.ZonedDateTime;
 
-  constructor(params: BaseEditorOptions) {
+  constructor(
+    params: BaseEditorOptions & {
+      short_name: string;
+      long_name: string;
+      start_access_date?: Temporal.ZonedDateTime;
+      end_access_date?: Temporal.ZonedDateTime;
+    },
+  ) {
     super(params);
 
-    this.description = 'Add course instance';
-
     this.uuid = uuidv4();
+
+    this.description = 'Add course instance';
+    this.short_name = params.short_name;
+    this.long_name = params.long_name;
+
+    if (
+      params.start_access_date &&
+      params.end_access_date &&
+      params.start_access_date.epochMilliseconds > params.end_access_date.epochMilliseconds
+    ) {
+      throw new HttpStatusError(400, 'Start date must be before end date');
+    }
+
+    this.start_access_date = params.start_access_date;
+    this.end_access_date = params.end_access_date;
   }
 
   async write() {
@@ -889,16 +935,42 @@ export class CourseInstanceAddEditor extends Editor {
     );
 
     debug('Generate short_name and long_name');
-    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
+    const names = getNamesForAdd(oldNamesShort, oldNamesLong, this.short_name, this.long_name);
+
     const short_name = names.shortName;
     const courseInstancePath = path.join(courseInstancesPath, short_name);
 
     debug('Write infoCourseInstance.json');
 
+    let allowAccess: { startDate?: string; endDate?: string } | undefined = undefined;
+
+    if (this.start_access_date || this.end_access_date) {
+      allowAccess = {
+        startDate: this.start_access_date
+          ? formatDate(
+              new Date(this.start_access_date.epochMilliseconds),
+              this.course.display_timezone,
+              {
+                includeTz: false,
+              },
+            )
+          : undefined,
+        endDate: this.end_access_date
+          ? formatDate(
+              new Date(this.end_access_date.epochMilliseconds),
+              this.course.display_timezone,
+              {
+                includeTz: false,
+              },
+            )
+          : undefined,
+      };
+    }
+
     const infoJson = {
       uuid: this.uuid,
       longName: names.longName,
-      allowAccess: [],
+      allowAccess: allowAccess !== undefined ? [allowAccess] : [],
     };
 
     // We use outputJson to create the directory this.courseInstancePath if it
@@ -979,7 +1051,7 @@ export class QuestionAddEditor extends Editor {
       const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
       debug('Generate qid and title');
-      const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
+      const names = getNamesForAdd(oldNamesShort, oldNamesLong);
 
       return { qid: names.shortName, title: names.longName };
     });
