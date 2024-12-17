@@ -6,20 +6,20 @@ This page describes the procedure to install and run PrairieLearn without any us
 
   - [Git](https://git-scm.com)
   - [Node.js 20](https://nodejs.org)
-  - [Yarn](https://classic.yarnpkg.com)
+  - [Yarn](https://yarnpkg.com)
   - [Python 3.10](https://www.python.org)
   - [PostgreSQL 15](https://www.postgresql.org)
   - [Redis](https://redis.io)
   - [Graphviz](https://graphviz.org)
   - [d2](https://d2lang.com)
 
-  On macOS, these can be installed with [Homebrew](http://brew.sh/). On Linux, these should all be standard packages from the OS distribution.
-
-  On macOS, you should ensure you have installed the XCode command line tools:
+  On macOS, these can be installed with [Homebrew](http://brew.sh/). You should also ensure you have installed the XCode command line tools:
 
   ```sh
   xcode-select --install
   ```
+
+On Linux, most of these prerequisites should be standard packages from the OS distribution, though in some cases the distribution may not include the latest version by default. In cases where your distribution does not include the corresponding package or it is outdated, you should follow the instructions in the corresponding page above.
 
 - Clone the latest code:
 
