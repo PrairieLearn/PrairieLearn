@@ -96,8 +96,8 @@ export class CodeCallerNative {
     // Determine which Python executable to use. If there's a `.venv` directory
     // at the root of the repository, use the Python executable in that
     // directory. Otherwise, use the system Python executable.
-    let pythonExecutable = 'python3.12';
-    const venvPython = path.join(REPOSITORY_ROOT_PATH, '.venv', 'bin', 'python3.10');
+    let pythonExecutable = 'python3.10';
+    const venvPython = path.join(REPOSITORY_ROOT_PATH, '.venv', 'bin', pythonExecutable);
     if (await fs.pathExists(venvPython)) {
       pythonExecutable = venvPython;
     }
