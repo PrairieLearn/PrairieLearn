@@ -1,4 +1,4 @@
-import { UAParser } from 'ua-parser-js';
+import { type IResult as UAParserResult } from 'ua-parser-js';
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
@@ -60,6 +60,13 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
 });
 type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
+type ClientFingerprintWithParsedAgent = ClientFingerprint & {
+  parsed_agent?: UAParserResult | null;
+};
+export type InstanceLogEntryWithParsedAgent = Omit<InstanceLogEntry, 'client_fingerprint'> & {
+  client_fingerprint: ClientFingerprintWithParsedAgent | null;
+};
+
 const FINGERPRINT_COLORS = ['red2', 'orange2', 'green2', 'blue2', 'turquoise2', 'purple2'];
 
 export function InstructorAssessmentInstance({
@@ -77,7 +84,7 @@ export function InstructorAssessmentInstance({
   assessment_instance_date_formatted: string;
   assessment_instance_duration: string;
   instance_questions: InstanceQuestionRow[];
-  assessmentInstanceLog: InstanceLogEntry[];
+  assessmentInstanceLog: InstanceLogEntryWithParsedAgent[];
 }) {
   return html`
     <!doctype html>
@@ -685,8 +692,11 @@ export function InstructorAssessmentInstance({
   `.toString();
 }
 
-function ClientFingerprintContent({ clientFingerprint }: { clientFingerprint: ClientFingerprint }) {
-  const parsedAgent = clientFingerprint.user_agent ? UAParser(clientFingerprint.user_agent) : null;
+function ClientFingerprintContent({
+  clientFingerprint,
+}: {
+  clientFingerprint: ClientFingerprintWithParsedAgent;
+}) {
   return html`
     <div>
       IP Address:
@@ -701,12 +711,20 @@ function ClientFingerprintContent({ clientFingerprint }: { clientFingerprint: Cl
     <div>User Agent:</div>
     <ul>
       <li>
-        Browser: ${parsedAgent?.browser.name ?? 'Unknown'} ${parsedAgent?.browser.version ?? ''}
+        Browser: ${clientFingerprint.parsed_agent?.browser.name ?? 'Unknown'}
+        ${clientFingerprint.parsed_agent?.browser.version ?? ''}
       </li>
-      <li>OS: ${parsedAgent?.os.name ?? 'Unknown'} ${parsedAgent?.os.version ?? ''}</li>
       <li>
-        Device: ${parsedAgent?.device.vendor ?? parsedAgent?.device.type ?? 'Unknown'}
-        ${parsedAgent?.device.model ?? ''}
+        OS: ${clientFingerprint.parsed_agent?.os.name ?? 'Unknown'}
+        ${clientFingerprint.parsed_agent?.os.version ?? ''}
+      </li>
+      <li>
+        Device:
+        ${clientFingerprint.parsed_agent?.device.vendor ??
+        clientFingerprint.parsed_agent?.device.type ??
+        clientFingerprint.parsed_agent?.cpu.architecture ??
+        'Unknown'}
+        ${clientFingerprint.parsed_agent?.device.model ?? ''}
       </li>
       <li>Raw: <code>${clientFingerprint.user_agent}</code></li>
     </ul>
