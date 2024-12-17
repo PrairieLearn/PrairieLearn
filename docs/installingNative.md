@@ -11,6 +11,7 @@ This page describes the procedure to install and run PrairieLearn without any us
   - [PostgreSQL 15](https://www.postgresql.org)
   - [Redis](https://redis.io)
   - [Graphviz](https://graphviz.org)
+  - [d2](https://d2lang.com)
 
   On macOS, these can be installed with [Homebrew](http://brew.sh/). On Linux, these should all be standard packages from the OS distribution.
 
