@@ -17,7 +17,13 @@ import {
   updateAssessmentStatistics,
   updateAssessmentStatisticsForCourseInstance,
 } from '../../lib/assessment.js';
-import { AssessmentSchema, IdSchema } from '../../lib/db-types.js';
+import {
+  type AssessmentModule,
+  AssessmentModuleSchema,
+  AssessmentSchema,
+  AssessmentSetSchema,
+  IdSchema,
+} from '../../lib/db-types.js';
 import { AssessmentAddEditor } from '../../lib/editors.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
@@ -54,12 +60,31 @@ router.get(
       .filter((row) => row.needs_statistics_update)
       .map((row) => row.id);
 
+    const assessmentSets = await queryRows(
+      sql.select_assessment_sets,
+      { course_id: res.locals.course.id },
+      AssessmentSetSchema,
+    );
+
+    let assessmentModules: AssessmentModule[] = [];
+
+    if (res.locals.course_instance.assessments_group_by === 'Module') {
+      assessmentModules = await queryRows(
+        sql.select_assessment_modules,
+        { course_id: res.locals.course.id },
+        AssessmentModuleSchema,
+      );
+    }
+
     res.send(
       InstructorAssessments({
         resLocals: res.locals,
         rows,
         assessmentIdsNeedingStatsUpdate,
         csvFilename,
+        assessmentSets,
+        assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
+        assessmentModules,
       }),
     );
   }),
@@ -192,7 +217,7 @@ router.post(
         { uuid: editor.uuid, course_instance_id: res.locals.course_instance.id },
         IdSchema,
       );
-      res.redirect(`${res.locals.urlPrefix}/assessment/${assessment_id}/settings`);
+      res.redirect(`${res.locals.urlPrefix}/assessment/${assessment_id}/questions`);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

@@ -7,12 +7,18 @@ import { run } from '@prairielearn/run';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { IssueBadge } from '../../components/IssueBadge.html.js';
+import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { SyncProblemButton } from '../../components/SyncProblemButton.html.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import { AssessmentSchema, AssessmentSetSchema } from '../../lib/db-types.js';
+import {
+  type AssessmentModule,
+  AssessmentSchema,
+  type AssessmentSet,
+  AssessmentSetSchema,
+} from '../../lib/db-types.js';
 
 import { type StatsUpdateData } from './instructorAssessments.types.js';
 
@@ -36,11 +42,17 @@ export function InstructorAssessments({
   rows,
   assessmentIdsNeedingStatsUpdate,
   csvFilename,
+  assessmentSets,
+  assessmentModules,
+  assessmentsGroupBy,
 }: {
   resLocals: Record<string, any>;
   rows: AssessmentRow[];
   assessmentIdsNeedingStatsUpdate: string[];
   csvFilename: string;
+  assessmentSets: AssessmentSet[];
+  assessmentModules: AssessmentModule[];
+  assessmentsGroupBy: string;
 }) {
   const { urlPrefix, authz_data, course, __csrf_token } = resLocals;
 
@@ -56,6 +68,13 @@ export function InstructorAssessments({
       </head>
       <body>
         ${Navbar({ resLocals })}
+        ${CreateAssessmentModal({
+          csrfToken: __csrf_token,
+          urlPrefix,
+          assessmentSets,
+          assessmentModules,
+          assessmentsGroupBy,
+        })}
         <main id="content" class="container-fluid">
           ${CourseInstanceSyncErrorsAndWarnings({
             authz_data,
@@ -68,13 +87,16 @@ export function InstructorAssessments({
               <h1>Assessments</h1>
               ${authz_data.has_course_permission_edit && !course.example_course && rows.length > 0
                 ? html`
-                    <form class="ml-auto" name="add-assessment-form" method="POST">
-                      <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                      <button name="__action" value="add_assessment" class="btn btn-sm btn-light">
-                        <i class="fa fa-plus" aria-hidden="true"></i>
-                        <span class="d-none d-sm-inline">Add assessment</span>
-                      </button>
-                    </form>
+                    <button
+                      name="__action"
+                      value="add_assessment"
+                      class="btn btn-sm btn-light ml-auto"
+                      data-toggle="modal"
+                      data-target="#createAssessmentModal"
+                    >
+                      <i class="fa fa-plus" aria-hidden="true"></i>
+                      <span class="d-none d-sm-inline">Add assessment</span>
+                    </button>
                   `
                 : ''}
             </div>
@@ -168,17 +190,16 @@ export function InstructorAssessments({
                         return html`<p>Course Editors can create new assessments.</p>`;
                       }
                       return html`
-                        <form name="add-assessment-form" method="POST">
-                          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                          <button
-                            name="__action"
-                            value="add_assessment"
-                            class="btn btn-sm btn-primary"
-                          >
-                            <i class="fa fa-plus" aria-hidden="true"></i>
-                            <span class="d-sm-inline">Add assessment</span>
-                          </button>
-                        </form>
+                        <button
+                          name="__action"
+                          value="add_assessment"
+                          class="btn btn-sm btn-primary"
+                          data-toggle="modal"
+                          data-target="#createAssessmentModal"
+                        >
+                          <i class="fa fa-plus" aria-hidden="true"></i>
+                          <span class="d-none d-sm-inline">Add assessment</span>
+                        </button>
                       `;
                     })}
                   </div>
@@ -235,4 +256,99 @@ export function AssessmentStats({ row }: { row: AssessmentStatsRow }) {
           : html`&mdash;`}
     </td>
   `;
+}
+
+function CreateAssessmentModal({
+  csrfToken,
+  urlPrefix,
+  assessmentSets,
+  assessmentModules,
+  assessmentsGroupBy,
+}: {
+  csrfToken: string;
+  urlPrefix: string;
+  assessmentSets: AssessmentSet[];
+  assessmentModules: AssessmentModule[];
+  assessmentsGroupBy: string;
+}) {
+  return Modal({
+    id: 'createAssessmentModal',
+    title: 'Create assessment',
+    formMethod: 'POST',
+    body: html`
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input
+          type="text"
+          class="form-control"
+          id="title"
+          name="title"
+          required
+          aria-describedby="title_help"
+        />
+        <small id="title_help" class="form-text text-muted">
+          The full name of the assessment.
+        </small>
+      </div>
+      <div class="form-group">
+        <label for="aid">Assessment identifier (AID)</label>
+        <input
+          type="text"
+          class="form-control"
+          id="aid"
+          name="aid"
+          required
+          aria-describedby="aid_help"
+        />
+        <small id="aid_help" class="form-text text-muted">
+          A short name used in menus and headers where a short description is required. Use only
+          letters, numbers, dashes, and underscores, with no spaces.
+        </small>
+      </div>
+      <div class="form-group">
+        <label for="type">Type</label>
+        <select class="form-select" id="type" name="type" required>
+          <option value="Homework">Homework</option>
+          <option value="Exam">Exam</option>
+        </select>
+        <small class="form-text text-muted">
+          The type of the assessment. This can be either Homework or Exam.
+        </small>
+      </div>
+      <div class="form-group">
+        <label for="set">Set</label>
+        <select class="form-select" id="set" name="set">
+          ${assessmentSets.map((set) => html` <option value="${set.name}">${set.name}</option> `)}
+        </select>
+        <small class="form-text text-muted">
+          The <a href="${urlPrefix}/course_admin/sets">assessment set</a> this assessment belongs
+          to.
+        </small>
+      </div>
+      ${assessmentsGroupBy === 'Module'
+        ? html`
+            <div class="form-group">
+              <label for="module">Module</label>
+              <select class="form-select" id="module" name="module">
+                ${assessmentModules.map(
+                  (module) => html` <option value="${module.name}">${module.name}</option> `,
+                )}
+              </select>
+              <small class="form-text text-muted">
+                The <a href="${urlPrefix}/course_admin/modules">module</a> this assessment belongs
+                to.
+              </small>
+            </div>
+          `
+        : ''}
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="add_assessment" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button id="add_assessment_create_button" type="submit" class="btn btn-primary">
+        Create
+      </button>
+    `,
+  });
 }
