@@ -1116,6 +1116,36 @@ export class QuestionDeleteEditor extends Editor {
   }
 }
 
+export class QuestionBatchDeleteEditor extends Editor {
+  private questions: Question[];
+
+  constructor(params: BaseEditorOptions & { questions: Question[] }) {
+    super(params);
+
+    this.questions = params.questions;
+    this.description = `Delete questions ${this.questions.map((x) => x.qid).join(', ')}`;
+  }
+
+  async write() {
+    debug('QuestionBatchDeleteEditor: write()');
+
+    await this.questions.forEach(async (question) => {
+      await fs.remove(path.join(this.course.path, 'questions', question.qid));
+      await this.removeEmptyPrecedingSubfolders(
+        path.join(this.course.path, 'questions'),
+        question.qid,
+      );
+    });
+
+    return {
+      pathsToAdd: this.questions.map((question) =>
+        path.join(this.course.path, 'questions', question.qid),
+      ),
+      commitMessage: `delete questions ${this.questions.map((x) => x.qid).join(', ')}`,
+    };
+  }
+}
+
 export class QuestionRenameEditor extends Editor {
   private qid_new: string;
   private question: Question;

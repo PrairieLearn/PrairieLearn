@@ -15,3 +15,12 @@ WHERE
   AND q.qid IS NOT NULL
 ORDER BY
   qid ASC;
+
+-- BLOCK select_drafts_by_course_id
+SELECT
+  *
+FROM
+  questions as q
+WHERE
+  q.course_id = $course_id
+  AND q.draft IS TRUE;
