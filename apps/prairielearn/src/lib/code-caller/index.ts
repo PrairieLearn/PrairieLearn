@@ -1,4 +1,3 @@
-// @ts-check
 import * as os from 'node:os';
 
 import debugfn from 'debug';

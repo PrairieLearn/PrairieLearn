@@ -97,13 +97,49 @@ describe('features', () => {
     assert.isFalse(await features.enabled('test:example-feature-flag', { user_id: '1' }));
   });
 
+  it('disables a feature for a specific context', async () => {
+    const features = new FeatureManager(['test:example-feature-flag']);
+
+    await features.enable('test:example-feature-flag', { institution_id: '1' });
+    await features.disable('test:example-feature-flag', { institution_id: '1', course_id: '1' });
+
+    assert.isTrue(await features.enabled('test:example-feature-flag', { institution_id: '1' }));
+    assert.isFalse(
+      await features.enabled('test:example-feature-flag', {
+        institution_id: '1',
+        course_id: '1',
+      }),
+    );
+    assert.isFalse(
+      await features.enabled('test:example-feature-flag', {
+        institution_id: '1',
+        course_id: '1',
+        course_instance_id: '1',
+      }),
+    );
+
+    await features.enable('test:example-feature-flag', {
+      institution_id: '1',
+      course_id: '1',
+      course_instance_id: '1',
+    });
+
+    assert.isTrue(
+      await features.enabled('test:example-feature-flag', {
+        institution_id: '1',
+        course_id: '1',
+        course_instance_id: '1',
+      }),
+    );
+  });
+
   it('enables a feature flag via course options', async () => {
     const features = new FeatureManager(['test:example-feature-flag']);
     const context = { institution_id: '1', course_id: '1' };
 
     await queryAsync('UPDATE pl_courses SET options = $options WHERE id = 1', {
       options: {
-        devModeFeatures: ['test:example-feature-flag'],
+        devModeFeatures: { 'test:example-feature-flag': true },
       },
     });
     assert.isTrue(await features.enabled('test:example-feature-flag', context));

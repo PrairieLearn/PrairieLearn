@@ -10,7 +10,7 @@ Each extension needs only an `info.json` containing metadata about the element, 
 
 The `info.json` file is structurally similar to the element info file and may contain the following fields:
 
-```json
+```json title="info.json"
 {
   "controller": "Python script",
   "dependencies": {
@@ -77,7 +77,7 @@ def render(element_html, data):
 
 The extension could then access `STATIC_VARIABLE` by importing the host script:
 
-```python
+```python hl_lines="3"
 import prairielearn as pl
 
 host_element = pl.load_host_script("pl-host-element.py")

@@ -450,6 +450,15 @@ export const CourseRequestSchema = z.object({
 });
 export type CourseRequest = z.infer<typeof CourseRequestSchema>;
 
+export const DraftQuestionMetadataSchema = z.object({
+  created_at: DateFromISOString,
+  created_by: IdSchema.nullable(),
+  id: IdSchema,
+  question_id: IdSchema.nullable(),
+  updated_by: IdSchema.nullable(),
+});
+export type DraftQuestionMetadata = z.infer<typeof DraftQuestionMetadataSchema>;
+
 export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
   created_at: DateFromISOString,
