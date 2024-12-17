@@ -98,15 +98,33 @@ onDocumentReady(() => {
       setQuestionState([...update]);
     };
 
+    const handleDelete = (question: AssessmentQuestionRow, i: number) => {
+      const update = questionState.filter((q) => q !== question);
+      if (question.start_new_zone) {
+        update[i].start_new_zone = true;
+      }
+      if (question.start_new_alternative_group) {
+        update[i].start_new_alternative_group = true;
+      }
+      setQuestionState([...update]);
+    };
+
+    let zoneNumber = 0;
+    let alternativeGroupNumber = 0;
+    let numberInAlternativeGroup = 1;
     const questionRowMap = questionState.map((question, i: number) => {
+      if (question.start_new_zone) {
+        zoneNumber++;
+      }
+      if (question.start_new_alternative_group || question.alternative_group_size === 1) {
+        alternativeGroupNumber++;
+      } else {
+        numberInAlternativeGroup++;
+      }
       const number =
-        question.alternative_group_size === 1 ? (
-          `${question.alternative_group_number}.`
-        ) : (
-          <span class="ml-3">
-            ${question.alternative_group_number}.${question.number_in_alternative_group}.
-          </span>
-        );
+        question.alternative_group_size === 1
+          ? `${alternativeGroupNumber}.`
+          : `${alternativeGroupNumber}.${numberInAlternativeGroup}.`;
 
       const issueBadge = IssueBadge({
         urlPrefix,
@@ -121,7 +139,7 @@ onDocumentReady(() => {
           {question.start_new_zone ? (
             <tr key={`zone-${i}`}>
               <th colspan={nTableCols}>
-                Zone {question.zone_number}. {question.zone_title}
+                Zone {zoneNumber}. {question.zone_title}
                 {question.zone_number_choose == null
                   ? '(Choose all questions)'
                   : question.zone_number_choose === 1
@@ -139,7 +157,7 @@ onDocumentReady(() => {
           {question.start_new_alternative_group && question.alternative_group_size > 1 ? (
             <tr>
               <td colspan={nTableCols}>
-                {question.alternative_group_number}.
+                {alternativeGroupNumber}.
                 {question.alternative_group_number_choose == null
                   ? 'Choose all questions from:'
                   : question.alternative_group_number_choose === 1
@@ -152,11 +170,18 @@ onDocumentReady(() => {
           )}
           <tr key={`question-${i}`}>
             {editMode.value ? (
-              <td>
-                <button class="btn btn-sm btn-light" onClick={() => handleEdit(question, i)}>
-                  edit
-                </button>
-              </td>
+              <>
+                <td>
+                  <button class="btn btn-sm btn-secondary" onClick={() => handleEdit(question, i)}>
+                    <i class="fa fa-edit" aria-hidden="true"></i>
+                  </button>
+                </td>
+                <td>
+                  <button class="btn btn-sm btn-danger" onClick={() => handleDelete(question, i)}>
+                    <i class="fa fa-trash" aria-hidden="true"></i>
+                  </button>
+                </td>
+              </>
             ) : (
               ''
             )}
@@ -291,7 +316,14 @@ onDocumentReady(() => {
       <table class="table table-sm table-hover" aria-label="Assessment questions">
         <thead>
           <tr>
-            {editMode.value ? <th></th> : ''}
+            {editMode.value ? (
+              <>
+                <th>Edit</th>
+                <th>Delete</th>
+              </>
+            ) : (
+              ''
+            )}
             <th>
               <span class="sr-only">Name</span>
             </th>
