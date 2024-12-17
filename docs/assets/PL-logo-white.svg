@@ -4,14 +4,8 @@
     <style>
       .cls-1 {
         stroke-miterlimit: 10;
-        fill: #000;
-        stroke: #000;
-      }
-      @media (prefers-color-scheme: dark) {
-        .cls-1 {
-          fill: #fff;
-          stroke: #fff;
-        }
+        fill: #fff;
+        stroke: #fff;
       }
     </style>
   </defs>
