@@ -1130,17 +1130,21 @@ export class QuestionBatchDeleteEditor extends Editor {
     debug('QuestionBatchDeleteEditor: write()');
 
     await this.questions.forEach(async (question) => {
-      await fs.remove(path.join(this.course.path, 'questions', question.qid));
-      await this.removeEmptyPrecedingSubfolders(
-        path.join(this.course.path, 'questions'),
-        question.qid,
-      );
+      if (question.qid) {
+        await fs.remove(path.join(this.course.path, 'questions', question.qid));
+        await this.removeEmptyPrecedingSubfolders(
+          path.join(this.course.path, 'questions'),
+          question.qid,
+        );
+      }
     });
 
     return {
-      pathsToAdd: this.questions.map((question) =>
-        path.join(this.course.path, 'questions', question.qid),
-      ),
+      pathsToAdd: this.questions
+        .map((question) =>
+          question.qid ? path.join(this.course.path, 'questions', question.qid) : undefined,
+        )
+        .filter((x) => x !== undefined), //ignore non-existent qids
       commitMessage: `delete questions ${this.questions.map((x) => x.qid).join(', ')}`,
     };
   }
