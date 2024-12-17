@@ -11,6 +11,7 @@ This page describes the procedure to install and run PrairieLearn without any us
   - [PostgreSQL 15](https://www.postgresql.org)
   - [Redis](https://redis.io)
   - [Graphviz](https://graphviz.org)
+  - [d2](https://d2lang.com)
 
   On macOS, these can be installed with [Homebrew](http://brew.sh/). On Linux, these should all be standard packages from the OS distribution.
 
@@ -68,7 +69,7 @@ This page describes the procedure to install and run PrairieLearn without any us
 
 - Create the file `PrairieLearn/config.json` with the path of your local course repository and with the path of a directory into which temporary files will be saved when using the in-browser file editor (edit both paths as needed):
 
-  ```json
+  ```json title="config.json"
   {
     "courseDirs": ["/Users/mwest/git/pl-tam212", "exampleCourse"],
     "filesRoot": "../filesRoot"

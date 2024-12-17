@@ -43,12 +43,23 @@
           "default": false
         },
         "devModeFeatures": {
-          "description": "Feature flags to enable in development mode.",
-          "type": "array",
-          "items": {
-            "description": "A single feature flag.",
-            "type": "string"
-          }
+          "description": "Feature flags to enable/disable in development mode.",
+          "anyOf": [
+            {
+              "type": "object",
+              "additionalProperties": {
+                "type": "boolean"
+              }
+            },
+            {
+              "description": "Legacy format; use an object instead.",
+              "type": "array",
+              "items": {
+                "description": "A single feature flag.",
+                "type": "string"
+              }
+            }
+          ]
         }
       }
     },
