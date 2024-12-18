@@ -112,7 +112,7 @@ export function getNamesForAdd(
 
     oldShortNames.forEach((oldShortName) => {
       // shortName is a copy of oldShortName if:
-      // it matches exactly, or
+      // it matches (including case, if not ignoring case), or
       // if oldShortName matches {shortName}_{number from 0-9}
       const oldShortNameCompare = ignoreCase ? oldShortName.toLowerCase() : oldShortName;
       const found =
@@ -131,7 +131,7 @@ export function getNamesForAdd(
   function getNumberLongName(oldLongNames: string[]): number {
     let numberOfMostRecentCopy = 1;
     // longName is a copy of oldLongName if:
-    // it matches exactly, or
+    // it matches (including case, if not ignoring case), or
     // if oldLongName matches {longName} ({number from 0-9})
 
     const longNameCompare = ignoreCase ? longName.toLowerCase() : longName;
