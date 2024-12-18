@@ -4,7 +4,7 @@ Various properties of the PrairieLearn server can be modified by creating a `con
 
 The file is structured as a JSON dictionary with the following syntax:
 
-```json
+```json title="config.json"
 {
   "property1": "...",
   "property2": "...",
@@ -18,13 +18,17 @@ A full list of properties can be found in [`lib/config.ts`](https://github.com/P
 
 The default course directories to be loaded by PrairieLearn can be overridden with the `"courseDirs"` setting. This setting takes a list of paths to load that are located _in the Docker container_.
 
-```json
+```json title="config.json"
 {
   "courseDirs": ["exampleCourse", "testCourse", "/myCourse"]
 }
 ```
 
-Note that these directories are paths in the container, not on your local computer. To mount a directory on your computer so that it is accessible in the container, you can add the following to your Docker run command:
+!!! note
+
+    These directories are paths in the container, not on your local computer.
+
+To mount a directory on your computer so that it is accessible in the container, you can add the following to your Docker run command:
 
 ```sh
 -v /path/to/myCourse:/myCourse

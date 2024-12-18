@@ -4,8 +4,9 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 import { html } from '@prairielearn/html';
 
 import './lib/changeIdButton.js';
+import { TagBadge } from '../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../src/components/TopicBadge.html.js';
-import { type Topic } from '../../src/lib/db-types.js';
+import { type Topic, type Tag } from '../../src/lib/db-types.js';
 
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 
@@ -36,6 +37,27 @@ onDocumentReady(() => {
       },
       item(data: Topic) {
         return TopicBadge(data).toString();
+      },
+    },
+  });
+
+  new TomSelect('#tags', {
+    valueField: 'name',
+    searchField: ['name', 'description'],
+    plugins: ['dropdown_input', 'remove_button'],
+    render: {
+      option(data: Tag) {
+        return html`
+          <div>
+            ${TagBadge(data)}
+            <div>
+              <small class="text-muted">${data.description}</small>
+            </div>
+          </div>
+        `.toString();
+      },
+      item(data: Tag) {
+        return html`<span class="badge color-${data.color} mr-1">${data.name}</span>`.toString();
       },
     },
   });
