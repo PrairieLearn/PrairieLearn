@@ -1,7 +1,7 @@
 import * as fs from 'fs';
+import { type ReadStream } from 'fs';
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
-import type stream from 'stream';
 
 import { type GetObjectOutput } from '@aws-sdk/client-s3';
 import debugfn from 'debug';
@@ -135,7 +135,7 @@ export async function deleteFile(file_id: string, authn_user_id: string) {
  * @param file_id - The file to get.
  * @return Requested file stream.
  */
-export async function getStream(file_id: number | string): Promise<stream> {
+export async function getStream(file_id: number | string): Promise<ReadStream> {
   debug(`getStream(): file_id=${file_id}`);
   const file = await getFile(file_id, 'stream');
   return file.contents;
@@ -145,8 +145,8 @@ export async function getFile(
   file_id: number | string,
   data_type: 'stream',
 ): Promise<{
-  contents: Exclude<GetObjectOutput['Body'], undefined>;
-  file: Buffer;
+  contents: ReadStream;
+  file: any;
 }>;
 
 export async function getFile(
@@ -154,7 +154,7 @@ export async function getFile(
   data_type: 'buffer',
 ): Promise<{
   contents: Buffer;
-  file: Buffer;
+  file: any;
 }>;
 /**
  * Get a file from the file store.
@@ -166,8 +166,8 @@ export async function getFile(
   file_id: number | string,
   data_type = 'buffer',
 ): Promise<{
-  contents: Buffer | Exclude<GetObjectOutput['Body'], undefined>;
-  file: Buffer;
+  contents: Buffer | GetObjectOutput['Body'] | ReadStream;
+  file: any;
 }> {
   debug(`get(): file_id=${file_id}`);
   const params = { file_id };
@@ -175,7 +175,7 @@ export async function getFile(
   debug('get(): got row from DB');
 
   let buffer: Buffer | GetObjectOutput['Body'];
-  let readStream: Buffer | GetObjectOutput['Body'];
+  let readStream: Buffer | GetObjectOutput['Body'] | ReadStream;
 
   if (result.rows.length < 1) {
     throw new Error(`No file with file_id ${file_id}`);
