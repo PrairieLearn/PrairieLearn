@@ -18,6 +18,7 @@ import {
   type CodeCaller,
   type PrepareForCourseOptions,
   type CallType as CallTypeShared,
+  type CodeCallerResult,
 } from './code-caller-shared.js';
 
 interface CodeCallerNativeChildProcess extends ChildProcess {
@@ -181,7 +182,7 @@ export class CodeCallerNative implements CodeCaller {
     file: string | null,
     fcn: string | null,
     args: any[],
-  ): Promise<{ result: any; output: string }> {
+  ): Promise<CodeCallerResult> {
     this.debug('enter call()');
 
     // Reset this so that we don't include old data if the checks below fail.
@@ -250,7 +251,7 @@ export class CodeCallerNative implements CodeCaller {
     this._checkState();
     this.debug('exit call()');
 
-    return deferred.promise as Promise<{ result: any; output: string }>;
+    return deferred.promise as Promise<CodeCallerResult>;
   }
 
   /**

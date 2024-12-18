@@ -25,6 +25,7 @@ import {
   FunctionMissingError,
   type CallType,
   type PrepareForCourseOptions,
+  type CodeCallerResult,
 } from './code-caller-shared.js';
 
 const CREATED = Symbol('CREATED');
@@ -247,7 +248,7 @@ export class CodeCallerContainer implements CodeCaller {
     file: string | null,
     fcn: string,
     args: any[],
-  ): Promise<{ result: any; output: string }> {
+  ): Promise<CodeCallerResult> {
     this.debug(`enter call(${type}, ${directory}, ${file}, ${fcn})`);
     this.callCount += 1;
 
@@ -270,12 +271,12 @@ export class CodeCallerContainer implements CodeCaller {
     this.outputStderr = [];
     this.outputBoth = '';
 
-    const deferred = deferredPromise();
+    const deferred = deferredPromise<CodeCallerResult>();
     this.callback = (err, result, output) => {
       if (err) {
         deferred.reject(err);
       } else {
-        deferred.resolve({ result, output });
+        deferred.resolve({ result, output: output ?? '' });
       }
     };
 
@@ -299,7 +300,7 @@ export class CodeCallerContainer implements CodeCaller {
     this._checkState();
     this.debug('exit call()');
 
-    return deferred.promise as any as { result: any; output: string };
+    return deferred.promise;
   }
 
   async restart() {
