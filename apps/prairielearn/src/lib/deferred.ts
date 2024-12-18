@@ -3,6 +3,7 @@ interface DeferredPromise<T> {
   resolve: (value: T) => void;
   reject: (reason: any) => void;
 }
+
 /**
  * Returns an object that can be used to resolve or reject a promise from
  * the outside.

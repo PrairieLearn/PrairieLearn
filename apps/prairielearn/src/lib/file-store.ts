@@ -153,7 +153,8 @@ export async function getFile(file_id: number | string, data_type = 'buffer') {
   const result = await sqldb.queryZeroOrOneRowAsync(sql.select_file, params);
   debug('get(): got row from DB');
 
-  let buffer: Buffer | GetObjectOutput['Body'], readStream: Buffer | GetObjectOutput['Body'];
+  let buffer: Buffer | GetObjectOutput['Body'];
+  let readStream: Buffer | GetObjectOutput['Body'];
 
   if (result.rows.length < 1) {
     throw new Error(`No file with file_id ${file_id}`);
@@ -203,7 +204,7 @@ export async function getFile(file_id: number | string, data_type = 'buffer') {
     }
   }
 
-  const contents = buffer || readStream;
+  const contents = buffer ?? readStream;
   if (contents === undefined) {
     throw new Error(`No contents for file_id ${file_id}`);
   }

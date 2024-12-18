@@ -7,30 +7,28 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 interface CourseInfo {
   type: 'course';
 }
+
 export interface QuestionInfo {
   type: 'question';
   qid: string;
 }
+
 export interface CourseInstanceInfo {
   type: 'courseInstance';
   ciid: string;
 }
+
 export interface AssessmentInfo {
   type: 'assessment';
   ciid: string;
   aid: string;
 }
+
 interface File {
   type: 'file';
 }
 
 type FileDetails = CourseInfo | QuestionInfo | CourseInstanceInfo | AssessmentInfo | File;
-interface QueryParams {
-  course_id: string;
-  qid?: string;
-  ciid?: string;
-  aid?: string;
-}
 
 export function getDetailsForFile(filePath: string): FileDetails {
   const normalizedPath = path.normalize(filePath);
@@ -75,7 +73,7 @@ export async function getErrorsAndWarningsForFilePath(
 ): Promise<{ errors: string | null; warnings: string | null }> {
   const details = getDetailsForFile(filePath);
   let queryName: string | null = null;
-  const queryParams: QueryParams = { course_id: courseId };
+  const queryParams: Record<string, any> = { course_id: courseId };
   switch (details.type) {
     case 'course':
       queryName = 'select_errors_and_warnings_for_course';

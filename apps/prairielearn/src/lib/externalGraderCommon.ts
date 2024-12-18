@@ -11,6 +11,7 @@ import { contains } from '@prairielearn/path-utils';
 import { getRuntimeDirectoryForCourse } from './chunks.js';
 import { type Config } from './config.js';
 import type { GradingJob, Submission, Variant, Question, Course } from './db-types.js';
+
 export interface Grader {
   handleGradingRequest(
     grading_job: GradingJob,
