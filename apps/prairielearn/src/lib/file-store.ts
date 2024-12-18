@@ -138,16 +138,37 @@ export async function deleteFile(file_id: string, authn_user_id: string) {
 export async function getStream(file_id: number | string): Promise<stream> {
   debug(`getStream(): file_id=${file_id}`);
   const file = await getFile(file_id, 'stream');
-  return file.contents as stream /* Strange conversion */;
+  return file.contents;
 }
 
+export async function getFile(
+  file_id: number | string,
+  data_type: 'stream',
+): Promise<{
+  contents: Exclude<GetObjectOutput['Body'], undefined>;
+  file: Buffer;
+}>;
+
+export async function getFile(
+  file_id: number | string,
+  data_type: 'buffer',
+): Promise<{
+  contents: Buffer;
+  file: Buffer;
+}>;
 /**
  * Get a file from the file store.
  *
  * @param file_id - The file to get.
  * @return An object with a buffer (of the file contents) and a file object.
  */
-export async function getFile(file_id: number | string, data_type = 'buffer') {
+export async function getFile(
+  file_id: number | string,
+  data_type = 'buffer',
+): Promise<{
+  contents: Buffer | Exclude<GetObjectOutput['Body'], undefined>;
+  file: Buffer;
+}> {
   debug(`get(): file_id=${file_id}`);
   const params = { file_id };
   const result = await sqldb.queryZeroOrOneRowAsync(sql.select_file, params);
