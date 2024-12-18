@@ -4,6 +4,7 @@
   "topic": "Workspace",
   "tags": ["su20", "nnytko2", "tyang15"],
   "type": "v3",
+  "sharePublicly": true,
   "workspaceOptions": {
     "image": "prairielearn/workspace-xtermjs",
     "port": 8080,

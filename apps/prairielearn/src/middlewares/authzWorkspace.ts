@@ -60,6 +60,9 @@ export default asyncHandler(async (req, res, next) => {
       await authzHasCoursePreviewOrInstanceView(req, res);
       await selectAndAuthzInstructorQuestion(req, res);
     }
+  } else if (res.locals.share_publicly || res.locals.share_source_publicly) {
+    // This workspace is not part of a course instance and the question is publicly accessible
+    // Therefore, no authorization is needed
   } else if (res.locals.course_id) {
     req.params.course_id = res.locals.course_id;
     await authzCourseOrInstance(req, res);
