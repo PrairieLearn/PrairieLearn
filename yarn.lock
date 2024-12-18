@@ -3681,7 +3681,6 @@ __metadata:
     ansi_up: "npm:^6.0.2"
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.6"
-    async-mutex: "npm:^0.5.0"
     axe-core: "npm:^4.10.2"
     backbone: "npm:^1.6.0"
     better-ajv-errors: "npm:^1.2.0"
