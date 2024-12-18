@@ -11,8 +11,6 @@ import { config } from './config.js';
 
 /**
  * Gets the lifecycle state of the current EC2 instance.
- *
- * @param client
  */
 async function getInstanceLifecycleState(client: AutoScalingClient): Promise<string | undefined> {
   const res = await client.send(

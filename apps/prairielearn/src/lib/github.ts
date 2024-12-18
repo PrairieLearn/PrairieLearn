@@ -12,6 +12,7 @@ import { syncDiskToSql } from '../sync/syncFromDisk.js';
 
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
+import { type User } from './db-types.js';
 import { sendCourseRequestMessage } from './opsbot.js';
 import { createServerJob, type ServerJob } from './server-jobs.js';
 
@@ -196,9 +197,7 @@ export async function createCourseRepoJob(
     github_user: string | null;
     course_request_id: string;
   },
-  authn_user: {
-    user_id: string;
-  },
+  authn_user: User,
 ) {
   const createCourseRepo = async (job: ServerJob) => {
     const client = getGithubClient();
