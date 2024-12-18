@@ -6,6 +6,8 @@
   "set": "Exam",
   "number": "12",
   "advanceScorePerc": 100,
+  "shareSourcePublicly": true,
+
   "zones": [
     {
       "questions": [
