@@ -764,7 +764,16 @@ export class AssessmentAddEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
-    const names = getNamesForAdd(oldNamesShort, oldNamesLong, this.aid, this.title, true);
+    const names = getNamesForAdd(
+      oldNamesShort,
+      oldNamesLong,
+      this.aid,
+      this.title,
+      true, // This is enabled to handle case-insensitive duplicate names. A duplicate with
+      // different case would result in a directory with the same name, throwing an error.
+      // e.x. if the user tries to add an assessment with the title "Test" when an assessment
+      // with the title "test" already exists, the directory "test" would already exist.
+    );
 
     const tid = names.shortName;
     const assessmentTitle = names.longName;
