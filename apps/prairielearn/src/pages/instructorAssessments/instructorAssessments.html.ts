@@ -287,7 +287,7 @@ function CreateAssessmentModal({
           aria-describedby="title_help"
         />
         <small id="title_help" class="form-text text-muted">
-          The full name of the assessment.
+          The full name of the assessment, visible to users.
         </small>
       </div>
       <div class="form-group">
@@ -301,8 +301,8 @@ function CreateAssessmentModal({
           aria-describedby="aid_help"
         />
         <small id="aid_help" class="form-text text-muted">
-          A short name used in menus and headers where a short description is required. Use only
-          letters, numbers, dashes, and underscores, with no spaces.
+          A short unique identifier for this assessment, such as "exam1-functions" or
+          "hw2-derivatives". Use only letters, numbers, dashes, and underscores, with no spaces.
         </small>
       </div>
       <div class="form-group">
@@ -317,7 +317,7 @@ function CreateAssessmentModal({
       </div>
       <div class="form-group">
         <label for="set">Set</label>
-        <select class="form-select" id="set" name="set">
+        <select class="form-select" id="set" name="set" required>
           ${assessmentSets.map((set) => html` <option value="${set.name}">${set.name}</option> `)}
         </select>
         <small class="form-text text-muted">
@@ -329,7 +329,7 @@ function CreateAssessmentModal({
         ? html`
             <div class="form-group">
               <label for="module">Module</label>
-              <select class="form-select" id="module" name="module">
+              <select class="form-select" id="module" name="module" required>
                 ${assessmentModules.map(
                   (module) => html` <option value="${module.name}">${module.name}</option> `,
                 )}

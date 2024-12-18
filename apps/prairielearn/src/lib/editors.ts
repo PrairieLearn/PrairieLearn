@@ -103,17 +103,23 @@ export function getNamesForAdd(
   longNames: string[],
   shortName = 'New',
   longName = 'New',
+  ignoreCase = false,
 ): { shortName: string; longName: string } {
   function getNumberShortName(oldShortNames: string[]): number {
     let numberOfMostRecentCopy = 1;
+
+    const shortNameCompare = ignoreCase ? shortName.toLowerCase() : shortName;
+
     oldShortNames.forEach((oldShortName) => {
       // shortName is a copy of oldShortName if:
       // it matches exactly, or
       // if oldShortName matches {shortName}_{number from 0-9}
+      const oldShortNameCompare = ignoreCase ? oldShortName.toLowerCase() : oldShortName;
       const found =
-        shortName === oldShortName || oldShortName.match(new RegExp(`^${shortName}_([0-9]+)$`));
+        shortNameCompare === oldShortNameCompare ||
+        oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
       if (found) {
-        const foundNumber = shortName === oldShortName ? 1 : parseInt(found[1]);
+        const foundNumber = shortNameCompare === oldShortNameCompare ? 1 : parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
           numberOfMostRecentCopy = foundNumber + 1;
         }
@@ -127,12 +133,19 @@ export function getNamesForAdd(
     // longName is a copy of oldLongName if:
     // it matches exactly, or
     // if oldLongName matches {longName} ({number from 0-9})
+
+    const longNameCompare = ignoreCase ? longName.toLowerCase() : longName;
+
     oldLongNames.forEach((oldLongName) => {
       if (!_.isString(oldLongName)) return;
+
+      const oldLongNameCompare = ignoreCase ? oldLongName.toLowerCase() : oldLongName;
+
       const found =
-        oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
+        oldLongNameCompare === longNameCompare ||
+        oldLongNameCompare.match(new RegExp(`^${longNameCompare} \\(([0-9]+)\\)$`));
       if (found) {
-        const foundNumber = oldLongName === longName ? 1 : parseInt(found[1]);
+        const foundNumber = oldLongNameCompare === longNameCompare ? 1 : parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
           numberOfMostRecentCopy = foundNumber + 1;
         }
@@ -700,14 +713,34 @@ export class AssessmentAddEditor extends Editor {
   private course_instance: CourseInstance;
 
   public readonly uuid: string;
+  private aid: string;
+  private title: string;
+  private type: 'Homework' | 'Exam';
+  private set: string;
+  private module?: string;
 
-  constructor(params: BaseEditorOptions) {
+  constructor(
+    params: BaseEditorOptions & {
+      aid: string;
+      title: string;
+      type: 'Homework' | 'Exam';
+      set: string;
+      module?: string;
+    },
+  ) {
     super(params);
 
     this.course_instance = params.locals.course_instance;
+
     this.description = `${this.course_instance.short_name}: add assessment`;
 
     this.uuid = uuidv4();
+
+    this.aid = params.aid;
+    this.title = params.title;
+    this.type = params.type;
+    this.set = params.set;
+    this.module = params.module;
   }
 
   async write() {
@@ -731,7 +764,8 @@ export class AssessmentAddEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
-    const names = getNamesForAdd(oldNamesShort, oldNamesLong);
+    const names = getNamesForAdd(oldNamesShort, oldNamesLong, this.aid, this.title, true);
+
     const tid = names.shortName;
     const assessmentTitle = names.longName;
     const assessmentPath = path.join(assessmentsPath, tid);
@@ -740,9 +774,10 @@ export class AssessmentAddEditor extends Editor {
 
     const infoJson = {
       uuid: this.uuid,
-      type: 'Homework',
+      type: this.type,
       title: assessmentTitle,
-      set: 'Homework',
+      set: this.set,
+      module: this.module,
       number: '1',
       allowAccess: [],
       zones: [],

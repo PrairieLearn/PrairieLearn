@@ -5,6 +5,7 @@ import asyncHandler from 'express-async-handler';
 
 import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import {
   loadSqlEquiv,
   queryRows,
@@ -203,14 +204,36 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_assessment') {
-      const editor = new AssessmentAddEditor({ locals: res.locals });
+      if (!req.body.title) {
+        throw new HttpStatusError(400, 'title is required');
+      }
+      if (!req.body.aid) {
+        throw new HttpStatusError(400, 'aid is required');
+      }
+      if (!req.body.type) {
+        throw new HttpStatusError(400, 'type is required');
+      }
+      if (!req.body.set) {
+        throw new HttpStatusError(400, 'set is required');
+      }
+      const editor = new AssessmentAddEditor({
+        locals: res.locals,
+        title: req.body.title,
+        aid: req.body.aid,
+        type: req.body.type,
+        set: req.body.set,
+        module: req.body.module,
+      });
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-      } catch {
+      } catch (e) {
+        console.error(e);
         res.redirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
         return;
       }
+
+      flash('success', 'Assessment created successfully.');
 
       const assessment_id = await queryRow(
         sql.select_assessment_id_from_uuid,
