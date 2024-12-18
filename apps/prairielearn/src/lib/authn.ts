@@ -1,4 +1,5 @@
 // @ts-check
+import type { Request, Response } from 'express';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -13,34 +14,35 @@ import { HttpRedirect } from './redirect.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-/**
- * @typedef {Object} LoadUserOptions
- * @property {boolean} [redirect] - Redirect after processing?
- */
-/**
- * @typedef {Object} LoadUserAuth
- * @property {string} [uid]
- * @property {string | null} [uin]
- * @property {string | null} [name]
- * @property {string | null} [email]
- * @property {string} [provider]
- * @property {number} [user_id] - If present, skip the users_select_or_insert call
- * @property {number | string | null} [institution_id]
- */
-/**
- * @param {import('express').Request} req
- * @param {import('express').Response} res
- * @param {LoadUserAuth} authnParams
- * @param {LoadUserOptions} [optionsParams]
- */
-export async function loadUser(req, res, authnParams, optionsParams = {}) {
-  let options = { redirect: false, ...optionsParams };
+interface LoadUserOptions {
+  /** Redirect after processing? */
+  redirect?: boolean;
+}
 
-  let user_id;
-  if ('user_id' in authnParams) {
+export interface LoadUserAuth {
+  uid?: string;
+  uin?: string | null;
+  name?: string | null;
+  email?: string | null;
+  provider: string;
+  /** If present, skip the users_select_or_insert call */
+  user_id?: number | string;
+  institution_id?: number | string | null;
+}
+
+export async function loadUser(
+  req: Request,
+  res: Response,
+  authnParams: LoadUserAuth,
+  optionsParams: LoadUserOptions = {},
+) {
+  const options = { redirect: false, ...optionsParams };
+
+  let user_id: number | string;
+  if (authnParams.user_id !== undefined) {
     user_id = authnParams.user_id;
   } else {
-    let params = [
+    const params = [
       authnParams.uid,
       authnParams.name,
       authnParams.uin,
@@ -49,7 +51,7 @@ export async function loadUser(req, res, authnParams, optionsParams = {}) {
       authnParams.institution_id,
     ];
 
-    let userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
+    const userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
 
     user_id = userSelectOrInsertRes.rows[0].user_id;
     const { result, user_institution_id } = userSelectOrInsertRes.rows[0];
