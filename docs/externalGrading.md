@@ -76,13 +76,15 @@ External grading configuration is done on a per-question basis. All configuratio
 
 Here's an example of a complete `externalGradingOptions` portion of a question's `info.json`:
 
-```json
-"externalGradingOptions": {
+```json title="info.json"
+{
+  "externalGradingOptions": {
     "enabled": true,
     "image": "prairielearn/grader-python",
     "serverFilesCourse": ["python_autograder/"],
     "entrypoint": "/grade/serverFilesCourse/python_autograder/run.sh",
     "timeout": 5
+  }
 }
 ```
 
@@ -240,15 +242,18 @@ To enable students to submit files, you can use one of PrairieLearn's file eleme
 If you want to write your own submission mechanism (as a custom element, for instance), you can do that as well. We expect files to be present in a `_files` array on the `submitted_answers` dict. They should be represented as objects containing the `name` of the file and base-64 encoded `contents`. Here's an example of a well-formed `_files` array:
 
 ```json
-"_files": [
+{
+  "_files": [
     {
-        "name": "fib.py",
-        "contents": "ZGVmIGZpYihuKToNCiAgaWYgKG4gPT0gMCk6DQogICAgICByZXR1cm4gMA0KICBlbGlmIChuID09IDEpOg0KICAgICAgcmV0dXJuIDENCiAgZWxzZToNCiAgICAgIHJldHVybiBmaWIobiAtIDEpICsgZmliKG4gLSAyKQ=="
-    }, {
-        "name": "anotherFile.py",
-        "contents": "base64EncodedFileGoesHere"
+      "name": "fib.py",
+      "contents": "ZGVmIGZpYihuKToNCiAgaWYgKG4gPT0gMCk6DQogICAgICByZXR1cm4gMA0KICBlbGlmIChuID09IDEpOg0KICAgICAgcmV0dXJuIDENCiAgZWxzZToNCiAgICAgIHJldHVybiBmaWIobiAtIDEpICsgZmliKG4gLSAyKQ=="
+    },
+    {
+      "name": "anotherFile.py",
+      "contents": "base64EncodedFileGoesHere"
     }
-]
+  ]
+}
 ```
 
 For a working example of this, see [the implementation of `pl-file-upload`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/elements/pl-file-upload/pl-file-upload.py).

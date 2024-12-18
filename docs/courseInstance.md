@@ -4,9 +4,9 @@
 
 ## Directory layout
 
-A _course instance_ corresponds to a single offering of a [course](course.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](assessment.md). The `assessments` directory should always exist, but may be empty if no assessments have been added. A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
+A _course instance_ corresponds to a single offering of a [course](course/index.md), such as "Fall 2016", or possibly "Fall 2016, Section 1". A course instance like `Fa16` is contained in one directory and has a configuration file (`infoCourseInstance.json`) and a subdirectory (`assessments`) containing a list of [assessments](assessment/index.md). The `assessments` directory should always exist, but may be empty if no assessments have been added. A course instance may be located in the root `courseInstances` directory, or any subfolder that is not a courseInstance itself.
 
-```text
+```bash
 exampleCourse
 `-- courseInstances
     +-- Fa16                          # Fall 2016 course instance
@@ -16,25 +16,27 @@ exampleCourse
     |   |   |   `-- ...               # files for Homework 1
     |   |   `-- hw02                  # second homework for Fa16
     |   |       `-- ...               # files for Homework 2
-    |   +-- clientFilesCourseInstance
+    |   +-- clientFilesCourseInstance # (1)!
     |   |   `-- Fa16_rules.pdf        # files for Fall 2016
     `-- Sp17
         +-- infoCourseInstance.json   # Spring 2017 configuration
         +-- assessments
         |   `-- ...                   # Spring 2017 assessments
-        +-- clientFilesCourseInstance
+        +-- clientFilesCourseInstance # (2)!
         |   `-- ...                   # files for Spring 2017
 ```
 
-- See an [example course instances directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances) in PrairieLearn
+1. See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` directory.
 
-- See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` directory.
+2. See [clientFiles and serverFiles](clientServerFiles.md) for information on the `clientFilesCourseInstance` directory.
+
+See an [example `courseInstances` directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances) in the PrairieLearn example course.
 
 ## `infoCourseInstance.json`
 
 This file specifies basic information about the course instance:
 
-```json
+```json title="infoCourseInstance.json"
 {
   "uuid": "62fbe2a4-8c22-471a-98fe-19e5d5da1bbe",
   "longName": "Spring 2015",
@@ -47,42 +49,46 @@ This file specifies basic information about the course instance:
 }
 ```
 
-- Example [infoCourseInstance.json](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/infoCourseInstance.json)
+??? note "Format specification for `infoCourseInstance.json`"
 
-- [Format specification for `infoCourseInstance.json`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/schemas/schemas/infoCourseInstance.json)
+    ```json
+    --8<-- "apps/prairielearn/src/schemas/schemas/infoCourseInstance.json"
+    ```
 
 ## Course instance `allowAccess`
 
-See [Access control](accessControl.md) for details.
+See the [access control documentation](accessControl/index.md) for more details on `allowAccess` rules.
 
 The course instance `allowAccess` rules determine who can access the course instance and when they can do so. Course staff always have access. The simple example below gives students access between the start (Jan 19th) and end (May 13th) of the semester, as follows.
 
-```json
-    "allowAccess": [
-        {
-            "startDate": "2015-01-19T00:00:01",
-            "endDate": "2015-05-13T23:59:59"
-        }
-    ]
+```json title="infoCourseInstance.json"
+{
+  "allowAccess": [
+    {
+      "startDate": "2015-01-19T00:00:01",
+      "endDate": "2015-05-13T23:59:59"
+    }
+  ]
+}
 ```
 
 ## Assessment page organization
 
 Instructors can group assessments by course modules (topics, sections or chapters in a course) or by assessment sets (homework, exam, etc). By default, all assessments in a course instance are grouped by `"Set"`. Setting the property `"groupAssessmentsBy"` to `"Module"` will group assessments together by module on the student assessments overview page.
 
-```json
+```json title="infoCourseInstance.json"
 {
   "groupAssessmentsBy": "Module"
 }
 ```
 
-For more information about assessment modules, see [Course configuration](course.md#assessment-modules).
+For more information about assessment modules, see [Course configuration](course/index.md#assessment-modules).
 
 ## Timezone
 
 The default timezone for course instances is the timezone of the course. This can be changed with the `timezone` property in `infoCourseInstance.json`. For example:
 
-```json
+```json title="infoCourseInstance.json"
 {
   "timezone": "America/New_York"
 }
@@ -94,13 +100,13 @@ Allowable timezones are those in the TZ column in the [list of tz database time 
 
 Students can enroll in a course instance through one of two ways:
 
-1. They can use a URL specific to the course instance or [to one of its assessments](assessment.md#linking-to-assessments). The appropriate link to provide to students can be found by opening the "Settings" tab of the Course Instance. This page includes, among other useful information, a Student Link that can be provided to students. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
+1. They can use a URL specific to the course instance or [to one of its assessments](assessment/index.md#linking-to-assessments). The appropriate link to provide to students can be found by opening the "Settings" tab of the Course Instance. This page includes, among other useful information, a Student Link that can be provided to students. This link points students to the list of assessments associated to the course instance, enrolling them automatically in the course instance if they are not yet enrolled.
 
 2. They can use the "Enroll" button in PrairieLearn's main page. This button opens a page listing all course instances that are currently available for enrollment, giving students the option to Add new courses.
 
 Some instructors may wish to hide their course from the list of available course instances in the Enroll page. This may be done to provide a small level of control over which students get access to the course, or to avoid confusion in case of course instances that are not expected to be visible to students in general. For these instances, the following setting will hide the course instance from the list of instances in the Enroll page, even if the instance is available for enrollment.
 
-```json
+```json title="infoCourseInstance.json"
 {
   "hideInEnrollPage": true
 }
@@ -114,7 +120,7 @@ Note that _this is not a security setting_. Students may still enroll in the cou
 
 LTI, or Learning Tools Interoperability, is the ability for Learning Management Systems (LMSes) to link together. In our context, it means that sites like Coursera can link into assessments in PrairieLearn, give the student a PrairieLearn experience, and report the assessment score back to Coursera automatically.
 
-PrairieLearn LTI support enables a new authentication source (that creates the user in PL and enrolls them in the appropriate course instance) with a grade reporting functionality. Everything else (course instance, assessment and question configuration and workflows) are the same. Assessment [access control](accessControl.md) rules still apply for LTI linked assessments.
+PrairieLearn LTI support enables a new authentication source (that creates the user in PL and enrolls them in the appropriate course instance) with a grade reporting functionality. Everything else (course instance, assessment and question configuration and workflows) are the same. Assessment [access control](accessControl/index.md) rules still apply for LTI linked assessments.
 
 ### Enabling LTI support in a course instance
 
@@ -132,7 +138,7 @@ A single LMS course should use the same credential. If multiple courses need to 
 
 PrairieLearn logins via LTI are unique to their LMS course. For example, if an Illinois student is taking a Coursera LTI course they will have two different user accounts in PrairieLearn.
 
-It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"institution": "LTI"`. See [Access control](accessControl.md) for more details.
+It is also necessary to add an `accessRule` in `infoCourseInstance.json` with `"institution": "LTI"`. See [Access control](accessControl/index.md) for more details.
 
 ### LTI linking into an assessment
 
