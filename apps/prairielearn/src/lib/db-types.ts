@@ -506,7 +506,7 @@ export const AiGenerationPromptSchema = z.object({
   errors: z.array(z.string()),
   html: z.string().nullable(),
   id: z.string(),
-  prompt_type: z.enum(['initial', 'human_revision', 'auto_revision']),
+  prompt_type: z.enum(['initial', 'human_revision', 'auto_revision', 'manual_change']),
   prompting_user_id: z.string(),
   python: z.string().nullable(),
   question_id: z.string(),

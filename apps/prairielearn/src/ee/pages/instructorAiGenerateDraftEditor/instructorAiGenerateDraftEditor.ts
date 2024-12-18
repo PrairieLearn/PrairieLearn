@@ -257,7 +257,8 @@ router.post(
 
       if (result.status === 'success') {
         const response = `\`\`\`html\n${req.body.html}\`\`\`\n\`\`\`python\n${req.body.python}\`\`\``;
-        queryAsync(sql.insert_ai_question_generation_prompt, {
+
+        await queryAsync(sql.insert_ai_question_generation_prompt, {
           question_id: req.params.question_id,
           prompting_user_id: res.locals.authn_user.user_id,
           prompt_type: 'manual_change',
