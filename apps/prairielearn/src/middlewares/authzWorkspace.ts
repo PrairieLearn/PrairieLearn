@@ -62,7 +62,10 @@ export default asyncHandler(async (req, res, next) => {
     }
   } else if (res.locals.share_publicly || res.locals.share_source_publicly) {
     // This workspace is not part of a course instance and the question is publicly accessible
-    // Therefore, no authorization is needed
+    // Therefore, just make sure its being accessed by the same person who created the variant
+    if (res.locals.authn_user.user_id !== res.locals.variant_user_id) {
+      throw new HttpStatusError(403, 'Access denied');
+    }
   } else if (res.locals.course_id) {
     req.params.course_id = res.locals.course_id;
     await authzCourseOrInstance(req, res);
