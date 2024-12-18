@@ -26,7 +26,7 @@ export interface LoadUserAuth {
   email?: string | null;
   provider: string;
   /** If present, skip the users_select_or_insert call */
-  user_id?: number;
+  user_id?: number | string;
   institution_id?: number | string | null;
 }
 
@@ -38,7 +38,7 @@ export async function loadUser(
 ) {
   const options = { redirect: false, ...optionsParams };
 
-  let user_id: number;
+  let user_id: number | string;
   if (authnParams.user_id !== undefined) {
     user_id = authnParams.user_id;
   } else {
