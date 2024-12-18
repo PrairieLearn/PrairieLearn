@@ -3,8 +3,9 @@ import asyncHandler from 'express-async-handler';
 import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows, queryAsync } from '@prairielearn/postgres';
 
+import * as b64Util from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { setQuestionCopyTargets } from '../../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
@@ -232,6 +233,45 @@ router.post(
       res.redirect(
         `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}?variant_id=${variantId}`,
       );
+    } else if (req.body.__action === 'submit_manual_revision') {
+      const client = getCourseFilesClient();
+
+      const files: Record<string, string> = {};
+
+      if ('html' in req.body && req.body.html) {
+        files['question.html'] = b64Util.b64EncodeUnicode(req.body.html);
+      }
+
+      if ('python' in req.body && req.body.python) {
+        files['server.py'] = b64Util.b64EncodeUnicode(req.body.python);
+      }
+
+      const result = await client.updateQuestionFiles.mutate({
+        course_id: res.locals.course.id,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        question_id: req.params.question_id,
+        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+        files,
+      });
+
+      if (result.status === 'success') {
+        const response = `\`\`\`html\n${req.body.html}\`\`\`\n\`\`\`python\n${req.body.python}\`\`\``;
+        queryAsync(sql.insert_ai_question_generation_prompt, {
+          question_id: req.params.question_id,
+          prompting_user_id: res.locals.authn_user.user_id,
+          prompt_type: 'manual_change',
+          user_prompt: 'Manually update question',
+          system_prompt: 'Manually update question',
+          response,
+          html: req.body.html,
+          python: req.body.python,
+          errors: [],
+          completion: [response],
+        });
+      }
+
+      res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }

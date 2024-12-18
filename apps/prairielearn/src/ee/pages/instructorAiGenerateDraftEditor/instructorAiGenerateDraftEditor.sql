@@ -8,5 +8,36 @@ WHERE
   questions.id = $question_id
   AND questions.course_id = $course_id
   AND questions.deleted_at IS NULL
+  AND ai_question_generation_prompts.prompt_type <> 'auto_revision'
 ORDER BY
   ai_question_generation_prompts.id;
+
+-- BLOCK insert_ai_question_generation_prompt
+INSERT INTO
+  ai_question_generation_prompts (
+    question_id,
+    prompting_user_id,
+    prompt_type,
+    user_prompt,
+    system_prompt,
+    response,
+    html,
+    python,
+    errors,
+    completion,
+    job_sequence_id
+  )
+VALUES
+  (
+    $question_id,
+    $prompting_user_id,
+    $prompt_type,
+    $user_prompt,
+    $system_prompt,
+    $response,
+    $html,
+    $python,
+    to_jsonb($errors::text[]),
+    to_jsonb($completion),
+    null
+  );

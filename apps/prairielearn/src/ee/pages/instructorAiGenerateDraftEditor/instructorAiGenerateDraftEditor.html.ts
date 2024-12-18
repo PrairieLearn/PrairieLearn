@@ -120,6 +120,7 @@ export function InstructorAiGenerateDraftEditor({
                         ${QuestionCodePanel({
                           htmlContents: prompts[prompts.length - 1].html,
                           pythonContents: prompts[prompts.length - 1].python,
+                          csrfToken: resLocals.__csrf_token,
                         })}
                       </div>
                     </div>
@@ -158,69 +159,76 @@ function PromptHistory({
   prompts: AiGenerationPrompt[];
   urlPrefix: string;
 }) {
-  return prompts
-    .filter((prompt) => prompt.prompt_type !== 'auto_revision')
-    .map((prompt) => {
-      return html`<div class="d-flex flex-row-reverse">
-          <div class="p-3 mb-2 bg-secondary text-white rounded">${prompt.user_prompt}</div>
-        </div>
-        <div class="d-flex flex-row">
-          <div class="p-3 mb-2 bg-dark text-white rounded">
-            ${prompt.prompt_type === 'initial'
-              ? 'We generated a potential question.'
-              : 'We have made changes. Please check the preview and prompt for further revisions.'}
-            <div>
-              ${run(() => {
-                if (!prompt.job_sequence_id) return '';
+  return prompts.map((prompt) => {
+    return html`<div class="d-flex flex-row-reverse">
+        <div class="p-3 mb-2 bg-secondary text-white rounded">${prompt.user_prompt}</div>
+      </div>
+      <div class="d-flex flex-row">
+        <div class="p-3 mb-2 bg-dark text-white rounded">
+          ${prompt.prompt_type === 'initial'
+            ? 'We generated a potential question.'
+            : 'We have made changes. Please check the preview and prompt for further revisions.'}
+          <div>
+            ${run(() => {
+              if (!prompt.job_sequence_id) return '';
 
-                const jobLogsUrl = urlPrefix + '/jobSequence/' + prompt.job_sequence_id;
+              const jobLogsUrl = urlPrefix + '/jobSequence/' + prompt.job_sequence_id;
 
-                return html`
-                  <a class="link-light small" href="${jobLogsUrl}" target="_blank">View job logs</a>
-                `;
-              })}
-            </div>
+              return html`
+                <a class="link-light small" href="${jobLogsUrl}" target="_blank">View job logs</a>
+              `;
+            })}
           </div>
-        </div>`;
-    });
+        </div>
+      </div>`;
+  });
 }
 
 function QuestionCodePanel({
   htmlContents,
   pythonContents,
+  csrfToken,
 }: {
   htmlContents: string | null;
   pythonContents: string | null;
+  csrfToken: string;
 }) {
   return html`
     <div class="mr-auto">
       <span class="card-title"> Generated HTML </span>
     </div>
-    <div id="card-html">
-      <textarea
-        id="output-html"
-        class="bg-dark text-white rounded p-3"
-        style="width:100%; height:10em"
-      >
+    <form method="post">
+      <input type="hidden" name="__action" value="submit_manual_revision" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <div id="card-html">
+        <textarea
+          id="output-html"
+          class="bg-dark text-white rounded p-3"
+          style="width:100%; height:10em"
+          name="html"
+        >
 ${htmlContents}</textarea
-      >
-    </div>
-    ${pythonContents == null
-      ? ''
-      : html`
-          <div class="mr-auto">
-            <span class="card-title"> Generated Python </span>
-          </div>
-          <div id="card-python">
-            <textarea
-              id="output-python"
-              class="bg-dark text-white rounded p-3"
-              style="width:100%; height:10em"
-            >
+        >
+      </div>
+      ${pythonContents == null
+        ? ''
+        : html`
+            <div class="mr-auto">
+              <span class="card-title"> Generated Python </span>
+            </div>
+            <div id="card-python">
+              <textarea
+                id="output-python"
+                class="bg-dark text-white rounded p-3"
+                style="width:100%; height:10em"
+                name="python"
+              >
 ${pythonContents}</textarea
-            >
-          </div>
-        `}
+              >
+            </div>
+          `}
+      <button class="btn btn-primary">Save manual edits</button>
+    </form>
   `;
 }
 
