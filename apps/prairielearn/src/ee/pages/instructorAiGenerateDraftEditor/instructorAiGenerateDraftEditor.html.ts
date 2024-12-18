@@ -61,7 +61,11 @@ export function InstructorAiGenerateDraftEditor({
                 <div class="row">
                   <div class="col-12 col-md-6">
                     <div>
-                      ${PromptHistory({ prompts, urlPrefix: resLocals.urlPrefix })}
+                      ${PromptHistory({
+                        prompts,
+                        urlPrefix: resLocals.urlPrefix,
+                        csrfToken: resLocals.__csrf_token,
+                      })}
                       <form
                         hx-post="${variantId
                           ? html`${resLocals.urlPrefix}/ai_generate_editor/${question.id}?variant_id=${variantId}`
@@ -155,9 +159,11 @@ export function InstructorAiGenerateDraftEditor({
 function PromptHistory({
   prompts,
   urlPrefix,
+  csrfToken,
 }: {
   prompts: AiGenerationPrompt[];
   urlPrefix: string;
+  csrfToken: string;
 }) {
   return prompts.map((prompt) => {
     return html`<div class="d-flex flex-row-reverse">
@@ -170,12 +176,20 @@ function PromptHistory({
             : 'We have made changes. Please check the preview and prompt for further revisions.'}
           <div>
             ${run(() => {
-              if (!prompt.job_sequence_id) return '';
+              if (!prompt.job_sequence_id || !prompt.id) return '';
 
               const jobLogsUrl = urlPrefix + '/jobSequence/' + prompt.job_sequence_id;
 
               return html`
                 <a class="link-light small" href="${jobLogsUrl}" target="_blank">View job logs</a>
+                <form method="post">
+                  <input type="hidden" name="__action" value="revert_edit_version" />
+                  <input type="hidden" name="unsafe_prompt_id" value="${prompt.id}" />
+                  <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+                  <button class="btn btn-link link-light small d-inline">
+                    Revert to this version
+                  </button>
+                </form>
               `;
             })}
           </div>

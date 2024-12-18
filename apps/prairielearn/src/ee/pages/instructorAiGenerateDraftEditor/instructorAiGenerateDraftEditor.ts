@@ -273,6 +273,58 @@ router.post(
       }
 
       res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
+    } else if (req.body.__action === 'revert_edit_version') {
+      const prompts = await queryRows(
+        sql.select_ai_question_generation_prompt_by_id_and_question,
+        { prompt_id: req.body.unsafe_prompt_id, question_id: req.params.question_id },
+        AiGenerationPromptSchema,
+      );
+      if (prompts.length !== 1) {
+        throw new error.HttpStatusError(
+          403,
+          `No prompt with ID ${req.body.unsafe_prompt_id} found for question.`,
+        );
+      }
+
+      const client = getCourseFilesClient();
+
+      const files: Record<string, string> = {};
+
+      if (prompts[0].html) {
+        files['question.html'] = b64Util.b64EncodeUnicode(prompts[0].html);
+      }
+
+      if (prompts[0].python) {
+        files['server.py'] = b64Util.b64EncodeUnicode(prompts[0].python);
+      }
+
+      const result = await client.updateQuestionFiles.mutate({
+        course_id: res.locals.course.id,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        question_id: req.params.question_id,
+        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+        files,
+      });
+
+      if (result.status === 'success') {
+        const response = `\`\`\`html\n${req.body.html}\`\`\`\n\`\`\`python\n${req.body.python}\`\`\``;
+
+        await queryAsync(sql.insert_ai_question_generation_prompt, {
+          question_id: req.params.question_id,
+          prompting_user_id: res.locals.authn_user.user_id,
+          prompt_type: 'manual_change',
+          user_prompt: `Manually revert question to v${req.body.unsafe_prompt_id}`,
+          system_prompt: `Manually revert question to v${req.body.unsafe_prompt_id}`,
+          response,
+          html: prompts[0].html,
+          python: prompts[0].python,
+          errors: [],
+          completion: [response],
+        });
+      }
+
+      res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
