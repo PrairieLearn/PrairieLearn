@@ -21,7 +21,6 @@ router.get(
       throw new error.HttpStatusError(404, 'Not Found');
     }
 
-    
     const course = await selectCourseByCourseInstanceId(course_instance_id.toString());
     res.locals.course = course;
     const assessment = await selectAssessmentById(assessment_id);
@@ -43,7 +42,6 @@ router.get(
         assessment,
         course,
         course_instance_id,
-        course_sharing_name: course.sharing_name,
         questions,
       }),
     );

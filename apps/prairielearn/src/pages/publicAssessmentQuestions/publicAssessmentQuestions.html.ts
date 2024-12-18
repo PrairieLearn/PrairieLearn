@@ -13,14 +13,12 @@ export function PublicAssessmentQuestions({
   assessment,
   course,
   course_instance_id,
-  course_sharing_name,
   questions,
 }: {
   resLocals: Record<string, any>;
   assessment: Assessment;
   course: Course;
   course_instance_id: string;
-  course_sharing_name: string;
   questions: AssessmentQuestionRow[];
 }) {
   return html`
@@ -34,19 +32,20 @@ export function PublicAssessmentQuestions({
         <main id="content" class="container">
           ${course.sharing_name
             ? html`
-          <div class="card mb-4">
-            <div class="card-header bg-primary text-white d-flex align-items-center">
-              ${assessment.title} ${assessment.number}: Questions
-            </div>
-            ${AssessmentQuestionsTable({
-              questions,
-              urlPrefix: resLocals.urlPrefix,
-              course_id: course.id,
-              course_instance_id,
-              course_sharing_name,
-            })}
-          </div>
-            ` : html`<p>
+                <div class="card mb-4">
+                  <div class="card-header bg-primary text-white d-flex align-items-center">
+                    ${assessment.title} ${assessment.number}: Questions
+                  </div>
+                  ${AssessmentQuestionsTable({
+                    questions,
+                    urlPrefix: resLocals.urlPrefix,
+                    course_id: course.id,
+                    course_instance_id,
+                    course_sharing_name: course.sharing_name,
+                  })}
+                </div>
+              `
+            : html`<p>
                 This course doesn't have a sharing name. If you are an Owner of this course, please
                 choose a sharing name on the
                 <a
