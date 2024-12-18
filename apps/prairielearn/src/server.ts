@@ -2118,7 +2118,6 @@ export async function initExpress(): Promise<Express> {
    *
    * RAISE EXCEPTION 'Entity not found' USING ERRCODE = 'ST404';
    *
-   * @param err
    * @returns The extracted HTTP status code
    */
   function maybeGetStatusCodeFromSqlError(err: any): number | null {
@@ -2427,12 +2426,12 @@ if (esMain(import.meta) && config.startServer) {
           ssl: config.postgresqlSsl,
           errorOnUnusedParameters: config.devMode,
         };
-        function idleErrorHandler(err: Error, _client: sqldb.PoolClient) {
+        function idleErrorHandler(err: Error) {
           logger.error('idle client error', err);
           Sentry.captureException(err, {
             level: 'fatal',
             tags: {
-              // This may have been set by `sql-db.js`. We include this in the
+              // This may have been set by `@prairielearn/postgres`. We include this in the
               // Sentry tags to more easily debug idle client errors.
               last_query: (err as any)?.data?.lastQuery ?? undefined,
             },
