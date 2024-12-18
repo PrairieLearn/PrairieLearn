@@ -76,15 +76,7 @@ export async function updateScore(assessment_instance_id: string) {
   shasum.update(body || '');
   const sha1 = shasum.digest('hex');
 
-  const oauthParams: {
-    oauth_consumer_key: string;
-    oauth_version: string;
-    oauth_timestamp: string;
-    oauth_nonce: string;
-    oauth_signature_method: string;
-    oauth_body_hash: string;
-    oauth_signature?: string;
-  } = {
+  const oauthParams: Record<string, string> = {
     oauth_consumer_key: info.consumer_key,
     oauth_version: '1.0',
     oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
