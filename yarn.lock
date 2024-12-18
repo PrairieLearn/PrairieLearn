@@ -3757,6 +3757,7 @@ __metadata:
     "@prairielearn/zod": "workspace:^"
     "@pyroscope/nodejs": "npm:^0.4.1"
     "@sa11y/format": "npm:^6.10.1"
+    "@smithy/types": "npm:^3.7.2"
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@trpc/client": "npm:^10.45.2"
     "@trpc/server": "npm:^10.45.2"
