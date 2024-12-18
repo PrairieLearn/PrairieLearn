@@ -26,6 +26,7 @@ import {
   checkInvalidSharingSetDeletions,
   checkInvalidSharingSetAdditions,
   checkInvalidSharedAssessments,
+  checkInvalidDraftQuestionSharing,
 } from './sharing.js';
 
 interface SyncResultSharingError {
@@ -70,6 +71,7 @@ export async function checkSharingConfigurationValid(
     courseData,
     logger,
   );
+  const existInvalidDraftQuestionSharing = checkInvalidDraftQuestionSharing(courseData, logger);
 
   const existInvalidSharedAssessment = checkInvalidSharedAssessments(courseData, logger);
 
@@ -79,7 +81,8 @@ export async function checkSharingConfigurationValid(
     !existInvalidSharingSetDeletions &&
     !existInvalidSharingSetAdditions &&
     !existInvalidSharingSetRemovals &&
-    !existInvalidSharedAssessment;
+    !existInvalidSharedAssessment &&
+    !existInvalidDraftQuestionSharing;
   return sharingConfigurationValid;
 }
 
