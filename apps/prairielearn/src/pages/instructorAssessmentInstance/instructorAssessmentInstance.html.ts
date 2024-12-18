@@ -598,7 +598,7 @@ export function InstructorAssessmentInstance({
                                   title="Fingerprint ${row.client_fingerprint_number}"
                                   data-content="${escapeHtml(
                                     ClientFingerprintContent({
-                                      clientFingerprint: row.client_fingerprint,
+                                      fingerprint: row.client_fingerprint,
                                     }),
                                   )}"
                                 >
@@ -684,44 +684,46 @@ export function InstructorAssessmentInstance({
   `.toString();
 }
 
-function ClientFingerprintContent({ clientFingerprint }: { clientFingerprint: ClientFingerprint }) {
-  const browserVersion = clientFingerprint.client_hints?.['sec-ch-ua-full-version-list'];
-  const mobile = clientFingerprint.client_hints?.['sec-ch-ua-mobile'];
-  const osPlatform = clientFingerprint.client_hints?.['sec-ch-ua-platform'];
-  let osPlatformVersion = clientFingerprint.client_hints?.['sec-ch-ua-platform-version'];
+function ClientFingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint }) {
+  let browserVersion: string = fingerprint.client_hints?.['sec-ch-ua-full-version-list'];
+  const mobile: string = fingerprint.client_hints?.['sec-ch-ua-mobile'];
+  const osPlatform: string = fingerprint.client_hints?.['sec-ch-ua-platform']?.replaceAll('"', '');
+  let osPlatformVersion: string = fingerprint.client_hints?.['sec-ch-ua-platform-version'];
+
+  if (browserVersion) {
+    const match = browserVersion.match(/^"([^"]+)";v="([^"]+)"/);
+    if (match) {
+      browserVersion = `${match[1]} v${match[2]}`;
+    }
+  }
 
   // Special handing of Windows platform version
   // https://learn.microsoft.com/en-us/microsoft-edge/web-platform/how-to-detect-win11#detecting-specific-windows-versions
   if (osPlatform === 'Windows' && osPlatformVersion != null) {
-    try {
-      const versionParts: string[] = osPlatformVersion.split('.');
-      const platformMajorVersion = Number(versionParts[0].replace('"', ''));
+    const platformMatch = osPlatformVersion.match(/^"([0-9]+)[0-9.]+"/);
+    if (platformMatch) {
+      const platformMajorVersion = Number(platformMatch[1]);
       if (platformMajorVersion === 0) {
-        osPlatformVersion = `8.1 or older (platform ${osPlatformVersion})`;
-      } else if (platformMajorVersion < 13) {
+        osPlatformVersion = '8.1 or older';
+      } else if (Number(platformMajorVersion) > 0 && Number(platformMajorVersion) < 13) {
         osPlatformVersion = `10 (platform ${osPlatformVersion})`;
       } else {
         osPlatformVersion = `11 or newer (platform ${osPlatformVersion})`;
       }
-    } catch (_) {
-      // Ignore errors and use the provided values without change
     }
   }
 
   return html`
     <div>
       IP Address:
-      <a
-        href="https://client.rdap.org/?type=ip&object=${clientFingerprint.ip_address}"
-        target="_blank"
-      >
-        ${clientFingerprint.ip_address}
+      <a href="https://client.rdap.org/?type=ip&object=${fingerprint.ip_address}" target="_blank">
+        ${fingerprint.ip_address}
       </a>
     </div>
-    <div>Session ID: ${clientFingerprint.user_session_id}</div>
-    <div>User Agent: <code>${clientFingerprint.user_agent}</code></div>
-    ${mobile ? html`<div>Mobile mode: ${mobile === '?1' ? 'yes' : 'no'}</div>` : ''}
-    ${browserVersion ? html`<div>Browser: ${browserVersion.split(',')[0]}</div>` : ''}
+    <div>Session ID: ${fingerprint.user_session_id}</div>
+    <div>User Agent: <code>${fingerprint.user_agent}</code></div>
+    ${mobile ? html`<div>Mobile mode: ${mobile === '?1' ? 'Yes' : 'No'}</div>` : ''}
+    ${browserVersion ? html`<div>Browser: ${browserVersion}</div>` : ''}
     ${osPlatform ? html`<div>OS: ${osPlatform} ${osPlatformVersion ?? ''}</div>` : ''}
   `;
 }
