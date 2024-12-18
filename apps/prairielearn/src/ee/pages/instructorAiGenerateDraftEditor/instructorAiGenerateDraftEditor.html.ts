@@ -186,7 +186,7 @@ function PromptHistory({
                   <input type="hidden" name="__action" value="revert_edit_version" />
                   <input type="hidden" name="unsafe_prompt_id" value="${prompt.id}" />
                   <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                  <button class="btn btn-link link-light small d-inline">
+                  <button class="btn btn-link link-light small d-inline p-0">
                     Revert to this version
                   </button>
                 </form>
