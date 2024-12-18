@@ -21,16 +21,24 @@ import { config } from '../config.js';
 import { deferredPromise } from '../deferred.js';
 
 import {
+  type CodeCaller,
   FunctionMissingError,
   type CallType,
-  CREATED,
-  IN_CALL,
-  EXITING,
-  EXITED,
-  WAITING,
-  type CallerState,
   type PrepareForCourseOptions,
 } from './code-caller-shared.js';
+
+const CREATED = Symbol('CREATED');
+const WAITING = Symbol('WAITING');
+const IN_CALL = Symbol('IN_CALL');
+const EXITING = Symbol('EXITING');
+const EXITED = Symbol('EXITED');
+
+type CallerState =
+  | typeof CREATED
+  | typeof WAITING
+  | typeof IN_CALL
+  | typeof EXITING
+  | typeof EXITED;
 
 const MOUNT_DIRECTORY_PREFIX = 'prairielearn-worker-';
 
@@ -113,11 +121,11 @@ async function ensureImage() {
   }
 }
 
-export class CodeCallerContainer {
+export class CodeCallerContainer implements CodeCaller {
   state: CallerState;
   uuid: string;
   container: Container | null;
-  callback: ((err: Error | null, data: any, output: string) => void) | null;
+  callback: ((err: Error | null, data?: any, output?: string) => void) | null;
   timeoutID: NodeJS.Timeout | null;
   callCount: number;
   ensureChildMutex: Mutex;
@@ -167,7 +175,7 @@ export class CodeCallerContainer {
     this.coursePath = null;
     this.forbiddenModules = [];
 
-    this._checkState(undefined);
+    this._checkState();
 
     this.debug(`exit constructor(), state: ${String(this.state)}, uuid: ${this.uuid}`);
   }
@@ -288,7 +296,7 @@ export class CodeCallerContainer {
     this.stdinStream?.write('\n');
 
     this.state = IN_CALL;
-    this._checkState(undefined);
+    this._checkState();
     this.debug('exit call()');
 
     return deferred.promise as any as { result: any; output: string };
@@ -337,13 +345,13 @@ export class CodeCallerContainer {
       this._cleanup();
       this.state = EXITING;
     }
-    this._checkState(undefined);
+    this._checkState();
     this.debug('exit done()');
   }
 
   async ensureChild() {
     this.debug('enter ensureChild()');
-    this._checkState(undefined);
+    this._checkState();
 
     // Since container creation is async, it's possible that ensureChild()
     // could be called again while it's already executing. For instance, we
@@ -366,11 +374,11 @@ export class CodeCallerContainer {
 
       await this.call('ping', null, null, 'ping', []);
 
-      this._checkState(undefined);
+      this._checkState();
       this.debug('exit _ensureChild()');
     });
 
-    this._checkState(undefined);
+    this._checkState();
     this.debug('exit ensureChild()');
   }
 
@@ -470,11 +478,7 @@ export class CodeCallerContainer {
     this.timeoutID = null;
     this._cleanup();
     this.state = EXITING;
-    this._callCallback(
-      new Error('timeout exceeded, killing CodeCallerContainer container'),
-      undefined,
-      '',
-    );
+    this._callCallback(new Error('timeout exceeded, killing CodeCallerContainer container'));
     this.debug('exit _timeout()');
   }
 
@@ -512,8 +516,6 @@ export class CodeCallerContainer {
             code,
           )}, err = ${err}`,
         ),
-        undefined,
-        '',
       );
     } else if (this.state === EXITING) {
       // no error, this is the good case
@@ -528,7 +530,7 @@ export class CodeCallerContainer {
    * @param {any} [data]
    * @param {string} [output]
    */
-  _callCallback(err: (Error & { data?: any }) | null, data: any, output: string) {
+  _callCallback(err: (Error & { data?: any }) | null, data?: any, output?: string) {
     this.debug('enter _callCallback()');
     if (err) err.data = this._errorData();
     const c = this.callback;
@@ -562,10 +564,10 @@ export class CodeCallerContainer {
     }
     this.state = WAITING;
     if (err) {
-      this._callCallback(err, undefined, '');
+      this._callCallback(err);
     } else {
       if (data?.functionMissing) {
-        this._callCallback(new FunctionMissingError('Function not found in module'), undefined, '');
+        this._callCallback(new FunctionMissingError('Function not found in module'));
       } else {
         this._callCallback(null, data?.data, data?.output || '');
       }
@@ -663,7 +665,7 @@ export class CodeCallerContainer {
   /**
    * Checks that the caller is in a good state.
    */
-  _checkState(allowedStates: CallerState[] | undefined) {
+  _checkState(allowedStates?: CallerState[]) {
     if (allowedStates && !allowedStates.includes(this.state)) {
       const allowedStatesList = allowedStates.map(String).join(', ');
       return this._logError(

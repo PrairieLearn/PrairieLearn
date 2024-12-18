@@ -1,6 +1,8 @@
+import { type ChildProcess } from 'child_process';
 import * as child_process from 'node:child_process';
-import { type SpawnOptions, type IOType } from 'node:child_process';
+import { type SpawnOptions } from 'node:child_process';
 import * as path from 'node:path';
+import { type Readable, type Writable } from 'stream';
 
 import debugfn from 'debug';
 import _ from 'lodash';
@@ -11,20 +13,31 @@ import { logger } from '@prairielearn/logger';
 import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
 
-import { type CodeCallerNativeChildProcess } from './code-caller-native-types.js';
 import {
   FunctionMissingError,
-  type CodeCallerState,
-  CREATED,
-  WAITING,
-  IN_CALL,
-  RESTARTING,
-  EXITING,
-  EXITED,
   type CodeCaller,
   type PrepareForCourseOptions,
   type CallType as CallTypeShared,
 } from './code-caller-shared.js';
+
+interface CodeCallerNativeChildProcess extends ChildProcess {
+  stdio: [Writable, Readable, Readable, Readable, Readable];
+}
+
+const CREATED = Symbol('CREATED');
+const WAITING = Symbol('WAITING');
+const IN_CALL = Symbol('IN_CALL');
+const EXITING = Symbol('EXITING');
+const EXITED = Symbol('EXITED');
+const RESTARTING = Symbol('RESTARTING');
+
+type CodeCallerState =
+  | typeof CREATED
+  | typeof WAITING
+  | typeof IN_CALL
+  | typeof EXITING
+  | typeof EXITED
+  | typeof RESTARTING;
 
 /* Re-export types until executor is in TypeScript are merged */
 export type CallType = CallTypeShared;
@@ -135,7 +148,7 @@ export class CodeCallerNative implements CodeCaller {
     this.coursePath = null;
     this.forbiddenModules = [];
 
-    this._checkState(undefined);
+    this._checkState();
 
     this.debug('exit constructor()');
   }
@@ -234,7 +247,7 @@ export class CodeCallerNative implements CodeCaller {
     this.child?.stdin?.write('\n');
 
     this.state = IN_CALL;
-    this._checkState(undefined);
+    this._checkState();
     this.debug('exit call()');
 
     return deferred.promise as Promise<{ result: any; output: string }>;
@@ -302,20 +315,20 @@ export class CodeCallerNative implements CodeCaller {
       this.child?.kill();
       this.state = EXITING;
     }
-    this._checkState(undefined);
+    this._checkState();
     this.debug('exit done()');
   }
 
   async ensureChild() {
     this.debug('enter ensureChild()');
-    this._checkState(undefined);
+    this._checkState();
 
     if (this.state === CREATED) {
       this._startChild();
       await this.call('ping', null, null, 'ping', []);
     }
 
-    this._checkState(undefined);
+    this._checkState();
     this.debug('exit ensureChild()');
   }
 
@@ -340,14 +353,10 @@ export class CodeCallerNative implements CodeCaller {
     const options: SpawnOptions = {
       cwd: import.meta.dirname,
       // stdin, stdout, stderr, data, and restart confirmations
-      stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe'] as IOType[],
+      stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe'],
       env,
     };
-    const child: CodeCallerNativeChildProcess = child_process.spawn(
-      cmd,
-      args,
-      options,
-    ) as CodeCallerNativeChildProcess;
+    const child = child_process.spawn(cmd, args, options) as CodeCallerNativeChildProcess;
     this.debug(`started child pid ${child.pid}`);
 
     child.stdio[1].setEncoding('utf8');
@@ -365,7 +374,7 @@ export class CodeCallerNative implements CodeCaller {
 
     this.child = child;
     this.state = WAITING;
-    this._checkState(undefined);
+    this._checkState();
     this.debug('exit _startChild()');
   }
 
@@ -446,8 +455,6 @@ export class CodeCallerNative implements CodeCaller {
             ', signal = ' +
             String(signal),
         ),
-        undefined,
-        '',
       );
     } else if (this.state === EXITING) {
       // no error, this is the good case
@@ -476,14 +483,14 @@ export class CodeCallerNative implements CodeCaller {
       this.state = EXITING;
       this.child?.kill('SIGTERM');
       const err = new Error('CodeCallerNative child process error: ' + String(error));
-      this._callCallback(err, undefined, '');
+      this._callCallback(err);
     } else if (this.state === EXITING) {
       this._logError(
         'CodeCallerNative child process raised error while in state = EXITING, message = ' +
           String(error),
       );
     }
-    this._checkState(undefined);
+    this._checkState();
     this.debug('exit _handleChildError()');
   }
 
@@ -494,7 +501,7 @@ export class CodeCallerNative implements CodeCaller {
     const err = new Error('timeout exceeded, killing CodeCallerNative child');
     this.child?.kill('SIGTERM');
     this.state = EXITING;
-    this._callCallback(err, undefined, '');
+    this._callCallback(err);
     this.debug('exit _timeout()');
   }
 
@@ -512,7 +519,7 @@ export class CodeCallerNative implements CodeCaller {
     const err = new Error('restart timeout exceeded, killing CodeCallerNative child');
     this.child?.kill('SIGTERM');
     this.state = EXITING;
-    this._callCallback(err, undefined, '');
+    this._callCallback(err);
     this.debug('exit _restartTimeout()');
   }
 
@@ -523,7 +530,7 @@ export class CodeCallerNative implements CodeCaller {
     this.debug('exit _clearRestartTimeout()');
   }
 
-  _callCallback(err: CodeCallerError | null, data: any, output: string) {
+  _callCallback(err: CodeCallerError | null, data?: any, output?: string) {
     this.debug('enter _callCallback()');
     if (err) err.data = this._errorData();
     const c = this.callback;
@@ -549,13 +556,13 @@ export class CodeCallerNative implements CodeCaller {
     if (err) {
       this.state = EXITING;
       this.child?.kill('SIGTERM');
-      this._callCallback(err, undefined, '');
+      this._callCallback(err);
     } else {
       this.state = WAITING;
       if (data?.present) {
         this._callCallback(null, data.val, this.outputBoth.join(''));
       } else {
-        this._callCallback(new FunctionMissingError('Function not found in module'), undefined, '');
+        this._callCallback(new FunctionMissingError('Function not found in module'));
       }
     }
 
@@ -624,7 +631,7 @@ export class CodeCallerNative implements CodeCaller {
     return false;
   }
 
-  _checkState(allowedStates: CodeCallerState[] | undefined) {
+  _checkState(allowedStates?: CodeCallerState[]) {
     if (allowedStates && !allowedStates.includes(this.state)) {
       const allowedStatesList = '[' + _.map(allowedStates, String).join(',') + ']';
       return this._logError(
