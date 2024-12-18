@@ -1,10 +1,9 @@
-// @ts-check
 import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { ECRClient } from '@aws-sdk/client-ecr';
 import debugfn from 'debug';
-import Docker from 'dockerode';
+import Docker, { type Container } from 'dockerode';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import MemoryStream from 'memorystream';
@@ -20,14 +19,31 @@ import { makeAwsClientConfig } from '../aws.js';
 import { config } from '../config.js';
 import { deferredPromise } from '../deferred.js';
 
-import { FunctionMissingError } from './code-caller-shared.js';
+import {
+  type CodeCaller,
+  FunctionMissingError,
+  type CallType,
+  type PrepareForCourseOptions,
+  type CodeCallerResult,
+} from './code-caller-shared.js';
 
-/** @typedef {typeof CREATED | typeof WAITING | typeof IN_CALL | typeof EXITING | typeof EXITED} CallerState */
 const CREATED = Symbol('CREATED');
 const WAITING = Symbol('WAITING');
 const IN_CALL = Symbol('IN_CALL');
 const EXITING = Symbol('EXITING');
 const EXITED = Symbol('EXITED');
+
+type CallerState =
+  | typeof CREATED
+  | typeof WAITING
+  | typeof IN_CALL
+  | typeof EXITING
+  | typeof EXITED;
+
+interface CodeCallerContainerOptions {
+  questionTimeoutMilliseconds: number;
+  pingTimeoutMilliseconds: number;
+}
 
 const MOUNT_DIRECTORY_PREFIX = 'prairielearn-worker-';
 
@@ -53,7 +69,7 @@ async function updateExecutorImageTag() {
   executorImageTag = (await execa('git', ['rev-parse', 'HEAD'])).stdout.trim();
 }
 
-function getExecutorImageName() {
+function getExecutorImageName(): string {
   if (config.workerExecutorImageRepository) {
     // Give precedence to any value provided by config. Note that we do not
     // prepend `cacheImageRegistry` here - we assume that the user has included
@@ -110,45 +126,43 @@ async function ensureImage() {
   }
 }
 
-/**
- * @typedef {Object} CodeCallerContainerOptions
- * @property {number} questionTimeoutMilliseconds
- * @property {number} pingTimeoutMilliseconds
- */
+export class CodeCallerContainer implements CodeCaller {
+  state: CallerState;
+  uuid: string;
+  container: Container | null;
+  callback: ((err: Error | null, data?: any, output?: string) => void) | null;
+  timeoutID: NodeJS.Timeout | null;
+  callCount: number;
+  hasBindMount: boolean;
+  options: { questionTimeoutMilliseconds: number; pingTimeoutMilliseconds: number };
+  stdinStream: MemoryStream | null;
+  stdoutStream: MemoryStream | null;
+  stderrStream: MemoryStream | null;
+  outputStdout: string[];
+  outputStderr: string[];
+  outputBoth: string;
+  lastCallData: any;
+  coursePath: string | null;
+  forbiddenModules: string[];
+  hostDirectory: tmp.DirectoryResult | null;
 
-/** @typedef {import('./code-caller-shared.js').CodeCaller} CodeCaller */
-/** @typedef {import('./code-caller-shared.js').CallType} CallType */
-
-/**
- * @implements {CodeCaller}
- */
-export class CodeCallerContainer {
   /**
    * Creating a new {@link CodeCallerContainer} instance requires some async work,
    * so we use this static method to create a new instance since a constructor
    * cannot be async.
-   *
-   * @param {CodeCallerContainerOptions} options
-   * @returns {Promise<CodeCallerContainer>}
    */
-  static async create(options) {
+  static async create(options: CodeCallerContainerOptions): Promise<CodeCallerContainer> {
     const codeCaller = new CodeCallerContainer(options);
     await codeCaller.ensureChild();
     return codeCaller;
   }
 
-  /**
-   * @private
-   * @param {CodeCallerContainerOptions} options
-   */
-  constructor(options) {
-    /** @type {CallerState} */
+  private constructor(options: CodeCallerContainerOptions) {
     this.state = CREATED;
     this.uuid = uuidv4();
 
     this.debug('enter constructor()');
 
-    /** @type {import('dockerode').Container | null} */
     this.container = null;
     this.callback = null;
     this.timeoutID = null;
@@ -158,9 +172,7 @@ export class CodeCallerContainer {
     this.options = options;
 
     // These will accumulate output from the container.
-    /** @type {string[]} */
     this.outputStdout = [];
-    /** @type {string[]} */
     this.outputStderr = [];
     this.outputBoth = '';
 
@@ -181,19 +193,13 @@ export class CodeCallerContainer {
 
   /**
    * Wrapper around `debug` that automatically includes UUID and the caller state.
-   *
-   * @param {string} message
    */
-  debug(message) {
+  debug(message: string) {
     const paddedState = this.state.toString().padEnd(15);
     debug(`[${this.uuid} ${paddedState}] ${message}`);
   }
 
-  /**
-   * @param {string} directory
-   * @param {string} mountpoint
-   */
-  async createBindMount(directory, mountpoint) {
+  async createBindMount(directory: string, mountpoint: string) {
     this.debug(`creating bind mount for ${directory} at ${mountpoint}`);
     await instrumented('createBindMount', async (span) => {
       span.setAttribute('mountpoint', mountpoint);
@@ -207,9 +213,8 @@ export class CodeCallerContainer {
   /**
    * Wrapper around `removeBindMount` that includes instance-specific logs.
    *
-   * @param {string} mountpoint
    */
-  async removeBindMountIfNeeded(mountpoint) {
+  async removeBindMountIfNeeded(mountpoint: string) {
     if (!this.hasBindMount) return;
 
     this.debug(`removing bind mount at ${mountpoint}`);
@@ -224,10 +229,8 @@ export class CodeCallerContainer {
   /**
    * Allows this caller to prepare for execution of code from a particular
    * course.
-   *
-   * @param {import('./code-caller-shared.js').PrepareForCourseOptions} options
    */
-  async prepareForCourse({ coursePath, forbiddenModules }) {
+  async prepareForCourse({ coursePath, forbiddenModules }: PrepareForCourseOptions) {
     this.forbiddenModules = forbiddenModules;
 
     if (this.coursePath && this.coursePath === coursePath) {
@@ -245,15 +248,13 @@ export class CodeCallerContainer {
     await this.createBindMount(coursePath, this.hostDirectory.path);
   }
 
-  /**
-   * @param {CallType} type
-   * @param {string | null} directory
-   * @param {string | null} file
-   * @param {string} fcn
-   * @param {any[]} args
-   * @returns {Promise<{ result: any, output: string }>}
-   */
-  async call(type, directory, file, fcn, args) {
+  async call(
+    type: CallType,
+    directory: string | null,
+    file: string | null,
+    fcn: string,
+    args: any[],
+  ): Promise<CodeCallerResult> {
     this.debug(`enter call(${type}, ${directory}, ${file}, ${fcn})`);
     this.callCount += 1;
 
@@ -276,12 +277,12 @@ export class CodeCallerContainer {
     this.outputStderr = [];
     this.outputBoth = '';
 
-    const deferred = deferredPromise();
+    const deferred = deferredPromise<CodeCallerResult>();
     this.callback = (err, result, output) => {
       if (err) {
         deferred.reject(err);
       } else {
-        deferred.resolve({ result, output });
+        deferred.resolve({ result, output: output ?? '' });
       }
     };
 
@@ -355,8 +356,7 @@ export class CodeCallerContainer {
     this.debug('exit done()');
   }
 
-  /** @private */
-  async ensureChild() {
+  private async ensureChild() {
     this.debug('enter ensureChild()');
     this._checkState();
 
@@ -382,10 +382,8 @@ export class CodeCallerContainer {
   /**
    * Creates a container and attaches its stdin/stdout/stderr to streams
    * we can write to and read from.
-   *
-   * @param {string} hostDirectory
    */
-  async _createAndAttachContainer(hostDirectory) {
+  async _createAndAttachContainer(hostDirectory: string) {
     this.debug('enter _createAndAttachContainer');
     this.debug('_createAndAttachContainer(): creating container');
     let bindMount = `${hostDirectory}:/course:ro`;
@@ -456,10 +454,7 @@ export class CodeCallerContainer {
     this.debug('exit _createAndAttachContainer');
   }
 
-  /**
-   * @param {string} data
-   */
-  _handleStdout(data) {
+  _handleStdout(data: string) {
     this.debug('enter _handleStdout()');
     this.outputStdout.push(data);
     if (data.indexOf('\n') >= 0) {
@@ -468,10 +463,7 @@ export class CodeCallerContainer {
     this.debug('exit _handleStdout()');
   }
 
-  /**
-   * @param {string} data
-   */
-  _handleStderr(data) {
+  _handleStderr(data: string) {
     this.debug('enter _handleStderr()');
     this.outputStderr.push(data);
     this.debug('exit _handleStderr()');
@@ -497,10 +489,10 @@ export class CodeCallerContainer {
   /**
    * Can be called asynchronously at any time if the container exits.
    *
-   * @param {Error | null | undefined} err An error that occurred while waiting for the container to exit.
-   * @param {number} [code] The status code that the container exited with
+   * @param err An error that occurred while waiting for the container to exit.
+   * @param code The status code that the container exited with
    */
-  async _handleContainerExit(err, code) {
+  async _handleContainerExit(err: Error | null | undefined, code?: number) {
     this.debug('enter _handleContainerExit()');
     this._checkState([WAITING, IN_CALL, EXITING]);
     if (this.state === WAITING) {
@@ -530,12 +522,7 @@ export class CodeCallerContainer {
     this.debug('exit _handleContainerExit()');
   }
 
-  /**
-   * @param {(Error & { data?: any }) | null} err
-   * @param {any} [data]
-   * @param {string} [output]
-   */
-  _callCallback(err, data, output) {
+  _callCallback(err: (Error & { data?: any }) | null, data?: any, output?: string) {
     this.debug('enter _callCallback()');
     if (err) err.data = this._errorData();
     const c = this.callback;
@@ -548,11 +535,17 @@ export class CodeCallerContainer {
     this.debug('enter _callIsFinished()');
     if (!this._checkState([IN_CALL])) return;
     this._clearTimeout();
-    let data = null;
-    let err = null;
+    let data: {
+      error?: string;
+      errorData?: { outputBoth: string };
+      functionMissing?: boolean;
+      data: any;
+      output: string;
+    } | null = null;
+    let err: Error | null = null;
     try {
       data = JSON.parse(this.outputStdout.join(''));
-      if (data.error) {
+      if (data && data.error) {
         err = new Error(data.error);
         if (data.errorData && data.errorData.outputBoth) {
           this.outputBoth = data.errorData.outputBoth;
@@ -565,10 +558,10 @@ export class CodeCallerContainer {
     if (err) {
       this._callCallback(err);
     } else {
-      if (data.functionMissing) {
+      if (data?.functionMissing) {
         this._callCallback(new FunctionMissingError('Function not found in module'));
       } else {
-        this._callCallback(null, data.data, data.output);
+        this._callCallback(null, data?.data, data?.output || '');
       }
     }
 
@@ -631,9 +624,9 @@ export class CodeCallerContainer {
   }
 
   /**
-   * @param {string} msg The message to log
+   * @param msg The message to log
    */
-  _logError(msg) {
+  _logError(msg: string): boolean {
     this.debug('enter _logError()');
     const errData = this._errorData();
     logger.error(msg, errData);
@@ -643,11 +636,8 @@ export class CodeCallerContainer {
 
   /**
    * Checks if the caller is ready for a call to call().
-   *
-   * @param {string} fcn
-   * @returns {boolean}
    */
-  _checkReadyForCall(fcn) {
+  _checkReadyForCall(fcn: string): boolean {
     if (!this.container) {
       return this._logError(
         `Not ready for call, container is not created (state: ${String(this.state)})`,
@@ -666,10 +656,8 @@ export class CodeCallerContainer {
 
   /**
    * Checks that the caller is in a good state.
-   *
-   * @param {CallerState[]} [allowedStates]
    */
-  _checkState(allowedStates) {
+  _checkState(allowedStates?: CallerState[]) {
     if (allowedStates && !allowedStates.includes(this.state)) {
       const allowedStatesList = allowedStates.map(String).join(', ');
       return this._logError(
@@ -679,7 +667,7 @@ export class CodeCallerContainer {
       );
     }
 
-    let containerNull, callbackNull, timeoutIDNull;
+    let containerNull: boolean, callbackNull: boolean, timeoutIDNull: boolean;
     if (this.state === CREATED) {
       containerNull = true;
       callbackNull = true;

@@ -1,4 +1,3 @@
-// @ts-check
 import debugfn from 'debug';
 import _ from 'lodash';
 
@@ -10,8 +9,22 @@ import { config } from './config.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:load');
 
+interface JobLoad {
+  startMS: number;
+  warned?: boolean;
+}
+
 class LoadEstimator {
-  constructor(jobType, maxJobCount, warnOnOldJobs) {
+  jobType: string;
+  lastEstimateTimeMS: number;
+  lastIncrementTimeMS: number;
+  integratedLoad: number;
+  currentJobs: Record<string, JobLoad>;
+  maxJobCount: number;
+  warnOnOldJobs: boolean;
+  timeoutID: NodeJS.Timeout | null;
+  active: boolean;
+  constructor(jobType: string, maxJobCount?: number, warnOnOldJobs?: boolean) {
     debug(`LoadEstimator(): jobType = ${jobType}`);
     this.jobType = jobType;
     const nowMS = Date.now();
@@ -26,7 +39,7 @@ class LoadEstimator {
     this._reportLoad();
   }
 
-  startJob(id) {
+  startJob(id: string) {
     debug(`LoadEstimator.startJob(): jobType = ${this.jobType}, id = ${id}`);
     this._addIntegratedLoad();
     if (_.has(this.currentJobs, id)) {
@@ -35,7 +48,7 @@ class LoadEstimator {
     this.currentJobs[id] = { startMS: Date.now() };
   }
 
-  endJob(id) {
+  endJob(id: string) {
     debug(`LoadEstimator.endJob(): jobType = ${this.jobType}, id = ${id}`);
     this._addIntegratedLoad();
     if (_.has(this.currentJobs, id)) {
@@ -81,7 +94,7 @@ class LoadEstimator {
   _reportLoad() {
     debug(`LoadEstimator._reportLoad(): jobType = ${this.jobType}`);
     this._warnOldJobs();
-    var params = {
+    const params = {
       // The instance ID used in the `server_loads` table is not quite the same
       // as the actual instance ID from the config. The config instance ID is
       // the identifier of the EC2 instance we're running on, but we might be
@@ -112,7 +125,7 @@ class LoadEstimator {
     debug(`LoadEstimator._warnOldJobs(): jobType = ${this.jobType}`);
     if (!this.warnOnOldJobs) return;
     const nowMS = Date.now();
-    _.forEach(this.currentJobs, (/** @type {object} */ info, id) => {
+    _.forEach(this.currentJobs, (info, id) => {
       if (nowMS - info.startMS > config.maxResponseTimeSec * 1000 && !info.warned) {
         const details = {
           jobType: this.jobType,
@@ -128,9 +141,9 @@ class LoadEstimator {
   }
 }
 
-const estimators = {};
+const estimators: Record<string, LoadEstimator> = {};
 
-export function initEstimator(jobType, maxJobCount, warnOnOldJobs) {
+export function initEstimator(jobType: string, maxJobCount: number, warnOnOldJobs?: boolean) {
   debug(
     `initEstimator(): jobType = ${jobType}, maxJobCount = ${maxJobCount}, warnOnOldJobs = ${warnOnOldJobs}`,
   );
@@ -138,7 +151,7 @@ export function initEstimator(jobType, maxJobCount, warnOnOldJobs) {
   estimators[jobType] = new LoadEstimator(jobType, maxJobCount, warnOnOldJobs);
 }
 
-export function startJob(jobType, id, maxJobCount) {
+export function startJob(jobType: string, id: string, maxJobCount?: number) {
   debug(`startJob(): jobType = ${jobType}, id = ${id}, maxJobCount = ${maxJobCount}`);
   if (!_.has(estimators, jobType)) {
     // lazy estimator creation, needed for unit tests
@@ -147,7 +160,7 @@ export function startJob(jobType, id, maxJobCount) {
   estimators[jobType].startJob(id);
 }
 
-export function endJob(jobType, id) {
+export function endJob(jobType: string, id: string) {
   debug(`endJob(): jobType = ${jobType}, id = ${id}`);
   if (!(jobType in estimators)) throw new Error(`endJob(): no such estimator: ${jobType}`);
   estimators[jobType].endJob(id);

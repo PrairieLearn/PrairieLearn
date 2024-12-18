@@ -1,4 +1,3 @@
-// @ts-check
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import { Octokit } from '@octokit/rest';
@@ -13,8 +12,9 @@ import { syncDiskToSql } from '../sync/syncFromDisk.js';
 
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
+import { type User } from './db-types.js';
 import { sendCourseRequestMessage } from './opsbot.js';
-import { createServerJob } from './server-jobs.js';
+import { createServerJob, type ServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -38,11 +38,11 @@ function getGithubClient() {
 
 /**
  * Creates a new repository from a given template.
- * @param {Octokit} client Octokit client
- * @param {string} repo Name of the new repo to create
- * @param {string} template Name of the template to use
+ * @param client Octokit client
+ * @param repo Name of the new repo to create
+ * @param template Name of the template to use
  */
-async function createRepoFromTemplate(client, repo, template) {
+async function createRepoFromTemplate(client: Octokit, repo: string, template: string) {
   await client.repos.createUsingTemplate({
     template_owner: config.githubCourseOwner,
     template_repo: template,
@@ -81,13 +81,20 @@ async function createRepoFromTemplate(client, repo, template) {
 
 /**
  * Pulls the contents of a file from a repository.
- * @param {Octokit} client Octokit client
- * @param {string} repo Repository to get file contents from
- * @param {string} path Path to the file, relative from the root of the repository.
+ * @param client Octokit client
+ * @param repo Repository to get file contents from
+ * @param path Path to the file, relative from the root of the repository.
  * @returns An object representing the file data.  Raw contents are stored in the 'contents' key,
  * while the file's SHA is stored in 'sha' (this is needed if you want to update the contents later)
  */
-async function getFileFromRepo(client, repo, path) {
+async function getFileFromRepo(
+  client: Octokit,
+  repo: string,
+  path: string,
+): Promise<{
+  sha: string;
+  contents: string;
+}> {
   const file = await client.repos.getContent({
     owner: config.githubCourseOwner,
     repo,
@@ -107,13 +114,19 @@ async function getFileFromRepo(client, repo, path) {
 
 /**
  * Updates a file's contents in a repository.
- * @param {Octokit} client Octokit client
- * @param {string} repo Repository to set file contents in
- * @param {string} path Path to the file, relative from the root of the repository.
- * @param {string} contents Raw contents of the file, stored as a string.
- * @param {string} sha The file's SHA that is being updated (this is returned in getFileFromRepoAsync).
+ * @param client Octokit client
+ * @param repo Repository to set file contents in
+ * @param path Path to the file, relative from the root of the repository.
+ * @param contents Raw contents of the file, stored as a string.
+ * @param sha The file's SHA that is being updated (this is returned in getFileFromRepoAsync).
  */
-async function putFileToRepo(client, repo, path, contents, sha) {
+async function putFileToRepo(
+  client: Octokit,
+  repo: string,
+  path: string,
+  contents: string,
+  sha: string,
+) {
   await client.repos.createOrUpdateFileContents({
     owner: config.githubCourseOwner,
     repo,
@@ -127,12 +140,17 @@ async function putFileToRepo(client, repo, path, contents, sha) {
 
 /**
  * Add a team to a specific repository.
- * @param { Octokit} client Octokit client
- * @param {string} repo Repository to update
- * @param {string} team Team to add
- * @param {'pull' | 'triage' | 'push' | 'maintain' | 'admin'} permission String permission to give to the team
+ * @param client Octokit client
+ * @param repo Repository to update
+ * @param team Team to add
+ * @param permission String permission to give to the team
  */
-async function addTeamToRepo(client, repo, team, permission) {
+async function addTeamToRepo(
+  client: Octokit,
+  repo: string,
+  team: string,
+  permission: 'pull' | 'triage' | 'push' | 'maintain' | 'admin',
+) {
   await client.teams.addOrUpdateRepoPermissionsInOrg({
     owner: config.githubCourseOwner,
     org: config.githubCourseOwner,
@@ -144,12 +162,17 @@ async function addTeamToRepo(client, repo, team, permission) {
 
 /**
  * Invites a user to a specific repository.
- * @param {Octokit} client Octokit client
- * @param {string} repo Repository to update
- * @param {string} username Username to add
- * @param {'pull' | 'triage' | 'push' | 'maintain' | 'admin'} permission String permission to give to the user
+ * @param client Octokit client
+ * @param repo Repository to update
+ * @param username Username to add
+ * @param permission String permission to give to the user
  */
-async function addUserToRepo(client, repo, username, permission) {
+async function addUserToRepo(
+  client: Octokit,
+  repo: string,
+  username: string,
+  permission: 'pull' | 'triage' | 'push' | 'maintain' | 'admin',
+) {
   await client.repos.addCollaborator({
     owner: config.githubCourseOwner,
     repo,
@@ -161,22 +184,22 @@ async function addUserToRepo(client, repo, username, permission) {
 /**
  * Starts a new server job to create a course GitHub repo, add it to the database, and then sync it locally.
  * @param options Options for creating the course, should contain the following keys:
- * - short_name
- * - title
- * - institution_id
- * - display_timezone
- * - path
- * - repo_short_name
- * - github_user
- * - course_request_id
  * @param authn_user Authenticated user that is creating the course.
- * @param callback Callback to run once the job sequence is created.  Will contain the sequence id as an argument.
  */
-export async function createCourseRepoJob(options, authn_user) {
-  /**
-   * @param {import('./server-jobs.js').ServerJob} job
-   */
-  const createCourseRepo = async (job) => {
+export async function createCourseRepoJob(
+  options: {
+    short_name: string;
+    title: string;
+    institution_id: string;
+    display_timezone: string;
+    path: string;
+    repo_short_name: string;
+    github_user: string | null;
+    course_request_id: string;
+  },
+  authn_user: User,
+) {
+  const createCourseRepo = async (job: ServerJob) => {
     const client = getGithubClient();
     if (client === null) {
       // If we are running locally and don't have a client, then just exit early
@@ -211,7 +234,7 @@ export async function createCourseRepoJob(options, authn_user) {
 
     // Update the infoCourse.json file by grabbing the original and JSON editing it.
     job.info('Updating infoCourse.json');
-    let { sha: sha, contents } = await getFileFromRepo(
+    const { sha: sha, contents } = await getFileFromRepo(
       client,
       options.repo_short_name,
       'infoCourse.json',
@@ -354,9 +377,9 @@ export async function createCourseRepoJob(options, authn_user) {
 
 /**
  * Slugs a course shortname into a GitHub repository name.
- * @param {string} short_name Course shortname
+ * @param short_name Course shortname
  */
-export function reponameFromShortname(short_name) {
+export function reponameFromShortname(short_name: string) {
   return 'pl-' + short_name.replace(' ', '').toLowerCase();
 }
 
@@ -365,11 +388,10 @@ export function reponameFromShortname(short_name) {
  * repository. Assumes that the repository is set using the SSH URL for GitHub.
  * Returns null if the URL cannot be retrieved from the repository.
  *
- * @param {string | null} repository The repository associated to the course
- * @returns {string | null} The HTTP prefix to access course information on
- * GitHub
+ * @param repository The repository associated to the course
+ * @returns The HTTP prefix to access course information on GitHub
  */
-export function httpPrefixForCourseRepo(repository) {
+export function httpPrefixForCourseRepo(repository: string | null): string | null {
   if (repository) {
     const githubRepoMatch = repository.match(/^git@github.com:\/?(.+?)(\.git)?\/?$/);
     if (githubRepoMatch) {

@@ -1,28 +1,30 @@
-// @ts-check
 import { createInterface } from 'node:readline';
 
-import { CodeCallerNative } from './lib/code-caller/code-caller-native.js';
+import {
+  CodeCallerNative,
+  type ErrorData,
+  type CodeCallerError,
+} from './lib/code-caller/code-caller-native.js';
+import { type CallType } from './lib/code-caller/code-caller-shared.js';
 import { FunctionMissingError } from './lib/code-caller/index.js';
 
-/**
- * @typedef {Object} Request
- * @property {import('./lib/code-caller/code-caller-native.js').CallType} type
- * @property {string} directory
- * @property {string} file
- * @property {string} fcn
- * @property {any[]} args
- * @property {string[]} forbidden_modules
- */
+interface ExecutorRequest {
+  type: CallType;
+  directory: string;
+  file: string;
+  fcn: string;
+  args: any[];
+  forbidden_modules: string[];
+}
 
-/**
- * @typedef {Object} Results
- * @property {string} [error]
- * @property {import('./lib/code-caller/code-caller-native.js').ErrorData} [errorData]
- * @property {any} [data]
- * @property {string} [output]
- * @property {boolean} [functionMissing]
- * @property {boolean} needsFullRestart
- */
+interface ExecutorResults {
+  error?: string;
+  errorData?: ErrorData;
+  data?: any;
+  output?: string;
+  functionMissing?: boolean;
+  needsFullRestart: boolean;
+}
 
 /**
  * Receives a single line of input and executes the instructions contained in
@@ -30,14 +32,9 @@ import { FunctionMissingError } from './lib/code-caller/index.js';
  *
  * The Promise returned from this function should never reject - errors will
  * be indicated by the `error` property on the result.
- *
- * @param {string} line
- * @param {CodeCallerNative} codeCaller
- * @returns {Promise<Results>}
  */
-async function handleInput(line, codeCaller) {
-  /** @type {Request} */
-  let request;
+async function handleInput(line: string, codeCaller: CodeCallerNative): Promise<ExecutorResults> {
+  let request: ExecutorRequest;
   try {
     request = JSON.parse(line);
   } catch (err) {
@@ -50,8 +47,8 @@ async function handleInput(line, codeCaller) {
   }
 
   if (request.fcn === 'restart') {
-    let restartErr;
-    let success;
+    let restartErr: Error | undefined;
+    let success: boolean | undefined;
 
     try {
       success = await codeCaller.restart();
@@ -77,7 +74,7 @@ async function handleInput(line, codeCaller) {
     return { needsFullRestart: true };
   }
 
-  let result, output, callErr;
+  let result: any, output: string | undefined, callErr: Error | CodeCallerError | undefined;
   try {
     ({ result, output } = await codeCaller.call(
       request.type,
@@ -95,7 +92,7 @@ async function handleInput(line, codeCaller) {
     // `FunctionMissingError` shouldn't be propagated as an actual error
     // we'll report it via `functionMissing`
     error: callErr && !functionMissing ? callErr.message : undefined,
-    errorData: callErr && !functionMissing ? callErr.data : undefined,
+    errorData: callErr && !functionMissing ? (callErr as CodeCallerError).data : undefined,
     data: result,
     output,
     functionMissing,
