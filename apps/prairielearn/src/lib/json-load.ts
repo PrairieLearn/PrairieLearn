@@ -1,4 +1,3 @@
-// @ts-check
 import * as fs from 'fs/promises';
 
 import { Ajv } from 'ajv';
@@ -11,10 +10,10 @@ const ajv = new Ajv();
 /**
  * Asynchronously reads the specified JSON file.
  *
- * @param {string} jsonFilename The name of the file to read
- * @returns {Promise<any>} The parsed JSON
+ * @param jsonFilename The name of the file to read
+ * @returns The parsed JSON
  */
-export async function readJSON(jsonFilename) {
+export async function readJSON(jsonFilename: string): Promise<any> {
   const data = await fs.readFile(jsonFilename, { encoding: 'utf8' });
   try {
     return jju.parse(data, { mode: 'json' });
@@ -28,10 +27,10 @@ export async function readJSON(jsonFilename) {
 /**
  * Validates an object with the specified JSON schema.
  *
- * @param {object} json The object to validate
- * @param {object} schema The schema used to validate the object
+ * @param json The object to validate
+ * @param schema The schema used to validate the object
  */
-export function validateJSON(json, schema) {
+export function validateJSON(json: object, schema: object) {
   const validate = ajv.compile(schema);
   const valid = validate(json);
 
@@ -49,11 +48,11 @@ export function validateJSON(json, schema) {
 /**
  * Reads and validates some type of `info.json` file.
  *
- * @param {string} jsonFilename The name of the file to read
- * @param {Object} schema The name of the schema file
- * @returns {Promise<any>} The parsed and validated JSON
+ * @param jsonFilename The name of the file to read
+ * @param schema The name of the schema file
+ * @returns The parsed and validated JSON
  */
-export async function readInfoJSON(jsonFilename, schema) {
+export async function readInfoJSON(jsonFilename: string, schema: object): Promise<any> {
   const json = await readJSON(jsonFilename);
 
   if (!schema) return json;
