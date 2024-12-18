@@ -215,6 +215,7 @@ router.post(
     } else if (req.body.__action === 'delete_question') {
       const editor = new QuestionDeleteEditor({
         locals: res.locals,
+        questions: res.locals.question,
       });
       const serverJob = await editor.prepareServerJob();
       try {

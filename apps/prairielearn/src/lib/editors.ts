@@ -1164,13 +1164,13 @@ export class QuestionModifyEditor extends Editor {
 export class QuestionDeleteEditor extends Editor {
   private questions: Question[];
 
-  constructor(params: BaseEditorOptions & { questionBatch?: Question[] }) {
+  constructor(params: BaseEditorOptions & { questions: Question | Question[] }) {
     super(params);
 
-    if (params.questionBatch !== undefined) {
-      this.questions = params.questionBatch;
+    if (Array.isArray(params.questions)) {
+      this.questions = params.questions;
     } else {
-      this.questions = [params.locals.question];
+      this.questions = [params.questions];
     }
 
     this.description =
@@ -1180,27 +1180,23 @@ export class QuestionDeleteEditor extends Editor {
   }
 
   async write() {
-    this.questions.forEach((question) => assert(question.qid, 'question.qid is required'));
-
     debug('QuestionDeleteEditor: write()');
 
-    await this.questions.forEach(async (question) => {
-      if (question.qid) {
-        //never will be false, but this is to placate typechecks
-        await fs.remove(path.join(this.course.path, 'questions', question.qid));
-        await this.removeEmptyPrecedingSubfolders(
-          path.join(this.course.path, 'questions'),
-          question.qid,
-        );
-      }
-    });
+    const qids: string[] = [];
+
+    for (const question of this.questions) {
+      assert(question.qid, 'question.qid is required');
+      //never will be false, but this is to placate typechecks
+      await fs.remove(path.join(this.course.path, 'questions', question.qid));
+      await this.removeEmptyPrecedingSubfolders(
+        path.join(this.course.path, 'questions'),
+        question.qid,
+      );
+      qids.push(question.qid);
+    }
 
     return {
-      pathsToAdd: this.questions
-        .map((question) =>
-          question.qid ? path.join(this.course.path, 'questions', question.qid) : undefined,
-        )
-        .filter((x) => x !== undefined), //never will be false, but this is to placate typechecks
+      pathsToAdd: qids.map((qid) => path.join(this.course.path, 'questions', qid)),
       commitMessage:
         this.questions.length === 1
           ? `delete question ${this.questions[0].qid}`

@@ -4,5 +4,5 @@ SELECT
 FROM
   questions as q
 WHERE
-  q.id::text = ANY ($question_ids)
+  q.id = ANY ($question_ids::bigint[])
   AND q.course_id = $course_id;

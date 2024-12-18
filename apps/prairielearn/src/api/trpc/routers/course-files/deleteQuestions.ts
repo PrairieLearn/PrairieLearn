@@ -21,10 +21,16 @@ export const batchDeleteQuestions = privateProcedure
     }),
   )
   .output(
-    z.object({
-      status: z.union([z.literal('success'), z.literal('error')]),
-      job_sequence_id: z.string(),
-    }),
+    z.union([
+      z.object({
+        status: z.literal('success'),
+        job_sequence_id: z.string(),
+      }),
+      z.object({
+        status: z.literal('error'),
+        job_sequence_id: z.string(),
+      }),
+    ]),
   )
   .mutation(async (opts) => {
     const course = await selectCourseById(opts.input.course_id);
@@ -51,7 +57,7 @@ export const batchDeleteQuestions = privateProcedure
         course,
         user,
       },
-      questionBatch: questions,
+      questions,
     });
 
     const serverJob = await editor.prepareServerJob();
