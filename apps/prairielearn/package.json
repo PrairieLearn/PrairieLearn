@@ -179,7 +179,6 @@
     "tmp-promise": "^3.0.3",
     "tom-select": "^2.4.1",
     "tzientist": "^3.2.0",
-    "ua-parser-js": "^2.0.0",
     "unified": "^11.0.5",
     "unist-util-visit": "^5.0.0",
     "unzipper": "^0.12.3",

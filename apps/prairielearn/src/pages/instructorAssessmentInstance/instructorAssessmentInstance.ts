@@ -2,7 +2,6 @@ import { pipeline } from 'node:stream/promises';
 
 import * as express from 'express';
 import asyncHandler from 'express-async-handler';
-import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
@@ -24,7 +23,6 @@ import {
   InstructorAssessmentInstance,
   AssessmentInstanceStatsSchema,
   InstanceQuestionRowSchema,
-  type InstanceLogEntryWithParsedAgent,
 } from './instructorAssessmentInstance.html.js';
 
 const router = express.Router();
@@ -85,16 +83,10 @@ router.get(
       InstanceQuestionRowSchema,
     );
 
-    const assessmentInstanceLog: InstanceLogEntryWithParsedAgent[] =
-      await selectAssessmentInstanceLog(res.locals.assessment_instance.id, false);
-    for (const logEntry of assessmentInstanceLog) {
-      if (logEntry.client_fingerprint?.user_agent) {
-        logEntry.client_fingerprint.parsed_agent = await UAParser({
-          'user-agent': logEntry.client_fingerprint.user_agent,
-          ...logEntry.client_fingerprint.client_hints,
-        }).withClientHints();
-      }
-    }
+    const assessmentInstanceLog = await selectAssessmentInstanceLog(
+      res.locals.assessment_instance.id,
+      false,
+    );
 
     res.send(
       InstructorAssessmentInstance({

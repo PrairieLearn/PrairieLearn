@@ -1,4 +1,3 @@
-import { type IResult as UAParserResult } from 'ua-parser-js';
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
@@ -60,13 +59,6 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
 });
 type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 
-type ClientFingerprintWithParsedAgent = ClientFingerprint & {
-  parsed_agent?: UAParserResult | null;
-};
-export type InstanceLogEntryWithParsedAgent = Omit<InstanceLogEntry, 'client_fingerprint'> & {
-  client_fingerprint: ClientFingerprintWithParsedAgent | null;
-};
-
 const FINGERPRINT_COLORS = ['red2', 'orange2', 'green2', 'blue2', 'turquoise2', 'purple2'];
 
 export function InstructorAssessmentInstance({
@@ -84,7 +76,7 @@ export function InstructorAssessmentInstance({
   assessment_instance_date_formatted: string;
   assessment_instance_duration: string;
   instance_questions: InstanceQuestionRow[];
-  assessmentInstanceLog: InstanceLogEntryWithParsedAgent[];
+  assessmentInstanceLog: InstanceLogEntry[];
 }) {
   return html`
     <!doctype html>
@@ -692,11 +684,30 @@ export function InstructorAssessmentInstance({
   `.toString();
 }
 
-function ClientFingerprintContent({
-  clientFingerprint,
-}: {
-  clientFingerprint: ClientFingerprintWithParsedAgent;
-}) {
+function ClientFingerprintContent({ clientFingerprint }: { clientFingerprint: ClientFingerprint }) {
+  const browserVersion = clientFingerprint.client_hints?.['sec-ch-ua-full-version-list'];
+  const mobile = clientFingerprint.client_hints?.['sec-ch-ua-mobile'];
+  const osPlatform = clientFingerprint.client_hints?.['sec-ch-ua-platform'];
+  let osPlatformVersion = clientFingerprint.client_hints?.['sec-ch-ua-platform-version'];
+
+  // Special handing of Windows platform version
+  // https://learn.microsoft.com/en-us/microsoft-edge/web-platform/how-to-detect-win11#detecting-specific-windows-versions
+  if (osPlatform === 'Windows' && osPlatformVersion != null) {
+    try {
+      const versionParts: string[] = osPlatformVersion.split('.');
+      const platformMajorVersion = Number(versionParts[0].replace('"', ''));
+      if (platformMajorVersion === 0) {
+        osPlatformVersion = `8.1 or older (platform ${osPlatformVersion})`;
+      } else if (platformMajorVersion < 13) {
+        osPlatformVersion = `10 (platform ${osPlatformVersion})`;
+      } else {
+        osPlatformVersion = `11 or newer (platform ${osPlatformVersion})`;
+      }
+    } catch (_) {
+      // Ignore errors and use the provided values without change
+    }
+  }
+
   return html`
     <div>
       IP Address:
@@ -708,26 +719,10 @@ function ClientFingerprintContent({
       </a>
     </div>
     <div>Session ID: ${clientFingerprint.user_session_id}</div>
-    <div>User Agent:</div>
-    <ul>
-      <li>
-        Browser: ${clientFingerprint.parsed_agent?.browser.name ?? 'Unknown'}
-        ${clientFingerprint.parsed_agent?.browser.version ?? ''}
-      </li>
-      <li>
-        OS: ${clientFingerprint.parsed_agent?.os.name ?? 'Unknown'}
-        ${clientFingerprint.parsed_agent?.os.version ?? ''}
-      </li>
-      <li>
-        Device:
-        ${clientFingerprint.parsed_agent?.device.vendor ??
-        clientFingerprint.parsed_agent?.device.type ??
-        clientFingerprint.parsed_agent?.cpu.architecture ??
-        'Unknown'}
-        ${clientFingerprint.parsed_agent?.device.model ?? ''}
-      </li>
-      <li>Raw: <code>${clientFingerprint.user_agent}</code></li>
-    </ul>
+    <div>User Agent: <code>${clientFingerprint.user_agent}</code></div>
+    ${mobile ? html`<div>Mobile mode: ${mobile === '?1' ? 'yes' : 'no'}</div>` : ''}
+    ${browserVersion ? html`<div>Browser: ${browserVersion.split(',')[0]}</div>` : ''}
+    ${osPlatform ? html`<div>OS: ${osPlatform} ${osPlatformVersion ?? ''}</div>` : ''}
   `;
 }
 
