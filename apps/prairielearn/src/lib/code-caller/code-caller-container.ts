@@ -454,7 +454,7 @@ export class CodeCallerContainer implements CodeCaller {
     this.container
       .wait()
       .then((status) => this._handleContainerExit(null, status))
-      .catch((err) => this._handleContainerExit(err, 999));
+      .catch((err) => this._handleContainerExit(err));
     this.debug('exit _createAndAttachContainer');
   }
 
@@ -496,7 +496,7 @@ export class CodeCallerContainer implements CodeCaller {
    * @param err An error that occurred while waiting for the container to exit.
    * @param code The status code that the container exited with
    */
-  async _handleContainerExit(err: Error | null | undefined, code: number) {
+  async _handleContainerExit(err: Error | null | undefined, code?: number) {
     this.debug('enter _handleContainerExit()');
     this._checkState([WAITING, IN_CALL, EXITING]);
     if (this.state === WAITING) {

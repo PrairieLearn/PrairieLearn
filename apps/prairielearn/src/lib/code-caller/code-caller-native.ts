@@ -217,12 +217,12 @@ export class CodeCallerNative implements CodeCaller {
     const callData = { file, fcn, args, cwd, paths, forbidden_modules: this.forbiddenModules };
     const callDataString = JSON.stringify(callData);
 
-    const deferred = deferredPromise();
+    const deferred = deferredPromise<CodeCallerResult>();
     this.callback = (err, data, output) => {
       if (err) {
         deferred.reject(err);
       } else {
-        deferred.resolve({ result: data, output });
+        deferred.resolve({ result: data, output: output ?? '' });
       }
     };
 
@@ -248,7 +248,7 @@ export class CodeCallerNative implements CodeCaller {
     this._checkState();
     this.debug('exit call()');
 
-    return deferred.promise as Promise<CodeCallerResult>;
+    return deferred.promise;
   }
 
   /**
