@@ -1,0 +1,5 @@
+[tools]
+node = "20"
+"npm:yarn" = "latest"
+python = "3.10"
+"ubi:terrastruct/d2" = "latest"
