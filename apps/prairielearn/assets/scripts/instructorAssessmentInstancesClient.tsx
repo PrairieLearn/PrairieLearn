@@ -48,7 +48,6 @@ onDocumentReady(() => {
         icon: 'fa-user-graduate',
         attributes: { title: 'List only enrolled students' },
         event: () => {
-          console.log('start of event');
           const table = $('#usersTable');
           const filterOn = !table.data('filter-student-only');
           table.data('filter-student-only', filterOn);
