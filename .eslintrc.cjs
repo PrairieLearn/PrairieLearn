@@ -159,15 +159,6 @@ module.exports = {
         browser: true,
         jquery: true,
       },
-      settings: {
-        react: {
-          pragma: 'h',
-        },
-      },
-      rules: {
-        'react/jsx-uses-react': 'error',
-        'react/jsx-uses-vars': 'error',
-      },
     },
   ],
 };
