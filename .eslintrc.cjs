@@ -46,6 +46,9 @@ module.exports = {
       typescript: true,
       node: true,
     },
+    react: {
+      pragma: 'h',
+    },
   },
   reportUnusedDisableDirectives: true,
   rules: {
@@ -90,6 +93,10 @@ module.exports = {
     // these two rules.
     'mocha/no-exclusive-tests': 'error',
     'mocha/no-skipped-tests': 'error',
+
+    // Allows us to use JSX in files.
+    'react/jsx-uses-react': 'error',
+    'react/jsx-uses-vars': 'error',
 
     // These rules are implemented in `packages/eslint-plugin-prairielearn`.
     '@prairielearn/aws-client-mandatory-config': 'error',
@@ -151,15 +158,6 @@ module.exports = {
       env: {
         browser: true,
         jquery: true,
-      },
-      settings: {
-        react: {
-          pragma: 'h',
-        },
-      },
-      rules: {
-        'react/jsx-uses-react': 'error',
-        'react/jsx-uses-vars': 'error',
       },
     },
   ],
