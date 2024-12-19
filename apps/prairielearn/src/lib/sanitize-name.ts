@@ -1,12 +1,10 @@
-// @ts-check
-
 /**
  * Replace special characters in string with underscores.
  *
  * @param {String} s - The string to sanitize.
  * @return {String} A sanitized version of s.
  */
-export function sanitizeString(s) {
+export function sanitizeString(s: string): string {
   return s.replace(/[^a-zA-Z0-9-]/g, '_');
 }
 
@@ -16,7 +14,7 @@ export function sanitizeString(s) {
  * @param {Object} course - The course database object.
  * @return {String} The sanitized prefix string.
  */
-export function courseFilenamePrefix(course) {
+export function courseFilenamePrefix(course: { short_name: string }): string {
   const prefix = sanitizeString(course.short_name) + '_';
   return prefix;
 }
@@ -28,7 +26,12 @@ export function courseFilenamePrefix(course) {
  * @param {Object} course - The course database object.
  * @return {String} The sanitized prefix string.
  */
-export function courseInstanceFilenamePrefix(course_instance, course) {
+export function courseInstanceFilenamePrefix(
+  course_instance: {
+    short_name: string;
+  },
+  course: { short_name: string },
+): string {
   const prefix = courseFilenamePrefix(course) + sanitizeString(course_instance.short_name) + '_';
   return prefix;
 }
@@ -42,7 +45,20 @@ export function courseInstanceFilenamePrefix(course_instance, course) {
  * @param {Object} course - The course database object.
  * @return {String} The sanitized prefix string.
  */
-export function assessmentFilenamePrefix(assessment, assessment_set, course_instance, course) {
+export function assessmentFilenamePrefix(
+  assessment: {
+    number: string;
+  },
+  assessment_set: {
+    abbreviation: string;
+  },
+  course_instance: {
+    short_name: string;
+  },
+  course: {
+    short_name: string;
+  },
+): string {
   const prefix =
     courseInstanceFilenamePrefix(course_instance, course) +
     sanitizeString(assessment_set.abbreviation) +
@@ -58,7 +74,14 @@ export function assessmentFilenamePrefix(assessment, assessment_set, course_inst
  * @param {Object} course - The course database object.
  * @return {String} The sanitized prefix string.
  */
-export function questionFilenamePrefix(question, course) {
+export function questionFilenamePrefix(
+  question: {
+    qid: string;
+  },
+  course: {
+    short_name: string;
+  },
+) {
   const prefix = courseFilenamePrefix(course) + sanitizeString(question.qid) + '_';
   return prefix;
 }
