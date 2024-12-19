@@ -9,11 +9,11 @@ elements = pl.load_host_script("elements.py")
 
 # Elements
 class PrairieLearnLogo(elements.BaseElement):
-    def generate(el, data):
+    def generate(self, data):
         return {
-            "left": pl.get_float_attrib(el, "x", 20),
-            "top": pl.get_float_attrib(el, "y", 20),
-            "angle": pl.get_float_attrib(el, "angle", 0),
+            "left": pl.get_float_attrib(self, "x", 20),
+            "top": pl.get_float_attrib(self, "y", 20),
+            "angle": pl.get_float_attrib(self, "angle", 0),
             "image_url": path.join(data["clientFilesUrl"], "logo.png"),
         }
 

@@ -4,7 +4,7 @@ include = [
     "./apps/prairielearn/python/*.py",
     "./graders/**/*.py",
     "./exampleCourse/**/*.py",
-    "./testCourse/**/*.py"
+    "./testCourse/**/*.py",
 ]
 exclude = [
     # These files are intentionally not parseable as Python.
@@ -13,14 +13,19 @@ exclude = [
     # Files related to the Python autograder will often intentionally appear
     # broken in isolation. We'll exclude these files from linting.
     "exampleCourse/questions/**/tests/initial_code.py",
-    "exampleCourse/questions/**/tests/trailing_code.py"
+    "exampleCourse/questions/**/tests/trailing_code.py",
 ]
 target-version = "py310"
 
 [tool.ruff.lint]
-extend-select = ["I"]
+extend-select = ["I", "N"]
 
 [tool.ruff.lint.per-file-ignores]
+# Only enforce naming convention for our files
+"exampleCourse/**" = ["N806", "N803", "N802", "N813"]
+"testCourse/**" = ["N806"]
+"graders/**" = ["N802", "N803", "N818", "N813", "N812"]
+
 # Files related to the Python autograder will often intentionally appear
 # broken in isolation. We'll allow specific errors in these files to
 # account for that.
@@ -42,7 +47,7 @@ extend-select = ["I"]
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
-    "./exampleCourse/questions/demo/autograder/python/square/tests/initial_code.py"
+    "./exampleCourse/questions/demo/autograder/python/square/tests/initial_code.py",
 ]
 
 [tool.pyright]
@@ -103,7 +108,4 @@ reportUnnecessaryTypeIgnoreComment = "error"
 
 [tool.pytest.ini_options]
 addopts = "--cov=apps"
-testpaths = [
-    "apps/prairielearn/elements",
-    "apps/prairielearn/python",
-]
+testpaths = ["apps/prairielearn/elements", "apps/prairielearn/python"]
