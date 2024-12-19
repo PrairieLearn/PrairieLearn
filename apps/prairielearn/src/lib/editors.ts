@@ -103,18 +103,19 @@ export function getNamesForAdd(
   longNames: string[],
   shortName = 'New',
   longName = 'New',
-  ignoreCase = false,
+  ignoreShortNameCase = false, // If true, shortName is treated as case-insensitive.
 ): { shortName: string; longName: string } {
   function getNumberShortName(oldShortNames: string[]): number {
     let numberOfMostRecentCopy = 1;
 
-    const shortNameCompare = ignoreCase ? shortName.toLowerCase() : shortName;
+    const shortNameCompare = ignoreShortNameCase ? shortName.toLowerCase() : shortName;
 
     oldShortNames.forEach((oldShortName) => {
       // shortName is a copy of oldShortName if:
-      // it matches (including case, if not ignoring case), or
+      // it matches (case-sensitive match if not ignoring case), or
       // if oldShortName matches {shortName}_{number from 0-9}
-      const oldShortNameCompare = ignoreCase ? oldShortName.toLowerCase() : oldShortName;
+
+      const oldShortNameCompare = ignoreShortNameCase ? oldShortName.toLowerCase() : oldShortName;
       const found =
         shortNameCompare === oldShortNameCompare ||
         oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
@@ -131,21 +132,15 @@ export function getNamesForAdd(
   function getNumberLongName(oldLongNames: string[]): number {
     let numberOfMostRecentCopy = 1;
     // longName is a copy of oldLongName if:
-    // it matches (including case, if not ignoring case), or
+    // it matches exactly, or
     // if oldLongName matches {longName} ({number from 0-9})
-
-    const longNameCompare = ignoreCase ? longName.toLowerCase() : longName;
 
     oldLongNames.forEach((oldLongName) => {
       if (!_.isString(oldLongName)) return;
-
-      const oldLongNameCompare = ignoreCase ? oldLongName.toLowerCase() : oldLongName;
-
       const found =
-        oldLongNameCompare === longNameCompare ||
-        oldLongNameCompare.match(new RegExp(`^${longNameCompare} \\(([0-9]+)\\)$`));
+        oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
       if (found) {
-        const foundNumber = oldLongNameCompare === longNameCompare ? 1 : parseInt(found[1]);
+        const foundNumber = oldLongName === longName ? 1 : parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
           numberOfMostRecentCopy = foundNumber + 1;
         }
@@ -769,10 +764,11 @@ export class AssessmentAddEditor extends Editor {
       oldNamesLong,
       this.aid,
       this.title,
-      true, // This is enabled to handle case-insensitive duplicate names. A duplicate with
-      // different case would result in a directory with the same name, throwing an error.
-      // e.x. if the user tries to add an assessment with the title "Test" when an assessment
-      // with the title "test" already exists, the directory "test" would already exist.
+      true, // This is enabled to handle duplicate short names case-insensitively. A duplicate in a different case
+      // results in a directory conflict.
+
+      // e.x. if the user tries to add an assessment with the short name "Test" when an assessment
+      // with the short name "test" already exists, the directory "test" would already exist, causing a conflict.
     );
 
     const tid = names.shortName;

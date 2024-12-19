@@ -175,33 +175,5 @@ describe('editors', () => {
         assert.equal(names['longName'], 'Fall 2019 Section 2 (4)');
       });
     });
-
-    describe('Unique short_name, duplicated long_name without number, ignoring case', () => {
-      it('should append _2 to the short_name and (2) to the long_name', () => {
-        const names = getNamesForAdd(
-          ['Fa18', 'Fa19'],
-          ['Fall 2018', 'Fall 2019'],
-          'Fall19',
-          'Fall 2019',
-          true,
-        );
-        assert.equal(names['shortName'], 'Fall19_2');
-        assert.equal(names['longName'], 'Fall 2019 (2)');
-      });
-    });
-
-    describe('Unique short_name, duplicated long_name with number, ignoring case', () => {
-      it('should increment the number for the long_name and append it to both short_name and long_name', () => {
-        const names = getNamesForAdd(
-          ['Fa18', 'Fa19', 'Fall19_2', 'Fall19_3'],
-          ['Fall 2018', 'Fall 2019', 'Fall 2019 (2)', 'Fall 2019 (3)'],
-          'Fall_19',
-          'Fall 2019',
-          true,
-        );
-        assert.equal(names['shortName'], 'Fall_19_4');
-        assert.equal(names['longName'], 'Fall 2019 (4)');
-      });
-    });
   });
 });
