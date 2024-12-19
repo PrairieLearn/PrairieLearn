@@ -64,21 +64,18 @@ rm -rf /tmp/pgvector
 dnf -y remove postgresql15-server-devel
 dnf -y autoremove
 
-# TODO: use standard OS Python installation? The only reason we switched to Conda
-# was to support R and `rpy2`, but now that we've removed those, we might not
-# get any benefit from Conda.
-echo "setting up conda..."
+echo "setting up uv + venv..."
 cd /
-arch=`uname -m`
-# Pinning the Conda version so the default Python version is 3.10. Later conda versions use 3.12 as the default.
-curl -LO https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Miniforge3-Linux-${arch}.sh
-bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
+curl -LO https://astral.sh/uv/install.sh
+env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
 
-echo "installing Python packages..."
-python3 -m pip install --no-cache-dir -r /python-requirements.txt
+# Install python3.10 into /usr/local/bin and register it with uv
+UV_PYTHON_BIN_DIR=/usr/local/bin uv python install --default --preview 3.10
+
+uv venv
+uv pip install --no-cache-dir -r /python-requirements.txt
+uv cache clean
 
 # Clear various caches to minimize the final image size.
 dnf clean all
-conda clean --all
 nvm cache clear
-rm Miniforge3-Linux-${arch}.sh
