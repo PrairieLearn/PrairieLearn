@@ -16,7 +16,7 @@ Any question that is marked with `"sharePublicly": true` or `"shareSourcePublicl
 
 ## Sharing sets
 
-Access to shared questions which are not shared publicly is controlled through **sharing sets**. A sharing set is a named set of questions which you can share to another course all at once. The sharing set system exists so that course owners may differentially share different sets of their questions. For example, an instructor may want to share some questions only with other courses in their department, and other questions with anyone using PrairieLearn. Sharing sets are created by adding them to the [`infoCourse.json` file](course.md#sharing-sets).
+Access to shared questions which are not shared publicly is controlled through **sharing sets**. A sharing set is a named set of questions which you can share to another course all at once. The sharing set system exists so that course owners may differentially share different sets of their questions. For example, an instructor may want to share some questions only with other courses in their department, and other questions with anyone using PrairieLearn. Sharing sets are created by adding them to the [`infoCourse.json` file](course/index.md#sharing-sets).
 
 ## Sharing a sharing set with another course
 
@@ -28,17 +28,19 @@ In order to allow someone to share their questions with your course, you must pr
 
 To refer to a question from another course, use the question id (qid) prefixed by the `@` symbol and the sharing name of the other course. For example, to use the question `addNumbers` from the course with sharing name `test-course`, you would put `@test-course/addNumbers` into your `assessmentInfo.json`. In the context of the `assessmentInfo.json`, this may look like:
 
-```json
-"zones": [
+```json title="assessmentInfo.json"
+{
+  "zones": [
     {
-        "title": "Question Sharing Example",
-        "comment": "These are new questions created for this exam",
-        "questions": [
-            {"id": "addNumbers", "autoPoints": [10, 5, 3, 1, 0.5, 0.25]},
-            {"id": "@test-course/addNumbers", "autoPoints": [10, 9, 7, 5]}
-        ]
-    },
-]
+      "title": "Question Sharing Example",
+      "comment": "These are new questions created for this exam",
+      "questions": [
+        { "id": "addNumbers", "autoPoints": [10, 5, 3, 1, 0.5, 0.25] },
+        { "id": "@test-course/addNumbers", "autoPoints": [10, 9, 7, 5] }
+      ]
+    }
+  ]
+}
 ```
 
 ## Client and server files
