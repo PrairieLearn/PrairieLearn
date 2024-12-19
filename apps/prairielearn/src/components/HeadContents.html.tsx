@@ -1,5 +1,5 @@
 import { Fragment, h } from 'preact';
-import { render } from 'preact-render-to-string';
+import { render } from 'preact-render-to-string/jsx';
 
 import { unsafeHtml } from '@prairielearn/html';
 
@@ -61,7 +61,9 @@ export function PreactHeadContents(props: TitleOptions) {
 }
 
 export function HeadContents(titleOptions: TitleOptions) {
-  return unsafeHtml(render(<PreactHeadContents {...titleOptions} />));
+  return unsafeHtml(
+    render(<PreactHeadContents {...titleOptions} />, {}, { pretty: true, jsx: false }),
+  );
 }
 
 // e.g. "hello_world" => "Hello World"

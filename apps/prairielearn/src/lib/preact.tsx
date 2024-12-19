@@ -1,6 +1,6 @@
 import { type ComponentType, type Attributes, type VNode, Fragment } from 'preact';
 import { h } from 'preact';
-import { render } from 'preact-render-to-string';
+import { render } from 'preact-render-to-string/jsx';
 
 import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
 
@@ -19,7 +19,7 @@ function escapeJsonForHtml(value: any): string {
 }
 
 export function renderHtmlDocument(content: VNode) {
-  return `<!doctype html>\n${render(content)}`;
+  return `<!doctype html>\n${render(content, {}, { pretty: true, jsx: false })}`;
 }
 
 export function renderForClientHydration<T>(
