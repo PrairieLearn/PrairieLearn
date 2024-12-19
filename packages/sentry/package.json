@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/sentry",
-  "version": "2.0.9",
+  "version": "2.0.10",
   "type": "module",
   "main": "dist/index.js",
   "repository": {
@@ -19,8 +19,8 @@
     "typescript": "^5.7.2"
   },
   "dependencies": {
-    "@sentry/node": "^8.36.0",
-    "@sentry/utils": "^8.36.0",
+    "@sentry/node": "^8.43.0",
+    "@sentry/utils": "^8.43.0",
     "execa": "^9.5.1"
   }
 }
