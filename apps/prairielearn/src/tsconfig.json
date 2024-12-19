@@ -2,7 +2,10 @@
   "extends": "@prairielearn/tsconfig/tsconfig.app.json",
   "compilerOptions": {
     "rootDir": "./",
-    "outDir": "../dist"
+    "outDir": "../dist",
+    "jsx": "react",
+    "jsxFactory": "h",
+    "jsxFragmentFactory": "Fragment"
   },
   "include": ["**/*"]
 }
