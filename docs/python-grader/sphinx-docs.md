@@ -51,6 +51,21 @@ Check that a student list has correct length with respect to a reference list. C
 - `accuracy_critical`: If true, grading will halt on failure.
 - `report_failure`: If true, feedback will be given on failure.
 
+#### _classmethod_ check_dict(name, ref, data)
+
+Checks that a student dict (`data`) has all correct key-value mappings with respect to a reference dict (`ref`). It also verifies the length of keys in the student dictionary against the reference dictionary, and optionally, enforces homogeneous data types for keys (using `entry_type_key`), values (using `entry_type_value`), or both. Additionally, it can verify the presence of specific keys (using `partial_keys`) in the student dictionary, and can focus the comparison solely on keys (using `check_only_keys`), values (using `check_only_values`), or both.
+
+- `name`: Name of the dict that is being checked. This will be used to give feedback.
+- `ref`: Reference dict.
+- `data`: Student dict to be checked. Do not mix this up with the previous dict! This argument is subject to more strict type checking.
+- `partial_keys`: If not None, it takes a List of keys to check if these particular keys are present in the student's dict or not.
+- `check_only_keys`: If true, grading will be done only based on checking all keys in student's dict and reference's dict match or not.
+- `check_only_values`: If true, grading will be done only based on checking all values in student's dict and reference's dict match or not.
+- `entry_type_key`: If not None, requires that each key in the student's dictionary in solution be of this type.
+- `entry_type_value`: If not None, requires that each value in the student's dictionary in solution be of this type.
+- `accuracy_critical`: If true, grading will halt on failure.
+- `report_failure`: If true, feedback will be given on failure.
+
 #### _classmethod_ check_numpy_array_allclose(name, ref, data, accuracy_critical=False, rtol=1e-05, atol=1e-08, report_success=True, report_failure=True)
 
 Feedback.check_numpy_allclose(name, ref, data)
