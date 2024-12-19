@@ -48,29 +48,14 @@ onDocumentReady(() => {
         icon: 'fa-user-graduate',
         attributes: { title: 'List only enrolled students' },
         event: () => {
+          console.log('start of event');
           const table = $('#usersTable');
           const filterOn = !table.data('filter-student-only');
           table.data('filter-student-only', filterOn);
 
           $('.columns button[name=studentsOnly]').toggleClass('active', filterOn);
-          if (assessmentGroupWork) {
-            table.bootstrapTable(
-              'filterBy',
-              { group_roles: 'Student' },
-              {
-                // the "filter" parameter has to be specified, hence we place a dummy placeholder here
-                filterAlgorithm: (row: { group_roles: string }, _: any) => {
-                  if (filterOn) {
-                    return row.group_roles.includes('Student');
-                  } else {
-                    return true;
-                  }
-                },
-              },
-            );
-          } else {
-            table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
-          }
+          // The filter object triggers the customSearch function, which performs the actual search.
+          table.bootstrapTable('filterBy', filterOn ? { role: 'Student' } : {});
         },
       },
     },
@@ -103,17 +88,23 @@ onDocumentReady(() => {
           $(this).find('.select-time-limit').trigger('change');
         });
     },
-    customSearch: (data: AssessmentInstanceRow[], searchText: string) => {
+    customSearch: (
+      data: AssessmentInstanceRow[],
+      searchText: string,
+      filter?: Record<string, any>,
+    ) => {
       return data.filter((row) => {
         const search = searchText.toLowerCase();
         return assessmentGroupWork
-          ? row.group_name?.toLowerCase().includes(search) ||
-              row.uid_list?.some((uid) => uid.toLowerCase().includes(search)) ||
-              row.user_name_list?.some((name) => name?.toLowerCase().includes(search)) ||
-              row.group_roles?.some((role) => role.toLowerCase().includes(search))
-          : row.uid?.toLowerCase().includes(search) ||
-              row.name?.toLowerCase().includes(search) ||
-              row.role?.toLowerCase().includes(search);
+          ? (!filter?.role || row.group_roles?.includes(filter.role)) &&
+              (row.group_name?.toLowerCase().includes(search) ||
+                row.uid_list?.some((uid) => uid.toLowerCase().includes(search)) ||
+                row.user_name_list?.some((name) => name?.toLowerCase().includes(search)) ||
+                row.group_roles?.some((role) => role.toLowerCase().includes(search)))
+          : (!filter?.role || row.role === filter.role) &&
+              (row.uid?.toLowerCase().includes(search) ||
+                row.name?.toLowerCase().includes(search) ||
+                row.role?.toLowerCase().includes(search));
       });
     },
     columns: tableColumns(assessmentGroupWork),
