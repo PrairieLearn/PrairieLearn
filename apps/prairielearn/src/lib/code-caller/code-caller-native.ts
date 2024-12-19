@@ -5,6 +5,7 @@ import * as path from 'node:path';
 import { type Readable, type Writable } from 'stream';
 
 import debugfn from 'debug';
+import fs from 'fs-extra';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -46,7 +47,11 @@ interface CodeCallerNativeOptions {
   dropPrivileges: boolean;
   questionTimeoutMilliseconds: number;
   pingTimeoutMilliseconds: number;
-  errorLogger: (msg: string, data?: any) => void;
+  errorLogger?: (msg: string, data?: any) => void;
+}
+
+interface CodeCallerNativeOptionsInternal extends Required<CodeCallerNativeOptions> {
+  pythonExecutable: string;
 }
 
 export interface ErrorData {
@@ -63,6 +68,7 @@ export interface ErrorData {
 }
 
 export type CodeCallerError = Error & { data?: ErrorData };
+
 /**
   Internal state machine
   ======================
@@ -95,7 +101,7 @@ export class CodeCallerNative implements CodeCaller {
   child: CodeCallerNativeChildProcess | null;
   callback: ((err: CodeCallerError | null, data?: any, output?: string) => void) | null;
   timeoutID: NodeJS.Timeout | null;
-  options: CodeCallerNativeOptions;
+  options: CodeCallerNativeOptionsInternal;
   outputStdout: string[];
   outputStderr: string[];
   outputBoth: string[];
@@ -104,29 +110,40 @@ export class CodeCallerNative implements CodeCaller {
   lastCallData: any;
   coursePath: string | null;
   forbiddenModules: string[];
+
+  /**
+   * Creating a new {@link CodeCallerNative} instance requires some async work,
+   * so we use this static method to create a new instance since a constructor
+   * cannot be async.
+   */
+  static async create(options: CodeCallerNativeOptions): Promise<CodeCallerNative> {
+    // Determine which Python executable to use. If there's a `.venv` directory
+    // at the root of the repository, use the Python executable in that
+    // directory. Otherwise, use the system Python executable.
+    let pythonExecutable = 'python3.10';
+    const venvPython = path.join(REPOSITORY_ROOT_PATH, '.venv', 'bin', pythonExecutable);
+    if (await fs.pathExists(venvPython)) {
+      pythonExecutable = venvPython;
+    }
+
+    const codeCaller = new CodeCallerNative({
+      pythonExecutable,
+      errorLogger: logger.error.bind(logger),
+      ...options,
+    });
+    await codeCaller.ensureChild();
+    return codeCaller;
+  }
+
   /**
    * Creates a new {@link CodeCallerNative} with the specified options.
    */
-  constructor(
-    options: CodeCallerNativeOptions = {
-      dropPrivileges: false,
-      questionTimeoutMilliseconds: 5_000,
-      pingTimeoutMilliseconds: 60_000,
-      // `CodeCallerNative` is used both directly by the server and also inside of
-      // the `prairielearn/executor` Docker image. When used inside Docker, the
-      // error output *must* be sent via stderr, as we use stdout for data
-      // communication. This is incompatible with the default behavior of our
-      // logger, which will only write to stdout. So, we allow a different
-      // logging function to be provided.
-      errorLogger: logger.error.bind(logger),
-    },
-  ) {
+  private constructor(options: CodeCallerNativeOptionsInternal) {
     this.state = CREATED;
     this.uuid = uuidv4();
 
     this.debug('enter constructor()');
 
-    /** @type {CodeCallerNativeChildProcess | null} */
     this.child = null;
     this.callback = null;
     this.timeoutID = null;
@@ -317,7 +334,7 @@ export class CodeCallerNative implements CodeCaller {
     this.debug('exit done()');
   }
 
-  async ensureChild() {
+  private async ensureChild() {
     this.debug('enter ensureChild()');
     this._checkState();
 
@@ -334,7 +351,7 @@ export class CodeCallerNative implements CodeCaller {
     this.debug('enter _startChild()');
     this._checkState([CREATED]);
 
-    const cmd = 'python3';
+    const cmd = this.options.pythonExecutable;
     const pythonZygote = path.join(APP_ROOT_PATH, 'python', 'zygote.py');
     const args = ['-B', pythonZygote];
     const env = _.clone(process.env);
