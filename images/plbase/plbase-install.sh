@@ -69,8 +69,12 @@ cd /
 curl -LO https://astral.sh/uv/install.sh
 env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
 
-# Install python3.10 into /usr/local/bin and register it with uv
-UV_PYTHON_BIN_DIR=/usr/local/bin uv python install --default --preview 3.10
+# /.venv/bin/python3 -> /usr/local/bin/python3 -> /usr/share/uv/python/*/bin/python3.10
+export UV_PYTHON_INSTALL_DIR=/usr/share/uv/python
+export UV_PYTHON_BIN_DIR=/usr/local/bin
+
+# Installing to a different directory is a preview feature
+uv python install --default --preview 3.10
 
 uv venv
 uv pip install --no-cache-dir -r /python-requirements.txt
