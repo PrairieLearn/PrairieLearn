@@ -1,6 +1,8 @@
-import { type ComponentType, type Attributes, type VNode } from 'preact';
+import { type ComponentType, type Attributes, type VNode, Fragment } from 'preact';
 import { h } from 'preact';
 import { render } from 'preact-render-to-string';
+
+import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
 
 // Based on https://pkg.go.dev/encoding/json#HTMLEscape
 const ENCODE_HTML_RULES: Record<string, string> = {
@@ -25,18 +27,26 @@ export function renderForClientHydration<T>(
   Component: ComponentType<T>,
   props: T & Attributes,
 ): VNode {
+  const scriptPath = `split-bundles/react-fragments/${id}.ts`;
+  const scriptPreloads = compiledScriptPreloadPaths(scriptPath);
   return (
-    <div id={id} class="js-react-fragment">
-      <script
-        type="application/json"
-        id={`${id}-props`}
-        dangerouslySetInnerHTML={{
-          __html: escapeJsonForHtml(props),
-        }}
-      />
-      <div id={`${id}-root`}>
-        <Component {...props} />
+    <Fragment>
+      <script type="module" src={compiledScriptPath(scriptPath)} />
+      {scriptPreloads.map((preloadPath) => (
+        <link rel="modulepreload" href={preloadPath} />
+      ))}
+      <div id={id} class="js-react-fragment">
+        <script
+          type="application/json"
+          id={`${id}-props`}
+          dangerouslySetInnerHTML={{
+            __html: escapeJsonForHtml(props),
+          }}
+        />
+        <div id={`${id}-root`}>
+          <Component {...props} />
+        </div>
       </div>
-    </div>
+    </Fragment>
   );
 }

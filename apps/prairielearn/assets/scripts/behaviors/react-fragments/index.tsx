@@ -1,23 +1,23 @@
-import { h } from 'preact';
+import { h, hydrate, type ComponentType } from 'preact';
 import { observe } from 'selector-observer';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
-const REACT_FRAGMENTS: Record<string, any> = {
-  InstructorInstanceAdminBillingForm: () =>
-    import('../../../src/ee/lib/billing/components/InstructorInstanceAdminBillingForm.js').then(
-      (m) => m.InstructorInstanceAdminBillingForm,
-    ),
-};
+import { ReactFragmentsRegistry } from './registry.js';
+
+const registry = new ReactFragmentsRegistry();
+
+export function registerReactFragment(id: string, component: ComponentType<any>) {
+  registry.setReactFragment(id, component);
+}
 
 onDocumentReady(() => {
   observe('.js-react-fragment', {
     async add(el) {
       const id = el.id;
       if (!id) throw new Error('js-react-fragment element must have an id');
-      if (!REACT_FRAGMENTS[id]) throw new Error(`No React fragment with id ${id}`);
 
-      const { hydrate } = await import('preact');
+      const Component = await registry.getReactFragment(id);
 
       const dataElement = el.querySelector(`script#${id}-props`);
       if (!dataElement) throw new Error('No data element found');
@@ -26,8 +26,6 @@ onDocumentReady(() => {
 
       const rootElement = el.querySelector(`div#${id}-root`);
       if (!rootElement) throw new Error('No root element found');
-
-      const Component = await REACT_FRAGMENTS[id]();
 
       hydrate(<Component {...data} />, rootElement);
     },

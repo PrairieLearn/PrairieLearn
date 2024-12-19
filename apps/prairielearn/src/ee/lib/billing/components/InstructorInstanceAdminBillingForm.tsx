@@ -217,10 +217,9 @@ export function InstructorInstanceAdminBillingForm(props: InstructorInstanceAdmi
         </label>
         <p class="small text-muted">
           Students will be able to use questions that utilize external grading and/or workspaces.
-          This course has
-          <strong>{pluralizeQuestionCount(externalGradingQuestionCount)}</strong> that use external
-          grading and <strong>{pluralizeQuestionCount(workspaceQuestionCount)}</strong> that use
-          workspaces.
+          This course has <strong>{pluralizeQuestionCount(externalGradingQuestionCount)}</strong>{' '}
+          that use external grading and{' '}
+          <strong>{pluralizeQuestionCount(workspaceQuestionCount)}</strong> that use workspaces.
         </p>
         {computeAlert && <Alert {...computeAlert} />}
       </div>
