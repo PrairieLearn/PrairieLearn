@@ -33,7 +33,7 @@ RUN apt-get update && \
     find /tmp -not -path /tmp -delete
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-    gosu curl git htop less nano unzip vim wget zip && \
+    gosu curl git htop less nano unzip vim wget zip gcc libc6-dev graphviz graphviz-dev && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     find /tmp -not -path /tmp -delete
@@ -42,29 +42,20 @@ RUN apt-get update && \
 # work during installation.
 SHELL ["/bin/bash", "-c"]
 
-# Install Python and required packages via miniconda.
+# Install Python and required packages via uv.
 # This is a prerequisite for the VS Code extensions in the following steps.
 USER coder
+
 COPY requirements.txt /
-RUN export arch=`uname -m` \
- && curl -sfLO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
- && chmod +x "Miniforge3-Linux-${arch}.sh" \
- && ./"Miniforge3-Linux-${arch}.sh" -b -p /home/coder/conda \
- # Install conda and mamba hooks for future interactive bash sessions:
- && /home/coder/conda/bin/mamba init bash \
- # Activate hooks in the current noninteractive session:
- && . "/home/coder/conda/etc/profile.d/conda.sh" \
- && . "/home/coder/conda/etc/profile.d/mamba.sh" \
- && mamba activate \
- # Installing `pygraphviz` with pip would require `build-essentials`, `graphviz`,
- # and `graphviz-dev` to be installed at the OS level, which would increase the
- # image size. Instead, we install it from Conda, which prebuilds it and also
- # automatically installs a Conda-specific `graphviz` dependency.
- && mamba install --yes $(grep pygraphviz /requirements.txt | head -n 1) \
- && pip install -r /requirements.txt \
- && rm "Miniforge3-Linux-${arch}.sh" \
- && mamba clean --all --yes --quiet \
- && pip cache purge
+
+# /home/coder/.venv/bin/python3 -> /home/coder/.local/bin/python3 -> /home/coder/.local/share/uv/python/*/bin/python3.10
+RUN curl -LO https://astral.sh/uv/install.sh && \
+    sh install.sh && rm install.sh && \
+    source "$HOME/.local/bin/env" && \
+    uv python install --default --preview 3.10 && \
+    uv venv && \
+    echo "source $HOME/.venv/bin/activate" >> ~/.bashrc && source $HOME/.venv/bin/activate && \
+    uv pip install --no-cache-dir -r /requirements.txt && uv cache clean
 
 # Install VS Code extensions and clear the extension cache to reduce image size.
 # We have first installed Python in the previous step, as specified in the
