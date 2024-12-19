@@ -397,6 +397,9 @@ export async function getAndRenderVariant(
   variant_id: string | null,
   variant_seed: string | null,
   locals: Record<string, any>,
+  options?: {
+    urlOverrides?: Partial<QuestionUrls>;
+  },
 ) {
   locals.question_course = await getQuestionCourse(locals.question, locals.course);
   locals.question_is_shared = await sqldb.queryRow(
@@ -452,6 +455,7 @@ export async function getAndRenderVariant(
 
   const urls = buildQuestionUrls(urlPrefix, variant, question, instance_question);
   Object.assign(locals, urls);
+  Object.assign(locals, options?.urlOverrides);
 
   const newLocals = buildLocals({
     variant,
