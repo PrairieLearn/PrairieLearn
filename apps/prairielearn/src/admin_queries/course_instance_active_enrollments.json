@@ -3,7 +3,7 @@
   "params": [
     {
       "name": "institution_short_name",
-      "description": "Restrict to a particular institution (blank means all institutions).",
+      "description": "Restrict to a particular institution.",
       "default": ""
     },
     {
@@ -19,11 +19,6 @@
     {
       "name": "minimum_instance_question_count",
       "description": "Minimum number of modified instance questions for a student to be included.",
-      "default": "10"
-    },
-    {
-      "name": "minimum_student_count",
-      "description": "Minimum number of students for a course instance to be included.",
       "default": "10"
     }
   ]
