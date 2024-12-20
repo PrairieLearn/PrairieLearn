@@ -6,7 +6,11 @@ import { loadSqlEquiv, queryRows, queryRow, queryAsync } from '@prairielearn/pos
 import * as b64Util from '../../lib/base64-util.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { QuestionGenerationContextEmbeddingSchema, QuestionSchema } from '../../lib/db-types.js';
+import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
+import { selectCourseById } from '../../models/course.js';
+import { selectQuestionById } from '../../models/question.js';
+import { selectUserById } from '../../models/user.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
 import { validateHTML } from './validateHTML.js';
@@ -45,6 +49,30 @@ Here is some context that may help you respond to the user. This context may inc
 ${context}
 
 `;
+}
+
+async function checkRender(
+  status: 'success' | 'error',
+  errors: string[],
+  courseId: string,
+  userId: string,
+  questionId: string,
+) {
+  if (status === 'success' && errors.length === 0) {
+    const question = await selectQuestionById(questionId);
+    const course = await selectCourseById(courseId);
+    const user = await selectUserById(userId);
+    const authnUser = await selectUserById(userId); //user id == authn user id in this case
+
+    const locals: Record<string, any> = { question, course, user, authn_user: authnUser };
+    await getAndRenderVariant(null, null, locals);
+    
+    return locals.issues.map(
+      (issue) =>
+        `When trying to render, your code created an error with the following stack trace: ${issue.system_data.courseErrData.outputBoth}\nPlease fix it.`,
+    );
+  }
+  return [];
 }
 
 /**
@@ -289,6 +317,10 @@ Keep in mind you are not just generating an example; you are generating an actua
     job.data.html = html;
     job.data.python = results?.python;
 
+    errors.push(
+      ...(await checkRender(saveResults.status, errors, courseId, userId, saveResults.question_id)),
+    );
+
     if (
       saveResults.status === 'success' &&
       errors.length > 0 &&
@@ -494,6 +526,8 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   job.data.html = html;
   job.data.python = python;
+
+  errors.push(...(await checkRender(result.status, errors, courseId, userId, questionId)));
 
   if (errors.length > 0 && remainingAttempts > 0) {
     const auto_revisionPrompt = `Please fix the following issues: \n${errors.join('\n')}`;
