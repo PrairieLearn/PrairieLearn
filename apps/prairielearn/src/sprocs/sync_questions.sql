@@ -144,6 +144,7 @@ BEGIN
         grading_method = (src.data->>'grading_method')::enum_grading_method,
         manual_perc = (src.data->>'manual_perc')::double precision,
         single_variant = (src.data->>'single_variant')::boolean,
+        draft = (src.data->>'draft')::boolean,
         show_correct_answer = (src.data->>'show_correct_answer')::boolean,
         template_directory = src.data->>'template_directory',
         topic_id = aggregates.topic_id,

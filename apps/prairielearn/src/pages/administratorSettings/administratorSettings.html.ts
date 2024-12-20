@@ -92,7 +92,7 @@ export function AdministratorSettings({ resLocals }) {
                 <div class="card mb-4">
                   <div class="card-header bg-primary text-white">LLM Context Documents</div>
                   <div class="card-body">
-                    <form class="" name="sync-context-form" method="POST">
+                    <form method="POST">
                       <input type="hidden" name="__action" value="sync_context_documents" />
                       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
                       <button class="btn btn-primary">Resync Documents</button>
@@ -131,8 +131,44 @@ export function AdministratorSettings({ resLocals }) {
                 <button type="button" class="btn btn-outline-info">Info</button>
                 <button type="button" class="btn btn-outline-dark">Dark</button>
               </div>
-              <div class="p-4 bg-dark">
+              <div class="mb-4 p-4 bg-dark">
                 <button type="button" class="btn btn-outline-light">Light</button>
+              </div>
+              <h3>Custom colors</h3>
+              <div
+                class="mb-4"
+                style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 1rem;"
+              >
+                <button type="button" class="btn color-red1">Red 1</button>
+                <button type="button" class="btn color-red2">Red 2</button>
+                <button type="button" class="btn color-red3">Red 3</button>
+                <button type="button" class="btn color-pink1">Pink 1</button>
+                <button type="button" class="btn color-pink2">Pink 2</button>
+                <button type="button" class="btn color-pink3">Pink 3</button>
+                <button type="button" class="btn color-purple1">Purple 1</button>
+                <button type="button" class="btn color-purple2">Purple 2</button>
+                <button type="button" class="btn color-purple3">Purple 3</button>
+                <button type="button" class="btn color-blue1">Blue 1</button>
+                <button type="button" class="btn color-blue2">Blue 2</button>
+                <button type="button" class="btn color-blue3">Blue 3</button>
+                <button type="button" class="btn color-turquoise1">Turquoise 1</button>
+                <button type="button" class="btn color-turquoise2">Turquoise 2</button>
+                <button type="button" class="btn color-turquoise3">Turquoise 3</button>
+                <button type="button" class="btn color-green1">Green 1</button>
+                <button type="button" class="btn color-green2">Green 2</button>
+                <button type="button" class="btn color-green3">Green 3</button>
+                <button type="button" class="btn color-yellow1">Yellow 1</button>
+                <button type="button" class="btn color-yellow2">Yellow 2</button>
+                <button type="button" class="btn color-yellow3">Yellow 3</button>
+                <button type="button" class="btn color-orange1">Orange 1</button>
+                <button type="button" class="btn color-orange2">Orange 2</button>
+                <button type="button" class="btn color-orange3">Orange 3</button>
+                <button type="button" class="btn color-brown1">Brown 1</button>
+                <button type="button" class="btn color-brown2">Brown 2</button>
+                <button type="button" class="btn color-brown3">Brown 3</button>
+                <button type="button" class="btn color-gray1">Gray 1</button>
+                <button type="button" class="btn color-gray2">Gray 2</button>
+                <button type="button" class="btn color-gray3">Gray 3</button>
               </div>
               <h3>Ghost button</h3>
               <p>

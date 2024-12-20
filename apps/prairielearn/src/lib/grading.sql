@@ -59,6 +59,7 @@ WITH
   updated_variant AS (
     UPDATE variants
     SET
+      params = $params,
       true_answer = $true_answer
     WHERE
       id = $variant_id

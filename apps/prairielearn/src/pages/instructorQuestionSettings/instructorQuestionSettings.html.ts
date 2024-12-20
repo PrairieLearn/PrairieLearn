@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { escapeHtml, html } from '@prairielearn/html';
+import { escapeHtml, html, type HtmlValue } from '@prairielearn/html';
 
 import { AssessmentBadge } from '../../components/AssessmentBadge.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
@@ -9,9 +9,16 @@ import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadgeList } from '../../components/TagBadge.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
-import { compiledScriptTag } from '../../lib/assets.js';
+import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { config } from '../../lib/config.js';
-import { AssessmentSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
+import {
+  AssessmentSchema,
+  AssessmentSetSchema,
+  IdSchema,
+  type Question,
+  type Topic,
+  type Tag,
+} from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
@@ -51,6 +58,8 @@ export function InstructorQuestionSettings({
   infoPath,
   origHash,
   canEdit,
+  courseTopics,
+  courseTags,
 }: {
   resLocals: Record<string, any>;
   questionTestPath: string;
@@ -64,10 +73,13 @@ export function InstructorQuestionSettings({
   infoPath: string;
   origHash: string;
   canEdit: boolean;
+  courseTopics: Topic[];
+  courseTags: Tag[];
 }) {
   // Only show assessments on which this question is used when viewing the question
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
+  const selectedTags = new Set(resLocals.tags?.map((tag) => tag.name) ?? []);
   return html`
     <!doctype html>
     <html lang="en">
@@ -78,7 +90,25 @@ export function InstructorQuestionSettings({
           .popover {
             max-width: 50%;
           }
+
+          .ts-wrapper.multi .ts-control > span {
+            cursor: pointer;
+          }
+
+          .ts-wrapper.multi .ts-control > span.active {
+            /* Fallback for Bootstrap 4; we can remove when we drop support for it. */
+            background-color: var(--bs-primary, #0d6efd) !important;
+            color: white !important;
+          }
         </style>
+        <link
+          href="${nodeModulesAssetPath(
+            resLocals.use_bootstrap_4
+              ? 'tom-select/dist/css/tom-select.bootstrap4.css'
+              : 'tom-select/dist/css/tom-select.bootstrap5.css',
+          )}"
+          rel="stylesheet"
+        />
       </head>
       <body>
         ${Navbar({ resLocals })}
@@ -133,23 +163,62 @@ export function InstructorQuestionSettings({
                     slashes to separate directories.
                   </small>
                 </div>
-
-                <div class="table-responsive card mb-3">
+                <div class="table-responsive card mb-3 overflow-visible">
                   <table
                     class="table two-column-description"
                     aria-label="Question topic, tags, and assessments"
                   >
                     <tr>
-                      <th class="border-top-0">Topic</th>
-                      <td class="border-top-0">${TopicBadge(resLocals.topic)}</td>
+                      <th class="align-middle">Topic</th>
+                      <!-- The style attribute is necessary until we upgrade to Bootstrap 5.3 -->
+                      <!-- This is used by tom-select to style the active item in the dropdown -->
+                      <td style="--bs-tertiary-bg: #f8f9fa">
+                        ${canEdit
+                          ? html`
+                              <select id="topic" name="topic" placeholder="Select a topic">
+                                ${courseTopics.map((topic) => {
+                                  return html`
+                                    <option
+                                      value="${topic.name}"
+                                      data-color="${topic.color}"
+                                      data-name="${topic.name}"
+                                      data-description="${topic.description}"
+                                      ${topic.name === resLocals.topic.name ? 'selected' : ''}
+                                    ></option>
+                                  `;
+                                })}
+                              </select>
+                            `
+                          : TopicBadge(resLocals.topic)}
+                      </td>
                     </tr>
                     <tr>
-                      <th>Tags</th>
-                      <td>${TagBadgeList(resLocals.tags)}</td>
+                      <th class="align-middle">Tags</th>
+                      <td>
+                        ${canEdit
+                          ? html`
+                              <select id="tags" name="tags" placeholder="Select tags" multiple>
+                                ${courseTags.length > 0
+                                  ? courseTags.map((tag) => {
+                                      return html`
+                                        <option
+                                          value="${tag.name}"
+                                          data-color="${tag.color}"
+                                          data-name="${tag.name}"
+                                          data-description="${tag.description}"
+                                          ${selectedTags.has(tag.name) ? 'selected' : ''}
+                                        ></option>
+                                      `;
+                                    })
+                                  : ''}
+                              </select>
+                            `
+                          : TagBadgeList(resLocals.tags)}
+                      </td>
                     </tr>
                     ${shouldShowAssessmentsList
                       ? html`<tr>
-                          <th>Assessments</th>
+                          <th class="align-middle">Assessments</th>
                           <td>${AssessmentBadges({ assessmentsWithQuestion, resLocals })}</td>
                         </tr>`
                       : ''}
@@ -183,7 +252,7 @@ export function InstructorQuestionSettings({
                       <h2 class="h4">Sharing</h2>
                       <div data-testid="shared-with">
                         ${QuestionSharing({
-                          questionSharedPublicly: resLocals.question.shared_publicly,
+                          question: resLocals.question,
                           sharingSetsIn,
                         })}
                       </div>
@@ -403,36 +472,51 @@ function QuestionTestsForm({
 }
 
 function QuestionSharing({
-  questionSharedPublicly,
+  question,
   sharingSetsIn,
 }: {
-  questionSharedPublicly: boolean;
+  question: Question;
   sharingSetsIn: SharingSetRow[];
 }) {
-  if (questionSharedPublicly) {
-    return html`
-      <p>
-        <span class="badge color-green3 mr-1">Public</span>
-        This question is publicly shared.
-      </p>
-    `;
+  if (!question.shared_publicly && !question.share_source_publicly && sharingSetsIn.length === 0) {
+    return html`<p>This question is not being shared.</p>`;
   }
 
-  const sharedWithLabel =
-    sharingSetsIn.length === 1 ? '1 sharing set' : `${sharingSetsIn.length} sharing sets`;
+  const details: HtmlValue[] = [];
 
-  return html`
-    ${sharingSetsIn.length === 0
-      ? html`<p>This question is not being shared.</p>`
-      : html`
-          <p>
-            Shared with ${sharedWithLabel}:
-            ${sharingSetsIn.map((sharing_set) => {
-              return html` <span class="badge color-gray1">${sharing_set.name}</span> `;
-            })}
-          </p>
-        `}
-  `;
+  if (question.shared_publicly) {
+    details.push(html`
+      <p>
+        <span class="badge color-green3 mr-1">Public</span>
+        This question is publicly shared and can be imported by other courses.
+      </p>
+    `);
+  }
+
+  if (question.share_source_publicly) {
+    details.push(html`
+      <p>
+        <span class="badge color-green3 mr-1">Public source</span>
+        This question's source is publicly shared.
+      </p>
+    `);
+  }
+
+  if (sharingSetsIn.length > 0) {
+    const sharedWithLabel =
+      sharingSetsIn.length === 1 ? '1 sharing set' : `${sharingSetsIn.length} sharing sets`;
+
+    details.push(html`
+      <p>
+        Shared with ${sharedWithLabel}:
+        ${sharingSetsIn.map((sharing_set) => {
+          return html` <span class="badge color-gray1">${sharing_set.name}</span> `;
+        })}
+      </p>
+    `);
+  }
+
+  return details;
 }
 
 function AssessmentBadges({
@@ -463,7 +547,7 @@ function AssessmentBadges({
     return html`
       <a
         href="/pl/course_instance/${assessmentsInCourseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}"
-        class="badge color-${assessment.color}"
+        class="btn btn-badge color-${assessment.color}"
       >
         ${assessment.label}
       </a>

@@ -8,5 +8,6 @@ export default (function (err, req, res, _next) {
   const statusCode = err.status || 500;
   res.status(statusCode).send({
     message: status[statusCode],
+    status: statusCode,
   });
 } satisfies ErrorRequestHandler);

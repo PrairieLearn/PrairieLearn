@@ -47,7 +47,7 @@ Example questions are in the [`exampleCourse/questions`](https://github.com/Prai
 
 The `info.json` file for each question defines properties of the question. For example:
 
-```json
+```json title="info.json"
 {
   "uuid": "cbf5cbf2-6458-4f13-a418-aa4d2b1093ff",
   "title": "Newton's third law",
@@ -84,7 +84,7 @@ Your question can load client-side assets such as scripts or stylesheets from di
 
 These dependencies are specified in the `info.json` file, and can be configured as follows:
 
-```json
+```json title="info.json"
 {
   "dependencies": {
     "nodeModulesScripts": ["three/build/three.min.js"],
@@ -97,9 +97,9 @@ These dependencies are specified in the `info.json` file, and can be configured 
 
 ### Question Sharing
 
-Any question that is marked with `"sharePublicly": true` or `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license. Questions may be privately shared to individual courses using sharing sets, as explained in the [sharing documentation](questionSharing.md). Sharing sets that a question belongs to are specified as a list of strings. These must match sharing sets that are declared in the [course configuration](course.md#adding-sharing-sets).
+Any question that is marked with `"sharePublicly": true` or `"shareSourcePublicly": true` will be considered and displayed as being published for free use under the [CC-BY-NC](https://www.creativecommons.org/licenses/by-nc/4.0/) license. Questions may be privately shared to individual courses using sharing sets, as explained in the [sharing documentation](questionSharing.md). Sharing sets that a question belongs to are specified as a list of strings. These must match sharing sets that are declared in the [course configuration](course/index.md#adding-sharing-sets).
 
-```json
+```json title="info.json"
 {
   "sharingSets": ["python-exercises"]
 }
@@ -459,7 +459,7 @@ And then we're done! This is an obviously more correct way to process questions,
 
 To opt in to the new renderer, add the following to your `infoCourse.json` file:
 
-```json
+```json title="infoCourse.json"
 {
   "options": {
     "useNewQuestionRenderer": true
