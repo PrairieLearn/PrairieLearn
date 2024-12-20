@@ -66,7 +66,7 @@ async function checkRender(
 
     const locals: Record<string, any> = { question, course, user, authn_user: authnUser };
     await getAndRenderVariant(null, null, locals);
-    
+
     return locals.issues.map(
       (issue) =>
         `When trying to render, your code created an error with the following stack trace: ${issue.system_data.courseErrData.outputBoth}\nPlease fix it.`,
@@ -249,7 +249,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
     // TODO [very important]: normalize to prevent prompt injection attacks
     const completion = await client.chat.completions.create({
-      model: 'gpt-3.5-turbo',
+      model: 'gpt-4o',
       messages: [
         { role: 'system', content: sysPrompt },
         { role: 'user', content: userPrompt },
@@ -466,7 +466,7 @@ Keep in mind you are not just generating an example; you are generating an actua
   // TODO [very important]: normalize to prevent prompt injection attacks
 
   const completion = await client.chat.completions.create({
-    model: 'gpt-3.5-turbo',
+    model: 'gpt-4o',
     messages: [
       { role: 'system', content: sysPrompt },
       { role: 'user', content: revisionPrompt },
