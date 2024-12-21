@@ -389,7 +389,9 @@ def evaluate_with_source(
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
     # TODO: Split up full_unicode in prairielearn.py to prevent a circular import
-    expr = unidecode(greek_unicode_transform(expr).replace("\u2212", "-")).replace("^", "**")
+    expr = unidecode(greek_unicode_transform(expr).replace("\u2212", "-")).replace(
+        "^", "**"
+    )
 
     local_dict = {
         k: v
