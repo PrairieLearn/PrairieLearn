@@ -1,7 +1,7 @@
 import chevron
 import lxml.html
 import numpy as np
-import prairielearn as pl
+import prairielearn.core as pl
 
 DIGITS_DEFAULT = 2
 

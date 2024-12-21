@@ -4,7 +4,7 @@ import random
 import chevron
 import lxml.html
 import numpy as np
-import prairielearn as pl
+import prairielearn.core as pl
 
 WEIGHT_DEFAULT = 1
 LABEL_DEFAULT = None

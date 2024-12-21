@@ -3,7 +3,7 @@ import warnings
 import lxml.html
 import networkx as nx
 import numpy as np
-import prairielearn as pl
+import prairielearn.core as pl
 import pygraphviz
 
 ENGINE_DEFAULT = "dot"

@@ -5,7 +5,7 @@ from typing import Any, Generator, Iterable, Iterator, Optional
 
 import chevron
 import lxml.html
-import prairielearn as pl
+import prairielearn.core as pl
 import pygments
 import pygments.formatters
 import pygments.lexer

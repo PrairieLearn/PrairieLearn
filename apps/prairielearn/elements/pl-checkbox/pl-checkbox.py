@@ -3,7 +3,7 @@ import random
 
 import chevron
 import lxml.html
-import prairielearn as pl
+import prairielearn.core as pl
 
 WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False

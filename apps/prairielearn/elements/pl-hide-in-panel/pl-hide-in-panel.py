@@ -1,5 +1,5 @@
 import lxml.html
-import prairielearn as pl
+import prairielearn.core as pl
 
 QUESTION_DEFAULT = False
 SUBMISSION_DEFAULT = False

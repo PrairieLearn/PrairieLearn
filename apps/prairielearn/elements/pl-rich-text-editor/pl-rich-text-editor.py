@@ -5,7 +5,7 @@ from enum import Enum
 
 import chevron
 import lxml.html
-import prairielearn as pl
+import prairielearn.core as pl
 
 
 class Counter(Enum):

@@ -4,7 +4,7 @@ from enum import Enum
 
 import chevron
 import lxml.html
-import prairielearn as pl
+import prairielearn.core as pl
 
 WEIGHT_DEFAULT = 1
 FIXED_STATEMENTS_ORDER_DEFAULT = False

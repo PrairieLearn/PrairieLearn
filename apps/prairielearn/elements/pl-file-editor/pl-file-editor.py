@@ -4,7 +4,7 @@ import os
 
 import chevron
 import lxml.html
-import prairielearn as pl
+import prairielearn.core as pl
 from text_unidecode import unidecode
 
 EDITOR_CONFIG_FUNCTION_DEFAULT = None

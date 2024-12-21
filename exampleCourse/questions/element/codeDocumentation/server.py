@@ -7,7 +7,7 @@ import numpy as np
 
 # Requried for python variable
 import pandas as pd
-import prairielearn as pl
+import prairielearn.core as pl
 
 # Required for symbolic input
 import sympy

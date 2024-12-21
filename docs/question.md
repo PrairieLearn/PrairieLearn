@@ -244,7 +244,7 @@ To account for this, the `prairielearn` Python library from [`prairielearn.py`](
 # server.py
 
 import numpy as np
-import prairielearn as pl
+import prairielearn.core as pl
 
 def generate(data):
     data["params"]["numpy_array"] = pl.to_json(np.array([1.2, 3.5, 5.1]))

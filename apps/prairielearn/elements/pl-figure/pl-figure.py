@@ -3,7 +3,7 @@ from enum import Enum
 
 import chevron
 import lxml.html
-import prairielearn as pl
+import prairielearn.core as pl
 from typing_extensions import assert_never
 
 

@@ -4,7 +4,7 @@ from pathlib import Path
 
 import chevron
 import lxml.html
-import prairielearn as pl
+import prairielearn.core as pl
 from lxml.html import HtmlElement
 from typing_extensions import assert_never
 

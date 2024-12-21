@@ -4,7 +4,7 @@ from typing import Any, Optional
 
 import chevron
 import lxml.html
-import prairielearn as pl
+import prairielearn.core as pl
 import unit_utils as uu
 from pint import UnitRegistry, errors
 from typing_extensions import assert_never

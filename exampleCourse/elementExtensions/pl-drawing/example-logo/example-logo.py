@@ -1,6 +1,6 @@
 from os import path
 
-import prairielearn as pl
+import prairielearn.core as pl
 
 # Import class definitions and default values from the drawing element
 defaults = pl.load_host_script("defaults.py")

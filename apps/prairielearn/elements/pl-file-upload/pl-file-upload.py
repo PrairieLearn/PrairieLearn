@@ -5,7 +5,7 @@ from io import StringIO
 
 import chevron
 import lxml.html
-import prairielearn as pl
+import prairielearn.core as pl
 from prairielearn.colors import PLColor
 
 

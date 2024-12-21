@@ -3,7 +3,7 @@ import os
 
 import chevron
 import lxml.html
-import prairielearn as pl
+import prairielearn.core as pl
 
 SOURCE_FILE_NAME_DEFAULT = None
 SUBMITTED_FILE_NAME_DEFAULT = None

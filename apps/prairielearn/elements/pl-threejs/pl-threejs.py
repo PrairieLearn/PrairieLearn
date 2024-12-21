@@ -6,7 +6,7 @@ import os
 import chevron
 import lxml.html
 import numpy as np
-import prairielearn as pl
+import prairielearn.core as pl
 import pyquaternion
 
 BODY_POSITION_DEFAULT = [0, 0, 0]

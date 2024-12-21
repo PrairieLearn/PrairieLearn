@@ -9,7 +9,7 @@ from typing import Optional, TypedDict
 
 import chevron
 import lxml.html
-import prairielearn as pl
+import prairielearn.core as pl
 from dag_checker import grade_dag, lcs_partial_credit, solve_dag
 from lxml.etree import Comment
 from typing_extensions import NotRequired, assert_never

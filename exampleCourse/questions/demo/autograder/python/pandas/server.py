@@ -1,5 +1,5 @@
 import pandas as pd
-import prairielearn as pl
+import prairielearn.core as pl
 
 
 def generate(data):

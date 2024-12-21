@@ -3,7 +3,7 @@ from typing import Any
 import ansi2html.style as ansi2html_style
 import chevron
 import lxml.html
-import prairielearn as pl
+import prairielearn.core as pl
 from ansi2html import Ansi2HTMLConverter
 from prairielearn.colors import PLColor
 
