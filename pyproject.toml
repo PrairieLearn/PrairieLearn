@@ -21,11 +21,6 @@ target-version = "py310"
 extend-select = ["I", "N"]
 
 [tool.ruff.lint.per-file-ignores]
-# Only enforce naming convention for our files
-"exampleCourse/**" = ["N806", "N803", "N802", "N813"]
-"testCourse/**" = ["N806"]
-"graders/**" = ["N802", "N803", "N818", "N813", "N812"]
-
 # Files related to the Python autograder will often intentionally appear
 # broken in isolation. We'll allow specific errors in these files to
 # account for that.
@@ -39,13 +34,13 @@ extend-select = ["I", "N"]
 # Questions commonly use "ambiguous variable names" to represent specific
 # concepts, e.g. I for an identity matrix. We'll allow these to be used in
 # questions.
-"exampleCourse/questions/**/*.py" = ["E741"]
+"exampleCourse/questions/**/*.py" = ["E741", "N806", "N803"]
 # The zygote specifically uses imports in strange places to facilitate the
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
-# Ignore lowercase variables (e.g. G for a graph)
-"./apps/prairielearn/elements/**/*.py" = ["N806", "N803"]
-"./apps/prairielearn/python/*.py" = ["N806", "N803"]
+# Ignore uppercase variables (e.g. G for a graph)
+"apps/prairielearn/elements/**/*.py" = ["N806", "N803"]
+"apps/prairielearn/python/*.py" = ["N806", "N803"]
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",

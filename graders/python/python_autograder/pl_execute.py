@@ -11,10 +11,10 @@ import pl_helpers
 from faker import Faker
 
 
-class UserCodeFailed(Exception):
+class UserCodeFailedError(Exception):
     def __init__(self, err, *args):
         self.err = err
-        super(UserCodeFailed, self).__init__(err, *args)
+        super(UserCodeFailedError, self).__init__(err, *args)
 
 
 def set_random_seed(seed=None):
@@ -185,7 +185,7 @@ def execute_code(
     with open(path.join(filenames_dir, "test.py"), "w", encoding="utf-8") as f:
         f.write(str_test)
     if err is not None:
-        raise UserCodeFailed(err)
+        raise UserCodeFailedError(err)
 
     # Redirect stdout back to normal
     sys.stdout.flush()

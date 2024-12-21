@@ -8,10 +8,10 @@ def generate(data):
     # The parameters for the second figure are randomized
     dimension = random.randint(1, 4)
 
-    shapeNames = ["circle", "square", "rectangle"]
-    random.shuffle(shapeNames)
+    shape_names = ["circle", "square", "rectangle"]
+    random.shuffle(shape_names)
 
-    shape_c, shape_x1, shape_x2 = shapeNames
+    shape_c, shape_x1, shape_x2 = shape_names
 
     data["params"]["shapeName"] = shape_c
     data["params"]["dimension"] = dimension
