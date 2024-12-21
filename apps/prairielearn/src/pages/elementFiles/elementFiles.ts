@@ -59,7 +59,7 @@ export default function (options = { publicQuestionEndpoint: false, coreElements
 
       let elementFilesDir: string;
       if (options.coreElements) {
-        elementFilesDir = path.join(APP_ROOT_PATH, 'elements');
+        elementFilesDir = path.join(APP_ROOT_PATH, 'python', 'elements');
       } else if (options.publicQuestionEndpoint) {
         const has_publicly_shared_question = await sqldb.queryRow(
           sql.select_has_publicly_shared_question,
