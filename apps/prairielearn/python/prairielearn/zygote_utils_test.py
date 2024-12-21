@@ -2,6 +2,7 @@ import json
 from typing import Any
 
 import pytest
+
 import prairielearn.zygote_utils as zu
 
 

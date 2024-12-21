@@ -78,8 +78,9 @@ import matplotlib.font_manager
 import nltk
 import numpy
 import pint
-import prairielearn
 import sklearn
+
+import prairielearn
 
 matplotlib.use("PDF")
 

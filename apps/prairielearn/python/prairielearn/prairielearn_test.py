@@ -9,8 +9,9 @@ import lxml.html
 import networkx as nx
 import numpy as np
 import pandas as pd
-import prairielearn as pl
 import pytest
+
+import prairielearn as pl
 
 
 def city_dataframe() -> pd.DataFrame:

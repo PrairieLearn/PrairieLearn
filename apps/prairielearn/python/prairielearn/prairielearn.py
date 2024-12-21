@@ -20,14 +20,15 @@ import lxml.html
 import networkx as nx
 import numpy as np
 import pandas
-import prairielearn.python_helper_sympy as phs
 import sympy
-from prairielearn import to_precision
-from prairielearn.colors import PLColor
 from numpy.typing import ArrayLike
 from pint import UnitRegistry
 from text_unidecode import unidecode
 from typing_extensions import NotRequired, assert_never
+
+import prairielearn.python_helper_sympy as phs
+from prairielearn import to_precision
+from prairielearn.colors import PLColor
 
 
 class PartialScore(TypedDict):

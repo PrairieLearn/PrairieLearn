@@ -1,4 +1,5 @@
 import pytest
+
 from prairielearn.check_data import check_data
 
 

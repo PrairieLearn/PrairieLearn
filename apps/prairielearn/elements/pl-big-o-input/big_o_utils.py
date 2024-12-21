@@ -1,5 +1,4 @@
 from typing import Callable, List, Tuple
-import sys
 
 import prairielearn.python_helper_sympy as phs
 import sympy

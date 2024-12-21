@@ -5,7 +5,6 @@ from collections import deque
 from dataclasses import dataclass
 from tokenize import TokenError
 from typing import Any, Callable, Literal, Type, TypedDict, cast
-from text_unidecode import unidecode
 
 import sympy
 from sympy.parsing.sympy_parser import (
@@ -14,6 +13,7 @@ from sympy.parsing.sympy_parser import (
     standard_transformations,
     stringify_expr,
 )
+from text_unidecode import unidecode
 from typing_extensions import NotRequired
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
