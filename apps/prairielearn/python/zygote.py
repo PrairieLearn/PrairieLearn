@@ -28,9 +28,8 @@ from importlib.abc import MetaPathFinder
 from inspect import signature
 from typing import Any, Iterable, Sequence
 
-# Pre-load the prairielearn module
-import prairielearn.question_phases
 import prairielearn.zygote_utils as zu
+from prairielearn import question_phases
 
 saved_path = copy.copy(sys.path)
 
@@ -80,9 +79,8 @@ import matplotlib.font_manager
 import nltk
 import numpy
 import pint
-import sklearn
-
 import prairielearn
+import sklearn
 
 matplotlib.use("PDF")
 
