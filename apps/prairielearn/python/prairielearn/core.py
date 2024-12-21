@@ -20,10 +20,15 @@ import lxml.html
 import networkx as nx
 import numpy as np
 import pandas
-import python_helper_sympy as phs
+try:
+    import python_helper_sympy as phs
+    from colors import PLColor
+    import to_precision
+except ImportError:
+    import prairielearn.python_helper_sympy as phs
+    from prairielearn.colors import PLColor
+    import prairielearn.to_precision as to_precision
 import sympy
-import to_precision
-from colors import PLColor
 from numpy.typing import ArrayLike
 from pint import UnitRegistry
 from text_unidecode import unidecode

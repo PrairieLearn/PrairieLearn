@@ -81,29 +81,32 @@ include = [
     "./apps/prairielearn/elements/pl-variable-output",
     "./apps/prairielearn/elements/pl-workspace",
     "./apps/prairielearn/elements/pl-xss-safe",
-    "./apps/prairielearn/python/prairielearn/check_data_test.py",
     "./apps/prairielearn/python/prairielearn/check_data.py",
-    "./apps/prairielearn/python/prairielearn/colors_test.py",
     "./apps/prairielearn/python/prairielearn/colors.py",
-    "./apps/prairielearn/python/prairielearn/conftest.py",
-    "./apps/prairielearn/python/prairielearn/prairielearn_test.py",
     "./apps/prairielearn/python/prairielearn/core.py",
-    "./apps/prairielearn/python/prairielearn/python_helper_sympy_test.py",
     "./apps/prairielearn/python/prairielearn/python_helper_sympy.py",
     "./apps/prairielearn/python/prairielearn/question_phases.py",
-    "./apps/prairielearn/python/prairielearn/traverse_test.py",
     "./apps/prairielearn/python/prairielearn/traverse.py",
     "./apps/prairielearn/python/prairielearn/zygote.py",
     "./apps/prairielearn/python/prairielearn/zygote_utils.py",
-    "./apps/prairielearn/python/prairielearn/zygote_utils_test.py",
+    "./apps/prairielearn/python/test/check_data_test.py",
+    "./apps/prairielearn/python/test/colors_test.py",
+    "./apps/prairielearn/python/test/python_helper_sympy_test.py",
+    "./apps/prairielearn/python/test/conftest.py",
+    "./apps/prairielearn/python/test/core_test.py",
+    "./apps/prairielearn/python/test/traverse_test.py",
+    "./apps/prairielearn/python/test/zygote_utils_test.py",
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
 reportUnnecessaryTypeIgnoreComment = "error"
 
 [tool.pytest.ini_options]
+pythonpath = [
+    "apps/prairielearn/python"
+]
 addopts = "--cov=apps"
 testpaths = [
     "apps/prairielearn/elements",
-    "apps/prairielearn/python/prairielearn"
+    "apps/prairielearn/python/test"
 ]

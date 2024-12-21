@@ -5,7 +5,7 @@ import string
 from enum import Enum
 from typing import Any, Callable, cast
 
-import core as pl
+import prairielearn.core as pl
 import lxml.html
 import networkx as nx
 import numpy as np

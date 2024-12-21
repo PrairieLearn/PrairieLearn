@@ -1,6 +1,6 @@
 from typing import List
 
-from traverse import (
+from prairielearn.traverse import (
     ElementReplacement,
     traverse_and_execute,
     traverse_and_replace,
