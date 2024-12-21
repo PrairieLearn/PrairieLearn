@@ -5,11 +5,11 @@ import string
 from enum import Enum
 from typing import Any, Callable, cast
 
-import prairielearn.core as pl
 import lxml.html
 import networkx as nx
 import numpy as np
 import pandas as pd
+import prairielearn.core as pl
 import pytest
 
 

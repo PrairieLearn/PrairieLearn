@@ -2,8 +2,8 @@ import json
 from itertools import chain, repeat
 from typing import Any, Optional
 
-import pytest
 import prairielearn.python_helper_sympy as phs
+import pytest
 import sympy
 
 
