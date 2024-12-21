@@ -67,14 +67,17 @@ plugins:
       default_handler: python
       handlers:
         python:
-          paths: [apps/prairielearn/python, apps/prairielearn/elements]
+          paths:
+            - apps/prairielearn/python
+            - apps/prairielearn/elements
+            - graders/python/python_autograder
           options:
             show_root_heading: true
             summary:
               attributes: false
             show_source: true
             show_bases: false # e.g. 'TypedDict'
-            show_labels: false # e.g. 'instance-attribute'
+            show_labels: true # e.g. 'instance-attribute'
             modernize_annotations: true # e.g. 'Optional[int]' -> 'int | None'
 
             members_order: source
@@ -166,6 +169,7 @@ nav:
       - 'Element for drawing': 'pl-drawing/index.md'
       - 'External grading': 'externalGrading.md'
       - 'Python autograder': 'python-grader/index.md'
+      - 'New Python autograder': 'python-grader/new.md'
       - 'C/C++ autograder': 'c-grader/index.md'
       - 'Java autograder': 'java-grader/index.md'
       - 'Workspaces': 'workspaces/index.md'
@@ -185,6 +189,7 @@ nav:
       - 'Code execution': 'codeExecution.md'
       - 'Docker packaging': 'docker.md'
       - 'Contributing to PL development': 'contributing.md'
+      - 'Python Reference': 'python-reference/index.md'
   - Administrators:
       - 'SAML SSO configuration': 'saml.md'
       - 'LTI 1.3 configuration': 'lti13.md'
