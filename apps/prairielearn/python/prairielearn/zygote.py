@@ -29,6 +29,7 @@ from inspect import signature
 from typing import Any, Iterable, Sequence
 
 import question_phases
+
 import prairielearn.zygote_utils as zu
 
 saved_path = copy.copy(sys.path)
