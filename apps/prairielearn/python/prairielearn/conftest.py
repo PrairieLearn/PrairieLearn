@@ -1,6 +1,4 @@
 import pytest
-import sys
-print(sys.path)
 from prairielearn import QuestionData
 
 
