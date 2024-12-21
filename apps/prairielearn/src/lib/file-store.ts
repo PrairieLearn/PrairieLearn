@@ -151,7 +151,7 @@ export async function getFile(
 
 export async function getFile(
   file_id: number | string,
-  data_type: 'buffer',
+  data_type?: 'buffer',
 ): Promise<{
   contents: Buffer;
   file: File;
