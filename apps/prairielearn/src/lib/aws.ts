@@ -159,7 +159,7 @@ export async function getFromS3(
   key: string,
   buffer = true,
 ): Promise<Buffer | GetObjectOutput['Body']> {
-  const s3 = new S3(makeS3ClientConfig());
+  const s3 = new S3(makeS3ClientConfig()) as NodeJsClient<S3>;
   const res = await s3.getObject({ Bucket: bucket, Key: key });
   if (!res.Body) throw new Error('No data returned from S3');
   logger.verbose(`Fetched data from s3://${bucket}/${key}`);
