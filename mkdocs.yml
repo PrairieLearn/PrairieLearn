@@ -169,7 +169,6 @@ nav:
       - 'Element for drawing': 'pl-drawing/index.md'
       - 'External grading': 'externalGrading.md'
       - 'Python autograder': 'python-grader/index.md'
-      - 'New Python autograder': 'python-grader/new.md'
       - 'C/C++ autograder': 'c-grader/index.md'
       - 'Java autograder': 'java-grader/index.md'
       - 'Workspaces': 'workspaces/index.md'
@@ -208,7 +207,8 @@ not_in_nav: |
   workshop/lesson3.md
   workshop/lesson4.md
   workshop/lesson5.md
-  python-grader/sphinx-docs.md
+  python-grader/reference-docs.md
+  elements/reference-links.md
 
 validation:
   omitted_files: warn
