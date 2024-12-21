@@ -13,8 +13,8 @@ code {
   text-align: left;
 }
 
-/* Prevent wrapping attributes inside tables */
-td code {
+/* Prevent wrapping attributes inside tables, but not mkdocstrings */
+td:not(.code) code {
   white-space: nowrap;
 }
 
