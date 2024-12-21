@@ -1,9 +1,6 @@
 from typing import Any
 
-try:
-    import core as pl
-except ImportError:
-    import prairielearn.core as pl
+import prairielearn.core as pl
 
 def safe_parse_int(int_str: str) -> int | float:
     """

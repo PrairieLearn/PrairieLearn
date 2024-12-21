@@ -21,14 +21,9 @@ import networkx as nx
 import numpy as np
 import pandas
 
-try:
-    import python_helper_sympy as phs
-    import to_precision
-    from colors import PLColor
-except ImportError:
-    import prairielearn.python_helper_sympy as phs
-    import prairielearn.to_precision as to_precision
-    from prairielearn.colors import PLColor
+import prairielearn.python_helper_sympy as phs
+import prairielearn.to_precision as to_precision
+from prairielearn.colors import PLColor
 import sympy
 from numpy.typing import ArrayLike
 from pint import UnitRegistry

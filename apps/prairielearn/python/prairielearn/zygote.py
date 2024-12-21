@@ -29,7 +29,7 @@ from inspect import signature
 from typing import Any, Iterable, Sequence
 
 import question_phases
-import zygote_utils as zu
+import prairielearn.zygote_utils as zu
 
 saved_path = copy.copy(sys.path)
 
@@ -67,6 +67,8 @@ logging.getLogger("matplotlib.font_manager").disabled = True
 
 # Pre-load commonly used modules
 sys.path.insert(0, os.path.abspath("../question-servers/freeformPythonLib"))
+# Pre-load the prairielearn module
+sys.path.insert(0, os.path.abspath("../../python"))
 import html
 import math
 import random
