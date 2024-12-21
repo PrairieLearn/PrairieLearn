@@ -483,7 +483,7 @@ Example of valid HTML:
 
 ## Options for grading student answers
 
-For most elements, there are four different ways of auto-grading the student answer. This applies to elements like [`pl-number-input`](elements.md#pl-number-input-element) and [`pl-string-input`](elements.md#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](elements.md#pl-multiple-choice-element) or [`pl-checkbox`](elements.md#pl-checkbox-element) that are much more constrained. The four ways are:
+For most elements, there are four different ways of auto-grading the student answer. This applies to elements like [`pl-number-input`](elements/submission-elements.md#pl-number-input-element) and [`pl-string-input`](elements/submission-elements.md#pl-string-input-element) that allow students to input an answer of their choosing, but not [`pl-multiple-choice`](elements/submission-elements.md#pl-multiple-choice-element) or [`pl-checkbox`](elements/submission-elements.md#pl-checkbox-element) that are much more constrained. The four ways are:
 
 1. Set the correct answer using the correct-answer attributes for each element in `question.html`. This will use the built-in grading methods for each element. Given that this option is typically used for answers with a hard-coded value, without randomization, it is not expected to be used frequently.
 
@@ -493,7 +493,7 @@ For most elements, there are four different ways of auto-grading the student ans
 
 4. Write an [external grader](externalGrading.md), though this is typically applied to more complex questions like coding.
 
-If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements.md#pl-answer-panel-element) that any correct answer would be accepted and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
+If a question has more than one of the above options, each of them overrides the one before it. Even if options 3 (custom grade function) or 4 (external grader) are used, then it can still be helpful to set a correct answer so that it is shown to students as a sample of what would be accepted. If there are multiple correct answers then it's probably a good idea to add a note with [`pl-answer-panel`](elements/conditional-elements.md#pl-answer-panel-element) that any correct answer would be accepted and the displayed answer is only an example. Moreover, if there is no relevant information to display on the correct answer panel (i.e., a question has multiple correct answers and is meant to be attempted until a full score is achieved), then the panel can be hidden by setting `showCorrectAnswer: false` in `info.json`.
 
 ### Custom grading best practices
 
