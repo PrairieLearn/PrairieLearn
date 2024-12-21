@@ -345,7 +345,7 @@ That question would be rendered like this:
 
 A few special behaviors have been added to enable Markdown to work better within the PrairieLearn ecosystem, as described below.
 
-## Markdown code blocks
+### Markdown code blocks
 
 Fenced code blocks (those using triple-backticks <code>\`\`\`</code>) are rendered as `<pl-code>` elements, which will then be rendered as usual by PrairieLearn. These blocks support specifying language and highlighted lines, which are then passed to the resulting `<pl-code>` element. Consider the following markdown:
 
@@ -372,7 +372,20 @@ int m = 4;
 </pl-code>
 ```
 
-## Escaping `<markdown>` tags
+## Using LaTeX in questions
+
+PrairieLearn supports LaTeX equations in questions. You can view a full list of supported MathJax commands [here](https://docs.mathjax.org/en/latest/input/tex/macros/index.html).
+
+Inline equations can be written using `$x^2$`, and display equations can be written using `$$x^2$$` or `\[x^2\]`. For example:
+
+```html
+<p>Here is some inline math: $x^2$. Here is some display math: $$x^2$$</p>
+<p>What is the total force $F$ currently acting on the particle?</p>
+```
+
+![](images/latex.png)
+
+### Escaping `<markdown>` tags
 
 Under the hood, PrairieLearn is doing some very simple parsing to determine what pieces of a question to process as Markdown: it finds an opening `<markdown>` tag and processes everything up to the closing `</markdown>` tag. But what if you want to have a literal `<markdown>` or `</markdown>` tag in your question? PrairieLearn defines a special escape syntax to enable this. If you have `<markdown#>` or `</markdown#>` in a Markdown block, they will be renderd as `<markdown>` and `</markdown>` respectively (but will not be used to find regions of text to process as Markdown). You can use more hashes to produce different strings: for instance, to have `<markdown###>` show up in the output, write `<markdown####>` in your question.
 
