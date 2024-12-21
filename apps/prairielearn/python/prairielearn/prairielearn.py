@@ -22,7 +22,7 @@ import numpy as np
 import pandas
 import prairielearn.python_helper_sympy as phs
 import sympy
-import prairielearn.to_precision
+from prairielearn import to_precision
 from prairielearn.colors import PLColor
 from numpy.typing import ArrayLike
 from pint import UnitRegistry
