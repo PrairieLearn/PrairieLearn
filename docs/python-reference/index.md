@@ -1,5 +1,5 @@
 <!-- prettier-ignore -->
-::: prairielearn
+::: prairielearn.core
     options:
         members:
             - QuestionData

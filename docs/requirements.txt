@@ -5,3 +5,4 @@ mkdocs-material>=9.5.47
 mkdocs-d2-plugin==1.6.0
 mkdocstrings==0.27.0
 mkdocstrings-python==1.12.2
+black==24.10.0
