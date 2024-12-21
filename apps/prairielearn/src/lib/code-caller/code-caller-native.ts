@@ -335,7 +335,7 @@ export class CodeCallerNative implements CodeCaller {
     this._checkState([CREATED]);
 
     const cmd = 'python3';
-    const pythonZygote = path.join(APP_ROOT_PATH, 'python', 'prairielearn', 'zygote.py');
+    const pythonZygote = path.join(APP_ROOT_PATH, 'python', 'zygote.py');
     const args = ['-B', pythonZygote];
     const env = _.clone(process.env);
     // PYTHONIOENCODING might not be needed once we switch to Python 3.7

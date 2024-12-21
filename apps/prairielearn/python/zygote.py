@@ -29,7 +29,6 @@ from inspect import signature
 from typing import Any, Iterable, Sequence
 
 # Pre-load the prairielearn module
-sys.path.insert(0, os.path.abspath("../../python"))
 import prairielearn.question_phases
 import prairielearn.zygote_utils as zu
 
