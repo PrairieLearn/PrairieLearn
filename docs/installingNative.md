@@ -51,7 +51,13 @@ Now you can install the other dependencies.
 
     Node.js 20 is not available in the default Ubuntu repositories -- you can install it through [nvm](https://github.com/nvm-sh/nvm).
 
-    You can install yarn through npm:
+    ```sh
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.1/install.sh | bash
+    source ~/.bashrc # or your shell's equivalent
+    nvm install 20
+    ```
+
+    You can then install yarn through npm:
 
     ```sh
     npm install -g yarn
