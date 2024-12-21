@@ -1,8 +1,8 @@
 # Element developer guide
 
-See [`elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/elements) for example elements.
+See [`python/elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/python/elements) for example elements.
 
-Element code uses the libraries in [the `python/` module](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/python).
+Element code uses the libraries in [the `python/prairielearn` module](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/python/prairielearn).
 
 ## Anatomy of an element
 
