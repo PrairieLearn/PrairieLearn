@@ -68,7 +68,7 @@ plugins:
       handlers:
         python:
           paths:
-            - apps/prairielearn/python
+            - apps/prairielearn/python/prairielearn
             - apps/prairielearn/elements
             - graders/python/python_autograder
           options:

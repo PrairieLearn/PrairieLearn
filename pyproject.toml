@@ -97,7 +97,7 @@ include = [
     "./apps/prairielearn/python/zygote_utils.py",
     "./apps/prairielearn/python/zygote_utils_test.py",
 ]
-extraPaths = ["./apps/prairielearn/python"]
+extraPaths = []
 pythonVersion = "3.10"
 reportUnnecessaryTypeIgnoreComment = "error"
 
@@ -105,5 +105,5 @@ reportUnnecessaryTypeIgnoreComment = "error"
 addopts = "--cov=apps"
 testpaths = [
     "apps/prairielearn/elements",
-    "apps/prairielearn/python",
+    "apps/prairielearn/python/prairielearn"
 ]

@@ -1,6 +1,6 @@
 import big_o_utils as bou
 import pytest
-import python_helper_sympy as phs
+import prairielearn.python_helper_sympy as phs
 
 VARIABLES = ["n"]
 

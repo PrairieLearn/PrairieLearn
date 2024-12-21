@@ -5,8 +5,8 @@ from collections import deque
 from dataclasses import dataclass
 from tokenize import TokenError
 from typing import Any, Callable, Literal, Type, TypedDict, cast
+from text_unidecode import unidecode
 
-import prairielearn as pl
 import sympy
 from sympy.parsing.sympy_parser import (
     eval_expr,
@@ -388,7 +388,7 @@ def evaluate_with_source(
 ) -> tuple[sympy.Expr, str]:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
-    expr = pl.full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
+    expr = unidecode(greek_unicode_transform(expr).replace("\u2212", "-")).replace("^", "**")
 
     local_dict = {
         k: v
