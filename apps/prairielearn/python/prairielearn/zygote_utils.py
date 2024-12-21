@@ -2,6 +2,7 @@ from typing import Any
 
 import prairielearn.core as pl
 
+
 def safe_parse_int(int_str: str) -> int | float:
     """
     Parses a JSON string. If the string contains an integer that is too large,
