@@ -87,7 +87,7 @@ include = [
     "./apps/prairielearn/python/prairielearn/colors.py",
     "./apps/prairielearn/python/prairielearn/conftest.py",
     "./apps/prairielearn/python/prairielearn/prairielearn_test.py",
-    "./apps/prairielearn/python/prairielearn/prairielearn.py",
+    "./apps/prairielearn/python/prairielearn/core.py",
     "./apps/prairielearn/python/prairielearn/python_helper_sympy_test.py",
     "./apps/prairielearn/python/prairielearn/python_helper_sympy.py",
     "./apps/prairielearn/python/prairielearn/question_phases.py",

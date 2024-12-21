@@ -3,9 +3,8 @@ from itertools import chain, repeat
 from typing import Any, Optional
 
 import pytest
+import python_helper_sympy as phs
 import sympy
-
-import prairielearn.python_helper_sympy as phs
 
 
 def test_evaluate() -> None:

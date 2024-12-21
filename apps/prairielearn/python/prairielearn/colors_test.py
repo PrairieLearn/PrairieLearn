@@ -1,7 +1,6 @@
 import pytest
 from coloraide import Color as Base
-
-from prairielearn.colors import PLColor, get_css_color
+from colors import PLColor, get_css_color
 
 
 @pytest.mark.parametrize(

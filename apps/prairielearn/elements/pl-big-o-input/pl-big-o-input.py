@@ -4,7 +4,7 @@ from enum import Enum
 import big_o_utils as bou
 import chevron
 import lxml.html
-import prairielearn.prairielearn as pl
+import prairielearn.core as pl
 import prairielearn.python_helper_sympy as phs
 import sympy
 from typing_extensions import assert_never

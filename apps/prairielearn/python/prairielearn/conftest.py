@@ -1,6 +1,5 @@
 import pytest
-
-from prairielearn import QuestionData
+from core import QuestionData
 
 
 @pytest.fixture

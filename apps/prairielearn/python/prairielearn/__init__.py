@@ -1,1 +1,1 @@
-from prairielearn.prairielearn import *  # noqa: F403
+from prairielearn.core import *  # noqa: F403
