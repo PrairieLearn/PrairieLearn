@@ -1,7 +1,7 @@
 [tool.ruff]
 include = [
     "./apps/prairielearn/elements/**/*.py",
-    "./apps/prairielearn/python/*.py",
+    "./apps/prairielearn/python/**.py",
     "./graders/**/*.py",
     "./exampleCourse/**/*.py",
     "./testCourse/**/*.py"
