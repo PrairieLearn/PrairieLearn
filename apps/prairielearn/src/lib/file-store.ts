@@ -11,7 +11,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { uploadToS3, getFromS3 } from './aws.js';
 import { config } from './config.js';
-import { IdSchema } from './db-types.js';
+import { type File, FileSchema, IdSchema } from './db-types.js';
 
 const debug = debugfn('prairielearn:socket-server');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -146,7 +146,7 @@ export async function getFile(
   data_type: 'stream',
 ): Promise<{
   contents: ReadStream;
-  file: any;
+  file: File;
 }>;
 
 export async function getFile(
@@ -154,7 +154,7 @@ export async function getFile(
   data_type: 'buffer',
 ): Promise<{
   contents: Buffer;
-  file: any;
+  file: File;
 }>;
 /**
  * Get a file from the file store.
@@ -167,28 +167,28 @@ export async function getFile(
   data_type = 'buffer',
 ): Promise<{
   contents: Buffer | GetObjectOutput['Body'] | ReadStream;
-  file: any;
+  file: File;
 }> {
   debug(`get(): file_id=${file_id}`);
   const params = { file_id };
-  const result = await sqldb.queryZeroOrOneRowAsync(sql.select_file, params);
+  const result = await sqldb.queryOptionalRow(sql.select_file, params, FileSchema);
   debug('get(): got row from DB');
 
   let buffer: Buffer | GetObjectOutput['Body'];
   let readStream: Buffer | GetObjectOutput['Body'] | ReadStream;
 
-  if (result.rows.length < 1) {
+  if (result === null) {
     throw new Error(`No file with file_id ${file_id}`);
   }
 
-  if (result.rows[0].storage_type === StorageTypes.FileSystem) {
+  if (result.storage_type === StorageTypes.FileSystem) {
     if (config.filesRoot == null) {
       throw new Error(
         `config.filesRoot must be non-null to get file_id ${file_id} from file store`,
       );
     }
 
-    const filename = path.join(config.filesRoot, result.rows[0].storage_filename);
+    const filename = path.join(config.filesRoot, result.storage_filename);
 
     if (data_type === 'buffer') {
       debug(`get(): readFile ${filename} and return object with contents buffer and file object`);
@@ -201,7 +201,7 @@ export async function getFile(
     }
   }
 
-  if (result.rows[0].storage_type === StorageTypes.S3) {
+  if (result.storage_type === StorageTypes.S3) {
     if (config.fileStoreS3Bucket == null) {
       throw new Error(
         `config.fileStoreS3Bucket must be configured to get file_id ${file_id} from file store`,
@@ -210,18 +210,14 @@ export async function getFile(
 
     if (data_type === 'buffer') {
       debug(
-        `get(): s3 fetch file ${result.rows[0].storage_filename} from ${config.fileStoreS3Bucket} and return object with contents buffer and file object`,
+        `get(): s3 fetch file ${result.storage_filename} from ${config.fileStoreS3Bucket} and return object with contents buffer and file object`,
       );
-      buffer = await getFromS3(config.fileStoreS3Bucket, result.rows[0].storage_filename);
+      buffer = await getFromS3(config.fileStoreS3Bucket, result.storage_filename);
     } else {
       debug(
-        `get(): s3 fetch stream ${result.rows[0].storage_filename} from ${config.fileStoreS3Bucket} and return object with contents stream and file object`,
+        `get(): s3 fetch stream ${result.storage_filename} from ${config.fileStoreS3Bucket} and return object with contents stream and file object`,
       );
-      readStream = await getFromS3(
-        config.fileStoreS3Bucket,
-        result.rows[0].storage_filename,
-        false,
-      );
+      readStream = await getFromS3(config.fileStoreS3Bucket, result.storage_filename, false);
     }
   }
 
@@ -231,6 +227,6 @@ export async function getFile(
   }
   return {
     contents,
-    file: result.rows[0],
+    file: result,
   };
 }
