@@ -36,16 +36,16 @@ elements = {}
 
 
 class BaseElement:
-    def generate(element, data):
+    def generate(self, data):
         return {}
 
     def is_gradable():
         return False
 
-    def grade(ref, student, tol, angtol):
+    def grade(self, student, tol, angtol):
         return True
 
-    def grading_name(element):
+    def grading_name(self):
         return None
 
     def validate_attributes():
@@ -59,29 +59,29 @@ class BaseElement:
 
 
 class ControlledLine(BaseElement):
-    def generate(el, data):
-        if "draw-error-box" in el.attrib:
-            obj_draw = el.attrib["draw-error-box"] == "true"
+    def generate(self, data):
+        if "draw-error-box" in self.attrib:
+            obj_draw = self.attrib["draw-error-box"] == "true"
         else:
             obj_draw = None
 
-        offset_x = pl.get_float_attrib(el, "offset-tol-x", 0)
-        offset_y = pl.get_float_attrib(el, "offset-tol-y", 0)
-        grid_size = pl.get_integer_attrib(el, "grid-size", 20)
-        tol = pl.get_float_attrib(el, "tol", grid_size / 2)
+        offset_x = pl.get_float_attrib(self, "offset-tol-x", 0)
+        offset_y = pl.get_float_attrib(self, "offset-tol-y", 0)
+        grid_size = pl.get_integer_attrib(self, "grid-size", 20)
+        tol = pl.get_float_attrib(self, "tol", grid_size / 2)
 
         # Defining the error boxes for end points
         wbox = 2 * tol + 2 * offset_x
         hbox = 2 * tol + 2 * offset_y
 
         return {
-            "x1": pl.get_float_attrib(el, "x1", 20),
-            "x2": pl.get_float_attrib(el, "x2", 40),
-            "y1": pl.get_float_attrib(el, "y1", 40),
-            "y2": pl.get_float_attrib(el, "y2", 40),
-            "stroke": pl.get_color_attrib(el, "color", "red"),
-            "strokeWidth": pl.get_float_attrib(el, "stroke-width", 4),
-            "handleRadius": pl.get_float_attrib(el, "handle-radius", 6),
+            "x1": pl.get_float_attrib(self, "x1", 20),
+            "x2": pl.get_float_attrib(self, "x2", 40),
+            "y1": pl.get_float_attrib(self, "y1", 40),
+            "y2": pl.get_float_attrib(self, "y2", 40),
+            "stroke": pl.get_color_attrib(self, "color", "red"),
+            "strokeWidth": pl.get_float_attrib(self, "stroke-width", 4),
+            "handleRadius": pl.get_float_attrib(self, "handle-radius", 6),
             "objectDrawErrorBox": obj_draw,
             "widthErrorBox": wbox,
             "heightErrorBox": hbox,
@@ -92,22 +92,22 @@ class ControlledLine(BaseElement):
     def is_gradable():
         return True
 
-    def grade(ref, st, tol, angtol):
+    def grade(self, st, tol, angtol):
         ex1, ex2 = st["x1"], st["x2"]
         ey1, ey2 = st["y1"], st["y2"]
-        rx1, rx2 = ref["x1"], ref["x2"]
-        ry1, ry2 = ref["y1"], ref["y2"]
+        rx1, rx2 = self["x1"], self["x2"]
+        ry1, ry2 = self["y1"], self["y2"]
         # Check endpoints (any order)
         return (
-            abserr(ex1, rx1) <= ref["offset_x"] + tol
-            and abserr(ey1, ry1) <= ref["offset_y"] + tol
-            and abserr(ex2, rx2) <= ref["offset_x"] + tol
-            and abserr(ey2, ry2) <= ref["offset_y"] + tol
+            abserr(ex1, rx1) <= self["offset_x"] + tol
+            and abserr(ey1, ry1) <= self["offset_y"] + tol
+            and abserr(ex2, rx2) <= self["offset_x"] + tol
+            and abserr(ey2, ry2) <= self["offset_y"] + tol
         ) or (
-            abserr(ex1, rx2) <= ref["offset_x"] + tol
-            and abserr(ey1, ry2) <= ref["offset_y"] + tol
-            and abserr(ex2, rx1) <= ref["offset_x"] + tol
-            and abserr(ey2, ry1) <= ref["offset_y"] + tol
+            abserr(ex1, rx2) <= self["offset_x"] + tol
+            and abserr(ey1, ry2) <= self["offset_y"] + tol
+            and abserr(ex2, rx1) <= self["offset_x"] + tol
+            and abserr(ey2, ry1) <= self["offset_y"] + tol
         )
 
     def get_attributes():
@@ -130,18 +130,18 @@ class ControlledLine(BaseElement):
 
 
 class ControlledCurvedLine(BaseElement):
-    def generate(el, data):
-        if "draw-error-box" in el.attrib:
-            obj_draw = el.attrib["draw-error-box"] == "true"
+    def generate(self, data):
+        if "draw-error-box" in self.attrib:
+            obj_draw = self.attrib["draw-error-box"] == "true"
         else:
             obj_draw = None
 
-        offset_x = pl.get_float_attrib(el, "offset-tol-x", 0)
-        offset_y = pl.get_float_attrib(el, "offset-tol-y", 0)
-        offset_control_x = pl.get_float_attrib(el, "offset-control-tol-x", 0)
-        offset_control_y = pl.get_float_attrib(el, "offset-control-tol-y", 0)
-        grid_size = pl.get_integer_attrib(el, "grid-size", 20)
-        tol = pl.get_float_attrib(el, "tol", grid_size / 2)
+        offset_x = pl.get_float_attrib(self, "offset-tol-x", 0)
+        offset_y = pl.get_float_attrib(self, "offset-tol-y", 0)
+        offset_control_x = pl.get_float_attrib(self, "offset-control-tol-x", 0)
+        offset_control_y = pl.get_float_attrib(self, "offset-control-tol-y", 0)
+        grid_size = pl.get_integer_attrib(self, "grid-size", 20)
+        tol = pl.get_float_attrib(self, "tol", grid_size / 2)
 
         # Defining the error boxes for end points
         wbox = 2 * tol + 2 * offset_x
@@ -151,15 +151,15 @@ class ControlledCurvedLine(BaseElement):
         hbox_c = 2 * tol + 2 * offset_control_y
 
         return {
-            "x1": pl.get_float_attrib(el, "x1", 20),
-            "y1": pl.get_float_attrib(el, "y1", 40),
-            "x3": pl.get_float_attrib(el, "x2", 60),
-            "y3": pl.get_float_attrib(el, "y2", 40),
-            "x2": pl.get_float_attrib(el, "x3", 40),
-            "y2": pl.get_float_attrib(el, "y3", 60),
-            "stroke": pl.get_color_attrib(el, "color", "red"),
-            "strokeWidth": pl.get_float_attrib(el, "stroke-width", 4),
-            "handleRadius": pl.get_float_attrib(el, "handle-radius", 6),
+            "x1": pl.get_float_attrib(self, "x1", 20),
+            "y1": pl.get_float_attrib(self, "y1", 40),
+            "x3": pl.get_float_attrib(self, "x2", 60),
+            "y3": pl.get_float_attrib(self, "y2", 40),
+            "x2": pl.get_float_attrib(self, "x3", 40),
+            "y2": pl.get_float_attrib(self, "y3", 60),
+            "stroke": pl.get_color_attrib(self, "color", "red"),
+            "strokeWidth": pl.get_float_attrib(self, "stroke-width", 4),
+            "handleRadius": pl.get_float_attrib(self, "handle-radius", 6),
             "objectDrawErrorBox": obj_draw,
             "widthErrorBox": wbox,
             "heightErrorBox": hbox,
@@ -174,27 +174,27 @@ class ControlledCurvedLine(BaseElement):
     def is_gradable():
         return True
 
-    def grade(ref, st, tol, angtol):
+    def grade(self, st, tol, angtol):
         ex1, ex2, exm = st["x1"], st["x3"], st["x2"]
         ey1, ey2, eym = st["y1"], st["y3"], st["y2"]
-        rx1, rx2, rxm = ref["x1"], ref["x3"], ref["x2"]
-        ry1, ry2, rym = ref["y1"], ref["y3"], ref["y2"]
+        rx1, rx2, rxm = self["x1"], self["x3"], self["x2"]
+        ry1, ry2, rym = self["y1"], self["y3"], self["y2"]
         # Check endpoints (any order) and the mid control point
         b1 = (
-            abserr(ex1, rx1) <= ref["offset_x"] + tol
-            and abserr(ey1, ry1) <= ref["offset_y"] + tol
-            and abserr(ex2, rx2) <= ref["offset_x"] + tol
-            and abserr(ey2, ry2) <= ref["offset_y"] + tol
-            and abserr(exm, rxm) <= ref["offset_control_x"] + tol
-            and abserr(eym, rym) <= ref["offset_control_y"] + tol
+            abserr(ex1, rx1) <= self["offset_x"] + tol
+            and abserr(ey1, ry1) <= self["offset_y"] + tol
+            and abserr(ex2, rx2) <= self["offset_x"] + tol
+            and abserr(ey2, ry2) <= self["offset_y"] + tol
+            and abserr(exm, rxm) <= self["offset_control_x"] + tol
+            and abserr(eym, rym) <= self["offset_control_y"] + tol
         )
         b2 = (
-            abserr(ex1, rx2) <= ref["offset_x"] + tol
-            and abserr(ey1, ry2) <= ref["offset_y"] + tol
-            and abserr(ex2, rx1) <= ref["offset_x"] + tol
-            and abserr(ey2, ry1) <= ref["offset_y"] + tol
-            and abserr(exm, rxm) <= ref["offset_control_x"] + tol
-            and abserr(eym, rym) <= ref["offset_control_y"] + tol
+            abserr(ex1, rx2) <= self["offset_x"] + tol
+            and abserr(ey1, ry2) <= self["offset_y"] + tol
+            and abserr(ex2, rx1) <= self["offset_x"] + tol
+            and abserr(ey2, ry1) <= self["offset_y"] + tol
+            and abserr(exm, rxm) <= self["offset_control_x"] + tol
+            and abserr(eym, rym) <= self["offset_control_y"] + tol
         )
         return b1 or b2
 
@@ -218,25 +218,29 @@ class ControlledCurvedLine(BaseElement):
 
 
 class Roller(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "color", "brown1")
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "color", "brown1")
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
         return {
-            "x1": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
-            "y1": pl.get_float_attrib(el, "y1", drawing_defaults["y1"]),
-            "height": pl.get_float_attrib(el, "height", drawing_defaults["height"]),
-            "width": pl.get_float_attrib(el, "width", drawing_defaults["width"]),
-            "angle": pl.get_float_attrib(el, "angle", drawing_defaults["angle"]),
-            "label": pl.get_string_attrib(el, "label", drawing_defaults["label"]),
-            "offsetx": pl.get_float_attrib(el, "offsetx", drawing_defaults["offsetx"]),
-            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsety"]),
+            "x1": pl.get_float_attrib(self, "x1", drawing_defaults["x1"]),
+            "y1": pl.get_float_attrib(self, "y1", drawing_defaults["y1"]),
+            "height": pl.get_float_attrib(self, "height", drawing_defaults["height"]),
+            "width": pl.get_float_attrib(self, "width", drawing_defaults["width"]),
+            "angle": pl.get_float_attrib(self, "angle", drawing_defaults["angle"]),
+            "label": pl.get_string_attrib(self, "label", drawing_defaults["label"]),
+            "offsetx": pl.get_float_attrib(
+                self, "offsetx", drawing_defaults["offsetx"]
+            ),
+            "offsety": pl.get_float_attrib(
+                self, "offsety", drawing_defaults["offsety"]
+            ),
             "color": color,
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "drawPin": json.loads(pl.get_string_attrib(el, "draw-pin", "true")),
-            "drawGround": json.loads(pl.get_string_attrib(el, "draw-ground", "true")),
+            "drawPin": json.loads(pl.get_string_attrib(self, "draw-pin", "true")),
+            "drawGround": json.loads(pl.get_string_attrib(self, "draw-ground", "true")),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
@@ -260,21 +264,25 @@ class Roller(BaseElement):
 
 
 class Clamped(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "color", "black")
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "color", "black")
         return {
-            "x1": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
-            "y1": pl.get_float_attrib(el, "y1", drawing_defaults["y1"]),
-            "height": pl.get_float_attrib(el, "height", drawing_defaults["height"]),
-            "width": pl.get_float_attrib(el, "width", drawing_defaults["width"]),
-            "angle": pl.get_float_attrib(el, "angle", drawing_defaults["angle"]),
-            "label": pl.get_string_attrib(el, "label", drawing_defaults["label"]),
-            "offsetx": pl.get_float_attrib(el, "offsetx", drawing_defaults["offsetx"]),
-            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsety"]),
+            "x1": pl.get_float_attrib(self, "x1", drawing_defaults["x1"]),
+            "y1": pl.get_float_attrib(self, "y1", drawing_defaults["y1"]),
+            "height": pl.get_float_attrib(self, "height", drawing_defaults["height"]),
+            "width": pl.get_float_attrib(self, "width", drawing_defaults["width"]),
+            "angle": pl.get_float_attrib(self, "angle", drawing_defaults["angle"]),
+            "label": pl.get_string_attrib(self, "label", drawing_defaults["label"]),
+            "offsetx": pl.get_float_attrib(
+                self, "offsetx", drawing_defaults["offsetx"]
+            ),
+            "offsety": pl.get_float_attrib(
+                self, "offsety", drawing_defaults["offsety"]
+            ),
             "color": color,
-            "stroke": pl.get_string_attrib(el, "stroke-color", "black"),
+            "stroke": pl.get_string_attrib(self, "stroke-color", "black"),
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
@@ -296,25 +304,29 @@ class Clamped(BaseElement):
 
 
 class FixedPin(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "color", "brown1")
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "color", "brown1")
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
         obj = {
-            "x1": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
-            "y1": pl.get_float_attrib(el, "y1", drawing_defaults["y1"]),
-            "height": pl.get_float_attrib(el, "height", drawing_defaults["height"]),
-            "width": pl.get_float_attrib(el, "width", drawing_defaults["width"]),
-            "angle": pl.get_float_attrib(el, "angle", drawing_defaults["angle"]),
-            "label": pl.get_string_attrib(el, "label", drawing_defaults["label"]),
-            "offsetx": pl.get_float_attrib(el, "offsetx", drawing_defaults["offsetx"]),
-            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsety"]),
+            "x1": pl.get_float_attrib(self, "x1", drawing_defaults["x1"]),
+            "y1": pl.get_float_attrib(self, "y1", drawing_defaults["y1"]),
+            "height": pl.get_float_attrib(self, "height", drawing_defaults["height"]),
+            "width": pl.get_float_attrib(self, "width", drawing_defaults["width"]),
+            "angle": pl.get_float_attrib(self, "angle", drawing_defaults["angle"]),
+            "label": pl.get_string_attrib(self, "label", drawing_defaults["label"]),
+            "offsetx": pl.get_float_attrib(
+                self, "offsetx", drawing_defaults["offsetx"]
+            ),
+            "offsety": pl.get_float_attrib(
+                self, "offsety", drawing_defaults["offsety"]
+            ),
             "color": color,
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "drawPin": json.loads(pl.get_string_attrib(el, "draw-pin", "true")),
-            "drawGround": json.loads(pl.get_string_attrib(el, "draw-ground", "true")),
+            "drawPin": json.loads(pl.get_string_attrib(self, "draw-pin", "true")),
+            "drawGround": json.loads(pl.get_string_attrib(self, "draw-ground", "true")),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
@@ -339,35 +351,35 @@ class FixedPin(BaseElement):
 
 
 class Rod(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "color", "white")
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "color", "white")
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
         return {
-            "height": pl.get_float_attrib(el, "width", drawing_defaults["width-rod"]),
-            "x1": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
-            "y1": pl.get_float_attrib(el, "y1", drawing_defaults["y1"]),
-            "label1": pl.get_string_attrib(el, "label1", drawing_defaults["label"]),
+            "height": pl.get_float_attrib(self, "width", drawing_defaults["width-rod"]),
+            "x1": pl.get_float_attrib(self, "x1", drawing_defaults["x1"]),
+            "y1": pl.get_float_attrib(self, "y1", drawing_defaults["y1"]),
+            "label1": pl.get_string_attrib(self, "label1", drawing_defaults["label"]),
             "offsetx1": pl.get_float_attrib(
-                el, "offsetx1", drawing_defaults["offsetx"]
+                self, "offsetx1", drawing_defaults["offsetx"]
             ),
             "offsety1": pl.get_float_attrib(
-                el, "offsety1", drawing_defaults["offsety"]
+                self, "offsety1", drawing_defaults["offsety"]
             ),
-            "x2": pl.get_float_attrib(el, "x2", drawing_defaults["x2"]),
-            "y2": pl.get_float_attrib(el, "y2", drawing_defaults["y2"]),
-            "label2": pl.get_string_attrib(el, "label2", drawing_defaults["label"]),
+            "x2": pl.get_float_attrib(self, "x2", drawing_defaults["x2"]),
+            "y2": pl.get_float_attrib(self, "y2", drawing_defaults["y2"]),
+            "label2": pl.get_string_attrib(self, "label2", drawing_defaults["label"]),
             "offsetx2": pl.get_float_attrib(
-                el, "offsetx2", drawing_defaults["offsetx"]
+                self, "offsetx2", drawing_defaults["offsetx"]
             ),
             "offsety2": pl.get_float_attrib(
-                el, "offsety2", drawing_defaults["offsety"]
+                self, "offsety2", drawing_defaults["offsety"]
             ),
             "color": color,
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "drawPin": json.loads(pl.get_string_attrib(el, "draw-pin", "true")),
+            "drawPin": json.loads(pl.get_string_attrib(self, "draw-pin", "true")),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
@@ -393,34 +405,34 @@ class Rod(BaseElement):
 
 
 class CollarRod(BaseElement):
-    def generate(el, data):
-        w = pl.get_float_attrib(el, "width", 20)
-        color = pl.get_color_attrib(el, "color", "white")
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
+    def generate(self, data):
+        w = pl.get_float_attrib(self, "width", 20)
+        color = pl.get_color_attrib(self, "color", "white")
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
         return {
             "height": w,
-            "x1": pl.get_float_attrib(el, "x1", 40),
-            "y1": pl.get_float_attrib(el, "y1", 40),
-            "collar1": pl.get_boolean_attrib(el, "draw-collar-end1", True),
-            "w1": pl.get_float_attrib(el, "w1", 1.5 * w),
-            "h1": pl.get_float_attrib(el, "h1", 2 * w),
-            "label1": pl.get_string_attrib(el, "label1", ""),
-            "offsetx1": pl.get_float_attrib(el, "offsetx1", 2),
-            "offsety1": pl.get_float_attrib(el, "offsety1", 2),
-            "x2": pl.get_float_attrib(el, "x2", 100),
-            "y2": pl.get_float_attrib(el, "y2", 40),
-            "w2": pl.get_float_attrib(el, "w2", 1.5 * w),
-            "h2": pl.get_float_attrib(el, "h2", 2 * w),
-            "collar2": pl.get_boolean_attrib(el, "draw-collar-end2", False),
-            "label2": pl.get_string_attrib(el, "label2", ""),
-            "offsetx2": pl.get_float_attrib(el, "offsetx2", 2),
-            "offsety2": pl.get_float_attrib(el, "offsety2", 2),
+            "x1": pl.get_float_attrib(self, "x1", 40),
+            "y1": pl.get_float_attrib(self, "y1", 40),
+            "collar1": pl.get_boolean_attrib(self, "draw-collar-end1", True),
+            "w1": pl.get_float_attrib(self, "w1", 1.5 * w),
+            "h1": pl.get_float_attrib(self, "h1", 2 * w),
+            "label1": pl.get_string_attrib(self, "label1", ""),
+            "offsetx1": pl.get_float_attrib(self, "offsetx1", 2),
+            "offsety1": pl.get_float_attrib(self, "offsety1", 2),
+            "x2": pl.get_float_attrib(self, "x2", 100),
+            "y2": pl.get_float_attrib(self, "y2", 40),
+            "w2": pl.get_float_attrib(self, "w2", 1.5 * w),
+            "h2": pl.get_float_attrib(self, "h2", 2 * w),
+            "collar2": pl.get_boolean_attrib(self, "draw-collar-end2", False),
+            "label2": pl.get_string_attrib(self, "label2", ""),
+            "offsetx2": pl.get_float_attrib(self, "offsetx2", 2),
+            "offsety2": pl.get_float_attrib(self, "offsety2", 2),
             "color": color,
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "drawPin": json.loads(pl.get_string_attrib(el, "draw-pin", "true")),
+            "drawPin": json.loads(pl.get_string_attrib(self, "draw-pin", "true")),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
@@ -452,38 +464,38 @@ class CollarRod(BaseElement):
 
 
 class ThreePointRod(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "color", "white")
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
-        x1 = pl.get_float_attrib(el, "x1", 40)
-        y1 = pl.get_float_attrib(el, "y1", 100)
-        x2 = pl.get_float_attrib(el, "x2", 100)
-        y2 = pl.get_float_attrib(el, "y2", 100)
-        x3 = pl.get_float_attrib(el, "x3", 100)
-        y3 = pl.get_float_attrib(el, "y3", 140)
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "color", "white")
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
+        x1 = pl.get_float_attrib(self, "x1", 40)
+        y1 = pl.get_float_attrib(self, "y1", 100)
+        x2 = pl.get_float_attrib(self, "x2", 100)
+        y2 = pl.get_float_attrib(self, "y2", 100)
+        x3 = pl.get_float_attrib(self, "x3", 100)
+        y3 = pl.get_float_attrib(self, "y3", 140)
         return {
-            "height": pl.get_float_attrib(el, "width", 20),
+            "height": pl.get_float_attrib(self, "width", 20),
             "x1": x1,
             "y1": y1,
             "x2": x2,
             "y2": y2,
             "x3": x3,
             "y3": y3,
-            "label1": pl.get_string_attrib(el, "label1", ""),
-            "offsetx1": pl.get_float_attrib(el, "offsetx1", 0),
-            "offsety1": pl.get_float_attrib(el, "offsety1", -20),
-            "label2": pl.get_string_attrib(el, "label2", ""),
-            "offsetx2": pl.get_float_attrib(el, "offsetx2", 0),
-            "offsety2": pl.get_float_attrib(el, "offsety2", -20),
-            "label3": pl.get_string_attrib(el, "label3", ""),
-            "offsetx3": pl.get_float_attrib(el, "offsetx3", 0),
-            "offsety3": pl.get_float_attrib(el, "offsety3", -20),
+            "label1": pl.get_string_attrib(self, "label1", ""),
+            "offsetx1": pl.get_float_attrib(self, "offsetx1", 0),
+            "offsety1": pl.get_float_attrib(self, "offsety1", -20),
+            "label2": pl.get_string_attrib(self, "label2", ""),
+            "offsetx2": pl.get_float_attrib(self, "offsetx2", 0),
+            "offsety2": pl.get_float_attrib(self, "offsety2", -20),
+            "label3": pl.get_string_attrib(self, "label3", ""),
+            "offsetx3": pl.get_float_attrib(self, "offsetx3", 0),
+            "offsety3": pl.get_float_attrib(self, "offsety3", -20),
             "color": color,
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "drawPin": json.loads(pl.get_string_attrib(el, "draw-pin", "true")),
+            "drawPin": json.loads(pl.get_string_attrib(self, "draw-pin", "true")),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
@@ -514,20 +526,20 @@ class ThreePointRod(BaseElement):
 
 
 class FourPointRod(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "color", "white")
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
-        x1 = pl.get_float_attrib(el, "x1", 40)
-        y1 = pl.get_float_attrib(el, "y1", 100)
-        x2 = pl.get_float_attrib(el, "x2", 100)
-        y2 = pl.get_float_attrib(el, "y2", 100)
-        x3 = pl.get_float_attrib(el, "x3", 100)
-        y3 = pl.get_float_attrib(el, "y3", 160)
-        x4 = pl.get_float_attrib(el, "x4", 140)
-        y4 = pl.get_float_attrib(el, "y4", 60)
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "color", "white")
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
+        x1 = pl.get_float_attrib(self, "x1", 40)
+        y1 = pl.get_float_attrib(self, "y1", 100)
+        x2 = pl.get_float_attrib(self, "x2", 100)
+        y2 = pl.get_float_attrib(self, "y2", 100)
+        x3 = pl.get_float_attrib(self, "x3", 100)
+        y3 = pl.get_float_attrib(self, "y3", 160)
+        x4 = pl.get_float_attrib(self, "x4", 140)
+        y4 = pl.get_float_attrib(self, "y4", 60)
 
         return {
-            "height": pl.get_float_attrib(el, "width", 20),
+            "height": pl.get_float_attrib(self, "width", 20),
             "x1": x1,
             "y1": y1,
             "x2": x2,
@@ -536,24 +548,24 @@ class FourPointRod(BaseElement):
             "y3": y3,
             "x4": x4,
             "y4": y4,
-            "label1": pl.get_string_attrib(el, "label1", ""),
-            "offsetx1": pl.get_float_attrib(el, "offsetx1", 0),
-            "offsety1": pl.get_float_attrib(el, "offsety1", -20),
-            "label2": pl.get_string_attrib(el, "label2", ""),
-            "offsetx2": pl.get_float_attrib(el, "offsetx2", 0),
-            "offsety2": pl.get_float_attrib(el, "offsety2", -20),
-            "label3": pl.get_string_attrib(el, "label3", ""),
-            "offsetx3": pl.get_float_attrib(el, "offsetx3", 0),
-            "offsety3": pl.get_float_attrib(el, "offsety3", -20),
-            "label4": pl.get_string_attrib(el, "label4", ""),
-            "offsetx4": pl.get_float_attrib(el, "offsetx4", 0),
-            "offsety4": pl.get_float_attrib(el, "offsety4", -20),
+            "label1": pl.get_string_attrib(self, "label1", ""),
+            "offsetx1": pl.get_float_attrib(self, "offsetx1", 0),
+            "offsety1": pl.get_float_attrib(self, "offsety1", -20),
+            "label2": pl.get_string_attrib(self, "label2", ""),
+            "offsetx2": pl.get_float_attrib(self, "offsetx2", 0),
+            "offsety2": pl.get_float_attrib(self, "offsety2", -20),
+            "label3": pl.get_string_attrib(self, "label3", ""),
+            "offsetx3": pl.get_float_attrib(self, "offsetx3", 0),
+            "offsety3": pl.get_float_attrib(self, "offsety3", -20),
+            "label4": pl.get_string_attrib(self, "label4", ""),
+            "offsetx4": pl.get_float_attrib(self, "offsetx4", 0),
+            "offsety4": pl.get_float_attrib(self, "offsety4", -20),
             "color": color,
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "drawPin": json.loads(pl.get_string_attrib(el, "draw-pin", "true")),
+            "drawPin": json.loads(pl.get_string_attrib(self, "draw-pin", "true")),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
@@ -589,17 +601,17 @@ class FourPointRod(BaseElement):
 
 
 class Pulley(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "color", "gray")
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
-        r = pl.get_float_attrib(el, "radius", 20)
-        x1 = pl.get_float_attrib(el, "x1", 100)
-        y1 = pl.get_float_attrib(el, "y1", 100)
-        x2 = pl.get_float_attrib(el, "x2", 140)
-        y2 = pl.get_float_attrib(el, "y2", 140)
-        x3 = pl.get_float_attrib(el, "x3", 40)
-        y3 = pl.get_float_attrib(el, "y3", 130)
-        longer = pl.get_boolean_attrib(el, "alternative-path", "false")
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "color", "gray")
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
+        r = pl.get_float_attrib(self, "radius", 20)
+        x1 = pl.get_float_attrib(self, "x1", 100)
+        y1 = pl.get_float_attrib(self, "y1", 100)
+        x2 = pl.get_float_attrib(self, "x2", 140)
+        y2 = pl.get_float_attrib(self, "y2", 140)
+        x3 = pl.get_float_attrib(self, "x3", 40)
+        y3 = pl.get_float_attrib(self, "y3", 130)
+        longer = pl.get_boolean_attrib(self, "alternative-path", "false")
 
         return {
             "x1": x1,
@@ -610,12 +622,12 @@ class Pulley(BaseElement):
             "y3": y3,
             "longer": longer,
             "radius": r,
-            "label": pl.get_string_attrib(el, "label", ""),
-            "offsetx": pl.get_float_attrib(el, "offsetx", 2),
-            "offsety": pl.get_float_attrib(el, "offsety", 2),
+            "label": pl.get_string_attrib(self, "label", ""),
+            "offsetx": pl.get_float_attrib(self, "offsetx", 2),
+            "offsety": pl.get_float_attrib(self, "offsety", 2),
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
             "fill": color,
         }
@@ -640,40 +652,40 @@ class Pulley(BaseElement):
 
 
 class Vector(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "color", "red3")
-        anchor_is_tail = pl.get_boolean_attrib(el, "anchor-is-tail", True)
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "color", "red3")
+        anchor_is_tail = pl.get_boolean_attrib(self, "anchor-is-tail", True)
         # This is the anchor point for Grading
-        x1 = pl.get_float_attrib(el, "x1", 30)
-        y1 = pl.get_float_attrib(el, "y1", 10)
+        x1 = pl.get_float_attrib(self, "x1", 30)
+        y1 = pl.get_float_attrib(self, "y1", 10)
         # This is the end point used for plotting
         left = x1
         top = y1
-        w = pl.get_float_attrib(el, "width", drawing_defaults["force-width"])
-        angle = pl.get_float_attrib(el, "angle", 0)
+        w = pl.get_float_attrib(self, "width", drawing_defaults["force-width"])
+        angle = pl.get_float_attrib(self, "angle", 0)
         theta = angle * math.pi / 180
         if not anchor_is_tail:
             left -= w * math.cos(theta)
             top -= w * math.sin(theta)
         # Error box for grading
-        disregard_sense = pl.get_boolean_attrib(el, "disregard-sense", False)
+        disregard_sense = pl.get_boolean_attrib(self, "disregard-sense", False)
         if disregard_sense:
             offset_forward_default = w
         else:
             offset_forward_default = 0
         offset_forward = pl.get_float_attrib(
-            el, "offset-forward", offset_forward_default
+            self, "offset-forward", offset_forward_default
         )
-        offset_backward = pl.get_float_attrib(el, "offset-backward", w)
+        offset_backward = pl.get_float_attrib(self, "offset-backward", w)
 
-        grid_size = pl.get_integer_attrib(el, "grid-size", 20)
-        tol = pl.get_float_attrib(el, "tol", grid_size / 2)
+        grid_size = pl.get_integer_attrib(self, "grid-size", 20)
+        tol = pl.get_float_attrib(self, "tol", grid_size / 2)
         pc, hbox, wbox, _, _ = get_error_box(
             x1, y1, theta, tol, offset_forward, offset_backward
         )
 
-        if "draw-error-box" in el.attrib:
-            obj_draw = el.attrib["draw-error-box"] == "true"
+        if "draw-error-box" in self.attrib:
+            obj_draw = self.attrib["draw-error-box"] == "true"
         else:
             obj_draw = None
 
@@ -684,19 +696,19 @@ class Vector(BaseElement):
             "y1": y1,
             "width": w,
             "angle": angle,
-            "label": pl.get_string_attrib(el, "label", ""),
-            "offsetx": pl.get_float_attrib(el, "offsetx", 2),
-            "offsety": pl.get_float_attrib(el, "offsety", 2),
+            "label": pl.get_string_attrib(self, "label", ""),
+            "offsetx": pl.get_float_attrib(self, "offsetx", 2),
+            "offsety": pl.get_float_attrib(self, "offsety", 2),
             "stroke": color,
-            "strokeWidth": pl.get_float_attrib(el, "stroke-width", 3),
-            "arrowheadWidthRatio": pl.get_float_attrib(el, "arrow-head-width", 1),
-            "arrowheadOffsetRatio": pl.get_float_attrib(el, "arrow-head-length", 1),
+            "strokeWidth": pl.get_float_attrib(self, "stroke-width", 3),
+            "arrowheadWidthRatio": pl.get_float_attrib(self, "arrow-head-width", 1),
+            "arrowheadOffsetRatio": pl.get_float_attrib(self, "arrow-head-length", 1),
             "drawStartArrow": False,
             "drawEndArrow": True,
             "originY": "center",
             "trueHandles": ["mtr"],
             "disregard_sense": disregard_sense,
-            "optional_grading": pl.get_boolean_attrib(el, "optional-grading", False),
+            "optional_grading": pl.get_boolean_attrib(self, "optional-grading", False),
             "objectDrawErrorBox": obj_draw,
             "XcenterErrorBox": pc[0] if pc is not None else pc,
             "YcenterErrorBox": pc[1] if pc is not None else pc,
@@ -711,7 +723,7 @@ class Vector(BaseElement):
     def is_gradable():
         return True
 
-    def grade(ref, st, tol, angtol):
+    def grade(self, st, tol, angtol):
         epos = np.array([st["left"], st["top"]]).astype(np.float64)
         eang = st["angle"]
         elen = st["width"]
@@ -725,22 +737,22 @@ class Vector(BaseElement):
             epos -= st_dir * np.float64(elen) / 2
 
         # Get the position of the anchor point for the correct answer
-        rpos = np.array([ref["x1"], ref["y1"]])
+        rpos = np.array([self["x1"], self["y1"]])
 
         # Get the angle for the correct answer
-        rang = ref["angle"]
-        rang_bwd = ref["angle"] + 180
+        rang = self["angle"]
+        rang_bwd = self["angle"] + 180
         rang_rad = rang * (np.pi / 180.0)
 
         # Defining the error box limit in the direction of the vector
-        max_backward = ref["offset_backward"] + tol
-        max_forward = ref["offset_forward"] + tol
+        max_backward = self["offset_backward"] + tol
+        max_forward = self["offset_forward"] + tol
 
         # Check the angles
         error_fwd = abserr_ang(rang, eang)
         error_bwd = abserr_ang(rang_bwd, eang)
 
-        if ref["disregard_sense"]:
+        if self["disregard_sense"]:
             if error_fwd > angtol and error_bwd > angtol:
                 return False
         else:
@@ -785,16 +797,16 @@ class Vector(BaseElement):
 
 
 class PairedVector(BaseElement):
-    def generate(el, data):
-        grid_size = pl.get_integer_attrib(el, "grid-size", 20)
-        color = pl.get_color_attrib(el, "color", "red3")
-        anchor_is_tail = pl.get_boolean_attrib(el, "anchor-is-tail", True)
+    def generate(self, data):
+        grid_size = pl.get_integer_attrib(self, "grid-size", 20)
+        color = pl.get_color_attrib(self, "color", "red3")
+        anchor_is_tail = pl.get_boolean_attrib(self, "anchor-is-tail", True)
         # This is the anchor point for Grading
-        x1 = pl.get_float_attrib(el, "x1", 2 * grid_size)
-        y1 = pl.get_float_attrib(el, "y1", grid_size)
+        x1 = pl.get_float_attrib(self, "x1", 2 * grid_size)
+        y1 = pl.get_float_attrib(self, "y1", grid_size)
 
-        x2 = pl.get_float_attrib(el, "x2", 3 * grid_size)
-        y2 = pl.get_float_attrib(el, "y2", 2 * grid_size)
+        x2 = pl.get_float_attrib(self, "x2", 3 * grid_size)
+        y2 = pl.get_float_attrib(self, "y2", 2 * grid_size)
 
         # This is the end point used for plotting
         left1 = x1
@@ -804,10 +816,10 @@ class PairedVector(BaseElement):
         top2 = y2
 
         # common arrow length
-        w = pl.get_float_attrib(el, "width", drawing_defaults["force-width"])
+        w = pl.get_float_attrib(self, "width", drawing_defaults["force-width"])
 
-        angle1 = pl.get_float_attrib(el, "angle1", 0)
-        angle2 = pl.get_float_attrib(el, "angle2", 0)
+        angle1 = pl.get_float_attrib(self, "angle1", 0)
+        angle2 = pl.get_float_attrib(self, "angle2", 0)
         theta1 = angle1 * math.pi / 180
         theta2 = angle2 * math.pi / 180
         if not anchor_is_tail:
@@ -817,17 +829,17 @@ class PairedVector(BaseElement):
             top2 -= w * math.sin(theta2)
 
         # Error box for grading; uses disregard-sense True by default (unlike pl-vector)
-        disregard_sense = pl.get_boolean_attrib(el, "disregard-sense", True)
+        disregard_sense = pl.get_boolean_attrib(self, "disregard-sense", True)
         if disregard_sense:
             offset_forward_default = w
         else:
             offset_forward_default = 0
         offset_forward = pl.get_float_attrib(
-            el, "offset-forward", offset_forward_default
+            self, "offset-forward", offset_forward_default
         )
-        offset_backward = pl.get_float_attrib(el, "offset-backward", w)
+        offset_backward = pl.get_float_attrib(self, "offset-backward", w)
 
-        tol = pl.get_float_attrib(el, "tol", grid_size / 2)
+        tol = pl.get_float_attrib(self, "tol", grid_size / 2)
         pc1, hbox1, wbox1, _, _ = get_error_box(
             x1, y1, theta1, tol, offset_forward, offset_backward
         )
@@ -835,8 +847,8 @@ class PairedVector(BaseElement):
             x2, y2, theta2, tol, offset_forward, offset_backward
         )
 
-        if "draw-error-box" in el.attrib:
-            obj_draw = el.attrib["draw-error-box"] == "true"
+        if "draw-error-box" in self.attrib:
+            obj_draw = self.attrib["draw-error-box"] == "true"
         else:
             obj_draw = None
 
@@ -852,19 +864,19 @@ class PairedVector(BaseElement):
             "width": w,
             "angle1": angle1,
             "angle2": angle2,
-            "label": pl.get_string_attrib(el, "label", ""),
-            "offsetx": pl.get_float_attrib(el, "offsetx", 2),
-            "offsety": pl.get_float_attrib(el, "offsety", 2),
+            "label": pl.get_string_attrib(self, "label", ""),
+            "offsetx": pl.get_float_attrib(self, "offsetx", 2),
+            "offsety": pl.get_float_attrib(self, "offsety", 2),
             "stroke": color,
-            "strokeWidth": pl.get_float_attrib(el, "stroke-width", 3),
-            "arrowheadWidthRatio": pl.get_float_attrib(el, "arrow-head-width", 1),
-            "arrowheadOffsetRatio": pl.get_float_attrib(el, "arrow-head-length", 1),
+            "strokeWidth": pl.get_float_attrib(self, "stroke-width", 3),
+            "arrowheadWidthRatio": pl.get_float_attrib(self, "arrow-head-width", 1),
+            "arrowheadOffsetRatio": pl.get_float_attrib(self, "arrow-head-length", 1),
             "drawStartArrow": False,
             "drawEndArrow": True,
             "originY": "center",
             "trueHandles": ["mtr"],
             "disregard_sense": disregard_sense,
-            "optional_grading": pl.get_boolean_attrib(el, "optional-grading", False),
+            "optional_grading": pl.get_boolean_attrib(self, "optional-grading", False),
             "objectDrawErrorBox": obj_draw,
             "XcenterErrorBox1": pc1[0] if pc1 is not None else pc1,
             "YcenterErrorBox1": pc1[1] if pc1 is not None else pc1,
@@ -883,8 +895,8 @@ class PairedVector(BaseElement):
     def is_gradable():
         return True
 
-    def grade(ref, st, tol, angtol):
-        ref2 = ref.copy()
+    def grade(self, st, tol, angtol):
+        ref2 = self.copy()
         st2 = st.copy()
         dup_attrs = [
             "top",
@@ -949,8 +961,8 @@ class PairedVector(BaseElement):
 
 
 class DoubleHeadedVector(BaseElement):
-    def generate(el, data):
-        obj = Vector.generate(el, data)
+    def generate(self, data):
+        obj = Vector.generate(self, data)
         obj["type"] = "pl-double-headed-vector"
         return obj
 
@@ -977,10 +989,10 @@ class DoubleHeadedVector(BaseElement):
 
 
 class ArcVector(BaseElement):
-    def generate(el, data):
-        disregard_sense = pl.get_boolean_attrib(el, "disregard-sense", False)
-        color = pl.get_color_attrib(el, "color", "purple")
-        clockwise_direction = pl.get_boolean_attrib(el, "clockwise-direction", True)
+    def generate(self, data):
+        disregard_sense = pl.get_boolean_attrib(self, "disregard-sense", False)
+        color = pl.get_color_attrib(self, "color", "purple")
+        clockwise_direction = pl.get_boolean_attrib(self, "clockwise-direction", True)
         if clockwise_direction:
             drawStartArrow = False
             drawEndArrow = True
@@ -988,19 +1000,19 @@ class ArcVector(BaseElement):
             drawStartArrow = True
             drawEndArrow = False
         # Error box for grading
-        x1 = pl.get_float_attrib(el, "x1", 40)
-        y1 = pl.get_float_attrib(el, "y1", 40)
+        x1 = pl.get_float_attrib(self, "x1", 40)
+        y1 = pl.get_float_attrib(self, "y1", 40)
 
-        if "draw-error-box" in el.attrib:
-            obj_draw = el.attrib["draw-error-box"] == "true"
+        if "draw-error-box" in self.attrib:
+            obj_draw = self.attrib["draw-error-box"] == "true"
         else:
             obj_draw = None
 
-        offset_forward = pl.get_float_attrib(el, "offset-forward", 0)
-        offset_backward = pl.get_float_attrib(el, "offset-backward", 0)
+        offset_forward = pl.get_float_attrib(self, "offset-forward", 0)
+        offset_backward = pl.get_float_attrib(self, "offset-backward", 0)
 
-        grid_size = pl.get_integer_attrib(el, "grid-size", 20)
-        tol = pl.get_float_attrib(el, "tol", grid_size / 2)
+        grid_size = pl.get_integer_attrib(self, "grid-size", 20)
+        tol = pl.get_float_attrib(self, "tol", grid_size / 2)
         pc, hbox, wbox, _, _ = get_error_box(
             x1, y1, 0, tol, offset_forward, offset_backward
         )
@@ -1009,24 +1021,24 @@ class ArcVector(BaseElement):
             "left": x1,
             "top": y1,
             "angle": 0,
-            "radius": pl.get_float_attrib(el, "radius", 30),
-            "startAngle": pl.get_float_attrib(el, "start-angle", 0),
-            "endAngle": pl.get_float_attrib(el, "end-angle", 210),
+            "radius": pl.get_float_attrib(self, "radius", 30),
+            "startAngle": pl.get_float_attrib(self, "start-angle", 0),
+            "endAngle": pl.get_float_attrib(self, "end-angle", 210),
             "drawCenterPoint": json.loads(
-                pl.get_string_attrib(el, "draw-center", "true")
+                pl.get_string_attrib(self, "draw-center", "true")
             ),
             "drawStartArrow": drawStartArrow,
             "drawEndArrow": drawEndArrow,
-            "label": pl.get_string_attrib(el, "label", ""),
-            "offsetx": pl.get_float_attrib(el, "offsetx", 0),
-            "offsety": pl.get_float_attrib(el, "offsety", 0),
+            "label": pl.get_string_attrib(self, "label", ""),
+            "offsetx": pl.get_float_attrib(self, "offsetx", 0),
+            "offsety": pl.get_float_attrib(self, "offsety", 0),
             "stroke": color,
             "fill": color,
-            "strokeWidth": pl.get_float_attrib(el, "stroke-width", 3),
-            "arrowheadWidthRatio": pl.get_float_attrib(el, "arrow-head-width", 1),
-            "arrowheadOffsetRatio": pl.get_float_attrib(el, "arrow-head-length", 1),
+            "strokeWidth": pl.get_float_attrib(self, "stroke-width", 3),
+            "arrowheadWidthRatio": pl.get_float_attrib(self, "arrow-head-width", 1),
+            "arrowheadOffsetRatio": pl.get_float_attrib(self, "arrow-head-length", 1),
             "disregard_sense": disregard_sense,
-            "optional_grading": pl.get_boolean_attrib(el, "optional-grading", False),
+            "optional_grading": pl.get_boolean_attrib(self, "optional-grading", False),
             "objectDrawErrorBox": obj_draw,
             "XcenterErrorBox": pc[0] if pc is not None else pc,
             "YcenterErrorBox": pc[1] if pc is not None else pc,
@@ -1042,12 +1054,12 @@ class ArcVector(BaseElement):
     def is_gradable():
         return True
 
-    def grade(ref, st, tol, angtol):
+    def grade(self, st, tol, angtol):
         epos = np.array([st["left"], st["top"]]).astype(np.float64)
         st_start_arrow = st["drawStartArrow"]
 
-        rpos = np.array([ref["left"], ref["top"]])
-        ref_start_arrow = ref["drawStartArrow"]
+        rpos = np.array([self["left"], self["top"]])
+        ref_start_arrow = self["drawStartArrow"]
 
         # Check if correct position
         relx, rely = epos - rpos
@@ -1055,7 +1067,7 @@ class ArcVector(BaseElement):
             return False
 
         # Check if correct orientation
-        if not ref["disregard_sense"]:
+        if not self["disregard_sense"]:
             if st_start_arrow is not ref_start_arrow:
                 return False
 
@@ -1084,43 +1096,43 @@ class ArcVector(BaseElement):
 
 
 class DistributedLoad(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "color", "red3")
-        anchor_is_tail = pl.get_boolean_attrib(el, "anchor-is-tail", True)
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "color", "red3")
+        anchor_is_tail = pl.get_boolean_attrib(self, "anchor-is-tail", True)
         # This is the anchor point for Grading
-        x1 = pl.get_float_attrib(el, "x1", 30)
-        y1 = pl.get_float_attrib(el, "y1", 10)
+        x1 = pl.get_float_attrib(self, "x1", 30)
+        y1 = pl.get_float_attrib(self, "y1", 10)
         # This is the end point used for plotting
         left = x1
         top = y1
-        w = pl.get_float_attrib(el, "width", drawing_defaults["force-width"])
-        w1 = pl.get_float_attrib(el, "w1", drawing_defaults["force-width"])
-        w2 = pl.get_float_attrib(el, "w2", drawing_defaults["force-width"])
+        w = pl.get_float_attrib(self, "width", drawing_defaults["force-width"])
+        w1 = pl.get_float_attrib(self, "w1", drawing_defaults["force-width"])
+        w2 = pl.get_float_attrib(self, "w2", drawing_defaults["force-width"])
         wmax = max(w1, w2)
-        angle = pl.get_float_attrib(el, "angle", 0)
+        angle = pl.get_float_attrib(self, "angle", 0)
         theta = angle * math.pi / 180
         if not anchor_is_tail:
             left += wmax * math.sin(theta)
             top -= wmax * math.cos(theta)
         # Error box for grading
-        disregard_sense = pl.get_boolean_attrib(el, "disregard-sense", False)
+        disregard_sense = pl.get_boolean_attrib(self, "disregard-sense", False)
         if disregard_sense:
             offset_forward_default = 1.1 * wmax
         else:
             offset_forward_default = 0
         offset_forward = pl.get_float_attrib(
-            el, "offset-forward", offset_forward_default
+            self, "offset-forward", offset_forward_default
         )
-        offset_backward = pl.get_float_attrib(el, "offset-backward", 1.1 * wmax)
+        offset_backward = pl.get_float_attrib(self, "offset-backward", 1.1 * wmax)
 
-        grid_size = pl.get_integer_attrib(el, "grid-size", 20)
-        tol = pl.get_float_attrib(el, "tol", grid_size / 2)
+        grid_size = pl.get_integer_attrib(self, "grid-size", 20)
+        tol = pl.get_float_attrib(self, "tol", grid_size / 2)
         pc, wbox, hbox, _, _ = get_error_box(
             x1, y1, theta + math.pi / 2, tol, offset_forward, offset_backward
         )
 
-        if "draw-error-box" in el.attrib:
-            obj_draw = el.attrib["draw-error-box"] == "true"
+        if "draw-error-box" in self.attrib:
+            obj_draw = self.attrib["draw-error-box"] == "true"
         else:
             obj_draw = None
 
@@ -1131,28 +1143,28 @@ class DistributedLoad(BaseElement):
             "y1": y1,
             "angle": angle,
             "range": w,
-            "spacing": pl.get_float_attrib(el, "spacing", 20),
+            "spacing": pl.get_float_attrib(self, "spacing", 20),
             "w1": w1,
             "w2": w2,
-            "label1": pl.get_string_attrib(el, "label1", ""),
-            "offsetx1": pl.get_float_attrib(el, "offsetx1", 2),
-            "offsety1": pl.get_float_attrib(el, "offsety1", 2),
-            "label2": pl.get_string_attrib(el, "label2", ""),
-            "offsetx2": pl.get_float_attrib(el, "offsetx2", 2),
-            "offsety2": pl.get_float_attrib(el, "offsety2", 2),
-            "label": pl.get_string_attrib(el, "label", ""),
-            "offsetx": pl.get_float_attrib(el, "offsetx", 2),
-            "offsety": pl.get_float_attrib(el, "offsety", 2),
+            "label1": pl.get_string_attrib(self, "label1", ""),
+            "offsetx1": pl.get_float_attrib(self, "offsetx1", 2),
+            "offsety1": pl.get_float_attrib(self, "offsety1", 2),
+            "label2": pl.get_string_attrib(self, "label2", ""),
+            "offsetx2": pl.get_float_attrib(self, "offsetx2", 2),
+            "offsety2": pl.get_float_attrib(self, "offsety2", 2),
+            "label": pl.get_string_attrib(self, "label", ""),
+            "offsetx": pl.get_float_attrib(self, "offsetx", 2),
+            "offsety": pl.get_float_attrib(self, "offsety", 2),
             "stroke": color,
-            "strokeWidth": pl.get_float_attrib(el, "stroke-width", 3),
-            "arrowheadWidthRatio": pl.get_float_attrib(el, "arrow-head-width", 2),
-            "arrowheadOffsetRatio": pl.get_float_attrib(el, "arrow-head-length", 3),
+            "strokeWidth": pl.get_float_attrib(self, "stroke-width", 3),
+            "arrowheadWidthRatio": pl.get_float_attrib(self, "arrow-head-width", 2),
+            "arrowheadOffsetRatio": pl.get_float_attrib(self, "arrow-head-length", 3),
             "drawStartArrow": False,
             "drawEndArrow": True,
-            "anchor_is_tail": pl.get_string_attrib(el, "anchor-is-tail", "true"),
+            "anchor_is_tail": pl.get_string_attrib(self, "anchor-is-tail", "true"),
             "trueHandles": ["mtr"],
             "disregard_sense": disregard_sense,
-            "optional_grading": pl.get_boolean_attrib(el, "optional-grading", False),
+            "optional_grading": pl.get_boolean_attrib(self, "optional-grading", False),
             "objectDrawErrorBox": obj_draw,
             "XcenterErrorBox": pc[0] if pc is not None else pc,
             "YcenterErrorBox": pc[1] if pc is not None else pc,
@@ -1166,7 +1178,7 @@ class DistributedLoad(BaseElement):
     def is_gradable():
         return True
 
-    def grade(ref, st, tol, angtol):
+    def grade(self, st, tol, angtol):
         epos = np.array([st["left"], st["top"]]).astype(np.float64)
         eang = st["angle"]
         elen = st["range"]
@@ -1174,23 +1186,23 @@ class DistributedLoad(BaseElement):
         ew2 = st["w2"]
 
         # Get the position of the anchor point for the correct answer
-        rpos = np.array([ref["x1"], ref["y1"]])
+        rpos = np.array([self["x1"], self["y1"]])
         # Get the angle for the correct answer
-        rang = ref["angle"]
-        rang_bwd = ref["angle"] + 180
+        rang = self["angle"]
+        rang_bwd = self["angle"] + 180
         rang_rad = rang * (np.pi / 180.0)
-        rlen = ref["range"]
-        rw1 = ref["w1"]
-        rw2 = ref["w2"]
+        rlen = self["range"]
+        rw1 = self["w1"]
+        rw2 = self["w2"]
         # Defining the error box limit in the direction of the vector
-        max_backward = ref["offset_backward"] + tol
-        max_forward = ref["offset_forward"] + tol
+        max_backward = self["offset_backward"] + tol
+        max_forward = self["offset_forward"] + tol
 
         # Check the angles
         error_fwd = abserr_ang(rang, eang)
         error_bwd = abserr_ang(rang_bwd, eang)
 
-        if ref["disregard_sense"]:
+        if self["disregard_sense"]:
             if error_fwd > angtol and error_bwd > angtol:
                 return False
         else:
@@ -1253,30 +1265,32 @@ class DistributedLoad(BaseElement):
 
 
 class Point(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "color", "black")
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "color", "black")
         # Error box for grading
-        x1 = pl.get_float_attrib(el, "x1", 40)
-        y1 = pl.get_float_attrib(el, "y1", 40)
+        x1 = pl.get_float_attrib(self, "x1", 40)
+        y1 = pl.get_float_attrib(self, "y1", 40)
 
-        if "draw-error-box" in el.attrib:
-            obj_draw = el.attrib["draw-error-box"] == "true"
+        if "draw-error-box" in self.attrib:
+            obj_draw = self.attrib["draw-error-box"] == "true"
         else:
             obj_draw = None
 
-        offset_forward = pl.get_float_attrib(el, "offset-forward", 0)
-        offset_backward = pl.get_float_attrib(el, "offset-backward", 0)
+        offset_forward = pl.get_float_attrib(self, "offset-forward", 0)
+        offset_backward = pl.get_float_attrib(self, "offset-backward", 0)
 
-        grid_size = pl.get_integer_attrib(el, "grid-size", 20)
-        tol = pl.get_float_attrib(el, "tol", grid_size / 2)
+        grid_size = pl.get_integer_attrib(self, "grid-size", 20)
+        tol = pl.get_float_attrib(self, "tol", grid_size / 2)
         pc, hbox, wbox, _, _ = get_error_box(
             x1, y1, 0, tol, offset_forward, offset_backward
         )
 
         return {
-            "left": pl.get_float_attrib(el, "x1", 20),
-            "top": pl.get_float_attrib(el, "y1", 20),
-            "radius": pl.get_float_attrib(el, "radius", drawing_defaults["point-size"]),
+            "left": pl.get_float_attrib(self, "x1", 20),
+            "top": pl.get_float_attrib(self, "y1", 20),
+            "radius": pl.get_float_attrib(
+                self, "radius", drawing_defaults["point-size"]
+            ),
             "objectDrawErrorBox": obj_draw,
             "XcenterErrorBox": pc[0] if pc is not None else pc,
             "YcenterErrorBox": pc[1] if pc is not None else pc,
@@ -1284,12 +1298,14 @@ class Point(BaseElement):
             "heightErrorBox": hbox,
             "offset_forward": offset_forward,
             "offset_backward": offset_backward,
-            "label": pl.get_string_attrib(el, "label", drawing_defaults["label"]),
-            "offsetx": pl.get_float_attrib(el, "offsetx", 5),
-            "offsety": pl.get_float_attrib(el, "offsety", 5),
+            "label": pl.get_string_attrib(self, "label", drawing_defaults["label"]),
+            "offsetx": pl.get_float_attrib(self, "offsetx", 5),
+            "offsety": pl.get_float_attrib(self, "offsety", 5),
             "originX": "center",
             "originY": "center",
-            "opacity": pl.get_float_attrib(el, "opacity", drawing_defaults["opacity"]),
+            "opacity": pl.get_float_attrib(
+                self, "opacity", drawing_defaults["opacity"]
+            ),
             "fill": color,
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
@@ -1298,9 +1314,9 @@ class Point(BaseElement):
     def is_gradable():
         return True
 
-    def grade(ref, st, tol, angtol):
+    def grade(self, st, tol, angtol):
         epos = np.array([st["left"], st["top"]]).astype(np.float64)
-        rpos = np.array([ref["left"], ref["top"]])
+        rpos = np.array([self["left"], self["top"]])
         # Check if correct position
         relx, rely = epos - rpos
         if relx > tol or relx < -tol or rely > tol or rely < -tol:
@@ -1313,28 +1329,28 @@ class Point(BaseElement):
 
 
 class Coordinates(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "color", "black")
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "color", "black")
         return {
-            "left": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
-            "top": pl.get_float_attrib(el, "y1", drawing_defaults["y1"]),
-            "width": pl.get_float_attrib(el, "width", drawing_defaults["width"]),
-            "label": pl.get_string_attrib(el, "label", ""),
-            "offsetx": pl.get_float_attrib(el, "offsetx", -16),
-            "offsety": pl.get_float_attrib(el, "offsety", -10),
-            "labelx": pl.get_string_attrib(el, "label-x", "x"),
-            "labely": pl.get_string_attrib(el, "label-y", "y"),
-            "offsetx_label_x": pl.get_float_attrib(el, "offsetx-label-x", 0),
-            "offsety_label_x": pl.get_float_attrib(el, "offsety-label-x", 0),
-            "offsetx_label_y": pl.get_float_attrib(el, "offsetx-label-y", -20),
-            "offsety_label_y": pl.get_float_attrib(el, "offsety-label-y", -10),
+            "left": pl.get_float_attrib(self, "x1", drawing_defaults["x1"]),
+            "top": pl.get_float_attrib(self, "y1", drawing_defaults["y1"]),
+            "width": pl.get_float_attrib(self, "width", drawing_defaults["width"]),
+            "label": pl.get_string_attrib(self, "label", ""),
+            "offsetx": pl.get_float_attrib(self, "offsetx", -16),
+            "offsety": pl.get_float_attrib(self, "offsety", -10),
+            "labelx": pl.get_string_attrib(self, "label-x", "x"),
+            "labely": pl.get_string_attrib(self, "label-y", "y"),
+            "offsetx_label_x": pl.get_float_attrib(self, "offsetx-label-x", 0),
+            "offsety_label_x": pl.get_float_attrib(self, "offsety-label-x", 0),
+            "offsetx_label_y": pl.get_float_attrib(self, "offsetx-label-y", -20),
+            "offsety_label_y": pl.get_float_attrib(self, "offsety-label-y", -10),
             "stroke": color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "angle": pl.get_float_attrib(el, "angle", 0),
-            "arrowheadWidthRatio": pl.get_float_attrib(el, "arrow-head-width", 1),
-            "arrowheadOffsetRatio": pl.get_float_attrib(el, "arrow-head-length", 1),
+            "angle": pl.get_float_attrib(self, "angle", 0),
+            "arrowheadWidthRatio": pl.get_float_attrib(self, "arrow-head-width", 1),
+            "arrowheadOffsetRatio": pl.get_float_attrib(self, "arrow-head-length", 1),
             "drawStartArrow": False,
             "drawEndArrow": True,
             "originY": "center",
@@ -1364,24 +1380,24 @@ class Coordinates(BaseElement):
 
 
 class Dimensions(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "stroke-color", "black")
-        offset = pl.get_float_attrib(el, "dim-offset", 0)
-        x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
-        y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
-        if "x2" not in el.attrib:
-            w = pl.get_float_attrib(el, "width", drawing_defaults["force-width"] / 2)
-            ang = pl.get_float_attrib(el, "angle", drawing_defaults["angle"])
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "stroke-color", "black")
+        offset = pl.get_float_attrib(self, "dim-offset", 0)
+        x1 = pl.get_float_attrib(self, "x1", drawing_defaults["x1"])
+        y1 = pl.get_float_attrib(self, "y1", drawing_defaults["y1"])
+        if "x2" not in self.attrib:
+            w = pl.get_float_attrib(self, "width", drawing_defaults["force-width"] / 2)
+            ang = pl.get_float_attrib(self, "angle", drawing_defaults["angle"])
             ang_rad = ang * math.pi / 180
             x2 = x1 + w * math.cos(ang_rad)
             y2 = y1 + w * math.sin(ang_rad)
         else:
-            x2 = pl.get_float_attrib(el, "x2")
-            y2 = pl.get_float_attrib(el, "y2", y1)
+            x2 = pl.get_float_attrib(self, "x2")
+            y2 = pl.get_float_attrib(self, "y2", y1)
             ang_rad = math.atan2(y2 - y1, x2 - x1)
 
-        if "dim-offset-angle" in el.attrib:
-            ang = pl.get_float_attrib(el, "dim-offset-angle")
+        if "dim-offset-angle" in self.attrib:
+            ang = pl.get_float_attrib(self, "dim-offset-angle")
             ang_rad = ang * math.pi / 180
 
         e1 = np.array([math.cos(ang_rad), math.sin(ang_rad)])
@@ -1405,23 +1421,25 @@ class Dimensions(BaseElement):
             "y2d": float(r2d[1]),
             "stroke": color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"] / 2
+                self, "stroke-width", drawing_defaults["stroke-width"] / 2
             ),
-            "arrowheadWidthRatio": pl.get_float_attrib(el, "arrow-head-width", 1.5),
-            "arrowheadOffsetRatio": pl.get_float_attrib(el, "arrow-head-length", 1.5),
-            "label": pl.get_string_attrib(el, "label", ""),
-            "offsetx": pl.get_float_attrib(el, "offsetx", 0),
-            "offsety": pl.get_float_attrib(el, "offsety", 0),
+            "arrowheadWidthRatio": pl.get_float_attrib(self, "arrow-head-width", 1.5),
+            "arrowheadOffsetRatio": pl.get_float_attrib(self, "arrow-head-length", 1.5),
+            "label": pl.get_string_attrib(self, "label", ""),
+            "offsetx": pl.get_float_attrib(self, "offsetx", 0),
+            "offsety": pl.get_float_attrib(self, "offsety", 0),
             "xlabel": float(rlabel[0]),
             "ylabel": float(rlabel[1]),
             "drawStartArrow": json.loads(
-                pl.get_string_attrib(el, "draw-start-arrow", "true")
+                pl.get_string_attrib(self, "draw-start-arrow", "true")
             ),
             "drawEndArrow": json.loads(
-                pl.get_string_attrib(el, "draw-end-arrow", "true")
+                pl.get_string_attrib(self, "draw-end-arrow", "true")
             ),
-            "startSupportLine": pl.get_boolean_attrib(el, "start-support-line", False),
-            "endSupportLine": pl.get_boolean_attrib(el, "end-support-line", False),
+            "startSupportLine": pl.get_boolean_attrib(
+                self, "start-support-line", False
+            ),
+            "endSupportLine": pl.get_boolean_attrib(self, "end-support-line", False),
             "originY": "center",
             "selectable": drawing_defaults["selectable"],
         }
@@ -1451,34 +1469,36 @@ class Dimensions(BaseElement):
 
 
 class ArcDimensions(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "stroke-color", "black")
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "stroke-color", "black")
         return {
-            "left": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
-            "top": pl.get_float_attrib(el, "y1", drawing_defaults["y1"]),
-            "angle": pl.get_float_attrib(el, "angle", drawing_defaults["angle"]),
-            "radius": pl.get_float_attrib(el, "radius", drawing_defaults["radius"]),
+            "left": pl.get_float_attrib(self, "x1", drawing_defaults["x1"]),
+            "top": pl.get_float_attrib(self, "y1", drawing_defaults["y1"]),
+            "angle": pl.get_float_attrib(self, "angle", drawing_defaults["angle"]),
+            "radius": pl.get_float_attrib(self, "radius", drawing_defaults["radius"]),
             "startAngle": pl.get_float_attrib(
-                el, "start-angle", drawing_defaults["angle"]
+                self, "start-angle", drawing_defaults["angle"]
             ),
             "endAngle": pl.get_float_attrib(
-                el, "end-angle", drawing_defaults["end-angle"]
+                self, "end-angle", drawing_defaults["end-angle"]
             ),
-            "drawCenterPoint": pl.get_boolean_attrib(el, "draw-center", False),
-            "drawStartArrow": pl.get_boolean_attrib(el, "draw-start-arrow", False),
-            "drawEndArrow": pl.get_boolean_attrib(el, "draw-end-arrow", True),
-            "startSupportLine": pl.get_boolean_attrib(el, "start-support-line", False),
-            "endSupportLine": pl.get_boolean_attrib(el, "end-support-line", False),
-            "label": pl.get_string_attrib(el, "label", drawing_defaults["label"]),
-            "offsetx": pl.get_float_attrib(el, "offsetx", 0),
-            "offsety": pl.get_float_attrib(el, "offsety", 0),
+            "drawCenterPoint": pl.get_boolean_attrib(self, "draw-center", False),
+            "drawStartArrow": pl.get_boolean_attrib(self, "draw-start-arrow", False),
+            "drawEndArrow": pl.get_boolean_attrib(self, "draw-end-arrow", True),
+            "startSupportLine": pl.get_boolean_attrib(
+                self, "start-support-line", False
+            ),
+            "endSupportLine": pl.get_boolean_attrib(self, "end-support-line", False),
+            "label": pl.get_string_attrib(self, "label", drawing_defaults["label"]),
+            "offsetx": pl.get_float_attrib(self, "offsetx", 0),
+            "offsety": pl.get_float_attrib(self, "offsety", 0),
             "stroke": color,
             "fill": color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"] / 2
+                self, "stroke-width", drawing_defaults["stroke-width"] / 2
             ),
-            "arrowheadWidthRatio": pl.get_float_attrib(el, "arrow-head-width", 1),
-            "arrowheadOffsetRatio": pl.get_float_attrib(el, "arrow-head-length", 1),
+            "arrowheadWidthRatio": pl.get_float_attrib(self, "arrow-head-width", 1),
+            "arrowheadOffsetRatio": pl.get_float_attrib(self, "arrow-head-length", 1),
             "originY": "center",
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
@@ -1507,29 +1527,31 @@ class ArcDimensions(BaseElement):
 
 
 class Rectangle(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "color", "green1")
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "color", "green1")
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
         return {
-            "left": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
-            "top": pl.get_float_attrib(el, "y1", drawing_defaults["y1"]),
-            "width": pl.get_float_attrib(el, "width", drawing_defaults["width"]),
-            "height": pl.get_float_attrib(el, "height", drawing_defaults["height"]),
-            "angle": pl.get_float_attrib(el, "angle", drawing_defaults["angle"]),
+            "left": pl.get_float_attrib(self, "x1", drawing_defaults["x1"]),
+            "top": pl.get_float_attrib(self, "y1", drawing_defaults["y1"]),
+            "width": pl.get_float_attrib(self, "width", drawing_defaults["width"]),
+            "height": pl.get_float_attrib(self, "height", drawing_defaults["height"]),
+            "angle": pl.get_float_attrib(self, "angle", drawing_defaults["angle"]),
             "originX": "center",
             "originY": "center",
-            "opacity": pl.get_float_attrib(el, "opacity", drawing_defaults["opacity"]),
+            "opacity": pl.get_float_attrib(
+                self, "opacity", drawing_defaults["opacity"]
+            ),
             "fill": color,
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"] / 2
+                self, "stroke-width", drawing_defaults["stroke-width"] / 2
             ),
             "strokeUniform": True,
             "selectable": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
+                self, "selectable", drawing_defaults["selectable"]
             ),
             "evented": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
+                self, "selectable", drawing_defaults["selectable"]
             ),
         }
 
@@ -1549,36 +1571,38 @@ class Rectangle(BaseElement):
 
 
 class Triangle(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "color", "red1")
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "color", "red1")
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
         return {
             "p1": {
-                "x": pl.get_float_attrib(el, "x1", 40),
-                "y": pl.get_float_attrib(el, "y1", 40),
+                "x": pl.get_float_attrib(self, "x1", 40),
+                "y": pl.get_float_attrib(self, "y1", 40),
             },
             "p2": {
-                "x": pl.get_float_attrib(el, "x2", 60),
-                "y": pl.get_float_attrib(el, "y2", 40),
+                "x": pl.get_float_attrib(self, "x2", 60),
+                "y": pl.get_float_attrib(self, "y2", 40),
             },
             "p3": {
-                "x": pl.get_float_attrib(el, "x3", 40),
-                "y": pl.get_float_attrib(el, "y3", 20),
+                "x": pl.get_float_attrib(self, "x3", 40),
+                "y": pl.get_float_attrib(self, "y3", 20),
             },
             "fill": color,
-            "opacity": pl.get_float_attrib(el, "opacity", drawing_defaults["opacity"]),
+            "opacity": pl.get_float_attrib(
+                self, "opacity", drawing_defaults["opacity"]
+            ),
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"] / 2
+                self, "stroke-width", drawing_defaults["stroke-width"] / 2
             ),
             "strokeUniform": True,
             "originX": "center",
             "originY": "center",
             "selectable": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
+                self, "selectable", drawing_defaults["selectable"]
             ),
             "evented": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
+                self, "selectable", drawing_defaults["selectable"]
             ),
         }
 
@@ -1599,30 +1623,32 @@ class Triangle(BaseElement):
 
 
 class Circle(BaseElement):
-    def generate(el, data):
-        color = pl.get_color_attrib(el, "color", "grey")
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
+    def generate(self, data):
+        color = pl.get_color_attrib(self, "color", "grey")
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
         return {
-            "left": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
-            "top": pl.get_float_attrib(el, "y1", drawing_defaults["y1"]),
-            "radius": pl.get_float_attrib(el, "radius", drawing_defaults["radius"]),
-            "label": pl.get_string_attrib(el, "label", drawing_defaults["label"]),
-            "offsetx": pl.get_float_attrib(el, "offsetx", 5),
-            "offsety": pl.get_float_attrib(el, "offsety", 5),
+            "left": pl.get_float_attrib(self, "x1", drawing_defaults["x1"]),
+            "top": pl.get_float_attrib(self, "y1", drawing_defaults["y1"]),
+            "radius": pl.get_float_attrib(self, "radius", drawing_defaults["radius"]),
+            "label": pl.get_string_attrib(self, "label", drawing_defaults["label"]),
+            "offsetx": pl.get_float_attrib(self, "offsetx", 5),
+            "offsety": pl.get_float_attrib(self, "offsety", 5),
             "originX": "center",
             "originY": "center",
-            "opacity": pl.get_float_attrib(el, "opacity", drawing_defaults["opacity"]),
+            "opacity": pl.get_float_attrib(
+                self, "opacity", drawing_defaults["opacity"]
+            ),
             "stroke": stroke_color,
             "fill": color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"] / 2
+                self, "stroke-width", drawing_defaults["stroke-width"] / 2
             ),
             "strokeUniform": True,
             "selectable": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
+                self, "selectable", drawing_defaults["selectable"]
             ),
             "evented": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
+                self, "selectable", drawing_defaults["selectable"]
             ),
             "scaling": True,
         }
@@ -1644,28 +1670,30 @@ class Circle(BaseElement):
 
 
 class Polygon(BaseElement):
-    def generate(el, data):
+    def generate(self, data):
         pointlist = json.loads(
             pl.get_string_attrib(
-                el,
+                self,
                 "plist",
                 '[{"x": 66.21260699999999, "y": 82.746078}, {"x": 25.880586, "y": 78.50701}, {"x": 17.448900000000002, "y": 38.839035}, {"x": 52.569852, "y": 18.561946}, {"x": 82.707481, "y": 45.697991}]',
             )
         )
-        color = pl.get_color_attrib(el, "color", "white")
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
+        color = pl.get_color_attrib(self, "color", "white")
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
         return {
             "pointlist": pointlist,
-            "opacity": pl.get_float_attrib(el, "opacity", drawing_defaults["opacity"]),
+            "opacity": pl.get_float_attrib(
+                self, "opacity", drawing_defaults["opacity"]
+            ),
             "fill": color,
             "stroke": stroke_color,
-            "strokeWidth": pl.get_float_attrib(el, "stroke-width", 1),
+            "strokeWidth": pl.get_float_attrib(self, "stroke-width", 1),
             "strokeUniform": True,
             "selectable": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
+                self, "selectable", drawing_defaults["selectable"]
             ),
             "evented": pl.get_boolean_attrib(
-                el, "selectable", drawing_defaults["selectable"]
+                self, "selectable", drawing_defaults["selectable"]
             ),
         }
 
@@ -1681,16 +1709,16 @@ class Polygon(BaseElement):
 
 
 class Spring(BaseElement):
-    def generate(el, data):
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
-        x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
-        y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
-        if "x2" in el.attrib and "y2" in el.attrib:
-            x2 = pl.get_float_attrib(el, "x2")
-            y2 = pl.get_float_attrib(el, "y2")
+    def generate(self, data):
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
+        x1 = pl.get_float_attrib(self, "x1", drawing_defaults["x1"])
+        y1 = pl.get_float_attrib(self, "y1", drawing_defaults["y1"])
+        if "x2" in self.attrib and "y2" in self.attrib:
+            x2 = pl.get_float_attrib(self, "x2")
+            y2 = pl.get_float_attrib(self, "y2")
         else:
-            w = pl.get_float_attrib(el, "width", drawing_defaults["force-width"])
-            angle = pl.get_float_attrib(el, "angle", drawing_defaults["angle"])
+            w = pl.get_float_attrib(self, "width", drawing_defaults["force-width"])
+            angle = pl.get_float_attrib(self, "angle", drawing_defaults["angle"])
             x2 = x1 + w * math.cos(angle * math.pi / 180)
             y2 = y1 + w * math.sin(angle * math.pi / 180)
         return {
@@ -1698,15 +1726,15 @@ class Spring(BaseElement):
             "y1": y1,
             "x2": x2,
             "y2": y2,
-            "height": pl.get_float_attrib(el, "height", drawing_defaults["height"]),
-            "dx": pl.get_float_attrib(el, "interval", 10),
+            "height": pl.get_float_attrib(self, "height", drawing_defaults["height"]),
+            "dx": pl.get_float_attrib(self, "interval", 10),
             "originX": "center",
             "originY": "center",
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "drawPin": pl.get_boolean_attrib(el, "draw-pin", False),
+            "drawPin": pl.get_boolean_attrib(self, "draw-pin", False),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
@@ -1728,16 +1756,16 @@ class Spring(BaseElement):
 
 
 class Coil(BaseElement):
-    def generate(el, data):
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
-        x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
-        y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
-        if "x2" in el.attrib and "y2" in el.attrib:
-            x2 = pl.get_float_attrib(el, "x2")
-            y2 = pl.get_float_attrib(el, "y2")
+    def generate(self, data):
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
+        x1 = pl.get_float_attrib(self, "x1", drawing_defaults["x1"])
+        y1 = pl.get_float_attrib(self, "y1", drawing_defaults["y1"])
+        if "x2" in self.attrib and "y2" in self.attrib:
+            x2 = pl.get_float_attrib(self, "x2")
+            y2 = pl.get_float_attrib(self, "y2")
         else:
-            w = pl.get_float_attrib(el, "width", 80)
-            angle = pl.get_float_attrib(el, "angle", drawing_defaults["angle"])
+            w = pl.get_float_attrib(self, "width", 80)
+            angle = pl.get_float_attrib(self, "angle", drawing_defaults["angle"])
             x2 = x1 + w * math.cos(angle * math.pi / 180)
             y2 = y1 + w * math.sin(angle * math.pi / 180)
         return {
@@ -1745,14 +1773,14 @@ class Coil(BaseElement):
             "y1": y1,
             "x2": x2,
             "y2": y2,
-            "height": pl.get_float_attrib(el, "height", 30),
+            "height": pl.get_float_attrib(self, "height", 30),
             "originX": "center",
             "originY": "center",
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
-            "drawPin": pl.get_boolean_attrib(el, "draw-pin", False),
+            "drawPin": pl.get_boolean_attrib(self, "draw-pin", False),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
         }
@@ -1773,22 +1801,22 @@ class Coil(BaseElement):
 
 
 class Line(BaseElement):
-    def generate(el, data):
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
-        x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
-        y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
-        if "x2" in el.attrib and "y2" in el.attrib:
-            x2 = pl.get_float_attrib(el, "x2")
-            y2 = pl.get_float_attrib(el, "y2")
+    def generate(self, data):
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
+        x1 = pl.get_float_attrib(self, "x1", drawing_defaults["x1"])
+        y1 = pl.get_float_attrib(self, "y1", drawing_defaults["y1"])
+        if "x2" in self.attrib and "y2" in self.attrib:
+            x2 = pl.get_float_attrib(self, "x2")
+            y2 = pl.get_float_attrib(self, "y2")
         else:
-            w = pl.get_float_attrib(el, "width", drawing_defaults["force-width"])
-            angle = pl.get_float_attrib(el, "angle", 0)
+            w = pl.get_float_attrib(self, "width", drawing_defaults["force-width"])
+            angle = pl.get_float_attrib(self, "angle", 0)
             x2 = x1 + w * math.cos(angle * math.pi / 180)
             y2 = y1 + w * math.sin(angle * math.pi / 180)
-        if "dashed-size" in el.attrib:
+        if "dashed-size" in self.attrib:
             dashed_array = [
-                pl.get_float_attrib(el, "dashed-size"),
-                pl.get_float_attrib(el, "dashed-size"),
+                pl.get_float_attrib(self, "dashed-size"),
+                pl.get_float_attrib(self, "dashed-size"),
             ]
         else:
             dashed_array = None
@@ -1799,10 +1827,12 @@ class Line(BaseElement):
             "y2": y2,
             "originX": "center",
             "originY": "center",
-            "opacity": pl.get_float_attrib(el, "opacity", drawing_defaults["opacity"]),
+            "opacity": pl.get_float_attrib(
+                self, "opacity", drawing_defaults["opacity"]
+            ),
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
             "strokeDashArray": dashed_array,
             "selectable": drawing_defaults["selectable"],
@@ -1825,35 +1855,37 @@ class Line(BaseElement):
 
 
 class Arc(BaseElement):
-    def generate(el, data):
-        stroke_color = pl.get_color_attrib(el, "stroke-color", "black")
+    def generate(self, data):
+        stroke_color = pl.get_color_attrib(self, "stroke-color", "black")
         theta1 = (
-            pl.get_float_attrib(el, "start-angle", drawing_defaults["angle"])
+            pl.get_float_attrib(self, "start-angle", drawing_defaults["angle"])
             * math.pi
             / 180
         )
         theta2 = (
-            pl.get_float_attrib(el, "end-angle", drawing_defaults["end-angle"])
+            pl.get_float_attrib(self, "end-angle", drawing_defaults["end-angle"])
             * math.pi
             / 180
         )
-        if "dashed-size" in el.attrib:
+        if "dashed-size" in self.attrib:
             dashed_array = [
-                pl.get_float_attrib(el, "dashed-size"),
-                pl.get_float_attrib(el, "dashed-size"),
+                pl.get_float_attrib(self, "dashed-size"),
+                pl.get_float_attrib(self, "dashed-size"),
             ]
         else:
             dashed_array = None
         return {
-            "left": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
-            "top": pl.get_float_attrib(el, "y1", drawing_defaults["y1"]),
-            "radius": pl.get_float_attrib(el, "radius", drawing_defaults["radius"]),
+            "left": pl.get_float_attrib(self, "x1", drawing_defaults["x1"]),
+            "top": pl.get_float_attrib(self, "y1", drawing_defaults["y1"]),
+            "radius": pl.get_float_attrib(self, "radius", drawing_defaults["radius"]),
             "startAngle": theta1,
             "endAngle": theta2,
-            "opacity": pl.get_float_attrib(el, "opacity", drawing_defaults["opacity"]),
+            "opacity": pl.get_float_attrib(
+                self, "opacity", drawing_defaults["opacity"]
+            ),
             "stroke": stroke_color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
             "strokeDashArray": dashed_array,
             "fill": "",
@@ -1878,17 +1910,17 @@ class Arc(BaseElement):
 
 
 class Text(BaseElement):
-    def generate(el, data):
+    def generate(self, data):
         return {
-            "left": pl.get_float_attrib(el, "x1", drawing_defaults["x1"]),
-            "top": pl.get_float_attrib(el, "y1", drawing_defaults["y1"]),
-            "label": pl.get_string_attrib(el, "label", " Text "),
-            "offsetx": pl.get_float_attrib(el, "offsetx", 0),
-            "offsety": pl.get_float_attrib(el, "offsety", 0),
+            "left": pl.get_float_attrib(self, "x1", drawing_defaults["x1"]),
+            "top": pl.get_float_attrib(self, "y1", drawing_defaults["y1"]),
+            "label": pl.get_string_attrib(self, "label", " Text "),
+            "offsetx": pl.get_float_attrib(self, "offsetx", 0),
+            "offsety": pl.get_float_attrib(self, "offsety", 0),
             "fontSize": pl.get_float_attrib(
-                el, "font-size", drawing_defaults["font-size"]
+                self, "font-size", drawing_defaults["font-size"]
             ),
-            "latex": pl.get_boolean_attrib(el, "latex", True),
+            "latex": pl.get_boolean_attrib(self, "latex", True),
         }
 
     def get_attributes():
@@ -1896,35 +1928,35 @@ class Text(BaseElement):
 
 
 class Axes(BaseElement):
-    def generate(el, data):
-        if "origin" in el.attrib:
-            origin = json.loads(pl.get_string_attrib(el, "origin"))
+    def generate(self, data):
+        if "origin" in self.attrib:
+            origin = json.loads(pl.get_string_attrib(self, "origin"))
             origin_x = origin["x"]
             origin_y = origin["y"]
         else:
             origin_x = origin_y = 60
 
-        color = pl.get_color_attrib(el, "color", "black")
+        color = pl.get_color_attrib(self, "color", "black")
         return {
             "left": origin_x,
             "top": origin_y,
-            "xneg": pl.get_float_attrib(el, "xneg", 20),
-            "xpos": pl.get_float_attrib(el, "xpos", 400),
-            "yneg": pl.get_float_attrib(el, "yneg", 160),
-            "ypos": pl.get_float_attrib(el, "ypos", 160),
+            "xneg": pl.get_float_attrib(self, "xneg", 20),
+            "xpos": pl.get_float_attrib(self, "xpos", 400),
+            "yneg": pl.get_float_attrib(self, "yneg", 160),
+            "ypos": pl.get_float_attrib(self, "ypos", 160),
             "supporting_lines": json.loads(
-                pl.get_string_attrib(el, "supporting-lines", "[]")
+                pl.get_string_attrib(self, "supporting-lines", "[]")
             ),
-            "label_list": json.loads(pl.get_string_attrib(el, "grid-label", "[]")),
-            "labelx": pl.get_string_attrib(el, "label-x", "x"),
-            "labely": pl.get_string_attrib(el, "label-y", "y"),
-            "offsetx_label_x": pl.get_float_attrib(el, "offsetx-label-x", 0),
-            "offsety_label_x": pl.get_float_attrib(el, "offsety-label-x", 0),
-            "offsetx_label_y": pl.get_float_attrib(el, "offsetx-label-y", -30),
-            "offsety_label_y": pl.get_float_attrib(el, "offsety-label-y", -10),
+            "label_list": json.loads(pl.get_string_attrib(self, "grid-label", "[]")),
+            "labelx": pl.get_string_attrib(self, "label-x", "x"),
+            "labely": pl.get_string_attrib(self, "label-y", "y"),
+            "offsetx_label_x": pl.get_float_attrib(self, "offsetx-label-x", 0),
+            "offsety_label_x": pl.get_float_attrib(self, "offsety-label-x", 0),
+            "offsetx_label_y": pl.get_float_attrib(self, "offsetx-label-y", -30),
+            "offsety_label_y": pl.get_float_attrib(self, "offsety-label-y", -10),
             "stroke": color,
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
             "originY": "center",
             "selectable": drawing_defaults["selectable"],
@@ -1952,18 +1984,18 @@ class Axes(BaseElement):
 
 
 class GraphLine(BaseElement):
-    def generate(el, data):
+    def generate(self, data):
         curved_line = False
 
-        if "origin" in el.attrib:
-            origin = json.loads(pl.get_string_attrib(el, "origin"))
+        if "origin" in self.attrib:
+            origin = json.loads(pl.get_string_attrib(self, "origin"))
             x0 = origin["x"]
             y0 = origin["y"]
         else:
             x0 = y0 = 0
 
-        if "end-points" in el.attrib:
-            line = json.loads(pl.get_string_attrib(el, "end-points"))
+        if "end-points" in self.attrib:
+            line = json.loads(pl.get_string_attrib(self, "end-points"))
             n_end_points = len(line)
             if n_end_points == 2:
                 x1 = line[0]["x"]
@@ -1987,13 +2019,13 @@ class GraphLine(BaseElement):
                 "pl-graph-line error: required attribute end-points is missing."
             )
 
-        if "end-gradients" in el.attrib:
+        if "end-gradients" in self.attrib:
             if curved_line:
                 raise Exception(
                     "pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both."
                 )
             else:
-                grads = json.loads(pl.get_string_attrib(el, "end-gradients"))
+                grads = json.loads(pl.get_string_attrib(self, "end-gradients"))
                 if len(grads) != 2:
                     raise Exception(
                         "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
@@ -2009,17 +2041,17 @@ class GraphLine(BaseElement):
                     y3 = (y1 - grad1 * x1) + grad1 * x3
                     curved_line = True
 
-        if "draw-error-box" in el.attrib:
-            obj_draw = el.attrib["draw-error-box"] == "true"
+        if "draw-error-box" in self.attrib:
+            obj_draw = self.attrib["draw-error-box"] == "true"
         else:
             obj_draw = None
 
-        offset_x = pl.get_float_attrib(el, "offset-tol-x", 0)
-        offset_y = pl.get_float_attrib(el, "offset-tol-y", 0)
-        offset_control_x = pl.get_float_attrib(el, "offset-control-tol-x", 0)
-        offset_control_y = pl.get_float_attrib(el, "offset-control-tol-y", 0)
-        grid_size = pl.get_integer_attrib(el, "grid-size", 20)
-        tol = pl.get_float_attrib(el, "tol", grid_size / 2)
+        offset_x = pl.get_float_attrib(self, "offset-tol-x", 0)
+        offset_y = pl.get_float_attrib(self, "offset-tol-y", 0)
+        offset_control_x = pl.get_float_attrib(self, "offset-control-tol-x", 0)
+        offset_control_y = pl.get_float_attrib(self, "offset-control-tol-y", 0)
+        grid_size = pl.get_integer_attrib(self, "grid-size", 20)
+        tol = pl.get_float_attrib(self, "tol", grid_size / 2)
 
         # Defining the error boxes for end points
         wbox = 2 * tol + 2 * offset_x
@@ -2031,8 +2063,8 @@ class GraphLine(BaseElement):
         obj = {
             "x1": x0 + x1,
             "y1": y0 - y1,
-            "stroke": pl.get_color_attrib(el, "color", "red"),
-            "strokeWidth": pl.get_float_attrib(el, "stroke-width", 4),
+            "stroke": pl.get_color_attrib(self, "color", "red"),
+            "strokeWidth": pl.get_float_attrib(self, "stroke-width", 4),
             "handleRadius": 6,
             "objectDrawErrorBox": obj_draw,
             "widthErrorBox": wbox,
@@ -2059,11 +2091,11 @@ class GraphLine(BaseElement):
             )
         return obj
 
-    def grading_name(element):
+    def grading_name(self):
         curved_line = False
-        if "end-points" in element.attrib:
-            line = json.loads(pl.get_string_attrib(element, "end-points"))
-            grads = json.loads(pl.get_string_attrib(element, "end-gradients", "[]"))
+        if "end-points" in self.attrib:
+            line = json.loads(pl.get_string_attrib(self, "end-points"))
+            grads = json.loads(pl.get_string_attrib(self, "end-gradients", "[]"))
             n_end_points = len(line)
             n_grads = len(grads)
             if n_end_points < 2 or n_end_points > 3:
@@ -2103,15 +2135,15 @@ class GraphLine(BaseElement):
 
 
 class Capacitor(BaseElement):
-    def generate(el, data):
-        x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
-        y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
-        if "x2" in el.attrib and "y2" in el.attrib:
-            x2 = pl.get_float_attrib(el, "x2")
-            y2 = pl.get_float_attrib(el, "y2")
+    def generate(self, data):
+        x1 = pl.get_float_attrib(self, "x1", drawing_defaults["x1"])
+        y1 = pl.get_float_attrib(self, "y1", drawing_defaults["y1"])
+        if "x2" in self.attrib and "y2" in self.attrib:
+            x2 = pl.get_float_attrib(self, "x2")
+            y2 = pl.get_float_attrib(self, "y2")
         else:
-            w = pl.get_float_attrib(el, "width", drawing_defaults["force-width"])
-            angle = pl.get_float_attrib(el, "angle", 0)
+            w = pl.get_float_attrib(self, "width", drawing_defaults["force-width"])
+            angle = pl.get_float_attrib(self, "angle", 0)
             x2 = x1 + w * math.cos(angle * math.pi / 180)
             y2 = y1 + w * math.sin(angle * math.pi / 180)
         return {
@@ -2119,23 +2151,27 @@ class Capacitor(BaseElement):
             "y1": y1,
             "x2": x2,
             "y2": y2,
-            "interval": pl.get_float_attrib(el, "interval", 10),
-            "height": pl.get_float_attrib(el, "height", 15),
+            "interval": pl.get_float_attrib(self, "interval", 10),
+            "height": pl.get_float_attrib(self, "height", 15),
             "originX": "center",
             "originY": "center",
-            "stroke": pl.get_color_attrib(el, "stroke-color", "black"),
+            "stroke": pl.get_color_attrib(self, "stroke-color", "black"),
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
-            "label": pl.get_string_attrib(el, "label", ""),
-            "offsetx": pl.get_float_attrib(el, "offsetx", drawing_defaults["offsetx"]),
-            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsetx"]),
-            "fontSize": pl.get_float_attrib(
-                el, "font-size", drawing_defaults["font-size"]
+            "label": pl.get_string_attrib(self, "label", ""),
+            "offsetx": pl.get_float_attrib(
+                self, "offsetx", drawing_defaults["offsetx"]
             ),
-            "polarized": pl.get_boolean_attrib(el, "polarized", False),
+            "offsety": pl.get_float_attrib(
+                self, "offsety", drawing_defaults["offsetx"]
+            ),
+            "fontSize": pl.get_float_attrib(
+                self, "font-size", drawing_defaults["font-size"]
+            ),
+            "polarized": pl.get_boolean_attrib(self, "polarized", False),
         }
 
     def get_attributes():
@@ -2159,15 +2195,15 @@ class Capacitor(BaseElement):
 
 
 class Battery(BaseElement):
-    def generate(el, data):
-        x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
-        y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
-        if "x2" in el.attrib and "y2" in el.attrib:
-            x2 = pl.get_float_attrib(el, "x2")
-            y2 = pl.get_float_attrib(el, "y2")
+    def generate(self, data):
+        x1 = pl.get_float_attrib(self, "x1", drawing_defaults["x1"])
+        y1 = pl.get_float_attrib(self, "y1", drawing_defaults["y1"])
+        if "x2" in self.attrib and "y2" in self.attrib:
+            x2 = pl.get_float_attrib(self, "x2")
+            y2 = pl.get_float_attrib(self, "y2")
         else:
-            w = pl.get_float_attrib(el, "width", drawing_defaults["force-width"])
-            angle = pl.get_float_attrib(el, "angle", 0)
+            w = pl.get_float_attrib(self, "width", drawing_defaults["force-width"])
+            angle = pl.get_float_attrib(self, "angle", 0)
             x2 = x1 + w * math.cos(angle * math.pi / 180)
             y2 = y1 + w * math.sin(angle * math.pi / 180)
         return {
@@ -2175,21 +2211,25 @@ class Battery(BaseElement):
             "y1": y1,
             "x2": x2,
             "y2": y2,
-            "interval": pl.get_float_attrib(el, "interval", 5),
-            "height": pl.get_float_attrib(el, "height", 20),
+            "interval": pl.get_float_attrib(self, "interval", 5),
+            "height": pl.get_float_attrib(self, "height", 20),
             "originX": "center",
             "originY": "center",
-            "stroke": pl.get_color_attrib(el, "stroke-color", "black"),
+            "stroke": pl.get_color_attrib(self, "stroke-color", "black"),
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
-            "label": pl.get_string_attrib(el, "label", ""),
-            "offsetx": pl.get_float_attrib(el, "offsetx", drawing_defaults["offsetx"]),
-            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsety"]),
+            "label": pl.get_string_attrib(self, "label", ""),
+            "offsetx": pl.get_float_attrib(
+                self, "offsetx", drawing_defaults["offsetx"]
+            ),
+            "offsety": pl.get_float_attrib(
+                self, "offsety", drawing_defaults["offsety"]
+            ),
             "fontSize": pl.get_float_attrib(
-                el, "font-size", drawing_defaults["font-size"]
+                self, "font-size", drawing_defaults["font-size"]
             ),
         }
 
@@ -2213,15 +2253,15 @@ class Battery(BaseElement):
 
 
 class Resistor(BaseElement):
-    def generate(el, data):
-        x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
-        y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
-        if "x2" in el.attrib and "y2" in el.attrib:
-            x2 = pl.get_float_attrib(el, "x2")
-            y2 = pl.get_float_attrib(el, "y2")
+    def generate(self, data):
+        x1 = pl.get_float_attrib(self, "x1", drawing_defaults["x1"])
+        y1 = pl.get_float_attrib(self, "y1", drawing_defaults["y1"])
+        if "x2" in self.attrib and "y2" in self.attrib:
+            x2 = pl.get_float_attrib(self, "x2")
+            y2 = pl.get_float_attrib(self, "y2")
         else:
-            w = pl.get_float_attrib(el, "width", drawing_defaults["force-width"])
-            angle = pl.get_float_attrib(el, "angle", 0)
+            w = pl.get_float_attrib(self, "width", drawing_defaults["force-width"])
+            angle = pl.get_float_attrib(self, "angle", 0)
             x2 = x1 + w * math.cos(angle * math.pi / 180)
             y2 = y1 + w * math.sin(angle * math.pi / 180)
         return {
@@ -2229,21 +2269,25 @@ class Resistor(BaseElement):
             "y1": y1,
             "x2": x2,
             "y2": y2,
-            "interval": pl.get_float_attrib(el, "interval", 30),
-            "height": pl.get_float_attrib(el, "height", 10),
+            "interval": pl.get_float_attrib(self, "interval", 30),
+            "height": pl.get_float_attrib(self, "height", 10),
             "originX": "center",
             "originY": "center",
-            "stroke": pl.get_color_attrib(el, "stroke-color", "black"),
+            "stroke": pl.get_color_attrib(self, "stroke-color", "black"),
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
-            "label": pl.get_string_attrib(el, "label", ""),
-            "offsetx": pl.get_float_attrib(el, "offsetx", drawing_defaults["offsetx"]),
-            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsety"]),
+            "label": pl.get_string_attrib(self, "label", ""),
+            "offsetx": pl.get_float_attrib(
+                self, "offsetx", drawing_defaults["offsetx"]
+            ),
+            "offsety": pl.get_float_attrib(
+                self, "offsety", drawing_defaults["offsety"]
+            ),
             "fontSize": pl.get_float_attrib(
-                el, "font-size", drawing_defaults["font-size"]
+                self, "font-size", drawing_defaults["font-size"]
             ),
         }
 
@@ -2267,15 +2311,15 @@ class Resistor(BaseElement):
 
 
 class Inductor(BaseElement):
-    def generate(el, data):
-        x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
-        y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
-        if "x2" in el.attrib and "y2" in el.attrib:
-            x2 = pl.get_float_attrib(el, "x2")
-            y2 = pl.get_float_attrib(el, "y2")
+    def generate(self, data):
+        x1 = pl.get_float_attrib(self, "x1", drawing_defaults["x1"])
+        y1 = pl.get_float_attrib(self, "y1", drawing_defaults["y1"])
+        if "x2" in self.attrib and "y2" in self.attrib:
+            x2 = pl.get_float_attrib(self, "x2")
+            y2 = pl.get_float_attrib(self, "y2")
         else:
-            w = pl.get_float_attrib(el, "width", drawing_defaults["force-width"])
-            angle = pl.get_float_attrib(el, "angle", 0)
+            w = pl.get_float_attrib(self, "width", drawing_defaults["force-width"])
+            angle = pl.get_float_attrib(self, "angle", 0)
             x2 = x1 + w * math.cos(angle * math.pi / 180)
             y2 = y1 + w * math.sin(angle * math.pi / 180)
         return {
@@ -2283,21 +2327,25 @@ class Inductor(BaseElement):
             "y1": y1,
             "x2": x2,
             "y2": y2,
-            "interval": pl.get_float_attrib(el, "interval", 40),
-            "height": pl.get_float_attrib(el, "height", 20),
+            "interval": pl.get_float_attrib(self, "interval", 40),
+            "height": pl.get_float_attrib(self, "height", 20),
             "originX": "center",
             "originY": "center",
-            "stroke": pl.get_color_attrib(el, "stroke-color", "black"),
+            "stroke": pl.get_color_attrib(self, "stroke-color", "black"),
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
-            "label": pl.get_string_attrib(el, "label", ""),
-            "offsetx": pl.get_float_attrib(el, "offsetx", drawing_defaults["offsetx"]),
-            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsety"]),
+            "label": pl.get_string_attrib(self, "label", ""),
+            "offsetx": pl.get_float_attrib(
+                self, "offsetx", drawing_defaults["offsetx"]
+            ),
+            "offsety": pl.get_float_attrib(
+                self, "offsety", drawing_defaults["offsety"]
+            ),
             "fontSize": pl.get_float_attrib(
-                el, "font-size", drawing_defaults["font-size"]
+                self, "font-size", drawing_defaults["font-size"]
             ),
         }
 
@@ -2321,15 +2369,15 @@ class Inductor(BaseElement):
 
 
 class Switch(BaseElement):
-    def generate(el, data):
-        x1 = pl.get_float_attrib(el, "x1", drawing_defaults["x1"])
-        y1 = pl.get_float_attrib(el, "y1", drawing_defaults["y1"])
-        if "x2" in el.attrib and "y2" in el.attrib:
-            x2 = pl.get_float_attrib(el, "x2")
-            y2 = pl.get_float_attrib(el, "y2")
+    def generate(self, data):
+        x1 = pl.get_float_attrib(self, "x1", drawing_defaults["x1"])
+        y1 = pl.get_float_attrib(self, "y1", drawing_defaults["y1"])
+        if "x2" in self.attrib and "y2" in self.attrib:
+            x2 = pl.get_float_attrib(self, "x2")
+            y2 = pl.get_float_attrib(self, "y2")
         else:
-            w = pl.get_float_attrib(el, "width", drawing_defaults["force-width"])
-            angle = pl.get_float_attrib(el, "angle", 0)
+            w = pl.get_float_attrib(self, "width", drawing_defaults["force-width"])
+            angle = pl.get_float_attrib(self, "angle", 0)
             x2 = x1 + w * math.cos(angle * math.pi / 180)
             y2 = y1 + w * math.sin(angle * math.pi / 180)
         return {
@@ -2337,22 +2385,26 @@ class Switch(BaseElement):
             "y1": y1,
             "x2": x2,
             "y2": y2,
-            "interval": pl.get_float_attrib(el, "interval", 40),
-            "switchAngle": pl.get_float_attrib(el, "switch-angle", 30),
-            "drawPin": pl.get_boolean_attrib(el, "draw-pin", True),
+            "interval": pl.get_float_attrib(self, "interval", 40),
+            "switchAngle": pl.get_float_attrib(self, "switch-angle", 30),
+            "drawPin": pl.get_boolean_attrib(self, "draw-pin", True),
             "originX": "center",
             "originY": "center",
-            "stroke": pl.get_color_attrib(el, "stroke-color", "black"),
+            "stroke": pl.get_color_attrib(self, "stroke-color", "black"),
             "strokeWidth": pl.get_float_attrib(
-                el, "stroke-width", drawing_defaults["stroke-width"]
+                self, "stroke-width", drawing_defaults["stroke-width"]
             ),
             "selectable": drawing_defaults["selectable"],
             "evented": drawing_defaults["selectable"],
-            "label": pl.get_string_attrib(el, "label", ""),
-            "offsetx": pl.get_float_attrib(el, "offsetx", drawing_defaults["offsetx"]),
-            "offsety": pl.get_float_attrib(el, "offsety", drawing_defaults["offsety"]),
+            "label": pl.get_string_attrib(self, "label", ""),
+            "offsetx": pl.get_float_attrib(
+                self, "offsetx", drawing_defaults["offsetx"]
+            ),
+            "offsety": pl.get_float_attrib(
+                self, "offsety", drawing_defaults["offsety"]
+            ),
             "fontSize": pl.get_float_attrib(
-                el, "font-size", drawing_defaults["font-size"]
+                self, "font-size", drawing_defaults["font-size"]
             ),
         }
 
@@ -2417,13 +2469,13 @@ elements["pl-switch"] = Switch
 
 class UnplaceableBaseElement(BaseElement):
     # Used only to get attributes
-    def generate(element):
+    def generate(self):
         raise Exception("Cannot create element!")
 
     def is_gradable():
         return False
 
-    def grade(ref, st, tol, angtol):
+    def grade(self, st, tol, angtol):
         raise Exception(
             "This element should not be graded!  If you see this message, something has gone terribly wrong!"
         )
