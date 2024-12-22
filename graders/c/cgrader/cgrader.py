@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 from typing import Literal
 
-import lxml.etree as ET
+import lxml.etree as et
 
 CODEBASE = "/grade/student"
 DATAFILE = "/grade/data/data.json"
@@ -63,7 +63,7 @@ could also mean that scanf does not support the input provided
 """
 
 
-class UngradableException(Exception):
+class UngradableError(Exception):
     def __init__(self):
         pass
 
@@ -225,7 +225,7 @@ class CGrader:
             self.result["message"] += (
                 f"Compilation errors, please fix and try again.\n\n{out}\n"
             )
-            raise UngradableException()
+            raise UngradableError()
         if out and add_warning_result_msg:
             self.result["message"] += f"Compilation warnings:\n\n{out}\n"
         if exec_file:
@@ -299,7 +299,7 @@ class CGrader:
             self.result["message"] += (
                 f"Linker errors, please fix and try again.\n\n{out}\n"
             )
-            raise UngradableException()
+            raise UngradableError()
         if out and add_warning_result_msg:
             self.result["message"] += f"Linker warnings:\n\n{out}\n"
         return out
@@ -614,7 +614,7 @@ class CGrader:
         )
         try:
             with open(log_file, "r", errors="backslashreplace") as log:
-                tree = ET.parse(log, parser=ET.XMLParser())
+                tree = et.parse(log, parser=et.XMLParser())
             for suite in tree.getroot().findall("{*}suite"):
                 suite_title = suite.findtext("{*}title") if use_suite_title else ""
                 for test in suite.findall("{*}test"):
@@ -635,10 +635,10 @@ class CGrader:
             self.result["message"] += (
                 "Test suite log file not found. Consult the instructor.\n"
             )
-            raise UngradableException()
-        except ET.ParseError as e:
+            raise UngradableError()
+        except et.ParseError as e:
             self.result["message"] += f"Error parsing test suite log.\n\n{e}\n"
-            raise UngradableException()
+            raise UngradableError()
 
     def save_results(self):
         if self.result["max_points"] > 0:
@@ -682,7 +682,7 @@ class CGrader:
 
         try:
             self.tests()
-        except UngradableException:
+        except UngradableError:
             self.result["gradable"] = False
         finally:
             self.save_results()

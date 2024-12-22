@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 class TestGrader(cgrader.CGrader):
     def tests(self):
         # Generates all correct outputs
-        def generateOutput(l, x, y):
+        def generate_output(l, x, y):
             v1x = x
             v1y = y
             v2x = v1x
@@ -34,7 +34,7 @@ class TestGrader(cgrader.CGrader):
         self.change_mode("image.json", "666")
 
         for l, x, y in [[2, 0, 4], [3, 0, 0], [1, 1, 1], [99, -10, -400]]:
-            test = self.test_run("./main", f"{l} {x} {y}\n", generateOutput(l, x, y))
+            test = self.test_run("./main", f"{l} {x} {y}\n", generate_output(l, x, y))
             try:
                 with open("image.json", "r") as f:
                     pts = json.load(f)
