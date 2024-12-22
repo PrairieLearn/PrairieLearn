@@ -3,7 +3,7 @@ import { type Question, type Course, type Variant, type Submission } from '../li
 export type QuestionType = Question['type'];
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
 
-type QuestionServerReturnValue<T> = Promise<{
+export type QuestionServerReturnValue<T> = Promise<{
   courseIssues: (Error & { fatal?: boolean; data?: any })[];
   data: T;
 }>;
@@ -65,13 +65,7 @@ export interface QuestionServer {
   prepare: (
     question: Question,
     course: Course,
-    variant: {
-      variant_seed: string;
-      params: Record<string, any>;
-      true_answer: Record<string, any>;
-      options: Record<string, any>;
-      broken: boolean;
-    },
+    variant: Pick<Variant, 'variant_seed' | 'params' | 'true_answer' | 'options' | 'broken'>,
   ) => QuestionServerReturnValue<PrepareResultData>;
   render: (
     renderSelection: { question: boolean; answer: boolean; submissions: boolean },

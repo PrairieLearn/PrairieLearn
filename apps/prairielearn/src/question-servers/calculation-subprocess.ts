@@ -6,21 +6,22 @@ import _ from 'lodash';
 import { contains } from '@prairielearn/path-utils';
 
 import * as chunks from '../lib/chunks.js';
+import { type Chunk } from '../lib/chunks.js';
 import { withCodeCaller } from '../lib/code-caller/index.js';
 import { config } from '../lib/config.js';
+import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
 import * as filePaths from '../lib/file-paths.js';
 import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
 
-/** @typedef {import('../lib/chunks.js').Chunk} Chunk */
-
-async function prepareChunksIfNeeded(question, course) {
+async function prepareChunksIfNeeded(question: Question, course: Course) {
   const questionIds = await chunks.getTemplateQuestionIds(question);
 
-  /** @type {Chunk[]} */
-  const templateQuestionChunks = questionIds.map((id) => ({ type: 'question', questionId: id }));
+  const templateQuestionChunks: Chunk[] = questionIds.map((id) => ({
+    type: 'question',
+    questionId: id,
+  }));
 
-  /** @type {Chunk[]} */
-  const chunksToLoad = [
+  const chunksToLoad: Chunk[] = [
     { type: 'question', questionId: question.id },
     { type: 'clientFilesCourse' },
     { type: 'serverFilesCourse' },
@@ -30,7 +31,11 @@ async function prepareChunksIfNeeded(question, course) {
   await chunks.ensureChunksForCourseAsync(course.id, chunksToLoad);
 }
 
-function getQuestionRuntimePath(questionServerPath, courseHostPath, courseRuntimePath) {
+function getQuestionRuntimePath(
+  questionServerPath: string,
+  courseHostPath: string,
+  courseRuntimePath: string,
+) {
   const questionServerType = contains(courseHostPath, questionServerPath) ? 'course' : 'core';
 
   if (questionServerType === 'course') {
@@ -49,11 +54,20 @@ function getQuestionRuntimePath(questionServerPath, courseHostPath, courseRuntim
   }
 }
 
-async function callFunction(func, question_course, question, inputData) {
+async function callFunction(
+  func: string,
+  question_course: Course,
+  question: Question,
+  inputData: any,
+) {
   await prepareChunksIfNeeded(question, question_course);
 
   const courseHostPath = chunks.getRuntimeDirectoryForCourse(question_course);
   const courseRuntimePath = config.workersExecutionMode === 'native' ? courseHostPath : '/course';
+
+  if (!question.directory) {
+    throw new Error('Question directory is missing');
+  }
 
   const { fullPath: questionServerPath } = await filePaths.questionFilePath(
     'server.js',
@@ -97,11 +111,16 @@ async function callFunction(func, question_course, question, inputData) {
   }
 }
 
-export async function generate(question, course, variant_seed) {
+export async function generate(question: Question, course: Course, variant_seed: string) {
   return await callFunction('generate', course, question, { variant_seed });
 }
 
-export async function grade(submission, variant, question, question_course) {
+export async function grade(
+  submission: Submission,
+  variant: Variant,
+  question: Question,
+  question_course: Course,
+) {
   return await callFunction('grade', question_course, question, { submission, variant });
 }
 
@@ -109,13 +128,13 @@ export async function grade(submission, variant, question, question_course) {
 // here to satisfy the question server interface.
 
 export async function render(
-  _renderSelection,
-  _variant,
-  _question,
-  _submission,
-  submissions,
-  _course,
-  _locals,
+  _renderSelection: any,
+  _variant: Variant,
+  _question: Question,
+  _submission: Submission,
+  submissions: Submission[],
+  _course: Course,
+  _locals: any,
 ) {
   const data = {
     extraHeadersHtml: '',
@@ -126,16 +145,21 @@ export async function render(
   return { courseIssues: [], data };
 }
 
-export async function prepare(_question, _course, variant) {
+export async function prepare(_question: Question, _course: Course, variant: Variant) {
   const data = {
-    params: variant.params,
-    true_answer: variant.true_answer,
-    options: variant.options,
+    params: variant.params ?? {},
+    true_answer: variant.true_answer ?? {},
+    options: variant.options ?? {},
   };
   return { courseIssues: [], data };
 }
 
-export async function parse(submission, variant, _question, _course) {
+export async function parse(
+  submission: Submission,
+  variant: Variant,
+  _question: Question,
+  _course: Course,
+) {
   const data = {
     params: variant.params ?? {},
     true_answer: variant.true_answer ?? {},
