@@ -731,7 +731,7 @@ export function getChunksDirectoriesForCourseId(courseId: string) {
   };
 }
 
-export interface CourseWithRuntimeDirectory {
+interface CourseWithRuntimeDirectory {
   /** The database ID of the course. */
   id: string;
   /** The path to the course source (not the chunks) */
