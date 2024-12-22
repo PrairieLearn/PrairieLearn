@@ -1,4 +1,6 @@
 import { type EffectiveQuestionType, type QuestionServer, type QuestionType } from './types.js';
+// Re-export all the types from types.js
+export * from './types.js';
 
 const questionModules: Record<EffectiveQuestionType, QuestionServer> = {
   Calculation: await import('./calculation-subprocess.js'),
