@@ -1,4 +1,3 @@
-// @ts-check
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as net from 'node:net';
@@ -13,8 +12,9 @@ import { Mutex } from 'async-mutex';
 import bodyParser from 'body-parser';
 import debugfn from 'debug';
 import Docker from 'dockerode';
-import express from 'express';
+import express, { type Response } from 'express';
 import asyncHandler from 'express-async-handler';
+import { type Entry } from 'fast-glob';
 import _ from 'lodash';
 import fetch from 'node-fetch';
 import * as shlex from 'shlex';
@@ -33,6 +33,43 @@ import { config, loadConfig } from './lib/config.js';
 import { parseDockerLogs } from './lib/docker.js';
 import { REPOSITORY_ROOT_PATH, APP_ROOT_PATH } from './lib/paths.js';
 import * as socketServer from './lib/socket-server.js';
+let server: http.Server | undefined;
+
+interface WorkspaceServerSettings {
+  instance_id?: string;
+  hostname?: string;
+  server_to_container_hostname?: string;
+  port?: number;
+}
+
+interface WorkspaceSettings {
+  workspace_image: string;
+  workspace_port: number;
+  workspace_home: string;
+  workspace_graded_files: string[];
+  workspace_args: string;
+  workspace_enable_networking: boolean;
+  workspace_environment: string[];
+}
+
+/*
+These types are somewhat duplicated from WorkspaceSchema in apps/prairielearn.
+TODO: break out types into a shared package.
+*/
+interface Workspace {
+  local_name: string;
+  launch_uuid: string;
+  remote_name: string;
+  launch_port?: number;
+  id: string | number;
+  version: string;
+  course_id: string;
+  institution_id: string;
+  settings?: WorkspaceSettings;
+  container?: Docker.Container;
+}
+
+const workspace_server_settings: WorkspaceServerSettings = {};
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const debug = debugfn('prairielearn:interface');
@@ -48,7 +85,7 @@ app.get(
   asyncHandler(async (req, res) => {
     const containers = await docker.listContainers({ all: true }).catch(() => null);
 
-    let db_status;
+    let db_status: string | null | undefined;
     try {
       await sqldb.queryAsync(sql.update_load_count, {
         instance_id: workspace_server_settings.instance_id,
@@ -83,7 +120,7 @@ app.post(
     } else if (action == null) {
       res.status(500).send('Missing action');
     } else if (action === 'init') {
-      const useInitialZip = _.get(req.body.options, 'useInitialZip', false);
+      const useInitialZip: boolean = _.get(req.body.options, 'useInitialZip', false);
       await initSequence(workspace_id, useInitialZip, res);
     } else if (action === 'getGradedFiles') {
       await sendGradedFilesArchive(workspace_id, res);
@@ -96,9 +133,6 @@ app.post(
 );
 
 app.use(Sentry.expressErrorHandler());
-
-let server;
-let workspace_server_settings = {};
 
 async
   .series([
@@ -303,10 +337,11 @@ async function pruneRunawayContainers() {
   const db_workspaces = await sqldb.queryAsync(sql.get_running_workspaces, {
     instance_id,
   });
+
   const db_workspaces_uuid_set = new Set(
     db_workspaces.rows.map((ws) => `workspace-${ws.launch_uuid}`),
   );
-  let running_workspaces;
+  let running_workspaces: Docker.ContainerInfo[] | undefined;
   try {
     running_workspaces = await docker.listContainers({ all: true });
   } catch {
@@ -330,10 +365,9 @@ async function pruneRunawayContainers() {
  * Looks up a docker container by the UUID used to launch it.
  * Throws an exception if the container was not found or if there
  * are multiple containers with the same UUID (this shouldn't happen?)
- * @param {string} launch_uuid UUID to search by
- * @return {Promise<import('dockerode').Container>}
+ * @param launch_uuid UUID to search by
  */
-async function _getDockerContainerByLaunchUuid(launch_uuid) {
+async function _getDockerContainerByLaunchUuid(launch_uuid: string): Promise<Docker.Container> {
   try {
     const containers = await docker.listContainers({
       filters: JSON.stringify({ name: [`workspace-${launch_uuid}`] }),
@@ -350,11 +384,8 @@ async function _getDockerContainerByLaunchUuid(launch_uuid) {
  * is already stopped or does not exist.
  *
  * After the container is removed, the workspace's disk usage will be updated.
- *
- * @param {string} workspace_id
- * @param {import('dockerode').Container} container
  */
-async function killAndRemoveWorkspace(workspace_id, container) {
+async function killAndRemoveWorkspace(workspace_id: string | number, container: Docker.Container) {
   try {
     await container.inspect();
 
@@ -386,7 +417,10 @@ async function killAndRemoveWorkspace(workspace_id, container) {
   }
 
   try {
-    await workspaceUtils.updateWorkspaceDiskUsage(workspace_id, config.workspaceHostHomeDirRoot);
+    await workspaceUtils.updateWorkspaceDiskUsage(
+      workspace_id.toString(),
+      config.workspaceHostHomeDirRoot,
+    );
   } catch (err) {
     logger.error('Error updating workspace disk usage', err);
     Sentry.captureException(err);
@@ -397,9 +431,9 @@ async function killAndRemoveWorkspace(workspace_id, container) {
  * Marks the host as "unhealthy", we typically want to do this when we hit some unrecoverable error.
  * This will also set the "unhealthy__at" field if applicable.
  *
- * @param {Error | string} reason The reason that this host is unhealthy
+ * @param reason The reason that this host is unhealthy
  */
-async function markSelfUnhealthy(reason) {
+async function markSelfUnhealthy(reason: Error | string) {
   try {
     Sentry.captureException(reason);
     const params = {
@@ -420,10 +454,10 @@ async function markSelfUnhealthy(reason) {
  * This object contains all columns in the 'workspaces' table as well as:
  * - local_name (container name)
  * - remote_name (subdirectory name on disk)
- * @param {string | number} workspace_id Workspace ID to search by.
- * @return {Promise<Object>} Workspace object, as described above.
+ * @param workspace_id Workspace ID to search by.
+ * @return Workspace object, as described above.
  */
-async function _getWorkspace(workspace_id) {
+async function _getWorkspace(workspace_id: string | number): Promise<Workspace> {
   const result = await sqldb.queryOneRowAsync(sql.get_workspace, {
     workspace_id,
     instance_id: workspace_server_settings.instance_id,
@@ -439,12 +473,12 @@ const _allocateContainerPortMutex = new Mutex();
 
 /**
  * Allocates and returns an unused port for a workspace.  This will insert the new port into the workspace table.
- * @param {object} workspace Workspace object, should at least contain an id.
- * @return {Promise<number>} Port that was allocated to the workspace.
+ * @param workspace Workspace object, should at least contain an id.
+ * @return Port that was allocated to the workspace.
  */
-async function _allocateContainerPort(workspace) {
+async function _allocateContainerPort(workspace: Workspace): Promise<number> {
   // Check if a port is considered free in the database
-  async function check_port_db(port) {
+  async function check_port_db(port: number) {
     const params = {
       instance_id: workspace_server_settings.instance_id,
       port,
@@ -454,10 +488,10 @@ async function _allocateContainerPort(workspace) {
   }
 
   // Spin up a server to check if a port is free
-  async function check_port_server(port) {
+  async function check_port_server(port: number) {
     return new Promise((res) => {
-      var server = net.createServer();
-      server.listen(port, function (_) {
+      const server = net.createServer();
+      server.listen(port, function () {
         server.once('close', function () {
           res(true);
         });
@@ -470,7 +504,7 @@ async function _allocateContainerPort(workspace) {
   }
 
   return _allocateContainerPortMutex.runExclusive(async () => {
-    let port;
+    let port: number | undefined;
     let done = false;
     // Max attempts <= 0 means unlimited attempts, > 0 mean a finite number of attempts.
     const max_attempts =
@@ -500,17 +534,13 @@ async function _allocateContainerPort(workspace) {
   });
 }
 
-/**
- * @param {object} workspace
- * @returns {Promise<void>}
- */
-function _checkServer(workspace) {
+function _checkServer(workspace: Workspace): Promise<void> {
   const startTimeout = config.workspaceStartTimeoutSec * 1000;
   const healthCheckInterval = config.workspaceHealthCheckIntervalSec * 1000;
   const healthCheckTimeout = config.workspaceHealthCheckTimeoutSec * 1000;
 
   const startTime = performance.now();
-  return new Promise((resolve, reject) => {
+  return new Promise<void>((resolve, reject) => {
     function checkWorkspace() {
       fetch(
         `http://${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}/`,
@@ -543,10 +573,10 @@ function _checkServer(workspace) {
 
 /**
  * Looks up all the question-specific workspace launch settings associated with a workspace id.
- * @param {string | number} workspace_id Workspace ID to search by.
- * @return {Promise<Object>} Workspace launch settings.
+ * @param workspace_id Workspace ID to search by.
+ * @return Workspace launch settings.
  */
-async function _getWorkspaceSettings(workspace_id) {
+async function _getWorkspaceSettings(workspace_id: string | number): Promise<WorkspaceSettings> {
   const result = await sqldb.queryOneRowAsync(sql.select_workspace_settings, {
     workspace_id,
   });
@@ -579,10 +609,13 @@ async function _getWorkspaceSettings(workspace_id) {
   return settings;
 }
 
-async function _pullImage(workspace) {
+async function _pullImage(workspace: Workspace) {
   if (!config.workspacePullImagesFromDockerHub) {
     logger.info('Not pulling docker image');
     return;
+  }
+  if (!workspace.settings) {
+    throw new Error('Workspace settings not found');
   }
 
   await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Checking image');
@@ -595,7 +628,7 @@ async function _pullImage(workspace) {
   const auth = config.cacheImageRegistry ? await setupDockerAuth(ecr) : null;
 
   let percentDisplayed = false;
-  let stream;
+  let stream: NodeJS.ReadableStream | undefined;
   try {
     stream = await docker.pull(workspace_image, { authconfig: auth });
   } catch (err) {
@@ -622,13 +655,19 @@ async function _pullImage(workspace) {
   // the first successful pull. This allows us to reference
   // the previously pulled layers and provide a more accurate
   // percantage calculation on any subsequent pulls.
-  let progressDetails = (await cache.get(`workspaceProgressInit:${workspace_image}`)) || {};
-  let progressDetailsInit = {};
+  const progressDetails: Record<
+    string,
+    {
+      current: number;
+      total: number;
+    }
+  > = (await cache.get(`workspaceProgressInit:${workspace_image}`)) || {};
+  const progressDetailsInit = {};
   let current = 0;
   let total = 0;
   let fraction = 0;
-  let currentBase;
-  let fractionBase;
+  let currentBase: number;
+  let fractionBase: number;
   let outputCount = 0;
   let percentCache = -1;
   let dateCache = Date.now() - 1e6;
@@ -714,10 +753,7 @@ async function _pullImage(workspace) {
   });
 }
 
-/**
- * @param {object} workspace
- */
-async function _createContainer(workspace) {
+async function _createContainer(workspace: Workspace) {
   const localName = workspace.local_name;
   const remoteName = workspace.remote_name;
 
@@ -730,9 +766,12 @@ async function _createContainer(workspace) {
   const workspacePath = path.join(workspaceDir, remoteName, 'current');
   // Where we are putting the job files relative to the server (`/jobs` inside Docker container).
   const workspaceJobPath = path.join(jobDirectory, remoteName, 'current');
+  if (!workspace.settings) {
+    throw new Error('Workspace settings not found');
+  }
 
   const containerPath = workspace.settings.workspace_home;
-  let args = workspace.settings.workspace_args.trim();
+  const args = workspace.settings.workspace_args.trim();
 
   let networkMode = 'bridge';
   if (!workspace.settings.workspace_enable_networking) {
@@ -822,8 +861,11 @@ async function _createContainer(workspace) {
   return container;
 }
 
-async function _startContainer(workspace) {
+async function _startContainer(workspace: Workspace) {
   await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Starting container');
+  if (!workspace.container) {
+    throw new Error('Container not found');
+  }
   await workspace.container.start();
 }
 
@@ -831,11 +873,12 @@ async function _startContainer(workspace) {
  * Wrapper around `updateWorkspaceState()` that will ensure any errors don't
  * propagate to the caller. Useful during the initialization sequence when we
  * would mark the host as unhealthy if an error occurred while updating the state.
- * @param {*} workspaceId
- * @param {*} state
- * @param {*} message
  */
-function safeUpdateWorkspaceState(workspaceId, state, message) {
+function safeUpdateWorkspaceState(
+  workspaceId: string | number,
+  state: 'stopped',
+  message?: string,
+) {
   workspaceUtils.updateWorkspaceState(workspaceId, state, message).catch((err) => {
     logger.error('Error updating workspace state', err);
     Sentry.captureException(err);
@@ -843,7 +886,7 @@ function safeUpdateWorkspaceState(workspaceId, state, message) {
 }
 
 // Called by the main server the first time a workspace is used by a user
-async function initSequence(workspace_id, useInitialZip, res) {
+async function initSequence(workspace_id: string | number, useInitialZip: boolean, res: Response) {
   // send 200 immediately to prevent socket hang up from _pullImage()
   res.status(200).send(`Preparing container for workspace ${workspace_id}`);
 
@@ -859,7 +902,7 @@ async function initSequence(workspace_id, useInitialZip, res) {
     await sqldb.queryOneRowAsync(sql.select_workspace, { workspace_id })
   ).rows[0];
 
-  const workspace = {
+  const workspace: Workspace = {
     id: workspace_id,
     course_id,
     institution_id,
@@ -978,18 +1021,14 @@ async function initSequence(workspace_id, useInitialZip, res) {
   }
 }
 
-/**
- * @param {string | number} workspace_id
- * @param {import('express').Response} res
- */
-async function sendGradedFilesArchive(workspace_id, res) {
+async function sendGradedFilesArchive(workspace_id: string | number, res: Response) {
   const workspace = await _getWorkspace(workspace_id);
   const workspaceSettings = await _getWorkspaceSettings(workspace_id);
   const timestamp = new Date().toISOString().replace(/[-T:.]/g, '-');
   const zipName = `${workspace.remote_name}-${timestamp}.zip`;
   const workspaceDir = path.join(config.workspaceHostHomeDirRoot, workspace.remote_name, 'current');
 
-  let gradedFiles;
+  let gradedFiles: Entry[] | undefined;
   try {
     gradedFiles = await workspaceUtils.getWorkspaceGradedFiles(
       workspaceDir,
@@ -1034,11 +1073,7 @@ async function sendGradedFilesArchive(workspace_id, res) {
   await archive.finalize();
 }
 
-/**
- * @param {string | number} workspaceId
- * @param {import('express').Response} res
- */
-async function sendLogs(workspaceId, res) {
+async function sendLogs(workspaceId: string | number, res: Response) {
   try {
     const workspace = await _getWorkspace(workspaceId);
     const container = await _getDockerContainerByLaunchUuid(workspace.launch_uuid);
@@ -1058,10 +1093,7 @@ async function sendLogs(workspaceId, res) {
   }
 }
 
-/**
- * @param {import('dockerode').Container} container
- */
-async function flushLogsToS3(container) {
+async function flushLogsToS3(container: Docker.Container) {
   if (!config.workspaceLogsS3Bucket) return;
 
   // Read all data from the container's labels instead of trying to look it up
