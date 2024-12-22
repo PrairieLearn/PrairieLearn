@@ -39,7 +39,7 @@ import {
   type TestResultData,
   type PrepareResultData,
   type GenerateResultData,
-} from './index.js';
+} from './types.js';
 
 const debug = debugfn('prairielearn:freeform');
 
