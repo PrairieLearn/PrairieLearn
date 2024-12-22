@@ -1,9 +1,8 @@
 import * as fs from 'fs';
-import { type ReadStream } from 'fs';
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
+import { type Stream } from 'stream';
 
-import { type GetObjectOutput } from '@aws-sdk/client-s3';
 import debugfn from 'debug';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -135,7 +134,7 @@ export async function deleteFile(file_id: string, authn_user_id: string) {
  * @param file_id - The file to get.
  * @return Requested file stream.
  */
-export async function getStream(file_id: number | string): Promise<ReadStream> {
+export async function getStream(file_id: number | string): Promise<Stream> {
   debug(`getStream(): file_id=${file_id}`);
   const file = await getFile(file_id, 'stream');
   return file.contents;
@@ -145,7 +144,7 @@ export async function getFile(
   file_id: number | string,
   data_type: 'stream',
 ): Promise<{
-  contents: ReadStream;
+  contents: Stream;
   file: File;
 }>;
 
@@ -164,69 +163,56 @@ export async function getFile(
  */
 export async function getFile(
   file_id: number | string,
-  data_type = 'buffer',
+  data_type: 'stream' | 'buffer' = 'buffer',
 ): Promise<{
-  contents: Buffer | GetObjectOutput['Body'] | ReadStream;
+  contents: Buffer | Stream;
   file: File;
 }> {
-  debug(`get(): file_id=${file_id}`);
-  const params = { file_id };
-  const result = await sqldb.queryOptionalRow(sql.select_file, params, FileSchema);
-  debug('get(): got row from DB');
+  const file = await sqldb.queryOptionalRow(sql.select_file, { file_id }, FileSchema);
 
-  let buffer: Buffer | GetObjectOutput['Body'];
-  let readStream: Buffer | GetObjectOutput['Body'] | ReadStream;
-
-  if (result === null) {
+  if (!file) {
     throw new Error(`No file with file_id ${file_id}`);
   }
 
-  if (result.storage_type === StorageTypes.FileSystem) {
+  if (file.storage_type === StorageTypes.FileSystem) {
     if (config.filesRoot == null) {
       throw new Error(
         `config.filesRoot must be non-null to get file_id ${file_id} from file store`,
       );
     }
 
-    const filename = path.join(config.filesRoot, result.storage_filename);
+    const filename = path.join(config.filesRoot, file.storage_filename);
 
-    if (data_type === 'buffer') {
-      debug(`get(): readFile ${filename} and return object with contents buffer and file object`);
-      buffer = await fsPromises.readFile(filename);
-    } else {
-      debug(
-        `get(): createReadStream ${filename} and return object with contents stream and file object`,
-      );
-      readStream = fs.createReadStream(filename);
+    const contents =
+      data_type === 'buffer' ? await fsPromises.readFile(filename) : fs.createReadStream(filename);
+
+    if (contents === undefined) {
+      throw new Error(`No contents for file_id ${file_id}`);
     }
-  }
-
-  if (result.storage_type === StorageTypes.S3) {
+    return {
+      contents,
+      file,
+    };
+  } else if (file.storage_type === StorageTypes.S3) {
     if (config.fileStoreS3Bucket == null) {
       throw new Error(
-        `config.fileStoreS3Bucket must be configured to get file_id ${file_id} from file store`,
+        `config.fileStoreS3Bucket must be non-null to get file_id ${file_id} from file store`,
       );
     }
 
-    if (data_type === 'buffer') {
-      debug(
-        `get(): s3 fetch file ${result.storage_filename} from ${config.fileStoreS3Bucket} and return object with contents buffer and file object`,
-      );
-      buffer = await getFromS3(config.fileStoreS3Bucket, result.storage_filename);
-    } else {
-      debug(
-        `get(): s3 fetch stream ${result.storage_filename} from ${config.fileStoreS3Bucket} and return object with contents stream and file object`,
-      );
-      readStream = await getFromS3(config.fileStoreS3Bucket, result.storage_filename, false);
-    }
-  }
+    const contents =
+      data_type === 'buffer'
+        ? await getFromS3(config.fileStoreS3Bucket, file.storage_filename, true)
+        : await getFromS3(config.fileStoreS3Bucket, file.storage_filename, false);
 
-  const contents = buffer ?? readStream;
-  if (contents === undefined) {
-    throw new Error(`No contents for file_id ${file_id}`);
+    if (contents === undefined) {
+      throw new Error(`No contents for file_id ${file_id}`);
+    }
+    return {
+      contents,
+      file,
+    };
+  } else {
+    throw new Error(`Unknown storage type: ${file.storage_type}`);
   }
-  return {
-    contents,
-    file: result,
-  };
 }

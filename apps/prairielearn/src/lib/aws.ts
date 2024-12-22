@@ -1,14 +1,11 @@
+import { type IncomingMessage } from 'node:http';
 import { pipeline } from 'node:stream/promises';
 import * as path from 'path';
 
-import {
-  S3,
-  type GetObjectOutput,
-  type CompleteMultipartUploadCommandOutput,
-} from '@aws-sdk/client-s3';
+import { S3, type CompleteMultipartUploadCommandOutput } from '@aws-sdk/client-s3';
 import { fromNodeProviderChain } from '@aws-sdk/credential-providers';
 import { Upload } from '@aws-sdk/lib-storage';
-import { type NodeJsClient } from '@smithy/types';
+import { type SdkStream, type NodeJsClient } from '@smithy/types';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 
@@ -158,7 +155,7 @@ export async function getFromS3(
   bucket: string,
   key: string,
   buffer = true,
-): Promise<Buffer | GetObjectOutput['Body']> {
+): Promise<Buffer | SdkStream<IncomingMessage>> {
   const s3 = new S3(makeS3ClientConfig()) as NodeJsClient<S3>;
   const res = await s3.getObject({ Bucket: bucket, Key: key });
   if (!res.Body) throw new Error('No data returned from S3');
