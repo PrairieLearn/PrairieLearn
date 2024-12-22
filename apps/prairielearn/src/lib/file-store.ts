@@ -186,9 +186,6 @@ export async function getFile(
     const contents =
       data_type === 'buffer' ? await fsPromises.readFile(filename) : fs.createReadStream(filename);
 
-    if (contents === undefined) {
-      throw new Error(`No contents for file_id ${file_id}`);
-    }
     return {
       contents,
       file,
@@ -205,9 +202,6 @@ export async function getFile(
         ? await getFromS3(config.fileStoreS3Bucket, file.storage_filename, true)
         : await getFromS3(config.fileStoreS3Bucket, file.storage_filename, false);
 
-    if (contents === undefined) {
-      throw new Error(`No contents for file_id ${file_id}`);
-    }
     return {
       contents,
       file,

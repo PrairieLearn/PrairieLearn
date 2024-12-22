@@ -143,6 +143,12 @@ export async function deleteFromS3(s3Bucket: string, s3Path: string, isDirectory
   debug(`Deleted s3://${s3Bucket}/${s3Path}`);
 }
 
+export async function getFromS3(bucket: string, key: string, buffer: true): Promise<Buffer>;
+export async function getFromS3(
+  bucket: string,
+  key: string,
+  buffer: false,
+): Promise<SdkStream<IncomingMessage>>;
 /**
  * Get a file from S3.
  *
