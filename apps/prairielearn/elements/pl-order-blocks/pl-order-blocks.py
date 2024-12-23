@@ -1,10 +1,10 @@
 import base64
 import json
 import math
-import os
 import random
 from copy import deepcopy
 from enum import Enum
+from pathlib import Path
 from typing import TypedDict
 
 import chevron
@@ -593,7 +593,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if grading_method is GradingMethodType.EXTERNAL:
             try:
                 base_path = data["options"]["question_path"]
-                file_lead_path = os.path.join(base_path, "tests/ans.py")
+                file_lead_path = Path(base_path) / "tests" / "ans.py"
                 with open(file_lead_path) as file:
                     solution_file = file.read()
                 return f'<pl-code language="python">{solution_file}</pl-code>'

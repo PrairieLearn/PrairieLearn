@@ -1,7 +1,7 @@
 import copy
-import os
 import warnings
 from itertools import chain
+from pathlib import Path
 from typing import Any, cast
 
 import chevron
@@ -72,8 +72,8 @@ def get_file_path(element: lxml.html.HtmlElement, data: pl.QuestionData) -> str:
 
     file_directory = data["options"][parent_dir_dict[dir_choice]]
     file_name = pl.get_string_attrib(element, "file-name")
-
-    return os.path.join(file_directory, file_name)
+    file_path = Path(file_directory) / file_name
+    return file_path.resolve().as_posix()
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:

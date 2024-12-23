@@ -163,18 +163,18 @@ class CGrader:
                 sandboxed=False,
             )
             # Identify references to functions intended to disable sanitizers from object file
-            if os.path.isfile(obj_file):
+            if obj_file.is_file():
                 # These primitives are checked in the .i file (the
                 # preprocessed C file), which will have any #define
                 # and #include primitives already expanded and
                 # comments removed
                 found_primitives = None
                 preprocessed_file = pathlib.Path(std_c_file).with_suffix(".i")
-                if not os.path.isfile(preprocessed_file):
+                if not preprocessed_file.is_file():
                     preprocessed_file = pathlib.Path(std_c_file).with_suffix(".ii")
-                if not os.path.isfile(preprocessed_file):
+                if not preprocessed_file.is_file():
                     preprocessed_file = pathlib.Path(std_c_file).with_suffix(".mi")
-                if os.path.isfile(preprocessed_file):
+                if preprocessed_file.is_file():
                     with open(preprocessed_file) as f:
                         preprocessed_text = f.read()
                         found_primitives = {
@@ -186,7 +186,7 @@ class CGrader:
                         + ", ".join(found_primitives)
                         + "\033[0m"
                     )
-                    os.unlink(obj_file)
+                    obj_file.unlink()
                 # nm -j will list any references to global symbols in
                 # the object file, either from function definitions or
                 # function calls.
@@ -202,13 +202,13 @@ class CGrader:
                         + ", ".join(found_symbols)
                         + "\033[0m"
                     )
-                    os.unlink(obj_file)
+                    obj_file.unlink()
                 if objcopy_args:
                     self.run_command(
                         ["objcopy", obj_file] + objcopy_args, sandboxed=False
                     )
 
-        if all(os.path.isfile(obj) for obj in std_obj_files):
+        if all(pathlib.Path(obj).is_file() for obj in std_obj_files):
             # Add new C files that maybe overwrite some existing functions.
             for added_c_file in add_c_file:
                 obj_file = pathlib.Path(added_c_file).with_suffix(".o")
@@ -219,7 +219,7 @@ class CGrader:
                 objs.append(obj_file)
 
         if ungradable_if_failed and not all(
-            os.path.isfile(f) for f in objs + std_obj_files
+            pathlib.Path(f).is_file() for f in objs + std_obj_files
         ):
             self.result["message"] += (
                 f"Compilation errors, please fix and try again.\n\n{out}\n"
@@ -292,7 +292,7 @@ class CGrader:
             sandboxed=False,
         )
 
-        if os.path.isfile(exec_file):
+        if pathlib.Path(exec_file).is_file():
             self.change_mode(exec_file, "755")
         elif ungradable_if_failed:
             self.result["message"] += (
@@ -344,9 +344,9 @@ class CGrader:
             objcopy_args=objcopy_args,
         )
         success = (
-            os.path.isfile(exec_file)
+            pathlib.Path(exec_file).is_file()
             if exec_file
-            else all(os.path.isfile(f) for f in objects)
+            else all(pathlib.Path(f).is_file() for f in objects)
         )
         return self.add_test_result(
             name,
@@ -357,11 +357,11 @@ class CGrader:
         )
 
     def change_mode(self, file, mode="744", change_parent=True):
-        file = os.path.abspath(file)
+        file = pathlib.Path(file).resolve()
         self.run_command(["chmod", mode, file], sandboxed=False)
-        parent = os.path.dirname(file)
+        parent = pathlib.Path(file).parent
         # Ensure that all users can resolve the path name
-        if change_parent and parent and not os.path.samefile(file, parent):
+        if change_parent and parent and not pathlib.Path.samefile(file, parent):
             self.change_mode(parent, "a+x")
 
     def test_send_in_check_out(self, *args, **kwargs):
@@ -583,7 +583,7 @@ class CGrader:
         env["TEMP"] = "/tmp"
 
         log_file_dir = tempfile.mkdtemp()
-        log_file = os.path.join(log_file_dir, "tests.xml")
+        log_file = pathlib.Path(log_file_dir) / "tests.xml"
         env["CK_XML_LOG_FILE_NAME"] = log_file
 
         if sandboxed:
@@ -646,9 +646,10 @@ class CGrader:
             for _field, ps in self.result["partial_scores"].items():
                 ps["score"] = ps["points"] / ps["max_points"]
 
-        if not os.path.exists("/grade/results"):
-            os.makedirs("/grade/results")
-        with open("/grade/results/results.json", "w") as resfile:
+        results_dir = pathlib.Path("/") / "grade" / "results"
+        if not results_dir.exists():
+            results_dir.mkdir(parents=True)
+        with open(results_dir / "results.json", "w") as resfile:
             json.dump(self.result, resfile)
 
     def start(self):

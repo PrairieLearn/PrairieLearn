@@ -2,7 +2,7 @@ import json
 import os
 import unittest
 from collections import namedtuple
-from os.path import join
+from pathlib import Path
 
 # Needed to ensure matplotlib runs on Docker
 import matplotlib as mpl
@@ -35,18 +35,18 @@ class PLTestCase(unittest.TestCase):
         Feedback.set_test(cls)
         base_dir = os.environ.get("MERGE_DIR")
         filenames_dir = os.environ.get("FILENAMES_DIR")
-        cls.student_code_abs_path = join(base_dir, cls.student_code_file)
+        cls.student_code_abs_path = Path(base_dir) / cls.student_code_file
 
         # Load data so that we can use it in the test cases
         filenames_dir = os.environ.get("FILENAMES_DIR")
-        with open(join(filenames_dir, "data.json"), encoding="utf-8") as f:
+        with open(Path(filenames_dir) / "data.json", encoding="utf-8") as f:
             cls.data = json.load(f)
 
         ref_result, student_result, plot_value = execute_code(
-            join(filenames_dir, "ans.py"),
-            join(base_dir, cls.student_code_file),
+            Path(filenames_dir) / "ans.py",
+            Path(base_dir) / cls.student_code_file,
             cls.include_plt,
-            join(base_dir, "output.txt"),
+            Path(base_dir) / "output.txt",
             cls.iter_num,
             cls.ipynb_key,
         )

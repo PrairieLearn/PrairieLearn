@@ -1,4 +1,4 @@
-import os
+from pathlib import Path
 
 import chevron
 import lxml.html
@@ -20,7 +20,7 @@ def render(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     script_name = pl.get_string_attrib(element, "script-name", None)
 
-    with open(os.path.join(data["options"]["question_path"], script_name)) as f:
+    with open(Path(data["options"]["question_path"]) / script_name) as f:
         script = f.read()
 
     width = pl.get_string_attrib(element, "width", WIDTH_DEFAULT)

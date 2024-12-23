@@ -2,7 +2,7 @@ import base64
 import binascii
 import json
 import math
-import os
+from pathlib import Path
 
 import chevron
 import lxml.html
@@ -579,7 +579,7 @@ def get_file_url(element, data):
         raise ValueError(msg)
 
     # Get full url
-    file_url = os.path.join(base_url, file_name)
+    file_url = Path(base_url) / file_name
 
     return file_url
 

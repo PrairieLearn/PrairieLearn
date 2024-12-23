@@ -1,5 +1,5 @@
 import base64
-import os
+from pathlib import Path
 
 import chevron
 import lxml.html
@@ -55,8 +55,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if source_file_name is not None:
         base_path = data["options"]["question_path"]
-        file_path = os.path.join(base_path, source_file_name)
-        if not os.path.exists(file_path):
+        file_path = Path(base_path) / source_file_name
+        if not file_path.exists():
             msg = f'Unknown file path: "{file_path}".'
             raise RuntimeError(msg)
 

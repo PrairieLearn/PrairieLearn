@@ -1,5 +1,5 @@
-import os
 from enum import Enum
+from pathlib import Path
 
 import chevron
 import lxml.html
@@ -49,12 +49,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             raise ValueError(msg)
 
         file_name = pl.get_string_attrib(element, "file-name")
-        file_path = os.path.join(
-            data["options"][DIRECTORY_PATH_DICT[file_directory]], file_name
+        file_path = (
+            Path(data["options"][DIRECTORY_PATH_DICT[file_directory]]) / file_name
         )
 
         # If file not found on server, raise error
-        if not os.path.isfile(file_path):
+        if not file_path.is_file():
             msg = f'File "{file_name}" not found in directory "{file_directory}".'
             raise FileNotFoundError(msg)
 
@@ -90,7 +90,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         assert_never(file_type)
 
     # Get full url
-    file_url = os.path.join(base_url, file_name)
+    file_url = Path(base_url) / file_name
 
     # Get width (optional)
     width = pl.get_string_attrib(element, "width", WIDTH_DEFAULT)

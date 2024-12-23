@@ -1,7 +1,7 @@
 import base64
 import hashlib
-import os
 from enum import Enum
+from pathlib import Path
 
 import chevron
 import lxml.html
@@ -123,8 +123,8 @@ def render(element_html, data):
             elif directory == "clientFilesCourse":
                 directory = data["options"]["client_files_course_path"]
             else:
-                directory = os.path.join(data["options"]["question_path"], directory)
-            file_path = os.path.join(directory, source_file_name)
+                directory = Path(data["options"]["question_path"]) / directory
+            file_path = Path(directory) / source_file_name
             with open(file_path) as f:
                 text_display = f.read()
         elif element_text is not None:

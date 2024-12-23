@@ -1,4 +1,4 @@
-from os import path
+from pathlib import Path
 
 import prairielearn as pl
 
@@ -14,7 +14,7 @@ class PrairieLearnLogo(elements.BaseElement):
             "left": pl.get_float_attrib(self, "x", 20),
             "top": pl.get_float_attrib(self, "y", 20),
             "angle": pl.get_float_attrib(self, "angle", 0),
-            "image_url": path.join(data["clientFilesUrl"], "logo.png"),
+            "image_url": Path(data["clientFilesUrl"]) / "logo.png",
         }
 
     def get_attributes():

@@ -70,7 +70,8 @@ select = [
     "PLR", "PLC", "PLE", "PLW",
     "TRY",
     "FLY",
-    "NPY"
+    "NPY",
+    "PTH"
     ]
 ignore = [
     # Ignore line length errors
@@ -83,7 +84,8 @@ ignore = [
     "PD901",
     "PLR0912", "PLR0915", "PLR0913", "PLR0911", "PLR2004", "PLR1714",
     "NPY002",
-    "TRY300", "TRY301"
+    "TRY300", "TRY301",
+    "PTH123"
 ]
 
 [tool.ruff.lint.per-file-ignores]

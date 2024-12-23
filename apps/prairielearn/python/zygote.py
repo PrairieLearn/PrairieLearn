@@ -27,6 +27,7 @@ import types
 from collections.abc import Iterable, Sequence
 from importlib.abc import MetaPathFinder
 from inspect import signature
+from pathlib import Path
 from typing import Any
 
 import question_phases
@@ -47,18 +48,18 @@ drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
 # fontconfig should respect these environment variables; other tools should as
 # well. If they don't, special cases can be added below.
 if drop_privileges:
-    config_home_path = "/tmp/xdg_config"
-    cache_home_path = "/tmp/xdg_cache"
+    config_home_path = Path("/tmp/xdg_config")
+    cache_home_path = Path("/tmp/xdg_cache")
 
     oldmask = os.umask(000)
 
-    os.makedirs(config_home_path, mode=0o777, exist_ok=True)
-    os.makedirs(cache_home_path, mode=0o777, exist_ok=True)
+    config_home_path.mkdir(mode=0o777, exist_ok=True)
+    cache_home_path.mkdir(mode=0o777, exist_ok=True)
 
     os.umask(oldmask)
 
-    os.environ["XDG_CONFIG_HOME"] = config_home_path
-    os.environ["XDG_CACHE_HOME"] = cache_home_path
+    os.environ["XDG_CONFIG_HOME"] = config_home_path.resolve().as_posix()
+    os.environ["XDG_CACHE_HOME"] = cache_home_path.resolve().as_posix()
 
 # Silence matplotlib's FontManager logs; these can cause trouble with our
 # expectation that code execution doesn't log anything to stdout/stderr.
@@ -67,7 +68,7 @@ import logging
 logging.getLogger("matplotlib.font_manager").disabled = True
 
 # Pre-load commonly used modules
-sys.path.insert(0, os.path.abspath("../question-servers/freeformPythonLib"))
+sys.path.insert(0, Path("../question-servers/freeformPythonLib").resolve().as_posix())
 import html
 import math
 import random
@@ -303,7 +304,7 @@ def worker_loop() -> None:
 
                 continue
 
-            file_path = os.path.join(cwd, file + ".py")
+            file_path = os.path.join(cwd, file + ".py")  # noqa: PTH118
 
             mod = mod_cache.get(file_path)
             if mod is None:

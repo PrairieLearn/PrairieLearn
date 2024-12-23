@@ -3,7 +3,7 @@ import io
 import os
 import urllib
 from functools import wraps
-from os.path import join, splitext
+from pathlib import Path
 
 import pygments
 from code_feedback import Feedback
@@ -53,7 +53,7 @@ def save_plot(plt, iternum=0):
         imgsrc = "data:image/png;base64," + urllib.parse.quote(
             base64.b64encode(imgdata.read())
         )
-        with open(join(base_dir, f"image_{iternum}_{i - 1}.png"), "w") as f:
+        with open(Path(base_dir) / f"image_{iternum}_{i - 1}.png", "w") as f:
             f.write(imgsrc)
 
 
@@ -111,10 +111,9 @@ def print_student_code(st_code="user_code.py", ipynb_key="#grade", as_feedback=T
     """
     Print the student's code, with syntax highlighting.
     """
-
-    with open(st_code, encoding="utf-8") as f:
-        filename, extension = splitext(st_code)
-        if extension == ".ipynb":
+    st_code_path = Path(st_code)
+    with open(st_code_path, encoding="utf-8") as f:
+        if st_code_path.suffix == ".ipynb":
             contents = extract_ipynb_contents(f, ipynb_key).strip()
             lines = filter(
                 lambda item: not item.strip().startswith(ipynb_key),

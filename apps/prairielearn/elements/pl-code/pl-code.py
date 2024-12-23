@@ -1,7 +1,7 @@
-import os
 from collections.abc import Generator, Iterable, Iterator
 from functools import cache
 from html import escape, unescape
+from pathlib import Path
 from typing import Any
 
 import chevron
@@ -238,13 +238,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if source_file_name is not None:
         if directory == "serverFilesCourse":
-            base_path = data["options"]["server_files_course_path"]
+            base_path = Path(data["options"]["server_files_course_path"])
         elif directory == "clientFilesCourse":
-            base_path = data["options"]["client_files_course_path"]
+            base_path = Path(data["options"]["client_files_course_path"])
         else:
-            base_path = os.path.join(data["options"]["question_path"], directory)
-        file_path = os.path.join(base_path, source_file_name)
-        if not os.path.exists(file_path):
+            base_path = Path(data["options"]["question_path"]) / directory
+        file_path = base_path / source_file_name
+        if not file_path.exists():
             msg = f'Unknown file path: "{file_path}".'
             raise ValueError(msg)
 

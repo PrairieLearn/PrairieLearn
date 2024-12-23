@@ -4,7 +4,7 @@ import os
 import random
 import sys
 from copy import deepcopy
-from os import path
+from pathlib import Path
 from types import ModuleType
 
 import numpy as np
@@ -59,39 +59,44 @@ def execute_code(
     """
 
     filenames_dir = os.environ.get("FILENAMES_DIR")
+    data_json_path = Path(filenames_dir) / "data.json"
+    setup_code_path = Path(filenames_dir) / "setup_code.py"
+    leading_code_path = Path(filenames_dir) / "leading_code.py"
+    trailing_code_path = Path(filenames_dir) / "trailing_code.py"
+    test_code_path = Path(filenames_dir) / "test.py"
 
-    with open(path.join(filenames_dir, "data.json"), encoding="utf-8") as f:
+    with open(data_json_path, encoding="utf-8") as f:
         data = json.load(f)
-    with open(path.join(filenames_dir, "setup_code.py"), encoding="utf-8") as f:
+    with open(setup_code_path, encoding="utf-8") as f:
         str_setup = f.read()
     with open(fname_ref, encoding="utf-8") as f:
         str_ref = f.read()
 
     # Read in leading, trailing code
-    str_leading = try_read(path.join(filenames_dir, "leading_code.py"))
-    str_trailing = try_read(path.join(filenames_dir, "trailing_code.py"))
+    str_leading = try_read(leading_code_path)
+    str_trailing = try_read(trailing_code_path)
 
     # Read student code (and transform if necessary) and append leading/trailing code
-    with open(fname_student, encoding="utf-8") as f:
-        filename, extension = path.splitext(fname_student)
-        if extension == ".ipynb":
+    fname_student_path = Path(fname_student)
+    with open(fname_student_path, encoding="utf-8") as f:
+        if fname_student_path.suffix == ".ipynb":
             str_student = pl_helpers.extract_ipynb_contents(f, ipynb_key)
         else:
             str_student = f.read()
     str_student = str_leading + str_student + str_trailing
 
-    with open(path.join(filenames_dir, "test.py"), encoding="utf-8") as f:
+    with open(test_code_path, encoding="utf-8") as f:
         str_test = f.read()
 
     # Delete sensitive code so students can't read e.g. test cases or setup code
-    os.remove(path.join(filenames_dir, "data.json"))
-    os.remove(fname_ref)
-    os.remove(path.join(filenames_dir, "setup_code.py"))
+    data_json_path.unlink()
+    fname_ref.unlink()
+    setup_code_path.unlink()
     with contextlib.suppress(FileNotFoundError):
-        os.remove(path.join(filenames_dir, "leading_code.py"))
+        leading_code_path.unlink()
     with contextlib.suppress(FileNotFoundError):
-        os.remove(path.join(filenames_dir, "trailing_code.py"))
-    os.remove(path.join(filenames_dir, "test.py"))
+        trailing_code_path.unlink()
+    test_code_path.unlink()
 
     repeated_setup_name = "repeated_setup()"
     if repeated_setup_name not in str_setup:
@@ -165,23 +170,19 @@ def execute_code(
         err = sys.exc_info()
 
     # Now that user code has been run, replace deleted files in case we are to run the tests again.
-    with open(path.join(filenames_dir, "data.json"), "w", encoding="utf-8") as f:
+    with open(data_json_path, "w", encoding="utf-8") as f:
         json.dump(data, f)
     with open(fname_ref, "w", encoding="utf-8") as f:
         f.write(str_ref)
-    with open(path.join(filenames_dir, "setup_code.py"), "w", encoding="utf-8") as f:
+    with open(setup_code_path, "w", encoding="utf-8") as f:
         f.write(str_setup)
     if len(str_leading) > 0:
-        with open(
-            path.join(filenames_dir, "leading_code.py"), "w", encoding="utf-8"
-        ) as f:
+        with open(leading_code_path, "w", encoding="utf-8") as f:
             f.write(str_leading)
     if len(str_trailing) > 0:
-        with open(
-            path.join(filenames_dir, "trailing_code.py"), "w", encoding="utf-8"
-        ) as f:
+        with open(trailing_code_path, "w", encoding="utf-8") as f:
             f.write(str_trailing)
-    with open(path.join(filenames_dir, "test.py"), "w", encoding="utf-8") as f:
+    with open(test_code_path, "w", encoding="utf-8") as f:
         f.write(str_test)
     if err is not None:
         raise UserCodeFailedError(err)

@@ -15,6 +15,7 @@ import uuid
 from collections.abc import Callable, Generator
 from enum import Enum
 from io import StringIO
+from pathlib import Path
 from typing import Any, Literal, TypedDict, TypeVar, overload
 
 import lxml.html
@@ -1401,9 +1402,7 @@ def string_to_2darray(s, allow_complex=True):
             elif s_after_right[0] != ",":
                 return (
                     None,
-                    {
-                        "format_error": f"No comma after row {len(s_row)} of the matrix."
-                    },
+                    {"format_error": f"No comma after row {len(s_row)} of the matrix."},
                 )
             else:
                 s = s_after_right[1:]
@@ -1715,7 +1714,7 @@ def load_extension(data, extension_name):
             return f
 
         def wrapped_function(*args, **kwargs):
-            old_wd = os.getcwd()
+            old_wd = Path.cwd()
             os.chdir(ext_info["directory"])
             ret_val = f(*args, **kwargs)
             os.chdir(old_wd)
@@ -1724,7 +1723,7 @@ def load_extension(data, extension_name):
         return wrapped_function
 
     # Load any Python functions and variables from the defined controller
-    script = os.path.join(ext_info["directory"], ext_info["controller"])
+    script = Path(ext_info["directory"]) / ext_info["controller"]
     loaded = {}
     spec = importlib.util.spec_from_file_location(f"{extension_name}-{script}", script)
     module = importlib.util.module_from_spec(spec)

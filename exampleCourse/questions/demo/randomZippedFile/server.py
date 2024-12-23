@@ -1,6 +1,6 @@
 import io
-import os
 import zipfile
+from pathlib import Path
 
 import chevron
 import faker
@@ -21,10 +21,10 @@ def file(data):
         params_dict = data["params"]
 
         # First, generate python file contents from template
-        template_path = os.path.join(
-            data["options"]["question_path"],
-            "fileTemplates",
-            "python_file_template.mustache",
+        template_path = (
+            Path(data["options"]["question_path"])
+            / "fileTemplates"
+            / "python_file_template.mustache"
         )
         with open(template_path) as template_file:
             python_file_contents = chevron.render(

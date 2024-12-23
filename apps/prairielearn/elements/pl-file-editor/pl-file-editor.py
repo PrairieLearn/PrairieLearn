@@ -1,6 +1,6 @@
 import base64
 import hashlib
-import os
+from pathlib import Path
 
 import chevron
 import lxml.html
@@ -120,12 +120,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if source_file_name is not None:
         if directory == "serverFilesCourse":
-            directory = data["options"]["server_files_course_path"]
+            directory = Path(data["options"]["server_files_course_path"])
         elif directory == "clientFilesCourse":
-            directory = data["options"]["client_files_course_path"]
+            directory = Path(data["options"]["client_files_course_path"])
         else:
-            directory = os.path.join(data["options"]["question_path"], directory)
-        file_path = os.path.join(directory, source_file_name)
+            directory = Path(data["options"]["question_path"]) / directory
+        file_path = directory / source_file_name
         with open(file_path, encoding="utf-8") as f:
             text_display = f.read()
     else:
