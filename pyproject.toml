@@ -67,7 +67,7 @@ select = [
     # pandas-vet
     "PD",
     # pylint
-    "PLR5501"
+    "PLR"
     ]
 ignore = [
     # Ignore line length errors
@@ -78,7 +78,7 @@ ignore = [
     "S311", "S102", "S101", "S324", "S320", "S108", "S603", "S605", "S607",
     "RET503", "RET504", "RET505",
     "PD901",
-    "PLR0912", "PLR0915", "PLR0913", "PLR0911"
+    "PLR0912", "PLR0915", "PLR0913", "PLR0911", "PLR2004", "PLR1714"
 ]
 
 [tool.ruff.lint.per-file-ignores]

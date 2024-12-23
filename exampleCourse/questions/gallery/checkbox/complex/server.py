@@ -42,4 +42,3 @@ def generate(data):
         data["params"]["text" + str(n + i)] = false_ans[i]
         data["params"]["ans" + str(n + i)] = "false"
 
-    return

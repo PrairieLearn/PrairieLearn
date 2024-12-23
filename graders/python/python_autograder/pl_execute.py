@@ -1,10 +1,10 @@
 import contextlib
 import json
 import os
-import os.path as path
 import random
 import sys
 from copy import deepcopy
+from os import path
 from types import ModuleType
 
 import numpy as np
