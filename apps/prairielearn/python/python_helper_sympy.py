@@ -159,7 +159,6 @@ class _Constants:
 class BaseSympyError(Exception):
     """Exception base class for sympy parsing errors"""
 
-    pass
 
 
 class HasConflictingVariableError(BaseSympyError):
