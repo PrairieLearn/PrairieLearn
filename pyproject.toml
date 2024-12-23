@@ -34,9 +34,19 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
+    "YTT",
+    "ASYNC",
+    # flake8-bandit
+    "S"
     ]
-# Ignore line length errors
-ignore = ["E501", "SIM108"]
+ignore = [
+    # Ignore line length errors
+    "E501",
+    # Allow for ternary operators
+    "SIM108",
+    # Allow assert statements, and some security issues are disabled
+    "S311", "S102", "S101", "S324", "S320", "S108", "S603", "S605", "S607"
+]
 
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear

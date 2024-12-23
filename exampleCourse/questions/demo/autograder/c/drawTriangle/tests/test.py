@@ -49,8 +49,8 @@ class TestGrader(cgrader.CGrader):
                         buf.getvalue()
                     ).decode("ascii")
                     test["images"] = [{"label": "Result", "url": url}]
-            except Exception:
-                pass
+            except Exception as e:
+                print(e)
 
 
 g = TestGrader()
