@@ -163,9 +163,9 @@ def prepare(element_html, data):
             correct_answer_list.append(keyed_answer)
 
     if name in data["params"]:
-        raise Exception("duplicate params variable name: %s" % name)
+        raise Exception(f"duplicate params variable name: {name}")
     if name in data["correct_answers"]:
-        raise Exception("duplicate correct_answers variable name: %s" % name)
+        raise Exception(f"duplicate correct_answers variable name: {name}")
     data["params"][name] = display_answers
     data["correct_answers"][name] = correct_answer_list
 
@@ -467,7 +467,7 @@ def render(element_html, data):
             html = ""
 
     else:
-        raise ValueError("Invalid panel type: %s" % data["panel"])
+        raise ValueError("Invalid panel type: {}".format(data["panel"]))
 
     return html
 
@@ -657,7 +657,7 @@ def test(element_html, data):
         data["raw_submitted_answers"][name] = None
         data["format_errors"][name] = "You must select at least one option."
     else:
-        raise Exception("invalid result: %s" % result)
+        raise Exception(f"invalid result: {result}")
 
 
 def _get_min_options_to_select(element, default_val):

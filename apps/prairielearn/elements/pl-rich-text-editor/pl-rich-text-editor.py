@@ -28,7 +28,7 @@ MARKDOWN_SHORTCUTS_DEFAULT = True
 
 
 def get_answer_name(file_name):
-    return "_rich_text_editor_{0}".format(
+    return "_rich_text_editor_{}".format(
         hashlib.sha1(file_name.encode("utf-8")).hexdigest()
     )
 
