@@ -372,7 +372,7 @@ def sympy_check(
         elif isinstance(item, sympy.Float):
             raise HasFloatError(float(str_item))
         elif not allow_complex and item == sympy.I:
-            raise HasComplexError()
+            raise HasComplexError
 
         work_stack.extend(item.args)
 
@@ -434,7 +434,7 @@ def evaluate_with_source(
     try:
         res = eval_expr(code, local_dict, global_dict)
     except Exception as err:
-        raise BaseSympyError() from err
+        raise BaseSympyError from err
 
     # Finally, check for invalid symbols
     sympy_check(res, locals_for_eval, allow_complex=allow_complex)

@@ -224,7 +224,7 @@ class CGrader:
             self.result["message"] += (
                 f"Compilation errors, please fix and try again.\n\n{out}\n"
             )
-            raise UngradableError()
+            raise UngradableError
         if out and add_warning_result_msg:
             self.result["message"] += f"Compilation warnings:\n\n{out}\n"
         if exec_file:
@@ -298,7 +298,7 @@ class CGrader:
             self.result["message"] += (
                 f"Linker errors, please fix and try again.\n\n{out}\n"
             )
-            raise UngradableError()
+            raise UngradableError
         if out and add_warning_result_msg:
             self.result["message"] += f"Linker warnings:\n\n{out}\n"
         return out
@@ -634,10 +634,10 @@ class CGrader:
             self.result["message"] += (
                 "Test suite log file not found. Consult the instructor.\n"
             )
-            raise UngradableError() from e
+            raise UngradableError from e
         except et.ParseError as e:
             self.result["message"] += f"Error parsing test suite log.\n\n{e}\n"
-            raise UngradableError() from e
+            raise UngradableError from e
 
     def save_results(self):
         if self.result["max_points"] > 0:

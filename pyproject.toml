@@ -57,6 +57,10 @@ select = [
     "ICN",
     # flake8-pie
     "PIE",
+    # flake8-quotes
+    "Q",
+    # flake8-raise
+    "RSE"
     ]
 ignore = [
     # Ignore line length errors
