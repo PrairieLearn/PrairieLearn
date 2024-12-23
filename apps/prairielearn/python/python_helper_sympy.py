@@ -716,7 +716,7 @@ def validate_string_as_sympy(
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
-    except Exception:
+    except Exception:  # noqa: BLE001
         return "Invalid format."
 
     # If complex numbers are not allowed, raise error if expression has the imaginary unit

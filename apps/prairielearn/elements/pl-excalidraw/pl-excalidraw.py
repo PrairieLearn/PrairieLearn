@@ -194,7 +194,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             # Check the submissions if available
             if drawing_name in data["submitted_answers"]:
                 json.loads(data["submitted_answers"][drawing_name])
-        except Exception as e:
+        except ValueError as e:
             if drawing_name not in data["format_errors"]:
                 data["format_errors"][drawing_name] = []
             data["format_errors"][drawing_name].append(

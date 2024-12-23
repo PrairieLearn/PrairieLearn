@@ -39,7 +39,7 @@ def ansi_to_html(output: str | None) -> str | None:
         return None
     try:
         return conv.convert(output, full=False)
-    except Exception as e:
+    except (ValueError, RuntimeError) as e:
         return f"[Error converting ANSI to HTML: {e}]\n\n{output}"
 
 

@@ -36,6 +36,7 @@ select = [
     "UP",
     "YTT",
     "ASYNC",
+    "BLE",
     # flake8-bandit
     "S"
     ]

@@ -1,4 +1,5 @@
 import base64
+import binascii
 import json
 import math
 import os
@@ -115,9 +116,7 @@ def get_objects(element, data):
         # - frame
         frame = pl.get_string_attrib(child, "frame", "body")
         if frame not in ["body", "space"]:
-            raise Exception(
-                f'"frame" must be either "body" or "space": {frame:s}'
-            )
+            raise Exception(f'"frame" must be either "body" or "space": {frame:s}')
         if frame == "body":
             default_color = "#e84a27"
             default_opacity = 0.7
@@ -398,7 +397,7 @@ def parse(element_html, data):
     # a failure, it would be due to corrupt data from the hidden input element).
     try:
         a_sub = b64_to_dict(a_sub)
-    except Exception:
+    except (binascii.Error, ValueError, TypeError):
         data["format_errors"][name] = "Invalid submitted answer."
         data["submitted_answers"][name] = None
         return
@@ -674,9 +673,7 @@ def get_position(element, name_position, default=None, must_be_nonzero=False):
         p = np.array(json.loads(s), dtype=np.float64)
         if p.shape == (3,):
             if must_be_nonzero and np.allclose(p, np.array([0, 0, 0])):
-                raise ValueError(
-                    f'attribute "{name_position:s}" must be non-zero'
-                )
+                raise ValueError(f'attribute "{name_position:s}" must be non-zero')
             else:
                 return p.tolist()
         else:
