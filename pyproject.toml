@@ -46,7 +46,6 @@ select = [
     "A",
     # flake8-comprehensions
     "C4",
-    "DTZ", "T10",
     # flake8-errmsg
     "EM",
     # flake8-executable
@@ -64,7 +63,9 @@ select = [
     # flake8-return
     "RET",
     # flake8-unused-arguments
-    "ARG"
+    "ARG",
+    # pandas-vet
+    "PD"
     ]
 ignore = [
     # Ignore line length errors
@@ -74,6 +75,7 @@ ignore = [
     # Allow assert statements, and some security issues are disabled
     "S311", "S102", "S101", "S324", "S320", "S108", "S603", "S605", "S607",
     "RET503", "RET504", "RET505",
+    "PD901"
 ]
 
 [tool.ruff.lint.per-file-ignores]

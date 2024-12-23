@@ -317,7 +317,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
                 "_value": {
                     "index": list(v.index),
                     "columns": list(v.columns),
-                    "data": v.values.tolist(),
+                    "data": v.to_numpy().tolist(),
                 },
             }
 
