@@ -132,7 +132,7 @@ def execute_code(
     # ref_code contains the correct answers
 
     if include_plt:
-        for i, j in ref_code.items():
+        for _, j in ref_code.items():
             if isinstance(j, ModuleType):
                 if j.__dict__["__name__"] == "matplotlib.pyplot":
                     j.close("all")

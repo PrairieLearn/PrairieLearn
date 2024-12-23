@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 from typing import Literal
 
-import lxml.etree as ET
+import lxml.etree as et
 
 CODEBASE = "/grade/student"
 DATAFILE = "/grade/data/data.json"
@@ -97,7 +97,7 @@ class CGrader:
             )
         except Exception:
             return ""
-        out = None
+        out = ""
         tostr = ""
         if input is not None and not isinstance(input, (bytes, bytearray)):
             input = str(input).encode("utf-8")
@@ -111,9 +111,10 @@ class CGrader:
                 out = proc.communicate(timeout=timeout)[0]
             except subprocess.TimeoutExpired:
                 tostr = TIMEOUT_MESSAGE
-            finally:
-                out = out.decode("utf-8", "backslashreplace") if out else ""
-                return out + tostr
+
+            if out:
+                out = out.decode("utf-8", "backslashreplace")
+        return out + tostr
 
     def compile_file(
         self,
@@ -631,20 +632,20 @@ class CGrader:
                         points=result == "success",
                         output=test.findtext("{*}message"),
                     )
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             self.result["message"] += (
                 "Test suite log file not found. Consult the instructor.\n"
             )
-            raise UngradableException()
-        except ET.ParseError as e:
+            raise UngradableError() from e
+        except et.ParseError as e:
             self.result["message"] += f"Error parsing test suite log.\n\n{e}\n"
-            raise UngradableException()
+            raise UngradableError() from e
 
     def save_results(self):
         if self.result["max_points"] > 0:
             self.result["score"] = self.result["points"] / self.result["max_points"]
         if "partial_scores" in self.result:
-            for field, ps in self.result["partial_scores"].items():
+            for _field, ps in self.result["partial_scores"].items():
                 ps["score"] = ps["points"] / ps["max_points"]
 
         if not os.path.exists("/grade/results"):

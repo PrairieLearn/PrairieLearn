@@ -2511,7 +2511,9 @@ def get_attributes(name):
         return []
 
 
-def generate(element, name, defaults={}):
+def generate(element, name, defaults=None):
+    if defaults is None:
+        defaults = {}
     if name in elements:
         obj = defaults.copy()
         cls = elements[name]

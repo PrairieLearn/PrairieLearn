@@ -158,7 +158,7 @@ def prepare(element_html, data):
 
     display_answers = []
     correct_answer_list = []
-    for i, (index, correct, html, feedback) in enumerate(sampled_answers):
+    for i, (_index, correct, html, feedback) in enumerate(sampled_answers):
         keyed_answer = {"key": pl.index2key(i), "html": html, "feedback": feedback}
         display_answers.append(keyed_answer)
         if correct:
@@ -380,8 +380,8 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            except Exception as err:
+                raise ValueError("invalid score" + score) from err
 
         with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
@@ -433,8 +433,8 @@ def render(element_html, data):
                         html_params["partial"] = math.floor(score * 100)
                     else:
                         html_params["incorrect"] = True
-                except Exception:
-                    raise ValueError("invalid score" + score)
+                except Exception as err:
+                    raise ValueError("invalid score" + score) from err
 
             with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()

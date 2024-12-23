@@ -48,7 +48,7 @@ if __name__ == "__main__":
             output_fname = output_f.read()
         os.remove(join(filenames_dir, OUTPUT_FILE))
 
-        from filenames.test import Test as test_case
+        from filenames.test import Test as TestCase
 
         # Update the working directory so tests may access local files
         prev_wd = os.getcwd()
@@ -60,8 +60,8 @@ if __name__ == "__main__":
         format_errors = []
         gradable = True
         has_test_cases = False
-        for i in range(test_case.total_iters):
-            suite = loader.loadTestsFromTestCase(test_case)
+        for _ in range(TestCase.total_iters):
+            suite = loader.loadTestsFromTestCase(TestCase)
             has_test_cases = suite.countTestCases() > 0
             result = PLTestResult()
             suite.run(result)

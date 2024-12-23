@@ -293,7 +293,7 @@ class CheckAST(ast.NodeVisitor):
             root = ast.parse(expr, mode="eval")
         except SyntaxError as err:
             offset = err.offset if err.offset is not None else -1
-            raise HasParseError(offset)
+            raise HasParseError(offset) from err
 
         # Link each node to its parent
         self.__parents = {
@@ -409,8 +409,8 @@ def evaluate_with_source(
 
     try:
         code = stringify_expr(expr, local_dict, global_dict, transformations)
-    except TokenError:
-        raise HasParseError(-1)
+    except TokenError as err:
+        raise HasParseError(-1) from err
 
     # First do AST check, mainly for security
     parsed_locals_to_eval = copy.deepcopy(locals_for_eval)
@@ -433,8 +433,8 @@ def evaluate_with_source(
     # Now that it's safe, get sympy expression
     try:
         res = eval_expr(code, local_dict, global_dict)
-    except Exception:
-        raise BaseSympyError()
+    except Exception as err:
+        raise BaseSympyError() from err
 
     # Finally, check for invalid symbols
     sympy_check(res, locals_for_eval, allow_complex=allow_complex)

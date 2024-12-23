@@ -18,7 +18,7 @@ exclude = [
 target-version = "py310"
 
 [tool.ruff.lint]
-select = ["E4", "E7", "E9", "F", "I", "N", "W"]
+select = ["E4", "E7", "E9", "F", "I", "N", "W", "B"]
 
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear

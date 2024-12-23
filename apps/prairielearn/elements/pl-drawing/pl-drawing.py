@@ -218,13 +218,15 @@ def render_controls(template, elem):
         return "unknown tag " + elem.tag
 
 
-def render_drawing_items(elem, curid=0, defaults={}):
+def render_drawing_items(elem, curid=0, defaults=None):
     # Convert a set of drawing items defined as html elements into an array of
     # objects that can be sent to mechanicsObjects.js
     # Some helpers to get attributes from elements.  If there is no default argument passed in,
     # it is assumed that the attribute must be present or else an error will be raised.  If a
     # default is passed, the attribute is optional.
 
+    if defaults is None:
+        defaults = {}
     objects = []
     for el in elem:
         if el.tag is lxml.etree.Comment:
@@ -243,7 +245,7 @@ def render_drawing_items(elem, curid=0, defaults={}):
                 objects.append(obj)
                 curid += 1
             else:
-                warnings.warn("No known tag type: " + el.tag)
+                warnings.warn("No known tag type: " + el.tag, stacklevel=2)
 
     return (objects, curid)
 

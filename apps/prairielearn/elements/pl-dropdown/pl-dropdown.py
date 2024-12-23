@@ -95,8 +95,8 @@ def render(element_html, data):
                 correct = True
             else:
                 correct = False
-        except Exception:
-            raise ValueError("invalid score" + score)
+        except Exception as err:
+            raise ValueError("invalid score" + score) from err
 
     if data["panel"] == "question":
         if sort_type == SortTypes.FIXED.name:

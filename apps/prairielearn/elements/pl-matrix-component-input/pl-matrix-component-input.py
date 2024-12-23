@@ -183,8 +183,8 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            except Exception as err:
+                raise ValueError("invalid score" + score) from err
 
         with open("pl-matrix-component-input.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
@@ -220,8 +220,8 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            except Exception as err:
+                raise ValueError("invalid score" + score) from err
 
         if parse_error is None and name in data["submitted_answers"]:
             # Get submitted answer, raising an exception if it does not exist

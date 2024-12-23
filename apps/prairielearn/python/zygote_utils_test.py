@@ -44,7 +44,7 @@ def test_all_integers_within_limits_no_exception(item: Any) -> None:
     try:
         zu.assert_all_integers_within_limits(item)
     except Exception as err:
-        assert False, err
+        raise AssertionError() from err
 
 
 @pytest.mark.parametrize(
