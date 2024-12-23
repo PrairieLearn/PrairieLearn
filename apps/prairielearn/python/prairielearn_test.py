@@ -405,7 +405,7 @@ def test_get_uuid() -> None:
 
     # Assert clauses have standard structure.
     assert len(clauses) == 5
-    assert [8, 4, 4, 4, 12] == list(map(len, clauses))
+    assert list(map(len, clauses)) == [8, 4, 4, 4, 12]
 
     # Assert that all characters are valid.
     seen_characters = set().union(*(clause for clause in clauses))

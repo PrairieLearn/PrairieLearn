@@ -195,20 +195,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     source_file_name = pl.get_string_attrib(
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
     )
-    if source_file_name is not None:
-        if element.text is not None and not str(element.text).isspace():
-            raise ValueError(
-                'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
-            )
+    if (
+        source_file_name is not None
+        and element.text is not None
+        and not str(element.text).isspace()
+    ):
+        raise ValueError(
+            'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
+        )
 
     highlight_lines = pl.get_string_attrib(
         element, "highlight-lines", HIGHLIGHT_LINES_DEFAULT
     )
-    if highlight_lines is not None:
-        if parse_highlight_lines(highlight_lines) is None:
-            raise ValueError(
-                "Could not parse highlight-lines attribute; check your syntax"
-            )
+    if highlight_lines is not None and parse_highlight_lines(highlight_lines) is None:
+        raise ValueError("Could not parse highlight-lines attribute; check your syntax")
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:

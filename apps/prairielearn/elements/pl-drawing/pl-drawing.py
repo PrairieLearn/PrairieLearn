@@ -113,9 +113,10 @@ def prepare(element_html, data):
                         for buttons in groups:
                             if buttons.tag == "pl-drawing-button":
                                 type_name = buttons.attrib.get("type", None)
-                                if type_name == "pl-arc-vector-CCW":
-                                    type_name = "pl-arc-vector"
-                                elif type_name == "pl-arc-vector-CW":
+                                if (
+                                    type_name == "pl-arc-vector-CCW"
+                                    or type_name == "pl-arc-vector-CW"
+                                ):
                                     type_name = "pl-arc-vector"
                                 type_attribs = elements.get_attributes(type_name)
                                 if elements.should_validate_attributes(type_name):
@@ -125,10 +126,7 @@ def prepare(element_html, data):
                                         optional_attribs=type_attribs,
                                     )
                                 if buttons.attrib["type"] == "pl-vector":
-                                    if "width" in buttons.attrib:
-                                        w_button = buttons.attrib["width"]
-                                    else:
-                                        w_button = None
+                                    w_button = buttons.attrib.get("width", None)
 
         if answer_child is None:
             raise Exception(
@@ -147,9 +145,8 @@ def prepare(element_html, data):
         for obj in ans:
             obj["graded"] = True
             obj["drawErrorBox"] = draw_error_box
-            if "objectDrawErrorBox" in obj:
-                if obj["objectDrawErrorBox"] is not None:
-                    obj["drawErrorBox"] = obj["objectDrawErrorBox"]
+            if "objectDrawErrorBox" in obj and obj["objectDrawErrorBox"] is not None:
+                obj["drawErrorBox"] = obj["objectDrawErrorBox"]
             # Check to see if consistent width for pl-vector is used for correct answer
             # and submitted answers that are added using the buttons
             if obj["gradingName"] == "vector":
@@ -278,9 +275,8 @@ def render(element_html, data):
     for obj in init:
         obj["graded"] = False
         obj["drawErrorBox"] = draw_error_box
-        if "objectDrawErrorBox" in obj:
-            if obj["objectDrawErrorBox"] is not None:
-                obj["drawErrorBox"] = obj["objectDrawErrorBox"]
+        if "objectDrawErrorBox" in obj and obj["objectDrawErrorBox"] is not None:
+            obj["drawErrorBox"] = obj["objectDrawErrorBox"]
 
     grid_size = pl.get_integer_attrib(
         element, "grid-size", defaults.element_defaults["grid-size"]

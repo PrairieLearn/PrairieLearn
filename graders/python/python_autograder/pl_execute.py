@@ -1,3 +1,4 @@
+import contextlib
 import json
 import os
 import os.path as path
@@ -86,14 +87,10 @@ def execute_code(
     os.remove(path.join(filenames_dir, "data.json"))
     os.remove(fname_ref)
     os.remove(path.join(filenames_dir, "setup_code.py"))
-    try:
+    with contextlib.suppress(FileNotFoundError):
         os.remove(path.join(filenames_dir, "leading_code.py"))
-    except FileNotFoundError:
-        pass
-    try:
+    with contextlib.suppress(FileNotFoundError):
         os.remove(path.join(filenames_dir, "trailing_code.py"))
-    except FileNotFoundError:
-        pass
     os.remove(path.join(filenames_dir, "test.py"))
 
     repeated_setup_name = "repeated_setup()"
@@ -133,9 +130,11 @@ def execute_code(
 
     if include_plt:
         for _, j in ref_code.items():
-            if isinstance(j, ModuleType):
-                if j.__dict__["__name__"] == "matplotlib.pyplot":
-                    j.close("all")
+            if (
+                isinstance(j, ModuleType)
+                and j.__dict__["__name__"] == "matplotlib.pyplot"
+            ):
+                j.close("all")
 
     # make only the variables listed in names_for_user available to student
     names_from_user = []
@@ -155,7 +154,7 @@ def execute_code(
     # Execute student code
     previous_stdout = sys.stdout
     if console_output_fname:
-        sys.stdout = open(console_output_fname, "w", encoding="utf-8")
+        sys.stdout = open(console_output_fname, "w", encoding="utf-8")  # noqa: SIM115
 
     set_random_seed(seed)
 
@@ -203,9 +202,11 @@ def execute_code(
     plot_value = None
     if include_plt:
         for key in list(student_code):
-            if isinstance(student_code[key], ModuleType):
-                if student_code[key].__dict__["__name__"] == "matplotlib.pyplot":
-                    plot_value = student_code[key]
+            if (
+                isinstance(student_code[key], ModuleType)
+                and student_code[key].__dict__["__name__"] == "matplotlib.pyplot"
+            ):
+                plot_value = student_code[key]
         if not plot_value:
             import matplotlib
 
