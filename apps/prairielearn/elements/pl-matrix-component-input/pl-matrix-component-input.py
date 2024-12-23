@@ -506,10 +506,10 @@ def test(element_html, data):
         }
 
 
-def create_table_for_html_display(m, n, name, label, data, format):
+def create_table_for_html_display(m, n, name, label, data, format_type):
     editable = data["editable"]
 
-    if format == "output-invalid":
+    if format_type == "output-invalid":
         display_array = "<table>"
         display_array += "<tr>"
         display_array += (
@@ -559,7 +559,7 @@ def create_table_for_html_display(m, n, name, label, data, format):
             display_array += "</tr>"
         display_array += "</table>"
 
-    elif format == "output-feedback":
+    elif format_type == "output-feedback":
         partial_score_feedback = data["partial_scores"].get(name, {"feedback": None})
         feedback_each_entry = partial_score_feedback.get("feedback", None)
         score = partial_score_feedback.get("score", None)
@@ -635,7 +635,7 @@ def create_table_for_html_display(m, n, name, label, data, format):
             display_array += "</tr>"
         display_array += "</table>"
 
-    elif format == "input":
+    elif format_type == "input":
         display_array = "<table>"
         display_array += "<tr>"
         # Add first row

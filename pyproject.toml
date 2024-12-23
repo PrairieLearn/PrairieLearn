@@ -34,11 +34,15 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
+    # flake8-2020
     "YTT",
+    # flake8-async
     "ASYNC",
+    # flake8-blind-except
     "BLE",
     # flake8-bandit
-    "S"
+    "S",
+    "A",
     ]
 ignore = [
     # Ignore line length errors

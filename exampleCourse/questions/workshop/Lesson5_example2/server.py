@@ -83,11 +83,11 @@ def power_iteration(H, tol):
     x0 = np.random.rand(H.shape[0])
     xnorm = la.norm(x0, 1)
     x0 = x0 / xnorm
-    iter = 0
+    iters = 0
     prev_vect = np.copy(x0) - 2 * np.ones(x0.shape[0])
     curr_vect = np.copy(x0)
-    while la.norm((prev_vect - curr_vect), 2) > tol and iter < 200:
-        iter += 1
+    while la.norm((prev_vect - curr_vect), 2) > tol and iters < 200:
+        iters += 1
         prev_vect = curr_vect
         curr_vect = H.dot(curr_vect)
         curr_vect = curr_vect / la.norm(curr_vect, 1)
