@@ -27,9 +27,9 @@ def graphviz_from_networkx(
 
     networkx_graph = pl.from_json(data["params"][input_param_name])
 
-    G = nx.nx_agraph.to_agraph(networkx_graph)
+    graph = nx.nx_agraph.to_agraph(networkx_graph)
 
-    return G.string()
+    return graph.string()
 
 
 def graphviz_from_adj_matrix(
@@ -97,8 +97,8 @@ def graphviz_from_adj_matrix(
 
     # Create pygraphviz graph representation
 
-    G = pygraphviz.AGraph(directed=directed)
-    G.add_nodes_from(mat_label)
+    graph = pygraphviz.AGraph(directed=directed)
+    graph.add_nodes_from(mat_label)
 
     for in_node, row in zip(mat_label, mat, strict=False):
         for out_node, x in zip(mat_label, row, strict=False):
@@ -108,7 +108,7 @@ def graphviz_from_adj_matrix(
                 continue
 
             if show_weights:
-                G.add_edge(
+                graph.add_edge(
                     out_node,
                     in_node,
                     label=pl.string_from_2darray(
@@ -116,9 +116,9 @@ def graphviz_from_adj_matrix(
                     ),
                 )
             else:
-                G.add_edge(out_node, in_node)
+                graph.add_edge(out_node, in_node)
 
-    return G.string()
+    return graph.string()
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:

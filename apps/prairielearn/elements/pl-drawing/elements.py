@@ -982,11 +982,11 @@ class ArcVector(BaseElement):
         color = pl.get_color_attrib(el, "color", "purple")
         clockwise_direction = pl.get_boolean_attrib(el, "clockwise-direction", True)
         if clockwise_direction:
-            drawStartArrow = False
-            drawEndArrow = True
+            draw_start_arrow = False
+            draw_end_arrow = True
         else:
-            drawStartArrow = True
-            drawEndArrow = False
+            draw_start_arrow = True
+            draw_end_arrow = False
         # Error box for grading
         x1 = pl.get_float_attrib(el, "x1", 40)
         y1 = pl.get_float_attrib(el, "y1", 40)
@@ -1015,11 +1015,11 @@ class ArcVector(BaseElement):
             "drawCenterPoint": json.loads(
                 pl.get_string_attrib(el, "draw-center", "true")
             ),
-            "drawStartArrow": drawStartArrow,
-            "drawEndArrow": drawEndArrow,
-            "label": pl.get_string_attrib(el, "label", ""),
-            "offsetx": pl.get_float_attrib(el, "offsetx", 0),
-            "offsety": pl.get_float_attrib(el, "offsety", 0),
+            "drawStartArrow": draw_start_arrow,
+            "drawEndArrow": draw_end_arrow,
+            "label": pl.get_string_attrib(self, "label", ""),
+            "offsetx": pl.get_float_attrib(self, "offsetx", 0),
+            "offsety": pl.get_float_attrib(self, "offsety", 0),
             "stroke": color,
             "fill": color,
             "strokeWidth": pl.get_float_attrib(el, "stroke-width", 3),
@@ -2521,12 +2521,12 @@ def generate(element, name, defaults=None):
         obj.update(cls.generate(element, data))
 
         # By default, set the grading name to the element name
-        gradingName = cls.grading_name(element)
-        if gradingName is None:
-            gradingName = name
+        grading_name = cls.grading_name(element)
+        if grading_name is None:
+            grading_name = name
 
-        obj["gradingName"] = gradingName
-        obj["type"] = gradingName
+        obj["gradingName"] = grading_name
+        obj["type"] = grading_name
         return obj
     else:
         return {}
