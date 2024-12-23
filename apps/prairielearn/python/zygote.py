@@ -116,7 +116,7 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
         ):
             msg = f'module "{fullname}" is not allowed.'
             raise ImportError(msg)
-        return None
+        return
 
 
 # We want to initialize the Faker seed, but only if faker is loaded
@@ -136,7 +136,7 @@ class FakerInitializeMetaPathFinder(MetaPathFinder):
             from faker import Faker
 
             Faker.seed(self.seed)
-        return None
+        return
 
 
 # This function tries to convert a python object to valid JSON. If an exception

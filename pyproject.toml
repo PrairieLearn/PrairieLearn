@@ -61,7 +61,8 @@ select = [
     "Q",
     # flake8-raise
     "RSE",
-    "RET506"
+    # flake8-return
+    "RET"
     ]
 ignore = [
     # Ignore line length errors
@@ -70,6 +71,7 @@ ignore = [
     "SIM108",
     # Allow assert statements, and some security issues are disabled
     "S311", "S102", "S101", "S324", "S320", "S108", "S603", "S605", "S607",
+    "RET503", "RET504", "RET505",
 ]
 
 [tool.ruff.lint.per-file-ignores]
