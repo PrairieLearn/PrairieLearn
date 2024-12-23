@@ -2,7 +2,7 @@ import random
 
 import numpy as np
 import numpy.linalg as la
-import prairielearn.core as pl
+import prairielearn as pl
 
 
 def generate(data):

@@ -1,7 +1,7 @@
 import copy
 
 import numpy as np
-import prairielearn.core as pl
+import prairielearn as pl
 
 
 def generate(data):

@@ -1,6 +1,6 @@
 import random
 
-import prairielearn.core as pl
+import prairielearn as pl
 import schemdraw.elements as elm
 from schemdraw import Drawing
 

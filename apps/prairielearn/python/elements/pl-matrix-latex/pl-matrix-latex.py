@@ -2,7 +2,7 @@ import numbers
 
 import lxml.html
 import numpy as np
-import prairielearn.core as pl
+import prairielearn as pl
 
 DIGITS_DEFAULT = 2
 PRESENTATION_TYPE_DEFAULT = "f"

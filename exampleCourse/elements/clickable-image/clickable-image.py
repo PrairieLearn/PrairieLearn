@@ -2,7 +2,7 @@ import random
 
 import chevron
 import lxml.html
-import prairielearn.core as pl
+import prairielearn as pl
 
 
 def prepare(element_html, data):

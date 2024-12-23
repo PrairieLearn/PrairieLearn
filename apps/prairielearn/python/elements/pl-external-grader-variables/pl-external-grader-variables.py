@@ -1,7 +1,7 @@
 import chevron
 import lxml.etree
 import lxml.html
-import prairielearn.core as pl
+import prairielearn as pl
 
 EMPTY_DEFAULT = False
 

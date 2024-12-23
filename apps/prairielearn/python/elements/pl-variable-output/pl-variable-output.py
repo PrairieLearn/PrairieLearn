@@ -4,7 +4,7 @@ import chevron
 import lxml.etree
 import lxml.html
 import numpy as np
-import prairielearn.core as pl
+import prairielearn as pl
 
 
 class TabType(Enum):

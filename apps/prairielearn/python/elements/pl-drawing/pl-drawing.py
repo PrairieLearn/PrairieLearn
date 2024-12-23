@@ -7,7 +7,7 @@ import defaults
 import elements
 import lxml.etree
 import lxml.html
-import prairielearn.core as pl
+import prairielearn as pl
 
 
 def union_drawing_items(e1, e2):

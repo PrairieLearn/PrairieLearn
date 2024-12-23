@@ -2,7 +2,7 @@ import pprint
 
 import lxml.html
 import pandas
-import prairielearn.core as pl
+import prairielearn as pl
 
 NO_HIGHLIGHT_DEFAULT = False
 PREFIX_DEFAULT = ""

@@ -7,7 +7,7 @@ from typing import Any, cast
 import chevron
 import lxml.etree
 import lxml.html
-import prairielearn.core as pl
+import prairielearn as pl
 
 LOG_VARIABLE_WARNINGS_DEFAULT = False
 TRIM_WHITESPACE_DEFAULT = True

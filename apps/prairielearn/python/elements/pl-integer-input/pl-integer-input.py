@@ -5,7 +5,7 @@ from typing import Any
 import chevron
 import lxml.html
 import numpy
-import prairielearn.core as pl
+import prairielearn as pl
 from typing_extensions import assert_never
 
 

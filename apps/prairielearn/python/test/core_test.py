@@ -9,7 +9,7 @@ import lxml.html
 import networkx as nx
 import numpy as np
 import pandas as pd
-import prairielearn.core as pl
+import prairielearn as pl
 import pytest
 
 

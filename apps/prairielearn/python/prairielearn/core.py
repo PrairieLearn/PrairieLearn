@@ -26,7 +26,7 @@ from pint import UnitRegistry
 from text_unidecode import unidecode
 from typing_extensions import NotRequired, assert_never
 
-import prairielearn.python_helper_sympy as phs
+import prairielearn.sympy_utils as phs
 import prairielearn.to_precision as to_precision
 from prairielearn.colors import PLColor
 

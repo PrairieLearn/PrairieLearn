@@ -2,7 +2,7 @@ from enum import Enum
 from typing import Any, Callable, Optional, Tuple
 
 import numpy as np
-import prairielearn.core as pl
+import prairielearn as pl
 from pint import UnitRegistry
 from typing_extensions import assert_never
 

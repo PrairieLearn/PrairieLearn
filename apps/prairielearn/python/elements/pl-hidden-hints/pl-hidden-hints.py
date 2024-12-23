@@ -4,7 +4,7 @@ from typing import Optional
 import chevron
 import lxml.etree
 import lxml.html
-import prairielearn.core as pl
+import prairielearn as pl
 
 # Based on the original hidden-hint element by Jason Xia
 

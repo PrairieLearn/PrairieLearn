@@ -1,5 +1,5 @@
 import numpy as np
-import prairielearn.core as pl
+import prairielearn as pl
 import pygraphviz
 
 # Import the host element for all the attrib defaults

@@ -5,7 +5,7 @@ from html import escape
 import chevron
 import lxml.html
 import numpy as np
-import prairielearn.core as pl
+import prairielearn as pl
 
 WEIGHT_DEFAULT = 1
 LABEL_DEFAULT = None

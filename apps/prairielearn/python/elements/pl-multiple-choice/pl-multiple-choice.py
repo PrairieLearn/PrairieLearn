@@ -9,7 +9,7 @@ from typing import NamedTuple, Optional
 import chevron
 import lxml.etree
 import lxml.html
-import prairielearn.core as pl
+import prairielearn as pl
 from typing_extensions import assert_never
 
 

@@ -2,7 +2,7 @@ import os
 from enum import Enum
 
 import lxml.html
-import prairielearn.core as pl
+import prairielearn as pl
 from typing_extensions import assert_never
 
 

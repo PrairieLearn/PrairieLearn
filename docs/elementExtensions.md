@@ -49,7 +49,7 @@ def my_cool_function():
 The host element could then call this by running the following:
 
 ```python
-import prairielearn.core as pl
+import prairielearn as pl
 
 def render(element_html, data):
     extension = pl.load_extension(data, "extension_name")
@@ -65,7 +65,7 @@ Extensions can also import files from their host element with the `load_host_scr
 If the host element were to contain, for example:
 
 ```python
-import prairielearn.core as pl
+import prairielearn as pl
 
 STATIC_VARIABLE = "hello"
 
@@ -78,7 +78,7 @@ def render(element_html, data):
 The extension could then access `STATIC_VARIABLE` by importing the host script:
 
 ```python hl_lines="3"
-import prairielearn.core as pl
+import prairielearn as pl
 
 host_element = pl.load_host_script("pl-host-element.py")
 

@@ -2,7 +2,7 @@ import json
 import math
 
 import numpy as np
-import prairielearn.core as pl
+import prairielearn as pl
 from defaults import drawing_defaults
 
 

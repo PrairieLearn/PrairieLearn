@@ -5,7 +5,7 @@ import string
 import networkx as nx
 import numpy as np
 import numpy.linalg as la
-import prairielearn.core as pl
+import prairielearn as pl
 
 
 def generate(data):

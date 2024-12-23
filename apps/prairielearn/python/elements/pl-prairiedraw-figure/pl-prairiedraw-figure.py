@@ -2,7 +2,7 @@ import os
 
 import chevron
 import lxml.html
-import prairielearn.core as pl
+import prairielearn as pl
 
 PARAM_NAMES_DEFAULT = None
 WIDTH_DEFAULT = "500"

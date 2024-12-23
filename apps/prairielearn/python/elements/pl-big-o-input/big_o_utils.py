@@ -1,6 +1,6 @@
 from typing import Callable, List, Tuple
 
-import prairielearn.python_helper_sympy as phs
+import python_helper_sympy as phs
 import sympy
 
 BigOGradingFunctionT = Callable[[str, str, List[str]], Tuple[float, str]]

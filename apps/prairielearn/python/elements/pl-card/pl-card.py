@@ -2,7 +2,7 @@ from typing import Any
 
 import chevron
 import lxml.html
-import prairielearn.core as pl
+import prairielearn as pl
 
 HEADER_DEFAULT = ""
 TITLE_DEFAULT = ""

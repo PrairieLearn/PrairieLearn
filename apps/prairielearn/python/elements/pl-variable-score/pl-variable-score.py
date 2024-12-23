@@ -1,7 +1,7 @@
 import math
 
 import lxml.html
-import prairielearn.core as pl
+import prairielearn as pl
 
 use_pl_variable_score = False
 

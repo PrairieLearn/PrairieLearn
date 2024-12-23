@@ -2,7 +2,7 @@ from itertools import count
 
 import chevron
 import lxml.html
-import prairielearn.core as pl
+import prairielearn as pl
 
 VALIGN_DEFAULT = "middle"
 HALIGN_DEFAULT = "center"

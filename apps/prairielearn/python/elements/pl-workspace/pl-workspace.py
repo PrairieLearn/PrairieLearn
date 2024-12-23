@@ -1,5 +1,5 @@
 import chevron
-import prairielearn.core as pl
+import prairielearn as pl
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:

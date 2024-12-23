@@ -1,5 +1,5 @@
 import numpy as np
-import prairielearn.core as pl
+import prairielearn as pl
 import scipy.linalg as sla
 
 
