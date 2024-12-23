@@ -88,9 +88,7 @@ def prepare(element_html, data):
 
     if min_correct < 1:
         raise ValueError(
-            "The attribute min-correct is {:d} but must be at least 1".format(
-                min_correct
-            )
+            f"The attribute min-correct is {min_correct:d} but must be at least 1"
         )
 
     # FIXME: why enforce a maximum number of options?
@@ -353,7 +351,7 @@ def render(element_html, data):
 
             info_params.update({"gradingtext": gradingtext})
 
-        with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+        with open("pl-checkbox.mustache", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
 
         html_params = {
@@ -383,7 +381,7 @@ def render(element_html, data):
             except Exception as err:
                 raise ValueError("invalid score" + score) from err
 
-        with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+        with open("pl-checkbox.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -436,7 +434,7 @@ def render(element_html, data):
                 except Exception as err:
                     raise ValueError("invalid score" + score) from err
 
-            with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+            with open("pl-checkbox.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html_params = {
@@ -444,7 +442,7 @@ def render(element_html, data):
                 "parse_error": parse_error,
                 "inline": inline,
             }
-            with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+            with open("pl-checkbox.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -463,7 +461,7 @@ def render(element_html, data):
                         element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
                     ),
                 }
-                with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+                with open("pl-checkbox.mustache", encoding="utf-8") as f:
                     html = chevron.render(f, html_params).strip()
         else:
             html = ""
@@ -493,9 +491,7 @@ def parse(element_html, data):
     if not submitted_key_set.issubset(all_keys_set):
         one_bad_key = submitted_key_set.difference(all_keys_set).pop()
         # FIXME: escape one_bad_key
-        data["format_errors"][name] = "You selected an invalid option: {:s}".format(
-            str(one_bad_key)
-        )
+        data["format_errors"][name] = f"You selected an invalid option: {str(one_bad_key):s}"
         return
 
     # Get minimum and maximum number of options to be selected

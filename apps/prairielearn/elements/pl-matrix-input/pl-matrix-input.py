@@ -57,40 +57,40 @@ def render(element_html, data):
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
                 raise ValueError(
-                    "Attribute rtol = {:g} must be non-negative".format(rtol)
+                    f"Attribute rtol = {rtol:g} must be non-negative"
                 )
             if atol < 0:
                 raise ValueError(
-                    "Attribute atol = {:g} must be non-negative".format(atol)
+                    f"Attribute atol = {atol:g} must be non-negative"
                 )
             info_params = {
                 "format": True,
                 "relabs": True,
-                "rtol": "{:g}".format(rtol),
-                "atol": "{:g}".format(atol),
+                "rtol": f"{rtol:g}",
+                "atol": f"{atol:g}",
             }
         elif comparison == "sigfig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
                 raise ValueError(
-                    "Attribute digits = {:d} must be non-negative".format(digits)
+                    f"Attribute digits = {digits:d} must be non-negative"
                 )
             info_params = {
                 "format": True,
                 "sigfig": True,
-                "digits": "{:d}".format(digits),
+                "digits": f"{digits:d}",
                 "comparison_eps": 0.51 * (10 ** -(digits - 1)),
             }
         elif comparison == "decdig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
                 raise ValueError(
-                    "Attribute digits = {:d} must be non-negative".format(digits)
+                    f"Attribute digits = {digits:d} must be non-negative"
                 )
             info_params = {
                 "format": True,
                 "decdig": True,
-                "digits": "{:d}".format(digits),
+                "digits": f"{digits:d}",
                 "comparison_eps": 0.51 * (10 ** -(digits - 0)),
             }
         else:
@@ -101,9 +101,9 @@ def render(element_html, data):
         info_params["allow_complex"] = pl.get_boolean_attrib(
             element, "allow-complex", ALLOW_COMPLEX_DEFAULT
         )
-        with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
-        with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             info_params.pop("format", None)
             info_params["shortformat"] = True
             shortinfo = chevron.render(f, info_params).strip()
@@ -139,7 +139,7 @@ def render(element_html, data):
             html_params["raw_submitted_answer"] = pl.escape_unicode_string(
                 raw_submitted_answer
             )
-        with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -195,7 +195,7 @@ def render(element_html, data):
             "missing_input", False
         )
 
-        with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -250,7 +250,7 @@ def render(element_html, data):
                 html_params["default_is_matlab"] = True
             else:
                 html_params["default_is_python"] = True
-            with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+            with open("pl-matrix-input.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html = ""
@@ -263,7 +263,7 @@ def render(element_html, data):
 
 def get_format_string(message):
     params = {"format_error": True, "format_error_message": message}
-    with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+    with open("pl-matrix-input.mustache", encoding="utf-8") as f:
         return chevron.render(f, params).strip()
 
 

@@ -31,7 +31,9 @@ select = [
     # flake8-bugbear
     "B",
     # flake8-simplify
-    "SIM"
+    "SIM",
+    # pyupgrade
+    "UP",
     ]
 # Ignore line length errors
 ignore = ["E501", "SIM108"]

@@ -1,7 +1,6 @@
-from typing import Optional
 
 
-def parse_highlight_lines(highlight_lines: str) -> Optional[list[int]]:
+def parse_highlight_lines(highlight_lines: str) -> list[int] | None:
     """
     Parses a string like "1", "1-4", "1-3,5,7-8" into a list of lines like
     [1], [1,2,3,4], and [1,2,3,5,7,8]

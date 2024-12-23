@@ -1,6 +1,6 @@
 from enum import Enum
 from random import choice
-from typing import Any, Optional
+from typing import Any
 
 import chevron
 import lxml.html
@@ -184,7 +184,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     parse_error = data["format_errors"].get(name)
     ureg = pl.get_unit_registry()
 
-    with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+    with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         template = f.read()
 
     if data["panel"] == "question":
@@ -488,7 +488,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
 
 def prepare_display_string(
-    quantity: Any, custom_format: Optional[str], grading_mode: GradingMode
+    quantity: Any, custom_format: str | None, grading_mode: GradingMode
 ) -> str:
     if grading_mode is GradingMode.ONLY_UNITS:
         return str(quantity.units)

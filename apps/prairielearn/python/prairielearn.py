@@ -12,9 +12,10 @@ import re
 import string
 import unicodedata
 import uuid
+from collections.abc import Callable, Generator
 from enum import Enum
 from io import StringIO
-from typing import Any, Callable, Generator, Literal, Type, TypedDict, TypeVar, overload
+from typing import Any, Literal, TypedDict, TypeVar, overload
 
 import lxml.html
 import networkx as nx
@@ -156,7 +157,7 @@ EnumT = TypeVar("EnumT", bound=Enum)
 def get_enum_attrib(
     element: lxml.html.HtmlElement,
     name: str,
-    enum_type: Type[EnumT],
+    enum_type: type[EnumT],
     default: EnumT | None = None,
 ) -> EnumT:
     """
@@ -718,9 +719,7 @@ def get_color_attrib(element, name, *args):
             return PLColor(val).to_string(hex=True)
         else:
             raise Exception(
-                'Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(
-                    name, val
-                )
+                f'Attribute "{name:s}" must be a CSS-style RGB string: {val:s}'
             )
 
 
@@ -931,9 +930,7 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
         return result
     else:
         raise Exception(
-            'language "{:s}" must be either "python", "matlab", "mathematica", "r", or "sympy"'.format(
-                language
-            )
+            f'language "{language:s}" must be either "python", "matlab", "mathematica", "r", or "sympy"'
         )
 
 
@@ -965,9 +962,9 @@ def _string_from_complex_sigfig(a, digits=2):
     re = to_precision.to_precision(a.real, digits)
     im = to_precision.to_precision(np.abs(a.imag), digits)
     if a.imag >= 0:
-        return "{:s}+{:s}j".format(re, im)
+        return f"{re:s}+{im:s}j"
     elif a.imag < 0:
-        return "{:s}-{:s}j".format(re, im)
+        return f"{re:s}-{im:s}j"
 
 
 def numpy_to_matlab_sf(A, ndigits=2):

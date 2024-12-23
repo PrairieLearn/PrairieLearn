@@ -22,7 +22,7 @@ def add_files(results):
         test["files"] = test.get("files", [])
         image_fname = join(base_dir, "image_" + test["name"] + ".png")
         if os.path.exists(image_fname):
-            with open(image_fname, "r") as content_file:
+            with open(image_fname) as content_file:
                 imgsrc = content_file.read()
             if "images" not in test:
                 test["images"] = []
@@ -30,7 +30,7 @@ def add_files(results):
             os.remove(image_fname)
         feedback_fname = join(base_dir, "feedback_" + test["filename"] + ".txt")
         if os.path.exists(feedback_fname):
-            with open(feedback_fname, "r", encoding="utf-8") as content_file:
+            with open(feedback_fname, encoding="utf-8") as content_file:
                 text_feedback = content_file.read()
             test["message"] = text_feedback
             os.remove(feedback_fname)
@@ -44,7 +44,7 @@ if __name__ == "__main__":
         # Read the output filename from a file, and then delete it
         # We could do this via command-line arg but there's a chance of
         # a student picking it up by calling `ps` for example.
-        with open(join(filenames_dir, OUTPUT_FILE), "r") as output_f:
+        with open(join(filenames_dir, OUTPUT_FILE)) as output_f:
             output_fname = output_f.read()
         os.remove(join(filenames_dir, OUTPUT_FILE))
 
@@ -103,7 +103,7 @@ if __name__ == "__main__":
         text_output = ""
         if os.path.exists(join(base_dir, "output.txt")):
             with open(
-                join(base_dir, "output.txt"), "r", encoding="utf-8"
+                join(base_dir, "output.txt"), encoding="utf-8"
             ) as content_file:
                 text_output = content_file.read()
             os.remove(join(base_dir, "output.txt"))
@@ -134,7 +134,7 @@ if __name__ == "__main__":
                 # Save each image as image_{test iteration}_{image number}
                 img_in = join(base_dir, f"image_{img_iter}_{img_num}.png")
                 if os.path.exists(img_in):
-                    with open(img_in, "r") as content_file:
+                    with open(img_in) as content_file:
                         grading_result["images"].append(content_file.read())
                     os.remove(img_in)
                     img_num += 1

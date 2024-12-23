@@ -2,8 +2,9 @@ import itertools as it
 import json
 import math
 import string
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable, cast
+from typing import Any, cast
 
 import lxml.html
 import networkx as nx

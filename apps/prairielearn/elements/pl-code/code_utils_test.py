@@ -1,4 +1,3 @@
-from typing import Optional
 
 import pytest
 from code_utils import parse_highlight_lines
@@ -15,6 +14,6 @@ from code_utils import parse_highlight_lines
     ],
 )
 def test_parse_highlight_lines(
-    input_str: str, expected_output: Optional[list[int]]
+    input_str: str, expected_output: list[int] | None
 ) -> None:
     assert parse_highlight_lines(input_str) == expected_output
