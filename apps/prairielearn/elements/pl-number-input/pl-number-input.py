@@ -194,13 +194,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
-                raise ValueError(
-                    f"Attribute rtol = {rtol:g} must be non-negative"
-                )
+                raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
             if atol < 0:
-                raise ValueError(
-                    f"Attribute atol = {atol:g} must be non-negative"
-                )
+                raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
             info_params = {
                 "format": True,
                 "relabs": True,
@@ -210,9 +206,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(
-                    f"Attribute digits = {digits:d} must be non-negative"
-                )
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "sigfig": True,
@@ -223,9 +217,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif comparison is ComparisonType.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(
-                    f"Attribute digits = {digits:d} must be non-negative"
-                )
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "decdig": True,
