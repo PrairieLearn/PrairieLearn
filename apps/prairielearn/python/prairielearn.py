@@ -295,15 +295,15 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
     elif isinstance(v, sympy.Matrix) or isinstance(v, sympy.ImmutableMatrix):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
-        M = []
+        matrix = []
         for i in range(0, num_rows):
             row = []
             for j in range(0, num_cols):
                 row.append(str(v[i, j]))
-            M.append(row)
+            matrix.append(row)
         return {
             "_type": "sympy_matrix",
-            "_value": M,
+            "_value": matrix,
             "_variables": s,
             "_shape": [num_rows, num_cols],
         }
@@ -426,13 +426,13 @@ def from_json(v):
                     value = v["_value"]
                     variables = v["_variables"]
                     shape = v["_shape"]
-                    M = sympy.Matrix.zeros(shape[0], shape[1])
+                    matrix = sympy.Matrix.zeros(shape[0], shape[1])
                     for i in range(0, shape[0]):
                         for j in range(0, shape[1]):
-                            M[i, j] = phs.convert_string_to_sympy(
+                            matrix[i, j] = phs.convert_string_to_sympy(
                                 value[i][j], variables
                             )
-                    return M
+                    return matrix
                 else:
                     raise Exception(
                         "variable of type sympy_matrix should have value, variables, and shape"
@@ -745,38 +745,38 @@ def numpy_to_matlab(A, ndigits=2, wtype="f"):
     digits after the decimal and is formatted as "wtype" (e.g., 'f', 'g', etc.).
     """
     if np.isscalar(A):
-        A_str = "{:.{indigits}{iwtype}}".format(A, indigits=ndigits, iwtype=wtype)
-        return A_str
+        scalar_str = "{:.{indigits}{iwtype}}".format(A, indigits=ndigits, iwtype=wtype)
+        return scalar_str
     elif A.ndim == 1:
         s = A.shape
         m = s[0]
-        A_str = "["
+        vector_str = "["
         for i in range(0, m):
-            A_str += "{:.{indigits}{iwtype}}".format(
+            vector_str += "{:.{indigits}{iwtype}}".format(
                 A[i], indigits=ndigits, iwtype=wtype
             )
             if i < m - 1:
-                A_str += ", "
-        A_str += "]"
-        return A_str
+                vector_str += ", "
+        vector_str += "]"
+        return vector_str
     else:
         s = A.shape
         m = s[0]
         n = s[1]
-        A_str = "["
+        matrix_str = "["
         for i in range(0, m):
             for j in range(0, n):
-                A_str += "{:.{indigits}{iwtype}}".format(
+                matrix_str += "{:.{indigits}{iwtype}}".format(
                     A[i, j], indigits=ndigits, iwtype=wtype
                 )
                 if j == n - 1:
                     if i == m - 1:
-                        A_str += "]"
+                        matrix_str += "]"
                     else:
-                        A_str += "; "
+                        matrix_str += "; "
                 else:
-                    A_str += " "
-        return A_str
+                    matrix_str += " "
+        return matrix_str
 
 
 def string_from_numpy(A, language="python", presentation_type="f", digits=2):
@@ -992,42 +992,42 @@ def numpy_to_matlab_sf(A, ndigits=2):
     """
     if np.isscalar(A):
         if np.iscomplexobj(A):
-            A_str = _string_from_complex_sigfig(A, ndigits)
+            scalar_str = _string_from_complex_sigfig(A, ndigits)
         else:
-            A_str = to_precision.to_precision(A, ndigits)
-        return A_str
+            scalar_str = to_precision.to_precision(A, ndigits)
+        return scalar_str
     elif A.ndim == 1:
         s = A.shape
         m = s[0]
-        A_str = "["
+        vector_str = "["
         for i in range(0, m):
             if np.iscomplexobj(A[i]):
-                A_str += _string_from_complex_sigfig(A[i], ndigits)
+                vector_str += _string_from_complex_sigfig(A[i], ndigits)
             else:
-                A_str += to_precision.to_precision(A[i], ndigits)
+                vector_str += to_precision.to_precision(A[i], ndigits)
             if i < m - 1:
-                A_str += ", "
-        A_str += "]"
-        return A_str
+                vector_str += ", "
+        vector_str += "]"
+        return vector_str
     else:
         s = A.shape
         m = s[0]
         n = s[1]
-        A_str = "["
+        matrix_str = "["
         for i in range(0, m):
             for j in range(0, n):
                 if np.iscomplexobj(A[i, j]):
-                    A_str += _string_from_complex_sigfig(A[i, j], ndigits)
+                    matrix_str += _string_from_complex_sigfig(A[i, j], ndigits)
                 else:
-                    A_str += to_precision.to_precision(A[i, j], ndigits)
+                    matrix_str += to_precision.to_precision(A[i, j], ndigits)
                 if j == n - 1:
                     if i == m - 1:
-                        A_str += "]"
+                        matrix_str += "]"
                     else:
-                        A_str += "; "
+                        matrix_str += "; "
                 else:
-                    A_str += " "
-        return A_str
+                    matrix_str += " "
+        return matrix_str
 
 
 def string_partition_first_interval(s, left="[", right="]"):
@@ -1216,9 +1216,9 @@ def string_to_2darray(s, allow_complex=True):
                 raise ValueError("invalid submitted answer (wrong type)")
             if not np.isfinite(ans):
                 raise ValueError("invalid submitted answer (not finite)")
-            A = np.array([[ans]])
+            matrix = np.array([[ans]])
             # Return it with no error
-            return (A, {"format_type": "python"})
+            return (matrix, {"format_type": "python"})
         except Exception:
             # Return error if submitted answer could not be converted to float or complex
             if allow_complex:
@@ -1293,7 +1293,7 @@ def string_to_2darray(s, allow_complex=True):
             return (None, {"format_error": "Row 1 of the matrix has no columns."})
 
         # Define matrix in which to put result
-        A = np.zeros((m, n))
+        matrix = np.zeros((m, n))
 
         # Iterate over rows
         for i in range(0, m):
@@ -1329,10 +1329,10 @@ def string_to_2darray(s, allow_complex=True):
 
                     # If the new entry is complex, convert the entire array in-place to np.complex128
                     if np.iscomplexobj(ans):
-                        A = A.astype(np.complex128, copy=False)
+                        matrix = matrix.astype(np.complex128, copy=False)
 
                     # Insert the new entry
-                    A[i, j] = ans
+                    matrix[i, j] = ans
                 except Exception:
                     # Return error if entry could not be converted to float or complex
                     return (
@@ -1343,7 +1343,7 @@ def string_to_2darray(s, allow_complex=True):
                     )
 
         # Return resulting ndarray with no error
-        return (A, {"format_type": "matlab"})
+        return (matrix, {"format_type": "matlab"})
 
     # If there is more than one set of brackets, treat as python format
     if number_of_left_brackets > 1:
@@ -1449,7 +1449,7 @@ def string_to_2darray(s, allow_complex=True):
                 )
 
         # Define matrix in which to put result
-        A = np.zeros((number_of_rows, number_of_columns))
+        matrix = np.zeros((number_of_rows, number_of_columns))
 
         # Parse each row and column
         for i in range(0, number_of_rows):
@@ -1475,10 +1475,10 @@ def string_to_2darray(s, allow_complex=True):
 
                     # If the new entry is complex, convert the entire array in-place to np.complex128
                     if np.iscomplexobj(ans):
-                        A = A.astype(np.complex128, copy=False)
+                        matrix = matrix.astype(np.complex128, copy=False)
 
                     # Insert the new entry
-                    A[i, j] = ans
+                    matrix[i, j] = ans
                 except Exception:
                     # Return error if entry could not be converted to float or complex
                     return (
@@ -1489,7 +1489,7 @@ def string_to_2darray(s, allow_complex=True):
                     )
 
         # Return result with no error
-        return (A, {"format_type": "python"})
+        return (matrix, {"format_type": "python"})
 
     # Should never get here
     raise Exception(f"Invalid number of left brackets: {number_of_left_brackets}")

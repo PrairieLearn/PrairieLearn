@@ -341,7 +341,7 @@ def parse(element_html, data):
             raise ValueError("true answer must be a 2D array")
         else:
             m, n = np.shape(a_tru)
-    A = np.empty((m, n))
+    matrix = np.empty((m, n))
 
     # Create an array for the submitted answer to be stored in data['submitted_answer'][name]
     # used for display in the answer and submission panels
@@ -357,7 +357,7 @@ def parse(element_html, data):
                 a_sub, allow_fractions, allow_complex=False
             )
             if value is not None:
-                A[i, j] = value
+                matrix[i, j] = value
                 data["submitted_answers"][each_entry_name] = newdata[
                     "submitted_answers"
                 ]
@@ -373,7 +373,7 @@ def parse(element_html, data):
             ).strip()
         data["submitted_answers"][name] = None
     else:
-        data["submitted_answers"][name] = pl.to_json(A)
+        data["submitted_answers"][name] = pl.to_json(matrix)
 
 
 def grade(element_html, data):
