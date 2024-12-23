@@ -36,7 +36,7 @@ class TestGrader(cgrader.CGrader):
         for l, x, y in [[2, 0, 4], [3, 0, 0], [1, 1, 1], [99, -10, -400]]:
             test = self.test_run("./main", f"{l} {x} {y}\n", generateOutput(l, x, y))
             try:
-                with open("image.json", "r") as f:
+                with open("image.json") as f:
                     pts = json.load(f)
                     plt.clf()
                     for i in range(1, len(pts), 4):

@@ -1,6 +1,4 @@
-# -*- coding: utf-8 -*-
 
-from __future__ import division, print_function
 
 __copyright__ = "Copyright (C) 2014 Andreas Kloeckner"
 
@@ -337,14 +335,14 @@ class Feedback:
                 return False
 
         if data is None:
-            return bad("{} is None or not defined".format(name))
+            return bad(f"{name} is None or not defined")
 
         if not isinstance(data, tuple):
-            return bad("{} is not a tuple".format(name))
+            return bad(f"{name} is not a tuple")
 
         nref = len(ref)
         if len(data) != nref:
-            return bad("{} should be of length {}".format(name, nref))
+            return bad(f"{name} should be of length {nref}")
 
         good = True
         for i in range(nref):
@@ -352,9 +350,7 @@ class Feedback:
                 good = False
                 if report_failure:
                     cls.add_feedback(
-                        "{}[{}] should be of type {}".format(
-                            name, i, type(ref[i]).__name__
-                        )
+                        f"{name}[{i}] should be of type {type(ref[i]).__name__}"
                     )
             elif data[i] != ref[i]:
                 good = False

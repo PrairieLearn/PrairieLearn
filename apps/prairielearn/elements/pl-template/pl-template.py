@@ -112,7 +112,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 )
 
             elif has_template_file:
-                with open(get_file_path(child, data), "r") as f:
+                with open(get_file_path(child, data)) as f:
                     variable_dict[name] = f.read()
 
             else:
@@ -137,7 +137,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         element, "log-tag-warnings", LOG_TAG_WARNINGS_DEFAULT
     )
 
-    with open(get_file_path(element, data), "r") as f:
+    with open(get_file_path(element, data)) as f:
         res = chevron.render(f, variable_dict, warn=log_variable_warnings)
 
     if log_tag_warnings:

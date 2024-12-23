@@ -1,9 +1,9 @@
-from typing import Callable, List, Tuple
+from collections.abc import Callable
 
 import python_helper_sympy as phs
 import sympy
 
-BigOGradingFunctionT = Callable[[str, str, List[str]], Tuple[float, str]]
+BigOGradingFunctionT = Callable[[str, str, list[str]], tuple[float, str]]
 
 TYPE_ERROR_FEEDBACK = (
     "Your answer could not be processed by the autograder. Did you divide by 0?"
@@ -31,8 +31,8 @@ THETA_LOWER_ORDER_TERMS_FEEDBACK = (
 
 
 def grade_o_expression(
-    a_true: str, a_sub: str, variables: List[str]
-) -> Tuple[float, str]:
+    a_true: str, a_sub: str, variables: list[str]
+) -> tuple[float, str]:
     sym_true, sym_true_source = phs.convert_string_to_sympy_with_source(
         a_true, variables, allow_complex=False, allow_trig_functions=False
     )
@@ -72,8 +72,8 @@ def grade_o_expression(
 
 
 def grade_theta_expression(
-    a_true: str, a_sub: str, variables: List[str]
-) -> Tuple[float, str]:
+    a_true: str, a_sub: str, variables: list[str]
+) -> tuple[float, str]:
     sym_true, sym_true_source = phs.convert_string_to_sympy_with_source(
         a_true, variables, allow_complex=False, allow_trig_functions=False
     )
@@ -114,8 +114,8 @@ def grade_theta_expression(
 
 
 def grade_omega_expression(
-    a_true: str, a_sub: str, variables: List[str]
-) -> Tuple[float, str]:
+    a_true: str, a_sub: str, variables: list[str]
+) -> tuple[float, str]:
     sym_true, sym_true_source = phs.convert_string_to_sympy_with_source(
         a_true, variables, allow_complex=False, allow_trig_functions=False
     )

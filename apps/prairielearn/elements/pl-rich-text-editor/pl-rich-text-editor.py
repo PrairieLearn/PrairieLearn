@@ -121,7 +121,8 @@ def render(element_html, data):
             else:
                 directory = os.path.join(data["options"]["question_path"], directory)
             file_path = os.path.join(directory, source_file_name)
-            text_display = open(file_path).read()
+            with open(file_path) as f:
+                text_display = f.read()
         else:
             if element_text is not None:
                 text_display = str(element_text)
@@ -144,7 +145,7 @@ def render(element_html, data):
             html_params["current_file_contents"] = html_params["original_file_contents"]
 
         html_params["question"] = data["panel"] == "question"
-        with open("pl-rich-text-editor.mustache", "r", encoding="utf-8") as f:
+        with open("pl-rich-text-editor.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":

@@ -5,7 +5,7 @@ import os
 import random
 from copy import deepcopy
 from enum import Enum
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import chevron
 import lxml.html
@@ -51,21 +51,21 @@ class FormatType(Enum):
 
 
 class GroupInfo(TypedDict):
-    tag: Optional[str]
-    depends: Optional[list[str]]
+    tag: str | None
+    depends: list[str] | None
 
 
 class OrderBlocksAnswerData(TypedDict):
     inner_html: str
-    indent: Optional[int]
+    indent: int | None
     ranking: int
     index: int
     tag: str
-    distractor_for: Optional[str]
+    distractor_for: str | None
     depends: list[str]  # only used with DAG grader
     group_info: GroupInfo  # only used with DAG grader
     distractor_bin: NotRequired[str]
-    distractor_feedback: Optional[str]
+    distractor_feedback: str | None
     uuid: str
 
 
@@ -110,7 +110,7 @@ def get_graph_info(html_tags: lxml.html.HtmlElement) -> tuple[str, list[str]]:
 
 def extract_dag(
     answers_list: list[OrderBlocksAnswerData],
-) -> tuple[dict[str, list[str]], dict[str, Optional[str]]]:
+) -> tuple[dict[str, list[str]], dict[str, str | None]]:
     depends_graph = {ans["tag"]: ans["depends"] for ans in answers_list}
     group_belonging = {ans["tag"]: ans["group_info"]["tag"] for ans in answers_list}
     group_depends = {
@@ -539,7 +539,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "block_layout": "pl-order-blocks-horizontal" if inline else "",
         }
 
-        with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
+        with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
         return html
 
@@ -595,7 +595,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     f"invalid score: {data['partial_scores'][answer_name].get('score', 0)}"
                 )
 
-        with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
+        with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
         return html
 
@@ -604,7 +604,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             try:
                 base_path = data["options"]["question_path"]
                 file_lead_path = os.path.join(base_path, "tests/ans.py")
-                with open(file_lead_path, "r") as file:
+                with open(file_lead_path) as file:
                     solution_file = file.read()
                 return f'<pl-code language="python">{solution_file}</pl-code>'
             except FileNotFoundError:
@@ -657,7 +657,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else "pl-order-blocks-right"
             ),
         }
-        with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
+        with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
         return html
 
@@ -748,8 +748,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
 def construct_feedback(
     feedback_type: FeedbackType,
-    first_wrong: Optional[int],
-    group_belonging: dict[str, Optional[str]],
+    first_wrong: int | None,
+    group_belonging: dict[str, str | None],
     check_indentation: bool,
     first_wrong_is_distractor: bool,
 ) -> str:
@@ -816,7 +816,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         correct_selections = len(true_answer_uuids.intersection(student_answer_uuids))
         incorrect_selections = len(student_answer) - correct_selections
 
-        final_score = float((correct_selections - incorrect_selections)) / len(
+        final_score = float(correct_selections - incorrect_selections) / len(
             true_answer_list
         )
         final_score = max(0.0, final_score)  # scores cannot be below 0

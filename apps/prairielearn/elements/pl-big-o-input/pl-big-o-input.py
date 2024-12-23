@@ -119,7 +119,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "constants": constants,
     }
 
-    with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+    with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         template = f.read()
 
     info = chevron.render(template, info_params).strip()

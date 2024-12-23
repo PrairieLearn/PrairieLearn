@@ -4,7 +4,7 @@ import io
 import os
 import pathlib
 import sys
-from typing import Any, Literal, Optional, Tuple, TypedDict
+from typing import Any, Literal, TypedDict
 
 import lxml.html
 from check_data import Phase, check_data
@@ -57,7 +57,7 @@ def filelike_to_string(filelike: Any) -> str:
 
 def process(
     phase: Phase, data: dict, context: RenderContext
-) -> Tuple[Optional[str], set[str]]:
+) -> tuple[str | None, set[str]]:
     html = context["html"]
     elements = context["elements"]
     course_path = context["course_path"]

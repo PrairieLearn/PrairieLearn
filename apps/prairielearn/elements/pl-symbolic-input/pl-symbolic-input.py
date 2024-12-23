@@ -139,7 +139,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "allow_complex": allow_complex,
     }
 
-    with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+    with open(SYMBOLIC_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         template = f.read()
 
     info = chevron.render(template, info_params).strip()

@@ -9,7 +9,7 @@ import subprocess
 import tempfile
 from typing import Literal
 
-import lxml.etree as ET
+import lxml.etree as et
 
 CODEBASE = "/grade/student"
 DATAFILE = "/grade/data/data.json"
@@ -176,7 +176,7 @@ class CGrader:
                 if not os.path.isfile(preprocessed_file):
                     preprocessed_file = pathlib.Path(std_c_file).with_suffix(".mi")
                 if os.path.isfile(preprocessed_file):
-                    with open(preprocessed_file, "r") as f:
+                    with open(preprocessed_file) as f:
                         preprocessed_text = f.read()
                         found_primitives = {
                             s for s in INVALID_PRIMITIVES if s in preprocessed_text
@@ -613,8 +613,8 @@ class CGrader:
             " - " if use_unit_test_id and (use_suite_title or use_case_name) else ""
         )
         try:
-            with open(log_file, "r", errors="backslashreplace") as log:
-                tree = ET.parse(log, parser=ET.XMLParser())
+            with open(log_file, errors="backslashreplace") as log:
+                tree = et.parse(log, parser=et.XMLParser())
             for suite in tree.getroot().findall("{*}suite"):
                 suite_title = suite.findtext("{*}title") if use_suite_title else ""
                 for test in suite.findall("{*}test"):

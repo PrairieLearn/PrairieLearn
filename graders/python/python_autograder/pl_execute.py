@@ -25,7 +25,7 @@ def set_random_seed(seed=None):
 
 def try_read(fname):
     try:
-        with open(fname, "r", encoding="utf-8") as f:
+        with open(fname, encoding="utf-8") as f:
             contents = f.read()
     except Exception:
         contents = ""
@@ -61,9 +61,9 @@ def execute_code(
 
     with open(path.join(filenames_dir, "data.json"), encoding="utf-8") as f:
         data = json.load(f)
-    with open(path.join(filenames_dir, "setup_code.py"), "r", encoding="utf-8") as f:
+    with open(path.join(filenames_dir, "setup_code.py"), encoding="utf-8") as f:
         str_setup = f.read()
-    with open(fname_ref, "r", encoding="utf-8") as f:
+    with open(fname_ref, encoding="utf-8") as f:
         str_ref = f.read()
 
     # Read in leading, trailing code
@@ -71,7 +71,7 @@ def execute_code(
     str_trailing = try_read(path.join(filenames_dir, "trailing_code.py"))
 
     # Read student code (and transform if necessary) and append leading/trailing code
-    with open(fname_student, "r", encoding="utf-8") as f:
+    with open(fname_student, encoding="utf-8") as f:
         filename, extension = path.splitext(fname_student)
         if extension == ".ipynb":
             str_student = pl_helpers.extract_ipynb_contents(f, ipynb_key)
