@@ -20,6 +20,7 @@ import fetch from 'node-fetch';
 import * as shlex from 'shlex';
 import { v4 as uuidv4 } from 'uuid';
 import yargsParser from 'yargs-parser';
+import { z } from 'zod';
 
 import { cache } from '@prairielearn/cache';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
@@ -650,13 +651,22 @@ async function _pullImage(workspace_id: string | number, settings: WorkspaceSett
   // the first successful pull. This allows us to reference
   // the previously pulled layers and provide a more accurate
   // percantage calculation on any subsequent pulls.
-  const progressDetails: Record<
-    string,
-    {
-      current: number;
-      total: number;
-    }
-  > = (await cache.get(`workspaceProgressInit:${workspace_image}`)) || {};
+
+  const rawProgressDetails = await cache.get(`workspaceProgressInit:${workspace_image}`);
+  // Use Zod to validate the rawProgressDetails. If it is invalid, we will set it to the empty object.
+
+  const ProgressDetailsSchema = z.record(
+    z.object({
+      current: z.number(),
+      total: z.number(),
+    }),
+  );
+
+  const validatedProgressDetails = ProgressDetailsSchema.safeParse(rawProgressDetails);
+  const progressDetails: z.infer<typeof ProgressDetailsSchema> = validatedProgressDetails.success
+    ? rawProgressDetails
+    : {};
+
   const progressDetailsInit = {};
   let current = 0;
   let total = 0;
