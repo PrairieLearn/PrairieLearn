@@ -74,7 +74,7 @@ def partition(data, pred):
     return (yes, no)
 
 
-def categorize_matches(element, data):
+def categorize_matches(element, _data):
     """Get provided statements and options from the pl-matching element"""
     options = {}
     statements = []

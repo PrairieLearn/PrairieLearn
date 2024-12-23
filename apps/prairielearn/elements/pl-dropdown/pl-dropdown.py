@@ -33,7 +33,7 @@ def get_options(element, data):
     return options
 
 
-def get_solution(element, data):
+def get_solution(element, _data):
     solution = []
     for child in element:
         if child.tag in ["pl-answer"]:

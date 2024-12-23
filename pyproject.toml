@@ -62,7 +62,9 @@ select = [
     # flake8-raise
     "RSE",
     # flake8-return
-    "RET"
+    "RET",
+    # flake8-unused-arguments
+    "ARG"
     ]
 ignore = [
     # Ignore line length errors

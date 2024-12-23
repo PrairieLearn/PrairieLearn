@@ -17,12 +17,12 @@ def test_traverse_and_execute() -> None:
 
 
 def test_traverse_and_replace_text() -> None:
-    html = traverse_and_replace("Hello", lambda e: "Goodbye")
+    html = traverse_and_replace("Hello", lambda _e: "Goodbye")
     assert html == "Hello"
 
 
 def test_traverse_and_replace_none() -> None:
-    html = traverse_and_replace("<p>Hello</p>", lambda e: None)
+    html = traverse_and_replace("<p>Hello</p>", lambda _e: None)
     assert html == ""
 
 
@@ -66,7 +66,7 @@ def test_traverse_and_replace_nested_none() -> None:
 
 
 def test_traverse_and_replace_empty() -> None:
-    html = traverse_and_replace("<p>Hello</p>", lambda e: "")
+    html = traverse_and_replace("<p>Hello</p>", lambda _e: "")
     assert html == ""
 
 
@@ -128,7 +128,7 @@ def test_traverse_and_replace_nested_trailing_text() -> None:
 
 
 def test_traverse_and_replace_leading_trailing_text() -> None:
-    html = traverse_and_replace("Hello <i>cruel</i> world", lambda e: "beautiful")
+    html = traverse_and_replace("Hello <i>cruel</i> world", lambda _e: "beautiful")
     assert html == "Hello beautiful world"
 
 

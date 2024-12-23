@@ -6,5 +6,5 @@ def df(x):
     return 2 * x
 
 
-def gradient_descent(x, alpha):
+def gradient_descent(x, _alpha):
     grad_f = df(x)

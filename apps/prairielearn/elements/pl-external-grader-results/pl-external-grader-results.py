@@ -43,7 +43,7 @@ def ansi_to_html(output: str | None) -> str | None:
         return f"[Error converting ANSI to HTML: {e}]\n\n{output}"
 
 
-def prepare(element_html: str, data: pl.QuestionData) -> None:
+def prepare(element_html: str, _data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs: list[str] = []
     optional_attribs: list[str] = []
@@ -59,7 +59,7 @@ def round_value(value: float, digits: int = 2) -> str:
     return f"{value:.{digits}f}".rstrip("0").rstrip(".")
 
 
-def render(element_html: str, data: pl.QuestionData) -> str:
+def render(_element_html: str, data: pl.QuestionData) -> str:
     # Early-exit if not the submission panel
     if data["panel"] != "submission":
         return ""

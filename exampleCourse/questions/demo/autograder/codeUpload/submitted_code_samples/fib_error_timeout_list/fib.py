@@ -1,7 +1,7 @@
 import random
 
 
-def fib(n):
+def fib(_n):
     c = 0
     for _ in range(10000):
         a = [random.random() for j in range(10000)]

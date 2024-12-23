@@ -1,2 +1,2 @@
-def fib(n):
+def fib(_n):
     return 5

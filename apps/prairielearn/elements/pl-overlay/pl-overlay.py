@@ -22,7 +22,7 @@ ALIGNMENT_TO_PERC = {
 }
 
 
-def prepare(element_html: str, data: pl.QuestionData) -> None:
+def prepare(element_html: str, _data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     num_backgrounds = 0
     for child in element:
@@ -81,7 +81,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         raise ValueError(msg)
 
 
-def render(element_html: str, data: pl.QuestionData) -> str:
+def render(element_html: str, _data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     width = pl.get_float_attrib(element, "width", None)
     height = pl.get_float_attrib(element, "height", None)
