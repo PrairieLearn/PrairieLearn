@@ -34,7 +34,7 @@ select = ["E4", "E7", "E9", "F", "I", "N", "W", "B"]
 # Questions commonly use "ambiguous variable names" to represent specific
 # concepts, e.g. I for an identity matrix. We'll allow these to be used in
 # questions.
-"exampleCourse/questions/**/*.py" = ["E741"]
+"exampleCourse/questions/**/*.py" = ["N806", "N803"]
 # The zygote specifically uses imports in strange places to facilitate the
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
