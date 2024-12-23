@@ -719,12 +719,11 @@ def get_color_attrib(element, name, *args):
     match = re.search(r"^#(?:[0-9a-fA-F]{1,2}){3}$", val)
     if match:
         return val
+    elif PLColor.match(val) is not None:
+        return PLColor(val).to_string(hex=True)
     else:
-        if PLColor.match(val) is not None:
-            return PLColor(val).to_string(hex=True)
-        else:
-            msg = f'Attribute "{name:s}" must be a CSS-style RGB string: {val:s}'
-            raise ValueError(msg)
+        msg = f'Attribute "{name:s}" must be a CSS-style RGB string: {val:s}'
+        raise ValueError(msg)
 
 
 def numpy_to_matlab(A, ndigits=2, wtype="f"):
@@ -1398,17 +1397,16 @@ def string_to_2darray(s, allow_complex=True):
                     )
                 else:
                     s = s_after_right
+            # Return error if it is not the last row and there is no comma after right bracket
+            elif s_after_right[0] != ",":
+                return (
+                    None,
+                    {
+                        "format_error": f"No comma after row {len(s_row)} of the matrix."
+                    },
+                )
             else:
-                # Return error if it is not the last row and there is no comma after right bracket
-                if s_after_right[0] != ",":
-                    return (
-                        None,
-                        {
-                            "format_error": f"No comma after row {len(s_row)} of the matrix."
-                        },
-                    )
-                else:
-                    s = s_after_right[1:]
+                s = s_after_right[1:]
         number_of_rows = len(s_row)
 
         # Check that number of rows is what we expected

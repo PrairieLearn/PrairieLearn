@@ -173,12 +173,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     elif name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
-    else:
-        # Use the existing format text in the invalid popup and render it
-        if parse_error is not None:
-            parse_error += chevron.render(
-                template, {"format_error": True, "format_string": info}
-            ).strip()
+    # Use the existing format text in the invalid popup and render it
+    elif parse_error is not None:
+        parse_error += chevron.render(
+            template, {"format_error": True, "format_string": info}
+        ).strip()
 
     # Next, get some attributes we will use in multiple places
     raw_submitted_answer = data["raw_submitted_answers"].get(name)

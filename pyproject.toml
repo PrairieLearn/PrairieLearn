@@ -65,7 +65,9 @@ select = [
     # flake8-unused-arguments
     "ARG",
     # pandas-vet
-    "PD"
+    "PD",
+    # pylint
+    "PLR5501"
     ]
 ignore = [
     # Ignore line length errors
@@ -75,7 +77,8 @@ ignore = [
     # Allow assert statements, and some security issues are disabled
     "S311", "S102", "S101", "S324", "S320", "S108", "S603", "S605", "S607",
     "RET503", "RET504", "RET505",
-    "PD901"
+    "PD901",
+    "PLR0912", "PLR0915", "PLR0913", "PLR0911"
 ]
 
 [tool.ruff.lint.per-file-ignores]

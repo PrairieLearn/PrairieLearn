@@ -242,9 +242,8 @@ class Feedback:
         if not good:
             if report_failure:
                 cls.add_feedback(f"'{name}' is inaccurate")
-        else:
-            if report_success:
-                cls.add_feedback(f"'{name}' looks good")
+        elif report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         if accuracy_critical and not good:
             raise GradingComplete
@@ -356,9 +355,8 @@ class Feedback:
 
         if not good:
             return bad(f"'{name}' is inaccurate")
-        else:
-            if report_success:
-                cls.add_feedback(f"'{name}' looks good")
+        elif report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         return True
 
@@ -428,9 +426,8 @@ class Feedback:
 
         if not good:
             return bad(f"'{name}' is inaccurate")
-        else:
-            if report_success:
-                cls.add_feedback(f"'{name}' looks good")
+        elif report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         return True
 

@@ -161,16 +161,15 @@ def process(
                     msg = "Another element already returned a file"
                     raise Exception(msg)
                 result = element_value
-            else:
-                if element_value is not None and element_value is not data:
-                    # TODO: Once this has been running in production for a while,
-                    # change this to raise an exception.
-                    sys.stderr.write(
-                        f"Function {str(phase)}() in {str(element_controller)} returned a data object other than the one that was passed in.\n\n"
-                        + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
-                        + "For now, the return value will be used instead of the data object that was passed in.\n\n"
-                        + "In the future, returning a different object will trigger a fatal error."
-                    )
+            elif element_value is not None and element_value is not data:
+                # TODO: Once this has been running in production for a while,
+                # change this to raise an exception.
+                sys.stderr.write(
+                    f"Function {str(phase)}() in {str(element_controller)} returned a data object other than the one that was passed in.\n\n"
+                    + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
+                    + "For now, the return value will be used instead of the data object that was passed in.\n\n"
+                    + "In the future, returning a different object will trigger a fatal error."
+                )
         except Exception as err:
             msg = f"Error processing element {element.tag}"
             raise Exception(msg) from err

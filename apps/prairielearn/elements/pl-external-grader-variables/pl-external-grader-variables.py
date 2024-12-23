@@ -55,10 +55,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             raise ValueError(msg)
 
         data["params"][params_name] = html_variables
-    else:
-        if html_variables:
-            msg = f'Cannot define variables from both "question.html" and "server.py" for variable name "{params_name}".'
-            raise ValueError(msg)
+    elif html_variables:
+        msg = f'Cannot define variables from both "question.html" and "server.py" for variable name "{params_name}".'
+        raise ValueError(msg)
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:

@@ -278,15 +278,14 @@ def render(element_html, data):
                     insert_text = f" between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
                 else:
                     insert_text = f" exactly <b>{min_options_to_select}</b> options."
+            # If we get here, at least one of min_options_to_select and max_options_to_select should *not* be revealed.
+            elif show_min_select:
+                insert_text = f" at least <b>{min_options_to_select}</b> options."
+            elif show_max_select:
+                insert_text = f" at most <b>{max_options_to_select}</b> options."
             else:
-                # If we get here, at least one of min_options_to_select and max_options_to_select should *not* be revealed.
-                if show_min_select:
-                    insert_text = f" at least <b>{min_options_to_select}</b> options."
-                elif show_max_select:
-                    insert_text = f" at most <b>{max_options_to_select}</b> options."
-                else:
-                    # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
-                    insert_text = " at least 1 option."
+                # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
+                insert_text = " at least 1 option."
 
             insert_text += number_correct_text
 

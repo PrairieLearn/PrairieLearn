@@ -430,21 +430,20 @@ def test(element_html, data):
         else:
             msg = f"invalid result: {result}"
             raise Exception(msg)
+    # python
+    elif result == "correct":
+        data["raw_submitted_answers"][name] = str(np.array(a_tru).tolist())
+        data["partial_scores"][name] = {"score": 1, "weight": weight}
+    elif result == "incorrect":
+        data["raw_submitted_answers"][name] = str(
+            (a_tru + (random.uniform(1, 10) * random.choice([-1, 1]))).tolist()
+        )
+        data["partial_scores"][name] = {"score": 0, "weight": weight}
+    elif result == "invalid":
+        # FIXME: add more invalid expressions, make text of format_errors
+        # correct, and randomize
+        data["raw_submitted_answers"][name] = "[[1, 2, 3], [4, 5]]"
+        data["format_errors"][name] = "invalid"
     else:
-        # python
-        if result == "correct":
-            data["raw_submitted_answers"][name] = str(np.array(a_tru).tolist())
-            data["partial_scores"][name] = {"score": 1, "weight": weight}
-        elif result == "incorrect":
-            data["raw_submitted_answers"][name] = str(
-                (a_tru + (random.uniform(1, 10) * random.choice([-1, 1]))).tolist()
-            )
-            data["partial_scores"][name] = {"score": 0, "weight": weight}
-        elif result == "invalid":
-            # FIXME: add more invalid expressions, make text of format_errors
-            # correct, and randomize
-            data["raw_submitted_answers"][name] = "[[1, 2, 3], [4, 5]]"
-            data["format_errors"][name] = "invalid"
-        else:
-            msg = f"invalid result: {result}"
-            raise Exception(msg)
+        msg = f"invalid result: {result}"
+        raise Exception(msg)

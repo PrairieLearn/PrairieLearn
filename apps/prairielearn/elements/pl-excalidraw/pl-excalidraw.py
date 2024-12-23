@@ -130,20 +130,18 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                         initial_content = empty_diagram
                 else:  # submission
                     initial_content = data["submitted_answers"][drawing_name]
-            else:  # not gradable
-                if fresh and source_available:
-                    initial_content = load_file_content(element, data)
-                else:
-                    raise unreachable
+            elif fresh and source_available:
+                initial_content = load_file_content(element, data)
+            else:
+                raise unreachable
 
         case "answer":
             if gradable:
                 show_widget = False
-            else:  # not gradable
-                if fresh and source_available:
-                    initial_content = load_file_content(element, data)
-                else:
-                    raise unreachable
+            elif fresh and source_available:
+                initial_content = load_file_content(element, data)
+            else:
+                raise unreachable
 
         case "submission":
             if gradable:
@@ -151,11 +149,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     raise unreachable
                 # submission
                 initial_content = data["submitted_answers"][drawing_name]
-            else:  # not gradable
-                if fresh and source_available:
-                    initial_content = load_file_content(element, data)
-                else:
-                    raise unreachable
+            elif fresh and source_available:
+                initial_content = load_file_content(element, data)
+            else:
+                raise unreachable
 
         case panel:
             assert_never(panel)

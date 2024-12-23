@@ -20,12 +20,11 @@ def validate_grouping(
                 != 0
             ):
                 return False
-        else:
-            if not all(
-                group_belonging.get(dependency) == group_tag
-                for (dependency, _) in graph.in_edges(node)
-            ):
-                return False
+        elif not all(
+            group_belonging.get(dependency) == group_tag
+            for (dependency, _) in graph.in_edges(node)
+        ):
+            return False
     return True
 
 

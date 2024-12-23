@@ -755,9 +755,8 @@ class Vector(BaseElement):
         if self["disregard_sense"]:
             if error_fwd > angtol and error_bwd > angtol:
                 return False
-        else:
-            if error_fwd > angtol:
-                return False
+        elif error_fwd > angtol:
+            return False
 
         # Get position of student answer relative to reference answer
         basis = np.array(
@@ -1198,9 +1197,8 @@ class DistributedLoad(BaseElement):
         if self["disregard_sense"]:
             if error_fwd > angtol and error_bwd > angtol:
                 return False
-        else:
-            if error_fwd > angtol:
-                return False
+        elif error_fwd > angtol:
+            return False
 
         # Check width
         if abserr(elen, rlen) > tol:
