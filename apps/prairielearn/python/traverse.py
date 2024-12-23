@@ -2,13 +2,10 @@ from collections import deque
 from collections.abc import Callable
 from html import escape as html_escape
 from itertools import chain
-from typing import Optional
 
 import lxml.html
 
-ElementReplacement = Optional[
-    str | lxml.html.HtmlElement | list[lxml.html.HtmlElement]
-]
+ElementReplacement = str | lxml.html.HtmlElement | list[lxml.html.HtmlElement] | None
 
 # https://developer.mozilla.org/en-US/docs/Glossary/Void_element
 VOID_ELEMENTS = frozenset(
