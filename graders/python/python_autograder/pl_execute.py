@@ -14,7 +14,7 @@ from faker import Faker
 class UserCodeFailed(Exception):
     def __init__(self, err, *args):
         self.err = err
-        super(UserCodeFailed, self).__init__(err, *args)
+        super().__init__(err, *args)
 
 
 def set_random_seed(seed=None):

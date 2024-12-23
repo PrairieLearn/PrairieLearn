@@ -120,7 +120,7 @@ def grade_answer_parameterized(
     # Try converting partial score
     if isinstance(result, bool):
         partial_score = 1.0 if result else 0.0
-    elif isinstance(result, (float, int)):
+    elif isinstance(result, float | int):
         assert 0.0 <= result <= 1.0
         partial_score = result
     else:
@@ -293,7 +293,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
             }
     elif isinstance(v, sympy.Expr):
         return phs.sympy_to_json(v)
-    elif isinstance(v, sympy.Matrix) or isinstance(v, sympy.ImmutableMatrix):
+    elif isinstance(v, sympy.Matrix | sympy.ImmutableMatrix):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
         M = []
@@ -344,7 +344,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
             raise ValueError(
                 f"Invalid df_encoding_version: {df_encoding_version}. Must be 1 or 2"
             )
-    elif isinstance(v, (nx.Graph, nx.DiGraph, nx.MultiGraph, nx.MultiDiGraph)):
+    elif isinstance(v, nx.Graph | nx.DiGraph | nx.MultiGraph | nx.MultiDiGraph):
         return {"_type": "networkx_graph", "_value": nx.adjacency_data(v)}
     else:
         return v
@@ -497,14 +497,14 @@ def check_attribs(
 ) -> None:
     for name in required_attribs:
         if not has_attrib(element, name):
-            raise Exception('Required attribute "%s" missing' % name)
+            raise Exception(f'Required attribute "{name}" missing')
     extra_attribs = list(
         set(element.attrib)
         - set(compat_array(required_attribs))
         - set(compat_array(optional_attribs))
     )
     for name in extra_attribs:
-        raise Exception('Unknown attribute "%s"' % name)
+        raise Exception(f'Unknown attribute "{name}"')
 
 
 def _get_attrib(element, name, *args):
@@ -538,7 +538,7 @@ def _get_attrib(element, name, *args):
     if len(args) == 1:
         return (args[0], True)
 
-    raise Exception('Attribute "%s" missing and no default is available' % name)
+    raise Exception(f'Attribute "{name}" missing and no default is available')
 
 
 def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
@@ -626,7 +626,7 @@ def get_boolean_attrib(element, name, *args):
     elif val in false_values:
         return False
     else:
-        raise Exception('Attribute "%s" must be a boolean value: %s' % (name, val))
+        raise Exception(f'Attribute "{name}" must be a boolean value: {val}')
 
 
 # Order here matters, as we want to override the case where the args is omitted
@@ -664,7 +664,7 @@ def get_integer_attrib(element, name, *args):
     if int_val is None:
         # can't raise this exception directly in the above except
         # handler because it gives an overly complex displayed error
-        raise Exception('Attribute "%s" must be an integer: %s' % (name, val))
+        raise Exception(f'Attribute "{name}" must be an integer: {val}')
     return int_val
 
 
@@ -686,7 +686,7 @@ def get_float_attrib(element, name, *args):
     if float_val is None:
         # can't raise this exception directly in the above except
         # handler because it gives an overly complex displayed error
-        raise Exception('Attribute "%s" must be a number: %s' % (name, val))
+        raise Exception(f'Attribute "{name}" must be a number: {val}')
     return float_val
 
 

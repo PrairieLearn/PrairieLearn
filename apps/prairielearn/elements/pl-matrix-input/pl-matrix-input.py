@@ -95,8 +95,7 @@ def render(element_html, data):
             }
         else:
             raise ValueError(
-                'method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")'
-                % comparison
+                f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
             )
         info_params["allow_complex"] = pl.get_boolean_attrib(
             element, "allow-complex", ALLOW_COMPLEX_DEFAULT
@@ -234,8 +233,7 @@ def render(element_html, data):
                 )
             else:
                 raise ValueError(
-                    'method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")'
-                    % comparison
+                    f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
                 )
 
             html_params = {
@@ -256,7 +254,7 @@ def render(element_html, data):
             html = ""
 
     else:
-        raise Exception("Invalid panel type: %s" % data["panel"])
+        raise Exception("Invalid panel type: {}".format(data["panel"]))
 
     return html
 
@@ -348,7 +346,7 @@ def grade(element_html, data):
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
         correct = pl.is_correct_ndarray2D_dd(a_sub, a_tru, digits)
     else:
-        raise ValueError('method of comparison "%s" is not valid' % comparison)
+        raise ValueError(f'method of comparison "{comparison}" is not valid')
 
     if correct:
         data["partial_scores"][name] = {"score": 1, "weight": weight}
@@ -432,7 +430,7 @@ def test(element_html, data):
             data["raw_submitted_answers"][name] = random.choice(invalid_cases[error])
             data["format_errors"][name] = error
         else:
-            raise Exception("invalid result: %s" % result)
+            raise Exception(f"invalid result: {result}")
     else:
         # python
         if result == "correct":
@@ -449,4 +447,4 @@ def test(element_html, data):
             data["raw_submitted_answers"][name] = "[[1, 2, 3], [4, 5]]"
             data["format_errors"][name] = "invalid"
         else:
-            raise Exception("invalid result: %s" % result)
+            raise Exception(f"invalid result: {result}")

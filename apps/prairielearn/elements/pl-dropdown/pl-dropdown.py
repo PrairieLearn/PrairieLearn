@@ -72,7 +72,7 @@ def prepare(element_html, data):
 
     if data["correct_answers"][answers_name] is None:
         raise Exception(
-            "Correct answer not defined for answers-name: %s" % answers_name
+            f"Correct answer not defined for answers-name: {answers_name}"
         )
 
 
@@ -207,4 +207,4 @@ def test(element_html, data):
         data["raw_submitted_answers"][answers_name] = "INVALID STRING"
         data["format_errors"][answers_name] = "format error message"
     else:
-        raise Exception("invalid result: %s" % data["test_type"])
+        raise Exception("invalid result: {}".format(data["test_type"]))

@@ -88,16 +88,14 @@ def render(element_html, data):
         else:
             if np.isscalar(a_tru):
                 raise Exception(
-                    'Value in data["correct_answers"] for variable %s in pl-matrix-component-input element cannot be a scalar.'
-                    % name
+                    f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element cannot be a scalar.'
                 )
             else:
                 a_tru = np.array(a_tru)
 
             if a_tru.ndim != 2:
                 raise Exception(
-                    'Value in data["correct_answers"] for variable %s in pl-matrix-component-input element must be a 2D array.'
-                    % name
+                    f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element must be a 2D array.'
                 )
             else:
                 m, n = np.shape(a_tru)
@@ -149,8 +147,7 @@ def render(element_html, data):
             }
         else:
             raise ValueError(
-                'method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")'
-                % comparison
+                f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
             )
 
         info_params["allow_fractions"] = allow_fractions
@@ -300,8 +297,7 @@ def render(element_html, data):
                 )
             else:
                 raise ValueError(
-                    'method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")'
-                    % comparison
+                    f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
                 )
 
             html_params = {
@@ -316,7 +312,7 @@ def render(element_html, data):
             html = ""
 
     else:
-        raise Exception("Invalid panel type: %s" % data["panel"])
+        raise Exception("Invalid panel type: {}".format(data["panel"]))
 
     return html
 
@@ -396,7 +392,7 @@ def grade(element_html, data):
     elif comparison == "decdig":
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
     else:
-        raise ValueError('method of comparison "%s" is not valid' % comparison)
+        raise ValueError(f'method of comparison "{comparison}" is not valid')
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
@@ -499,7 +495,7 @@ def test(element_html, data):
                     data["raw_submitted_answers"][name] = ""
                     data["format_errors"][each_entry_name] = "(Invalid blank entry)"
             else:
-                raise Exception("invalid result: %s" % result)
+                raise Exception(f"invalid result: {result}")
 
     if result == "invalid":
         data["format_errors"][name] = (

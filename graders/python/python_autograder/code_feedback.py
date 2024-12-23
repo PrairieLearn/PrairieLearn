@@ -129,15 +129,15 @@ class Feedback:
         import numpy as np
 
         if data is None:
-            cls.finish("'%s' is None or not defined" % name)
+            cls.finish(f"'{name}' is None or not defined")
 
         if not isinstance(data, np.ndarray):
-            cls.finish("'%s' is not a numpy array" % name)
+            cls.finish(f"'{name}' is not a numpy array")
 
         if isinstance(data, np.matrix):
             cls.finish(
-                "'%s' is a numpy matrix. Do not use those. "
-                "bit.ly/array-vs-matrix" % name
+                f"'{name}' is a numpy matrix. Do not use those. "
+                "bit.ly/array-vs-matrix"
             )
 
         if len(data.shape) != num_axes:
@@ -148,8 +148,8 @@ class Feedback:
 
         if data.dtype.kind not in "fc":
             cls.finish(
-                "'%s' does not consist of floating point numbers--"
-                "got: '%s'" % (name, data.dtype)
+                f"'{name}' does not consist of floating point numbers--"
+                f"got: '{data.dtype}'"
             )
 
     @classmethod
@@ -179,27 +179,27 @@ class Feedback:
                 return False
 
         if data is None:
-            return bad("'%s' is None or not defined" % name)
+            return bad(f"'{name}' is None or not defined")
 
         if not isinstance(data, np.ndarray):
-            return bad("'%s' is not a numpy array" % name)
+            return bad(f"'{name}' is not a numpy array")
 
         if isinstance(data, np.matrix):
             return bad(
-                "'%s' is a numpy matrix. Do not use those. "
-                "bit.ly/array-vs-matrix" % name
+                f"'{name}' is a numpy matrix. Do not use those. "
+                "bit.ly/array-vs-matrix"
             )
 
         if ref.shape != data.shape:
             return bad(
-                "'%s' does not have correct shape--"
-                "got: '%s', expected: '%s'" % (name, data.shape, ref.shape)
+                f"'{name}' does not have correct shape--"
+                f"got: '{data.shape}', expected: '{ref.shape}'"
             )
 
         if ref.dtype.kind != data.dtype.kind:
             return bad(
-                "'%s' does not have correct data type--"
-                "got: '%s', expected: '%s'" % (name, data.dtype, ref.dtype)
+                f"'{name}' does not have correct data type--"
+                f"got: '{data.dtype}', expected: '{ref.dtype}'"
             )
 
         return True
@@ -242,10 +242,10 @@ class Feedback:
 
         if not good:
             if report_failure:
-                cls.add_feedback("'%s' is inaccurate" % name)
+                cls.add_feedback(f"'{name}' is inaccurate")
         else:
             if report_success:
-                cls.add_feedback("'%s' looks good" % name)
+                cls.add_feedback(f"'{name}' looks good")
 
         if accuracy_critical and not good:
             raise GradingComplete()
@@ -284,10 +284,10 @@ class Feedback:
                 return False
 
         if data is None:
-            return bad("'%s' is None or not defined" % name)
+            return bad(f"'{name}' is None or not defined")
 
         if not isinstance(data, list):
-            return bad("'%s' is not a list" % name)
+            return bad(f"'{name}' is not a list")
 
         if len(ref) != len(data):
             return bad(
@@ -356,10 +356,10 @@ class Feedback:
                 good = False
 
         if not good:
-            return bad("'%s' is inaccurate" % name)
+            return bad(f"'{name}' is inaccurate")
         else:
             if report_success:
-                cls.add_feedback("'%s' looks good" % name)
+                cls.add_feedback(f"'{name}' looks good")
 
         return True
 
@@ -408,17 +408,17 @@ class Feedback:
                 return False
 
         if data is None:
-            return bad("'%s' is None or not defined" % name)
+            return bad(f"'{name}' is None or not defined")
 
-        if not isinstance(data, (complex, float, int, np.number)):
+        if not isinstance(data, complex | float | int | np.number):
             try:
                 # Check whether data is a sympy number because sympy
                 # numbers do not follow the typical interface
                 # See https://github.com/inducer/relate/pull/284
                 if not data.is_number:
-                    return bad("'%s' is not a number" % name)
+                    return bad(f"'{name}' is not a number")
             except AttributeError:
-                return bad("'%s' is not a number" % name)
+                return bad(f"'{name}' is not a number")
 
         good = False
 
@@ -428,10 +428,10 @@ class Feedback:
             good = True
 
         if not good:
-            return bad("'%s' is inaccurate" % name)
+            return bad(f"'{name}' is inaccurate")
         else:
             if report_success:
-                cls.add_feedback("'%s' looks good" % name)
+                cls.add_feedback(f"'{name}' looks good")
 
         return True
 
@@ -452,17 +452,14 @@ class Feedback:
                 try:
                     callable_name = f.__name__
                 except Exception as e_name:
-                    callable_name = "<unable to retrieve name; encountered %s: %s>" % (
-                        type(e_name).__name__,
-                        str(e_name),
-                    )
+                    callable_name = f"<unable to retrieve name; encountered {type(e_name).__name__}: {str(e_name)}>"
                 from traceback import format_exc
 
                 cls.add_feedback(
-                    "The callable '%s' supplied in your code failed with "
+                    "The callable '{}' supplied in your code failed with "
                     "an exception while it was being called by the "
                     "grading code:"
-                    "%s" % (callable_name, "".join(format_exc()))
+                    "{}".format(callable_name, "".join(format_exc()))
                 )
             else:
                 cls.add_feedback(
@@ -511,10 +508,10 @@ class Feedback:
                 return False
 
         if plot is None:
-            return bad("'%s' is None or not defined" % name)
+            return bad(f"'{name}' is None or not defined")
 
         if not isinstance(plot, matplotlib.axes.Axes):
-            return bad("'%s' is not an object of matplotlib axes" % name)
+            return bad(f"'{name}' is not an object of matplotlib axes")
 
         # check_axes_scale can be None, 'x', 'y', or 'xy'
         if check_axes_scale:
@@ -533,13 +530,13 @@ class Feedback:
                     scales_match = False
 
             if not scales_match:
-                return bad("'%s' does not have the correct scale for its axes" % name)
+                return bad(f"'{name}' does not have the correct scale for its axes")
 
         user_lines = plot.get_lines()
         ref_lines = ref.get_lines()
 
         if user_lines is None:
-            return bad("No lines were plotted in '%s'" % name)
+            return bad(f"No lines were plotted in '{name}'")
 
         if len(user_lines) != len(ref_lines):
             return bad(
@@ -565,10 +562,10 @@ class Feedback:
 
         if num_correct == len(ref_lines):
             if report_success:
-                cls.add_feedback("'%s' looks good" % name)
+                cls.add_feedback(f"'{name}' looks good")
             return True
         else:
-            return bad("'%s' is inaccurate" % name)
+            return bad(f"'{name}' is inaccurate")
 
     @classmethod
     def check_dataframe(

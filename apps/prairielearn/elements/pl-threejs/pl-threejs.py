@@ -376,7 +376,7 @@ def render(element_html, data):
         with open("pl-threejs.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
     else:
-        raise Exception("Invalid panel type: %s" % data["panel"])
+        raise Exception("Invalid panel type: {}".format(data["panel"]))
 
     return html
 

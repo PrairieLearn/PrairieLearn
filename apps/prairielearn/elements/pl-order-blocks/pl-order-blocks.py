@@ -1013,4 +1013,4 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
 
     else:
-        raise Exception("invalid result: %s" % data["test_type"])
+        raise Exception("invalid result: {}".format(data["test_type"]))
