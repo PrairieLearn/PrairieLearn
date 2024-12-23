@@ -515,7 +515,7 @@ def _get_attrib(element, name, *args):
     # to distinguish between default=None and no default being passed,
     # which means we need to explicitly handle the optional argument
     if len(args) > 1:
-        raise Exception("Only one additional argument is allowed")
+        raise ValueError("Only one additional argument is allowed")
 
     if name in element.attrib:
         return (element.attrib[name], False)
@@ -529,7 +529,7 @@ def _get_attrib(element, name, *args):
     if len(args) == 1:
         return (args[0], True)
 
-    raise Exception(f'Attribute "{name}" missing and no default is available')
+    raise ValueError(f'Attribute "{name}" missing and no default is available')
 
 
 def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
