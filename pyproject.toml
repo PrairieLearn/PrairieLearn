@@ -42,7 +42,10 @@ select = [
     "BLE",
     # flake8-bandit
     "S",
+    # flake8-builtins
     "A",
+    # flake8-comprehensions
+    "C4",
     ]
 ignore = [
     # Ignore line length errors
