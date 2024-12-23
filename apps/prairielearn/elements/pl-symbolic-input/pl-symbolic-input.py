@@ -59,7 +59,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if pl.has_attrib(element, "correct-answer"):
         if name in data["correct_answers"]:
-            raise ValueError(f"duplicate correct_answers variable name: {name}")
+            msg = f"duplicate correct_answers variable name: {name}"
+            raise ValueError(msg)
 
         a_true = pl.get_string_attrib(element, "correct-answer")
         variables = phs.get_items_list(
@@ -84,8 +85,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 custom_functions=custom_functions,
             )
         except phs.BaseSympyError as err:
+            msg = f'Parsing correct answer "{a_true}" for "{name}" failed.'
             raise ValueError(
-                f'Parsing correct answer "{a_true}" for "{name}" failed.'
+                msg
             ) from err
 
         data["correct_answers"][name] = a_true
@@ -94,7 +96,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "imaginary-unit-for-display", IMAGINARY_UNIT_FOR_DISPLAY_DEFAULT
     )
     if imaginary_unit not in {"i", "j"}:
-        raise ValueError("imaginary-unit-for-display must be either i or j")
+        msg = "imaginary-unit-for-display must be either i or j"
+        raise ValueError(msg)
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:

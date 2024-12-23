@@ -158,7 +158,8 @@ def process(
                 return element_value
             elif phase == "file":
                 if result is not None:
-                    raise Exception("Another element already returned a file")
+                    msg = "Another element already returned a file"
+                    raise Exception(msg)
                 result = element_value
             else:
                 if element_value is not None and element_value is not data:
@@ -171,7 +172,8 @@ def process(
                         + "In the future, returning a different object will trigger a fatal error."
                     )
         except Exception as err:
-            raise Exception(f"Error processing element {element.tag}") from err
+            msg = f"Error processing element {element.tag}"
+            raise Exception(msg) from err
 
     def process_element_return_none(element: lxml.html.HtmlElement) -> None:
         process_element(element)

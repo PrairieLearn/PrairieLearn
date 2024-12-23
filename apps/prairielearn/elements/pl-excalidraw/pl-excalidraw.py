@@ -68,14 +68,16 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         pl.check_answers_names(data, name)
 
     if is_answer_name_required(gradable) and name is None:
+        msg = f"Missing required attribute {ATTR_ANSWER_NAME} (Required when `{ATTR_GRADABLE}` is set)"
         raise RuntimeError(
-            f"Missing required attribute {ATTR_ANSWER_NAME} (Required when `{ATTR_GRADABLE}` is set)"
+            msg
         )
 
     source_dir = pl.get_string_attrib(element, ATTR_SOURCE_DIRECTORY, ".")
     if source_dir not in SOURCE_DIRECTORY_MAP:
+        msg = f"{source_dir=} must be one of {list(SOURCE_DIRECTORY_MAP.keys())}"
         raise RuntimeError(
-            f"{source_dir=} must be one of {list(SOURCE_DIRECTORY_MAP.keys())}"
+            msg
         )
 
 
@@ -87,7 +89,8 @@ def load_file_content(element: HtmlElement, data: pl.QuestionData) -> str:
         element, ATTR_SOURCE_FILE_NAME
     )
     if not file.exists():
-        raise RuntimeError(f"Unknown file path: {file}")
+        msg = f"Unknown file path: {file}"
+        raise RuntimeError(msg)
     return file.read_text(encoding="utf-8")
 
 
@@ -105,7 +108,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     matrix = f"{gradable=} {fresh=} {panel=} {source_available=}"
 
     if is_source_file_name_required(panel, gradable, fresh) and not source_available:
-        raise RuntimeError(f"Missing required attribute `{ATTR_SOURCE_FILE_NAME}`")
+        msg = f"Missing required attribute `{ATTR_SOURCE_FILE_NAME}`"
+        raise RuntimeError(msg)
 
     initial_content: str = empty_diagram
 

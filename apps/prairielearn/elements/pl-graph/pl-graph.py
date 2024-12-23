@@ -43,7 +43,8 @@ def graphviz_from_adj_matrix(
 
     # Exception to make typechecker happy.
     if input_param_name is None:
-        raise ValueError('"params-name" is a required attribute.')
+        msg = '"params-name" is a required attribute.'
+        raise ValueError(msg)
 
     input_label = pl.get_string_attrib(
         element, "params-name-labels", PARAMS_NAME_LABELS_DEFAULT
@@ -71,23 +72,28 @@ def graphviz_from_adj_matrix(
     # Sanity checking
 
     if mat.shape[0] != mat.shape[1]:
+        msg = f'Non-square adjacency matrix "{input_param_name}" of size ({mat.shape[0]}, {mat.shape[1]}) given as input.'
         raise ValueError(
-            f'Non-square adjacency matrix "{input_param_name}" of size ({mat.shape[0]}, {mat.shape[1]}) given as input.'
+            msg
         )
 
     if label is not None:
         mat_label = label
         if mat_label.shape[0] != mat.shape[0]:
-            raise ValueError(
+            msg = (
                 f'Dimension {mat_label.shape[0]} of the label "{input_label}"'
                 f'is not consistent with the dimension {mat.shape[0]} of the matrix "{input_param_name}".'
+            )
+            raise ValueError(
+                msg
             )
     else:
         mat_label = range(mat.shape[1])
 
     if not directed and not np.allclose(mat, mat.T):
+        msg = f'Input matrix "{input_param_name}" must be symmetric if rendering is set to be undirected.'
         raise ValueError(
-            f'Input matrix "{input_param_name}" must be symmetric if rendering is set to be undirected.'
+            msg
         )
 
     # Auto detect showing weights if any of the weights are not 1 or 0
@@ -171,15 +177,17 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     input_type = pl.get_string_attrib(element, "params-type", PARAMS_TYPE_DEFAULT)
 
     if len(str(element.text)) == 0 and input_param_name is None:
+        msg = "No graph source given! Must either define graph in HTML or provide source in params."
         raise ValueError(
-            "No graph source given! Must either define graph in HTML or provide source in params."
+            msg
         )
 
     if input_param_name is not None:
         if input_type in matrix_backends:
             graphviz_data = matrix_backends[input_type](element, data)
         else:
-            raise ValueError(f'Unknown graph type "{input_type}".')
+            msg = f'Unknown graph type "{input_type}".'
+            raise ValueError(msg)
     else:
         # Read the contents of this element as the data to render
         # we dump the string to json to ensure that newlines are

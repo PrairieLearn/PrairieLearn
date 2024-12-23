@@ -75,7 +75,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     correct_answer = pl.get_float_attrib(element, "correct-answer", None)
     if correct_answer is not None:
         if name in data["correct_answers"]:
-            raise Exception(f"duplicate correct_answers variable name: {name}")
+            msg = f"duplicate correct_answers variable name: {name}"
+            raise Exception(msg)
         data["correct_answers"][name] = correct_answer
 
     custom_format = pl.get_string_attrib(element, "custom-format", None)
@@ -83,7 +84,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         try:
             _ = ("{:" + custom_format + "}").format(0)
         except ValueError:
-            raise Exception(f"invalid custom format: {custom_format}") from None
+            msg = f"invalid custom format: {custom_format}"
+            raise Exception(msg) from None
 
 
 def format_true_ans(
@@ -194,9 +196,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
-                raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
+                msg = f"Attribute rtol = {rtol:g} must be non-negative"
+                raise ValueError(msg)
             if atol < 0:
-                raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
+                msg = f"Attribute atol = {atol:g} must be non-negative"
+                raise ValueError(msg)
             info_params = {
                 "format": True,
                 "relabs": True,
@@ -206,7 +210,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
+                msg = f"Attribute digits = {digits:d} must be non-negative"
+                raise ValueError(msg)
             info_params = {
                 "format": True,
                 "sigfig": True,
@@ -217,7 +222,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif comparison is ComparisonType.DECDIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
+                msg = f"Attribute digits = {digits:d} must be non-negative"
+                raise ValueError(msg)
             info_params = {
                 "format": True,
                 "decdig": True,

@@ -10,8 +10,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     workspace_url = data["options"].get("workspace_url")
 
     if workspace_url is None:
+        msg = "Workspace URL not found. Did you remember to set the workspace options?"
         raise ValueError(
-            "Workspace URL not found. Did you remember to set the workspace options?"
+            msg
         )
 
     # Create and return html

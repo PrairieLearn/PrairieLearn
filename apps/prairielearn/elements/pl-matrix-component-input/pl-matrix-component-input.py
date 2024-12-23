@@ -44,21 +44,25 @@ def prepare(element_html, data):
     if name not in data["correct_answers"]:
         m = pl.get_integer_attrib(element, "rows", None)
         if m is None:
+            msg = "Number of rows is not set in pl-matrix-component-input with no correct answer."
             raise Exception(
-                "Number of rows is not set in pl-matrix-component-input with no correct answer."
+                msg
             )
         if m < 1:
+            msg = "Number of rows in pl-matrix-component-input must be strictly positive."
             raise Exception(
-                "Number of rows in pl-matrix-component-input must be strictly positive."
+                msg
             )
         n = pl.get_integer_attrib(element, "columns", None)
         if n is None:
+            msg = "Number of columns is not set in pl-matrix-component-input with no correct answer."
             raise Exception(
-                "Number of columns is not set in pl-matrix-component-input with no correct answer."
+                msg
             )
         if n < 1:
+            msg = "Number of columns in pl-matrix-component-input must be strictly positive."
             raise Exception(
-                "Number of columns in pl-matrix-component-input must be strictly positive."
+                msg
             )
 
 
@@ -87,15 +91,17 @@ def render(element_html, data):
             n = pl.get_integer_attrib(element, "columns", None)
         else:
             if np.isscalar(a_tru):
+                msg = f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element cannot be a scalar.'
                 raise Exception(
-                    f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element cannot be a scalar.'
+                    msg
                 )
             else:
                 a_tru = np.array(a_tru)
 
             if a_tru.ndim != 2:
+                msg = f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element must be a 2D array.'
                 raise Exception(
-                    f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element must be a 2D array.'
+                    msg
                 )
             else:
                 m, n = np.shape(a_tru)
@@ -108,9 +114,11 @@ def render(element_html, data):
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
-                raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
+                msg = f"Attribute rtol = {rtol:g} must be non-negative"
+                raise ValueError(msg)
             if atol < 0:
-                raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
+                msg = f"Attribute atol = {atol:g} must be non-negative"
+                raise ValueError(msg)
             info_params = {
                 "format": True,
                 "relabs": True,
@@ -120,7 +128,8 @@ def render(element_html, data):
         elif comparison == "sigfig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
+                msg = f"Attribute digits = {digits:d} must be non-negative"
+                raise ValueError(msg)
             info_params = {
                 "format": True,
                 "sigfig": True,
@@ -130,7 +139,8 @@ def render(element_html, data):
         elif comparison == "decdig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
+                msg = f"Attribute digits = {digits:d} must be non-negative"
+                raise ValueError(msg)
             info_params = {
                 "format": True,
                 "decdig": True,
@@ -138,8 +148,9 @@ def render(element_html, data):
                 "comparison_eps": 0.51 * (10 ** -(digits - 0)),
             }
         else:
+            msg = f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
             raise ValueError(
-                f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
+                msg
             )
 
         info_params["allow_fractions"] = allow_fractions
@@ -216,7 +227,8 @@ def render(element_html, data):
             # Get submitted answer, raising an exception if it does not exist
             a_sub = data["submitted_answers"].get(name, None)
             if a_sub is None:
-                raise Exception("submitted answer is None")
+                msg = "submitted answer is None"
+                raise Exception(msg)
             # If answer is in a format generated by pl.to_json, convert it back to a standard type (otherwise, do nothing)
             a_sub = pl.from_json(a_sub)
             # Wrap answer in an ndarray (if it's already one, this does nothing)
@@ -288,8 +300,9 @@ def render(element_html, data):
                     + "$"
                 )
             else:
+                msg = f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
                 raise ValueError(
-                    f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
+                    msg
                 )
 
             html_params = {
@@ -304,7 +317,8 @@ def render(element_html, data):
             html = ""
 
     else:
-        raise Exception("Invalid panel type: {}".format(data["panel"]))
+        msg = "Invalid panel type: {}".format(data["panel"])
+        raise Exception(msg)
 
     return html
 
@@ -326,7 +340,8 @@ def parse(element_html, data):
     else:
         a_tru = np.array(a_tru)
         if a_tru.ndim != 2:
-            raise ValueError("true answer must be a 2D array")
+            msg = "true answer must be a 2D array"
+            raise ValueError(msg)
         else:
             m, n = np.shape(a_tru)
     matrix = np.empty((m, n))
@@ -382,7 +397,8 @@ def grade(element_html, data):
     elif comparison == "sigfig" or comparison == "decdig":
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
     else:
-        raise ValueError(f'method of comparison "{comparison}" is not valid')
+        msg = f'method of comparison "{comparison}" is not valid'
+        raise ValueError(msg)
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
@@ -393,7 +409,8 @@ def grade(element_html, data):
     a_tru = np.array(a_tru)
     # Throw an error if true answer is not a 2D numpy array
     if a_tru.ndim != 2:
-        raise ValueError("true answer must be a 2D array")
+        msg = "true answer must be a 2D array"
+        raise ValueError(msg)
     else:
         m, n = np.shape(a_tru)
 
@@ -456,7 +473,8 @@ def test(element_html, data):
     a_tru = np.array(a_tru)
     # Throw an error if true answer is not a 2D numpy array
     if a_tru.ndim != 2:
-        raise ValueError("true answer must be a 2D array")
+        msg = "true answer must be a 2D array"
+        raise ValueError(msg)
     else:
         m, n = np.shape(a_tru)
 
@@ -485,7 +503,8 @@ def test(element_html, data):
                     data["raw_submitted_answers"][name] = ""
                     data["format_errors"][each_entry_name] = "(Invalid blank entry)"
             else:
-                raise Exception(f"invalid result: {result}")
+                msg = f"invalid result: {result}"
+                raise Exception(msg)
 
     if result == "invalid":
         data["format_errors"][name] = (

@@ -44,7 +44,8 @@ def get_solution(element, data):
                 solution.append(child_html)
 
     if len(solution) > 1:
-        raise Exception("Multiple correct answers were set")
+        msg = "Multiple correct answers were set"
+        raise Exception(msg)
 
     return solution[0]
 
@@ -60,8 +61,9 @@ def prepare(element_html, data):
     if pl.get_boolean_attrib(
         element, "allow-blank", ALLOW_BLANK_DEFAULT
     ) and not pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT):
+        msg = 'The attribute "allow-blank" cannot be enabled when blank dropdown entries are disabled by the "blank" attribute.'
         raise ValueError(
-            'The attribute "allow-blank" cannot be enabled when blank dropdown entries are disabled by the "blank" attribute.'
+            msg
         )
 
     answers_name = pl.get_string_attrib(element, "answers-name")
@@ -71,7 +73,8 @@ def prepare(element_html, data):
     data["correct_answers"][answers_name] = get_solution(element, data)
 
     if data["correct_answers"][answers_name] is None:
-        raise Exception(f"Correct answer not defined for answers-name: {answers_name}")
+        msg = f"Correct answer not defined for answers-name: {answers_name}"
+        raise Exception(msg)
 
 
 def render(element_html, data):
@@ -205,4 +208,5 @@ def test(element_html, data):
         data["raw_submitted_answers"][answers_name] = "INVALID STRING"
         data["format_errors"][answers_name] = "format error message"
     else:
-        raise Exception("invalid result: {}".format(data["test_type"]))
+        msg = "invalid result: {}".format(data["test_type"])
+        raise Exception(msg)

@@ -1,2 +1,3 @@
 def generate(data):
-    raise Exception("deliberately broken generate function")
+    msg = "deliberately broken generate function"
+    raise Exception(msg)

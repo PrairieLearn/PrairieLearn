@@ -114,7 +114,8 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
             fullname == module or fullname.startswith(module + ".")
             for module in self.forbidden_modules
         ):
-            raise ImportError(f'module "{fullname}" is not allowed.')
+            msg = f'module "{fullname}" is not allowed.'
+            raise ImportError(msg)
         return None
 
 
@@ -457,8 +458,9 @@ with open(4, "w", encoding="utf-8") as exitf:
                         if any(
                             p.username() == "executor" for p in psutil.process_iter()
                         ):
+                            msg = "found remaining processes belonging to executor user"
                             raise Exception(
-                                "found remaining processes belonging to executor user"
+                                msg
                             )
 
                     # We'll need to write a confirmation message on file

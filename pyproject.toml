@@ -46,6 +46,9 @@ select = [
     "A",
     # flake8-comprehensions
     "C4",
+    "DTZ", "T10",
+    # flake8-errmsg
+    "EM"
     ]
 ignore = [
     # Ignore line length errors

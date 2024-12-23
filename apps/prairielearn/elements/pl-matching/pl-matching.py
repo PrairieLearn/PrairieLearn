@@ -42,8 +42,9 @@ def get_counter(i, counter_type):
     elif counter_type == "full-text":
         return ""
     else:
+        msg = f'Illegal counter-type in pl-matching element: "{counter_type}" should be "decimal", "lower-alpha", "upper-alpha", or "full-text".'
         raise Exception(
-            f'Illegal counter-type in pl-matching element: "{counter_type}" should be "decimal", "lower-alpha", "upper-alpha", or "full-text".'
+            msg
         )
 
 
@@ -140,8 +141,9 @@ def prepare(element_html, data):
     if pl.get_boolean_attrib(
         element, "allow-blank", ALLOW_BLANK_DEFAULT
     ) and not pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT):
+        msg = 'The attribute "allow-blank" cannot be enabled when blank dropdown entries are disabled by the "blank" attribute.'
         raise ValueError(
-            'The attribute "allow-blank" cannot be enabled when blank dropdown entries are disabled by the "blank" attribute.'
+            msg
         )
 
     name = pl.get_string_attrib(element, "answers-name")

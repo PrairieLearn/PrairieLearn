@@ -30,8 +30,9 @@ def assert_all_integers_within_limits(item: Any) -> None:
 
         if isinstance(next_item, int):
             if not pl.is_int_json_serializable(next_item):
+                msg = f"Data structure contains oversized integer: {next_item}"
                 raise ValueError(
-                    f"Data structure contains oversized integer: {next_item}"
+                    msg
                 )
 
         elif isinstance(next_item, list):

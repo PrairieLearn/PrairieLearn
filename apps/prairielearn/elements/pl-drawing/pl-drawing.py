@@ -79,7 +79,8 @@ def prepare(element_html, data):
     if not prev:
         name = pl.get_string_attrib(element, "answers-name", None)
         if name is None:
-            raise Exception("answers-name is required if gradable mode is enabled")
+            msg = "answers-name is required if gradable mode is enabled"
+            raise Exception(msg)
 
         n_id = 0
         n_control_elements = 0
@@ -91,8 +92,9 @@ def prepare(element_html, data):
             # Get all the objects in pl-drawing-answer
             if child.tag == "pl-drawing-answer":
                 if answer_child is not None:
+                    msg = "You should have only one pl-drawing-answer inside a pl-drawing."
                     raise Exception(
-                        "You should have only one pl-drawing-answer inside a pl-drawing."
+                        msg
                     )
                 draw_error_box = pl.get_boolean_attrib(
                     child, "draw-error-box", defaults.element_defaults["draw-error-box"]
@@ -101,8 +103,9 @@ def prepare(element_html, data):
             # Get all the objects in pl-drawing-initial
             if child.tag == "pl-drawing-initial":
                 if initial_child is not None:
+                    msg = "You should have only one pl-drawing-initial inside a pl-drawing."
                     raise Exception(
-                        "You should have only one pl-drawing-initial inside a pl-drawing."
+                        msg
                     )
                 initial_child = child
             # Get the width of the vector defined in the pl-drawing-button for pl-vector
@@ -129,8 +132,9 @@ def prepare(element_html, data):
                                     w_button = buttons.attrib.get("width", None)
 
         if answer_child is None:
+            msg = 'You do not have any "pl-drawing-answer" inside pl-drawing where gradable=True. You should either specify the "pl-drawing-answer" if you want to grade objects, or make gradable=False'
             raise Exception(
-                'You do not have any "pl-drawing-answer" inside pl-drawing where gradable=True. You should either specify the "pl-drawing-answer" if you want to grade objects, or make gradable=False'
+                msg
             )
 
         # Generate these in order so that answer elements are displayed on top of initial elements
@@ -156,8 +160,9 @@ def prepare(element_html, data):
                 ) or obj["width"] == float(w_button):
                     continue
                 else:
+                    msg = "Width is not consistent! pl-vector in pl-drawing-answers needs to have the same width of pl-vector in pl-drawing-button."
                     raise Exception(
-                        "Width is not consistent! pl-vector in pl-drawing-answers needs to have the same width of pl-vector in pl-drawing-button."
+                        msg
                     )
 
         # Combines all the objects in pl-drawing-answers and pl-drawing-initial

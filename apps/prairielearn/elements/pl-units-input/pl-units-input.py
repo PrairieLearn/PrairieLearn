@@ -85,8 +85,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     if allow_blank and not pl.has_attrib(element, "blank-value"):
+        msg = 'Attribute "blank-value" must be provided if "allow-blank" is enabled.'
         raise ValueError(
-            'Attribute "blank-value" must be provided if "allow-blank" is enabled.'
+            msg
         )
 
     name = pl.get_string_attrib(element, "answers-name")
@@ -98,15 +99,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if correct_answer_html is not None:
         if name in data["correct_answers"]:
-            raise ValueError(f"Duplicate correct_answers variable name: {name}")
+            msg = f"Duplicate correct_answers variable name: {name}"
+            raise ValueError(msg)
         data["correct_answers"][name] = correct_answer_html
 
     correct_answer = data["correct_answers"].get(name)
 
     digits = pl.get_integer_attrib(element, "digits", None)
     if digits is not None and digits <= 0:
+        msg = f"Number of digits specified must be at least 1, not {digits}."
         raise ValueError(
-            f"Number of digits specified must be at least 1, not {digits}."
+            msg
         )
 
     ureg = pl.get_unit_registry()
@@ -120,13 +123,15 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         parsed_atol = ureg.Quantity(get_with_units_atol(element, data, ureg))
         if parsed_atol.dimensionless:
             atol = pl.get_string_attrib(element, "atol")
+            msg = f'"atol" attribute "{atol}" must have units in "with-units" grading.'
             raise ValueError(
-                f'"atol" attribute "{atol}" must have units in "with-units" grading.'
+                msg
             )
 
         if pl.has_attrib(element, "comparison"):
+            msg = 'Cannot set attribute "comparison" in "with-units" grading.'
             raise ValueError(
-                'Cannot set attribute "comparison" in "with-units" grading.'
+                msg
             )
 
         partial_credit = pl.get_float_attrib(
@@ -134,8 +139,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         )
 
         if partial_credit is not None and not (0.0 <= partial_credit <= 1.0):
+            msg = f'"magnitude-partial-credit" must be in the range [0.0, 1.0], not {partial_credit}'
             raise ValueError(
-                f'"magnitude-partial-credit" must be in the range [0.0, 1.0], not {partial_credit}'
+                msg
             )
 
         correct_answer_parsed = ureg.Quantity(correct_answer)
@@ -143,16 +149,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         if (correct_answer_parsed is not None) and (
             not correct_answer_parsed.check(parsed_atol.dimensionality)
         ):
-            raise ValueError(
+            msg = (
                 f"Correct answer has dimensionality: {correct_answer_parsed.dimensionality}, "
                 f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
+            )
+            raise ValueError(
+                msg
             )
     else:
         atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
         parsed_atol = ureg.Quantity(atol)
         if not parsed_atol.dimensionless:
+            msg = f'"atol" attribute "{atol}" may only have units in with-units grading.'
             raise ValueError(
-                f'"atol" attribute "{atol}" may only have units in with-units grading.'
+                msg
             )
 
 
@@ -256,7 +266,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if parse_error is None and name in data["submitted_answers"]:
             a_sub = data["submitted_answers"].get(name, None)
             if a_sub is None:
-                raise ValueError("submitted answer is None")
+                msg = "submitted answer is None"
+                raise ValueError(msg)
 
             a_sub_parsed = ureg.Quantity(a_sub)
             html_params["a_sub"] = prepare_display_string(

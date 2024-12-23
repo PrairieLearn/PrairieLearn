@@ -3,4 +3,5 @@ def generate(data):
 
 
 def grade(data):
-    raise Exception("deliberately broken grading function")
+    msg = "deliberately broken grading function"
+    raise Exception(msg)
