@@ -54,7 +54,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         data["params"]["_required_file_names"] = []
     elif file_name in data["params"]["_required_file_names"]:
         msg = "There is more than one file editor with the same file name."
-        raise Exception(msg)
+        raise ValueError(msg)
     data["params"]["_required_file_names"].append(file_name)
 
     if (
@@ -63,7 +63,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         and not str(element.text).isspace()
     ):
         msg = 'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
-        raise Exception(msg)
+        raise ValueError(msg)
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:

@@ -458,7 +458,7 @@ with open(4, "w", encoding="utf-8") as exitf:
                             p.username() == "executor" for p in psutil.process_iter()
                         ):
                             msg = "found remaining processes belonging to executor user"
-                            raise Exception(msg)
+                            raise RuntimeError(msg)
 
                     # We'll need to write a confirmation message on file
                     # descriptor 4 so that PL knows that control was actually
@@ -468,11 +468,11 @@ with open(4, "w", encoding="utf-8") as exitf:
                     exitf.flush()
                 else:
                     # The worker did not exit gracefully
-                    raise Exception(
+                    raise RuntimeError(
                         "worker process exited unexpectedly with status %d" % status
                     )
             else:
                 # Something else happened that is weird
-                raise Exception(
+                raise RuntimeError(
                     "worker process exited unexpectedly with status %d" % status
                 )

@@ -125,7 +125,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if not isinstance(frame, pd.DataFrame):
         msg = f'Parameter name "{varname}" does not encode a dataframe.'
-        raise ValueError(msg)
+        raise TypeError(msg)
 
     frame = cast(pd.DataFrame, frame)
 

@@ -36,11 +36,11 @@ def prepare(element_html: str, _data: pl.QuestionData) -> None:
         and (submitted_file_name is not None or contents is not None)
     ) or (submitted_file_name is not None and contents is not None):
         msg = 'Only one of the attributes "source-file-name", "submitted-file-name" and "contents" can be used.'
-        raise Exception(msg)
+        raise ValueError(msg)
 
     if language not in ["html", "markdown"]:
         msg = 'Attribute "language" must be either "html" or "markdown".'
-        raise Exception(msg)
+        raise ValueError(msg)
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -58,7 +58,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         file_path = os.path.join(base_path, source_file_name)
         if not os.path.exists(file_path):
             msg = f'Unknown file path: "{file_path}".'
-            raise Exception(msg)
+            raise RuntimeError(msg)
 
         with open(file_path) as f:
             contents = f.read()

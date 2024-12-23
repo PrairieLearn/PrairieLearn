@@ -45,7 +45,7 @@ def get_solution(element, _data):
 
     if len(solution) > 1:
         msg = "Multiple correct answers were set"
-        raise Exception(msg)
+        raise RuntimeError(msg)
 
     return solution[0]
 
@@ -72,7 +72,7 @@ def prepare(element_html, data):
 
     if data["correct_answers"][answers_name] is None:
         msg = f"Correct answer not defined for answers-name: {answers_name}"
-        raise Exception(msg)
+        raise ValueError(msg)
 
 
 def render(element_html, data):
@@ -207,4 +207,4 @@ def test(element_html, data):
         data["format_errors"][answers_name] = "format error message"
     else:
         msg = "invalid result: {}".format(data["test_type"])
-        raise Exception(msg)
+        raise RuntimeError(msg)

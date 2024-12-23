@@ -54,7 +54,7 @@ def prepare(element_html, data):
     partial_credit_method = pl.get_string_attrib(element, "partial-credit-method", None)
     if not partial_credit and partial_credit_method is not None:
         msg = "Cannot specify partial-credit-method if partial-credit is not enabled"
-        raise Exception(msg)
+        raise ValueError(msg)
 
     correct_answers = []
     incorrect_answers = []
@@ -94,7 +94,9 @@ def prepare(element_html, data):
     max_answers = 26  # will not display more than 26 checkbox answers
 
     number_answers = max(0, min(len_total, max_answers, number_answers))
-    min_correct = min(len_correct, number_answers, max(0, number_answers - len_incorrect, min_correct))
+    min_correct = min(
+        len_correct, number_answers, max(0, number_answers - len_incorrect, min_correct)
+    )
     max_correct = min(len_correct, number_answers, max(min_correct, max_correct))
     if not (0 <= min_correct <= max_correct <= len_correct):
         raise ValueError(
@@ -155,10 +157,10 @@ def prepare(element_html, data):
 
     if name in data["params"]:
         msg = f"duplicate params variable name: {name}"
-        raise Exception(msg)
+        raise ValueError(msg)
     if name in data["correct_answers"]:
         msg = f"duplicate correct_answers variable name: {name}"
-        raise Exception(msg)
+        raise ValueError(msg)
     data["params"][name] = display_answers
     data["correct_answers"][name] = correct_answer_list
 
@@ -652,7 +654,7 @@ def test(element_html, data):
         data["format_errors"][name] = "You must select at least one option."
     else:
         msg = f"invalid result: {result}"
-        raise Exception(msg)
+        raise RuntimeError(msg)
 
 
 def _get_min_options_to_select(element, default_val):
