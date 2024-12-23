@@ -1,7 +1,7 @@
 import pprint
 
 import lxml.html
-import pandas
+import pandas as pd
 import prairielearn as pl
 
 NO_HIGHLIGHT_DEFAULT = False
@@ -74,9 +74,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         compact_default = pl.get_boolean_attrib(element, "compact", COMPACT_DEFAULT)
     except Exception as err:
         msg = 'Attribute name "compact" is deprecated, use "compact-sequences" instead.'
-        raise Exception(
-            msg
-        ) from err
+        raise Exception(msg) from err
 
     compact = pl.get_boolean_attrib(element, "compact-sequences", compact_default)
 
@@ -92,14 +90,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if varname not in data["params"]:
         msg = f'Could not find {varname} in params. Please make sure to set params-name="{varname}" in the element.'
-        raise KeyError(
-            msg
-        )
+        raise KeyError(msg)
 
     var_out = pl.from_json(data["params"][varname])
 
     # Passthrough legacy support for pl-dataframe
-    if isinstance(var_out, pandas.DataFrame) and not force_text:
+    if isinstance(var_out, pd.DataFrame) and not force_text:
         return (
             f'<pl-dataframe params-name="{varname}" show-header="{show_header}" show-index="{show_index}" '
             f'show-dimensions="{show_dimensions}" show-python="false"></pl-dataframe>'

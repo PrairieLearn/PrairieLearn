@@ -93,9 +93,7 @@ def prepare(element_html, data):
             if child.tag == "pl-drawing-answer":
                 if answer_child is not None:
                     msg = "You should have only one pl-drawing-answer inside a pl-drawing."
-                    raise Exception(
-                        msg
-                    )
+                    raise Exception(msg)
                 draw_error_box = pl.get_boolean_attrib(
                     child, "draw-error-box", defaults.element_defaults["draw-error-box"]
                 )
@@ -104,9 +102,7 @@ def prepare(element_html, data):
             if child.tag == "pl-drawing-initial":
                 if initial_child is not None:
                     msg = "You should have only one pl-drawing-initial inside a pl-drawing."
-                    raise Exception(
-                        msg
-                    )
+                    raise Exception(msg)
                 initial_child = child
             # Get the width of the vector defined in the pl-drawing-button for pl-vector
             if child.tag == "pl-controls":
@@ -133,9 +129,7 @@ def prepare(element_html, data):
 
         if answer_child is None:
             msg = 'You do not have any "pl-drawing-answer" inside pl-drawing where gradable=True. You should either specify the "pl-drawing-answer" if you want to grade objects, or make gradable=False'
-            raise Exception(
-                msg
-            )
+            raise Exception(msg)
 
         # Generate these in order so that answer elements are displayed on top of initial elements
         init = None
@@ -161,9 +155,7 @@ def prepare(element_html, data):
                     continue
                 else:
                     msg = "Width is not consistent! pl-vector in pl-drawing-answers needs to have the same width of pl-vector in pl-drawing-button."
-                    raise Exception(
-                        msg
-                    )
+                    raise Exception(msg)
 
         # Combines all the objects in pl-drawing-answers and pl-drawing-initial
         # and saves in correct_answers

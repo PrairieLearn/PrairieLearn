@@ -114,9 +114,7 @@ def dag_to_nx(
 
     if not nx.is_directed_acyclic_graph(graph):
         msg = "Dependency between blocks does not form a Directed Acyclic Graph; Problem unsolvable."
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     return graph
 
@@ -131,9 +129,7 @@ def add_edges_for_groups(
     }
     if not validate_grouping(graph, group_belonging):
         msg = "Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group."
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     # if a group G depends on a node N, all blocks in the group G should depend on Node N
     for group_tag in groups:
@@ -230,7 +226,7 @@ def lcs_partial_credit(
                 continue
             if not all(
                 group_belonging[x] == group_belonging[node1]
-                    for x in submission_no_distractors[i : j + 1]
+                for x in submission_no_distractors[i : j + 1]
             ):
                 problematic_subgraph.add_nodes_from(
                     submission_no_distractors[i : j + 1]

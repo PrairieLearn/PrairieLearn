@@ -505,9 +505,7 @@ def convert_string_to_sympy_with_source(
         )
         if unbound_variables:
             msg = f'Assumptions for variables that are not present: {",".join(unbound_variables)}'
-            raise HasInvalidAssumptionError(
-                msg
-            )
+            raise HasInvalidAssumptionError(msg)
 
     # If there is a list of variables, add each one to the whitelist with assumptions
     if variables is not None:
@@ -518,9 +516,7 @@ def convert_string_to_sympy_with_source(
             # Check for naming conflicts
             if variable in used_names:
                 msg = f"Conflicting variable name: {variable}"
-                raise HasConflictingVariableError(
-                    msg
-                )
+                raise HasConflictingVariableError(msg)
             else:
                 used_names.add(variable)
 
@@ -539,9 +535,7 @@ def convert_string_to_sympy_with_source(
             function = greek_unicode_transform(function)
             if function in used_names:
                 msg = f"Conflicting variable name: {function}"
-                raise HasConflictingFunctionError(
-                    msg
-                )
+                raise HasConflictingFunctionError(msg)
 
             used_names.add(function)
 

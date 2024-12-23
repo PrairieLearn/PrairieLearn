@@ -20,7 +20,7 @@ from typing import Any, Literal, TypedDict, TypeVar, overload
 import lxml.html
 import networkx as nx
 import numpy as np
-import pandas
+import pandas as pd
 import python_helper_sympy as phs
 import sympy
 import to_precision
@@ -182,19 +182,17 @@ def get_enum_attrib(
         return enum_val
 
     if enum_val != enum_val.lower():
-        msg = f'Value "{enum_val}" assigned to "{name}" cannot have uppercase characters.'
-        raise ValueError(
-            msg
+        msg = (
+            f'Value "{enum_val}" assigned to "{name}" cannot have uppercase characters.'
         )
+        raise ValueError(msg)
 
     upper_enum_str = enum_val.upper()
     accepted_names = {member.name.replace("_", "-") for member in enum_type}
 
     if upper_enum_str not in accepted_names:
         msg = f"{enum_val} is not a valid type, must be one of: {', '.join(member.name.lower().replace('_', '-') for member in enum_type)}."
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     return enum_type[upper_enum_str.replace("-", "_")]
 
@@ -313,7 +311,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
             "_variables": s,
             "_shape": [num_rows, num_cols],
         }
-    elif isinstance(v, pandas.DataFrame):
+    elif isinstance(v, pd.DataFrame):
         if df_encoding_version == 1:
             return {
                 "_type": "dataframe",
@@ -347,9 +345,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
 
         else:
             msg = f"Invalid df_encoding_version: {df_encoding_version}. Must be 1 or 2"
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
     elif isinstance(v, nx.Graph | nx.DiGraph | nx.MultiGraph | nx.MultiDiGraph):
         return {"_type": "networkx_graph", "_value": nx.adjacency_data(v)}
     else:
@@ -384,17 +380,13 @@ def from_json(v):
                 return complex(v["_value"]["real"], v["_value"]["imag"])
             else:
                 msg = "variable of type complex should have value with real and imaginary pair"
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
         elif v["_type"] == "np_scalar":
             if "_concrete_type" in v and "_value" in v:
                 return getattr(np, v["_concrete_type"])(v["_value"])
             else:
                 msg = f"variable of type {v['_type']} needs both concrete type and value information"
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
         elif v["_type"] == "ndarray":
             if "_value" in v:
                 if "_dtype" in v:
@@ -418,9 +410,7 @@ def from_json(v):
                     )
             else:
                 msg = "variable of type complex_ndarray should have value with real and imaginary pair"
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
         elif v["_type"] == "sympy":
             return phs.json_to_sympy(v)
         elif v["_type"] == "sympy_matrix":
@@ -437,9 +427,7 @@ def from_json(v):
                 return matrix
             else:
                 msg = "variable of type sympy_matrix should have value, variables, and shape"
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
         elif v["_type"] == "dataframe":
             if (
                 ("_value" in v)
@@ -448,19 +436,17 @@ def from_json(v):
                 and ("data" in v["_value"])
             ):
                 val = v["_value"]
-                return pandas.DataFrame(
+                return pd.DataFrame(
                     index=val["index"], columns=val["columns"], data=val["data"]
                 )
             else:
                 msg = "variable of type dataframe should have value with index, columns, and data"
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
         elif v["_type"] == "dataframe_v2":
             # Convert native JSON back to a string representation so that
             # pandas read_json() can process it.
             value_str = StringIO(json.dumps(v["_value"]))
-            return pandas.read_json(value_str, orient="table")
+            return pd.read_json(value_str, orient="table")
         elif v["_type"] == "networkx_graph":
             return nx.adjacency_graph(v["_value"])
         else:
@@ -739,9 +725,7 @@ def get_color_attrib(element, name, *args):
             return PLColor(val).to_string(hex=True)
         else:
             msg = f'Attribute "{name:s}" must be a CSS-style RGB string: {val:s}'
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
 
 def numpy_to_matlab(A, ndigits=2, wtype="f"):
@@ -951,9 +935,7 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
         return result
     else:
         msg = f'language "{language:s}" must be either "python", "matlab", "mathematica", "r", or "sympy"'
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
 
 # Deprecated version, keeping for backwards compatibility
@@ -1158,14 +1140,10 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
 
                 if a_parse_l is None or not np.isfinite(a_parse_l):
                     msg = f"The numerator could not be interpreted as a decimal{ or_complex }number."
-                    raise ValueError(
-                        msg
-                    )
+                    raise ValueError(msg)
                 if a_parse_r is None or not np.isfinite(a_parse_r):
                     msg = f"The denominator could not be interpreted as a decimal{ or_complex }number."
-                    raise ValueError(
-                        msg
-                    )
+                    raise ValueError(msg)
 
                 with np.errstate(divide="raise"):
                     a_frac = a_parse_l / a_parse_r
@@ -1189,9 +1167,7 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
             a_sub_parsed = string_to_number(a_sub, allow_complex=allow_complex)
             if a_sub_parsed is None:
                 msg = f"The submitted answer could not be interpreted as a decimal{ or_complex }number."
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
             if not np.isfinite(a_sub_parsed):
                 msg = "The submitted answer is not a finite number."
                 raise ValueError(msg)
@@ -1439,9 +1415,7 @@ def string_to_2darray(s, allow_complex=True):
         # Check that number of rows is what we expected
         if number_of_rows != number_of_left_brackets - 1:
             msg = f"Number of rows {number_of_rows} should have been one less than the number of brackets {number_of_left_brackets}"
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         # Split each row on comma
         number_of_columns = None

@@ -63,9 +63,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         and not str(element.text).isspace()
     ):
         msg = 'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
-        raise Exception(
-            msg
-        )
+        raise Exception(msg)
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:

@@ -91,9 +91,7 @@ def render(element_html, data):
             }
         else:
             msg = f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
         info_params["allow_complex"] = pl.get_boolean_attrib(
             element, "allow-complex", ALLOW_COMPLEX_DEFAULT
         )
@@ -231,9 +229,7 @@ def render(element_html, data):
                 )
             else:
                 msg = f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
 
             html_params = {
                 "answer": True,

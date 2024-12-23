@@ -45,25 +45,19 @@ def prepare(element_html, data):
         m = pl.get_integer_attrib(element, "rows", None)
         if m is None:
             msg = "Number of rows is not set in pl-matrix-component-input with no correct answer."
-            raise Exception(
-                msg
-            )
+            raise Exception(msg)
         if m < 1:
-            msg = "Number of rows in pl-matrix-component-input must be strictly positive."
-            raise Exception(
-                msg
+            msg = (
+                "Number of rows in pl-matrix-component-input must be strictly positive."
             )
+            raise Exception(msg)
         n = pl.get_integer_attrib(element, "columns", None)
         if n is None:
             msg = "Number of columns is not set in pl-matrix-component-input with no correct answer."
-            raise Exception(
-                msg
-            )
+            raise Exception(msg)
         if n < 1:
             msg = "Number of columns in pl-matrix-component-input must be strictly positive."
-            raise Exception(
-                msg
-            )
+            raise Exception(msg)
 
 
 def render(element_html, data):
@@ -92,17 +86,13 @@ def render(element_html, data):
         else:
             if np.isscalar(a_tru):
                 msg = f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element cannot be a scalar.'
-                raise Exception(
-                    msg
-                )
+                raise Exception(msg)
             else:
                 a_tru = np.array(a_tru)
 
             if a_tru.ndim != 2:
                 msg = f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element must be a 2D array.'
-                raise Exception(
-                    msg
-                )
+                raise Exception(msg)
             else:
                 m, n = np.shape(a_tru)
 
@@ -149,9 +139,7 @@ def render(element_html, data):
             }
         else:
             msg = f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         info_params["allow_fractions"] = allow_fractions
         with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
@@ -301,9 +289,7 @@ def render(element_html, data):
                 )
             else:
                 msg = f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
 
             html_params = {
                 "answer": True,
