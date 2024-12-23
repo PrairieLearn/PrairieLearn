@@ -53,9 +53,8 @@ def prepare(element_html, data):
     )
     partial_credit_method = pl.get_string_attrib(element, "partial-credit-method", None)
     if not partial_credit and partial_credit_method is not None:
-        raise Exception(
-            "Cannot specify partial-credit-method if partial-credit is not enabled"
-        )
+        msg = "Cannot specify partial-credit-method if partial-credit is not enabled"
+        raise ValueError(msg)
 
     correct_answers = []
     incorrect_answers = []
@@ -163,9 +162,11 @@ def prepare(element_html, data):
             correct_answer_list.append(keyed_answer)
 
     if name in data["params"]:
-        raise Exception(f"duplicate params variable name: {name}")
+        msg = f"duplicate params variable name: {name}"
+        raise ValueError(msg)
     if name in data["correct_answers"]:
-        raise Exception(f"duplicate correct_answers variable name: {name}")
+        msg = f"duplicate correct_answers variable name: {name}"
+        raise ValueError(msg)
     data["params"][name] = display_answers
     data["correct_answers"][name] = correct_answer_list
 
@@ -659,7 +660,8 @@ def test(element_html, data):
         data["raw_submitted_answers"][name] = None
         data["format_errors"][name] = "You must select at least one option."
     else:
-        raise Exception(f"invalid result: {result}")
+        msg = f"invalid result: {result}"
+        raise RuntimeError(msg)
 
 
 def _get_min_options_to_select(element, default_val):

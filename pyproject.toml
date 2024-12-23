@@ -29,14 +29,18 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
+    # flake8-errmsg
+    "EM",
     "BLE",
+    "TRY",
 ]
 
 ignore = [
     # Ignore line length errors
     "E501",
-    # if-else blocks that could be shortened (https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp/)
-    "SIM108"
+    # Allow for ternary operators
+    "SIM108",
+    "TRY300", "TRY301"
 ]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear

@@ -73,9 +73,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     try:
         compact_default = pl.get_boolean_attrib(element, "compact", COMPACT_DEFAULT)
     except Exception as exc:
-        raise Exception(
-            'Attribute name "compact" is deprecated, use "compact-sequences" instead.'
-        ) from exc
+        msg = 'Attribute name "compact" is deprecated, use "compact-sequences" instead.'
+        raise DeprecationWarning(msg) from exc
 
     compact = pl.get_boolean_attrib(element, "compact-sequences", compact_default)
 

@@ -1969,35 +1969,28 @@ class GraphLine(BaseElement):
                 y3 = line[2]["y"]
                 curved_line = True
             else:
-                raise Exception(
-                    "pl-graph-line error: the attribute end-points expects a list of size 2 or 3."
-                )
+                msg = "pl-graph-line error: the attribute end-points expects a list of size 2 or 3."
+                raise ValueError(msg)
         else:
-            raise Exception(
-                "pl-graph-line error: required attribute end-points is missing."
-            )
+            msg = "pl-graph-line error: required attribute end-points is missing."
+            raise ValueError(msg)
 
         if "end-gradients" in el.attrib:
             if curved_line:
-                raise Exception(
-                    "pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both."
-                )
-            else:
-                grads = json.loads(pl.get_string_attrib(el, "end-gradients"))
-                if len(grads) != 2:
-                    raise Exception(
-                        "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
-                    )
-                grad1 = grads[0]
-                grad2 = grads[1]
-                if abs(grad1 - grad2) < 1e-9:
-                    raise Exception(
-                        "The provided gradients are not compatible to compute a quadratic curve between the given points."
-                    )
-                else:
-                    x3 = ((y2 - grad2 * x2) - (y1 - grad1 * x1)) / (grad1 - grad2)
-                    y3 = (y1 - grad1 * x1) + grad1 * x3
-                    curved_line = True
+                msg = "pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both."
+                raise ValueError(msg)
+            grads = json.loads(pl.get_string_attrib(self, "end-gradients"))
+            if len(grads) != 2:
+                msg = "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
+                raise ValueError(msg)
+            grad1 = grads[0]
+            grad2 = grads[1]
+            if abs(grad1 - grad2) < 1e-9:
+                msg = "The provided gradients are not compatible to compute a quadratic curve between the given points."
+                raise ValueError(msg)
+            x3 = ((y2 - grad2 * x2) - (y1 - grad1 * x1)) / (grad1 - grad2)
+            y3 = (y1 - grad1 * x1) + grad1 * x3
+            curved_line = True
 
         if "draw-error-box" in el.attrib:
             obj_draw = el.attrib["draw-error-box"] == "true"
@@ -2057,17 +2050,14 @@ class GraphLine(BaseElement):
             n_end_points = len(line)
             n_grads = len(grads)
             if n_end_points < 2 or n_end_points > 3:
-                raise Exception(
-                    "pl-graph-line error: the attribute end-points expects a list of size 2 or 3."
-                )
+                msg = "pl-graph-line error: the attribute end-points expects a list of size 2 or 3."
+                raise ValueError(msg)
             if n_grads != 0 and n_grads != 2:
-                raise Exception(
-                    "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
-                )
+                msg = "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
+                raise ValueError(msg)
             if n_end_points > 2 and n_grads > 0:
-                raise Exception(
-                    "pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both."
-                )
+                msg = "pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both."
+                raise ValueError(msg)
             if n_end_points == 3:
                 curved_line = True
             if n_end_points == 2 and len(grads) == 2:
@@ -2407,16 +2397,16 @@ elements["pl-switch"] = Switch
 
 class UnplaceableBaseElement(BaseElement):
     # Used only to get attributes
-    def generate(element):
-        raise Exception("Cannot create element!")
+    def generate(self):
+        msg = "Cannot create element!"
+        raise RuntimeError(msg)
 
     def is_gradable():
         return False
 
-    def grade(ref, st, tol, angtol):
-        raise Exception(
-            "This element should not be graded!  If you see this message, something has gone terribly wrong!"
-        )
+    def grade(self, _st, _tol, _angtol):
+        msg = "This element should not be graded!  If you see this message, something has gone terribly wrong!"
+        raise NotImplementedError(msg)
 
 
 class DrawingElement(UnplaceableBaseElement):
