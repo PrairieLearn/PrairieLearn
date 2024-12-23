@@ -229,7 +229,7 @@ def prepare(element_html, data):
     # Build the options to display to the student.
     chosen_option_names = []
     display_options = []
-    for i, opt in enumerate(options):
+    for opt in options:
         keyed_option = {"key": opt["name"], "html": opt["html"]}
         display_options.append(keyed_option)
         chosen_option_names.append(opt["name"])
@@ -365,8 +365,8 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            except Exception as err:
+                raise ValueError("invalid score" + score) from err
 
         with open("pl-matching.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
@@ -428,8 +428,8 @@ def render(element_html, data):
                         html_params["partial"] = math.floor(score * 100)
                     else:
                         html_params["incorrect"] = True
-                except Exception:
-                    raise ValueError("invalid score" + score)
+                except Exception as err:
+                    raise ValueError("invalid score" + score) from err
 
             with open("pl-matching.mustache", "r", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()

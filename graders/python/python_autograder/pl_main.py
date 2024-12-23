@@ -60,7 +60,7 @@ if __name__ == "__main__":
         format_errors = []
         gradable = True
         has_test_cases = False
-        for i in range(TestCase.total_iters):
+        for _ in range(TestCase.total_iters):
             suite = loader.loadTestsFromTestCase(TestCase)
             has_test_cases = suite.countTestCases() > 0
             result = PLTestResult()
