@@ -48,7 +48,11 @@ select = [
     "C4",
     "DTZ", "T10",
     # flake8-errmsg
-    "EM"
+    "EM",
+    # flake8-executable
+    "EXE",
+    # flake8-future-annotation
+    "FA"
     ]
 ignore = [
     # Ignore line length errors
