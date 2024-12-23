@@ -164,10 +164,8 @@ def get_nota_aota_attrib(
             element, name, default != AotaNotaType.FALSE
         )
         return AotaNotaType.RANDOM if boolean_value else AotaNotaType.FALSE
-    except Exception:
-        pass
-
-    return pl.get_enum_attrib(element, name, AotaNotaType, default)
+    except ValueError:
+        return pl.get_enum_attrib(element, name, AotaNotaType, default)
 
 
 def get_order_type(element: lxml.html.HtmlElement) -> OrderType:

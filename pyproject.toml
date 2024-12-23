@@ -36,7 +36,6 @@ ignore = [
     # if-else blocks that could be shortened (https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp/)
     "SIM108"
 ]
-
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
 # broken in isolation. We'll allow specific errors in these files to
