@@ -60,7 +60,8 @@ select = [
     # flake8-quotes
     "Q",
     # flake8-raise
-    "RSE"
+    "RSE",
+    "RET506"
     ]
 ignore = [
     # Ignore line length errors
@@ -84,6 +85,7 @@ ignore = [
 "exampleCourse/questions/**/tests/ans.py" = ["F821"]
 # Ignore uppercase variables and function parameters (e.g. G for a graph)
 "exampleCourse/questions/**/*.py" = ["N806", "N803"]
+"testCourse/questions/**/*.py" = []
 # The zygote specifically uses imports in strange places to facilitate the
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]

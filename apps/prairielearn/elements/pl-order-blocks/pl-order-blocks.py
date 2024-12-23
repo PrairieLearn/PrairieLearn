@@ -274,8 +274,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             if tag in used_tags:
                 msg = f'Tag "{tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
                 raise Exception(msg)
-            else:
-                used_tags.add(tag)
+            used_tags.add(tag)
 
         if check_indentation is False and answer_indent is not None:
             msg = (
@@ -322,8 +321,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             if group_tag in used_tags:
                 msg = f'Tag "{group_tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
                 raise Exception(msg)
-            else:
-                used_tags.add(group_tag)
+            used_tags.add(group_tag)
 
             for grouped_tag in html_tags:
                 if html_tags.tag is Comment:

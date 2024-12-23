@@ -2011,20 +2011,18 @@ class GraphLine(BaseElement):
             if curved_line:
                 msg = "pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both."
                 raise Exception(msg)
-            else:
-                grads = json.loads(pl.get_string_attrib(self, "end-gradients"))
-                if len(grads) != 2:
-                    msg = "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
-                    raise Exception(msg)
-                grad1 = grads[0]
-                grad2 = grads[1]
-                if abs(grad1 - grad2) < 1e-9:
-                    msg = "The provided gradients are not compatible to compute a quadratic curve between the given points."
-                    raise Exception(msg)
-                else:
-                    x3 = ((y2 - grad2 * x2) - (y1 - grad1 * x1)) / (grad1 - grad2)
-                    y3 = (y1 - grad1 * x1) + grad1 * x3
-                    curved_line = True
+            grads = json.loads(pl.get_string_attrib(self, "end-gradients"))
+            if len(grads) != 2:
+                msg = "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
+                raise Exception(msg)
+            grad1 = grads[0]
+            grad2 = grads[1]
+            if abs(grad1 - grad2) < 1e-9:
+                msg = "The provided gradients are not compatible to compute a quadratic curve between the given points."
+                raise Exception(msg)
+            x3 = ((y2 - grad2 * x2) - (y1 - grad1 * x1)) / (grad1 - grad2)
+            y3 = (y1 - grad1 * x1) + grad1 * x3
+            curved_line = True
 
         if "draw-error-box" in self.attrib:
             obj_draw = self.attrib["draw-error-box"] == "true"

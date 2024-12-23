@@ -113,7 +113,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 msg = f'pl-variable "{name}" must have at most one of file-name or its inner html defined'
                 raise ValueError(msg)
 
-            elif has_template_file:
+            if has_template_file:
                 with open(get_file_path(child, data)) as f:
                     variable_dict[name] = f.read()
 

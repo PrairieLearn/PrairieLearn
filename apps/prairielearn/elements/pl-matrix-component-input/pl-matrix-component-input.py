@@ -87,14 +87,12 @@ def render(element_html, data):
             if np.isscalar(a_tru):
                 msg = f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element cannot be a scalar.'
                 raise Exception(msg)
-            else:
-                a_tru = np.array(a_tru)
+            a_tru = np.array(a_tru)
 
             if a_tru.ndim != 2:
                 msg = f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element must be a 2D array.'
                 raise Exception(msg)
-            else:
-                m, n = np.shape(a_tru)
+            m, n = np.shape(a_tru)
 
         input_array = create_table_for_html_display(m, n, name, label, data, "input")
 
@@ -328,8 +326,7 @@ def parse(element_html, data):
         if a_tru.ndim != 2:
             msg = "true answer must be a 2D array"
             raise ValueError(msg)
-        else:
-            m, n = np.shape(a_tru)
+        m, n = np.shape(a_tru)
     matrix = np.empty((m, n))
 
     # Create an array for the submitted answer to be stored in data['submitted_answer'][name]
@@ -397,8 +394,7 @@ def grade(element_html, data):
     if a_tru.ndim != 2:
         msg = "true answer must be a 2D array"
         raise ValueError(msg)
-    else:
-        m, n = np.shape(a_tru)
+    m, n = np.shape(a_tru)
 
     number_of_correct = 0
     feedback = {}
@@ -461,8 +457,7 @@ def test(element_html, data):
     if a_tru.ndim != 2:
         msg = "true answer must be a 2D array"
         raise ValueError(msg)
-    else:
-        m, n = np.shape(a_tru)
+    m, n = np.shape(a_tru)
 
     result = data["test_type"]
 

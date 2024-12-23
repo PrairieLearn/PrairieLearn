@@ -144,16 +144,16 @@ def check_prop(
     if value_type == "integer" and not isinstance(new_value, int):
         msg = f'Expected data["{prop}"] to be an integer'
         raise ValueError(msg)
-    elif value_type == "string" and not isinstance(new_value, str):
+    if value_type == "string" and not isinstance(new_value, str):
         msg = f'Expected data["{prop}"] to be a string'
         raise ValueError(msg)
-    elif value_type == "number" and not isinstance(new_value, int | float):
+    if value_type == "number" and not isinstance(new_value, int | float):
         msg = f'Expected data["{prop}"] to be a number'
         raise ValueError(msg)
-    elif value_type == "boolean" and not isinstance(new_value, bool):
+    if value_type == "boolean" and not isinstance(new_value, bool):
         msg = f'Expected data["{prop}"] to be a boolean'
         raise ValueError(msg)
-    elif value_type == "object" and not isinstance(new_value, dict):
+    if value_type == "object" and not isinstance(new_value, dict):
         msg = f'Expected data["{prop}"] to be an object'
         raise ValueError(msg)
 

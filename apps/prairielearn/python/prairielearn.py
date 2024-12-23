@@ -76,8 +76,7 @@ def check_answers_names(data: QuestionData, name: str) -> None:
     if name in data["answers_names"]:
         msg = f'Duplicate "answers-name" attribute: "{name}"'
         raise KeyError(msg)
-    else:
-        data["answers_names"][name] = True
+    data["answers_names"][name] = True
 
 
 def get_unit_registry() -> UnitRegistry:

@@ -448,17 +448,16 @@ def render(element_html, data):
             if len(correct_answer_list) == 0:
                 msg = "At least one option must be true."
                 raise ValueError(msg)
-            else:
-                html_params = {
-                    "answer": True,
-                    "inline": inline,
-                    "answers": correct_answer_list,
-                    "hide_letter_keys": pl.get_boolean_attrib(
-                        element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
-                    ),
-                }
-                with open("pl-checkbox.mustache", encoding="utf-8") as f:
-                    html = chevron.render(f, html_params).strip()
+            html_params = {
+                "answer": True,
+                "inline": inline,
+                "answers": correct_answer_list,
+                "hide_letter_keys": pl.get_boolean_attrib(
+                    element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
+                ),
+            }
+            with open("pl-checkbox.mustache", encoding="utf-8") as f:
+                html = chevron.render(f, html_params).strip()
         else:
             html = ""
 

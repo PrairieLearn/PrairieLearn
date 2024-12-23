@@ -41,7 +41,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         if html_variables:
             msg = f'Variable name "{params_name}" was declared empty, but has variables defined in "question.html".'
             raise ValueError(msg)
-        elif params_name in data["params"]:
+        if params_name in data["params"]:
             msg = f'Variable name "{params_name}" was declared empty, but has variables defined in "server.py".'
             raise ValueError(msg)
 
