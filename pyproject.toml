@@ -29,7 +29,9 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
+    "BLE",
 ]
+
 ignore = [
     # Ignore line length errors
     "E501",

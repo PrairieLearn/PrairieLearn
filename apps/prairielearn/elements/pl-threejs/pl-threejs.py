@@ -1,4 +1,5 @@
 import base64
+import binascii
 import json
 import math
 import os
@@ -396,7 +397,7 @@ def parse(element_html, data):
     # a failure, it would be due to corrupt data from the hidden input element).
     try:
         a_sub = b64_to_dict(a_sub)
-    except Exception:
+    except (binascii.Error, ValueError, TypeError):
         data["format_errors"][name] = "Invalid submitted answer."
         data["submitted_answers"][name] = None
         return

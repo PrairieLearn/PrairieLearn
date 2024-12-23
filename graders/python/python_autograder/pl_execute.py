@@ -28,7 +28,7 @@ def try_read(fname):
     try:
         with open(fname, encoding="utf-8") as f:
             contents = f.read()
-    except Exception:
+    except FileNotFoundError:
         contents = ""
     return contents
 
@@ -161,7 +161,7 @@ def execute_code(
     try:
         exec(str_student, student_code)
         err = None
-    except Exception:
+    except Exception:  # noqa: BLE001
         err = sys.exc_info()
 
     # Now that user code has been run, replace deleted files in case we are to run the tests again.

@@ -33,7 +33,7 @@ def render(element_html, data):
 
     try:
         score = float(score)
-    except Exception:
+    except ValueError:
         return (
             '<span class="badge badge-danger">ERROR: invalid score: '
             + score
