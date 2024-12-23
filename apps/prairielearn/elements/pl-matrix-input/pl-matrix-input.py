@@ -329,7 +329,7 @@ def grade(element_html, data):
     a_sub = np.array(a_sub)
 
     # If true and submitted answers have different shapes, score is zero
-    if not (a_sub.shape == a_tru.shape):
+    if a_sub.shape != a_tru.shape:
         data["partial_scores"][name] = {"score": 0, "weight": weight}
         return
 

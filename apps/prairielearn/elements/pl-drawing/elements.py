@@ -769,10 +769,7 @@ class Vector(BaseElement):
         epos_rel = basis @ (epos - rpos)
         rely, relx = epos_rel
 
-        if relx > tol or relx < -tol or rely > max_forward or rely < -max_backward:
-            return False
-
-        return True
+        return abs(relx) <= tol and -max_backward <= rely <= max_forward
 
     def get_attributes():
         return [
@@ -1067,11 +1064,7 @@ class ArcVector(BaseElement):
             return False
 
         # Check if correct orientation
-        if not self["disregard_sense"]:
-            if st_start_arrow is not ref_start_arrow:
-                return False
-
-        return True
+        return self["disregard_sense"] or st_start_arrow == ref_start_arrow
 
     def get_attributes():
         return [
@@ -1319,10 +1312,7 @@ class Point(BaseElement):
         rpos = np.array([self["left"], self["top"]])
         # Check if correct position
         relx, rely = epos - rpos
-        if relx > tol or relx < -tol or rely > tol or rely < -tol:
-            return False
-
-        return True
+        return abs(relx) <= tol and abs(rely) <= tol
 
     def get_attributes():
         return ["x1", "y1", "radius", "label", "offsetx", "offsety", "opacity", "color"]

@@ -292,7 +292,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
             }
     elif isinstance(v, sympy.Expr):
         return phs.sympy_to_json(v)
-    elif isinstance(v, sympy.Matrix) or isinstance(v, sympy.ImmutableMatrix):
+    elif isinstance(v, (sympy.Matrix, sympy.ImmutableMatrix)):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
         matrix = []
@@ -371,96 +371,87 @@ def from_json(v):
     If v does not have the format {'_type':..., '_value':...}, then it is
     returned without change.
     """
-    if isinstance(v, dict):
-        if "_type" in v:
-            if v["_type"] == "complex":
-                if (
-                    ("_value" in v)
-                    and ("real" in v["_value"])
-                    and ("imag" in v["_value"])
-                ):
-                    return complex(v["_value"]["real"], v["_value"]["imag"])
-                else:
-                    raise Exception(
-                        "variable of type complex should have value with real and imaginary pair"
-                    )
-            elif v["_type"] == "np_scalar":
-                if "_concrete_type" in v and "_value" in v:
-                    return getattr(np, v["_concrete_type"])(v["_value"])
-                else:
-                    raise Exception(
-                        f"variable of type {v['_type']} needs both concrete type and value information"
-                    )
-            elif v["_type"] == "ndarray":
-                if "_value" in v:
-                    if "_dtype" in v:
-                        return np.array(v["_value"]).astype(v["_dtype"])
-                    else:
-                        return np.array(v["_value"])
-                else:
-                    raise Exception("variable of type ndarray should have value")
-            elif v["_type"] == "complex_ndarray":
-                if (
-                    ("_value" in v)
-                    and ("real" in v["_value"])
-                    and ("imag" in v["_value"])
-                ):
-                    if "_dtype" in v:
-                        return (
-                            np.array(v["_value"]["real"])
-                            + np.array(v["_value"]["imag"]) * 1j
-                        ).astype(v["_dtype"])
-                    else:
-                        return (
-                            np.array(v["_value"]["real"])
-                            + np.array(v["_value"]["imag"]) * 1j
-                        )
-                else:
-                    raise Exception(
-                        "variable of type complex_ndarray should have value with real and imaginary pair"
-                    )
-            elif v["_type"] == "sympy":
-                return phs.json_to_sympy(v)
-            elif v["_type"] == "sympy_matrix":
-                if ("_value" in v) and ("_variables" in v) and ("_shape" in v):
-                    value = v["_value"]
-                    variables = v["_variables"]
-                    shape = v["_shape"]
-                    matrix = sympy.Matrix.zeros(shape[0], shape[1])
-                    for i in range(0, shape[0]):
-                        for j in range(0, shape[1]):
-                            matrix[i, j] = phs.convert_string_to_sympy(
-                                value[i][j], variables
-                            )
-                    return matrix
-                else:
-                    raise Exception(
-                        "variable of type sympy_matrix should have value, variables, and shape"
-                    )
-            elif v["_type"] == "dataframe":
-                if (
-                    ("_value" in v)
-                    and ("index" in v["_value"])
-                    and ("columns" in v["_value"])
-                    and ("data" in v["_value"])
-                ):
-                    val = v["_value"]
-                    return pandas.DataFrame(
-                        index=val["index"], columns=val["columns"], data=val["data"]
-                    )
-                else:
-                    raise Exception(
-                        "variable of type dataframe should have value with index, columns, and data"
-                    )
-            elif v["_type"] == "dataframe_v2":
-                # Convert native JSON back to a string representation so that
-                # pandas read_json() can process it.
-                value_str = StringIO(json.dumps(v["_value"]))
-                return pandas.read_json(value_str, orient="table")
-            elif v["_type"] == "networkx_graph":
-                return nx.adjacency_graph(v["_value"])
+    if isinstance(v, dict) and "_type" in v:
+        if v["_type"] == "complex":
+            if ("_value" in v) and ("real" in v["_value"]) and ("imag" in v["_value"]):
+                return complex(v["_value"]["real"], v["_value"]["imag"])
             else:
-                raise Exception("variable has unknown type {:s}".format(v["_type"]))
+                raise Exception(
+                    "variable of type complex should have value with real and imaginary pair"
+                )
+        elif v["_type"] == "np_scalar":
+            if "_concrete_type" in v and "_value" in v:
+                return getattr(np, v["_concrete_type"])(v["_value"])
+            else:
+                raise Exception(
+                    f"variable of type {v['_type']} needs both concrete type and value information"
+                )
+        elif v["_type"] == "ndarray":
+            if "_value" in v:
+                if "_dtype" in v:
+                    return np.array(v["_value"]).astype(v["_dtype"])
+                else:
+                    return np.array(v["_value"])
+            else:
+                raise Exception("variable of type ndarray should have value")
+        elif v["_type"] == "complex_ndarray":
+            if ("_value" in v) and ("real" in v["_value"]) and ("imag" in v["_value"]):
+                if "_dtype" in v:
+                    return (
+                        np.array(v["_value"]["real"])
+                        + np.array(v["_value"]["imag"]) * 1j
+                    ).astype(v["_dtype"])
+                else:
+                    return (
+                        np.array(v["_value"]["real"])
+                        + np.array(v["_value"]["imag"]) * 1j
+                    )
+            else:
+                raise Exception(
+                    "variable of type complex_ndarray should have value with real and imaginary pair"
+                )
+        elif v["_type"] == "sympy":
+            return phs.json_to_sympy(v)
+        elif v["_type"] == "sympy_matrix":
+            if ("_value" in v) and ("_variables" in v) and ("_shape" in v):
+                value = v["_value"]
+                variables = v["_variables"]
+                shape = v["_shape"]
+                matrix = sympy.Matrix.zeros(shape[0], shape[1])
+                for i in range(0, shape[0]):
+                    for j in range(0, shape[1]):
+                        matrix[i, j] = phs.convert_string_to_sympy(
+                            value[i][j], variables
+                        )
+                return matrix
+            else:
+                raise Exception(
+                    "variable of type sympy_matrix should have value, variables, and shape"
+                )
+        elif v["_type"] == "dataframe":
+            if (
+                ("_value" in v)
+                and ("index" in v["_value"])
+                and ("columns" in v["_value"])
+                and ("data" in v["_value"])
+            ):
+                val = v["_value"]
+                return pandas.DataFrame(
+                    index=val["index"], columns=val["columns"], data=val["data"]
+                )
+            else:
+                raise Exception(
+                    "variable of type dataframe should have value with index, columns, and data"
+                )
+        elif v["_type"] == "dataframe_v2":
+            # Convert native JSON back to a string representation so that
+            # pandas read_json() can process it.
+            value_str = StringIO(json.dumps(v["_value"]))
+            return pandas.read_json(value_str, orient="table")
+        elif v["_type"] == "networkx_graph":
+            return nx.adjacency_graph(v["_value"])
+        else:
+            raise Exception("variable has unknown type {:s}".format(v["_type"]))
     return v
 
 
@@ -1735,9 +1726,7 @@ def load_extension(data, extension_name):
 
     # Filter out extra names so we only get user defined functions and variables
     loaded = {
-        f: wrap(module.__dict__[f])
-        for f in module.__dict__.keys()
-        if not f.startswith("__")
+        f: wrap(module.__dict__[f]) for f in module.__dict__ if not f.startswith("__")
     }
 
     # Return functions and variables as a namedtuple, so we get the nice dot access syntax

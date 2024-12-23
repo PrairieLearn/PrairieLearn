@@ -65,12 +65,15 @@ def prepare(element_html, data):
         raise Exception("There is more than one file editor with the same file name.")
     data["params"]["_required_file_names"].append(file_name)
 
-    if source_file_name is not None:
-        if element_text and not str(element_text).isspace():
-            raise Exception(
-                'Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.'
-                + element_text
-            )
+    if (
+        source_file_name is not None
+        and element_text
+        and not str(element_text).isspace()
+    ):
+        raise Exception(
+            'Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.'
+            + element_text
+        )
 
 
 def render(element_html, data):
@@ -121,7 +124,8 @@ def render(element_html, data):
             else:
                 directory = os.path.join(data["options"]["question_path"], directory)
             file_path = os.path.join(directory, source_file_name)
-            text_display = open(file_path).read()
+            with open(file_path, "r") as f:
+                text_display = f.read()
         else:
             if element_text is not None:
                 text_display = str(element_text)
