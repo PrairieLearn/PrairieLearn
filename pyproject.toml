@@ -67,7 +67,7 @@ select = [
     # pandas-vet
     "PD",
     # pylint
-    "PLR"
+    "PLR", "PLC", "PLE", "PLW"
     ]
 ignore = [
     # Ignore line length errors
@@ -92,6 +92,7 @@ ignore = [
 "exampleCourse/questions/**/tests/setup_code.py" = ["F401", "F821"]
 "exampleCourse/questions/**/tests/leading_code.py" = ["F401", "F821", "F841"]
 "exampleCourse/questions/**/tests/ans.py" = ["F821"]
+"exampleCourse/questions/demo/autograder/ansiOutput/server.py" = ["PLE2513"]
 # Ignore uppercase variables and function parameters (e.g. G for a graph)
 "exampleCourse/questions/**/*.py" = ["N806", "N803"]
 "testCourse/questions/**/*.py" = []
