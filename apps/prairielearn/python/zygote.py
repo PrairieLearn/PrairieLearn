@@ -28,8 +28,8 @@ from importlib.abc import MetaPathFinder
 from inspect import signature
 from typing import Any, Iterable, Sequence
 
-import prairielearn.zygote_utils as zu
-from prairielearn import question_phases
+import prairielearn.internal.zygote_utils as zu
+from prairielearn.internal import question_phases
 
 saved_path = copy.copy(sys.path)
 

@@ -1,7 +1,7 @@
 import json
 from typing import Any
 
-import prairielearn.zygote_utils as zu
+import prairielearn.internal.zygote_utils as zu
 import pytest
 
 
