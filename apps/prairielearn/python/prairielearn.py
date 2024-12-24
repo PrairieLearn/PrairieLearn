@@ -528,7 +528,7 @@ def _get_attrib(element, name, *args):
     if len(args) == 1:
         return (args[0], True)
 
-    raise Exception('Attribute "%s" missing and no default is available' % name)
+    raise ValueError('Attribute "%s" missing and no default is available' % name)
 
 
 def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
@@ -616,7 +616,7 @@ def get_boolean_attrib(element, name, *args):
     elif val in false_values:
         return False
     else:
-        raise Exception('Attribute "%s" must be a boolean value: %s' % (name, val))
+        raise ValueError('Attribute "%s" must be a boolean value: %s' % (name, val))
 
 
 # Order here matters, as we want to override the case where the args is omitted
