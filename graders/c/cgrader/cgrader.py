@@ -63,7 +63,7 @@ could also mean that scanf does not support the input provided
 """
 
 
-class UngradableException(Exception):
+class UngradableError(Exception):
     def __init__(self):
         pass
 
@@ -226,7 +226,7 @@ class CGrader:
             self.result["message"] += (
                 f"Compilation errors, please fix and try again.\n\n{out}\n"
             )
-            raise UngradableException()
+            raise UngradableError()
         if out and add_warning_result_msg:
             self.result["message"] += f"Compilation warnings:\n\n{out}\n"
         if exec_file:
@@ -300,7 +300,7 @@ class CGrader:
             self.result["message"] += (
                 f"Linker errors, please fix and try again.\n\n{out}\n"
             )
-            raise UngradableException()
+            raise UngradableError()
         if out and add_warning_result_msg:
             self.result["message"] += f"Linker warnings:\n\n{out}\n"
         return out
@@ -615,7 +615,7 @@ class CGrader:
         )
         try:
             with open(log_file, "r", errors="backslashreplace") as log:
-                tree = ET.parse(log, parser=ET.XMLParser())
+                tree = et.parse(log, parser=et.XMLParser())
             for suite in tree.getroot().findall("{*}suite"):
                 suite_title = suite.findtext("{*}title") if use_suite_title else ""
                 for test in suite.findall("{*}test"):
@@ -683,7 +683,7 @@ class CGrader:
 
         try:
             self.tests()
-        except UngradableException:
+        except UngradableError:
             self.result["gradable"] = False
         finally:
             self.save_results()

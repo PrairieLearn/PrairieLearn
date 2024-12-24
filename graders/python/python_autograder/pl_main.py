@@ -91,7 +91,7 @@ if __name__ == "__main__":
             results = all_results[0]
 
         # Compile total number of points
-        max_points = test_case.get_total_points()
+        max_points = TestCase.get_total_points()
         earned_points = sum([test["points"] for test in results])
         score = (
             0 if float(max_points) == 0 else float(earned_points) / float(max_points)
@@ -128,7 +128,7 @@ if __name__ == "__main__":
         # Save images
         grading_result["images"] = []
         all_img_num = 0
-        for img_iter in range(test_case.total_iters):
+        for img_iter in range(TestCase.total_iters):
             img_num = 0
             while True:
                 # Save each image as image_{test iteration}_{image number}

@@ -1014,9 +1014,9 @@ class ArcVector(BaseElement):
             ),
             "drawStartArrow": draw_start_arrow,
             "drawEndArrow": draw_end_arrow,
-            "label": pl.get_string_attrib(self, "label", ""),
-            "offsetx": pl.get_float_attrib(self, "offsetx", 0),
-            "offsety": pl.get_float_attrib(self, "offsety", 0),
+            "label": pl.get_string_attrib(el, "label", ""),
+            "offsetx": pl.get_float_attrib(el, "offsetx", 0),
+            "offsety": pl.get_float_attrib(el, "offsety", 0),
             "stroke": color,
             "fill": color,
             "strokeWidth": pl.get_float_attrib(el, "stroke-width", 3),
@@ -1052,7 +1052,7 @@ class ArcVector(BaseElement):
             return False
 
         # Check if correct orientation
-        return self["disregard_sense"] or st_start_arrow == ref_start_arrow
+        return ref["disregard_sense"] or st_start_arrow == ref_start_arrow
 
     def get_attributes():
         return [

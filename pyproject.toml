@@ -26,8 +26,6 @@ select = [
     "F",
     # isort
     "I",
-    # pep8-naming
-    "N",
     # flake8-bugbear
     "B",
     # flake8-simplify
