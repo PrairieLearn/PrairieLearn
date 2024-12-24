@@ -12,7 +12,7 @@ from typing_extensions import assert_never
 from prairielearn.internal.check_data import Phase, check_data
 from prairielearn.internal.traverse import traverse_and_execute, traverse_and_replace
 
-PYTHON_PATH = pathlib.Path(__file__).parent.parent.resolve()
+PYTHON_PATH = pathlib.Path(__file__).parent.parent.parent.resolve()
 CORE_ELEMENTS_PATH = (PYTHON_PATH / "elements").resolve()
 SAVED_PATH = copy.copy(sys.path)
 
