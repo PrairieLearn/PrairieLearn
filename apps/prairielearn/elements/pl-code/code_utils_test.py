@@ -1,4 +1,3 @@
-
 import pytest
 from code_utils import parse_highlight_lines
 

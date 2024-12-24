@@ -56,13 +56,9 @@ def render(element_html, data):
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
-                raise ValueError(
-                    f"Attribute rtol = {rtol:g} must be non-negative"
-                )
+                raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
             if atol < 0:
-                raise ValueError(
-                    f"Attribute atol = {atol:g} must be non-negative"
-                )
+                raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
             info_params = {
                 "format": True,
                 "relabs": True,
@@ -72,9 +68,7 @@ def render(element_html, data):
         elif comparison == "sigfig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(
-                    f"Attribute digits = {digits:d} must be non-negative"
-                )
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "sigfig": True,
@@ -84,9 +78,7 @@ def render(element_html, data):
         elif comparison == "decdig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(
-                    f"Attribute digits = {digits:d} must be non-negative"
-                )
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "decdig": True,

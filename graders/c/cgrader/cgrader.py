@@ -636,7 +636,7 @@ class CGrader:
                 "Test suite log file not found. Consult the instructor.\n"
             )
             raise UngradableException()
-        except ET.ParseError as e:
+        except et.ParseError as e:
             self.result["message"] += f"Error parsing test suite log.\n\n{e}\n"
             raise UngradableException()
 

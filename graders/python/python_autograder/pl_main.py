@@ -102,9 +102,7 @@ if __name__ == "__main__":
 
         text_output = ""
         if os.path.exists(join(base_dir, "output.txt")):
-            with open(
-                join(base_dir, "output.txt"), encoding="utf-8"
-            ) as content_file:
+            with open(join(base_dir, "output.txt"), encoding="utf-8") as content_file:
                 text_output = content_file.read()
             os.remove(join(base_dir, "output.txt"))
 
