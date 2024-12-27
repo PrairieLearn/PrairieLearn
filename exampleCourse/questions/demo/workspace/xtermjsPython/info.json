@@ -1,0 +1,13 @@
+{
+  "uuid": "b62a4383-cbc1-4a10-b058-2fab814e6c17",
+  "title": "Workspace demo: Xterm.js running Python",
+  "topic": "Workspace",
+  "type": "v3",
+  "singleVariant": true,
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-xtermjs",
+    "port": 8080,
+    "home": "/home/student",
+    "args": ["-c", "/usr/bin/python3"]
+  }
+}

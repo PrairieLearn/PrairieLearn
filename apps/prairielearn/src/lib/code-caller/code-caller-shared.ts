@@ -1,8 +1,13 @@
 export class FunctionMissingError extends Error {
-  constructor(message) {
+  constructor(message: string) {
     super(message);
     this.name = 'FunctionMissingError';
   }
+}
+
+export interface CodeCallerResult {
+  result: any;
+  output: string;
 }
 
 export type CallType =
