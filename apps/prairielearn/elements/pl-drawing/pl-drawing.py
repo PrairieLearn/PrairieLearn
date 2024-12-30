@@ -222,8 +222,6 @@ def render_drawing_items(elem, curid=0, defaults=None):
     # it is assumed that the attribute must be present or else an error will be raised.  If a
     # default is passed, the attribute is optional.
 
-    if defaults is None:
-        defaults = {}
     objects = []
     for el in elem:
         if el.tag is lxml.etree.Comment:
