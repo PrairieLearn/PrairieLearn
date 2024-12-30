@@ -31,7 +31,7 @@ def generate(data):
             "input": input,
             "output": output,
         }
-        for (input, output) in zip(input_words, output_words, strict=False)
+        for (input, output) in zip(input_words, output_words, strict=True)
     ]
 
     # Pick the function name

@@ -100,8 +100,8 @@ def graphviz_from_adj_matrix(
     graph = pygraphviz.AGraph(directed=directed)
     graph.add_nodes_from(mat_label)
 
-    for in_node, row in zip(mat_label, mat, strict=False):
-        for out_node, x in zip(mat_label, row, strict=False):
+    for in_node, row in zip(mat_label, mat, strict=True):
+        for out_node, x in zip(mat_label, row, strict=True):
             # If showing negative weights, show every entry that is not None
             # Otherwise, only show positive weights
             if x is None or (not negative_weights and x <= 0.0):
