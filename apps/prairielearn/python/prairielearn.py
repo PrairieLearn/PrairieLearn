@@ -724,7 +724,7 @@ def get_color_attrib(element, name, *args):
             )
 
 
-def numpy_to_matlab(A, ndigits=2, wtype="f"):
+def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
     """numpy_to_matlab(A, ndigits=2, wtype='f')
 
     This function assumes that A is one of these things:
@@ -735,11 +735,11 @@ def numpy_to_matlab(A, ndigits=2, wtype="f"):
     It returns A as a MATLAB-formatted string in which each number has "ndigits"
     digits after the decimal and is formatted as "wtype" (e.g., 'f', 'g', etc.).
     """
-    if np.isscalar(A):
+    if np.isscalar(np_object):
         scalar_str = "{:.{indigits}{iwtype}}".format(A, indigits=ndigits, iwtype=wtype)
         return scalar_str
-    elif A.ndim == 1:
-        s = A.shape
+    elif np_object.ndim == 1:
+        s = np_object.shape
         m = s[0]
         vector_str = "["
         for i in range(0, m):
@@ -751,7 +751,7 @@ def numpy_to_matlab(A, ndigits=2, wtype="f"):
         vector_str += "]"
         return vector_str
     else:
-        s = A.shape
+        s = np_object.shape
         m = s[0]
         n = s[1]
         matrix_str = "["
