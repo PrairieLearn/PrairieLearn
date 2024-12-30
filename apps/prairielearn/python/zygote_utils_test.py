@@ -41,10 +41,8 @@ def test_safe_parse_int_large_ints(item: str) -> None:
     ],
 )
 def test_all_integers_within_limits_no_exception(item: Any) -> None:
-    try:
-        zu.assert_all_integers_within_limits(item)
-    except Exception as err:
-        raise AssertionError() from err
+    # We are checking that no exception is thrown
+    zu.assert_all_integers_within_limits(item)
 
 
 @pytest.mark.parametrize(

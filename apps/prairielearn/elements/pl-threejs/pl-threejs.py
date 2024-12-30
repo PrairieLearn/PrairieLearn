@@ -494,11 +494,11 @@ def grade(element_html, data):
 def parse_correct_answer(f, a):
     if f == "homogeneous":
         try:
-            transform_mat = np.array(a, dtype=np.float64)
-            if transform_mat.shape == (4, 4):
-                rot_mat = transform_mat[0:3, 0:3]
-                p = transform_mat[0:3, 3:4]
-                return np.reshape(p, (3,)), pyquaternion.Quaternion(matrix=rot_mat)
+            transform_matrix = np.array(a, dtype=np.float64)
+            if transform_matrix.shape == (4, 4):
+                rot_matrix = transform_matrix[0:3, 0:3]
+                p = transform_matrix[0:3, 3:4]
+                return np.reshape(p, (3,)), pyquaternion.Quaternion(matrix=rot_matrix)
             else:
                 raise ValueError()
         except Exception as err:
@@ -535,8 +535,8 @@ def parse_correct_answer(f, a):
     elif f == "matrix":
         try:
             p = np.reshape(np.array(a[0], dtype=np.float64), (3,))
-            rot_mat = np.array(a[1], dtype=np.float64)
-            return np.reshape(p, (3,)), pyquaternion.Quaternion(matrix=rot_mat)
+            rot_matrix = np.array(a[1], dtype=np.float64)
+            return np.reshape(p, (3,)), pyquaternion.Quaternion(matrix=rot_matrix)
         except Exception as err:
             raise Exception(
                 'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]"'
@@ -644,9 +644,9 @@ def get_orientation(element, name_orientation, name_format):
             ) from err
     elif f == "matrix":
         try:
-            rot_mat = np.array(json.loads(s), dtype=np.float64)
+            rot_matrix = np.array(json.loads(s), dtype=np.float64)
             return np.roll(
-                pyquaternion.Quaternion(matrix=rot_mat).elements, -1
+                pyquaternion.Quaternion(matrix=rot_matrix).elements, -1
             ).tolist()
         except Exception as err:
             raise Exception(
