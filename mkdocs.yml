@@ -69,6 +69,7 @@ plugins:
         python:
           paths:
             - apps/prairielearn/python
+            - apps/prairielearn/elements
             - graders/python/python_autograder
           options:
             show_root_heading: true
