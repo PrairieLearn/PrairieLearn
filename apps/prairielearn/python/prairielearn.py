@@ -736,7 +736,9 @@ def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
     digits after the decimal and is formatted as "wtype" (e.g., 'f', 'g', etc.).
     """
     if np.isscalar(np_object):
-        scalar_str = "{:.{indigits}{iwtype}}".format(A, indigits=ndigits, iwtype=wtype)
+        scalar_str = "{:.{indigits}{iwtype}}".format(
+            np_object, indigits=ndigits, iwtype=wtype
+        )
         return scalar_str
     elif np_object.ndim == 1:
         s = np_object.shape
@@ -744,7 +746,7 @@ def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
         vector_str = "["
         for i in range(0, m):
             vector_str += "{:.{indigits}{iwtype}}".format(
-                A[i], indigits=ndigits, iwtype=wtype
+                np_object[i], indigits=ndigits, iwtype=wtype
             )
             if i < m - 1:
                 vector_str += ", "
@@ -758,7 +760,7 @@ def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
         for i in range(0, m):
             for j in range(0, n):
                 matrix_str += "{:.{indigits}{iwtype}}".format(
-                    A[i, j], indigits=ndigits, iwtype=wtype
+                    np_object[i, j], indigits=ndigits, iwtype=wtype
                 )
                 if j == n - 1:
                     if i == m - 1:
