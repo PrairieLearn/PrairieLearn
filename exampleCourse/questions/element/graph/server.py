@@ -57,7 +57,7 @@ def generate(data):
     extents = nx.utils.pairwise(itertools.accumulate((0,) + tuple(subset_sizes)))
     layers = [range(start, end) for start, end in extents]
     layered_graph = nx.Graph()
-    for i, (layer, color) in enumerate(zip(layers, subset_color, strict=False)):
+    for i, (layer, color) in enumerate(zip(layers, subset_color, strict=True)):
         layered_graph.add_nodes_from(layer, layer=i, color=color)
 
     for layer1, layer2 in nx.utils.pairwise(layers):
