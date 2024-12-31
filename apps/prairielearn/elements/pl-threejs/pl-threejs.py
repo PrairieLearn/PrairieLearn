@@ -134,10 +134,8 @@ def get_objects(element, data):
                 position = position.tolist()
             else:
                 raise ValueError()
-        except Exception as err:
-            raise Exception(
-                f'attribute "position" must have format [x, y, z]: {p:s}'
-            ) from err
+        except Exception:
+            raise Exception(f'attribute "position" must have format [x, y, z]: {p:s}')
         # - orientation (and format)
         orientation = get_orientation(child, "orientation", "format")
         # - scale
@@ -613,10 +611,10 @@ def get_orientation(element, name_orientation, name_format):
                 return np.roll((qx * qy * qz).elements, -1).tolist()
             else:
                 raise ValueError()
-        except Exception as err:
+        except Exception:
             raise Exception(
                 f'attribute "{name_orientation:s}" with format "{name_format:s}" must be a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]": {s:s}'
-            ) from err
+            )
     elif f == "quaternion":
         try:
             q = np.array(json.loads(s), dtype=np.float64)
@@ -624,18 +622,18 @@ def get_orientation(element, name_orientation, name_format):
                 return q.tolist()
             else:
                 raise ValueError()
-        except Exception as err:
+        except Exception:
             raise Exception(
                 f'attribute "{name_orientation:s}" with format "{name_format:s}" must be a unit quaternion with format "[x, y, z, w]": {s:s}'
-            ) from err
+            )
     elif f == "matrix":
         try:
             R = np.array(json.loads(s), dtype=np.float64)
             return np.roll(pyquaternion.Quaternion(matrix=R).elements, -1).tolist()
-        except Exception as err:
+        except Exception:
             raise Exception(
                 f'attribute "{name_orientation:s}" with format "{name_format:s}" must be a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]": {s:s}'
-            ) from err
+            )
     elif f == "axisangle":
         try:
             q = np.array(json.loads(s), dtype=np.float64)
@@ -650,10 +648,10 @@ def get_orientation(element, name_orientation, name_format):
                     raise ValueError()
             else:
                 raise ValueError()
-        except Exception as err:
+        except Exception:
             raise Exception(
                 f'attribute "{name_orientation:s}" with format "{name_format:s}" must have format "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees: {s:s}'
-            ) from err
+            )
     else:
         raise Exception(
             f'attribute "{name_format:s}" must be "rpy", "quaternion", "matrix", or "axisangle": {f:s}'
@@ -673,7 +671,7 @@ def get_position(element, name_position, default=[0, 0, 0], must_be_nonzero=Fals
                 return p.tolist()
         else:
             raise ValueError()
-    except Exception as err:
+    except Exception:
         raise Exception(
             f'attribute "{name_position:s}" must have format "[x, y, z]": {s:s}'
-        ) from err
+        )
