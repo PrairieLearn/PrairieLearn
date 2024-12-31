@@ -1,11 +1,5 @@
 # @prairielearn/bind-mount
 
-## 1.1.0
-
-### Patch Changes
-
-- XXX: Convert from a CJS module to an ESM module
-
 ## 1.0.7
 
 ### Patch Changes
