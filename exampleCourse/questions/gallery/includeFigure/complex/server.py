@@ -1,12 +1,12 @@
 import io
 import random
 
-import matplotlib as ml
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 import sympy as sym
 
-ml.rcParams["text.usetex"] = True
+mpl.rcParams["text.usetex"] = True
 
 
 def func(x, a, b, c):

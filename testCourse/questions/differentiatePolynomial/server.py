@@ -1,4 +1,4 @@
-import numpy
+import numpy as np
 import sympy
 
 
@@ -7,10 +7,10 @@ def generate(data):
     x = sympy.symbols("x")
 
     # Randomize the degree
-    degree = numpy.random.random_integers(1, 5)
+    degree = np.random.random_integers(1, 5)
 
     # Randomize the coefficients (make sure the leading coefficient is non-zero)
-    coeffs = numpy.random.random_integers(-9, 9, degree + 1)
+    coeffs = np.random.random_integers(-9, 9, degree + 1)
     if coeffs[0] == 0:
         coeffs[0] = 1
 

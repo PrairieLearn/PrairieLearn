@@ -1,7 +1,7 @@
 import pprint
 
 import lxml.html
-import pandas
+import pandas as pd
 import prairielearn as pl
 
 NO_HIGHLIGHT_DEFAULT = False
@@ -26,7 +26,7 @@ COPY_CODE_BUTTON_DEFAULT = False
 SHOW_LINE_NUMBERS_DEFAULT = False
 
 
-def prepare(element_html: str, data: pl.QuestionData) -> None:
+def prepare(element_html: str, _data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(
         element,
@@ -72,10 +72,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     # Using a passthrough for "compact", as the attribute had to be renamed
     try:
         compact_default = pl.get_boolean_attrib(element, "compact", COMPACT_DEFAULT)
-    except Exception:
-        raise Exception(
-            'Attribute name "compact" is deprecated, use "compact-sequences" instead.'
-        )
+    except Exception as err:
+        msg = 'Attribute name "compact" is deprecated, use "compact-sequences" instead.'
+        raise DeprecationWarning(msg) from err
 
     compact = pl.get_boolean_attrib(element, "compact-sequences", compact_default)
 
@@ -90,20 +89,19 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     )
 
     if varname not in data["params"]:
-        raise KeyError(
-            f'Could not find {varname} in params. Please make sure to set params-name="{varname}" in the element.'
-        )
+        msg = f'Could not find {varname} in params. Please make sure to set params-name="{varname}" in the element.'
+        raise KeyError(msg)
 
     var_out = pl.from_json(data["params"][varname])
 
     # Passthrough legacy support for pl-dataframe
-    if isinstance(var_out, pandas.DataFrame) and not force_text:
+    if isinstance(var_out, pd.DataFrame) and not force_text:
         return (
             f'<pl-dataframe params-name="{varname}" show-header="{show_header}" show-index="{show_index}" '
             f'show-dimensions="{show_dimensions}" show-python="false"></pl-dataframe>'
         )
     # Support pprint for complex data types
-    elif isinstance(var_out, (dict, list)):
+    elif isinstance(var_out, dict | list):
         var_string = pprint.pformat(
             var_out,
             indent=indent,

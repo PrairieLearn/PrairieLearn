@@ -1,6 +1,6 @@
 import base64
 import hashlib
-import os
+from pathlib import Path
 
 import chevron
 import lxml.html
@@ -23,9 +23,7 @@ ALLOW_BLANK_DEFAULT = False
 
 
 def get_answer_name(file_name: str) -> str:
-    return "_file_editor_{0}".format(
-        hashlib.sha1(file_name.encode("utf-8")).hexdigest()
-    )
+    return "_file_editor_{}".format(hashlib.sha1(file_name.encode("utf-8")).hexdigest())
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -55,14 +53,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if "_required_file_names" not in data["params"]:
         data["params"]["_required_file_names"] = []
     elif file_name in data["params"]["_required_file_names"]:
-        raise Exception("There is more than one file editor with the same file name.")
+        msg = "There is more than one file editor with the same file name."
+        raise ValueError(msg)
     data["params"]["_required_file_names"].append(file_name)
 
-    if source_file_name is not None:
-        if element.text is not None and not str(element.text).isspace():
-            raise Exception(
-                'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
-            )
+    if (
+        source_file_name is not None
+        and element.text is not None
+        and not str(element.text).isspace()
+    ):
+        msg = 'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
+        raise ValueError(msg)
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -119,13 +120,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if source_file_name is not None:
         if directory == "serverFilesCourse":
-            directory = data["options"]["server_files_course_path"]
+            directory = Path(data["options"]["server_files_course_path"])
         elif directory == "clientFilesCourse":
-            directory = data["options"]["client_files_course_path"]
+            directory = Path(data["options"]["client_files_course_path"])
         else:
-            directory = os.path.join(data["options"]["question_path"], directory)
-        file_path = os.path.join(directory, source_file_name)
-        with open(file_path, "r", encoding="utf-8") as f:
+            directory = Path(data["options"]["question_path"]) / directory
+        file_path = directory / source_file_name
+        with open(file_path, encoding="utf-8") as f:
             text_display = f.read()
     else:
         text_display = "" if element.text is None else str(element.text)
@@ -145,7 +146,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     else:
         html_params["current_file_contents"] = html_params["original_file_contents"]
 
-    with open("pl-file-editor.mustache", "r", encoding="utf-8") as f:
+    with open("pl-file-editor.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
 
 

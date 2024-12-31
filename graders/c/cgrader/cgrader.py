@@ -1,5 +1,3 @@
-#! /usr/bin/python3
-
 import json
 import os
 import pathlib
@@ -9,7 +7,7 @@ import subprocess
 import tempfile
 from typing import Literal
 
-import lxml.etree as ET
+import lxml.etree as et
 
 CODEBASE = "/grade/student"
 DATAFILE = "/grade/data/data.json"
@@ -63,7 +61,7 @@ could also mean that scanf does not support the input provided
 """
 
 
-class UngradableException(Exception):
+class UngradableError(Exception):
     def __init__(self):
         pass
 
@@ -74,7 +72,7 @@ class CGrader:
             self.data = json.load(file)
         self.compiler = compiler
 
-    def run_command(self, command, input=None, sandboxed=True, timeout=None, env=None):
+    def run_command(self, command, input=None, sandboxed=True, timeout=None, env=None):  # noqa: A002
         if isinstance(command, str):
             command = shlex.split(command)
         if sandboxed:
@@ -95,12 +93,12 @@ class CGrader:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
-        except Exception:
+        except Exception:  # noqa: BLE001
             return ""
-        out = None
+        out = ""
         tostr = ""
-        if input is not None and not isinstance(input, (bytes, bytearray)):
-            input = str(input).encode("utf-8")
+        if input is not None and not isinstance(input, bytes | bytearray):
+            input = str(input).encode("utf-8")  # noqa: A001
         try:
             proc.communicate(input=input, timeout=timeout)[0]
         except subprocess.TimeoutExpired:
@@ -111,9 +109,10 @@ class CGrader:
                 out = proc.communicate(timeout=timeout)[0]
             except subprocess.TimeoutExpired:
                 tostr = TIMEOUT_MESSAGE
-            finally:
-                out = out.decode("utf-8", "backslashreplace") if out else ""
-                return out + tostr
+
+            if out:
+                out = out.decode("utf-8", "backslashreplace")
+        return out + tostr
 
     def compile_file(
         self,
@@ -164,19 +163,19 @@ class CGrader:
                 sandboxed=False,
             )
             # Identify references to functions intended to disable sanitizers from object file
-            if os.path.isfile(obj_file):
+            if obj_file.is_file():
                 # These primitives are checked in the .i file (the
                 # preprocessed C file), which will have any #define
                 # and #include primitives already expanded and
                 # comments removed
                 found_primitives = None
                 preprocessed_file = pathlib.Path(std_c_file).with_suffix(".i")
-                if not os.path.isfile(preprocessed_file):
+                if not preprocessed_file.is_file():
                     preprocessed_file = pathlib.Path(std_c_file).with_suffix(".ii")
-                if not os.path.isfile(preprocessed_file):
+                if not preprocessed_file.is_file():
                     preprocessed_file = pathlib.Path(std_c_file).with_suffix(".mi")
-                if os.path.isfile(preprocessed_file):
-                    with open(preprocessed_file, "r") as f:
+                if preprocessed_file.is_file():
+                    with open(preprocessed_file) as f:
                         preprocessed_text = f.read()
                         found_primitives = {
                             s for s in INVALID_PRIMITIVES if s in preprocessed_text
@@ -187,7 +186,7 @@ class CGrader:
                         + ", ".join(found_primitives)
                         + "\033[0m"
                     )
-                    os.unlink(obj_file)
+                    obj_file.unlink()
                 # nm -j will list any references to global symbols in
                 # the object file, either from function definitions or
                 # function calls.
@@ -203,13 +202,13 @@ class CGrader:
                         + ", ".join(found_symbols)
                         + "\033[0m"
                     )
-                    os.unlink(obj_file)
+                    obj_file.unlink()
                 if objcopy_args:
                     self.run_command(
                         ["objcopy", obj_file] + objcopy_args, sandboxed=False
                     )
 
-        if all(os.path.isfile(obj) for obj in std_obj_files):
+        if all(pathlib.Path(obj).is_file() for obj in std_obj_files):
             # Add new C files that maybe overwrite some existing functions.
             for added_c_file in add_c_file:
                 obj_file = pathlib.Path(added_c_file).with_suffix(".o")
@@ -220,12 +219,12 @@ class CGrader:
                 objs.append(obj_file)
 
         if ungradable_if_failed and not all(
-            os.path.isfile(f) for f in objs + std_obj_files
+            pathlib.Path(f).is_file() for f in objs + std_obj_files
         ):
             self.result["message"] += (
                 f"Compilation errors, please fix and try again.\n\n{out}\n"
             )
-            raise UngradableException()
+            raise UngradableError
         if out and add_warning_result_msg:
             self.result["message"] += f"Compilation warnings:\n\n{out}\n"
         if exec_file:
@@ -293,13 +292,13 @@ class CGrader:
             sandboxed=False,
         )
 
-        if os.path.isfile(exec_file):
+        if pathlib.Path(exec_file).is_file():
             self.change_mode(exec_file, "755")
         elif ungradable_if_failed:
             self.result["message"] += (
                 f"Linker errors, please fix and try again.\n\n{out}\n"
             )
-            raise UngradableException()
+            raise UngradableError
         if out and add_warning_result_msg:
             self.result["message"] += f"Linker warnings:\n\n{out}\n"
         return out
@@ -345,9 +344,9 @@ class CGrader:
             objcopy_args=objcopy_args,
         )
         success = (
-            os.path.isfile(exec_file)
+            pathlib.Path(exec_file).is_file()
             if exec_file
-            else all(os.path.isfile(f) for f in objects)
+            else all(pathlib.Path(f).is_file() for f in objects)
         )
         return self.add_test_result(
             name,
@@ -358,11 +357,11 @@ class CGrader:
         )
 
     def change_mode(self, file, mode="744", change_parent=True):
-        file = os.path.abspath(file)
+        file = pathlib.Path(file).resolve()
         self.run_command(["chmod", mode, file], sandboxed=False)
-        parent = os.path.dirname(file)
+        parent = pathlib.Path(file).parent
         # Ensure that all users can resolve the path name
-        if change_parent and parent and not os.path.samefile(file, parent):
+        if change_parent and parent and not pathlib.Path.samefile(file, parent):
             self.change_mode(parent, "a+x")
 
     def test_send_in_check_out(self, *args, **kwargs):
@@ -373,7 +372,7 @@ class CGrader:
     def test_run(
         self,
         command,
-        input=None,
+        input=None,  # noqa: A002
         exp_output=None,
         must_match_all_outputs: OutputMatchingOption | bool = "any",
         reject_output=None,
@@ -394,13 +393,13 @@ class CGrader:
             args = list(map(str, args))
 
         if name is None and input is not None:
-            name = 'Test with input "%s"' % " ".join(input.splitlines())
+            name = 'Test with input "{}"'.format(" ".join(input.splitlines()))
         elif name is None and args is not None:
-            name = 'Test with arguments "%s"' % " ".join(args)
+            name = 'Test with arguments "{}"'.format(" ".join(args))
         elif name is None and isinstance(command, list):
-            name = "Test command: %s" % command[0]
+            name = f"Test command: {command[0]}"
         elif name is None:
-            name = "Test command: %s" % command
+            name = f"Test command: {command}"
 
         if exp_output is None:
             exp_output = []
@@ -531,7 +530,7 @@ class CGrader:
         field=None,
         images=None,
     ):
-        if not isinstance(points, (int, float)):
+        if not isinstance(points, int | float):
             points = max_points if points else 0.0
         test = {
             "name": name,
@@ -584,7 +583,7 @@ class CGrader:
         env["TEMP"] = "/tmp"
 
         log_file_dir = tempfile.mkdtemp()
-        log_file = os.path.join(log_file_dir, "tests.xml")
+        log_file = pathlib.Path(log_file_dir) / "tests.xml"
         env["CK_XML_LOG_FILE_NAME"] = log_file
 
         if sandboxed:
@@ -613,8 +612,8 @@ class CGrader:
             " - " if use_unit_test_id and (use_suite_title or use_case_name) else ""
         )
         try:
-            with open(log_file, "r", errors="backslashreplace") as log:
-                tree = ET.parse(log, parser=ET.XMLParser())
+            with open(log_file, errors="backslashreplace") as log:
+                tree = et.parse(log, parser=et.XMLParser())
             for suite in tree.getroot().findall("{*}suite"):
                 suite_title = suite.findtext("{*}title") if use_suite_title else ""
                 for test in suite.findall("{*}test"):
@@ -631,25 +630,26 @@ class CGrader:
                         points=result == "success",
                         output=test.findtext("{*}message"),
                     )
-        except FileNotFoundError:
+        except FileNotFoundError as e:
             self.result["message"] += (
                 "Test suite log file not found. Consult the instructor.\n"
             )
-            raise UngradableException()
-        except ET.ParseError as e:
+            raise UngradableError from e
+        except et.ParseError as e:
             self.result["message"] += f"Error parsing test suite log.\n\n{e}\n"
-            raise UngradableException()
+            raise UngradableError from e
 
     def save_results(self):
         if self.result["max_points"] > 0:
             self.result["score"] = self.result["points"] / self.result["max_points"]
         if "partial_scores" in self.result:
-            for field, ps in self.result["partial_scores"].items():
+            for _field, ps in self.result["partial_scores"].items():
                 ps["score"] = ps["points"] / ps["max_points"]
 
-        if not os.path.exists("/grade/results"):
-            os.makedirs("/grade/results")
-        with open("/grade/results/results.json", "w") as resfile:
+        results_dir = pathlib.Path("/") / "grade" / "results"
+        if not results_dir.exists():
+            results_dir.mkdir(parents=True)
+        with open(results_dir / "results.json", "w") as resfile:
             json.dump(self.result, resfile)
 
     def start(self):
@@ -682,7 +682,7 @@ class CGrader:
 
         try:
             self.tests()
-        except UngradableException:
+        except UngradableError:
             self.result["gradable"] = False
         finally:
             self.save_results()
@@ -693,7 +693,7 @@ class CGrader:
 
 class CPPGrader(CGrader):
     def __init__(self, compiler="g++"):
-        super(CPPGrader, self).__init__(compiler)
+        super().__init__(compiler)
 
 
 if __name__ == "__main__":

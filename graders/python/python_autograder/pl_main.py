@@ -2,7 +2,7 @@ import json
 import os
 import traceback
 from collections import defaultdict
-from os.path import join
+from pathlib import Path
 from unittest import TestLoader
 
 from pl_result import PLTestResult
@@ -20,20 +20,20 @@ def add_files(results):
 
     for test in results:
         test["files"] = test.get("files", [])
-        image_fname = join(base_dir, "image_" + test["name"] + ".png")
-        if os.path.exists(image_fname):
-            with open(image_fname, "r") as content_file:
+        image_fname = Path(base_dir) / "image_" + test["name"] + ".png"
+        if image_fname.exists():
+            with open(image_fname) as content_file:
                 imgsrc = content_file.read()
             if "images" not in test:
                 test["images"] = []
             test["images"].append(imgsrc)
-            os.remove(image_fname)
-        feedback_fname = join(base_dir, "feedback_" + test["filename"] + ".txt")
-        if os.path.exists(feedback_fname):
-            with open(feedback_fname, "r", encoding="utf-8") as content_file:
+            image_fname.unlink()
+        feedback_fname = Path(base_dir) / "feedback_" + test["filename"] + ".txt"
+        if feedback_fname.exists():
+            with open(feedback_fname, encoding="utf-8") as content_file:
                 text_feedback = content_file.read()
             test["message"] = text_feedback
-            os.remove(feedback_fname)
+            feedback_fname.unlink()
 
 
 if __name__ == "__main__":
@@ -44,14 +44,15 @@ if __name__ == "__main__":
         # Read the output filename from a file, and then delete it
         # We could do this via command-line arg but there's a chance of
         # a student picking it up by calling `ps` for example.
-        with open(join(filenames_dir, OUTPUT_FILE), "r") as output_f:
+        output_file = Path(filenames_dir) / OUTPUT_FILE
+        with open(output_file) as output_f:
             output_fname = output_f.read()
-        os.remove(join(filenames_dir, OUTPUT_FILE))
+        output_file.unlink()
 
-        from filenames.test import Test as test_case
+        from filenames.test import Test as TestCase
 
         # Update the working directory so tests may access local files
-        prev_wd = os.getcwd()
+        prev_wd = Path.getcwd()
         os.chdir(base_dir)
 
         # Run the tests with our custom setup
@@ -60,8 +61,8 @@ if __name__ == "__main__":
         format_errors = []
         gradable = True
         has_test_cases = False
-        for i in range(test_case.total_iters):
-            suite = loader.loadTestsFromTestCase(test_case)
+        for _ in range(TestCase.total_iters):
+            suite = loader.loadTestsFromTestCase(TestCase)
             has_test_cases = suite.countTestCases() > 0
             result = PLTestResult()
             suite.run(result)
@@ -91,7 +92,7 @@ if __name__ == "__main__":
             results = all_results[0]
 
         # Compile total number of points
-        max_points = test_case.get_total_points()
+        max_points = TestCase.get_total_points()
         earned_points = sum([test["points"] for test in results])
         score = (
             0 if float(max_points) == 0 else float(earned_points) / float(max_points)
@@ -101,12 +102,11 @@ if __name__ == "__main__":
         add_files(results)
 
         text_output = ""
-        if os.path.exists(join(base_dir, "output.txt")):
-            with open(
-                join(base_dir, "output.txt"), "r", encoding="utf-8"
-            ) as content_file:
+        output_txt = Path(base_dir) / "output.txt"
+        if output_txt.exists():
+            with open(output_txt, encoding="utf-8") as content_file:
                 text_output = content_file.read()
-            os.remove(join(base_dir, "output.txt"))
+            output_txt.unlink()
 
         # Assemble final grading results
         grading_result = {}
@@ -128,15 +128,15 @@ if __name__ == "__main__":
         # Save images
         grading_result["images"] = []
         all_img_num = 0
-        for img_iter in range(test_case.total_iters):
+        for img_iter in range(TestCase.total_iters):
             img_num = 0
             while True:
                 # Save each image as image_{test iteration}_{image number}
-                img_in = join(base_dir, f"image_{img_iter}_{img_num}.png")
-                if os.path.exists(img_in):
-                    with open(img_in, "r") as content_file:
+                img_in = Path(base_dir) / f"image_{img_iter}_{img_num}.png"
+                if img_in.exists():
+                    with open(img_in) as content_file:
                         grading_result["images"].append(content_file.read())
-                    os.remove(img_in)
+                    img_in.unlink()
                     img_num += 1
                     all_img_num += 1
                 else:

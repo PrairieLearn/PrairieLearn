@@ -1,4 +1,4 @@
-def fib(n):
+def fib(_n):
     with open("tmp.txt", "w") as f:
         while True:
             f.write("x" * 1024 + "\n")

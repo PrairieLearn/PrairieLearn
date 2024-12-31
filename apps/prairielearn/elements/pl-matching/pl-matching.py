@@ -42,9 +42,8 @@ def get_counter(i, counter_type):
     elif counter_type == "full-text":
         return ""
     else:
-        raise Exception(
-            f'Illegal counter-type in pl-matching element: "{counter_type}" should be "decimal", "lower-alpha", "upper-alpha", or "full-text".'
-        )
+        msg = f'Illegal counter-type in pl-matching element: "{counter_type}" should be "decimal", "lower-alpha", "upper-alpha", or "full-text".'
+        raise ValueError(msg)
 
 
 def legal_answer(answer, options):
@@ -75,7 +74,7 @@ def partition(data, pred):
     return (yes, no)
 
 
-def categorize_matches(element, data):
+def categorize_matches(element, _data):
     """Get provided statements and options from the pl-matching element"""
     options = {}
     statements = []
@@ -140,9 +139,8 @@ def prepare(element_html, data):
     if pl.get_boolean_attrib(
         element, "allow-blank", ALLOW_BLANK_DEFAULT
     ) and not pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT):
-        raise ValueError(
-            'The attribute "allow-blank" cannot be enabled when blank dropdown entries are disabled by the "blank" attribute.'
-        )
+        msg = 'The attribute "allow-blank" cannot be enabled when blank dropdown entries are disabled by the "blank" attribute.'
+        raise ValueError(msg)
 
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
@@ -169,16 +167,15 @@ def prepare(element_html, data):
             indices = random.sample(range(len(statements)), number_statements)
             statements = [statements[i] for i in sorted(indices)]
         # Otherwise, just use all the statements as-is.
+    # Shuffle or sample the statements.
+    elif number_statements < len(statements):
+        statements = random.sample(statements, number_statements)
     else:
-        # Shuffle or sample the statements.
-        if number_statements < len(statements):
-            statements = random.sample(statements, number_statements)
-        else:
-            random.shuffle(statements)
+        random.shuffle(statements)
 
     # Organize the list of options to use.
     # First, select all the options associated with the chosen statements.
-    needed_options_keys = set((s["match"] for s in statements))
+    needed_options_keys = {s["match"] for s in statements}
     needed_options, distractors = partition(
         options, lambda opt: opt["name"] in needed_options_keys
     )
@@ -197,7 +194,7 @@ def prepare(element_html, data):
             # Add a sample of the distractors.
             distractor_sample = random.sample(distractors, more_needed)
             needed_options_keys = needed_options_keys.union(
-                set(o["name"] for o in distractor_sample)
+                {o["name"] for o in distractor_sample}
             )
             needed_options = [o for o in options if o["name"] in needed_options_keys]
         options = needed_options
@@ -229,7 +226,7 @@ def prepare(element_html, data):
     # Build the options to display to the student.
     chosen_option_names = []
     display_options = []
-    for i, opt in enumerate(options):
+    for opt in options:
         keyed_option = {"key": opt["name"], "html": opt["html"]}
         display_options.append(keyed_option)
         chosen_option_names.append(opt["name"])
@@ -281,11 +278,10 @@ def parse(element_html, data):
             )
         elif student_answer is None:
             data["format_errors"][expected_html_name] = "No answer was submitted."
-        else:
-            if not legal_answer(student_answer, display_options):
-                data["format_errors"][expected_html_name] = (
-                    "The submitted answer is invalid."
-                )
+        elif not legal_answer(student_answer, display_options):
+            data["format_errors"][expected_html_name] = (
+                "The submitted answer is invalid."
+            )
 
 
 def render(element_html, data):
@@ -365,10 +361,10 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            except Exception as err:
+                raise ValueError("invalid score" + score) from err
 
-        with open("pl-matching.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matching.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
@@ -428,10 +424,10 @@ def render(element_html, data):
                         html_params["partial"] = math.floor(score * 100)
                     else:
                         html_params["incorrect"] = True
-                except Exception:
-                    raise ValueError("invalid score" + score)
+                except Exception as err:
+                    raise ValueError("invalid score" + score) from err
 
-            with open("pl-matching.mustache", "r", encoding="utf-8") as f:
+            with open("pl-matching.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
     elif data["panel"] == "answer":
         if not pl.get_boolean_attrib(
@@ -466,7 +462,7 @@ def render(element_html, data):
                 "counter_type": counter_type,
                 "no_counters": no_counters,
             }
-            with open("pl-matching.mustache", "r", encoding="utf-8") as f:
+            with open("pl-matching.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
 
     return html

@@ -33,7 +33,7 @@ def get_options(element, data):
     return options
 
 
-def get_solution(element, data):
+def get_solution(element, _data):
     solution = []
     for child in element:
         if child.tag in ["pl-answer"]:
@@ -44,7 +44,8 @@ def get_solution(element, data):
                 solution.append(child_html)
 
     if len(solution) > 1:
-        raise Exception("Multiple correct answers were set")
+        msg = "Multiple correct answers were set"
+        raise RuntimeError(msg)
 
     return solution[0]
 
@@ -60,9 +61,8 @@ def prepare(element_html, data):
     if pl.get_boolean_attrib(
         element, "allow-blank", ALLOW_BLANK_DEFAULT
     ) and not pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT):
-        raise ValueError(
-            'The attribute "allow-blank" cannot be enabled when blank dropdown entries are disabled by the "blank" attribute.'
-        )
+        msg = 'The attribute "allow-blank" cannot be enabled when blank dropdown entries are disabled by the "blank" attribute.'
+        raise ValueError(msg)
 
     answers_name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, answers_name)
@@ -71,9 +71,8 @@ def prepare(element_html, data):
     data["correct_answers"][answers_name] = get_solution(element, data)
 
     if data["correct_answers"][answers_name] is None:
-        raise Exception(
-            "Correct answer not defined for answers-name: %s" % answers_name
-        )
+        msg = f"Correct answer not defined for answers-name: {answers_name}"
+        raise ValueError(msg)
 
 
 def render(element_html, data):
@@ -95,8 +94,8 @@ def render(element_html, data):
                 correct = True
             else:
                 correct = False
-        except Exception:
-            raise ValueError("invalid score" + score)
+        except Exception as err:
+            raise ValueError("invalid score" + score) from err
 
     if data["panel"] == "question":
         if sort_type == SortTypes.FIXED.name:
@@ -138,7 +137,7 @@ def render(element_html, data):
             "correct-answer": data["correct_answers"][answers_name],
         }
 
-    with open("pl-dropdown.mustache", "r", encoding="utf-8") as f:
+    with open("pl-dropdown.mustache", encoding="utf-8") as f:
         html = chevron.render(f, html_params).strip()
     return html
 
@@ -207,4 +206,5 @@ def test(element_html, data):
         data["raw_submitted_answers"][answers_name] = "INVALID STRING"
         data["format_errors"][answers_name] = "format error message"
     else:
-        raise Exception("invalid result: %s" % data["test_type"])
+        msg = "invalid result: {}".format(data["test_type"])
+        raise RuntimeError(msg)

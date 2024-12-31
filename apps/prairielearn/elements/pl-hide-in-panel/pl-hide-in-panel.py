@@ -6,7 +6,7 @@ SUBMISSION_DEFAULT = False
 ANSWER_DEFAULT = False
 
 
-def prepare(element_html: str, data: pl.QuestionData) -> None:
+def prepare(element_html: str, _data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
     optional_attribs = ["question", "submission", "answer"]

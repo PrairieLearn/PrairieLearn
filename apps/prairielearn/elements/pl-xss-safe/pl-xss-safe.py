@@ -1,5 +1,5 @@
 import base64
-import os
+from pathlib import Path
 
 import chevron
 import lxml.html
@@ -11,7 +11,7 @@ CONTENTS_DEFAULT = None
 LANGUAGE_DEFAULT = "html"
 
 
-def prepare(element_html: str, data: pl.QuestionData) -> None:
+def prepare(element_html: str, _data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
     optional_attribs = [
@@ -35,12 +35,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         source_file_name is not None
         and (submitted_file_name is not None or contents is not None)
     ) or (submitted_file_name is not None and contents is not None):
-        raise Exception(
-            'Only one of the attributes "source-file-name", "submitted-file-name" and "contents" can be used.'
-        )
+        msg = 'Only one of the attributes "source-file-name", "submitted-file-name" and "contents" can be used.'
+        raise ValueError(msg)
 
     if language not in ["html", "markdown"]:
-        raise Exception('Attribute "language" must be either "html" or "markdown".')
+        msg = 'Attribute "language" must be either "html" or "markdown".'
+        raise ValueError(msg)
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -55,11 +55,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if source_file_name is not None:
         base_path = data["options"]["question_path"]
-        file_path = os.path.join(base_path, source_file_name)
-        if not os.path.exists(file_path):
-            raise Exception(f'Unknown file path: "{file_path}".')
+        file_path = Path(base_path) / source_file_name
+        if not file_path.exists():
+            msg = f'Unknown file path: "{file_path}".'
+            raise RuntimeError(msg)
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             contents = f.read()
 
     elif submitted_file_name is not None:
@@ -82,5 +83,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
     }
 
-    with open("pl-xss-safe.mustache", "r", encoding="utf-8") as f:
+    with open("pl-xss-safe.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

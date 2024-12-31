@@ -68,15 +68,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         pl.check_answers_names(data, name)
 
     if is_answer_name_required(gradable) and name is None:
-        raise RuntimeError(
-            f"Missing required attribute {ATTR_ANSWER_NAME} (Required when `{ATTR_GRADABLE}` is set)"
-        )
+        msg = f"Missing required attribute {ATTR_ANSWER_NAME} (Required when `{ATTR_GRADABLE}` is set)"
+        raise RuntimeError(msg)
 
     source_dir = pl.get_string_attrib(element, ATTR_SOURCE_DIRECTORY, ".")
     if source_dir not in SOURCE_DIRECTORY_MAP:
-        raise RuntimeError(
-            f"{source_dir=} must be one of {list(SOURCE_DIRECTORY_MAP.keys())}"
-        )
+        msg = f"{source_dir=} must be one of {list(SOURCE_DIRECTORY_MAP.keys())}"
+        raise RuntimeError(msg)
 
 
 def load_file_content(element: HtmlElement, data: pl.QuestionData) -> str:
@@ -87,7 +85,8 @@ def load_file_content(element: HtmlElement, data: pl.QuestionData) -> str:
         element, ATTR_SOURCE_FILE_NAME
     )
     if not file.exists():
-        raise RuntimeError(f"Unknown file path: {file}")
+        msg = f"Unknown file path: {file}"
+        raise RuntimeError(msg)
     return file.read_text(encoding="utf-8")
 
 
@@ -105,7 +104,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     matrix = f"{gradable=} {fresh=} {panel=} {source_available=}"
 
     if is_source_file_name_required(panel, gradable, fresh) and not source_available:
-        raise RuntimeError(f"Missing required attribute `{ATTR_SOURCE_FILE_NAME}`")
+        msg = f"Missing required attribute `{ATTR_SOURCE_FILE_NAME}`"
+        raise RuntimeError(msg)
 
     initial_content: str = empty_diagram
 
@@ -130,32 +130,29 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                         initial_content = empty_diagram
                 else:  # submission
                     initial_content = data["submitted_answers"][drawing_name]
-            else:  # not gradable
-                if fresh and source_available:
-                    initial_content = load_file_content(element, data)
-                else:
-                    raise unreachable
+            elif fresh and source_available:
+                initial_content = load_file_content(element, data)
+            else:
+                raise unreachable
 
         case "answer":
             if gradable:
                 show_widget = False
-            else:  # not gradable
-                if fresh and source_available:
-                    initial_content = load_file_content(element, data)
-                else:
-                    raise unreachable
+            elif fresh and source_available:
+                initial_content = load_file_content(element, data)
+            else:
+                raise unreachable
 
         case "submission":
             if gradable:
                 if fresh:
                     raise unreachable
-                else:  # submission
-                    initial_content = data["submitted_answers"][drawing_name]
-            else:  # not gradable
-                if fresh and source_available:
-                    initial_content = load_file_content(element, data)
-                else:
-                    raise unreachable
+                # submission
+                initial_content = data["submitted_answers"][drawing_name]
+            elif fresh and source_available:
+                initial_content = load_file_content(element, data)
+            else:
+                raise unreachable
 
         case panel:
             assert_never(panel)
@@ -181,7 +178,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "show_widget": show_widget,
     }
 
-    with open("pl-excalidraw.mustache", "r", encoding="utf-8") as template:
+    with open("pl-excalidraw.mustache", encoding="utf-8") as template:
         return chevron.render(template, render_data)
 
 
@@ -194,7 +191,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             # Check the submissions if available
             if drawing_name in data["submitted_answers"]:
                 json.loads(data["submitted_answers"][drawing_name])
-        except Exception as e:
+        except ValueError as e:
             if drawing_name not in data["format_errors"]:
                 data["format_errors"][drawing_name] = []
             data["format_errors"][drawing_name].append(

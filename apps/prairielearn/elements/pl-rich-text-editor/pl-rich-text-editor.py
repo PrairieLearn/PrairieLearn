@@ -1,7 +1,7 @@
 import base64
 import hashlib
-import os
 from enum import Enum
+from pathlib import Path
 
 import chevron
 import lxml.html
@@ -28,7 +28,7 @@ MARKDOWN_SHORTCUTS_DEFAULT = True
 
 
 def get_answer_name(file_name):
-    return "_rich_text_editor_{0}".format(
+    return "_rich_text_editor_{}".format(
         hashlib.sha1(file_name.encode("utf-8")).hexdigest()
     )
 
@@ -62,15 +62,19 @@ def prepare(element_html, data):
     if "_required_file_names" not in data["params"]:
         data["params"]["_required_file_names"] = []
     elif file_name in data["params"]["_required_file_names"]:
-        raise Exception("There is more than one file editor with the same file name.")
+        msg = "There is more than one file editor with the same file name."
+        raise RuntimeError(msg)
     data["params"]["_required_file_names"].append(file_name)
 
-    if source_file_name is not None:
-        if element_text and not str(element_text).isspace():
-            raise Exception(
-                'Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.'
-                + element_text
-            )
+    if (
+        source_file_name is not None
+        and element_text
+        and not str(element_text).isspace()
+    ):
+        raise ValueError(
+            'Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.'
+            + element_text
+        )
 
 
 def render(element_html, data):
@@ -119,14 +123,14 @@ def render(element_html, data):
             elif directory == "clientFilesCourse":
                 directory = data["options"]["client_files_course_path"]
             else:
-                directory = os.path.join(data["options"]["question_path"], directory)
-            file_path = os.path.join(directory, source_file_name)
-            text_display = open(file_path).read()
+                directory = Path(data["options"]["question_path"]) / directory
+            file_path = Path(directory) / source_file_name
+            with open(file_path) as f:
+                text_display = f.read()
+        elif element_text is not None:
+            text_display = str(element_text)
         else:
-            if element_text is not None:
-                text_display = str(element_text)
-            else:
-                text_display = ""
+            text_display = ""
 
         html_params["original_file_contents"] = base64.b64encode(
             text_display.encode("UTF-8").strip()
@@ -144,13 +148,13 @@ def render(element_html, data):
             html_params["current_file_contents"] = html_params["original_file_contents"]
 
         html_params["question"] = data["panel"] == "question"
-        with open("pl-rich-text-editor.mustache", "r", encoding="utf-8") as f:
+        with open("pl-rich-text-editor.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
         html = ""
     else:
-        raise Exception("Invalid panel type: " + data["panel"])
+        raise ValueError("Invalid panel type: " + data["panel"])
 
     return html
 

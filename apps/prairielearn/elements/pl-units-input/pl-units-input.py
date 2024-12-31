@@ -1,6 +1,6 @@
 from enum import Enum
 from random import choice
-from typing import Any, Optional
+from typing import Any
 
 import chevron
 import lxml.html
@@ -85,9 +85,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     if allow_blank and not pl.has_attrib(element, "blank-value"):
-        raise ValueError(
-            'Attribute "blank-value" must be provided if "allow-blank" is enabled.'
-        )
+        msg = 'Attribute "blank-value" must be provided if "allow-blank" is enabled.'
+        raise ValueError(msg)
 
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
@@ -98,16 +97,16 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if correct_answer_html is not None:
         if name in data["correct_answers"]:
-            raise ValueError(f"Duplicate correct_answers variable name: {name}")
+            msg = f"Duplicate correct_answers variable name: {name}"
+            raise ValueError(msg)
         data["correct_answers"][name] = correct_answer_html
 
     correct_answer = data["correct_answers"].get(name)
 
     digits = pl.get_integer_attrib(element, "digits", None)
     if digits is not None and digits <= 0:
-        raise ValueError(
-            f"Number of digits specified must be at least 1, not {digits}."
-        )
+        msg = f"Number of digits specified must be at least 1, not {digits}."
+        raise ValueError(msg)
 
     ureg = pl.get_unit_registry()
 
@@ -120,40 +119,39 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         parsed_atol = ureg.Quantity(get_with_units_atol(element, data, ureg))
         if parsed_atol.dimensionless:
             atol = pl.get_string_attrib(element, "atol")
-            raise ValueError(
-                f'"atol" attribute "{atol}" must have units in "with-units" grading.'
-            )
+            msg = f'"atol" attribute "{atol}" must have units in "with-units" grading.'
+            raise ValueError(msg)
 
         if pl.has_attrib(element, "comparison"):
-            raise ValueError(
-                'Cannot set attribute "comparison" in "with-units" grading.'
-            )
+            msg = 'Cannot set attribute "comparison" in "with-units" grading.'
+            raise ValueError(msg)
 
         partial_credit = pl.get_float_attrib(
             element, "magnitude-partial-credit", MAGNITUDE_PARTIAL_CREDIT_DEFAULT
         )
 
         if partial_credit is not None and not (0.0 <= partial_credit <= 1.0):
-            raise ValueError(
-                f'"magnitude-partial-credit" must be in the range [0.0, 1.0], not {partial_credit}'
-            )
+            msg = f'"magnitude-partial-credit" must be in the range [0.0, 1.0], not {partial_credit}'
+            raise ValueError(msg)
 
         correct_answer_parsed = ureg.Quantity(correct_answer)
 
         if (correct_answer_parsed is not None) and (
             not correct_answer_parsed.check(parsed_atol.dimensionality)
         ):
-            raise ValueError(
+            msg = (
                 f"Correct answer has dimensionality: {correct_answer_parsed.dimensionality}, "
                 f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
             )
+            raise ValueError(msg)
     else:
         atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
         parsed_atol = ureg.Quantity(atol)
         if not parsed_atol.dimensionless:
-            raise ValueError(
+            msg = (
                 f'"atol" attribute "{atol}" may only have units in with-units grading.'
             )
+            raise ValueError(msg)
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -184,7 +182,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     parse_error = data["format_errors"].get(name)
     ureg = pl.get_unit_registry()
 
-    with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+    with open(UNITS_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         template = f.read()
 
     if data["panel"] == "question":
@@ -256,7 +254,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if parse_error is None and name in data["submitted_answers"]:
             a_sub = data["submitted_answers"].get(name, None)
             if a_sub is None:
-                raise ValueError("submitted answer is None")
+                msg = "submitted answer is None"
+                raise ValueError(msg)
 
             a_sub_parsed = ureg.Quantity(a_sub)
             html_params["a_sub"] = prepare_display_string(
@@ -269,11 +268,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
 
-        else:
-            if raw_submitted_answer is not None:
-                html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                    raw_submitted_answer
-                )
+        elif raw_submitted_answer is not None:
+            html_params["raw_submitted_answer"] = pl.escape_unicode_string(
+                raw_submitted_answer
+            )
 
         if show_score and score is not None:
             score_type, score_value = pl.determine_score_params(score)
@@ -351,7 +349,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     except errors.UndefinedUnitError:  # incorrect units
         data["format_errors"][name] = "Invalid unit."
         return
-    except Exception as e:
+    except Exception as e:  # noqa: BLE001
         data["format_errors"][name] = f"Exception when parsing submission: {e}"
         return
 
@@ -488,7 +486,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
 
 def prepare_display_string(
-    quantity: Any, custom_format: Optional[str], grading_mode: GradingMode
+    quantity: Any, custom_format: str | None, grading_mode: GradingMode
 ) -> str:
     if grading_mode is GradingMode.ONLY_UNITS:
         return str(quantity.units)

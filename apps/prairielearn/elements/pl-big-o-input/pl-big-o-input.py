@@ -70,11 +70,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
 
     if len(variables) > 1:
-        raise ValueError(f"Only one variable is supported for question {name}")
+        msg = f"Only one variable is supported for question {name}"
+        raise ValueError(msg)
 
     if pl.has_attrib(element, "correct-answer"):
         if name in data["correct_answers"]:
-            raise ValueError(f"duplicate correct_answers variable name: {name}")
+            msg = f"duplicate correct_answers variable name: {name}"
+            raise ValueError(msg)
 
         a_true = pl.get_string_attrib(element, "correct-answer")
         # Validate that the answer can be parsed before storing
@@ -82,8 +84,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             phs.convert_string_to_sympy(
                 a_true, variables, allow_complex=False, allow_trig_functions=False
             )
-        except phs.BaseSympyError:
-            raise ValueError(f'Parsing correct answer "{a_true}" for "{name}" failed.')
+        except phs.BaseSympyError as err:
+            msg = f'Parsing correct answer "{a_true}" for "{name}" failed.'
+            raise ValueError(msg) from err
 
         data["correct_answers"][name] = a_true
 
@@ -119,7 +122,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "constants": constants,
     }
 
-    with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+    with open(BIG_O_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         template = f.read()
 
     info = chevron.render(template, info_params).strip()
@@ -141,12 +144,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     elif name not in data["submitted_answers"]:
         missing_input = True
         parse_error = None
-    else:
-        # Use the existing format text in the invalid popup and render it
-        if parse_error is not None:
-            parse_error += chevron.render(
-                template, {"format_error": True, "format_string": info}
-            ).strip()
+    # Use the existing format text in the invalid popup and render it
+    elif parse_error is not None:
+        parse_error += chevron.render(
+            template, {"format_error": True, "format_string": info}
+        ).strip()
 
     # Next, get some attributes we will use in multiple places
     raw_submitted_answer = data["raw_submitted_answers"].get(name)

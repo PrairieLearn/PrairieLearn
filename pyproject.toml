@@ -4,7 +4,7 @@ include = [
     "./apps/prairielearn/python/*.py",
     "./graders/**/*.py",
     "./exampleCourse/**/*.py",
-    "./testCourse/**/*.py"
+    "./testCourse/**/*.py",
 ]
 exclude = [
     # These files are intentionally not parseable as Python.
@@ -13,12 +13,80 @@ exclude = [
     # Files related to the Python autograder will often intentionally appear
     # broken in isolation. We'll exclude these files from linting.
     "exampleCourse/questions/**/tests/initial_code.py",
-    "exampleCourse/questions/**/tests/trailing_code.py"
+    "exampleCourse/questions/**/tests/trailing_code.py",
 ]
 target-version = "py310"
 
 [tool.ruff.lint]
-extend-select = ["I"]
+select = [
+    # pycodestyle
+    "E",
+    "W",
+    # Pyflakes
+    "F",
+    # isort
+    "I",
+    # pep8-naming
+    "N",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # pyupgrade
+    "UP",
+    # flake8-2020
+    "YTT",
+    # flake8-async
+    "ASYNC",
+    # flake8-blind-except
+    "BLE",
+    # flake8-bandit
+    "S",
+    # flake8-builtins
+    "A",
+    # flake8-comprehensions
+    "C4",
+    # flake8-errmsg
+    "EM",
+    # flake8-executable
+    "EXE",
+    # flake8-future-annotation
+    "FA",
+    # flake8-import-conventions
+    "ICN",
+    # flake8-pie
+    "PIE",
+    # flake8-quotes
+    "Q",
+    # flake8-raise
+    "RSE",
+    # flake8-return
+    "RET",
+    # flake8-unused-arguments
+    "ARG",
+    # pandas-vet
+    "PD",
+    # pylint
+    "PLR", "PLC", "PLE", "PLW",
+    "TRY",
+    "FLY",
+    "NPY",
+    "PTH"
+    ]
+ignore = [
+    # Ignore line length errors
+    "E501",
+    # Allow for ternary operators
+    "SIM108",
+    # Allow assert statements, and some security issues are disabled
+    "S311", "S102", "S101", "S324", "S320", "S108", "S603", "S605", "S607",
+    "RET503", "RET504", "RET505",
+    "PD901",
+    "PLR0912", "PLR0915", "PLR0913", "PLR0911", "PLR2004", "PLR1714",
+    "NPY002",
+    "TRY300", "TRY301",
+    "PTH123"
+]
 
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
@@ -31,18 +99,20 @@ extend-select = ["I"]
 "exampleCourse/questions/**/tests/setup_code.py" = ["F401", "F821"]
 "exampleCourse/questions/**/tests/leading_code.py" = ["F401", "F821", "F841"]
 "exampleCourse/questions/**/tests/ans.py" = ["F821"]
-# Questions commonly use "ambiguous variable names" to represent specific
-# concepts, e.g. I for an identity matrix. We'll allow these to be used in
-# questions.
-"exampleCourse/questions/**/*.py" = ["E741"]
+"exampleCourse/questions/demo/autograder/ansiOutput/server.py" = ["PLE2513"]
+# Ignore uppercase variables and function parameters (e.g. G for a graph)
+"exampleCourse/questions/**/*.py" = ["N806", "N803"]
+"testCourse/questions/**/*.py" = []
 # The zygote specifically uses imports in strange places to facilitate the
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
-
+# Ignore uppercase function parameters (e.g. G for a graph)
+"apps/prairielearn/elements/**/*.py" = ["N803"]
+"apps/prairielearn/python/*.py" = ["N803"]
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
-    "./exampleCourse/questions/demo/autograder/python/square/tests/initial_code.py"
+    "./exampleCourse/questions/demo/autograder/python/square/tests/initial_code.py",
 ]
 
 [tool.pyright]
@@ -103,7 +173,4 @@ reportUnnecessaryTypeIgnoreComment = "error"
 
 [tool.pytest.ini_options]
 addopts = "--cov=apps"
-testpaths = [
-    "apps/prairielearn/elements",
-    "apps/prairielearn/python",
-]
+testpaths = ["apps/prairielearn/elements", "apps/prairielearn/python"]

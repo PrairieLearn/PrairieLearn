@@ -2,7 +2,7 @@ import chevron
 import prairielearn as pl
 
 
-def render(element_html: str, data: pl.QuestionData) -> str:
+def render(_element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] != "question":
         return ""
 
@@ -10,17 +10,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     workspace_url = data["options"].get("workspace_url")
 
     if workspace_url is None:
-        raise ValueError(
-            "Workspace URL not found. Did you remember to set the workspace options?"
-        )
+        msg = "Workspace URL not found. Did you remember to set the workspace options?"
+        raise ValueError(msg)
 
     # Create and return html
     html_params = {"workspace_url": workspace_url}
-    with open("pl-workspace.mustache", "r", encoding="utf-8") as f:
+    with open("pl-workspace.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
 
 
-def parse(element_html: str, data: pl.QuestionData) -> None:
+def parse(_element_html: str, data: pl.QuestionData) -> None:
     workspace_required_file_names = data["params"].get(
         "_workspace_required_file_names", []
     )

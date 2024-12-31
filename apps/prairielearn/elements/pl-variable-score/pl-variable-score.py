@@ -6,7 +6,7 @@ import prairielearn as pl
 use_pl_variable_score = False
 
 
-def prepare(element_html, data):
+def prepare(element_html, _data):
     if not use_pl_variable_score:
         return
 
@@ -33,7 +33,7 @@ def render(element_html, data):
 
     try:
         score = float(score)
-    except Exception:
+    except ValueError:
         return (
             '<span class="badge badge-danger">ERROR: invalid score: '
             + score

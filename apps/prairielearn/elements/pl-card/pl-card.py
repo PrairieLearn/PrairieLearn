@@ -15,7 +15,7 @@ IMG_BOTTOM_ALT_DEFAULT = ""
 WIDTH_DEFAULT = "auto"
 
 
-def prepare(element_html: str, data: pl.QuestionData) -> None:
+def prepare(element_html: str, _data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
     optional_attribs = [
@@ -32,7 +32,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
-def render(element_html: str, data: pl.QuestionData) -> str:
+def render(element_html: str, _data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
 
     header = pl.get_string_attrib(element, "header", HEADER_DEFAULT)
@@ -50,7 +50,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     width = pl.get_string_attrib(element, "width", WIDTH_DEFAULT)
 
     if width not in {"25%", "50%", "75%", "auto"}:
-        raise ValueError(f"Invalid width: {width}.")
+        msg = f"Invalid width: {width}."
+        raise ValueError(msg)
 
     content = pl.inner_html(element)
 
@@ -72,5 +73,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "title": title  # https://github.com/noahmorrison/chevron/issues/117
         }
 
-    with open("pl-card.mustache", "r", encoding="utf-8") as f:
+    with open("pl-card.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

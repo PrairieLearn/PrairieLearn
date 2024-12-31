@@ -4,7 +4,7 @@ import pathlib
 import random
 from collections import Counter
 from enum import Enum
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 import chevron
 import lxml.etree
@@ -37,7 +37,7 @@ class AnswerTuple(NamedTuple):
     idx: int
     correct: bool
     html: str
-    feedback: Optional[str]
+    feedback: str | None
     score: float
 
 
@@ -88,12 +88,12 @@ def categorize_options(
             score = pl.get_float_attrib(child, "score", default_score)
 
             if not (SCORE_INCORRECT_DEFAULT <= score <= SCORE_CORRECT_DEFAULT):
-                raise ValueError(
-                    f"Score {score} is invalid, must be in the range [0.0, 1.0]."
-                )
+                msg = f"Score {score} is invalid, must be in the range [0.0, 1.0]."
+                raise ValueError(msg)
 
             if correct and score != SCORE_CORRECT_DEFAULT:
-                raise ValueError("Correct answers must give full credit.")
+                msg = "Correct answers must give full credit."
+                raise ValueError(msg)
 
             answer_tuple = AnswerTuple(
                 next(index_counter), correct, child_html, child_feedback, score
@@ -107,9 +107,8 @@ def categorize_options(
             continue
 
         else:
-            raise ValueError(
-                f"Tags inside of pl-multiple-choice must be pl-answer, not '{child.tag}'."
-            )
+            msg = f"Tags inside of pl-multiple-choice must be pl-answer, not '{child.tag}'."
+            raise ValueError(msg)
 
     # NOTE Reading in answer choices from JSON is deprecated.
     file_path = pl.get_string_attrib(element, "external-json", EXTERNAL_JSON_DEFAULT)
@@ -128,7 +127,7 @@ def categorize_options(
                 file_path
             )
 
-        with open(json_file, mode="r", encoding="utf-8") as f:
+        with open(json_file, encoding="utf-8") as f:
             obj = json.load(f)
 
         for text in obj.get(correct_attrib, []):
@@ -164,19 +163,16 @@ def get_nota_aota_attrib(
             element, name, default != AotaNotaType.FALSE
         )
         return AotaNotaType.RANDOM if boolean_value else AotaNotaType.FALSE
-    except Exception:
-        pass
-
-    return pl.get_enum_attrib(element, name, AotaNotaType, default)
+    except ValueError:
+        return pl.get_enum_attrib(element, name, AotaNotaType, default)
 
 
 def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
     """Gets order type in a backwards-compatible way. New display overwrites old."""
 
     if pl.has_attrib(element, "fixed-order") and pl.has_attrib(element, "order"):
-        raise ValueError(
-            'Setting answer choice order should be done with the "order" attribute.'
-        )
+        msg = 'Setting answer choice order should be done with the "order" attribute.'
+        raise ValueError(msg)
 
     fixed_order = pl.get_boolean_attrib(element, "fixed-order", FIXED_ORDER_DEFAULT)
     order_type_default = OrderType.FIXED if fixed_order else OrderType.RANDOM
@@ -188,9 +184,10 @@ def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
     """Gets display type in a backwards-compatible way. New display overwrites old."""
 
     if pl.has_attrib(element, "inline") and pl.has_attrib(element, "display"):
-        raise ValueError(
+        msg = (
             'Setting answer choice display should be done with the "display" attribute.'
         )
+        raise ValueError(msg)
 
     inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
     display_default = DisplayType.INLINE if inline else DisplayType.BLOCK
@@ -202,11 +199,11 @@ def prepare_answers_to_display(
     correct_answers: list[AnswerTuple],
     incorrect_answers: list[AnswerTuple],
     *,
-    number_answers: Optional[int],
+    number_answers: int | None,
     aota: AotaNotaType,
     nota: AotaNotaType,
-    aota_feedback: Optional[str],
-    nota_feedback: Optional[str],
+    aota_feedback: str | None,
+    nota_feedback: str | None,
     order_type: OrderType,
     display_type: DisplayType,
 ) -> list[AnswerTuple]:
@@ -216,15 +213,13 @@ def prepare_answers_to_display(
 
     if aota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM} and len_correct < 2:
         # To prevent confusion on the client side
-        raise ValueError(
-            'pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set to "correct" or "random"'
-        )
+        msg = 'pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set to "correct" or "random"'
+        raise ValueError(msg)
 
     if nota in {AotaNotaType.INCORRECT, AotaNotaType.FALSE} and len_correct < 1:
         # There must be a correct answer
-        raise ValueError(
-            'pl-multiple-choice element must have at least 1 correct answer, or add none-of-the-above set to "correct" or "random"'
-        )
+        msg = 'pl-multiple-choice element must have at least 1 correct answer, or add none-of-the-above set to "correct" or "random"'
+        raise ValueError(msg)
 
     if len_correct == 0:
         # If no correct option is provided, 'None of the above' will always
@@ -264,17 +259,15 @@ def prepare_answers_to_display(
         number_answers = min(len_correct, number_answers)
         # raise exception when the *provided* number-answers can't be satisfied
         if set_num_answers and number_answers < expected_num_answers:
-            raise ValueError(
-                f"Not enough correct choices for all-of-the-above. Need {expected_num_answers - number_answers} more"
-            )
+            msg = f"Not enough correct choices for all-of-the-above. Need {expected_num_answers - number_answers} more"
+            raise ValueError(msg)
     if nota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM}:
         # if nota correct
         number_answers = min(len_incorrect, number_answers)
         # raise exception when the *provided* number-answers can't be satisfied
         if set_num_answers and number_answers < expected_num_answers:
-            raise ValueError(
-                f"Not enough incorrect choices for none-of-the-above. Need {expected_num_answers - number_answers} more"
-            )
+            msg = f"Not enough incorrect choices for none-of-the-above. Need {expected_num_answers - number_answers} more"
+            raise ValueError(msg)
     # this is the case for
     # - 'All of the above' is incorrect
     # - 'None of the above' is incorrect
@@ -313,9 +306,8 @@ def prepare_answers_to_display(
         number_incorrect = max(0, number_answers - number_correct)
 
     if not (0 <= number_incorrect <= len_incorrect):
-        raise ValueError(
-            f"INTERNAL ERROR: number_incorrect: ({number_incorrect}, {len_incorrect}, {number_answers})"
-        )
+        msg = f"INTERNAL ERROR: number_incorrect: ({number_incorrect}, {len_incorrect}, {number_answers})"
+        raise ValueError(msg)
 
     # 2. Sample correct and incorrect choices
     sampled_correct = random.sample(correct_answers, number_correct)
@@ -405,18 +397,18 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if get_display_type(element) is not DisplayType.DROPDOWN:
         if pl.has_attrib(element, "size"):
-            raise ValueError(
-                f'"size" attribute on "{name}" should only be set if display is "dropdown".'
-            )
+            msg = f'"size" attribute on "{name}" should only be set if display is "dropdown".'
+            raise ValueError(msg)
         if pl.has_attrib(element, "placeholder"):
-            raise ValueError(
-                f'"placeholder" attribute on "{name}" should only be set if display is "dropdown".'
-            )
+            msg = f'"placeholder" attribute on "{name}" should only be set if display is "dropdown".'
+            raise ValueError(msg)
 
     if name in data["params"]:
-        raise ValueError(f"Duplicate params variable name: {name}")
+        msg = f"Duplicate params variable name: {name}"
+        raise ValueError(msg)
     if name in data["correct_answers"]:
-        raise ValueError(f"Duplicate correct_answers variable name: {name}")
+        msg = f"Duplicate correct_answers variable name: {name}"
+        raise ValueError(msg)
 
     correct_answers, incorrect_answers = categorize_options(element, data)
 
@@ -431,9 +423,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     duplicates = [item for item, count in choices_dict.items() if count > 1]
 
     if duplicates:
-        raise ValueError(
-            f"pl-multiple-choice element has duplicate choices: {duplicates}"
-        )
+        msg = f"pl-multiple-choice element has duplicate choices: {duplicates}"
+        raise ValueError(msg)
 
     # Get answers to display to student, using a helper function to separate out logic.
     answers_to_display = prepare_answers_to_display(
@@ -461,7 +452,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     # NOTE: The saved correct answer is just the one that gets shown to the student, it is not used for grading
     display_answers = []
     correct_answer = None
-    for key, answer in zip(pl.iter_keys(), answers_to_display):
+    for key, answer in zip(pl.iter_keys(), answers_to_display, strict=False):
         keyed_answer = {
             "key": key,
             "html": answer.html,
@@ -549,7 +540,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -585,14 +576,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 html_params["display_feedback"] = True
                 html_params["feedback"] = feedback
 
-        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
         correct_answer = data["correct_answers"].get(name, None)
 
         if correct_answer is None:
-            raise ValueError("No true answer.")
+            msg = "No true answer."
+            raise ValueError(msg)
 
         html_params = {
             "answer": True,
@@ -605,7 +597,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
             ),
         }
-        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     assert_never(data["panel"])
@@ -643,7 +635,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         else SCORE_INCORRECT_DEFAULT
     )
 
-    def grade_multiple_choice(submitted_key: str) -> tuple[float, Optional[str]]:
+    def grade_multiple_choice(submitted_key: str) -> tuple[float, str | None]:
         for option in data["params"][name]:
             if option["key"] == submitted_key:
                 return option.get("score", default_score), option.get("feedback", "")
@@ -660,7 +652,8 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
     correct_key = data["correct_answers"].get(name, {"key": None}).get("key", None)
     if correct_key is None:
-        raise ValueError("could not determine correct_key")
+        msg = "could not determine correct_key"
+        raise ValueError(msg)
 
     number_answers = len(data["params"][name])
     all_keys = list(it.islice(pl.iter_keys(), number_answers))

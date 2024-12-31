@@ -3,7 +3,7 @@ import io
 import os
 import urllib
 from functools import wraps
-from os.path import join, splitext
+from pathlib import Path
 
 import pygments
 from code_feedback import Feedback
@@ -13,11 +13,11 @@ from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer
 
 
-class DoNotRun(Exception):
+class DoNotRunError(Exception):
     pass
 
 
-class GradingSkipped(Exception):
+class GradingSkipped(Exception):  # noqa: N818
     pass
 
 
@@ -53,7 +53,7 @@ def save_plot(plt, iternum=0):
         imgsrc = "data:image/png;base64," + urllib.parse.quote(
             base64.b64encode(imgdata.read())
         )
-        with open(join(base_dir, f"image_{iternum}_{i - 1}.png"), "w") as f:
+        with open(Path(base_dir) / f"image_{iternum}_{i - 1}.png", "w") as f:
             f.write(imgsrc)
 
 
@@ -76,13 +76,13 @@ def name(name):
 
     def decorator(f):
         @wraps(f)
-        def wrapped(Test_instance):
+        def wrapped(test_instance):
             Feedback.set_name(f.__name__)
-            if Test_instance.total_iters > 1 and getattr(
-                Test_instance, "print_iteration_prefix", True
+            if test_instance.total_iters > 1 and getattr(
+                test_instance, "print_iteration_prefix", True
             ):
-                Feedback.add_iteration_prefix(Test_instance.iter_num)
-            f(Test_instance)
+                Feedback.add_iteration_prefix(test_instance.iter_num)
+            f(test_instance)
 
         wrapped.__dict__["name"] = name
         return wrapped
@@ -96,12 +96,12 @@ def not_repeated(f):
     """
 
     @wraps(f)
-    def wrapped(Test_instance):
-        if Test_instance.iter_num > 0:
-            raise DoNotRun
+    def wrapped(test_instance):
+        if test_instance.iter_num > 0:
+            raise DoNotRunError
         Feedback.clear_iteration_prefix()
-        Test_instance.print_iteration_prefix = False
-        f(Test_instance)
+        test_instance.print_iteration_prefix = False
+        f(test_instance)
 
     wrapped.__repeated__ = False
     return wrapped
@@ -111,10 +111,9 @@ def print_student_code(st_code="user_code.py", ipynb_key="#grade", as_feedback=T
     """
     Print the student's code, with syntax highlighting.
     """
-
-    with open(st_code, "r", encoding="utf-8") as f:
-        filename, extension = splitext(st_code)
-        if extension == ".ipynb":
+    st_code_path = Path(st_code)
+    with open(st_code_path, encoding="utf-8") as f:
+        if st_code_path.suffix == ".ipynb":
             contents = extract_ipynb_contents(f, ipynb_key).strip()
             lines = filter(
                 lambda item: not item.strip().startswith(ipynb_key),

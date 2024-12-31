@@ -24,9 +24,11 @@ import subprocess
 import sys
 import time
 import types
+from collections.abc import Iterable, Sequence
 from importlib.abc import MetaPathFinder
 from inspect import signature
-from typing import Any, Iterable, Sequence
+from pathlib import Path
+from typing import Any
 
 import question_phases
 import zygote_utils as zu
@@ -46,18 +48,18 @@ drop_privileges = os.environ.get("DROP_PRIVILEGES", False)
 # fontconfig should respect these environment variables; other tools should as
 # well. If they don't, special cases can be added below.
 if drop_privileges:
-    config_home_path = "/tmp/xdg_config"
-    cache_home_path = "/tmp/xdg_cache"
+    config_home_path = Path("/tmp/xdg_config")
+    cache_home_path = Path("/tmp/xdg_cache")
 
     oldmask = os.umask(000)
 
-    os.makedirs(config_home_path, mode=0o777, exist_ok=True)
-    os.makedirs(cache_home_path, mode=0o777, exist_ok=True)
+    config_home_path.mkdir(mode=0o777, exist_ok=True)
+    cache_home_path.mkdir(mode=0o777, exist_ok=True)
 
     os.umask(oldmask)
 
-    os.environ["XDG_CONFIG_HOME"] = config_home_path
-    os.environ["XDG_CACHE_HOME"] = cache_home_path
+    os.environ["XDG_CONFIG_HOME"] = config_home_path.resolve().as_posix()
+    os.environ["XDG_CACHE_HOME"] = cache_home_path.resolve().as_posix()
 
 # Silence matplotlib's FontManager logs; these can cause trouble with our
 # expectation that code execution doesn't log anything to stdout/stderr.
@@ -66,22 +68,22 @@ import logging
 logging.getLogger("matplotlib.font_manager").disabled = True
 
 # Pre-load commonly used modules
-sys.path.insert(0, os.path.abspath("../question-servers/freeformPythonLib"))
+sys.path.insert(0, Path("../question-servers/freeformPythonLib").resolve().as_posix())
 import html
 import math
 import random
 
 import chevron
 import lxml.html
-import matplotlib
+import matplotlib as mpl
 import matplotlib.font_manager
 import nltk
-import numpy
+import numpy as np
 import pint
 import prairielearn
 import sklearn
 
-matplotlib.use("PDF")
+mpl.use("PDF")
 
 # Construct initial unit registry to create initial cache file.
 prairielearn.get_unit_registry()
@@ -106,15 +108,15 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
     def find_spec(
         self,
         fullname: str,
-        path: Sequence[str] | None,
-        target: types.ModuleType | None = None,
+        _path: Sequence[str] | None,
+        _target: types.ModuleType | None = None,
     ):
         if any(
             fullname == module or fullname.startswith(module + ".")
             for module in self.forbidden_modules
         ):
-            raise ImportError(f'module "{fullname}" is not allowed.')
-        return None
+            msg = f'module "{fullname}" is not allowed.'
+            raise ImportError(msg)
 
 
 # We want to initialize the Faker seed, but only if faker is loaded
@@ -125,8 +127,8 @@ class FakerInitializeMetaPathFinder(MetaPathFinder):
     def find_spec(
         self,
         fullname: str,
-        path: Sequence[str] | None,
-        target: types.ModuleType | None = None,
+        _path: Sequence[str] | None,
+        _target: types.ModuleType | None = None,
     ):
         if fullname == "faker" or fullname.startswith("faker."):
             # Once this initialization is done we no longer need this meta path finder
@@ -134,7 +136,6 @@ class FakerInitializeMetaPathFinder(MetaPathFinder):
             from faker import Faker
 
             Faker.seed(self.seed)
-        return None
 
 
 # This function tries to convert a python object to valid JSON. If an exception
@@ -235,6 +236,7 @@ def worker_loop() -> None:
                     # the call information.
                     input=json.dumps(args[0]),
                     encoding="utf-8",
+                    check=False,
                 )
 
                 # Proxy any output from the subprocess back to the caller.
@@ -261,7 +263,7 @@ def worker_loop() -> None:
             if type(args[-1]) is dict and not seeded:  # noqa: E721
                 variant_seed = args[-1].get("variant_seed", None)
                 random.seed(variant_seed)
-                numpy.random.seed(variant_seed)
+                np.random.seed(variant_seed)
                 sys.meta_path.insert(0, FakerInitializeMetaPathFinder(variant_seed))
                 seeded = True
 
@@ -302,7 +304,7 @@ def worker_loop() -> None:
 
                 continue
 
-            file_path = os.path.join(cwd, file + ".py")
+            file_path = os.path.join(cwd, file + ".py")  # noqa: PTH118
 
             mod = mod_cache.get(file_path)
             if mod is None:
@@ -398,7 +400,7 @@ def worker_loop() -> None:
 worker_pid = 0
 
 
-def terminate_worker(signum: int, stack: types.FrameType | None) -> None:
+def terminate_worker(_signum: int, _stack: types.FrameType | None) -> None:
     if worker_pid > 0:
         os.kill(worker_pid, signal.SIGKILL)
     os._exit(0)
@@ -456,9 +458,8 @@ with open(4, "w", encoding="utf-8") as exitf:
                         if any(
                             p.username() == "executor" for p in psutil.process_iter()
                         ):
-                            raise Exception(
-                                "found remaining processes belonging to executor user"
-                            )
+                            msg = "found remaining processes belonging to executor user"
+                            raise RuntimeError(msg)
 
                     # We'll need to write a confirmation message on file
                     # descriptor 4 so that PL knows that control was actually
@@ -468,11 +469,11 @@ with open(4, "w", encoding="utf-8") as exitf:
                     exitf.flush()
                 else:
                     # The worker did not exit gracefully
-                    raise Exception(
+                    raise RuntimeError(
                         "worker process exited unexpectedly with status %d" % status
                     )
             else:
                 # Something else happened that is weird
-                raise Exception(
+                raise RuntimeError(
                     "worker process exited unexpectedly with status %d" % status
                 )

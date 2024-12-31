@@ -39,11 +39,11 @@ def ansi_to_html(output: str | None) -> str | None:
         return None
     try:
         return conv.convert(output, full=False)
-    except Exception as e:
+    except (ValueError, RuntimeError) as e:
         return f"[Error converting ANSI to HTML: {e}]\n\n{output}"
 
 
-def prepare(element_html: str, data: pl.QuestionData) -> None:
+def prepare(element_html: str, _data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs: list[str] = []
     optional_attribs: list[str] = []
@@ -59,7 +59,7 @@ def round_value(value: float, digits: int = 2) -> str:
     return f"{value:.{digits}f}".rstrip("0").rstrip(".")
 
 
-def render(element_html: str, data: pl.QuestionData) -> str:
+def render(_element_html: str, data: pl.QuestionData) -> str:
     # Early-exit if not the submission panel
     if data["panel"] != "submission":
         return ""
@@ -185,5 +185,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     elif not grading_succeeded:
         html_params["message"] = ansi_to_html(feedback.get("message", None))
 
-    with open("pl-external-grader-results.mustache", "r", encoding="utf-8") as f:
+    with open("pl-external-grader-results.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

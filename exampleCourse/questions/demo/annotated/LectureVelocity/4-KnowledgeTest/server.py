@@ -1,11 +1,11 @@
 import io
 import random
 
-import matplotlib as ml
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 import numpy as np
 
-ml.rcParams["text.usetex"] = True
+mpl.rcParams["text.usetex"] = True
 plt.rcParams.update({"font.size": 14})
 
 
@@ -74,7 +74,7 @@ def generate(data):
         tag1 = "true"
         tag2 = "false"
 
-    for i, p in enumerate(points):
+    for p in points:
         if p > 1.3 * tmax:
             dic.append({"tag": tag1, "ans": str(p)})
         elif p < 0.7 * tmax:

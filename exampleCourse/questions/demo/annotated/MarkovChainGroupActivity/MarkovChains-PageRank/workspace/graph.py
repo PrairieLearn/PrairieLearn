@@ -43,7 +43,7 @@ def _draw_adj_matrix(
     return _render_graph(G, layout)
 
 
-def _draw_edge_inc_matrix(mat, mat_label, round_digits, layout="dot"):
+def _draw_edge_inc_matrix(mat, mat_label, _round_digits, layout="dot"):
     G = pygraphviz.AGraph(directed=True)
 
     for node in mat_label:
@@ -70,9 +70,8 @@ def draw_matrix(
     mat = mat.T
 
     if len(mat.shape) != 2:
-        raise Exception(
-            f"Input matrix has wrong dimensionality (gotten {len(mat.shape)}, expected 2)."
-        )
+        msg = f"Input matrix has wrong dimensionality (gotten {len(mat.shape)}, expected 2)."
+        raise TypeError(msg)
     if directed is None:
         if mat.shape[0] == mat.shape[1]:
             directed = not np.allclose(mat.T, mat)

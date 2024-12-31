@@ -79,7 +79,7 @@ problem_2_expected_ed_no_groups = [0, 0, 1, 0, 3, 2, 4, 6]
 
 def test_grade_dag():
     for submission, expected, expected_ed in zip(
-        problem_1_submissions, problem_1_expected, problem_1_expected_ed
+        problem_1_submissions, problem_1_expected, problem_1_expected_ed, strict=False
     ):
         assert grade_dag(submission, problem_1_dag, problem_1_groups) == (expected, 10)
         assert lcs_partial_credit(submission, problem_1_dag, {}) == expected_ed
@@ -89,6 +89,7 @@ def test_grade_dag():
         problem_2_expected,
         problem_2_expected_ed_no_groups,
         problem_2_expected_ed_groups,
+        strict=False,
     ):
         assert grade_dag(submission, problem_2_dag, problem_2_groups) == (expected, 7)
         assert (
@@ -141,11 +142,11 @@ problem_3_groups = {"1": None, "2": "g1", "3": "g1", "4": "g2", "5": "g2", "6": 
 def test_problem_validation():
     dag_to_nx(problem_1_dag, problem_1_groups)
     dag_to_nx(problem_2_dag, problem_2_groups)
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         dag_to_nx(problem_3_invalid_dag_1, problem_3_groups)
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         dag_to_nx(problem_3_invalid_dag_2, problem_3_groups)
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         dag_to_nx(problem_3_invalid_dag_3, problem_3_groups)
     dag_to_nx(problem_3_dag, problem_3_groups)
 

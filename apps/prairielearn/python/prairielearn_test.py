@@ -2,8 +2,9 @@ import itertools as it
 import json
 import math
 import string
+from collections.abc import Callable
 from enum import Enum
-from typing import Any, Callable, cast
+from typing import Any, cast
 
 import lxml.html
 import networkx as nx
@@ -150,7 +151,9 @@ def test_networkx_serialization(networkx_graph: Any) -> None:
     networkx_graph.graph["rankdir"] = "TB"
 
     # Add some data to test that it's retained
-    for i, (in_node, out_node, edge_data) in enumerate(networkx_graph.edges(data=True)):
+    for i, (_in_node, _out_node, edge_data) in enumerate(
+        networkx_graph.edges(data=True)
+    ):
         edge_data["weight"] = i
         edge_data["label"] = chr(ord("a") + i)
 
@@ -305,7 +308,7 @@ def test_get_enum_attrib(html_str: str, expected_result: DummyEnum) -> None:
 def test_get_enum_attrib_exceptions(html_str: str) -> None:
     element = lxml.html.fragment_fromstring(html_str)
 
-    with pytest.raises(Exception):
+    with pytest.raises(ValueError):
         pl.get_enum_attrib(element, "test-choice", DummyEnum)
 
 
@@ -379,7 +382,7 @@ def test_grade_answer_parametrized_key_error_blank(
     question_data["submitted_answers"] = {question_name: "True"}
 
     def grading_function(_: str) -> tuple[bool, str | None]:
-        decoy_dict: dict[str, str] = dict()
+        decoy_dict: dict[str, str] = {}
         decoy_dict["junk"]  # This is to throw a key error
         return (True, None)
 
@@ -387,8 +390,8 @@ def test_grade_answer_parametrized_key_error_blank(
         pl.grade_answer_parameterized(question_data, question_name, grading_function)
 
     # Empty out submitted answers
-    question_data["submitted_answers"] = dict()
-    question_data["format_errors"] = dict()
+    question_data["submitted_answers"] = {}
+    question_data["format_errors"] = {}
     pl.grade_answer_parameterized(question_data, question_name, grading_function)
 
     assert question_data["partial_scores"][question_name]["score"] == 0.0
@@ -403,7 +406,7 @@ def test_get_uuid() -> None:
 
     # Assert clauses have standard structure.
     assert len(clauses) == 5
-    assert [8, 4, 4, 4, 12] == list(map(len, clauses))
+    assert list(map(len, clauses)) == [8, 4, 4, 4, 12]
 
     # Assert that all characters are valid.
     seen_characters = set().union(*(clause for clause in clauses))

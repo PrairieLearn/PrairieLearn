@@ -31,7 +31,7 @@ PRESENTATION_TYPE_DEFAULT = "g"
 
 def convert_pandas_dtype_to_r(s: pd.Series) -> str:
     # Force series to avoid odd element-wise output
-    s.dtype
+    _ = s.dtype
 
     if pd.api.types.is_float_dtype(s):
         return "numeric"
@@ -66,7 +66,7 @@ def using_default_index(df: pd.DataFrame) -> bool:
     )
 
 
-def prepare(element_html: str, data: pl.QuestionData) -> None:
+def prepare(element_html: str, _data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(
         element,
@@ -113,20 +113,19 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     width = pl.get_integer_attrib(element, "width", WIDTH_DEFAULT)
 
     if varname not in data["params"]:
-        raise KeyError(
-            f'Could not find "{varname}" in params. Please double check the parameter name is spelled correctly.'
-        )
+        msg = f'Could not find "{varname}" in params. Please double check the parameter name is spelled correctly.'
+        raise KeyError(msg)
 
     if presentation_type not in VALID_PRESENTATION_TYPES:
-        raise ValueError(
-            f'Invalid presentation type "{presentation_type}", must be one of {VALID_PRESENTATION_TYPES}.'
-        )
+        msg = f'Invalid presentation type "{presentation_type}", must be one of {VALID_PRESENTATION_TYPES}.'
+        raise ValueError(msg)
 
     # Always assume that entry in params dict is serialized dataframe
     frame = pl.from_json(data["params"][varname])
 
     if not isinstance(frame, pd.DataFrame):
-        raise ValueError(f'Parameter name "{varname}" does not encode a dataframe.')
+        msg = f'Parameter name "{varname}" does not encode a dataframe.'
+        raise TypeError(msg)
 
     frame = cast(pd.DataFrame, frame)
 
@@ -158,7 +157,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         descriptors = frame.agg([get_dtype_function]).set_axis(
             ["dtype"], axis="index", copy=False
         )
-        other = descriptors.style.map(lambda v: "font-weight: bold;")  # type: ignore
+        other = descriptors.style.map(lambda _v: "font-weight: bold;")  # type: ignore
         frame_style.set_table_styles(
             [{"selector": ".foot_row0", "props": "border-top: 1px solid black;"}]
         )
@@ -190,5 +189,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if show_dimensions:
         html_params["num_rows"], html_params["num_cols"] = frame.shape
 
-    with open("pl-dataframe.mustache", "r", encoding="utf-8") as f:
+    with open("pl-dataframe.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

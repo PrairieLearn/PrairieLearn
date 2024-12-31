@@ -1,5 +1,5 @@
-import os
 from enum import Enum
+from pathlib import Path
 
 import lxml.html
 import prairielearn as pl
@@ -41,21 +41,19 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         file_directory = pl.get_string_attrib(element, "directory", DIRECTORY_DEFAULT)
 
         if file_directory not in DIRECTORY_PATH_DICT:
-            dict_keys = ", ".join(f'"{key}"' for key in DIRECTORY_PATH_DICT.keys())
-            raise ValueError(
-                f'Invalid directory choice "{file_directory}", must be one of: {dict_keys}.'
-            )
+            dict_keys = ", ".join(f'"{key}"' for key in DIRECTORY_PATH_DICT)
+            msg = f'Invalid directory choice "{file_directory}", must be one of: {dict_keys}.'
+            raise ValueError(msg)
 
         file_name = pl.get_string_attrib(element, "file-name")
-        file_path = os.path.join(
-            data["options"][DIRECTORY_PATH_DICT[file_directory]], file_name
+        file_path = (
+            Path(data["options"][DIRECTORY_PATH_DICT[file_directory]]) / file_name
         )
 
         # If file not found on server, raise error
-        if not os.path.isfile(file_path):
-            raise FileNotFoundError(
-                f'File "{file_name}" not found in directory "{file_directory}".'
-            )
+        if not file_path.is_file():
+            msg = f'File "{file_name}" not found in directory "{file_directory}".'
+            raise FileNotFoundError(msg)
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -85,9 +83,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     elif file_type is FileType.DYNAMIC:
         if pl.has_attrib(element, "directory"):
-            raise ValueError(
-                f'Attribute "directory" cannot be provided for type "{file_type}".'
-            )
+            msg = f'Attribute "directory" cannot be provided for type "{file_type}".'
+            raise ValueError(msg)
 
         base_url = data["options"]["client_files_question_dynamic_url"]
 
@@ -95,7 +92,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         assert_never(file_type)
 
     # Get full url
-    file_url = os.path.join(base_url, file_name)
+    file_url = Path(base_url) / file_name
 
     # Create and return html
     if force_download:

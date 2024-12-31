@@ -58,7 +58,7 @@ def check_attributes_rec(element):
             pl.check_attribs(element, required_attribs=[], optional_attribs=attributes)
         except Exception as e:
             print(f"Error in {name}: {e}")
-            raise e
+            raise
     for child in element:
         check_attributes_rec(child)
 
@@ -79,7 +79,8 @@ def prepare(element_html, data):
     if not prev:
         name = pl.get_string_attrib(element, "answers-name", None)
         if name is None:
-            raise Exception("answers-name is required if gradable mode is enabled")
+            msg = "answers-name is required if gradable mode is enabled"
+            raise ValueError(msg)
 
         n_id = 0
         n_control_elements = 0
@@ -91,9 +92,8 @@ def prepare(element_html, data):
             # Get all the objects in pl-drawing-answer
             if child.tag == "pl-drawing-answer":
                 if answer_child is not None:
-                    raise Exception(
-                        "You should have only one pl-drawing-answer inside a pl-drawing."
-                    )
+                    msg = "You should have only one pl-drawing-answer inside a pl-drawing."
+                    raise ValueError(msg)
                 draw_error_box = pl.get_boolean_attrib(
                     child, "draw-error-box", defaults.element_defaults["draw-error-box"]
                 )
@@ -101,9 +101,8 @@ def prepare(element_html, data):
             # Get all the objects in pl-drawing-initial
             if child.tag == "pl-drawing-initial":
                 if initial_child is not None:
-                    raise Exception(
-                        "You should have only one pl-drawing-initial inside a pl-drawing."
-                    )
+                    msg = "You should have only one pl-drawing-initial inside a pl-drawing."
+                    raise ValueError(msg)
                 initial_child = child
             # Get the width of the vector defined in the pl-drawing-button for pl-vector
             if child.tag == "pl-controls":
@@ -113,9 +112,10 @@ def prepare(element_html, data):
                         for buttons in groups:
                             if buttons.tag == "pl-drawing-button":
                                 type_name = buttons.attrib.get("type", None)
-                                if type_name == "pl-arc-vector-CCW":
-                                    type_name = "pl-arc-vector"
-                                elif type_name == "pl-arc-vector-CW":
+                                if (
+                                    type_name == "pl-arc-vector-CCW"
+                                    or type_name == "pl-arc-vector-CW"
+                                ):
                                     type_name = "pl-arc-vector"
                                 type_attribs = elements.get_attributes(type_name)
                                 if elements.should_validate_attributes(type_name):
@@ -125,15 +125,11 @@ def prepare(element_html, data):
                                         optional_attribs=type_attribs,
                                     )
                                 if buttons.attrib["type"] == "pl-vector":
-                                    if "width" in buttons.attrib:
-                                        w_button = buttons.attrib["width"]
-                                    else:
-                                        w_button = None
+                                    w_button = buttons.attrib.get("width", None)
 
         if answer_child is None:
-            raise Exception(
-                'You do not have any "pl-drawing-answer" inside pl-drawing where gradable=True. You should either specify the "pl-drawing-answer" if you want to grade objects, or make gradable=False'
-            )
+            msg = 'You do not have any "pl-drawing-answer" inside pl-drawing where gradable=True. You should either specify the "pl-drawing-answer" if you want to grade objects, or make gradable=False'
+            raise ValueError(msg)
 
         # Generate these in order so that answer elements are displayed on top of initial elements
         init = None
@@ -147,9 +143,8 @@ def prepare(element_html, data):
         for obj in ans:
             obj["graded"] = True
             obj["drawErrorBox"] = draw_error_box
-            if "objectDrawErrorBox" in obj:
-                if obj["objectDrawErrorBox"] is not None:
-                    obj["drawErrorBox"] = obj["objectDrawErrorBox"]
+            if "objectDrawErrorBox" in obj and obj["objectDrawErrorBox"] is not None:
+                obj["drawErrorBox"] = obj["objectDrawErrorBox"]
             # Check to see if consistent width for pl-vector is used for correct answer
             # and submitted answers that are added using the buttons
             if obj["gradingName"] == "vector":
@@ -158,10 +153,8 @@ def prepare(element_html, data):
                     and obj["width"] == defaults.drawing_defaults["force-width"]
                 ) or obj["width"] == float(w_button):
                     continue
-                else:
-                    raise Exception(
-                        "Width is not consistent! pl-vector in pl-drawing-answers needs to have the same width of pl-vector in pl-drawing-button."
-                    )
+                msg = "Width is not consistent! pl-vector in pl-drawing-answers needs to have the same width of pl-vector in pl-drawing-button."
+                raise RuntimeError(msg)
 
         # Combines all the objects in pl-drawing-answers and pl-drawing-initial
         # and saves in correct_answers
@@ -218,18 +211,20 @@ def render_controls(template, elem):
         return "unknown tag " + elem.tag
 
 
-def render_drawing_items(elem, curid=0, defaults={}):
+def render_drawing_items(elem, curid=0, defaults=None):
     # Convert a set of drawing items defined as html elements into an array of
     # objects that can be sent to mechanicsObjects.js
     # Some helpers to get attributes from elements.  If there is no default argument passed in,
     # it is assumed that the attribute must be present or else an error will be raised.  If a
     # default is passed, the attribute is optional.
 
+    if defaults is None:
+        defaults = {}
     objects = []
     for el in elem:
         if el.tag is lxml.etree.Comment:
             continue
-        elif el.tag == "pl-drawing-group":
+        if el.tag == "pl-drawing-group":
             if pl.get_boolean_attrib(el, "visible", True):
                 curid += 1
                 raw, _ = render_drawing_items(el, curid, {"groupid": curid})
@@ -243,7 +238,7 @@ def render_drawing_items(elem, curid=0, defaults={}):
                 objects.append(obj)
                 curid += 1
             else:
-                warnings.warn("No known tag type: " + el.tag)
+                warnings.warn("No known tag type: " + el.tag, stacklevel=2)
 
     return (objects, curid)
 
@@ -265,7 +260,7 @@ def render(element_html, data):
     for el in element:
         if el.tag is lxml.etree.Comment:
             continue
-        elif el.tag == "pl-controls" and not preview_mode:
+        if el.tag == "pl-controls" and not preview_mode:
             btn_markup = render_controls(template, el)
         elif el.tag == "pl-drawing-initial":
             init, _ = render_drawing_items(el)
@@ -276,9 +271,8 @@ def render(element_html, data):
     for obj in init:
         obj["graded"] = False
         obj["drawErrorBox"] = draw_error_box
-        if "objectDrawErrorBox" in obj:
-            if obj["objectDrawErrorBox"] is not None:
-                obj["drawErrorBox"] = obj["objectDrawErrorBox"]
+        if "objectDrawErrorBox" in obj and obj["objectDrawErrorBox"] is not None:
+            obj["drawErrorBox"] = obj["objectDrawErrorBox"]
 
     grid_size = pl.get_integer_attrib(
         element, "grid-size", defaults.element_defaults["grid-size"]
@@ -356,15 +350,14 @@ def render(element_html, data):
 
     if preview_mode:
         html_params["input_answer"] = json.dumps(init)
+    elif data["panel"] == "answer" and name in data["correct_answers"]:
+        html_params["input_answer"] = json.dumps(data["correct_answers"][name])
     else:
-        if data["panel"] == "answer" and name in data["correct_answers"]:
-            html_params["input_answer"] = json.dumps(data["correct_answers"][name])
-        else:
-            sub = []
-            if name in data["submitted_answers"]:
-                sub = data["submitted_answers"][name]
-            items = union_drawing_items(init, sub)
-            html_params["input_answer"] = json.dumps(items)
+        sub = []
+        if name in data["submitted_answers"]:
+            sub = data["submitted_answers"][name]
+        items = union_drawing_items(init, sub)
+        html_params["input_answer"] = json.dumps(items)
 
     # Grading feedback
     if data["panel"] == "submission":

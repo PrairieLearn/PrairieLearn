@@ -2,9 +2,10 @@ import ast
 import copy
 import html
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass
 from tokenize import TokenError
-from typing import Any, Callable, Literal, Type, TypedDict, cast
+from typing import Any, Literal, TypedDict, cast
 
 import prairielearn as pl
 import sympy
@@ -19,7 +20,7 @@ from typing_extensions import NotRequired
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
 SympyMapT = dict[str, Callable | sympy.Basic]
-ASTWhiteListT = tuple[Type[ast.AST], ...]
+ASTWhiteListT = tuple[type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
 
 
@@ -158,18 +159,16 @@ class _Constants:
 class BaseSympyError(Exception):
     """Exception base class for sympy parsing errors"""
 
+
+class HasConflictingVariableError(BaseSympyError):
     pass
 
 
-class HasConflictingVariable(BaseSympyError):
+class HasConflictingFunctionError(BaseSympyError):
     pass
 
 
-class HasConflictingFunction(BaseSympyError):
-    pass
-
-
-class HasInvalidAssumption(BaseSympyError):
+class HasInvalidAssumptionError(BaseSympyError):
     pass
 
 
@@ -237,7 +236,7 @@ class CheckAST(ast.NodeVisitor):
         self.whitelist = whitelist
         self.variables = variables
         self.functions = functions
-        self.__parents = dict()
+        self.__parents = {}
 
     def visit(self, node: ast.AST) -> None:
         if not isinstance(node, self.whitelist):
@@ -245,13 +244,13 @@ class CheckAST(ast.NodeVisitor):
             raise HasInvalidExpressionError(err_node.col_offset)
         return super().visit(node)
 
-    def visit_Call(self, node: ast.Call) -> None:
+    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
         if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
             err_node = self.get_parent_with_location(node)
             raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
         self.generic_visit(node)
 
-    def visit_Name(self, node: ast.Name) -> None:
+    def visit_Name(self, node: ast.Name) -> None:  # noqa: N802
         if (
             isinstance(node.ctx, ast.Load)
             and not self.is_name_of_function(node)
@@ -262,8 +261,7 @@ class CheckAST(ast.NodeVisitor):
                 raise FunctionNameWithoutArgumentsError(
                     err_node.col_offset, err_node.id
                 )
-            else:
-                raise HasInvalidVariableError(err_node.col_offset, err_node.id)
+            raise HasInvalidVariableError(err_node.col_offset, err_node.id)
         self.generic_visit(node)
 
     def is_name_of_function(self, node: ast.AST) -> bool:
@@ -293,7 +291,7 @@ class CheckAST(ast.NodeVisitor):
             root = ast.parse(expr, mode="eval")
         except SyntaxError as err:
             offset = err.offset if err.offset is not None else -1
-            raise HasParseError(offset)
+            raise HasParseError(offset) from err
 
         # Link each node to its parent
         self.__parents = {
@@ -306,7 +304,7 @@ class CheckAST(ast.NodeVisitor):
 
         # Empty parents dict after execution
         # dict is only populated during execution
-        self.__parents = dict()
+        self.__parents = {}
 
 
 def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:
@@ -369,10 +367,10 @@ def sympy_check(
 
         if isinstance(item, sympy.Symbol) and str_item not in valid_symbols:
             raise HasInvalidSymbolError(str_item)
-        elif isinstance(item, sympy.Float):
+        if isinstance(item, sympy.Float):
             raise HasFloatError(float(str_item))
-        elif not allow_complex and item == sympy.I:
-            raise HasComplexError()
+        if not allow_complex and item == sympy.I:
+            raise HasComplexError
 
         work_stack.extend(item.args)
 
@@ -409,8 +407,8 @@ def evaluate_with_source(
 
     try:
         code = stringify_expr(expr, local_dict, global_dict, transformations)
-    except TokenError:
-        raise HasParseError(-1)
+    except TokenError as err:
+        raise HasParseError(-1) from err
 
     # First do AST check, mainly for security
     parsed_locals_to_eval = copy.deepcopy(locals_for_eval)
@@ -433,8 +431,8 @@ def evaluate_with_source(
     # Now that it's safe, get sympy expression
     try:
         res = eval_expr(code, local_dict, global_dict)
-    except Exception:
-        raise BaseSympyError()
+    except Exception as err:
+        raise BaseSympyError from err
 
     # Finally, check for invalid symbols
     sympy_check(res, locals_for_eval, allow_complex=allow_complex)
@@ -503,21 +501,21 @@ def convert_string_to_sympy_with_source(
             variables if variables is not None else []
         )
         if unbound_variables:
-            raise HasInvalidAssumption(
-                f'Assumptions for variables that are not present: {",".join(unbound_variables)}'
-            )
+            msg = f'Assumptions for variables that are not present: {",".join(unbound_variables)}'
+            raise HasInvalidAssumptionError(msg)
 
     # If there is a list of variables, add each one to the whitelist with assumptions
     if variables is not None:
         variable_dict = locals_for_eval["variables"]
 
-        for variable in variables:
-            variable = greek_unicode_transform(variable)
+        for raw_variable in variables:
+            variable = greek_unicode_transform(raw_variable)
             # Check for naming conflicts
             if variable in used_names:
-                raise HasConflictingVariable(f"Conflicting variable name: {variable}")
-            else:
-                used_names.add(variable)
+                msg = f"Conflicting variable name: {variable}"
+                raise HasConflictingVariableError(msg)
+
+            used_names.add(variable)
 
             # If no conflict, add to locals dict with assumptions
             if assumptions is None:
@@ -530,10 +528,11 @@ def convert_string_to_sympy_with_source(
     # If there is a list of custom functions, add each one to the whitelist
     if custom_functions is not None:
         function_dict = locals_for_eval["functions"]
-        for function in custom_functions:
-            function = greek_unicode_transform(function)
+        for raw_function in custom_functions:
+            function = greek_unicode_transform(raw_function)
             if function in used_names:
-                raise HasConflictingFunction(f"Conflicting variable name: {function}")
+                msg = f"Conflicting variable name: {function}"
+                raise HasConflictingFunctionError(msg)
 
             used_names.add(function)
 
@@ -604,11 +603,14 @@ def json_to_sympy(
     allow_trig_functions: bool = True,
 ) -> sympy.Expr:
     if "_type" not in sympy_expr_dict:
-        raise ValueError("json must have key _type for conversion to sympy")
+        msg = "json must have key _type for conversion to sympy"
+        raise ValueError(msg)
     if sympy_expr_dict["_type"] != "sympy":
-        raise ValueError('json must have _type == "sympy" for conversion to sympy')
+        msg = 'json must have _type == "sympy" for conversion to sympy'
+        raise ValueError(msg)
     if "_value" not in sympy_expr_dict:
-        raise ValueError("json must have key _value for conversion to sympy")
+        msg = "json must have key _value for conversion to sympy"
+        raise ValueError(msg)
     if "_variables" not in sympy_expr_dict:
         sympy_expr_dict["_variables"] = None
 
@@ -711,7 +713,7 @@ def validate_string_as_sympy(
             f"<br><br><pre>{point_to_error(expr, err.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
-    except Exception:
+    except Exception:  # noqa: BLE001
         return "Invalid format."
 
     # If complex numbers are not allowed, raise error if expression has the imaginary unit
