@@ -158,7 +158,6 @@ nav:
       - 'Code execution': 'codeExecution.md'
       - 'Docker packaging': 'docker.md'
       - 'Contributing to PL development': 'contributing.md'
-      - 'Python Reference': 'python-reference/index.md'
   - Administrators:
       - 'SAML SSO configuration': 'saml.md'
       - 'LTI 1.3 configuration': 'lti13.md'

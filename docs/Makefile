@@ -1,5 +1,5 @@
 # Execute commands regardless of physical state of files
-.PHONY: all build preview d2-fmt
+.PHONY: all build preview sphinx d2-fmt
 
 # Overall build scheme
 all: build
@@ -22,3 +22,6 @@ build: d2-fmt
 
 preview:
 	cd ../ && mkdocs serve
+
+sphinx:
+	make -C python-grader
