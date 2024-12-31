@@ -14,16 +14,22 @@ WITH
   ),
   group_memberships AS (
     SELECT
-      gu.group_id,
+      g.group_id,
       COUNT(*) AS count
     FROM
-      existing_duplicate_users AS edu
-      JOIN group_users AS gu ON (
-        edu.user_id = gu.user_id
-        AND edu.group_config_id = gu.group_config_id
-      )
+      (
+        SELECT DISTINCT
+          group_id
+        FROM
+          existing_duplicate_users AS edu
+          JOIN group_users AS gu ON (
+            edu.user_id = gu.user_id
+            AND edu.group_config_id = gu.group_config_id
+          )
+      ) AS g
+      JOIN group_users AS gu2 ON (g.group_id = gu2.group_id)
     GROUP BY
-      gu.group_id
+      g.group_id
   ),
   group_to_retain AS (
     SELECT
