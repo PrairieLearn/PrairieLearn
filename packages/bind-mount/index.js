@@ -1,36 +1,43 @@
+let addon;
 try {
-  // eslint-disable-next-line @typescript-eslint/no-require-imports
-  const addon = require('bindings')('addon');
-
-  module.exports.mount = (source, target) => {
+    addon = await import('bindings').then((bindings) => bindings.default('addon'));
+}
+catch {
+    addon = null;
+}
+/**
+ * Creates a bind mount at `target` that points to `source`.
+ */
+export function mount(source, target) {
+    if (!addon) {
+        throw new Error('Failed to load native bindings');
+    }
     return new Promise((resolve, reject) => {
-      addon.Mount(source, target, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
+        addon.Mount(source, target, (err) => {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve();
+            }
+        });
     });
-  };
-
-  module.exports.umount = (target) => {
+}
+/**
+ * Removes the bind mount at `target`.
+ */
+export function umount(target) {
+    if (!addon) {
+        throw new Error('Failed to load native bindings');
+    }
     return new Promise((resolve, reject) => {
-      addon.Umount(target, (err) => {
-        if (err) {
-          reject(err);
-        } else {
-          resolve();
-        }
-      });
+        addon.Umount(target, (err) => {
+            if (err) {
+                reject(err);
+            }
+            else {
+                resolve();
+            }
+        });
     });
-  };
-} catch {
-  module.exports.mount = () => {
-    throw new Error('Failed to load native bindings');
-  };
-
-  module.exports.umount = () => {
-    throw new Error('Failed to load native bindings');
-  };
 }
