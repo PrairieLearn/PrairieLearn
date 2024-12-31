@@ -9,10 +9,7 @@ import { AssessmentBadge } from '../../../src/components/AssessmentBadge.html.js
 import { SyncProblemButton } from '../../../src/components/SyncProblemButton.html.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.html.js';
 import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
-import { type Topic } from '../../../src/lib/db-types.js';
-import { type QuestionsPageData } from '../../../src/models/questions.js';
 
-// TODO: Pull in correct type from env types
 onDocumentReady(() => {
   const {
     course_instance_ids,
@@ -22,18 +19,18 @@ onDocumentReady(() => {
     urlPrefix,
     plainUrlPrefix,
   } = decodeData('questions-table-data');
-  (window as any).topicList = function () {
-    const data = $('#questionsTable').bootstrapTable('getData');
+  window.topicList = function () {
+    var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.topic.name));
   };
 
-  (window as any).tagsList = function () {
-    const data = $('#questionsTable').bootstrapTable('getData');
+  window.tagsList = function () {
+    var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.tags))), (row) => row.name));
   };
 
-  (window as any).sharingSetsList = function () {
-    const data = $('#questionsTable').bootstrapTable('getData');
+  window.sharingSetsList = function () {
+    var data = $('#questionsTable').bootstrapTable('getData');
     const sharing_sets = _.keyBy(
       _.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name),
     );
@@ -42,13 +39,13 @@ onDocumentReady(() => {
     return sharing_sets;
   };
 
-  (window as any).versionList = function () {
-    const data = $('#questionsTable').bootstrapTable('getData');
+  window.versionList = function () {
+    var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.display_type));
   };
 
-  (window as any).qidFormatter = function (_qid: any, question: QuestionsPageData) {
-    let text = '';
+  window.qidFormatter = function (qid, question) {
+    var text = '';
     if (question.sync_errors) {
       text += SyncProblemButton({
         type: 'error',
@@ -75,7 +72,7 @@ onDocumentReady(() => {
       text += html`<a
         class="badge badge-pill badge-danger ml-1"
         href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
-          question.qid ?? '',
+          question.qid,
         )}"
         >${question.open_issue_count}</a
       >`;
@@ -83,15 +80,15 @@ onDocumentReady(() => {
     return text.toString();
   };
 
-  (window as any).topicFormatter = function (_topic: any, question: QuestionsPageData) {
+  window.topicFormatter = function (topic, question) {
     return TopicBadge(question.topic).toString();
   };
 
-  (window as any).tagsFormatter = function (_tags: any, question: QuestionsPageData) {
+  window.tagsFormatter = function (tags, question) {
     return TagBadgeList(question.tags).toString();
   };
 
-  (window as any).sharingSetFormatter = function (_sharing_sets: any, question: QuestionsPageData) {
+  window.sharingSetFormatter = function (sharing_sets, question) {
     const items = [];
     if (question.shared_publicly) {
       items.push(html`<span class="badge color-green3">Public</span>`);
@@ -107,17 +104,17 @@ onDocumentReady(() => {
     return joinHtml(items, ' ').toString();
   };
 
-  (window as any).versionFormatter = function (_version: any, question: QuestionsPageData) {
+  window.versionFormatter = function (version, question) {
     return html`<span class="badge color-${question.display_type === 'v3' ? 'green1' : 'red1'}"
       >${question.display_type}</span
     >`.toString();
   };
 
-  (window as any).topicSorter = function (topicA: Topic, topicB: Topic) {
-    return topicA.name?.localeCompare(topicB.name ?? '');
+  window.topicSorter = function (topicA, topicB) {
+    return topicA.name.localeCompare(topicB.name);
   };
 
-  (window as any).genericFilterSearch = function (search: string, value: string) {
+  window.genericFilterSearch = function (search, value) {
     return $('<div>')
       .html(value)
       .find('.formatter-data')
@@ -126,11 +123,11 @@ onDocumentReady(() => {
       .includes(search.toUpperCase());
   };
 
-  (window as any).badgeFilterSearch = function (search: string, value: string) {
+  window.badgeFilterSearch = function (search, value) {
     if (search === '(none)') {
       return value === '';
     }
-    const values = $('<div>')
+    var values = $('<div>')
       .html(value)
       .find('.badge, .btn-badge')
       .filter(
@@ -139,10 +136,7 @@ onDocumentReady(() => {
     return !!values;
   };
 
-  const assessmentsByCourseInstanceFormatter = function (
-    course_instance_id: string,
-    question: QuestionsPageData,
-  ) {
+  let assessmentsByCourseInstanceFormatter = function (course_instance_id, question) {
     return (question.assessments ?? [])
       .filter(
         (assessment) => assessment.course_instance_id.toString() === course_instance_id.toString(),
@@ -153,24 +147,21 @@ onDocumentReady(() => {
       .join(' ');
   };
 
-  const assessmentsByCourseInstanceList = function (ci_id: string) {
-    const data = $('#questionsTable').bootstrapTable('getData');
-    const assessments = _.filter(
+  let assessmentsByCourseInstanceList = function (ci_id) {
+    var data = $('#questionsTable').bootstrapTable('getData');
+    var assessments = _.filter(
       _.flatten(_.map(data, (row) => row.assessments)),
       (row) => row && row.course_instance_id === ci_id,
     );
     return _.assign(_.keyBy(_.map(assessments, (row) => row.label)), { '(None)': '(None)' });
   };
 
-  course_instance_ids.forEach((courseInstanceId: string) => {
-    (window as any)[`assessments${courseInstanceId}List`] = function () {
+  course_instance_ids.forEach((courseInstanceId) => {
+    window[`assessments${courseInstanceId}List`] = function () {
       return assessmentsByCourseInstanceList(courseInstanceId);
     };
 
-    (window as any)[`assessments${courseInstanceId}Formatter`] = function (
-      _: any,
-      question: QuestionsPageData,
-    ) {
+    window[`assessments${courseInstanceId}Formatter`] = function (_, question) {
       return assessmentsByCourseInstanceFormatter(courseInstanceId, question);
     };
   });
@@ -201,15 +192,14 @@ onDocumentReady(() => {
       searchInputs.forEach((searchInput) => {
         searchInput.setAttribute(
           'aria-label',
-          `Filter by ${searchInput.closest('th')?.querySelector('div.th-inner')?.textContent?.trim()}`,
+          `Filter by ${searchInput.closest('th').querySelector('div.th-inner').textContent.trim()}`,
         );
       });
     },
   };
 
   if (showAddQuestionButton) {
-    // TODO: type tableSettings
-    (tableSettings.buttons as any).addQuestion = {
+    tableSettings.buttons.addQuestion = {
       text: 'Add Question',
       icon: 'fa-plus',
       attributes: { title: 'Create a new question' },
@@ -220,8 +210,7 @@ onDocumentReady(() => {
   }
 
   if (showAiGenerateQuestionButton) {
-    // TODO: type tableSettings
-    (tableSettings.buttons as any).aiGenerateQuestion = {
+    tableSettings.buttons.aiGenerateQuestion = {
       html: html`
         <a class="btn btn-secondary" href="${urlPrefix}/ai_generate_question_drafts">
           <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
