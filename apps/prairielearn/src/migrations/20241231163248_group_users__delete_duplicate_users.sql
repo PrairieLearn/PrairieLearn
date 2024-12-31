@@ -34,6 +34,7 @@ WITH
           gu.group_id
         FROM
           group_users AS gu
+          JOIN groups AS g ON (gu.group_id = g.id)
           LEFT JOIN group_memberships AS gm ON (gu.group_id = gm.group_id)
           LEFT JOIN assessment_instances AS ai ON (
             a.id = ai.assessment_id
@@ -43,6 +44,8 @@ WITH
           edu.user_id = gu.user_id
           AND edu.group_config_id = gu.group_config_id
         ORDER BY
+          -- If there is a soft-deleted group, prefer one that is not soft-deleted
+          g.deleted_at IS NOT NULL,
           -- If there is an assessment instance, prefer the one with the highest score
           ai.score_perc DESC NULLS LAST,
           -- Prefer a group with an assessment instance over one without it
