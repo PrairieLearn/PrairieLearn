@@ -1,1 +1,5 @@
 build/
+
+# Compiled source
+index.js
+index.d.ts
