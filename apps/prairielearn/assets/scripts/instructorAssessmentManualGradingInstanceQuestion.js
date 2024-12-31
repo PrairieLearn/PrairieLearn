@@ -10,7 +10,6 @@ $(() => {
     if (event.repeat) return;
     // Ignore events that target an input element
     if (
-      event.target instanceof HTMLInputElement &&
       !['TEXTAREA', 'SELECT'].includes(event.target.tagName) &&
       (event.target.tagName !== 'INPUT' ||
         ['radio', 'button', 'submit', 'checkbox'].includes(event.target.type)) &&
