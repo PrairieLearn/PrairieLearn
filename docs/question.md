@@ -238,7 +238,7 @@ def grade(data):
 
 All persistent data related to a question variant is stored under different entries in the `data` dictionary. This dictionary is stored in JSON format by PrairieLearn, and as a result, everything in `data` must be JSON serializable. Some types in Python are natively JSON serializable, such as strings, lists, and dicts, while others are not, such as complex numbers, numpy ndarrays, and pandas DataFrames.
 
-To account for this, [`core.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/core.py) file from the `prairielearn` Python library, usually aliased and used as `pl`, provides the functions [`to_json`](./python-reference/index.md#prairielearn.to_json) and [`from_json`](./python-reference/index.md#prairielearn.from_json), which can respectively serialize and deserialize various objects for storage as part of question data. Please refer to the docstrings on those functions for more information. Here is a simple example:
+To account for this, the `prairielearn` Python library from [`core.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/core.py), usually aliased and used as `pl`, provides the functions `to_json` and `from_json`, which can respectively serialize and deserialize various objects for storage as part of question data. Please refer to the docstrings on those functions for more information. Here is a simple example:
 
 ```python
 # server.py
@@ -253,7 +253,7 @@ def grade(data):
     pl.from_json(data["params"]["numpy_array"])
 ```
 
-The `pl.to_json` function supports keyword-only options for different types of encodings (e.g. `pl.to_json(var, df_encoding_version=2)`). These options have been added to allow for new encoding behavior while still retaining backwards compatibility with existing usage. You can view the full reference for `pl.to_json` and `pl.from_json` in the [Python reference](./python-reference/index.md).
+The `pl.to_json` function supports keyword-only options for different types of encodings (e.g. `pl.to_json(var, df_encoding_version=2)`). These options have been added to allow for new encoding behavior while still retaining backwards compatibility with existing usage.
 
 - `df_encoding_version` controls the encoding of Pandas DataFrames. Encoding a DataFrame `df` by setting `pl.to_json(df, df_encoding_version=2)` allows for missing and date time values whereas `pl.to_json(df, df_encoding_version=1)` (default) does not. However, `df_encoding_version=1` has support for complex numbers, while `df_encoding_version=2` does not.
 
@@ -501,8 +501,8 @@ Although questions with custom grading usually don't use the grading functions f
 
 Any custom grading function for the whole question should set `data["score"]` as a value between 0.0 and 1.0, which will be the final score for the given question. If a custom grading function is only grading a specific part of a question, the grading function should set the corresponding dictionary entry in `data["partial_scores"]` and then recompute the final `data["score"]` value for the whole question. The [`core.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/core.py) file from the `prairielearn` Python library provides the following score recomputation functions:
 
-- [`set_weighted_score_data`](python-reference/index.md#prairielearn.set_weighted_score_data) sets `data["score"]` to be the weighted average of entries in `data["partial_scores"]`.
-- [`set_all_or_nothing_score_data`](python-reference/index.md#prairielearn.set_all_or_nothing_score_data) sets `data["score"]` to 1.0 if all entries in `data["partial_scores"]` are 1.0, 0.0 otherwise.
+- `set_weighted_score_data` sets `data["score"]` to be the weighted average of entries in `data["partial_scores"]`.
+- `set_all_or_nothing_score_data` sets `data["score"]` to 1.0 if all entries in `data["partial_scores"]` are 1.0, 0.0 otherwise.
 
 This can be used like so:
 
@@ -541,9 +541,9 @@ def generate(data):
 
 Similarly, for grading functions involving floating point numbers, _avoid exact comparisons with `==`._ Floating point calculations in Python introduce error, and comparisons with `==` might unexpectedly fail. Instead, the function [`math.isclose`](https://docs.python.org/3/library/math.html#math.isclose) can be used, as it performs comparisons within given tolerance values. The [`core.py`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/python/prairielearn/core.py) file from the `prairielearn` Python library also offers several functions to perform more specialized comparisons:
 
-- [`is_correct_scalar_ra`](python-reference/index.md#prairielearn.is_correct_scalar_ra) compares floats using relative and absolute tolerances.
-- [`is_correct_scalar_sf`](python-reference/index.md#prairielearn.is_correct_scalar_sf) compares floats up to a specified number of significant figures.
-- [`is_correct_scalar_dd`](python-reference/index.md#prairielearn.to_json) compares floats up to a specified number of digits.
+- `is_correct_scalar_ra` compares floats using relative and absolute tolerances.
+- `is_correct_scalar_sf` compares floats up to a specified number of significant figures.
+- `is_correct_scalar_dd` compares floats up to a specified number of digits.
 
 More detailed information can be found in the docstrings for these functions.
 

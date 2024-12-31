@@ -176,8 +176,7 @@ not_in_nav: |
   workshop/lesson3.md
   workshop/lesson4.md
   workshop/lesson5.md
-  python-grader/reference-docs.md
-  elements/reference-links.md
+  python-grader/sphinx-docs.md
 
 validation:
   omitted_files: warn
