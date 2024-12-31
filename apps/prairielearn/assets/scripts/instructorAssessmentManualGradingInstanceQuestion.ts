@@ -171,13 +171,13 @@ function resetInstructorGradingPanel() {
     .querySelectorAll<HTMLFormElement>('.js-rubric-settings-modal form')
     .forEach((form) => form.addEventListener('submit', submitSettings));
 
-  document
-    .querySelectorAll<HTMLButtonElement>('.js-disable-rubric-button')
-    .forEach((button) =>
-      button.addEventListener('click', (e) =>
-        submitSettings.bind(button.closest('form'))(e, 'false'),
-      ),
-    );
+  document.querySelectorAll<HTMLButtonElement>('.js-disable-rubric-button').forEach((button) =>
+    button.addEventListener('click', (e) => {
+      const form = button.closest('form');
+      if (!form) return;
+      submitSettings.bind(form)(e, 'false');
+    }),
+  );
 
   resetRubricItemRowsListeners();
   updateRubricItemOrderField();
@@ -266,7 +266,7 @@ function checkRubricItemTotals() {
   }
 }
 
-function submitSettings(this: HTMLFormElement, e: SubmitEvent, use_rubric: any) {
+function submitSettings(this: HTMLFormElement, e: SubmitEvent | MouseEvent, use_rubric: any) {
   e.preventDefault();
   const modal = this.closest('.modal');
   const gradingForm = document.querySelector<HTMLFormElement>(
@@ -326,7 +326,7 @@ function submitSettings(this: HTMLFormElement, e: SubmitEvent, use_rubric: any) 
             .forEach((input) => {
               if (input.name === 'modified_at') {
                 // Do not reset modified_at, as the rubric settings may have changed it
-              } else if (input.type !== 'checkbox') {
+              } else if (input.type !== 'checkbox' && !(item_value instanceof File)) {
                 input.value = item_value;
               } else if (input.value === item_value) {
                 input.checked = true;
@@ -457,7 +457,7 @@ function updatePointsView(sourceInput: HTMLInputElement | null) {
   });
 }
 
-function computePointsFromRubric(sourceInput: Element | Event | null = null) {
+function computePointsFromRubric(sourceInput: HTMLInputElement | null = null) {
   document.querySelectorAll('form[name=manual-grading-form]').forEach((form: Element) => {
     if (form instanceof HTMLFormElement && form.dataset.rubricActive === 'true') {
       const manualInput = form.querySelector<HTMLInputElement>(
@@ -496,13 +496,19 @@ function computePointsFromRubric(sourceInput: Element | Event | null = null) {
 }
 
 function enableRubricItemLongTextField(event: Event) {
+  if (!(event.target instanceof HTMLElement)) {
+    return;
+  }
   const container = event.target.closest('td');
-  const label = container.querySelector('label');
-  const button = container.querySelector('button');
+  const label = container?.querySelector('label');
+  const button = container?.querySelector('button');
+  if (!container || !label || !button) {
+    return;
+  }
 
   const input = document.createElement('textarea');
   input.classList.add('form-control');
-  input.name = button.dataset.inputName;
+  input.name = button.dataset.inputName ?? '';
   input.setAttribute('maxlength', '10000');
   input.textContent = button.dataset.currentValue || '';
 
@@ -515,54 +521,79 @@ function enableRubricItemLongTextField(event: Event) {
 }
 
 function updateRubricItemOrderField() {
-  document.querySelectorAll('.js-rubric-item-row-order').forEach((input, index) => {
-    input.value = index;
-  });
+  document
+    .querySelectorAll<HTMLInputElement>('.js-rubric-item-row-order')
+    .forEach((input, index) => {
+      input.value = `${index}`;
+    });
 }
 
 function moveRowDown(event: Event) {
+  if (!(event.target instanceof HTMLElement)) {
+    return;
+  }
   const row = event.target.closest('tr');
+  if (!row || !row.parentNode || !row.nextElementSibling) {
+    return;
+  }
   row.parentNode.insertBefore(row.nextElementSibling, row);
   updateRubricItemOrderField();
 }
 
 function moveRowUp(event: Event) {
+  if (!(event.target instanceof HTMLElement)) {
+    return;
+  }
   const row = event.target.closest('tr');
+  if (!row || !row.parentNode || !row.nextElementSibling || !row.previousElementSibling) {
+    return;
+  }
   row.parentNode.insertBefore(row.previousElementSibling, row.nextElementSibling);
   updateRubricItemOrderField();
 }
 
 function deleteRow(event: Event) {
+  if (!(event.target instanceof HTMLElement)) {
+    return;
+  }
   const table = event.target.closest('table');
-  event.target.closest('tr').remove();
+  event.target.closest('tr')?.remove();
   if (!table?.querySelectorAll('.js-rubric-item-row-order')?.length) {
-    table.querySelector('.js-no-rubric-item-note').classList.remove('d-none');
+    table?.querySelector('.js-no-rubric-item-note')?.classList.remove('d-none');
   }
   updateRubricItemOrderField();
   checkRubricItemTotals();
 }
 
 function rowDragStart(event: Event) {
-  window.rubricItemRowDragging = event.target.closest('tr');
+  if (!(event.target instanceof HTMLElement)) {
+    return;
+  }
+  (window as any).rubricItemRowDragging = event.target.closest('tr');
+  // @ts-expect-error TODO: pull in jquery types for browser events
   if (event.originalEvent?.dataTransfer) {
+    // @ts-expect-error TODO: pull in jquery types for browser events
     event.originalEvent.dataTransfer.effectAllowed = 'move';
   }
 }
 
 function rowDragOver(event: Event) {
+  if (!(event.target instanceof HTMLElement)) {
+    return;
+  }
   const row = event.target.closest('tr');
   // Rows in different tables don't count
-  if (!row || row.parent !== window.rubricItemRowDragging.parent) return;
-  const rowList = Array.from(row.parentNode.childNodes);
-  const draggingRowIdx = rowList.indexOf(window.rubricItemRowDragging);
+  if (!row || row.parentNode !== (window as any).rubricItemRowDragging.parent) return;
+  const rowList = Array.from(row.parentNode?.childNodes ?? []);
+  const draggingRowIdx = rowList.indexOf((window as any).rubricItemRowDragging);
   const targetRowIdx = rowList.indexOf(row);
   event.preventDefault();
   if (targetRowIdx < draggingRowIdx) {
-    row.parentNode.insertBefore(window.rubricItemRowDragging, row);
+    row.parentNode?.insertBefore((window as any).rubricItemRowDragging, row);
   } else if (row.nextSibling) {
-    row.parentNode.insertBefore(window.rubricItemRowDragging, row.nextSibling);
+    row.parentNode?.insertBefore((window as any).rubricItemRowDragging, row.nextSibling);
   } else {
-    row.parentNode.appendChild(window.rubricItemRowDragging);
+    row.parentNode?.appendChild((window as any).rubricItemRowDragging);
   }
   updateRubricItemOrderField();
 }
