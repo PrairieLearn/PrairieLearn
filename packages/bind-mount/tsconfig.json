@@ -8,5 +8,5 @@
     "outDir": "./",
     "declaration": true
   },
-  "files": ["index.ts", "bindings.d.ts"],
+  "files": ["index.ts", "bindings.d.ts"]
 }
