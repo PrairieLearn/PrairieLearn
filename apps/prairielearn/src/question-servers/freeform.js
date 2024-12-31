@@ -74,7 +74,7 @@ class CourseIssueError extends Error {
 
 export async function init() {
   // Populate the list of PrairieLearn elements
-  coreElementsCache = await loadElements(path.join(APP_ROOT_PATH, 'python', 'elements'), 'core');
+  coreElementsCache = await loadElements(path.join(APP_ROOT_PATH, 'elements'), 'core');
 }
 
 /**

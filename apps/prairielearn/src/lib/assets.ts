@@ -21,7 +21,7 @@ let publicHash: HashElementNode | null = null;
 const cachedPackageVersionHashes: Record<string, string> = {};
 
 async function computeElementsHash() {
-  elementsHash = await hashElement(path.join(APP_ROOT_PATH, 'python', 'elements'), {
+  elementsHash = await hashElement(path.join(APP_ROOT_PATH, 'elements'), {
     encoding: 'hex',
   });
 }

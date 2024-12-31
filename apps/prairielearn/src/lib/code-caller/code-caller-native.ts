@@ -207,7 +207,7 @@ export class CodeCallerNative implements CodeCaller {
       paths.push(path.join(this.coursePath, 'serverFilesCourse'));
     } else if (type === 'core-element') {
       if (!directory) throw new Error('Missing directory');
-      cwd = path.join(APP_ROOT_PATH, 'python', 'elements', directory);
+      cwd = path.join(APP_ROOT_PATH, 'elements', directory);
     } else if (type === 'restart' || type === 'ping') {
       // Doesn't need a working directory
     } else {

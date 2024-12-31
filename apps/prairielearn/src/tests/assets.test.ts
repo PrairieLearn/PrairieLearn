@@ -11,7 +11,7 @@ import { APP_ROOT_PATH } from '../lib/paths.js';
 import * as helperServer from './helperServer.js';
 
 const SITE_URL = 'http://localhost:' + config.serverPort;
-const ELEMENTS_PATH = path.resolve(APP_ROOT_PATH, 'python', 'elements');
+const ELEMENTS_PATH = path.resolve(APP_ROOT_PATH, 'elements');
 
 let cachedElementsInfo: Record<string, any> | null = null;
 

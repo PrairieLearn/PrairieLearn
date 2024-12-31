@@ -106,6 +106,6 @@ pythonpath = [
 ]
 addopts = "--cov=apps"
 testpaths = [
-    "apps/prairielearn/python/elements",
+    "apps/prairielearn/elements",
     "apps/prairielearn/python/test"
 ]
