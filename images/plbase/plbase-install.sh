@@ -79,6 +79,7 @@ uv python install --default --preview 3.10
 uv venv
 uv pip install --no-cache-dir -r /python-requirements.txt
 uv cache clean
+python -m ensurepip
 
 # Clear various caches to minimize the final image size.
 dnf clean all
