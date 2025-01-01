@@ -6,7 +6,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@novnc/novnc": "1.4.0",
+    "@novnc/novnc": "1.5.0",
     "command-line-args": "^6.0.0",
     "command-line-usage": "^7.0.2",
     "express": "^5.0.1",
