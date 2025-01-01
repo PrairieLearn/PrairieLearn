@@ -9,8 +9,8 @@
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "start-executor": "node dist/executor.js",
     "start": "node dist/server.js",
-    "test": "c8 mocha --parallel --timeout 50000 src/**/*.test.ts",
-    "test:dist": "mocha --parallel --timeout 50000 dist/**/*.test.js"
+    "test": "c8 mocha --parallel src/**/*.test.ts",
+    "test:dist": "mocha --parallel dist/**/*.test.js"
   },
   "dependencies": {
     "@aws-sdk/client-auto-scaling": "^3.699.0",
