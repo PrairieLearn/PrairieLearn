@@ -3,7 +3,7 @@ WITH
     SELECT
       user_id,
       group_config_id,
-      COUNT(*) AS count
+      array_agg(group_id) AS group_ids
     FROM
       group_users
     GROUP BY
@@ -19,15 +19,11 @@ WITH
     FROM
       (
         SELECT DISTINCT
-          group_id
+          UNNEST(group_ids) AS group_id
         FROM
-          existing_duplicate_users AS edu
-          JOIN group_users AS gu ON (
-            edu.user_id = gu.user_id
-            AND edu.group_config_id = gu.group_config_id
-          )
+          existing_duplicate_users
       ) AS g
-      JOIN group_users AS gu2 ON (g.group_id = gu2.group_id)
+      JOIN group_users AS gu ON (g.group_id = gu.group_id)
     GROUP BY
       g.group_id
   ),
