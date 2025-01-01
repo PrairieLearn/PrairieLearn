@@ -81,6 +81,8 @@ import { pf } from './polyfill.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
 
+console.log({ httpDevServer });
+
 process.on('warning', (e) => console.warn(e));
 
 const argv = yargsParser(process.argv.slice(2));
