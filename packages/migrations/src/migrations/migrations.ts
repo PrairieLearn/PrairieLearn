@@ -140,7 +140,7 @@ export async function initWithLock(directories: string[], project: string) {
         throw err;
       }
     } else {
-      const migrationModule = await import(migrationPath);
+      const migrationModule = await import(/* @vite-ignore */ migrationPath);
       const implementation = migrationModule.default;
       if (typeof implementation !== 'function') {
         throw new Error(`Migration ${filename} does not export a default function`);
