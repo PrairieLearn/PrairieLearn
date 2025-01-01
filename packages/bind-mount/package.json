@@ -16,10 +16,11 @@
   },
   "scripts": {
     "build": "tsc && node-gyp rebuild",
-    "install": "npm run build"
+    "install": "node-gyp rebuild"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
+    "@types/node": "^20.17.9",
     "typescript": "^5.7.2"
   }
 }
