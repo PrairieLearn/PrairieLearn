@@ -2218,7 +2218,19 @@ export async function startServer() {
   } else if (httpDevServer) {
     // Use @vavite/httpDevServer for HMR
     console.log('Doing it...');
-    httpDevServer.on('request', server);
+    // server.listen(config.serverPort);
+    // const mini = express();
+    // mini.get('/foo', function (req, res) {
+    //   console.log(req.originalUrl);
+    //   res.send('INDEXROUTE ' + req.originalUrl);
+    // });
+    // mini.get('*', function (req, res) {
+    //   console.log(req.originalUrl);
+    //   res.send('tested ' + req.originalUrl);
+    // });
+
+    // must be a handler, not a server yet
+    httpDevServer.on('request', app);
     httpDevServer.on('error', (err) => {
       throw err;
     });
