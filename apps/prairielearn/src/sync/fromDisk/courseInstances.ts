@@ -1,3 +1,5 @@
+import { fileURLToPath } from 'url';
+
 import _ from 'lodash';
 import { z } from 'zod';
 
@@ -9,7 +11,7 @@ import { type CourseData, type CourseInstance } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.filename);
+const sql = sqldb.loadSqlEquiv(fileURLToPath(import.meta.url));
 
 function getParamsForCourseInstance(courseInstance: CourseInstance | null | undefined) {
   if (!courseInstance) return null;

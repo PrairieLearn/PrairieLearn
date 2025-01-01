@@ -1,6 +1,7 @@
 import { EventEmitter } from 'node:events';
 import path from 'node:path';
 import { setTimeout as sleep } from 'node:timers/promises';
+import { fileURLToPath } from 'url';
 
 import { doWithLock } from '@prairielearn/named-locks';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
@@ -22,7 +23,7 @@ import {
   validateBatchedMigrationImplementation,
 } from './batched-migration.js';
 
-const sql = loadSqlEquiv(import.meta.filename);
+const sql = loadSqlEquiv(fileURLToPath(import.meta.url));
 
 const DEFAULT_MIN_VALUE = 1n;
 const DEFAULT_BATCH_SIZE = 1_000;
