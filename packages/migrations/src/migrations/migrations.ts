@@ -54,7 +54,14 @@ export function getMigrationsToExecute(
   return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
 }
 
+let didMigration = false;
+
 export async function initWithLock(directories: string[], project: string) {
+  if (didMigration) {
+    logger.verbose('Already did migration, returning');
+    // throw Error('PLEASE MIGRATE');
+    return;
+  }
   logger.verbose('Starting DB schema migration');
 
   // Create the migrations table if needed
@@ -156,4 +163,5 @@ export async function initWithLock(directories: string[], project: string) {
       project,
     });
   }
+  didMigration = true;
 }

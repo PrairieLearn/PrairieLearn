@@ -81,8 +81,6 @@ import { pf } from './polyfill.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
 
-console.log({ httpDevServer });
-
 process.on('warning', (e) => console.warn(e));
 
 const argv = yargsParser(process.argv.slice(2));
@@ -2215,12 +2213,16 @@ export async function startServer() {
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
 
   // In production, startup the server normally
-  if (import.meta.env.PROD) {
+  if ((import.meta as any).env.PROD) {
     server.listen(config.serverPort);
-  } else {
+  } else if (httpDevServer) {
     // Use @vavite/httpDevServer for HMR
     console.log('Doing it...');
     httpDevServer.on('request', server);
+    httpDevServer.on('error', (err) => {
+      throw err;
+    });
+    return;
   }
 
   // Wait for the server to either start successfully or error out.
@@ -2241,8 +2243,6 @@ export async function startServer() {
       }
     });
   });
-
-  return server;
 }
 
 export async function stopServer() {
@@ -2484,7 +2484,7 @@ if (/* esMain(import.meta) && */ config.startServer) {
           ],
         });
 
-        runner.on('error', (err) => {
+        runner?.on('error', (err) => {
           logger.error('Batched migration runner error', err);
           Sentry.captureException(err);
         });
@@ -2681,6 +2681,7 @@ if (/* esMain(import.meta) && */ config.startServer) {
       async () => {
         logger.verbose('Starting server...');
         await startServer();
+        console.log('returned from startServer');
       },
       async () => socketServer.init(server),
       async () => externalGradingSocket.init(),
