@@ -143,7 +143,7 @@
     "on-finished": "^2.4.1",
     "on-headers": "^1.0.2",
     "openai": "^4.76.0",
-    "openid-client": "^5.7.1",
+    "openid-client": "^6.1.7",
     "parse5": "^7.2.1",
     "passport": "^0.7.0",
     "passport-azure-ad": "^4.3.5",
