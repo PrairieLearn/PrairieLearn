@@ -12,6 +12,32 @@ import { TopicBadge } from '../../../src/components/TopicBadge.html.js';
 import { type Topic } from '../../../src/lib/db-types.js';
 import { type QuestionsPageData } from '../../../src/models/questions.js';
 
+import { type ExtendedBootstrapTableOptions } from './bootstrapTable.js';
+
+type PrefixSuffixObjectKeys<T extends Record<string, any>, P extends string, S extends string> = {
+  [K in keyof T as K extends string ? `${P}${K}${S}` : never]: T[K];
+};
+
+type AssessmentGlobals = PrefixSuffixObjectKeys<Record<string, any>, 'assessments', 'Formatter'> &
+  PrefixSuffixObjectKeys<Record<string, any>, 'assessments', 'List'>;
+
+declare global {
+  interface Window extends AssessmentGlobals {
+    topicList: () => any;
+    tagsList: () => any;
+    sharingSetsList: () => any;
+    versionList: () => any;
+    qidFormatter: (_qid: any, question: QuestionsPageData) => any;
+    topicFormatter: (_topic: any, question: QuestionsPageData) => any;
+    tagsFormatter: (_tags: any, question: QuestionsPageData) => any;
+    sharingSetFormatter: (_sharing_sets: any, question: QuestionsPageData) => any;
+    versionFormatter: (_version: any, question: QuestionsPageData) => any;
+    topicSorter: (topicA: Topic, topicB: Topic) => any;
+    genericFilterSearch: (search: string, value: string) => any;
+    badgeFilterSearch: (search: string, value: string) => any;
+  }
+}
+
 // TODO: Pull in correct type from env types
 onDocumentReady(() => {
   const {
@@ -22,17 +48,17 @@ onDocumentReady(() => {
     urlPrefix,
     plainUrlPrefix,
   } = decodeData('questions-table-data');
-  (window as any).topicList = function () {
+  window.topicList = function () {
     const data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.topic.name));
   };
 
-  (window as any).tagsList = function () {
+  window.tagsList = function () {
     const data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(_.flatten(_.filter(_.map(data, (row) => row.tags))), (row) => row.name));
   };
 
-  (window as any).sharingSetsList = function () {
+  window.sharingSetsList = function () {
     const data = $('#questionsTable').bootstrapTable('getData');
     const sharing_sets = _.keyBy(
       _.map(_.flatten(_.filter(_.map(data, (row) => row.sharing_sets))), (row) => row.name),
@@ -42,12 +68,12 @@ onDocumentReady(() => {
     return sharing_sets;
   };
 
-  (window as any).versionList = function () {
+  window.versionList = function () {
     const data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.display_type));
   };
 
-  (window as any).qidFormatter = function (_qid: any, question: QuestionsPageData) {
+  window.qidFormatter = function (_qid: any, question: QuestionsPageData) {
     let text = '';
     if (question.sync_errors) {
       text += SyncProblemButton({
@@ -83,15 +109,15 @@ onDocumentReady(() => {
     return text.toString();
   };
 
-  (window as any).topicFormatter = function (_topic: any, question: QuestionsPageData) {
+  window.topicFormatter = function (_topic: any, question: QuestionsPageData) {
     return TopicBadge(question.topic).toString();
   };
 
-  (window as any).tagsFormatter = function (_tags: any, question: QuestionsPageData) {
+  window.tagsFormatter = function (_tags: any, question: QuestionsPageData) {
     return TagBadgeList(question.tags).toString();
   };
 
-  (window as any).sharingSetFormatter = function (_sharing_sets: any, question: QuestionsPageData) {
+  window.sharingSetFormatter = function (_sharing_sets: any, question: QuestionsPageData) {
     const items = [];
     if (question.shared_publicly) {
       items.push(html`<span class="badge color-green3">Public</span>`);
@@ -107,17 +133,17 @@ onDocumentReady(() => {
     return joinHtml(items, ' ').toString();
   };
 
-  (window as any).versionFormatter = function (_version: any, question: QuestionsPageData) {
+  window.versionFormatter = function (_version: any, question: QuestionsPageData) {
     return html`<span class="badge color-${question.display_type === 'v3' ? 'green1' : 'red1'}"
       >${question.display_type}</span
     >`.toString();
   };
 
-  (window as any).topicSorter = function (topicA: Topic, topicB: Topic) {
+  window.topicSorter = function (topicA: Topic, topicB: Topic) {
     return topicA.name?.localeCompare(topicB.name ?? '');
   };
 
-  (window as any).genericFilterSearch = function (search: string, value: string) {
+  window.genericFilterSearch = function (search: string, value: string) {
     return $('<div>')
       .html(value)
       .find('.formatter-data')
@@ -126,7 +152,7 @@ onDocumentReady(() => {
       .includes(search.toUpperCase());
   };
 
-  (window as any).badgeFilterSearch = function (search: string, value: string) {
+  window.badgeFilterSearch = function (search: string, value: string) {
     if (search === '(none)') {
       return value === '';
     }
@@ -163,11 +189,11 @@ onDocumentReady(() => {
   };
 
   course_instance_ids.forEach((courseInstanceId: string) => {
-    (window as any)[`assessments${courseInstanceId}List`] = function () {
+    window[`assessments${courseInstanceId}List`] = function () {
       return assessmentsByCourseInstanceList(courseInstanceId);
     };
 
-    (window as any)[`assessments${courseInstanceId}Formatter`] = function (
+    window[`assessments${courseInstanceId}Formatter`] = function (
       _: any,
       question: QuestionsPageData,
     ) {
@@ -175,7 +201,7 @@ onDocumentReady(() => {
     };
   });
 
-  const tableSettings = {
+  const tableSettings: ExtendedBootstrapTableOptions = {
     // TODO: If we can pick up the following change, we can drop the `icons` config here:
     // https://github.com/wenzhixin/bootstrap-table/pull/7190
     iconsPrefix: 'fa',
@@ -208,8 +234,7 @@ onDocumentReady(() => {
   };
 
   if (showAddQuestionButton) {
-    // TODO: type tableSettings
-    (tableSettings.buttons as any).addQuestion = {
+    tableSettings.buttons.addQuestion = {
       text: 'Add Question',
       icon: 'fa-plus',
       attributes: { title: 'Create a new question' },
@@ -219,9 +244,8 @@ onDocumentReady(() => {
     };
   }
 
-  if (showAiGenerateQuestionButton) {
-    // TODO: type tableSettings
-    (tableSettings.buttons as any).aiGenerateQuestion = {
+  if (showAiGenerateQuestionButton && tableSettings.buttons) {
+    tableSettings.buttons.aiGenerateQuestion = {
       html: html`
         <a class="btn btn-secondary" href="${urlPrefix}/ai_generate_question_drafts">
           <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
