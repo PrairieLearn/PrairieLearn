@@ -5,7 +5,11 @@ import asyncHandler from 'express-async-handler';
 
 import * as sqldb from '@prairielearn/postgres';
 
-const sql = sqldb.loadSql(path.join(import.meta.dirname, '..', 'queries.sql'));
+import { pf } from '../../../../polyfill.js';
+
+const sql = sqldb.loadSql(
+  path.join(...pf(import.meta.dirname, import.meta.url), '..', 'queries.sql'),
+);
 const router = Router({ mergeParams: true });
 
 router.get(

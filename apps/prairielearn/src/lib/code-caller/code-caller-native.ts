@@ -10,6 +10,7 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
 
+import { pf } from '../../polyfill.js';
 import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
 
@@ -349,7 +350,7 @@ export class CodeCallerNative implements CodeCaller {
     }
 
     const options: SpawnOptions = {
-      cwd: import.meta.dirname,
+      cwd: path.resolve(...pf(import.meta.dirname, import.meta.url)),
       // stdin, stdout, stderr, data, and restart confirmations
       stdio: ['pipe', 'pipe', 'pipe', 'pipe', 'pipe'],
       env,

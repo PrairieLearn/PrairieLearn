@@ -5,6 +5,7 @@ import * as express from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as jsonLoad from '../../lib/json-load.js';
+import { pf } from '../../polyfill.js';
 
 import {
   AdministratorQueries,
@@ -13,7 +14,12 @@ import {
 } from './administratorQueries.html.js';
 
 const router = express.Router();
-const queriesDir = path.resolve(import.meta.dirname, '..', '..', 'admin_queries');
+const queriesDir = path.resolve(
+  ...pf(import.meta.dirname, import.meta.url),
+  '..',
+  '..',
+  'admin_queries',
+);
 
 router.get(
   '/',

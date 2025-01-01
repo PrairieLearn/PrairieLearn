@@ -1,19 +1,15 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
 
+import { pf } from '../polyfill.js';
+
 /**
  * Reads a JSON file from the schemas directory.
  */
 function readSchema(filePath: string) {
   return JSON.parse(
     fs.readFileSync(
-      path.resolve(
-        ...(import.meta.dirname
-          ? [import.meta.dirname]
-          : [import.meta.url.replace('file:', ''), '..']),
-        'schemas',
-        filePath,
-      ),
+      path.resolve(...pf(import.meta.dirname, import.meta.url), 'schemas', filePath),
       'utf8',
     ),
   );

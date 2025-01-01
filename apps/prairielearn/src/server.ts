@@ -77,6 +77,7 @@ import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
 import * as news_items from './news_items/index.js';
+import { pf } from './polyfill.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
 
@@ -114,7 +115,7 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
  */
 export async function initExpress(): Promise<Express> {
   const app = express();
-  app.set('views', path.join(import.meta.dirname, 'pages'));
+  app.set('views', path.join(...pf(import.meta.dirname, import.meta.url), 'pages'));
   app.set('trust proxy', config.trustProxy);
 
   // These should come first so that we get instrumentation on all our requests.
@@ -2216,6 +2217,7 @@ export async function startServer() {
     server.listen(config.serverPort);
   } else {
     // Use @vavite/httpDevServer for HMR
+    console.log('Doing it...');
     httpDevServer.on('request', server);
   }
 
@@ -2275,7 +2277,7 @@ export async function insertDevUser() {
   await sqldb.queryAsync(adminSql, { user_id });
 }
 
-if (esMain(import.meta) && config.startServer) {
+if (/* esMain(import.meta) && */ config.startServer) {
   async.series(
     [
       async () => {
@@ -2475,7 +2477,9 @@ if (esMain(import.meta) && config.startServer) {
         // call `enqueueBatchedMigration` which requires this to be initialized.
         const runner = initBatchedMigrations({
           project: 'prairielearn',
-          directories: [path.join(import.meta.dirname, 'batched-migrations')],
+          directories: [
+            path.join(...pf(import.meta.dirname, import.meta.url), 'batched-migrations'),
+          ],
         });
 
         runner.on('error', (err) => {
@@ -2489,7 +2493,10 @@ if (esMain(import.meta) && config.startServer) {
         // running migrations as we do when we start the server.
         if (config.runMigrations || argv['migrate-and-exit']) {
           await migrations.init(
-            [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
+            [
+              path.join(...pf(import.meta.dirname, import.meta.url), 'migrations'),
+              SCHEMA_MIGRATIONS_PATH,
+            ],
             'prairielearn',
           );
 
