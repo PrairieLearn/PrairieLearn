@@ -1,12 +1,7 @@
 {
+  "extends": "@prairielearn/tsconfig/tsconfig.package.json",
   "compilerOptions": {
-    "target": "ES2022",
-    "module": "NodeNext",
-    "moduleResolution": "nodenext",
-    "esModuleInterop": true,
-    "strict": true,
-    "outDir": "./",
-    "declaration": true
-  },
-  "files": ["index.ts", "bindings.d.ts"]
+    "outDir": "./dist",
+    "rootDir": "./src"
+  }
 }
