@@ -9,6 +9,7 @@ import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { NewsItemSchema } from '../../lib/db-types.js';
 import { userIsInstructorInAnyCourse } from '../../models/course-permissions.js';
+import { pf } from '../../polyfill.js';
 
 import { NewsItem } from './newsItem.html.js';
 
@@ -31,7 +32,7 @@ router.get(
     }
 
     const indexFilename = path.join(
-      import.meta.dirname,
+      path.resolve(...pf(import.meta.dirname, import.meta.url)),
       '..',
       '..',
       'news_items',
@@ -62,7 +63,7 @@ router.get(
     }
 
     const newsItemDir = path.join(
-      import.meta.dirname,
+      ...pf(import.meta.dirname, import.meta.url),
       '..',
       '..',
       'news_items',

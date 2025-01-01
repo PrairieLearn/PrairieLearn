@@ -12,6 +12,7 @@ import {
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 
+import { pf } from '../polyfill.js';
 import * as sprocs from '../sprocs/index.js';
 
 const POSTGRES_USER = 'postgres';
@@ -59,12 +60,17 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
   // so we need to make sure the batched migration machinery is initialized.
   initBatchedMigrations({
     project: 'prairielearn',
-    directories: [path.resolve(import.meta.dirname, '..', 'batched-migrations')],
+    directories: [
+      path.resolve(...pf(import.meta.dirname, import.meta.url), '..', 'batched-migrations'),
+    ],
   });
 
   if (runMigrations) {
     await initMigrations(
-      [path.resolve(import.meta.dirname, '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
+      [
+        path.resolve(...pf(import.meta.dirname, import.meta.url), '..', 'migrations'),
+        SCHEMA_MIGRATIONS_PATH,
+      ],
       'prairielearn',
     );
   }
