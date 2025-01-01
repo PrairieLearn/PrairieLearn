@@ -10,7 +10,6 @@ export default defineConfig({
   plugins: [
     reloader({
       entry: '/src/server',
-      // Options, see below
     }),
   ],
 });
