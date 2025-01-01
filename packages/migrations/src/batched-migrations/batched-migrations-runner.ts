@@ -88,7 +88,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
   private async loadMigrationImplementation(migrationFile: MigrationFile) {
     // We use dynamic imports to handle both CJS and ESM modules.
     const migrationModulePath = path.join(migrationFile.directory, migrationFile.filename);
-    const migrationModule = await import(migrationModulePath);
+    const migrationModule = await import(/* @vite-ignore */ migrationModulePath);
 
     const migrationImplementation = migrationModule.default as BatchedMigrationImplementation;
     validateBatchedMigrationImplementation(migrationImplementation);

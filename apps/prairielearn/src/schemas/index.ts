@@ -6,7 +6,16 @@ import * as path from 'node:path';
  */
 function readSchema(filePath: string) {
   return JSON.parse(
-    fs.readFileSync(path.resolve(import.meta.dirname, 'schemas', filePath), 'utf8'),
+    fs.readFileSync(
+      path.resolve(
+        ...(import.meta.dirname
+          ? [import.meta.dirname]
+          : [import.meta.url.replace('file:', ''), '..']),
+        'schemas',
+        filePath,
+      ),
+      'utf8',
+    ),
   );
 }
 
