@@ -1,4 +1,5 @@
 import path from 'path';
+import { fileURLToPath } from 'url';
 
 import fs from 'fs-extra';
 
@@ -14,7 +15,7 @@ import {
   sortMigrationFiles,
 } from '../load-migrations.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.filename);
+const sql = sqldb.loadSqlEquiv(fileURLToPath(import.meta.url));
 
 export async function init(directories: string | string[], project: string) {
   const migrationDirectories = Array.isArray(directories) ? directories : [directories];
