@@ -8,7 +8,7 @@ This page describes the procedure to install and run PrairieLearn without any us
   - [Node.js 20](https://nodejs.org)
   - [Yarn](https://yarnpkg.com)
   - [Python 3.10](https://www.python.org)
-  - [PostgreSQL 15](https://www.postgresql.org)
+  - [PostgreSQL 16](https://www.postgresql.org)
   - [Redis 6](https://redis.io)
   - [Graphviz](https://graphviz.org)
   - [d2](https://d2lang.com)
