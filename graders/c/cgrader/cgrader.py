@@ -632,14 +632,14 @@ class CGrader:
                         points=result == "success",
                         output=test.findtext("{*}message"),
                     )
-        except FileNotFoundError as e:
+        except FileNotFoundError as exc:
             self.result["message"] += (
                 "Test suite log file not found. Consult the instructor.\n"
             )
-            raise UngradableException() from e
-        except et.ParseError as e:
+            raise UngradableException() from exc
+        except et.ParseError as exc:
             self.result["message"] += f"Error parsing test suite log.\n\n{e}\n"
-            raise UngradableException() from e
+            raise UngradableException() from exc
 
     def save_results(self):
         if self.result["max_points"] > 0:

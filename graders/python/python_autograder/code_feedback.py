@@ -451,7 +451,7 @@ class Feedback:
 
         try:
             return f(*args, **kwargs)
-        except Exception as e:
+        except Exception as exc:
             if callable(f):
                 try:
                     callable_name = f.__name__
@@ -475,7 +475,7 @@ class Feedback:
                     "callable."
                 )
 
-            raise GradingComplete() from e
+            raise GradingComplete() from exc
 
     @classmethod
     def check_plot(
