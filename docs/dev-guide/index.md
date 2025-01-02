@@ -314,7 +314,7 @@ WHERE
     ($points_list::INTEGER[]);
   ```
 
-- To use a JavaScript array for membership testing in SQL use [`unnest()`](https://www.postgresql.org/docs/current/functions-array.html) like:
+- To use a JavaScript array for membership testing in SQL use `= ANY ($array)` (or its negative form `!= ALL ($array)`) like:
 
   ```javascript
   const questions = await sqldb.queryRows(
@@ -331,10 +331,7 @@ WHERE
   FROM
     questions
   WHERE
-    id IN (
-      SELECT
-        unnest($id_list::INTEGER[])
-    );
+    id = ANY ($id_list::INTEGER[]);
   ```
 
 - To pass a lot of data to SQL a useful pattern is to send a JSON object array and unpack it in SQL to the equivalent of a table. This is the pattern used by the "sync" code, such as [sprocs/sync_news_items.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/sprocs/sync_news_items.sql). For example:

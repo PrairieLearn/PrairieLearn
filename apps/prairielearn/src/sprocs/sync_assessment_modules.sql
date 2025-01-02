@@ -104,7 +104,7 @@ BEGIN
         DELETE FROM assessment_modules AS am
         WHERE
             am.course_id = syncing_course_id
-            AND am.name NOT IN (SELECT unnest(used_assessment_module_names))
+            AND am.name != ALL(used_assessment_module_names)
             AND am.number != 0;
     END IF;
 

@@ -87,7 +87,7 @@ BEGIN
         DELETE FROM topics AS t
         WHERE
             t.course_id = syncing_course_id
-            AND t.name NOT IN (SELECT UNNEST(used_topic_names));
+            AND t.name != ALL(used_topic_names);
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;
