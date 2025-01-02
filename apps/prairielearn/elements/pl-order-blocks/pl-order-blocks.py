@@ -590,10 +590,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     html_params["partially_correct"] = math.floor(score)
                 else:
                     html_params["incorrect"] = True
-            except Exception as err:
+            except Exception as exc:
                 raise ValueError(
                     f"invalid score: {data['partial_scores'][answer_name].get('score', 0)}"
-                ) from err
+                ) from exc
 
         with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params)

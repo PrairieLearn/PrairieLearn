@@ -132,8 +132,8 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception as err:
-                raise ValueError("invalid score" + score) from err
+            except Exception as exc:
+                raise ValueError("invalid score" + score) from exc
 
         if raw_submitted_answer is not None:
             html_params["raw_submitted_answer"] = pl.escape_unicode_string(
@@ -188,8 +188,8 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception as err:
-                raise ValueError("invalid score" + score) from err
+            except Exception as exc:
+                raise ValueError("invalid score" + score) from exc
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False

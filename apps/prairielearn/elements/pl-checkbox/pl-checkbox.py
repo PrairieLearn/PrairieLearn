@@ -380,8 +380,8 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception as err:
-                raise ValueError("invalid score" + score) from err
+            except Exception as exc:
+                raise ValueError("invalid score" + score) from exc
 
         with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
@@ -433,8 +433,8 @@ def render(element_html, data):
                         html_params["partial"] = math.floor(score * 100)
                     else:
                         html_params["incorrect"] = True
-                except Exception as err:
-                    raise ValueError("invalid score" + score) from err
+                except Exception as exc:
+                    raise ValueError("invalid score" + score) from exc
 
             with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()

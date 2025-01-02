@@ -83,10 +83,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 allow_trig_functions=allow_trig,
                 custom_functions=custom_functions,
             )
-        except phs.BaseSympyError as err:
+        except phs.BaseSympyError as exc:
             raise ValueError(
                 f'Parsing correct answer "{a_true}" for "{name}" failed.'
-            ) from err
+            ) from exc
 
         data["correct_answers"][name] = a_true
 
