@@ -144,7 +144,7 @@ Now you can install the other dependencies.
     === "uv"
 
         ```sh
-        uv venv
+        uv venv --python 3.10
         source venv/bin/activate
         ```
 
