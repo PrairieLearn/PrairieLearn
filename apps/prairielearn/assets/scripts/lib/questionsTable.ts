@@ -1,5 +1,3 @@
-/* eslint-env browser, jquery */
-
 import _ from 'lodash';
 
 import { onDocumentReady, decodeData } from '@prairielearn/browser-utils';
@@ -14,6 +12,7 @@ import { type QuestionsPageData } from '../../../src/models/questions.js';
 
 import { type ExtendedBootstrapTableOptions } from './bootstrapTable.js';
 
+// Allows records like 'Prefix...Suffix'. If key extends `${P}${K}${S}`, allowed, otherwise never.
 type PrefixSuffixObjectKeys<T extends Record<string, any>, P extends string, S extends string> = {
   [K in keyof T as K extends string ? `${P}${K}${S}` : never]: T[K];
 };
@@ -38,7 +37,6 @@ declare global {
   }
 }
 
-// TODO: Pull in correct type from env types
 onDocumentReady(() => {
   const {
     course_instance_ids,
@@ -244,7 +242,7 @@ onDocumentReady(() => {
     };
   }
 
-  if (showAiGenerateQuestionButton && tableSettings.buttons) {
+  if (showAiGenerateQuestionButton) {
     tableSettings.buttons.aiGenerateQuestion = {
       html: html`
         <a class="btn btn-secondary" href="${urlPrefix}/ai_generate_question_drafts">
