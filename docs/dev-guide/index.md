@@ -184,7 +184,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
   await sqldb.callAsync('workspaces_message_update', [workspace_id, message]);
   ```
 
-- The stored procedures are all contained in a separate [database schema](https://www.postgresql.org/docs/12/ddl-schemas.html) with a name like `server_2021-07-07T20:25:04.779Z_T75V6Y`. To see a list of the schemas use the `\dn` command in `psql`.
+- The stored procedures are all contained in a separate [database schema](https://www.postgresql.org/docs/current/ddl-schemas.html) with a name like `server_2021-07-07T20:25:04.779Z_T75V6Y`. To see a list of the schemas use the `\dn` command in `psql`.
 
 - To be able to use the stored procedures from the `psql` command line it is necessary to get the most recent schema name using `\dn` and set the `search_path` to use this _quoted_ schema name and the `public` schema:
 
@@ -314,7 +314,7 @@ WHERE
     ($points_list::INTEGER[]);
   ```
 
-- To use a JavaScript array for membership testing in SQL use [`unnest()`](https://www.postgresql.org/docs/9.5/static/functions-array.html) like:
+- To use a JavaScript array for membership testing in SQL use [`unnest()`](https://www.postgresql.org/docs/current/functions-array.html) like:
 
   ```javascript
   const questions = await sqldb.queryRows(
