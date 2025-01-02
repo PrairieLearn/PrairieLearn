@@ -114,10 +114,7 @@ SELECT
 FROM
   submissions AS s
 WHERE
-  s.id IN (
-    SELECT
-      UNNEST($submission_ids::bigint[])
-  )
+  s.id = ANY ($submission_ids::bigint[])
 ORDER BY
   s.date DESC;
 
