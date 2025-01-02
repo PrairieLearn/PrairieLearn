@@ -1,4 +1,5 @@
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import express from 'express';
 import asyncHandler from 'express-async-handler';
@@ -10,7 +11,7 @@ import * as sqldb from '@prairielearn/postgres';
 import type { AdministratorQueryResult } from '../../admin_queries/util.js';
 import { IdSchema, type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 import * as jsonLoad from '../../lib/json-load.js';
-import { pf } from '../../polyfill.js';
+
 
 import {
   AdministratorQuery,
@@ -21,12 +22,7 @@ import {
 const router = express.Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const queriesDir = path.resolve(
-  ...pf(import.meta.dirname, import.meta.url),
-  '..',
-  '..',
-  'admin_queries',
-);
+const queriesDir = path.resolve(fileURLToPath(import.meta.url), '..', '..', '..', 'admin_queries');
 
 router.get(
   '/:query',

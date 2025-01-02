@@ -1,5 +1,6 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -9,7 +10,7 @@ import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { NewsItemSchema } from '../../lib/db-types.js';
 import { userIsInstructorInAnyCourse } from '../../models/course-permissions.js';
-import { pf } from '../../polyfill.js';
+
 
 import { NewsItem } from './newsItem.html.js';
 
@@ -32,7 +33,7 @@ router.get(
     }
 
     const indexFilename = path.join(
-      path.resolve(...pf(import.meta.dirname, import.meta.url)),
+      path.resolve(fileURLToPath(import.meta.url), '..'),
       '..',
       '..',
       'news_items',
@@ -63,7 +64,8 @@ router.get(
     }
 
     const newsItemDir = path.join(
-      ...pf(import.meta.dirname, import.meta.url),
+      fileURLToPath(import.meta.url),
+      '..',
       '..',
       '..',
       'news_items',

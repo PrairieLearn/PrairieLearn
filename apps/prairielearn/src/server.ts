@@ -77,7 +77,7 @@ import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
 import * as news_items from './news_items/index.js';
-import { pf } from './polyfill.js';
+
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
 
@@ -115,7 +115,7 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
  */
 export async function initExpress(): Promise<Express> {
   const app = express();
-  app.set('views', path.join(...pf(import.meta.dirname, import.meta.url), 'pages'));
+  app.set('views', path.join(fileURLToPath(import.meta.url), '..', 'pages'));
   app.set('trust proxy', config.trustProxy);
 
   // These should come first so that we get instrumentation on all our requests.
@@ -2216,20 +2216,7 @@ export async function startServer() {
   if ((import.meta as any).env.PROD) {
     server.listen(config.serverPort);
   } else if (httpDevServer) {
-    // Use @vavite/httpDevServer for HMR
-    console.log('Doing it...');
-    // server.listen(config.serverPort);
-    // const mini = express();
-    // mini.get('/foo', function (req, res) {
-    //   console.log(req.originalUrl);
-    //   res.send('INDEXROUTE ' + req.originalUrl);
-    // });
-    // mini.get('*', function (req, res) {
-    //   console.log(req.originalUrl);
-    //   res.send('tested ' + req.originalUrl);
-    // });
-
-    // must be a handler, not a server yet
+    // TODO: currently, must be a connect handler, not an instance of a http server
     httpDevServer.on('request', app);
     httpDevServer.on('error', (err) => {
       throw err;
@@ -2491,9 +2478,7 @@ if (/* esMain(import.meta) && */ config.startServer) {
         // call `enqueueBatchedMigration` which requires this to be initialized.
         const runner = initBatchedMigrations({
           project: 'prairielearn',
-          directories: [
-            path.join(...pf(import.meta.dirname, import.meta.url), 'batched-migrations'),
-          ],
+          directories: [path.join(fileURLToPath(import.meta.url), '..', 'batched-migrations')],
         });
 
         runner?.on('error', (err) => {
@@ -2507,10 +2492,7 @@ if (/* esMain(import.meta) && */ config.startServer) {
         // running migrations as we do when we start the server.
         if (config.runMigrations || argv['migrate-and-exit']) {
           await migrations.init(
-            [
-              path.join(...pf(import.meta.dirname, import.meta.url), 'migrations'),
-              SCHEMA_MIGRATIONS_PATH,
-            ],
+            [path.join(fileURLToPath(import.meta.url), '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
             'prairielearn',
           );
 
@@ -2693,7 +2675,6 @@ if (/* esMain(import.meta) && */ config.startServer) {
       async () => {
         logger.verbose('Starting server...');
         await startServer();
-        console.log('returned from startServer');
       },
       async () => socketServer.init(server),
       async () => externalGradingSocket.init(),
