@@ -58,9 +58,9 @@ let didMigration = false;
 
 export async function initWithLock(directories: string[], project: string) {
   if (didMigration) {
-    logger.verbose('Already did migration, returning');
-    // throw Error('PLEASE MIGRATE');
-    return;
+    // For Vite HMR mode
+    if ((import.meta as any).env?.DEV) return;
+    throw new Error('BatchedMigrationsRunner has already performed migration');
   }
   logger.verbose('Starting DB schema migration');
 
