@@ -259,7 +259,4 @@ UPDATE jobs AS j
 SET
   heartbeat_at = CURRENT_TIMESTAMP
 WHERE
-  j.id IN (
-    SELECT
-      UNNEST($job_ids::bigint[])
-  );
+  j.id = ANY ($job_ids::bigint[]);
