@@ -77,7 +77,6 @@ import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
 import * as news_items from './news_items/index.js';
-
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
 
@@ -2278,7 +2277,7 @@ export async function insertDevUser() {
   await sqldb.queryAsync(adminSql, { user_id });
 }
 
-if (/* esMain(import.meta) && */ config.startServer) {
+if ((esMain(import.meta) || import.meta.env?.DEV) && config.startServer) {
   async.series(
     [
       async () => {
