@@ -2571,7 +2571,7 @@ if (esMain(import.meta) && config.startServer) {
       },
       async () => {
         // We create and activate a random DB schema name
-        // (https://www.postgresql.org/docs/12/ddl-schemas.html)
+        // (https://www.postgresql.org/docs/current/ddl-schemas.html)
         // after we have run the migrations but before we create
         // the sprocs. This means all tables (from migrations) are
         // in the public schema, but all sprocs are in the random

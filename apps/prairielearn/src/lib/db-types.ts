@@ -390,7 +390,6 @@ export const CourseInstanceSchema = z.object({
   hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
   long_name: z.string().nullable(),
-  ps_linked: z.boolean(),
   short_name: z.string().nullable(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
