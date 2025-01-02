@@ -5,7 +5,7 @@ import chevron
 import lxml.html
 import prairielearn as pl
 from ansi2html import Ansi2HTMLConverter
-from colors import PLColor
+from prairielearn.colors import PLColor
 
 # No built-in support for custom schemes, so we'll monkey-patch our own colors
 # into the module. Colors borrowed from the "Dark Background" color preset in

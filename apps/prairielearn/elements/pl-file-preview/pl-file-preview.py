@@ -1,7 +1,7 @@
 import chevron
 import lxml.html
 import prairielearn as pl
-from colors import PLColor
+from prairielearn.colors import PLColor
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
