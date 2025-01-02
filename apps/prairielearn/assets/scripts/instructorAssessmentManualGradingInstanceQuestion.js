@@ -121,9 +121,7 @@ function resetInstructorGradingPanel() {
       const input = this.closest('.js-adjust-points')?.querySelector(
         '.js-adjust-points-input-container',
       );
-      if (!input) {
-        return;
-      }
+      if (!input) return;
       input.style.display = '';
       input.classList.remove('d-none');
       input.querySelector('input')?.focus();
@@ -194,9 +192,7 @@ function adjustHeightFromContent(element) {
 
 function updateSettingsPointValues() {
   const form = document.querySelector('.js-rubric-settings-modal form');
-  if (!form) {
-    return;
-  }
+  if (!form) return;
   const selected = form.querySelector('.js-replace-auto-points-input:checked');
   const points = Number((selected ?? form).dataset.maxPoints);
   const pointsStr = points === 1 ? '1 point' : `${points} points`;
@@ -218,9 +214,7 @@ function updateSettingsPointValues() {
 
 function checkRubricItemTotals() {
   const form = document.querySelector('.js-rubric-settings-modal form');
-  if (!form) {
-    return;
-  }
+  if (!form) return;
   const startingPoints = Number(form.querySelector('[name="starting_points"]:checked')?.value ?? 0);
   const [totalPositive, totalNegative] = Array.from(form.querySelectorAll('.js-rubric-item-points'))
     .map((input) => Number(input.value))
@@ -228,10 +222,16 @@ function checkRubricItemTotals() {
       ([pos, neg], value) => (value > 0 ? [pos + value, neg] : [pos, neg + value]),
       [startingPoints, startingPoints],
     );
-  const minPoints = Number(form.querySelector('[name="min_points"]')?.value ?? 0);
-  const maxPoints =
-    Number(form.querySelector('[name="max_extra_points"]')?.value ?? 0) +
-    Number(form.querySelector('.js-negative-grading')?.value ?? 0);
+
+  const minPointsInput = form.querySelector('[name="min_points"]');
+  const maxPointsInput = form.querySelector('[name="max_extra_points"]');
+  const jsNegativeGradingInput = form.querySelector('.js-negative-grading');
+  if (!minPointsInput || !maxPointsInput || !jsNegativeGradingInput) {
+    throw Error('Missing a required input');
+  }
+
+  const minPoints = Number(minPointsInput.value ?? 0);
+  const maxPoints = Number(maxPointsInput.value ?? 0) + Number(jsNegativeGradingInput.value ?? 0);
   const settingsPointsWarningPlaceholder = form.querySelector(
     '.js-settings-points-warning-placeholder',
   );
@@ -263,9 +263,8 @@ function submitSettings(e, use_rubric) {
   const gradingForm = document.querySelector(
     '.js-main-grading-panel form[name=manual-grading-form]',
   );
-  if (!gradingForm) {
-    return;
-  }
+  if (!gradingForm) return;
+
   // Save values in grading rubric so they can be re-applied once the form is re-created.
   const rubricFormData = Array.from(new FormData(gradingForm).entries());
   // The CSRF token of the returned panels is not valid for the current form (it uses a
@@ -332,9 +331,7 @@ function submitSettings(e, use_rubric) {
 }
 
 function addAlert(placeholder, msg, classes = ['alert-danger']) {
-  if (!placeholder) {
-    return;
-  }
+  if (!placeholder) return;
   const alert = document.createElement('div');
   alert.classList.add('alert', 'alert-dismissible', 'fade', 'show');
   if (classes) {
@@ -436,9 +433,7 @@ function computePointsFromRubric(sourceInput = null) {
   document.querySelectorAll('form[name=manual-grading-form]').forEach((form) => {
     if (form instanceof HTMLFormElement && form.dataset.rubricActive === 'true') {
       const manualInput = form.querySelector('.js-manual-score-value-input-points');
-      if (!manualInput) {
-        return;
-      }
+      if (!manualInput) return;
       const replaceAutoPoints = form.dataset.rubricReplaceAutoPoints === 'true';
       const startingPoints = Number(form.dataset.rubricStartingPoints ?? 0);
       const itemsSum = Array.from(form.querySelectorAll('.js-selectable-rubric-item:checked'))
@@ -463,15 +458,11 @@ function computePointsFromRubric(sourceInput = null) {
 }
 
 function enableRubricItemLongTextField(event) {
-  if (!(event.target instanceof HTMLElement)) {
-    return;
-  }
+  if (!(event.target instanceof HTMLElement)) return;
   const container = event.target.closest('td');
   const label = container.querySelector('label');
   const button = container.querySelector('button');
-  if (!container || !label || !button) {
-    return;
-  }
+  if (!container || !label || !button) return;
   const input = document.createElement('textarea');
   input.classList.add('form-control');
   input.name = button.dataset.inputName;
@@ -493,9 +484,7 @@ function updateRubricItemOrderField() {
 }
 
 function moveRowDown(event) {
-  if (!(event.target instanceof HTMLElement)) {
-    return;
-  }
+  if (!(event.target instanceof HTMLElement)) return;
   const row = event.target.closest('tr');
   if (!row || !row.parentNode || !row.nextElementSibling) {
     return;
@@ -505,21 +494,15 @@ function moveRowDown(event) {
 }
 
 function moveRowUp(event) {
-  if (!(event.target instanceof HTMLElement)) {
-    return;
-  }
+  if (!(event.target instanceof HTMLElement)) return;
   const row = event.target.closest('tr');
-  if (!row || !row.parentNode || !row.nextElementSibling || !row.previousElementSibling) {
-    return;
-  }
+  if (!row || !row.parentNode || !row.nextElementSibling || !row.previousElementSibling) return;
   row.parentNode.insertBefore(row.previousElementSibling, row.nextElementSibling);
   updateRubricItemOrderField();
 }
 
 function deleteRow(event) {
-  if (!(event.target instanceof HTMLElement)) {
-    return;
-  }
+  if (!(event.target instanceof HTMLElement)) return;
   const table = event.target.closest('table');
   event.target.closest('tr')?.remove();
   if (!table?.querySelectorAll('.js-rubric-item-row-order')?.length) {
@@ -530,9 +513,7 @@ function deleteRow(event) {
 }
 
 function rowDragStart(event) {
-  if (!(event.target instanceof HTMLElement)) {
-    return;
-  }
+  if (!(event.target instanceof HTMLElement)) return;
   window.rubricItemRowDragging = event.target.closest('tr');
   if (event.originalEvent?.dataTransfer) {
     event.originalEvent.dataTransfer.effectAllowed = 'move';
@@ -540,9 +521,7 @@ function rowDragStart(event) {
 }
 
 function rowDragOver(event) {
-  if (!(event.target instanceof HTMLElement)) {
-    return;
-  }
+  if (!(event.target instanceof HTMLElement)) return;
   const row = event.target.closest('tr');
   // Rows in different tables don't count
   if (!row || row.parent !== window.rubricItemRowDragging.parent) return;
@@ -562,13 +541,9 @@ function rowDragOver(event) {
 
 function addRubricItemRow() {
   const modal = this.closest('.modal');
-  if (!modal) {
-    return;
-  }
+  if (!modal) return;
   const table = modal.querySelector('.js-rubric-items-table');
-  if (!table) {
-    return;
-  }
+  if (!table) return;
   const next_id = Number(table.dataset.nextNewId ?? 0) + 1;
   const points = modal.querySelector('.js-negative-grading')?.checked ? -1 : +1;
   table.dataset.nextNewId = `${next_id}`;
@@ -576,9 +551,7 @@ function addRubricItemRow() {
   // Create a new row based on the template element in the modal
   const templateRow = modal.querySelector('.js-new-row-rubric-item');
   const row = templateRow?.content.firstElementChild?.cloneNode(true);
-  if (!row || !(row instanceof HTMLTableRowElement)) {
-    return;
-  }
+  if (!row || !(row instanceof HTMLTableRowElement)) return;
   table.querySelector('tbody').appendChild(row);
 
   const rubricItemRowOrder = row.querySelector('.js-rubric-item-row-order');
