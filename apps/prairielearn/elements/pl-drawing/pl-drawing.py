@@ -56,9 +56,9 @@ def check_attributes_rec(element):
     if elements.should_validate_attributes(name):
         try:
             pl.check_attribs(element, required_attribs=[], optional_attribs=attributes)
-        except Exception as e:
-            print(f"Error in {name}: {e}")
-            raise e
+        except Exception as exc:
+            print(f"Error in {name}: {exc}")
+            raise exc
     for child in element:
         check_attributes_rec(child)
 
