@@ -645,7 +645,7 @@ class CGrader:
         if self.result["max_points"] > 0:
             self.result["score"] = self.result["points"] / self.result["max_points"]
         if "partial_scores" in self.result:
-            for _field, ps in self.result["partial_scores"].items():
+            for ps in self.result["partial_scores"].values():
                 ps["score"] = ps["points"] / ps["max_points"]
 
         if not os.path.exists("/grade/results"):
