@@ -70,4 +70,4 @@ ENTRYPOINT ["/usr/bin/pl-gosu-helper.sh", "/usr/bin/entrypoint.sh", "--auth", "n
     "--bind-addr", "0.0.0.0:8080", "."]
 
 # USAGE: 
-# docker build --platform linux/amd64 -t prairielearn/workspace-vscode .
+# docker build --platform linux/amd64 -t prairielearn/workspace-vscode-base .
