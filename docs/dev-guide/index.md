@@ -314,7 +314,7 @@ WHERE
     ($points_list::INTEGER[]);
   ```
 
-- To use a JavaScript array for membership testing in SQL use `= ANY ($array)` (or its negative form `!= ALL ($array)`) like:
+- To use a JavaScript array for membership testing in SQL use [`unnest()`](https://www.postgresql.org/docs/current/functions-array.html) like:
 
   ```javascript
   const questions = await sqldb.queryRows(
