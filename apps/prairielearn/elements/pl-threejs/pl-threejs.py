@@ -494,10 +494,10 @@ def grade(element_html, data):
 def parse_correct_answer(f, a):
     if f == "homogeneous":
         try:
-            transform_matrix = np.array(a, dtype=np.float64)
-            if transform_matrix.shape == (4, 4):
-                rot_matrix = transform_matrix[0:3, 0:3]
-                p = transform_matrix[0:3, 3:4]
+            rotation_matrix = np.array(a, dtype=np.float64)
+            if rotation_matrix.shape == (4, 4):
+                rot_matrix = rotation_matrix[0:3, 0:3]
+                p = rotation_matrix[0:3, 3:4]
                 return np.reshape(p, (3,)), pyquaternion.Quaternion(matrix=rot_matrix)
             else:
                 raise ValueError()

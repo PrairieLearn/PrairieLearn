@@ -19,11 +19,7 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = [
-    # pycodestyle
     "E",
-    "W",
-    # Pyflakes
-    "F",
     # isort
     "I",
     # flake8-bugbear
@@ -31,8 +27,12 @@ select = [
     # flake8-simplify
     "SIM"
     ]
-# Ignore line length errors
-ignore = ["E501", "SIM108"]
+ignore = [
+    # Ignore line length errors
+    "E501",
+    # if-else blocks that could be shortened(https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp/)
+    "SIM108"
+]
 
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear

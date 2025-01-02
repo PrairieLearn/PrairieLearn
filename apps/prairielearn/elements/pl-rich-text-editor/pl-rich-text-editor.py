@@ -72,7 +72,6 @@ def prepare(element_html, data):
     ):
         raise Exception(
             'Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.'
-            + element_text
         )
 
 
