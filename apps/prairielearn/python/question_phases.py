@@ -134,8 +134,8 @@ def process(
                 return None
 
             # Add element-specific or phase-specific information to the data.
-            prepare_data(phase, data, context, element)
-            prepare_data(phase, original_data, context, element)
+            prepare_data(phase, data, context, element.tag)
+            prepare_data(phase, original_data, context, element.tag)
 
             # Temporarily strip tail text from the element; the `parse_fragment`
             # function will choke on it.
@@ -188,14 +188,14 @@ def process(
 
 
 def prepare_data(
-    phase: Phase, data: dict, context: RenderContext, element: lxml.html.HtmlElement
+    phase: Phase, data: dict, context: RenderContext, element_tag: str
 ) -> None:
     element_extensions = context["element_extensions"]
-    element_info = context["elements"][element.tag]
+    element_info = context["elements"][element_tag]
 
     # Make a deep copy of the data so that question/element code can't
     # modify the source data.
-    data["extensions"] = copy.deepcopy(element_extensions.get(element.tag, {}))
+    data["extensions"] = copy.deepcopy(element_extensions.get(element_tag, {}))
 
     # `*_url` options are only present during the render phase.
     if phase == "render":
