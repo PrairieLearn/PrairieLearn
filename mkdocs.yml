@@ -100,6 +100,10 @@ markdown_extensions:
       emoji_generator: !!python/name:material.extensions.emoji.to_svg
   - md_in_html
 
+  # Reference markdown files from other markdown files
+  - markdown_include.include:
+      base_path: docs
+
 extra_javascript:
   - assets/mathjax-config.js
   - https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js
@@ -112,6 +116,9 @@ extra:
       link: https://github.com/PrairieLearn/PrairieLearn
     - icon: fontawesome/brands/slack
       link: https://prairielearn.slack.com
+
+exclude_docs: |
+  elements/reference-links.md
 
 nav:
   - Overview: 'index.md'
@@ -130,7 +137,12 @@ nav:
       - 'Assessment configuration': 'assessment/index.md'
       - 'Question configuration': 'question.md'
       - 'Question runtime environment': 'questionRuntime/index.md'
-      - 'Elements for writing questions': 'elements.md'
+      - 'Elements for writing questions':
+          - 'Overview': elements.md
+          - 'Submission Elements': 'elements/submission-elements.md'
+          - 'Decorative Elements': 'elements/decorative-elements.md'
+          - 'Conditional Elements': 'elements/conditional-elements.md'
+          - 'Deprecated Elements': 'elements/deprecated-elements.md'
       - 'Access control': 'accessControl/index.md'
       - 'Remote exams': 'remoteExams.md'
       - 'clientFiles and serverFiles': 'clientServerFiles.md'
