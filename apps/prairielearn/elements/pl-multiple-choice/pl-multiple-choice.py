@@ -461,7 +461,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     # NOTE: The saved correct answer is just the one that gets shown to the student, it is not used for grading
     display_answers = []
     correct_answer = None
-    for key, answer in zip(pl.iter_keys(), answers_to_display):
+    for key, answer in zip(pl.iter_keys(), answers_to_display, strict=False):
         keyed_answer = {
             "key": key,
             "html": answer.html,
