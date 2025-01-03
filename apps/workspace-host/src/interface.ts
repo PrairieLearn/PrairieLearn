@@ -886,8 +886,12 @@ async function _startContainer(
  * propagate to the caller. Useful during the initialization sequence when we
  * would mark the host as unhealthy if an error occurred while updating the state.
  */
-function markWorkspaceStopped(workspaceId: string | number, message?: string) {
-  workspaceUtils.updateWorkspaceState(workspaceId, 'stopped', message).catch((err) => {
+function safeUpdateWorkspaceState(
+  workspaceId: string | number,
+  state: 'stopped',
+  message?: string,
+) {
+  workspaceUtils.updateWorkspaceState(workspaceId, state, message).catch((err) => {
     logger.error('Error updating workspace state', err);
     Sentry.captureException(err);
   });
@@ -932,8 +936,9 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       settings = await _getWorkspaceSettings(workspace.id);
     } catch (err) {
       logger.error(`Error configuring workspace ${workspace.id}`, err);
-      markWorkspaceStopped(
+      safeUpdateWorkspaceState(
         workspace.id,
+        'stopped',
         'Error configuring workspace. Click "Reboot" to try again.',
       );
       return; // don't set host to unhealthy
@@ -944,7 +949,11 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     } catch (err) {
       const image = settings.workspace_image;
       logger.error(`Error pulling image ${image} for workspace ${workspace.id}`, err);
-      markWorkspaceStopped(workspace.id, 'Error pulling image. Click "Reboot" to try again.');
+      safeUpdateWorkspaceState(
+        workspace.id,
+        'stopped',
+        'Error pulling image. Click "Reboot" to try again.',
+      );
       return; // don't set host to unhealthy
     }
 
@@ -954,7 +963,11 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       container = await _createContainer(workspace, settings, launch_port);
     } catch (err) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
-      markWorkspaceStopped(workspace.id, 'Error creating container. Click "Reboot" to try again.');
+      safeUpdateWorkspaceState(
+        workspace.id,
+        'stopped',
+        'Error creating container. Click "Reboot" to try again.',
+      );
       return; // don't set host to unhealthy
     }
 
@@ -1004,7 +1017,11 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       }
     } catch (err) {
       logger.error(`Error starting container for workspace ${workspace.id}`, err);
-      markWorkspaceStopped(workspace.id, 'Error starting container. Click "Reboot" to try again.');
+      safeUpdateWorkspaceState(
+        workspace.id,
+        'stopped',
+        'Error starting container. Click "Reboot" to try again.',
+      );
 
       // Immediately kill and remove the container, which will flush any
       // logs to S3 for better debugging.
