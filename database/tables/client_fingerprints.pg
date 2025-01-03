@@ -1,5 +1,6 @@
 columns
     accept_language: character varying(255)
+    client_hints: jsonb
     created_at: timestamp with time zone not null default now()
     id: bigint not null default nextval('client_fingerprints_id_seq'::regclass)
     ip_address: inet not null

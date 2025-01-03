@@ -345,6 +345,7 @@ export type AuthnProvider = z.infer<typeof AuthnProviderSchema>;
 
 export const ClientFingerprintSchema = z.object({
   accept_language: z.string().nullable(),
+  client_hints: z.record(z.string(), z.any()).nullable(),
   created_at: DateFromISOString,
   id: IdSchema,
   ip_address: z.string(),
