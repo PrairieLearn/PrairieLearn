@@ -64,16 +64,18 @@ let courseElementsCache = {};
 // Maps course IDs to course element extension info
 let courseExtensionsCache = {};
 
-interface CourseIssueErrorOptions {
-  cause?: Error;
-  data?: any;
-  fatal: boolean;
-}
 class CourseIssueError extends Error {
   data: any;
   fatal: boolean;
-  cause: Error;
-  constructor(message: string, options?: CourseIssueErrorOptions) {
+
+  constructor(
+    message: string,
+    options?: {
+      cause?: Error;
+      data?: any;
+      fatal: boolean;
+    },
+  ) {
     super(message, { cause: options?.cause });
     this.name = 'CourseIssueError';
     this.data = options?.data;
@@ -434,7 +436,7 @@ async function execPythonServer(
   }
 }
 
-async function execTemplate(htmlFilename: string, data: mustache.Context) {
+async function execTemplate(htmlFilename: string, data: any) {
   const rawFile = await fs.readFile(htmlFilename, { encoding: 'utf8' });
   let html = mustache.render(rawFile, data);
   html = markdown.processQuestion(html);
@@ -598,8 +600,8 @@ async function traverseQuestionAndExecuteFunctions(
     ..._.keys(context.course_elements),
   ]);
 
-  const visitNode = async (node: any) => {
-    if (node.tagName && questionElements.has(node.tagName)) {
+  const visitNode = async (node: parse5.DefaultTreeAdapterTypes.Node) => {
+    if ('tagName' in node && questionElements.has(node.tagName)) {
       const elementName = node.tagName;
       const elementFile = getElementController(elementName, context);
       if (phase === 'render' && !_.includes(renderedElementNames, elementName)) {
@@ -683,25 +685,36 @@ async function traverseQuestionAndExecuteFunctions(
         }
       }
     }
-    const newChildren: any[] = [];
+
+    // Comment nodes don't have childNodes and can't be serialized.
+    if (!('childNodes' in node)) {
+      return null;
+    }
+
+    const newChildren: parse5.DefaultTreeAdapterTypes.ChildNode[] = [];
     for (let i = 0; i < (node.childNodes || []).length; i++) {
       const childRes = await visitNode(node.childNodes[i]);
       if (childRes) {
         if (childRes.nodeName === '#document-fragment') {
           newChildren.push(...childRes.childNodes);
-        } else {
+        } else if ('tagName' in childRes) {
           newChildren.push(childRes);
+        } else {
+          throw new CourseIssueError(`Unexpected visited node - '${childRes}'`);
         }
       }
     }
-    // the following line is safe because we can't be in multiple copies of this function simultaneously
     node.childNodes = newChildren;
+
+    // the following line is safe because we can't be in multiple copies of this function simultaneously
     return node;
   };
   let questionHtml = '';
   try {
     const res = await visitNode(parse5.parseFragment(html));
-    questionHtml = parse5.serialize(res);
+    if (res) {
+      questionHtml = parse5.serialize(res);
+    }
   } catch (e) {
     courseIssues.push(e);
   }
@@ -734,7 +747,7 @@ async function legacyTraverseQuestionAndExecuteFunctions(
   try {
     await async.eachSeries(questionElements, async (elementName) => {
       await async.eachSeries($(elementName).toArray(), async (element) => {
-        if (phase === 'render' && !_.includes(renderedElementNames, element.toString())) {
+        if (phase === 'render' && !_.includes(renderedElementNames, elementName)) {
           renderedElementNames.push(elementName);
         }
 
@@ -1079,10 +1092,7 @@ async function processQuestion(
  * These include file paths that are relevant for questions and elements.
  * URLs are not included here because those are only applicable during 'render'.
  */
-function getContextOptions(context: {
-  question_dir: string;
-  course_dir: string;
-}): Record<string, string> {
+function getContextOptions(context: { question_dir: string; course_dir: string }) {
   return {
     question_path: context.question_dir,
     client_files_question_path: path.join(context.question_dir, 'clientFilesQuestion'),
@@ -1173,7 +1183,7 @@ async function renderPanel(
   panel: 'question' | 'answer' | 'submission',
   codeCaller: CodeCaller,
   variant: Variant,
-  submission: Submission | undefined | null,
+  submission: Submission | null,
   course: Course,
   locals: Record<string, any>,
   context: QuestionProcessingContext,
@@ -1893,6 +1903,10 @@ export async function test(
 }
 
 async function getContext(question: Question, course: Course): Promise<QuestionProcessingContext> {
+  if (question.directory === null) {
+    throw new Error('Question directory is missing');
+  }
+
   const coursePath = chunks.getRuntimeDirectoryForCourse(course);
   const chunksToLoad: Chunk[] = [
     { type: 'question', questionId: question.id },
@@ -1922,9 +1936,6 @@ async function getContext(question: Question, course: Course): Promise<QuestionP
   // that actually executes the question.
   const courseDirectory = config.workersExecutionMode === 'native' ? coursePath : '/course';
   const courseDirectoryHost = coursePath;
-  if (question.directory === null) {
-    throw new Error('Question directory is missing');
-  }
 
   const questionDirectory = path.join(courseDirectory, 'questions', question.directory);
   const questionDirectoryHost = path.join(coursePath, 'questions', question.directory);

@@ -58,6 +58,7 @@ function generate(server: any, coursePath: string, question: Question, variant_s
   if (question.directory === null) {
     throw new Error('Question directory is required');
   }
+
   const questionDir = path.join(coursePath, 'questions', question.directory);
   const options = question.options || {};
 
@@ -76,6 +77,10 @@ function grade(
   variant: Variant,
   question: Question,
 ) {
+  if (question.directory === null) {
+    throw new Error('Question directory is required');
+  }
+
   const vid = variant.variant_seed;
 
   // Note: v3 questions use `params` and `true_answer` from the submission instead
@@ -87,9 +92,6 @@ function grade(
 
   const submittedAnswer = submission.submitted_answer;
   const options = variant.options;
-  if (question.directory === null) {
-    throw new Error('Question directory is required');
-  }
   const questionDir = path.join(coursePath, 'questions', question.directory);
 
   const grading = server.gradeAnswer(

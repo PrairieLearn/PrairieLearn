@@ -2,19 +2,19 @@ import { type EffectiveQuestionType, type QuestionServer, type QuestionType } fr
 // Re-export all the types from types.js
 export * from './types.js';
 
-const questionModules: Record<EffectiveQuestionType, QuestionServer> = {
+const questionModules = {
   Calculation: await import('./calculation-subprocess.js'),
   Freeform: await import('./freeform.js'),
-};
+} satisfies Record<EffectiveQuestionType, QuestionServer>;
 
-const effectiveQuestionTypes: Record<QuestionType, EffectiveQuestionType> = {
+const effectiveQuestionTypes = {
   Calculation: 'Calculation',
   File: 'Calculation',
   Checkbox: 'Calculation',
   MultipleChoice: 'Calculation',
   MultipleTrueFalse: 'Calculation',
   Freeform: 'Freeform',
-};
+} satisfies Record<QuestionType, EffectiveQuestionType>;
 
 export function getEffectiveQuestionType(type: QuestionType): EffectiveQuestionType {
   if (type in effectiveQuestionTypes) {
