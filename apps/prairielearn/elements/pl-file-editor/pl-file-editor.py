@@ -58,11 +58,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         raise Exception("There is more than one file editor with the same file name.")
     data["params"]["_required_file_names"].append(file_name)
 
-    if source_file_name is not None:
-        if element.text is not None and not str(element.text).isspace():
-            raise Exception(
-                'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
-            )
+    if (
+        source_file_name is not None
+        and element.text is not None
+        and not str(element.text).isspace()
+    ):
+        raise Exception(
+            'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
+        )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:

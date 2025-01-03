@@ -53,17 +53,17 @@ def grade_o_expression(
         ):
             return (0.0, NEGATIVE_FEEDBACK)
 
-        L = sympy.limit(
+        limit = sympy.limit(
             sympy.simplify(sym_true / sym_sub), sympy.Symbol(variables[0]), sympy.oo
         )
 
-        if L < sympy.sympify(0):
+        if limit < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
-        elif L == sympy.oo:
+        elif limit == sympy.oo:
             return (0.0, INCORRECT_FEEDBACK)
-        elif L == sympy.sympify(0):
+        elif limit == sympy.sympify(0):
             return (0.25, TOO_LOOSE_FEEDBACK)
-        elif L == sympy.sympify(1):
+        elif limit == sympy.sympify(1):
             return (0.5, LOWER_ORDER_TERMS_FEEDBACK)
 
         return (0.5, CONSTANT_FACTORS_FEEDBACK)
@@ -94,18 +94,18 @@ def grade_theta_expression(
         ):
             return (0.0, NEGATIVE_FEEDBACK)
 
-        omega_L = sympy.limit(
+        omega_limit = sympy.limit(
             sympy.simplify(sym_sub / sym_true), sympy.Symbol(variables[0]), sympy.oo
         )
-        bigo_L = sympy.limit(
+        bigo_limit = sympy.limit(
             sympy.simplify(sym_true / sym_sub), sympy.Symbol(variables[0]), sympy.oo
         )
 
-        if omega_L < sympy.sympify(0) or bigo_L < sympy.sympify(0):
+        if omega_limit < sympy.sympify(0) or bigo_limit < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
-        elif omega_L == sympy.oo or bigo_L == sympy.oo:
+        elif omega_limit == sympy.oo or bigo_limit == sympy.oo:
             return (0.0, INCORRECT_FEEDBACK)
-        elif omega_L == sympy.sympify(1) and bigo_L == sympy.sympify(1):
+        elif omega_limit == sympy.sympify(1) and bigo_limit == sympy.sympify(1):
             return (0.25, THETA_LOWER_ORDER_TERMS_FEEDBACK)
 
         return (0.25, THETA_CONSTANT_FACTORS_FEEDBACK)
@@ -136,17 +136,17 @@ def grade_omega_expression(
         ):
             return (0.0, NEGATIVE_FEEDBACK)
 
-        L = sympy.limit(
+        limit = sympy.limit(
             sympy.simplify(sym_true / sym_sub), sympy.Symbol(variables[0]), sympy.oo
         )
 
-        if L < sympy.sympify(0):
+        if limit < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
-        elif L == sympy.oo:
+        elif limit == sympy.oo:
             return (0.25, TOO_LOOSE_FEEDBACK)
-        elif L == sympy.sympify(0):
+        elif limit == sympy.sympify(0):
             return (0.0, INCORRECT_FEEDBACK)
-        elif L == sympy.sympify(1):
+        elif limit == sympy.sympify(1):
             return (0.5, LOWER_ORDER_TERMS_FEEDBACK)
 
         return (0.5, CONSTANT_FACTORS_FEEDBACK)

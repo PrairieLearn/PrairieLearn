@@ -158,7 +158,7 @@ def prepare(element_html, data):
 
     display_answers = []
     correct_answer_list = []
-    for i, (index, correct, html, feedback) in enumerate(sampled_answers):
+    for i, (_index, correct, html, feedback) in enumerate(sampled_answers):
         keyed_answer = {"key": pl.index2key(i), "html": html, "feedback": feedback}
         display_answers.append(keyed_answer)
         if correct:
@@ -380,8 +380,8 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            except Exception as exc:
+                raise ValueError("invalid score" + score) from exc
 
         with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
@@ -433,8 +433,8 @@ def render(element_html, data):
                         html_params["partial"] = math.floor(score * 100)
                     else:
                         html_params["incorrect"] = True
-                except Exception:
-                    raise ValueError("invalid score" + score)
+                except Exception as exc:
+                    raise ValueError("invalid score" + score) from exc
 
             with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
@@ -537,29 +537,29 @@ def grade(element_html, data):
         option["key"]: option.get("feedback", None) for option in data["params"][name]
     }
 
-    submittedSet = set(submitted_keys)
-    correctSet = set(correct_keys)
+    submitted_set = set(submitted_keys)
+    correct_set = set(correct_keys)
 
     score = 0
-    if not partial_credit and submittedSet == correctSet:
+    if not partial_credit and submitted_set == correct_set:
         score = 1
     elif partial_credit:
         if partial_credit_method == "PC":
-            if submittedSet == correctSet:
+            if submitted_set == correct_set:
                 score = 1
             else:
-                n_correct_answers = len(correctSet) - len(correctSet - submittedSet)
-                points = n_correct_answers - len(submittedSet - correctSet)
-                score = max(0, points / len(correctSet))
+                n_correct_answers = len(correct_set) - len(correct_set - submitted_set)
+                points = n_correct_answers - len(submitted_set - correct_set)
+                score = max(0, points / len(correct_set))
         elif partial_credit_method == "EDC":
-            number_wrong = len(submittedSet - correctSet) + len(
-                correctSet - submittedSet
+            number_wrong = len(submitted_set - correct_set) + len(
+                correct_set - submitted_set
             )
             score = 1 - 1.0 * number_wrong / number_answers
         elif partial_credit_method == "COV":
-            n_correct_answers = len(correctSet & submittedSet)
-            base_score = n_correct_answers / len(correctSet)
-            guessing_factor = n_correct_answers / len(submittedSet)
+            n_correct_answers = len(correct_set & submitted_set)
+            base_score = n_correct_answers / len(correct_set)
+            guessing_factor = n_correct_answers / len(submitted_set)
             score = base_score * guessing_factor
         else:
             raise ValueError(

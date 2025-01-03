@@ -9,7 +9,7 @@ def generate(data):
     c = "it is a beautiful day!"
 
     list1 = []
-    for i in range(8):
+    for _ in range(8):
         list1.append(random.randint(0, 1))
 
     d = "".join(str(e) for e in list1)
