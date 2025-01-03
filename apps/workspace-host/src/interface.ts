@@ -610,6 +610,22 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
   return settings;
 }
 
+const ProgressDetailsSchema = z.record(
+  z.object({
+    current: z.number(),
+    total: z.number(),
+  }),
+);
+type ProgressDetails = z.infer<typeof ProgressDetailsSchema>;
+
+async function _getCachedProgressDetails(workspace_image: string): Promise<ProgressDetails> {
+  const rawProgressDetails = await cache.get(`workspaceProgressInit:${workspace_image}`);
+
+  // Use Zod to validate the data. If it is invalid, we will set it to the empty object.
+  const validatedProgressDetails = ProgressDetailsSchema.safeParse(rawProgressDetails);
+  return validatedProgressDetails.success ? validatedProgressDetails.data : {};
+}
+
 async function _pullImage(workspace: Workspace) {
   if (!config.workspacePullImagesFromDockerHub) {
     logger.info('Not pulling docker image');
@@ -654,20 +670,7 @@ async function _pullImage(workspace: Workspace) {
   // the previously pulled layers and provide a more accurate
   // percentage calculation on any subsequent pulls.
 
-  const rawProgressDetails = await cache.get(`workspaceProgressInit:${workspace_image}`);
-  // Use Zod to validate the rawProgressDetails. If it is invalid, we will set it to the empty object.
-
-  const ProgressDetailsSchema = z.record(
-    z.object({
-      current: z.number(),
-      total: z.number(),
-    }),
-  );
-
-  const validatedProgressDetails = ProgressDetailsSchema.safeParse(rawProgressDetails);
-  const progressDetails: z.infer<typeof ProgressDetailsSchema> = validatedProgressDetails.success
-    ? rawProgressDetails
-    : {};
+  const progressDetails = await _getCachedProgressDetails(workspace_image);
 
   const progressDetailsInit = {};
   let current = 0;
