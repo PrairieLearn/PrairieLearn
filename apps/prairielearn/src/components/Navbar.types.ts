@@ -8,6 +8,8 @@ export type NavbarType =
   | undefined;
 
 export type NavPage =
+  | 'public_question'
+  | 'public_questions'
   | 'instance_admin'
   | 'course_admin'
   | 'assessment'
