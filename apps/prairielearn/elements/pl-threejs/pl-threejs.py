@@ -115,9 +115,7 @@ def get_objects(element, data):
         # - frame
         frame = pl.get_string_attrib(child, "frame", "body")
         if frame not in ["body", "space"]:
-            raise Exception(
-                '"frame" must be either "body" or "space": {:s}'.format(frame)
-            )
+            raise Exception(f'"frame" must be either "body" or "space": {frame}')
         if frame == "body":
             default_color = "#e84a27"
             default_opacity = 0.7
@@ -138,7 +136,7 @@ def get_objects(element, data):
                 raise ValueError()
         except Exception as exc:
             raise Exception(
-                'attribute "position" must have format [x, y, z]: {:s}'.format(p)
+                f'attribute "position" must have format [x, y, z]: {p}'
             ) from exc
         # - orientation (and format)
         orientation = get_orientation(child, "orientation", "format")
@@ -252,7 +250,7 @@ def render(element_html, data):
             "options": json.dumps(options, allow_nan=False),
         }
 
-        with open("pl-threejs.mustache", "r", encoding="utf-8") as f:
+        with open("pl-threejs.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
     elif data["panel"] == "submission":
         will_be_graded = pl.get_boolean_attrib(element, "grade", GRADE_DEFAULT)
@@ -313,7 +311,7 @@ def render(element_html, data):
                 except Exception as exc:
                     raise ValueError("invalid score" + score) from exc
 
-        with open("pl-threejs.mustache", "r", encoding="utf-8") as f:
+        with open("pl-threejs.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
     elif data["panel"] == "answer":
         will_be_graded = pl.get_boolean_attrib(element, "grade", GRADE_DEFAULT)
@@ -375,10 +373,10 @@ def render(element_html, data):
             "options": json.dumps(options, allow_nan=False),
         }
 
-        with open("pl-threejs.mustache", "r", encoding="utf-8") as f:
+        with open("pl-threejs.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
     else:
-        raise Exception("Invalid panel type: %s" % data["panel"])
+        raise Exception("Invalid panel type: {}".format(data["panel"]))
 
     return html
 
@@ -457,15 +455,11 @@ def grade(element_html, data):
     tol_rotation = pl.get_float_attrib(element, "tol-rotation", TOL_ROTATION_DEFAULT)
     if tol_translation <= 0:
         raise Exception(
-            "tol_translation must be a positive real number: {:g}".format(
-                tol_translation
-            )
+            f"tol_translation must be a positive real number: {tol_translation:g}"
         )
     if tol_rotation <= 0:
         raise Exception(
-            "tol_rotation must be a positive real number (angle in degrees): {:g}".format(
-                tol_rotation
-            )
+            f"tol_rotation must be a positive real number (angle in degrees): {tol_rotation:g}"
         )
 
     # Check if angle is no greater than tolerance
@@ -568,9 +562,7 @@ def parse_correct_answer(f, a):
             ) from exc
     else:
         raise Exception(
-            '"answer-pose-format" must be "rpy", "quaternion", "matrix", "axisangle", or "homogeneous": {:s}'.format(
-                f
-            )
+            f'"answer-pose-format" must be "rpy", "quaternion", "matrix", "axisangle", or "homogeneous": {f}'
         )
 
 
@@ -598,9 +590,7 @@ def get_file_url(element, data):
         base_url = data["options"]["client_files_course_url"]
     else:
         raise ValueError(
-            'file-directory "{}" is not valid (must be "clientFilesQuestion" or "clientFilesCourse")'.format(
-                file_directory
-            )
+            f'file-directory "{file_directory}" is not valid (must be "clientFilesQuestion" or "clientFilesCourse")'
         )
 
     # Get full url
@@ -627,9 +617,7 @@ def get_orientation(element, name_orientation, name_format):
                 raise ValueError()
         except Exception as exc:
             raise Exception(
-                'attribute "{:s}" with format "{:s}" must be a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]": {:s}'.format(
-                    name_orientation, name_format, s
-                )
+                f'attribute "{name_orientation}" with format "{name_format}" must be a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]": {s}'
             ) from exc
     elif f == "quaternion":
         try:
@@ -640,9 +628,7 @@ def get_orientation(element, name_orientation, name_format):
                 raise ValueError()
         except Exception as exc:
             raise Exception(
-                'attribute "{:s}" with format "{:s}" must be a unit quaternion with format "[x, y, z, w]": {:s}'.format(
-                    name_orientation, name_format, s
-                )
+                f'attribute "{name_orientation}" with format "{name_format}" must be a unit quaternion with format "[x, y, z, w]": {s}'
             ) from exc
     elif f == "matrix":
         try:
@@ -652,9 +638,7 @@ def get_orientation(element, name_orientation, name_format):
             ).tolist()
         except Exception as exc:
             raise Exception(
-                'attribute "{:s}" with format "{:s}" must be a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]": {:s}'.format(
-                    name_orientation, name_format, s
-                )
+                f'attribute "{name_orientation}" with format "{name_format}" must be a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]": {s}'
             ) from exc
     elif f == "axisangle":
         try:
@@ -672,15 +656,11 @@ def get_orientation(element, name_orientation, name_format):
                 raise ValueError()
         except Exception as exc:
             raise Exception(
-                'attribute "{:s}" with format "{:s}" must have format "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees: {:s}'.format(
-                    name_orientation, name_format, s
-                )
+                f'attribute "{name_orientation}" with format "{name_format}" must have format "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees: {s}'
             ) from exc
     else:
         raise Exception(
-            'attribute "{:s}" must be "rpy", "quaternion", "matrix", or "axisangle": {:s}'.format(
-                name_format, f
-            )
+            f'attribute "{name_format}" must be "rpy", "quaternion", "matrix", or "axisangle": {f}'
         )
 
 
@@ -694,16 +674,12 @@ def get_position(element, name_position, default=None, must_be_nonzero=False):
         p = np.array(json.loads(s), dtype=np.float64)
         if p.shape == (3,):
             if must_be_nonzero and np.allclose(p, np.array([0, 0, 0])):
-                raise ValueError(
-                    'attribute "{:s}" must be non-zero'.format(name_position)
-                )
+                raise ValueError(f'attribute "{name_position}" must be non-zero')
             else:
                 return p.tolist()
         else:
             raise ValueError()
     except Exception as exc:
         raise Exception(
-            'attribute "{:s}" must have format "[x, y, z]": {:s}'.format(
-                name_position, s
-            )
+            f'attribute "{name_position}" must have format "[x, y, z]": {s}'
         ) from exc

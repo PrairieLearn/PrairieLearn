@@ -123,7 +123,7 @@ class PLTestCase(unittest.TestCase):
         """
 
         if not result.done_grading and not result.skip_grading:
-            super(PLTestCase, self).run(result)
+            super().run(result)
         elif result.skip_grading:
             result.startTest(self)
             self.setUp()
