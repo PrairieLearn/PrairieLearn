@@ -113,7 +113,7 @@ def dag_to_nx(
     add_edges_for_groups(graph, group_belonging)
 
     if not nx.is_directed_acyclic_graph(graph):
-        raise Exception(
+        raise ValueError(
             "Dependency between blocks does not form a Directed Acyclic Graph; Problem unsolvable."
         )
 
@@ -129,7 +129,7 @@ def add_edges_for_groups(
         if group is not None
     }
     if not validate_grouping(graph, group_belonging):
-        raise Exception(
+        raise ValueError(
             "Blocks within in a `pl-block-group` are not allowed to depend on blocks outside their group."
         )
 

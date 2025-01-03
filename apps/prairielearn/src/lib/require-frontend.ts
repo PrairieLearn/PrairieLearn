@@ -1,4 +1,3 @@
-// @ts-check
 /**
  * Require frontend modules.
  *
@@ -19,12 +18,12 @@ requirejs.config({
   baseUrl: path.join(APP_ROOT_PATH, 'public/localscripts/calculationQuestion'),
 });
 
-requirejs.onError = function (err) {
-  var data = {
+requirejs.onError = function (err: Error) {
+  const data = {
     errorMsg: err.toString(),
     stack: err.stack,
   };
-  for (var e in err) {
+  for (const e in err) {
     if (Object.prototype.hasOwnProperty.call(err, e)) {
       data[e] = String(err[e]);
     }
