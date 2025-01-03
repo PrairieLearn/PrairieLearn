@@ -139,7 +139,8 @@ class Feedback:
         if isinstance(data, np.matrix):
             cls.finish(
                 "'%s' is a numpy matrix. Do not use those. "
-                "bit.ly/array-vs-matrix" % name
+                "https://docs.scipy.org/doc/scipy/tutorial/linalg.html#numpy-matrix-vs-2-d-numpy-ndarray"
+                % name
             )
 
         if len(data.shape) != num_axes:
@@ -189,7 +190,8 @@ class Feedback:
         if isinstance(data, np.matrix):
             return bad(
                 "'%s' is a numpy matrix. Do not use those. "
-                "bit.ly/array-vs-matrix" % name
+                "https://docs.scipy.org/doc/scipy/tutorial/linalg.html#numpy-matrix-vs-2-d-numpy-ndarray"
+                % name
             )
 
         if ref.shape != data.shape:
