@@ -262,7 +262,7 @@ class TestSympy:
     def test_bad_assumption_conversion(
         self, expr: str, bad_assumptions: phs.AssumptionsDictT
     ) -> None:
-        with pytest.raises(phs.HasInvalidAssumption):
+        with pytest.raises(phs.HasInvalidAssumptionError):
             phs.convert_string_to_sympy(
                 expr,
                 custom_functions=["f"],
@@ -293,11 +293,11 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasConflictingVariable):
+        with pytest.raises(phs.HasConflictingVariableError):
             phs.convert_string_to_sympy(a_sub, ["i", "j"], allow_complex=True)
 
     def test_reserved_functions(self) -> None:
-        with pytest.raises(phs.HasConflictingFunction):
+        with pytest.raises(phs.HasConflictingFunctionError):
             phs.convert_string_to_sympy("sin 1", custom_functions=["sin", "f"])
 
     @pytest.mark.parametrize("a_sub", NO_FLOATS_CASES)

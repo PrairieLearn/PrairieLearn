@@ -21,7 +21,7 @@ THE SOFTWARE.
 """
 
 
-class GradingComplete(Exception):
+class GradingComplete(Exception):  # noqa: N818
     pass
 
 

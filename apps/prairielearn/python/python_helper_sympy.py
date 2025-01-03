@@ -162,15 +162,15 @@ class BaseSympyError(Exception):
     pass
 
 
-class HasConflictingVariable(BaseSympyError):
+class HasConflictingVariableError(BaseSympyError):
     pass
 
 
-class HasConflictingFunction(BaseSympyError):
+class HasConflictingFunctionError(BaseSympyError):
     pass
 
 
-class HasInvalidAssumption(BaseSympyError):
+class HasInvalidAssumptionError(BaseSympyError):
     pass
 
 
@@ -246,13 +246,13 @@ class CheckAST(ast.NodeVisitor):
             raise HasInvalidExpressionError(err_node.col_offset)
         return super().visit(node)
 
-    def visit_Call(self, node: ast.Call) -> None:
+    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
         if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
             err_node = self.get_parent_with_location(node)
             raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
         self.generic_visit(node)
 
-    def visit_Name(self, node: ast.Name) -> None:
+    def visit_Name(self, node: ast.Name) -> None:  # noqa: N802
         if (
             isinstance(node.ctx, ast.Load)
             and not self.is_name_of_function(node)
@@ -504,7 +504,7 @@ def convert_string_to_sympy_with_source(
             variables if variables is not None else []
         )
         if unbound_variables:
-            raise HasInvalidAssumption(
+            raise HasInvalidAssumptionError(
                 f'Assumptions for variables that are not present: {",".join(unbound_variables)}'
             )
 
@@ -516,7 +516,9 @@ def convert_string_to_sympy_with_source(
             variable = greek_unicode_transform(variable)
             # Check for naming conflicts
             if variable in used_names:
-                raise HasConflictingVariable(f"Conflicting variable name: {variable}")
+                raise HasConflictingVariableError(
+                    f"Conflicting variable name: {variable}"
+                )
             else:
                 used_names.add(variable)
 
@@ -534,7 +536,9 @@ def convert_string_to_sympy_with_source(
         for function in custom_functions:
             function = greek_unicode_transform(function)
             if function in used_names:
-                raise HasConflictingFunction(f"Conflicting variable name: {function}")
+                raise HasConflictingFunctionError(
+                    f"Conflicting variable name: {function}"
+                )
 
             used_names.add(function)
 
