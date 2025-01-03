@@ -78,7 +78,7 @@ def execute_code(
             str_student = pl_helpers.extract_ipynb_contents(f, ipynb_key)
         else:
             str_student = f.read()
-    str_student = str_leading + str_student + str_trailing
+    str_student = str_leading + "\n" + str_student + "\n" + str_trailing
 
     with open(path.join(filenames_dir, "test.py"), encoding="utf-8") as f:
         str_test = f.read()
