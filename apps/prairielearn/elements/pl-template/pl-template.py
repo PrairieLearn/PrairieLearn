@@ -46,7 +46,8 @@ def check_tags(element_html: str) -> None:
 
             if is_tag_invald:
                 warnings.warn(
-                    f'Element "{e.tag}" may not work correctly when used inside of "pl-template" element.'
+                    f'Element "{e.tag}" may not work correctly when used inside of "pl-template" element.',
+                    stacklevel=2,
                 )
 
 

@@ -31,7 +31,7 @@ PRESENTATION_TYPE_DEFAULT = "g"
 
 def convert_pandas_dtype_to_r(s: pd.Series) -> str:
     # Force series to avoid odd element-wise output
-    s.dtype
+    _ = s.dtype
 
     if pd.api.types.is_float_dtype(s):
         return "numeric"

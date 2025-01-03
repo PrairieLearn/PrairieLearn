@@ -590,10 +590,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     html_params["partially_correct"] = math.floor(score)
                 else:
                     html_params["incorrect"] = True
-            except Exception:
+            except Exception as exc:
                 raise ValueError(
                     f"invalid score: {data['partial_scores'][answer_name].get('score', 0)}"
-                )
+                ) from exc
 
         with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
@@ -724,7 +724,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
 
         answer_code = ""
-        for index, answer in enumerate(student_answer):
+        for answer in student_answer:
             indent = int(answer["indent"] or 0)
             answer_code += (
                 ("    " * indent)

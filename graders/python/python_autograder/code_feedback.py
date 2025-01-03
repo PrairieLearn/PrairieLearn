@@ -445,7 +445,7 @@ class Feedback:
 
         try:
             return f(*args, **kwargs)
-        except Exception:
+        except Exception as exc:
             if callable(f):
                 try:
                     callable_name = f.__name__
@@ -466,7 +466,7 @@ class Feedback:
                     "callable."
                 )
 
-            raise GradingComplete()
+            raise GradingComplete() from exc
 
     @classmethod
     def check_plot(
@@ -549,7 +549,7 @@ class Feedback:
             ref_datas[i] = ref_data
 
         num_correct = 0
-        for i, line in enumerate(user_lines):
+        for line in user_lines:
             data = np.array([line.get_data()[0], line.get_data()[1]])
             data = data[np.lexsort(data.T)]
             for j, ref in ref_datas.items():
@@ -571,7 +571,7 @@ class Feedback:
         name,
         ref,
         data,
-        subset_columns=[],
+        subset_columns=None,
         check_values=True,
         allow_order_variance=True,
         display_input=False,
@@ -589,7 +589,7 @@ class Feedback:
         - ``name``, String: The human-readable name of the DataFrame being checked
         - ``ref``, DataFrame: The reference (correct) DataFrame
         - ``data``, DataFrame: The student DataFrame
-        - ``subset_columns`` = [], Array of Strings:
+        - ``subset_columns`` = None, Array of Strings:
           If ``subset_columns`` is an empty array, all columns are used in the check.
           Otherwise, only columns named in ``subset_columns`` are used in the check and other columns are dropped.
         - ``check_values`` = True, Boolean: Check the values of each cell, in addition to the dimensions of the DataFrame
@@ -616,6 +616,8 @@ class Feedback:
         if len(ref) != len(data):
             return bad(f"{name} is inaccurate")
 
+        if subset_columns is None:
+            subset_columns = []
         # If `subset_columns` is non-empty, use only the columns
         # specified for grading
         if len(subset_columns) > 0:
