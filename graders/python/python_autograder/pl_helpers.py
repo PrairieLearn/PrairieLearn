@@ -112,7 +112,7 @@ def print_student_code(st_code="user_code.py", ipynb_key="#grade", as_feedback=T
     Print the student's code, with syntax highlighting.
     """
 
-    with open(st_code, "r", encoding="utf-8") as f:
+    with open(st_code, encoding="utf-8") as f:
         filename, extension = splitext(st_code)
         if extension == ".ipynb":
             contents = extract_ipynb_contents(f, ipynb_key).strip()

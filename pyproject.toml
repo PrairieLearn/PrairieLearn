@@ -18,7 +18,24 @@ exclude = [
 target-version = "py310"
 
 [tool.ruff.lint]
-extend-select = ["I", "N"]
+select = [
+    "E",
+    "N",
+    # isort
+    "I",
+    # flake8-bugbear
+    "B",
+    # flake8-simplify
+    "SIM",
+    # pyupgrade
+    "UP",
+]
+ignore = [
+    # Ignore line length errors
+    "E501",
+    # if-else blocks that could be shortened (https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp/)
+    "SIM108"
+]
 
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
@@ -31,16 +48,14 @@ extend-select = ["I", "N"]
 "exampleCourse/questions/**/tests/setup_code.py" = ["F401", "F821"]
 "exampleCourse/questions/**/tests/leading_code.py" = ["F401", "F821", "F841"]
 "exampleCourse/questions/**/tests/ans.py" = ["F821"]
-# Questions commonly use "ambiguous variable names" to represent specific
-# concepts, e.g. I for an identity matrix. We'll allow these to be used in
-# questions.
-"exampleCourse/questions/**/*.py" = ["E741", "N806", "N803"]
+# Ignore uppercase variables and function parameters (e.g. G for a graph)
+"exampleCourse/questions/**/*.py" = ["N806", "N803"]
 # The zygote specifically uses imports in strange places to facilitate the
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
-# Ignore uppercase variables (e.g. G for a graph)
-"apps/prairielearn/elements/**/*.py" = ["N806", "N803"]
-"apps/prairielearn/python/*.py" = ["N806", "N803"]
+# Ignore uppercase function parameters (e.g. G for a graph)
+"apps/prairielearn/elements/**/*.py" = ["N803"]
+"apps/prairielearn/python/*.py" = ["N803"]
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",

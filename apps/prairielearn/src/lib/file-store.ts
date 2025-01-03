@@ -1,17 +1,16 @@
-// @ts-check
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 import * as path from 'path';
+import { type Stream } from 'stream';
 
 import debugfn from 'debug';
 import { v4 as uuidv4 } from 'uuid';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { uploadToS3, getFromS3 } from '../lib/aws.js';
-
+import { uploadToS3, getFromS3 } from './aws.js';
 import { config } from './config.js';
-import { IdSchema } from './db-types.js';
+import { type File, FileSchema, IdSchema } from './db-types.js';
 
 const debug = debugfn('prairielearn:socket-server');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -21,20 +20,32 @@ const StorageTypes = Object.freeze({
   FileSystem: 'FileSystem',
 });
 
+interface UploadFileOptions {
+  /** The display_filename of the file. */
+  display_filename: string;
+  /** The file contents. */
+  contents: Buffer;
+  /** The file type. */
+  type: string;
+  /** The assessment for the file. */
+  assessment_id: string | null;
+  /** The assessment instance for the file. */
+  assessment_instance_id: string | null;
+  /** The instance question for the file. */
+  instance_question_id: string | null;
+  /** The current user performing the update. */
+  user_id: string;
+  /** The current authenticated user. */
+  authn_user_id: string;
+  /** AWS 'S3' or 'FileSystem' storage options. */
+  storage_type?: string;
+}
+
 /**
  * Upload a file into the file store.
  *
- * @param {object} options - The options for the file upload.
- * @param {string} options.display_filename - The display_filename of the file.
- * @param {Buffer} options.contents - The file contents.
- * @param {string} options.type - The file type.
- * @param {string|null} options.assessment_id = The assessment for the file.
- * @param {string|null} options.assessment_instance_id - The assessment instance for the file.
- * @param {string|null} options.instance_question_id - The instance question for the file.
- * @param {string} options.user_id - The current user performing the update.
- * @param {string} options.authn_user_id - The current authenticated user.
- * @param {string} [options.storage_type] - AWS 'S3' or 'FileSystem' storage options.
- * @return {Promise<string>} The file_id of the newly created file.
+ * @param options - The options for the file upload.
+ * @return The file_id of the newly created file.
  */
 export async function uploadFile({
   display_filename,
@@ -46,7 +57,7 @@ export async function uploadFile({
   user_id,
   authn_user_id,
   storage_type,
-}) {
+}: UploadFileOptions): Promise<string> {
   storage_type = storage_type || config.fileStoreStorageTypeDefault;
   debug(`upload(): storage_type=${storage_type}`);
 
@@ -106,10 +117,10 @@ export async function uploadFile({
 /**
  * Soft-delete a file from the file store, leaving the physical file on disk.
  *
- * @param {string} file_id - The file to delete.
- * @param {string} authn_user_id - The current authenticated user.
+ * @param file_id - The file to delete.
+ * @param authn_user_id - The current authenticated user.
  */
-export async function deleteFile(file_id, authn_user_id) {
+export async function deleteFile(file_id: string, authn_user_id: string) {
   debug(`delete(): file_id=${file_id}`);
   debug(`delete(): authn_user_id=${authn_user_id}`);
 
@@ -120,79 +131,82 @@ export async function deleteFile(file_id, authn_user_id) {
 /**
  * Option of returning a stream instead of a file
  *
- * @param {number | string} file_id - The file to get.
- * @return {Promise<(import('stream'))>} - Requested file stream.
+ * @param file_id - The file to get.
+ * @return Requested file stream.
  */
-export async function getStream(file_id) {
+export async function getStream(file_id: number | string): Promise<Stream> {
   debug(`getStream(): file_id=${file_id}`);
   const file = await getFile(file_id, 'stream');
   return file.contents;
 }
 
+export async function getFile(
+  file_id: number | string,
+  data_type: 'stream',
+): Promise<{
+  contents: Stream;
+  file: File;
+}>;
+
+export async function getFile(
+  file_id: number | string,
+  data_type?: 'buffer',
+): Promise<{
+  contents: Buffer;
+  file: File;
+}>;
 /**
  * Get a file from the file store.
  *
- * @param {number | string} file_id - The file to get.
- * @return {Promise<object>} An object with a buffer (of the file contents) and a file object.
+ * @param file_id - The file to get.
+ * @return An object with a buffer (of the file contents) and a file object.
  */
-export async function getFile(file_id, data_type = 'buffer') {
-  debug(`get(): file_id=${file_id}`);
-  const params = { file_id };
-  const result = await sqldb.queryZeroOrOneRowAsync(sql.select_file, params);
-  debug('get(): got row from DB');
+export async function getFile(
+  file_id: number | string,
+  data_type: 'stream' | 'buffer' = 'buffer',
+): Promise<{
+  contents: Buffer | Stream;
+  file: File;
+}> {
+  const file = await sqldb.queryOptionalRow(sql.select_file, { file_id }, FileSchema);
 
-  let buffer, readStream;
-
-  if (result.rows.length < 1) {
+  if (!file) {
     throw new Error(`No file with file_id ${file_id}`);
   }
 
-  if (result.rows[0].storage_type === StorageTypes.FileSystem) {
+  if (file.storage_type === StorageTypes.FileSystem) {
     if (config.filesRoot == null) {
       throw new Error(
         `config.filesRoot must be non-null to get file_id ${file_id} from file store`,
       );
     }
 
-    const filename = path.join(config.filesRoot, result.rows[0].storage_filename);
+    const filename = path.join(config.filesRoot, file.storage_filename);
 
-    if (data_type === 'buffer') {
-      debug(`get(): readFile ${filename} and return object with contents buffer and file object`);
-      buffer = await fsPromises.readFile(filename);
-    } else {
-      debug(
-        `get(): createReadStream ${filename} and return object with contents stream and file object`,
-      );
-      readStream = fs.createReadStream(filename);
-    }
-  }
+    const contents =
+      data_type === 'buffer' ? await fsPromises.readFile(filename) : fs.createReadStream(filename);
 
-  if (result.rows[0].storage_type === StorageTypes.S3) {
+    return {
+      contents,
+      file,
+    };
+  } else if (file.storage_type === StorageTypes.S3) {
     if (config.fileStoreS3Bucket == null) {
       throw new Error(
-        `config.fileStoreS3Bucket must be configured to get file_id ${file_id} from file store`,
+        `config.fileStoreS3Bucket must be non-null to get file_id ${file_id} from file store`,
       );
     }
 
-    if (data_type === 'buffer') {
-      debug(
-        `get(): s3 fetch file ${result.rows[0].storage_filename} from ${config.fileStoreS3Bucket} and return object with contents buffer and file object`,
-      );
-      buffer = await getFromS3(config.fileStoreS3Bucket, result.rows[0].storage_filename);
-    } else {
-      debug(
-        `get(): s3 fetch stream ${result.rows[0].storage_filename} from ${config.fileStoreS3Bucket} and return object with contents stream and file object`,
-      );
-      readStream = await getFromS3(
-        config.fileStoreS3Bucket,
-        result.rows[0].storage_filename,
-        false,
-      );
-    }
+    const contents =
+      data_type === 'buffer'
+        ? await getFromS3(config.fileStoreS3Bucket, file.storage_filename, true)
+        : await getFromS3(config.fileStoreS3Bucket, file.storage_filename, false);
+
+    return {
+      contents,
+      file,
+    };
+  } else {
+    throw new Error(`Unknown storage type: ${file.storage_type}`);
   }
-
-  return {
-    contents: buffer || readStream,
-    file: result.rows[0],
-  };
 }

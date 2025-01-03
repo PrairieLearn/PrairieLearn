@@ -1,5 +1,4 @@
 import math
-from typing import Optional
 
 import pytest
 import unit_utils as uu
@@ -80,7 +79,7 @@ def test_with_units_grading_fn(
 def test_exact_units_grading_fn(
     ureg: UnitRegistry,
     a_true: str,
-    partial_credit: Optional[float],
+    partial_credit: float | None,
     a_sub: str,
     expected_grade: float,
 ) -> None:

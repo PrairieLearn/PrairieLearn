@@ -1,3 +1,4 @@
+import contextlib
 import json
 import os
 import os.path as path
@@ -14,7 +15,7 @@ from faker import Faker
 class UserCodeFailedError(Exception):
     def __init__(self, err, *args):
         self.err = err
-        super(UserCodeFailedError, self).__init__(err, *args)
+        super().__init__(err, *args)
 
 
 def set_random_seed(seed=None):
@@ -25,7 +26,7 @@ def set_random_seed(seed=None):
 
 def try_read(fname):
     try:
-        with open(fname, "r", encoding="utf-8") as f:
+        with open(fname, encoding="utf-8") as f:
             contents = f.read()
     except Exception:
         contents = ""
@@ -61,9 +62,9 @@ def execute_code(
 
     with open(path.join(filenames_dir, "data.json"), encoding="utf-8") as f:
         data = json.load(f)
-    with open(path.join(filenames_dir, "setup_code.py"), "r", encoding="utf-8") as f:
+    with open(path.join(filenames_dir, "setup_code.py"), encoding="utf-8") as f:
         str_setup = f.read()
-    with open(fname_ref, "r", encoding="utf-8") as f:
+    with open(fname_ref, encoding="utf-8") as f:
         str_ref = f.read()
 
     # Read in leading, trailing code
@@ -71,7 +72,7 @@ def execute_code(
     str_trailing = try_read(path.join(filenames_dir, "trailing_code.py"))
 
     # Read student code (and transform if necessary) and append leading/trailing code
-    with open(fname_student, "r", encoding="utf-8") as f:
+    with open(fname_student, encoding="utf-8") as f:
         filename, extension = path.splitext(fname_student)
         if extension == ".ipynb":
             str_student = pl_helpers.extract_ipynb_contents(f, ipynb_key)
@@ -86,14 +87,10 @@ def execute_code(
     os.remove(path.join(filenames_dir, "data.json"))
     os.remove(fname_ref)
     os.remove(path.join(filenames_dir, "setup_code.py"))
-    try:
+    with contextlib.suppress(FileNotFoundError):
         os.remove(path.join(filenames_dir, "leading_code.py"))
-    except FileNotFoundError:
-        pass
-    try:
+    with contextlib.suppress(FileNotFoundError):
         os.remove(path.join(filenames_dir, "trailing_code.py"))
-    except FileNotFoundError:
-        pass
     os.remove(path.join(filenames_dir, "test.py"))
 
     repeated_setup_name = "repeated_setup()"
@@ -132,10 +129,12 @@ def execute_code(
     # ref_code contains the correct answers
 
     if include_plt:
-        for i, j in ref_code.items():
-            if isinstance(j, ModuleType):
-                if j.__dict__["__name__"] == "matplotlib.pyplot":
-                    j.close("all")
+        for j in ref_code.values():
+            if (
+                isinstance(j, ModuleType)
+                and j.__dict__["__name__"] == "matplotlib.pyplot"
+            ):
+                j.close("all")
 
     # make only the variables listed in names_for_user available to student
     names_from_user = []
@@ -155,7 +154,7 @@ def execute_code(
     # Execute student code
     previous_stdout = sys.stdout
     if console_output_fname:
-        sys.stdout = open(console_output_fname, "w", encoding="utf-8")
+        sys.stdout = open(console_output_fname, "w", encoding="utf-8")  # noqa: SIM115
 
     set_random_seed(seed)
 
@@ -203,9 +202,11 @@ def execute_code(
     plot_value = None
     if include_plt:
         for key in list(student_code):
-            if isinstance(student_code[key], ModuleType):
-                if student_code[key].__dict__["__name__"] == "matplotlib.pyplot":
-                    plot_value = student_code[key]
+            if (
+                isinstance(student_code[key], ModuleType)
+                and student_code[key].__dict__["__name__"] == "matplotlib.pyplot"
+            ):
+                plot_value = student_code[key]
         if not plot_value:
             import matplotlib
 

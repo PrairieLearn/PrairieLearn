@@ -769,10 +769,7 @@ class Vector(BaseElement):
         epos_rel = basis @ (epos - rpos)
         rely, relx = epos_rel
 
-        if relx > tol or relx < -tol or rely > max_forward or rely < -max_backward:
-            return False
-
-        return True
+        return abs(relx) <= tol and -max_backward <= rely <= max_forward
 
     def get_attributes():
         return [
@@ -994,11 +991,11 @@ class ArcVector(BaseElement):
         color = pl.get_color_attrib(self, "color", "purple")
         clockwise_direction = pl.get_boolean_attrib(self, "clockwise-direction", True)
         if clockwise_direction:
-            drawStartArrow = False
-            drawEndArrow = True
+            draw_start_arrow = False
+            draw_end_arrow = True
         else:
-            drawStartArrow = True
-            drawEndArrow = False
+            draw_start_arrow = True
+            draw_end_arrow = False
         # Error box for grading
         x1 = pl.get_float_attrib(self, "x1", 40)
         y1 = pl.get_float_attrib(self, "y1", 40)
@@ -1027,8 +1024,8 @@ class ArcVector(BaseElement):
             "drawCenterPoint": json.loads(
                 pl.get_string_attrib(self, "draw-center", "true")
             ),
-            "drawStartArrow": drawStartArrow,
-            "drawEndArrow": drawEndArrow,
+            "drawStartArrow": draw_start_arrow,
+            "drawEndArrow": draw_end_arrow,
             "label": pl.get_string_attrib(self, "label", ""),
             "offsetx": pl.get_float_attrib(self, "offsetx", 0),
             "offsety": pl.get_float_attrib(self, "offsety", 0),
@@ -1067,11 +1064,7 @@ class ArcVector(BaseElement):
             return False
 
         # Check if correct orientation
-        if not self["disregard_sense"]:
-            if st_start_arrow is not ref_start_arrow:
-                return False
-
-        return True
+        return self["disregard_sense"] or st_start_arrow == ref_start_arrow
 
     def get_attributes():
         return [
@@ -1319,10 +1312,7 @@ class Point(BaseElement):
         rpos = np.array([self["left"], self["top"]])
         # Check if correct position
         relx, rely = epos - rpos
-        if relx > tol or relx < -tol or rely > tol or rely < -tol:
-            return False
-
-        return True
+        return abs(relx) <= tol and abs(rely) <= tol
 
     def get_attributes():
         return ["x1", "y1", "radius", "label", "offsetx", "offsety", "opacity", "color"]
@@ -2563,7 +2553,9 @@ def get_attributes(name):
         return []
 
 
-def generate(element, name, defaults={}):
+def generate(element, name, defaults=None):
+    if defaults is None:
+        defaults = {}
     if name in elements:
         obj = defaults.copy()
         cls = elements[name]
@@ -2571,12 +2563,12 @@ def generate(element, name, defaults={}):
         obj.update(cls.generate(element, data))
 
         # By default, set the grading name to the element name
-        gradingName = cls.grading_name(element)
-        if gradingName is None:
-            gradingName = name
+        grading_name = cls.grading_name(element)
+        if grading_name is None:
+            grading_name = name
 
-        obj["gradingName"] = gradingName
-        obj["type"] = gradingName
+        obj["gradingName"] = grading_name
+        obj["type"] = grading_name
         return obj
     else:
         return {}

@@ -23,17 +23,18 @@ module.exports = {
     'eslint:recommended',
     'plugin:import-x/recommended',
     'plugin:import-x/typescript',
+    'plugin:@eslint-react/recommended-legacy',
     'plugin:@typescript-eslint/stylistic',
     'plugin:@typescript-eslint/strict',
     'prettier',
   ],
   plugins: [
-    '@typescript-eslint',
     'no-floating-promise',
     'no-only-tests',
     'mocha',
-    'react',
+    '@eslint-react',
     '@prairielearn',
+    '@typescript-eslint',
   ],
   parserOptions: {
     ecmaVersion: 13,
@@ -156,10 +157,6 @@ module.exports = {
         react: {
           pragma: 'h',
         },
-      },
-      rules: {
-        'react/jsx-uses-react': 'error',
-        'react/jsx-uses-vars': 'error',
       },
     },
   ],
