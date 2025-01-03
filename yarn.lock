@@ -4079,6 +4079,7 @@ __metadata:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
+    "@prairielearn/run": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/workspace-utils": "workspace:^"
     "@socket.io/redis-adapter": "npm:^8.3.0"

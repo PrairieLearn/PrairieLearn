@@ -26,6 +26,7 @@ import { cache } from '@prairielearn/cache';
 import { DockerName, setupDockerAuth } from '@prairielearn/docker-utils';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
@@ -64,6 +65,8 @@ interface Workspace {
   version: string;
   course_id: string;
   institution_id: string;
+  launch_port: number;
+  settings: WorkspaceSettings;
 }
 
 let server: http.Server | undefined;
@@ -531,7 +534,7 @@ async function _allocateContainerPort(workspace_id: string | number): Promise<nu
   });
 }
 
-function _checkServer(workspace: Workspace, launch_port: number): Promise<void> {
+function _checkServer(workspace: Workspace): Promise<void> {
   const startTimeout = config.workspaceStartTimeoutSec * 1000;
   const healthCheckInterval = config.workspaceHealthCheckIntervalSec * 1000;
   const healthCheckTimeout = config.workspaceHealthCheckTimeoutSec * 1000;
@@ -539,7 +542,9 @@ function _checkServer(workspace: Workspace, launch_port: number): Promise<void> 
   const startTime = performance.now();
   return new Promise<void>((resolve, reject) => {
     function checkWorkspace() {
-      fetch(`http://${workspace_server_settings.server_to_container_hostname}:${launch_port}/`, {
+      const hostname = workspace_server_settings.server_to_container_hostname;
+      const port = workspace.launch_port;
+      fetch(`http://${hostname}:${port}/`, {
         signal: AbortSignal.timeout(healthCheckTimeout),
       })
         .then(() => {
@@ -605,17 +610,14 @@ async function _getWorkspaceSettings(workspace_id: string | number): Promise<Wor
   return settings;
 }
 
-async function _pullImage(workspace_id: string | number, settings: WorkspaceSettings) {
+async function _pullImage(workspace: Workspace) {
   if (!config.workspacePullImagesFromDockerHub) {
     logger.info('Not pulling docker image');
     return;
   }
-  if (!settings) {
-    throw new Error('Workspace settings not found');
-  }
 
-  await workspaceUtils.updateWorkspaceMessage(workspace_id, 'Checking image');
-  const workspace_image = settings.workspace_image;
+  await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Checking image');
+  const workspace_image = workspace.settings.workspace_image;
   logger.info(`Pulling docker image: ${workspace_image}`);
 
   // We only auth if a specific ECR registry is configured. Otherwise, we'll
@@ -650,7 +652,7 @@ async function _pullImage(workspace_id: string | number, settings: WorkspaceSett
   // progress reporting, we cache the layer details after
   // the first successful pull. This allows us to reference
   // the previously pulled layers and provide a more accurate
-  // percantage calculation on any subsequent pulls.
+  // percentage calculation on any subsequent pulls.
 
   const rawProgressDetails = await cache.get(`workspaceProgressInit:${workspace_image}`);
   // Use Zod to validate the rawProgressDetails. If it is invalid, we will set it to the empty object.
@@ -698,7 +700,7 @@ async function _pullImage(workspace_id: string | number, settings: WorkspaceSett
           1000 * 60 * 60 * 24 * 30, // 30 days
         );
         workspaceUtils
-          .updateWorkspaceMessage(workspace_id, 'Pulling image (100%)', toDatabase)
+          .updateWorkspaceMessage(workspace.id, 'Pulling image (100%)', toDatabase)
           .catch((err) => {
             logger.error('Error updating workspace message', err);
             Sentry.captureException(err);
@@ -746,7 +748,7 @@ async function _pullImage(workspace_id: string | number, settings: WorkspaceSett
             percentDisplayed = true;
             const toDatabase = false;
             workspaceUtils
-              .updateWorkspaceMessage(workspace_id, `Pulling image (${percent}%)`, toDatabase)
+              .updateWorkspaceMessage(workspace.id, `Pulling image (${percent}%)`, toDatabase)
               .catch((err) => {
                 logger.error('Error updating workspace message', err);
                 Sentry.captureException(err);
@@ -758,13 +760,8 @@ async function _pullImage(workspace_id: string | number, settings: WorkspaceSett
   });
 }
 
-async function _createContainer(
-  workspace: Workspace,
-  settings: WorkspaceSettings,
-  launch_port: number,
-): Promise<Docker.Container> {
-  const localName = workspace.local_name;
-  const remoteName = workspace.remote_name;
+async function _createContainer(workspace: Workspace): Promise<Docker.Container> {
+  const { local_name, remote_name, launch_port, settings } = workspace;
 
   const jobDirectory = config.workspaceHostHomeDirRoot;
   const workspaceDir = process.env.HOST_JOBS_DIR
@@ -772,12 +769,9 @@ async function _createContainer(
     : jobDirectory;
 
   // Where docker will see the jobs (host path outside docker container).
-  const workspacePath = path.join(workspaceDir, remoteName, 'current');
+  const workspacePath = path.join(workspaceDir, remote_name, 'current');
   // Where we are putting the job files relative to the server (`/jobs` inside Docker container).
-  const workspaceJobPath = path.join(jobDirectory, remoteName, 'current');
-  if (!settings) {
-    throw new Error('Workspace settings not found');
-  }
+  const workspaceJobPath = path.join(jobDirectory, remote_name, 'current');
 
   const containerPath = settings.workspace_home;
   const args = settings.workspace_args.trim();
@@ -801,7 +795,7 @@ async function _createContainer(
   );
   debug(`Port binding: ${settings.workspace_port}:${launch_port}`);
   debug(`Volume mount: ${workspacePath}:${containerPath}`);
-  debug(`Container name: ${localName}`);
+  debug(`Container name: ${local_name}`);
 
   try {
     await fs.access(workspaceJobPath);
@@ -857,7 +851,7 @@ async function _createContainer(
       'prairielearn.institution-id': String(workspace.institution_id),
     },
     Cmd: args?.length ? shlex.split(args) : undefined,
-    name: localName,
+    name: local_name,
     Volumes: {
       [containerPath]: {},
     },
@@ -870,14 +864,8 @@ async function _createContainer(
   return container;
 }
 
-async function _startContainer(
-  workspace_id: string | number,
-  container: Docker.Container | undefined,
-) {
+async function _startContainer(workspace_id: string | number, container: Docker.Container) {
   await workspaceUtils.updateWorkspaceMessage(workspace_id, 'Starting container');
-  if (!container) {
-    throw new Error('Container not found');
-  }
   await container.start();
 }
 
@@ -914,40 +902,40 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     await sqldb.queryOneRowAsync(sql.select_workspace, { workspace_id })
   ).rows[0];
 
-  const workspace: Workspace = {
-    id: workspace_id,
-    course_id,
-    institution_id,
-    version,
-    launch_uuid: uuid,
-    local_name: `workspace-${uuid}`,
-    remote_name: `workspace-${workspace_id}-${version}`,
-  };
-
-  logger.info(`Launching workspace-${workspace.id}-${version} (useInitialZip=${useInitialZip})`);
+  logger.info(`Launching workspace-${workspace_id}-${version} (useInitialZip=${useInitialZip})`);
   try {
     // Only errors at this level will set host to unhealthy.
 
-    let settings: WorkspaceSettings;
-    let launch_port: number;
-    try {
-      debug('init: configuring workspace');
-      launch_port = await _allocateContainerPort(workspace.id);
-      settings = await _getWorkspaceSettings(workspace.id);
-    } catch (err) {
-      logger.error(`Error configuring workspace ${workspace.id}`, err);
-      safeUpdateWorkspaceState(
-        workspace.id,
-        'stopped',
-        'Error configuring workspace. Click "Reboot" to try again.',
-      );
-      return; // don't set host to unhealthy
-    }
+    const workspace = await run(async () => {
+      try {
+        debug('init: configuring workspace');
+        return {
+          id: workspace_id,
+          course_id,
+          institution_id,
+          version,
+          launch_uuid: uuid,
+          local_name: `workspace-${uuid}`,
+          remote_name: `workspace-${workspace_id}-${version}`,
+          launch_port: await _allocateContainerPort(workspace_id),
+          settings: await _getWorkspaceSettings(workspace_id),
+        } satisfies Workspace;
+      } catch (err) {
+        logger.error(`Error configuring workspace ${workspace_id}`, err);
+        safeUpdateWorkspaceState(
+          workspace_id,
+          'stopped',
+          'Error configuring workspace. Click "Reboot" to try again.',
+        );
+      }
+    });
+
+    if (!workspace) return; // don't set host to unhealthy
 
     try {
-      await _pullImage(workspace.id, settings);
+      await _pullImage(workspace);
     } catch (err) {
-      const image = settings.workspace_image;
+      const image = workspace.settings.workspace_image;
       logger.error(`Error pulling image ${image} for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
         workspace.id,
@@ -960,7 +948,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
     let container: Docker.Container | undefined;
     try {
       await workspaceUtils.updateWorkspaceMessage(workspace.id, 'Creating container');
-      container = await _createContainer(workspace, settings, launch_port);
+      container = await _createContainer(workspace);
     } catch (err) {
       logger.error(`Error creating container for workspace ${workspace.id}`, err);
       safeUpdateWorkspaceState(
@@ -973,7 +961,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
 
     try {
       await _startContainer(workspace.id, container);
-      await _checkServer(workspace, launch_port);
+      await _checkServer(workspace);
       debug(`init: container initialized for workspace_id=${workspace.id}`);
 
       // Before we transition this workspace to running, check that the container
@@ -998,7 +986,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
           return null;
         }
 
-        const hostname = `${workspace_server_settings.server_to_container_hostname}:${launch_port}`;
+        const hostname = `${workspace_server_settings.server_to_container_hostname}:${workspace.launch_port}`;
         await sqldb.queryAsync(sql.update_workspace_hostname, {
           workspace_id: workspace.id,
           hostname,
@@ -1031,7 +1019,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       return;
     }
   } catch (err) {
-    logger.error(`Error initializing workspace ${workspace.id}; marking self as unhealthy`);
+    logger.error(`Error initializing workspace ${workspace_id}; marking self as unhealthy`);
     await markSelfUnhealthy(err);
   }
 }
