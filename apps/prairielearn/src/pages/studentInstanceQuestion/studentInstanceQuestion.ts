@@ -291,7 +291,7 @@ router.get(
         variant_id = last_variant_id;
       }
     }
-    await getAndRenderVariant(variant_id, null, res.locals);
+    await getAndRenderVariant(variant_id, null, res.locals as any);
 
     await logPageView('studentInstanceQuestion', req, res);
     await setQuestionCopyTargets(res);
