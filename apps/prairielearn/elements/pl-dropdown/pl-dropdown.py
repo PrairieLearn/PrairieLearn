@@ -71,9 +71,7 @@ def prepare(element_html, data):
     data["correct_answers"][answers_name] = get_solution(element, data)
 
     if data["correct_answers"][answers_name] is None:
-        raise Exception(
-            "Correct answer not defined for answers-name: %s" % answers_name
-        )
+        raise Exception(f"Correct answer not defined for answers-name: {answers_name}")
 
 
 def render(element_html, data):
@@ -138,7 +136,7 @@ def render(element_html, data):
             "correct-answer": data["correct_answers"][answers_name],
         }
 
-    with open("pl-dropdown.mustache", "r", encoding="utf-8") as f:
+    with open("pl-dropdown.mustache", encoding="utf-8") as f:
         html = chevron.render(f, html_params).strip()
     return html
 
@@ -207,4 +205,4 @@ def test(element_html, data):
         data["raw_submitted_answers"][answers_name] = "INVALID STRING"
         data["format_errors"][answers_name] = "format error message"
     else:
-        raise Exception("invalid result: %s" % data["test_type"])
+        raise Exception("invalid result: {}".format(data["test_type"]))

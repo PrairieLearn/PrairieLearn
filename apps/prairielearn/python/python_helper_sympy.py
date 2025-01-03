@@ -2,9 +2,10 @@ import ast
 import copy
 import html
 from collections import deque
+from collections.abc import Callable
 from dataclasses import dataclass
 from tokenize import TokenError
-from typing import Any, Callable, Literal, Type, TypedDict, cast
+from typing import Any, Literal, TypedDict, cast
 
 import prairielearn as pl
 import sympy
@@ -19,7 +20,7 @@ from typing_extensions import NotRequired
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
 SympyMapT = dict[str, Callable | sympy.Basic]
-ASTWhiteListT = tuple[Type[ast.AST], ...]
+ASTWhiteListT = tuple[type[ast.AST], ...]
 AssumptionsDictT = dict[str, dict[str, Any]]
 
 
@@ -723,7 +724,7 @@ def validate_string_as_sympy(
         expr_parsed = expr_parsed.subs(sympy.I, sympy.Symbol(imaginary_unit))
         return (
             "Your answer was simplified to this, which contains a complex number"
-            f"(denoted ${imaginary_unit:s}$): $${sympy.latex(expr_parsed):s}$$"
+            f"(denoted ${imaginary_unit}$): $${sympy.latex(expr_parsed)}$$"
         )
 
     return None

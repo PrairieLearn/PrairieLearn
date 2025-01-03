@@ -1,7 +1,8 @@
 import os
+from collections.abc import Generator, Iterable, Iterator
 from functools import cache
 from html import escape, unescape
-from typing import Any, Generator, Iterable, Iterator, Optional
+from typing import Any
 
 import chevron
 import lxml.html
@@ -71,7 +72,7 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
     with highlighted lines.
     """
 
-    def set_highlighted_lines(self, hl_lines: Optional[list[int]]) -> None:
+    def set_highlighted_lines(self, hl_lines: list[int] | None) -> None:
         self.hl_lines.clear()
         if hl_lines:
             for line in hl_lines:
@@ -106,7 +107,7 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
 # lexers to avoid this cost if `<pl-code>` is used with the same language
 # multiple times in the same question.
 @cache
-def get_lexer_by_name(name: str) -> Optional[pygments.lexer.Lexer]:
+def get_lexer_by_name(name: str) -> pygments.lexer.Lexer | None:
     """
     Tries to find a lexer by both its proper name and any aliases it has.
     """
@@ -137,7 +138,7 @@ def get_ansi_color_tokens():
 # member, so the caller must take care to set or clear it as needed before use.
 @cache
 def get_formatter(
-    BaseStyle: type[pygments.style.Style], highlight_lines_color: Optional[str]
+    BaseStyle: type[pygments.style.Style], highlight_lines_color: str | None
 ) -> HighlightingHtmlFormatter:
     class CustomStyleWithAnsiColors(BaseStyle):
         styles = dict(BaseStyle.styles)
@@ -248,7 +249,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if not os.path.exists(file_path):
             raise ValueError(f'Unknown file path: "{file_path}".')
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             code = f.read().removesuffix("\n").removesuffix("\r")
 
         # Automatically escape code in file source (important for: html/xml).
@@ -291,5 +292,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         ),
     }
 
-    with open("pl-code.mustache", "r", encoding="utf-8") as f:
+    with open("pl-code.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

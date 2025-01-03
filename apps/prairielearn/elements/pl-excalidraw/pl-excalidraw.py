@@ -181,7 +181,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "show_widget": show_widget,
     }
 
-    with open("pl-excalidraw.mustache", "r", encoding="utf-8") as template:
+    with open("pl-excalidraw.mustache", encoding="utf-8") as template:
         return chevron.render(template, render_data)
 
 

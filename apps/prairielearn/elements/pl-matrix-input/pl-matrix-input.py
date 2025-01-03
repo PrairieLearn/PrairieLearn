@@ -56,54 +56,45 @@ def render(element_html, data):
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
-                raise ValueError(
-                    "Attribute rtol = {:g} must be non-negative".format(rtol)
-                )
+                raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
             if atol < 0:
-                raise ValueError(
-                    "Attribute atol = {:g} must be non-negative".format(atol)
-                )
+                raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
             info_params = {
                 "format": True,
                 "relabs": True,
-                "rtol": "{:g}".format(rtol),
-                "atol": "{:g}".format(atol),
+                "rtol": f"{rtol:g}",
+                "atol": f"{atol:g}",
             }
         elif comparison == "sigfig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(
-                    "Attribute digits = {:d} must be non-negative".format(digits)
-                )
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "sigfig": True,
-                "digits": "{:d}".format(digits),
+                "digits": f"{digits:d}",
                 "comparison_eps": 0.51 * (10 ** -(digits - 1)),
             }
         elif comparison == "decdig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(
-                    "Attribute digits = {:d} must be non-negative".format(digits)
-                )
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "decdig": True,
-                "digits": "{:d}".format(digits),
+                "digits": f"{digits:d}",
                 "comparison_eps": 0.51 * (10 ** -(digits - 0)),
             }
         else:
             raise ValueError(
-                'method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")'
-                % comparison
+                f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
             )
         info_params["allow_complex"] = pl.get_boolean_attrib(
             element, "allow-complex", ALLOW_COMPLEX_DEFAULT
         )
-        with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
-        with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             info_params.pop("format", None)
             info_params["shortformat"] = True
             shortinfo = chevron.render(f, info_params).strip()
@@ -139,7 +130,7 @@ def render(element_html, data):
             html_params["raw_submitted_answer"] = pl.escape_unicode_string(
                 raw_submitted_answer
             )
-        with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -195,7 +186,7 @@ def render(element_html, data):
             "missing_input", False
         )
 
-        with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -234,8 +225,7 @@ def render(element_html, data):
                 )
             else:
                 raise ValueError(
-                    'method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")'
-                    % comparison
+                    f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
                 )
 
             html_params = {
@@ -250,20 +240,20 @@ def render(element_html, data):
                 html_params["default_is_matlab"] = True
             else:
                 html_params["default_is_python"] = True
-            with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+            with open("pl-matrix-input.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html = ""
 
     else:
-        raise Exception("Invalid panel type: %s" % data["panel"])
+        raise Exception("Invalid panel type: {}".format(data["panel"]))
 
     return html
 
 
 def get_format_string(message):
     params = {"format_error": True, "format_error_message": message}
-    with open("pl-matrix-input.mustache", "r", encoding="utf-8") as f:
+    with open("pl-matrix-input.mustache", encoding="utf-8") as f:
         return chevron.render(f, params).strip()
 
 
@@ -348,7 +338,7 @@ def grade(element_html, data):
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
         correct = pl.is_correct_ndarray2D_dd(a_sub, a_tru, digits)
     else:
-        raise ValueError('method of comparison "%s" is not valid' % comparison)
+        raise ValueError(f'method of comparison "{comparison}" is not valid')
 
     if correct:
         data["partial_scores"][name] = {"score": 1, "weight": weight}
@@ -432,7 +422,7 @@ def test(element_html, data):
             data["raw_submitted_answers"][name] = random.choice(invalid_cases[error])
             data["format_errors"][name] = error
         else:
-            raise Exception("invalid result: %s" % result)
+            raise Exception(f"invalid result: {result}")
     else:
         # python
         if result == "correct":
@@ -449,4 +439,4 @@ def test(element_html, data):
             data["raw_submitted_answers"][name] = "[[1, 2, 3], [4, 5]]"
             data["format_errors"][name] = "invalid"
         else:
-            raise Exception("invalid result: %s" % result)
+            raise Exception(f"invalid result: {result}")

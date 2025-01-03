@@ -12,9 +12,10 @@ import re
 import string
 import unicodedata
 import uuid
+from collections.abc import Callable, Generator
 from enum import Enum
 from io import StringIO
-from typing import Any, Callable, Generator, Literal, Type, TypedDict, TypeVar, overload
+from typing import Any, Literal, TypedDict, TypeVar, overload
 
 import lxml.html
 import networkx as nx
@@ -119,7 +120,7 @@ def grade_answer_parameterized(
     # Try converting partial score
     if isinstance(result, bool):
         partial_score = 1.0 if result else 0.0
-    elif isinstance(result, (float, int)):
+    elif isinstance(result, float | int):
         assert 0.0 <= result <= 1.0
         partial_score = result
     else:
@@ -156,7 +157,7 @@ EnumT = TypeVar("EnumT", bound=Enum)
 def get_enum_attrib(
     element: lxml.html.HtmlElement,
     name: str,
-    enum_type: Type[EnumT],
+    enum_type: type[EnumT],
     default: EnumT | None = None,
 ) -> EnumT:
     """
@@ -292,7 +293,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
             }
     elif isinstance(v, sympy.Expr):
         return phs.sympy_to_json(v)
-    elif isinstance(v, (sympy.Matrix, sympy.ImmutableMatrix)):
+    elif isinstance(v, sympy.Matrix | sympy.ImmutableMatrix):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
         matrix = []
@@ -343,7 +344,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
             raise ValueError(
                 f"Invalid df_encoding_version: {df_encoding_version}. Must be 1 or 2"
             )
-    elif isinstance(v, (nx.Graph, nx.DiGraph, nx.MultiGraph, nx.MultiDiGraph)):
+    elif isinstance(v, nx.Graph | nx.DiGraph | nx.MultiGraph | nx.MultiDiGraph):
         return {"_type": "networkx_graph", "_value": nx.adjacency_data(v)}
     else:
         return v
@@ -451,7 +452,7 @@ def from_json(v):
         elif v["_type"] == "networkx_graph":
             return nx.adjacency_graph(v["_value"])
         else:
-            raise Exception("variable has unknown type {:s}".format(v["_type"]))
+            raise Exception("variable has unknown type {}".format(v["_type"]))
     return v
 
 
@@ -487,14 +488,14 @@ def check_attribs(
 ) -> None:
     for name in required_attribs:
         if not has_attrib(element, name):
-            raise Exception('Required attribute "%s" missing' % name)
+            raise Exception(f'Required attribute "{name}" missing')
     extra_attribs = list(
         set(element.attrib)
         - set(compat_array(required_attribs))
         - set(compat_array(optional_attribs))
     )
     for name in extra_attribs:
-        raise Exception('Unknown attribute "%s"' % name)
+        raise Exception(f'Unknown attribute "{name}"')
 
 
 def _get_attrib(element, name, *args):
@@ -528,7 +529,7 @@ def _get_attrib(element, name, *args):
     if len(args) == 1:
         return (args[0], True)
 
-    raise ValueError('Attribute "%s" missing and no default is available' % name)
+    raise ValueError(f'Attribute "{name}" missing and no default is available')
 
 
 def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
@@ -616,7 +617,7 @@ def get_boolean_attrib(element, name, *args):
     elif val in false_values:
         return False
     else:
-        raise ValueError('Attribute "%s" must be a boolean value: %s' % (name, val))
+        raise ValueError(f'Attribute "{name}" must be a boolean value: {val}')
 
 
 # Order here matters, as we want to override the case where the args is omitted
@@ -654,7 +655,7 @@ def get_integer_attrib(element, name, *args):
     if int_val is None:
         # can't raise this exception directly in the above except
         # handler because it gives an overly complex displayed error
-        raise Exception('Attribute "%s" must be an integer: %s' % (name, val))
+        raise Exception(f'Attribute "{name}" must be an integer: {val}')
     return int_val
 
 
@@ -676,7 +677,7 @@ def get_float_attrib(element, name, *args):
     if float_val is None:
         # can't raise this exception directly in the above except
         # handler because it gives an overly complex displayed error
-        raise Exception('Attribute "%s" must be a number: %s' % (name, val))
+        raise Exception(f'Attribute "{name}" must be a number: {val}')
     return float_val
 
 
@@ -717,11 +718,7 @@ def get_color_attrib(element, name, *args):
         if PLColor.match(val) is not None:
             return PLColor(val).to_string(hex=True)
         else:
-            raise Exception(
-                'Attribute "{:s}" must be a CSS-style RGB string: {:s}'.format(
-                    name, val
-                )
-            )
+            raise Exception(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
 
 
 def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
@@ -933,9 +930,7 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
         return result
     else:
         raise Exception(
-            'language "{:s}" must be either "python", "matlab", "mathematica", "r", or "sympy"'.format(
-                language
-            )
+            f'language "{language}" must be either "python", "matlab", "mathematica", "r", or "sympy"'
         )
 
 
@@ -967,9 +962,9 @@ def _string_from_complex_sigfig(a, digits=2):
     re = to_precision.to_precision(a.real, digits)
     im = to_precision.to_precision(np.abs(a.imag), digits)
     if a.imag >= 0:
-        return "{:s}+{:s}j".format(re, im)
+        return f"{re}+{im}j"
     elif a.imag < 0:
-        return "{:s}-{:s}j".format(re, im)
+        return f"{re}-{im}j"
 
 
 def numpy_to_matlab_sf(A, ndigits=2):

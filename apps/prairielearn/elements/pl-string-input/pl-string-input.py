@@ -86,7 +86,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     parse_error = data["format_errors"].get(name)
 
     # Get template
-    with open(STRING_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+    with open(STRING_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         template = f.read()
 
     if data["panel"] == "question":
@@ -318,7 +318,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["partial_scores"][name] = {"score": 1, "weight": weight}
     elif result == "incorrect":
         data["raw_submitted_answers"][name] = a_tru + str(
-            (random.randint(1, 11) * random.choice([-1, 1]))
+            random.randint(1, 11) * random.choice([-1, 1])
         )
         data["partial_scores"][name] = {"score": 0, "weight": weight}
     elif result == "invalid":

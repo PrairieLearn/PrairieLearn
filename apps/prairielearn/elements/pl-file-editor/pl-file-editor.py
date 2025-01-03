@@ -23,9 +23,7 @@ ALLOW_BLANK_DEFAULT = False
 
 
 def get_answer_name(file_name: str) -> str:
-    return "_file_editor_{0}".format(
-        hashlib.sha1(file_name.encode("utf-8")).hexdigest()
-    )
+    return "_file_editor_{}".format(hashlib.sha1(file_name.encode("utf-8")).hexdigest())
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -128,7 +126,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             directory = os.path.join(data["options"]["question_path"], directory)
         file_path = os.path.join(directory, source_file_name)
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(file_path, encoding="utf-8") as f:
             text_display = f.read()
     else:
         text_display = "" if element.text is None else str(element.text)
@@ -148,7 +146,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     else:
         html_params["current_file_contents"] = html_params["original_file_contents"]
 
-    with open("pl-file-editor.mustache", "r", encoding="utf-8") as f:
+    with open("pl-file-editor.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
 
 
