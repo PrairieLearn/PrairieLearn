@@ -38,7 +38,7 @@ class TestGrader(cgrader.CGrader):
                 "./main", f"{length} {x} {y}\n", generate_output(length, x, y)
             )
             try:
-                with open("image.json", "r") as f:
+                with open("image.json") as f:
                     pts = json.load(f)
                     plt.clf()
                     for i in range(1, len(pts), 4):

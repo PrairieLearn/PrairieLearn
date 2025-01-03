@@ -91,7 +91,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
     score = data["partial_scores"].get(name, {"score": None}).get("score")
 
-    with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+    with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         template = f.read()
 
     if data["panel"] == "question":
@@ -234,7 +234,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     a_sub = str(a_sub)
 
-    with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+    with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         template = f.read()
 
     if a_sub.strip() == "":
