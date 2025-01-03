@@ -190,5 +190,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if show_dimensions:
         html_params["num_rows"], html_params["num_cols"] = frame.shape
 
-    with open("pl-dataframe.mustache", "r", encoding="utf-8") as f:
+    with open("pl-dataframe.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

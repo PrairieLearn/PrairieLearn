@@ -99,7 +99,7 @@ class CGrader:
             return ""
         out = ""
         tostr = ""
-        if input is not None and not isinstance(input, (bytes, bytearray)):
+        if input is not None and not isinstance(input, bytes | bytearray):
             input = str(input).encode("utf-8")
         try:
             proc.communicate(input=input, timeout=timeout)[0]
@@ -177,7 +177,7 @@ class CGrader:
                 if not os.path.isfile(preprocessed_file):
                     preprocessed_file = pathlib.Path(std_c_file).with_suffix(".mi")
                 if os.path.isfile(preprocessed_file):
-                    with open(preprocessed_file, "r") as f:
+                    with open(preprocessed_file) as f:
                         preprocessed_text = f.read()
                         found_primitives = {
                             s for s in INVALID_PRIMITIVES if s in preprocessed_text
@@ -395,13 +395,13 @@ class CGrader:
             args = list(map(str, args))
 
         if name is None and input is not None:
-            name = 'Test with input "%s"' % " ".join(input.splitlines())
+            name = 'Test with input "{}"'.format(" ".join(input.splitlines()))
         elif name is None and args is not None:
-            name = 'Test with arguments "%s"' % " ".join(args)
+            name = 'Test with arguments "{}"'.format(" ".join(args))
         elif name is None and isinstance(command, list):
-            name = "Test command: %s" % command[0]
+            name = f"Test command: {command[0]}"
         elif name is None:
-            name = "Test command: %s" % command
+            name = f"Test command: {command}"
 
         if exp_output is None:
             exp_output = []
@@ -532,7 +532,7 @@ class CGrader:
         field=None,
         images=None,
     ):
-        if not isinstance(points, (int, float)):
+        if not isinstance(points, int | float):
             points = max_points if points else 0.0
         test = {
             "name": name,
@@ -614,7 +614,7 @@ class CGrader:
             " - " if use_unit_test_id and (use_suite_title or use_case_name) else ""
         )
         try:
-            with open(log_file, "r", errors="backslashreplace") as log:
+            with open(log_file, errors="backslashreplace") as log:
                 tree = et.parse(log, parser=et.XMLParser())
             for suite in tree.getroot().findall("{*}suite"):
                 suite_title = suite.findtext("{*}title") if use_suite_title else ""
@@ -694,7 +694,7 @@ class CGrader:
 
 class CPPGrader(CGrader):
     def __init__(self, compiler="g++"):
-        super(CPPGrader, self).__init__(compiler)
+        super().__init__(compiler)
 
 
 if __name__ == "__main__":

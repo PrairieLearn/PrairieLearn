@@ -88,9 +88,7 @@ def prepare(element_html, data):
 
     if min_correct < 1:
         raise ValueError(
-            "The attribute min-correct is {:d} but must be at least 1".format(
-                min_correct
-            )
+            f"The attribute min-correct is {min_correct:d} but must be at least 1"
         )
 
     # FIXME: why enforce a maximum number of options?
@@ -165,9 +163,9 @@ def prepare(element_html, data):
             correct_answer_list.append(keyed_answer)
 
     if name in data["params"]:
-        raise Exception("duplicate params variable name: %s" % name)
+        raise Exception(f"duplicate params variable name: {name}")
     if name in data["correct_answers"]:
-        raise Exception("duplicate correct_answers variable name: %s" % name)
+        raise Exception(f"duplicate correct_answers variable name: {name}")
     data["params"][name] = display_answers
     data["correct_answers"][name] = correct_answer_list
 
@@ -353,7 +351,7 @@ def render(element_html, data):
 
             info_params.update({"gradingtext": gradingtext})
 
-        with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+        with open("pl-checkbox.mustache", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
 
         html_params = {
@@ -383,7 +381,7 @@ def render(element_html, data):
             except Exception as exc:
                 raise ValueError("invalid score" + score) from exc
 
-        with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+        with open("pl-checkbox.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -436,7 +434,7 @@ def render(element_html, data):
                 except Exception as exc:
                     raise ValueError("invalid score" + score) from exc
 
-            with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+            with open("pl-checkbox.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html_params = {
@@ -444,7 +442,7 @@ def render(element_html, data):
                 "parse_error": parse_error,
                 "inline": inline,
             }
-            with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+            with open("pl-checkbox.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -463,13 +461,13 @@ def render(element_html, data):
                         element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
                     ),
                 }
-                with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+                with open("pl-checkbox.mustache", encoding="utf-8") as f:
                     html = chevron.render(f, html_params).strip()
         else:
             html = ""
 
     else:
-        raise ValueError("Invalid panel type: %s" % data["panel"])
+        raise ValueError("Invalid panel type: {}".format(data["panel"]))
 
     return html
 
@@ -493,8 +491,8 @@ def parse(element_html, data):
     if not submitted_key_set.issubset(all_keys_set):
         one_bad_key = submitted_key_set.difference(all_keys_set).pop()
         # FIXME: escape one_bad_key
-        data["format_errors"][name] = "You selected an invalid option: {:s}".format(
-            str(one_bad_key)
+        data["format_errors"][name] = (
+            f"You selected an invalid option: {str(one_bad_key)}"
         )
         return
 
@@ -661,7 +659,7 @@ def test(element_html, data):
         data["raw_submitted_answers"][name] = None
         data["format_errors"][name] = "You must select at least one option."
     else:
-        raise Exception("invalid result: %s" % result)
+        raise Exception(f"invalid result: {result}")
 
 
 def _get_min_options_to_select(element, default_val):
