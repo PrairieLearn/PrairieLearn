@@ -1,7 +1,7 @@
+import { Modal } from 'bootstrap';
 import { Fragment, h, render } from 'preact';
 import React, { useEffect, useState } from 'preact/hooks';
 import { signal } from '@preact/signals';
-import { html } from '@prairielearn/html';
 
 import { IssueBadge } from '../../src/components/IssueBadge.html.js';
 import { SyncProblemButton } from '../../src/components/SyncProblemButton.html.js';
@@ -12,9 +12,10 @@ import { TopicBadge } from '../../src/components/TopicBadge.html.js';
 import { onDocumentReady, templateFromAttributes, decodeData } from '@prairielearn/browser-utils';
 
 import { histmini } from './lib/histmini.js';
-import { max } from 'lodash';
 
 import { AssessmentQuestionRow } from '../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
+import { auto } from 'async';
+import { edit } from 'ace-builds';
 
 onDocumentReady(() => {
   $('#resetQuestionVariantsModal').on('show.bs.modal', (e) => {
@@ -36,7 +37,9 @@ onDocumentReady(() => {
     assessmentQuestionsTable.dataset.hasCoursePermissionPreview === 'true';
   const hasCourseInstancePermissionEdit =
     assessmentQuestionsTable.dataset.hasCourseInstancePermissionEdit === 'true';
+  let questions = signal<AssessmentQuestionRow[]>(decodeData('assessment-questions-data'));
   let editMode = signal(false);
+  let editedQuestion = signal<AssessmentQuestionRow | null>(null);
 
   function EditModeButtons() {
     return (
@@ -61,11 +64,11 @@ onDocumentReady(() => {
 
   render(<EditModeButtons />, document.querySelector('.js-edit-mode-buttons') as HTMLElement);
 
-  function AssessmentQuestionsTable({ questions }: { questions: AssessmentQuestionRow[] }) {
-    const [questionState, setQuestionState] = useState(questions);
+  const modal = document.querySelector('.js-edit-question-modal') as HTMLElement;
+  function AssessmentQuestionsTable() {
     // If at least one question has a nonzero unlock score, display the Advance Score column
     const showAdvanceScorePercCol =
-      questionState.map((q) => q.assessment_question_advance_score_perc !== 0).length >= 1;
+      questions.value.map((q) => q.assessment_question_advance_score_perc !== 0).length >= 1;
 
     const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 
@@ -88,31 +91,41 @@ onDocumentReady(() => {
           return `${init_points - max_manual_points}/${max_auto_points}`;
         }
       } else {
-        return `&mdash;`;
+        return '—';
       }
     }
 
+    // const handleEdit = (question: AssessmentQuestionRow, i: number) => {
+    //   const update = questionState.map((q) => ({ ...q }));
+    //   update[i].title = 'EDITED';
+    //   setQuestionState([...update]);
+    // };
+
     const handleEdit = (question: AssessmentQuestionRow, i: number) => {
-      const update = questionState.map((q) => ({ ...q }));
-      update[i].title = 'EDITED';
-      setQuestionState([...update]);
+      editedQuestion.value = { ...question };
+      render(<EditQuestionModal question={question} i={i} />, modal);
+      Modal.getOrCreateInstance(modal).show();
     };
 
     const handleDelete = (question: AssessmentQuestionRow, i: number) => {
-      const update = questionState.filter((q) => q !== question);
-      if (question.start_new_zone) {
-        update[i].start_new_zone = true;
+      const update = questions.value.filter((q) => q !== question);
+      if (update.length === 0) {
+        questions.value = [];
+      } else {
+        if (question.start_new_zone) {
+          update[i].start_new_zone = true;
+        }
+        if (question.start_new_alternative_group) {
+          update[i].start_new_alternative_group = true;
+        }
+        questions.value = [...update];
       }
-      if (question.start_new_alternative_group) {
-        update[i].start_new_alternative_group = true;
-      }
-      setQuestionState([...update]);
     };
 
     let zoneNumber = 0;
     let alternativeGroupNumber = 0;
     let numberInAlternativeGroup = 1;
-    const questionRowMap = questionState.map((question, i: number) => {
+    const questionRowMap = questions.value.map((question, i: number) => {
       if (question.start_new_zone) {
         zoneNumber++;
       }
@@ -232,10 +245,10 @@ onDocumentReady(() => {
             </td>
             <td>
               {maxPoints({
-                max_auto_points: question.max_auto_points,
-                max_manual_points: question.max_manual_points,
-                points_list: question.points_list,
-                init_points: question.init_points,
+                max_auto_points: question.max_auto_points ?? 0,
+                max_manual_points: question.max_manual_points ?? 0,
+                points_list: question.points_list ?? [],
+                init_points: question.init_points ?? 0,
               })}
             </td>
             <td>{question.max_manual_points || '—'}</td>
@@ -343,10 +356,225 @@ onDocumentReady(() => {
       </table>
     );
   }
-  render(
-    <AssessmentQuestionsTable questions={decodeData('assessment-questions-data')} />,
-    assessmentQuestionsTable,
-  );
+  render(<AssessmentQuestionsTable />, assessmentQuestionsTable);
+
+  function EditQuestionModal({ question, i }: { question: AssessmentQuestionRow; i: number }) {
+    const [autoGraded, setAutoGraded] = useState(question.max_manual_points === 0);
+    const handleSubmit = () => {
+      Modal.getOrCreateInstance(document.querySelector('.js-edit-question-modal')).hide();
+      const update: AssessmentQuestionRow[] = questions.value.map((q) => ({ ...q }));
+      update[i] = editedQuestion.value ?? update[i];
+      questions.value = [...update];
+    };
+    useEffect(() => {
+      setAutoGraded(question.max_manual_points === 0);
+    }, [question]);
+    return (
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <h2 class="modal-title h4">Edit Question</h2>
+            <button
+              type="button"
+              class="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            ></button>
+          </div>
+          <div class="modal-body">
+            <form id="edit-question-form">
+              <div class="form-group">
+                <label for="qidInput">QID</label>
+                <div class="input-group">
+                  <input
+                    type="text"
+                    class="form-control js-qid-input"
+                    id="qidInput"
+                    name="qid"
+                    aria-describedby="qidHelp"
+                    value={editedQuestion.value?.qid ?? ''}
+                    onChange={(e) => {
+                      if (editedQuestion.value) {
+                        editedQuestion.value.qid = (e.target as HTMLInputElement).value;
+                        editedQuestion.value.display_name = (e.target as HTMLInputElement).value;
+                      }
+                    }}
+                  />
+                </div>
+                <small id="uidHelp" class="form-text text-muted">
+                  {' '}
+                  This is the unique question ID.{' '}
+                </small>
+              </div>
+              {assessmentType === 'Homework' ? (
+                <>
+                  <div class="form-group">
+                    <label for="gradingMethod" class="form-label">
+                      Grading Method
+                    </label>
+                    <select
+                      class="form-control"
+                      id="gradingMethod"
+                      name="gradingMethod"
+                      onChange={(e) => setAutoGraded(e.target?.value === 'auto')}
+                    >
+                      <option value="auto" selected={autoGraded}>
+                        Auto
+                      </option>
+                      <option value="manual" selected={!autoGraded}>
+                        Manual
+                      </option>
+                    </select>
+                    <small id="gradingMethodHelp" class="form-text text-muted">
+                      Whether points for the question will be given automatically or manually.
+                    </small>
+                  </div>
+                  {autoGraded ? (
+                    <>
+                      <div class="form-group js-hw-auto-points">
+                        <label for="autoPointsInput">Auto Points</label>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="autoPointsInput"
+                          name="autoPoints"
+                          value={editedQuestion.value?.init_points ?? 0}
+                          onChange={(e) => {
+                            if (editedQuestion.value) {
+                              editedQuestion.value.init_points = (
+                                e.target as HTMLInputElement
+                              ).valueAsNumber;
+                            }
+                          }}
+                        />
+                        <small id="autoPointsHelp" class="form-text text-muted">
+                          The amount of points each attempt at the question is worth.
+                        </small>
+                      </div>
+                      <div class="form-group js-hw-auto-points">
+                        <label for="maxAutoPointsInput">Max Points</label>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="maxAutoPointsInput"
+                          name="maxAutoPoints"
+                          value={editedQuestion.value?.max_auto_points ?? 0}
+                          onChange={(e) => {
+                            if (editedQuestion.value) {
+                              editedQuestion.value.max_auto_points = (
+                                e.target as HTMLInputElement
+                              ).valueAsNumber;
+                            }
+                          }}
+                        />
+                        <small id="maxPointsHelp" class="form-text text-muted">
+                          The maximum number of points that can be awarded for the question.
+                        </small>
+                      </div>
+                      <div class="form-group js-hw-auto-points">
+                        <label for="triesPerVariantInput">Tries Per Variant</label>
+                        <input
+                          type="number"
+                          class="form-control"
+                          id="triesPerVariantInput"
+                          name="triesPerVariant"
+                          value={editedQuestion.value?.tries_per_variant ?? 0}
+                          onChange={(e) => {
+                            if (editedQuestion.value) {
+                              editedQuestion.value.tries_per_variant = (
+                                e.target as HTMLInputElement
+                              ).valueAsNumber;
+                            }
+                          }}
+                        />
+                        <small id="triesPerVariantHelp" class="form-text text-muted">
+                          This is the number of attempts a student has to answer the question before
+                          getting a new variant.
+                        </small>
+                      </div>
+                    </>
+                  ) : (
+                    <div class="form-group js-hw-manual-points">
+                      <label for="manualPointsInput">Manual Points</label>
+                      <input
+                        type="number"
+                        class="form-control"
+                        id="manualPointsInput"
+                        name="manualPoints"
+                        value={editedQuestion.value?.max_manual_points ?? 0}
+                        onChange={(e) => {
+                          if (editedQuestion.value) {
+                            editedQuestion.value.max_manual_points = (
+                              e.target as HTMLInputElement
+                            ).valueAsNumber;
+                          }
+                        }}
+                      />
+                      <small id="manualPointsHelp" class="form-text text-muted">
+                        The is the amout of points possible from manual grading.
+                      </small>
+                    </div>
+                  )}
+                </>
+              ) : (
+                <>
+                  <div class="form-group">
+                    <label for="autoPoints">Auto Points</label>
+                    <input
+                      type="text"
+                      class="form-control points-list"
+                      id="autoPointsInput"
+                      name="autoPoints"
+                      value={editedQuestion.value?.points_list?.join(',')}
+                      onChange={(e) => {
+                        if (editedQuestion.value) {
+                          editedQuestion.value.points_list = (e.target as HTMLInputElement).value
+                            .split(',')
+                            .map((v) => Number(v));
+                        }
+                      }}
+                    />
+                    <small id="autoPointsHelp" class="form-text text-muted">
+                      This is a list of points that each attempt at the question is worth. Enter
+                      values separated by commas.
+                    </small>
+                  </div>
+                  <div class="form-group">
+                    <label for="manualPoints">Manual Points</label>
+                    <input
+                      type="number"
+                      class="form-control"
+                      id="manualPointsInput"
+                      name="manualPoints"
+                      value={editedQuestion.value?.max_manual_points ?? 0}
+                      onChange={(e) => {
+                        if (editedQuestion.value) {
+                          editedQuestion.value.max_manual_points = (
+                            e.target as HTMLInputElement
+                          ).valueAsNumber;
+                        }
+                      }}
+                    />
+                    <small id="manualPointsHelp" class="form-text text-muted">
+                      The is the amout of points possible from manual grading.
+                    </small>
+                  </div>
+                </>
+              )}
+            </form>
+          </div>
+          <div class="modal-footer">
+            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+              Close
+            </button>
+            <button type="button" class="btn btn-primary" onClick={() => handleSubmit()}>
+              Save changes
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   // To do: we should now be able to render these directly in the questionRowMap
   document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => histmini(element));
