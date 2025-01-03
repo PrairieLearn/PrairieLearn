@@ -452,7 +452,7 @@ def from_json(v):
         elif v["_type"] == "networkx_graph":
             return nx.adjacency_graph(v["_value"])
         else:
-            raise Exception("variable has unknown type {:s}".format(v["_type"]))
+            raise Exception("variable has unknown type {}".format(v["_type"]))
     return v
 
 
@@ -718,9 +718,7 @@ def get_color_attrib(element, name, *args):
         if PLColor.match(val) is not None:
             return PLColor(val).to_string(hex=True)
         else:
-            raise Exception(
-                f'Attribute "{name:s}" must be a CSS-style RGB string: {val:s}'
-            )
+            raise Exception(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
 
 
 def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
@@ -932,7 +930,7 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
         return result
     else:
         raise Exception(
-            f'language "{language:s}" must be either "python", "matlab", "mathematica", "r", or "sympy"'
+            f'language "{language}" must be either "python", "matlab", "mathematica", "r", or "sympy"'
         )
 
 
@@ -964,9 +962,9 @@ def _string_from_complex_sigfig(a, digits=2):
     re = to_precision.to_precision(a.real, digits)
     im = to_precision.to_precision(np.abs(a.imag), digits)
     if a.imag >= 0:
-        return f"{re:s}+{im:s}j"
+        return f"{re}+{im}j"
     elif a.imag < 0:
-        return f"{re:s}-{im:s}j"
+        return f"{re}-{im}j"
 
 
 def numpy_to_matlab_sf(A, ndigits=2):
