@@ -132,8 +132,8 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            except Exception as exc:
+                raise ValueError("invalid score" + score) from exc
 
         if raw_submitted_answer is not None:
             html_params["raw_submitted_answer"] = pl.escape_unicode_string(
@@ -188,8 +188,8 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            except Exception as exc:
+                raise ValueError("invalid score" + score) from exc
 
         html_params["error"] = html_params["parse_error"] or html_params.get(
             "missing_input", False
@@ -329,7 +329,7 @@ def grade(element_html, data):
     a_sub = np.array(a_sub)
 
     # If true and submitted answers have different shapes, score is zero
-    if not (a_sub.shape == a_tru.shape):
+    if a_sub.shape != a_tru.shape:
         data["partial_scores"][name] = {"score": 0, "weight": weight}
         return
 

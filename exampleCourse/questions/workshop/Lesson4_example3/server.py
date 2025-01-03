@@ -26,13 +26,12 @@ def parse(data):
                     data["format_errors"][name] = (
                         "Temperature {} looks too low.".format(name)
                     )
-            elif name in ["D", "L", "x1"]:
-                if var > 0.5:
-                    data["format_errors"][name] = (
-                        "Dimension {} is outside the range of acceptable values for this experiment. Check your units?".format(
-                            name
-                        )
+            elif name in ["D", "L", "x1"] and var > 0.5:
+                data["format_errors"][name] = (
+                    "Dimension {} is outside the range of acceptable values for this experiment. Check your units?".format(
+                        name
                     )
+                )
 
 
 def grade(data):
