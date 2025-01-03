@@ -38,7 +38,10 @@ function getParamsForQuestion(qid: string, q: Question | null | undefined) {
     client_files: q.clientFiles || [],
     draft: isDraftQid(qid),
     topic: q.topic,
-    grading_method: q.gradingMethod || 'Internal',
+    // Using Manual or Internal grading method has no practical difference, but
+    // the value is updated for consistency
+    grading_method: q.gradingMethod || ((q.manualPerc ?? 0) >= 100 ? 'Manual' : 'Internal'),
+    manual_perc: q.manualPerc ?? (q.gradingMethod === 'Manual' ? 100 : 0),
     single_variant: !!q.singleVariant,
     show_correct_answer: q.showCorrectAnswer === undefined ? true : q.showCorrectAnswer,
     external_grading_enabled: q.externalGradingOptions && q.externalGradingOptions.enabled,

@@ -193,6 +193,7 @@ export interface Question {
   clientTemplates?: string[];
   template?: string;
   gradingMethod?: 'Internal' | 'External' | 'Manual';
+  manualPerc?: number;
   singleVariant?: boolean;
   showCorrectAnswer?: boolean;
   partialCredit?: boolean;
@@ -281,6 +282,8 @@ export async function writeCourseToDirectory(courseData: CourseData, coursePath:
 export const QUESTION_ID = 'test';
 export const ALTERNATIVE_QUESTION_ID = 'test2';
 export const MANUAL_GRADING_QUESTION_ID = 'test_manual';
+export const EXTERNAL_GRADING_QUESTION_ID = 'test_external';
+export const PARTIALLY_MANUAL_GRADING_QUESTION_ID = 'test_manual_40';
 export const WORKSPACE_QUESTION_ID = 'workspace';
 export const COURSE_INSTANCE_ID = 'Fa19';
 export const ASSESSMENT_ID = 'test';
@@ -368,6 +371,28 @@ const questions: Record<string, Question> = {
     title: 'Test question',
     topic: 'Test',
     gradingMethod: 'Manual',
+    tags: ['test'],
+    type: 'v3',
+  },
+  [EXTERNAL_GRADING_QUESTION_ID]: {
+    uuid: '97ef0aee-46f3-4a12-afa8-7d9614913723',
+    title: 'External grading question',
+    topic: 'Test',
+    gradingMethod: 'External',
+    tags: ['test'],
+    type: 'v3',
+    externalGradingOptions: {
+      enabled: true,
+      image: 'alpine:latest',
+      entrypoint: '/grade/tests/grade.sh',
+      timeout: 10,
+    },
+  },
+  [PARTIALLY_MANUAL_GRADING_QUESTION_ID]: {
+    uuid: '32497a05-c0bc-4224-bda5-39730164bf1c',
+    title: 'Question with partial manual grading',
+    topic: 'Test',
+    manualPerc: 40,
     tags: ['test'],
     type: 'v3',
   },

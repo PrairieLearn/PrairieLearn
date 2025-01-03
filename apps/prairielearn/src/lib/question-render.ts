@@ -352,14 +352,15 @@ function buildLocals({
     locals.showTryAgainButton = true;
   }
 
-  // The method to determine if this is a manual-only question depends on the context.
-  // If the question is being rendered in an assessment, we check if there are manual points and no auto points.
-  // If the question is being rendered in question preview, we use the grading method as a proxy.
-  if (
-    assessment_question
-      ? !assessment_question.max_auto_points && assessment_question.max_manual_points
-      : question?.grading_method === 'Manual'
-  ) {
+  // If the manual percentage is not populated, we fallback to the grading
+  // method (in question preview), or the proportion of manual points to max
+  // points (in assessment).
+  const manualPercentage =
+    assessment_question?.manual_perc ??
+    (assessment_question
+      ? (100 * (assessment_question.max_manual_points ?? 0)) / (assessment_question.max_points || 1)
+      : (question?.manual_perc ?? (question?.grading_method === 'Manual' ? 100 : 0)));
+  if (manualPercentage >= 100) {
     locals.showGradeButton = false;
   }
 
