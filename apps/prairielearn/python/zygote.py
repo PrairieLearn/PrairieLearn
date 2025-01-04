@@ -24,9 +24,10 @@ import subprocess
 import sys
 import time
 import types
+from collections.abc import Iterable, Sequence
 from importlib.abc import MetaPathFinder
 from inspect import signature
-from typing import Any, Iterable, Sequence
+from typing import Any
 
 import question_phases
 import zygote_utils as zu

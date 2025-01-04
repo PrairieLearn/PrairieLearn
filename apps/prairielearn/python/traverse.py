@@ -1,13 +1,11 @@
 from collections import deque
+from collections.abc import Callable
 from html import escape as html_escape
 from itertools import chain
-from typing import Callable, Deque, List, Optional, Tuple, Union
 
 import lxml.html
 
-ElementReplacement = Optional[
-    Union[str, lxml.html.HtmlElement, List[lxml.html.HtmlElement]]
-]
+ElementReplacement = str | lxml.html.HtmlElement | list[lxml.html.HtmlElement] | None
 
 # https://developer.mozilla.org/en-US/docs/Glossary/Void_element
 VOID_ELEMENTS = frozenset(
@@ -70,12 +68,12 @@ def traverse_and_replace(
     """
 
     # Initialize result and work data structures
-    result: Deque[str] = deque()
+    result: deque[str] = deque()
 
     initial_list = lxml.html.fragments_fromstring(html)
-    count_stack: Deque[int] = deque([len(initial_list)])
-    work_stack: Deque[Union[str, lxml.html.HtmlElement]] = deque(reversed(initial_list))
-    tail_stack: Deque[Tuple[str, Optional[str]]] = deque()
+    count_stack: deque[int] = deque([len(initial_list)])
+    work_stack: deque[str | lxml.html.HtmlElement] = deque(reversed(initial_list))
+    tail_stack: deque[tuple[str, str | None]] = deque()
 
     while work_stack:
         element = work_stack.pop()
