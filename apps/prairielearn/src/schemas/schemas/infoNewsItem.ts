@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export default z
+const NewsItemSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -18,3 +18,5 @@ export default z
   })
   .strict()
   .describe('Info files for news items.');
+
+export { NewsItemSchema };
