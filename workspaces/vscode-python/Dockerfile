@@ -1,48 +1,36 @@
 FROM prairielearn/workspace-vscode-base
 
-USER root
-RUN apt-get update && apt-get upgrade -y \
-    && apt-get install -y --no-install-recommends \
-    python3 python3-pip python3-venv \
-        build-essential \
-        graphviz graphviz-dev \
-    && rm -rf /var/lib/apt/lists/* \
-    && find /tmp -not -path /tmp -delete
+# Make sure to build using bash as the shell so that conda/mamba hooks will
+# work during installation.
+SHELL ["/bin/bash", "-c"]
 
-RUN pip install     \
-    beautifulsoup4  \
-    bokeh           \
-    colormath       \
-    defusedxml      \
-    Faker           \
-    folium          \
-    ipython         \
-    matplotlib      \
-    nbconvert       \
-    nbformat        \
-    networkx        \
-    nltk            \
-    numpy           \
-    openpyxl        \
-    pandas          \
-    Pillow          \
-    PuLP            \
-    Pygments        \
-    pyarrow         \
-    pygraphviz      \
-    requests        \
-    scikit-image    \
-    scikit-learn    \
-    scipy           \
-    seaborn         \
-    sympy           \
-    text-unidecode  \
-    typing-extensions 
+# Install Python and required packages via miniconda.
+# This is a prerequisite for the VS Code extensions in the following steps.
+USER coder
+COPY requirements.txt /
+RUN export arch=`uname -m` \
+ && curl -sfLO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
+ && chmod +x "Miniforge3-Linux-${arch}.sh" \
+ && ./"Miniforge3-Linux-${arch}.sh" -b -p /home/coder/conda \
+ # Install conda and mamba hooks for future interactive bash sessions:
+ && /home/coder/conda/bin/mamba init bash \
+ # Activate hooks in the current noninteractive session:
+ && . "/home/coder/conda/etc/profile.d/conda.sh" \
+ && . "/home/coder/conda/etc/profile.d/mamba.sh" \
+ && mamba activate \
+ # Installing `pygraphviz` with pip would require `build-essentials`, `graphviz`,
+ # and `graphviz-dev` to be installed at the OS level, which would increase the
+ # image size. Instead, we install it from Conda, which prebuilds it and also
+ # automatically installs a Conda-specific `graphviz` dependency.
+ && mamba install --yes $(grep pygraphviz /requirements.txt | head -n 1) \
+ && pip install -r /requirements.txt \
+ && rm "Miniforge3-Linux-${arch}.sh" \
+ && mamba clean --all --yes --quiet \
+ && pip cache purge
 
 # Install VS Code extensions.
 # We have first installed Python in the previous step, as specified in the
 # documentation of the ms-python.python extension.
-
 USER coder
 RUN code-server --disable-telemetry --force \
     # vscode support for python, including debugger

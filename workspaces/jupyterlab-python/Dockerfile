@@ -3,8 +3,8 @@ FROM jupyter/minimal-notebook:2023-10-20
 ENV XDG_DATA_HOME=/tmp/local/share
 ENV XDG_CACHE_HOME=/tmp/cache
 ENV XDG_CONFIG_HOME=/tmp/config
-ENV JUPYTER_RUNTIME_DIR /tmp/runtime
-ENV JUPYTER_ALLOW_INSECURE_WRITES true
+ENV JUPYTER_RUNTIME_DIR=/tmp/runtime
+ENV JUPYTER_ALLOW_INSECURE_WRITES=true
 ENV JUPYTER_CONFIG_DIR=/tmp/jupyter_config
 ENV NPM_CONFIG_CACHE=/tmp/npm
 ENV NO_UPDATE_NOTIFIER=true
@@ -18,3 +18,6 @@ COPY jupyter_server_config.py /etc/jupyter/
 
 USER jovyan
 CMD ["pl-gosu-helper.sh", "start.sh", "jupyter", "lab"]
+
+# USAGE:
+# docker build --platform linux/amd64 -t prairielearn/workspace-jupyterlab-python .

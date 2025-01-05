@@ -1,3 +1,3 @@
-# workspace-vscode-python
+# workspace-vscode-C/C++
 
-This image is a copy of `workspace-vscode` with Python installed.
+This image is a copy of `workspace-vscode-basic` with C/C++ installed.
