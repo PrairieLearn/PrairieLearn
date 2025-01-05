@@ -185,7 +185,8 @@ onDocumentReady(() => {
   // base path for modes/themes here based on the meta tag set in the document,
   // which is computed server-side based on the asset path for the ace-builds
   // module.
-  const aceBasePath = document.querySelector('meta[name="ace-base-path"]')?.getAttribute('content');
+  const aceBasePath =
+    document.querySelector('meta[name="ace-base-path"]')?.getAttribute('content') ?? null;
   ace.config.set('modePath', aceBasePath);
   ace.config.set('workerPath', aceBasePath);
   ace.config.set('themePath', aceBasePath);

@@ -4,7 +4,7 @@ import io
 import os
 import pathlib
 import sys
-from typing import Any, Literal, Optional, Tuple, TypedDict
+from typing import Any, Literal, TypedDict
 
 import lxml.html
 from check_data import Phase, check_data
@@ -57,7 +57,7 @@ def filelike_to_string(filelike: Any) -> str:
 
 def process(
     phase: Phase, data: dict, context: RenderContext
-) -> Tuple[Optional[str], set[str]]:
+) -> tuple[str | None, set[str]]:
     html = context["html"]
     elements = context["elements"]
     course_path = context["course_path"]
@@ -170,8 +170,8 @@ def process(
                         + "For now, the return value will be used instead of the data object that was passed in.\n\n"
                         + "In the future, returning a different object will trigger a fatal error."
                     )
-        except Exception:
-            raise Exception(f"Error processing element {element.tag}")
+        except Exception as exc:
+            raise Exception(f"Error processing element {element.tag}") from exc
 
     def process_element_return_none(element: lxml.html.HtmlElement) -> None:
         process_element(element)
