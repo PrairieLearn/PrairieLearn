@@ -35,7 +35,7 @@ const ColorSchema = z
   ])
   .describe('A color name.');
 
-export default z
+const CourseSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -160,3 +160,5 @@ export default z
   })
   .strict()
   .describe('The specification file for a course.');
+
+export { CourseSchema };
