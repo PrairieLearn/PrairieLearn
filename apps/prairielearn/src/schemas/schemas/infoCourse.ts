@@ -1,5 +1,40 @@
 import { z } from 'zod';
 
+const ColorSchema = z
+  .enum([
+    'red1',
+    'red2',
+    'red3',
+    'pink1',
+    'pink2',
+    'pink3',
+    'purple1',
+    'purple2',
+    'purple3',
+    'blue1',
+    'blue2',
+    'blue3',
+    'turquoise1',
+    'turquoise2',
+    'turquoise3',
+    'green1',
+    'green2',
+    'green3',
+    'yellow1',
+    'yellow2',
+    'yellow3',
+    'orange1',
+    'orange2',
+    'orange3',
+    'brown1',
+    'brown2',
+    'brown3',
+    'gray1',
+    'gray2',
+    'gray3',
+  ])
+  .describe('A color name.');
+
 export default z
   .object({
     comment: z
@@ -59,7 +94,7 @@ export default z
               .describe(
                 "Plural heading for a group of assessments (preferably 1 to 3 words), e.g., 'Homeworks', 'Quizzes'.",
               ),
-            color: z.any(),
+            color: ColorSchema,
           })
           .describe('A single assessment set description.'),
       )
@@ -88,7 +123,7 @@ export default z
               .optional(),
             shortName: z.string().describe('Short name (preferably 2 to 7 characters).').optional(),
             name: z.string().describe('Long descriptive name (preferably less than 10 words).'),
-            color: z.any(),
+            color: ColorSchema,
             description: z.string().describe('Description of the topic.').optional(),
           })
           .describe('A single assessment set description.'),
@@ -104,7 +139,7 @@ export default z
               .optional(),
             shortName: z.string().describe('Short name (preferably 2 to 7 characters).').optional(),
             name: z.string().describe('Long descriptive name (preferably less than 10 words).'),
-            color: z.any(),
+            color: ColorSchema,
             description: z.string().describe('Description of the tag.').optional(),
           })
           .describe('A single tag description.'),
