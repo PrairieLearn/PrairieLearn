@@ -205,6 +205,79 @@ def grade_dag(
     grouping_correctness = check_grouping(submission_new, group_belonging)
     return min(top_sort_correctness, grouping_correctness), graph.number_of_nodes(), edited_submission
 
+def get_wrong_order_lines(
+    submission: list[Mapping[str, str]],
+    depends_graph: Mapping[str, list[str]],
+    group_belonging: Mapping[str, Optional[str]]
+) ->  list[int]:
+    """
+    Determines which blocks in the student submission are disordered based on the dependency graph and group constraints.
+
+    The function ensures:
+    1. The submission adheres to the topological order of the dependency graph.
+    2. Blocks in the same pl-block-group appear contiguously.
+    3. Relationships defined by check_tag attributes are validated and enforced.
+
+    Parameters:
+        submission (list[Mapping[str, str]]): The student-submitted block ordering.
+        depends_graph (Mapping[str, list[str]]): The dependency graph specifying the logical order between blocks.
+        group_belonging (Mapping[str, Optional[str]]): A mapping of block tags to their respective pl-block-groups.
+
+    Returns:
+        list[int]: Indices of blocks that are disordered in the submission.
+    """
+    graph = dag_to_nx(depends_graph, group_belonging)
+    seen = set()
+    disordered = []
+
+    # First, we check the basic topological ordering
+    for i, node in enumerate(submission):
+        if node["tag"] is None or not all(u in seen for (u, _) in graph.in_edges(node["tag"])):
+            disordered.append(i)
+        seen.add(node["tag"])
+
+    disordered_lines = []
+    transitive_closure_graph = nx.transitive_closure(graph)
+
+    for i, node in enumerate(submission):
+        if node["check_tag"]:
+            # Check if the check_tag exists in the graph
+            if node["check_tag"] not in graph.nodes:
+                raise Exception(
+                    f"The check_tag '{node['check_tag']}' referenced by tag '{node['tag']}' does not exist in the correct answer."
+                )
+
+            if node["check_tag"] == node["tag"]:
+                if i in disordered:
+                    disordered_lines.append(i)
+            else:
+                # Check if there is a valid dependency between the check_tag and the current node
+                if not transitive_closure_graph.has_edge(node["check_tag"], node["tag"]) and \
+                not transitive_closure_graph.has_edge(node["tag"], node["check_tag"]):
+                    raise Exception(
+                        f"Invalid check_tag relationship: {node['tag']} and {node['check_tag']} are in different groups or have no dependency."
+                    )
+
+                # Find the index of the block with the check_tag in the submission
+                check_tag_index = None
+                for idx, block in enumerate(submission):
+                    if block["tag"] == node["check_tag"]:
+                        check_tag_index = idx
+
+                # Determine if the current node is disordered based on its check_tag
+                predecessors = list(transitive_closure_graph.predecessors(node["tag"]))
+                successors = list(transitive_closure_graph.successors(node["tag"]))
+
+                if check_tag_index is not None:
+                    if node["check_tag"] in predecessors and check_tag_index > i:
+                        disordered_lines.append(i)
+                    elif node["check_tag"] in successors and check_tag_index < i:
+                        disordered_lines.append(i)
+                else:
+                    disordered_lines.append(i)
+
+    return disordered_lines
+
 def is_vertex_cover(G: nx.DiGraph, vertex_cover: Iterable[str]) -> bool:
     """this function from
     https://docs.ocean.dwavesys.com/en/stable/docs_dnx/reference/algorithms/generated/dwave_networkx.algorithms.cover.is_vertex_cover.html
