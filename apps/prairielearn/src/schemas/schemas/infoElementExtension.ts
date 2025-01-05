@@ -1,53 +1,66 @@
 import { z } from 'zod';
 
-export default z
+const LegacyDependencySchema = z
+  .object({
+    coreStyles: z
+      .array(z.string().describe('A .css file located in /public/stylesheets.'))
+      .describe(
+        '[DEPRECATED, DO NOT USE] The styles required by this extension from /public/stylesheets.',
+      )
+      .optional(),
+    coreScripts: z
+      .array(z.string().describe('A .js file located in /public/javascripts.'))
+      .describe(
+        '[DEPRECATED, DO NOT USE] The scripts required by this extension from /public/javascripts.',
+      )
+      .optional(),
+    nodeModulesStyles: z
+      .array(z.string().describe('A .css file located in /node_modules.'))
+      .describe('The styles required by this extension from /node_modules.')
+      .optional(),
+    nodeModulesScripts: z
+      .array(z.string().describe('A .js file located in /node_modules.'))
+      .describe('The scripts required by this extension from /node_modules.')
+      .optional(),
+    clientFilesCourseStyles: z
+      .array(z.string().describe('A .css file located in clientFilesCourse.'))
+      .describe('The styles required by this extension from clientFilesCourse.')
+      .optional(),
+    clientFilesCourseScripts: z
+      .array(z.string().describe('A .js file located in clientFilesCourse.'))
+      .describe('The styles required by this extension from clientFilesCourse.')
+      .optional(),
+    extensionStyles: z
+      .array(z.string().describe("A .css file located in the extension's directory."))
+      .describe("The styles required by this extension from the extension's directory.")
+      .optional(),
+    extensionScripts: z
+      .array(z.string().describe("A .js file located in the extension's directory."))
+      .describe("The scripts required by this extension from the extension's directory.")
+      .optional(),
+  })
+  .strict()
+  .describe("The extension's client-side dependencies.");
+
+const DependencySchema = z.intersection(
+  LegacyDependencySchema,
+  z.object({
+    coreStyles: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+    coreScripts: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+  }),
+);
+
+const LegacyElementExtensionSchema = z
   .object({
     controller: z
       .string()
       .describe("The name of the extension's Python controller file.")
       .optional(),
-    dependencies: z
-      .object({
-        coreStyles: z
-          .array(z.string().describe('A .css file located in /public/stylesheets.'))
-          .describe(
-            '[DEPRECATED, DO NOT USE] The styles required by this extension from /public/stylesheets.',
-          )
-          .optional(),
-        coreScripts: z
-          .array(z.string().describe('A .js file located in /public/javascripts.'))
-          .describe(
-            '[DEPRECATED, DO NOT USE] The scripts required by this extension from /public/javascripts.',
-          )
-          .optional(),
-        nodeModulesStyles: z
-          .array(z.string().describe('A .css file located in /node_modules.'))
-          .describe('The styles required by this extension from /node_modules.')
-          .optional(),
-        nodeModulesScripts: z
-          .array(z.string().describe('A .js file located in /node_modules.'))
-          .describe('The scripts required by this extension from /node_modules.')
-          .optional(),
-        clientFilesCourseStyles: z
-          .array(z.string().describe('A .css file located in clientFilesCourse.'))
-          .describe('The styles required by this extension from clientFilesCourse.')
-          .optional(),
-        clientFilesCourseScripts: z
-          .array(z.string().describe('A .js file located in clientFilesCourse.'))
-          .describe('The styles required by this extension from clientFilesCourse.')
-          .optional(),
-        extensionStyles: z
-          .array(z.string().describe("A .css file located in the extension's directory."))
-          .describe("The styles required by this extension from the extension's directory.")
-          .optional(),
-        extensionScripts: z
-          .array(z.string().describe("A .js file located in the extension's directory."))
-          .describe("The scripts required by this extension from the extension's directory.")
-          .optional(),
-      })
-      .strict()
-      .describe("The extension's client-side dependencies.")
-      .optional(),
+    dependencies: LegacyDependencySchema.optional(),
     dynamicDependencies: z
       .object({
         comment: z
@@ -73,3 +86,12 @@ export default z
   })
   .strict()
   .describe('Info files for v3 element extensions.');
+
+const ElementExtensionSchema = z.intersection(
+  LegacyElementExtensionSchema,
+  z.object({
+    dependencies: DependencySchema.optional(),
+  }),
+);
+
+export { LegacyElementExtensionSchema, ElementExtensionSchema };
