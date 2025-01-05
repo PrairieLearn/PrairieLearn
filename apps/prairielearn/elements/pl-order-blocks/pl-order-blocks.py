@@ -10,7 +10,7 @@ from typing import Optional, TypedDict
 import chevron
 import lxml.html
 import prairielearn as pl
-from dag_checker import grade_dag, lcs_partial_credit, solve_dag
+from dag_checker import grade_dag, lcs_partial_credit, solve_dag, get_wrong_order_lines
 from lxml.etree import Comment
 from typing_extensions import NotRequired, assert_never
 
@@ -66,6 +66,8 @@ class OrderBlocksAnswerData(TypedDict):
     group_info: GroupInfo  # only used with DAG grader
     distractor_bin: NotRequired[str]
     distractor_feedback: Optional[str]
+    ordering_feedback: Optional[str]
+    check_tag: Optional[str]
     uuid: str
 
 class FeedbackMessageData(TypedDict):
@@ -257,6 +259,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                     "indent",
                     "distractor-feedback",
                     "distractor-for",
+                    "ordering-feedback",
+                    "check-tag",
                 ],
             )
 
@@ -269,8 +273,25 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         distractor_feedback = pl.get_string_attrib(
             html_tags, "distractor-feedback", None
         )
-        
         distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
+        ordering_feedback = pl.get_string_attrib(
+            html_tags, "ordering-feedback", None
+        )
+
+        check_tag = pl.get_string_attrib(
+            html_tags, "check-tag", None
+        )
+
+        # Raise an exception if there's a check-tag but no disorder-feedback
+        if check_tag and not ordering_feedback:
+            raise Exception(
+                f"The block with check-tag '{check_tag}'has no disorder-feedback."
+            )
+        if check_tag and not is_correct:
+            raise Exception(
+                f"check-tag '{check_tag}' cannot be attached to an incorrect block."
+            )
+        
         if distractor_for is not None and is_correct:
             raise Exception(
                 "The distractor-for attribute may only be used on blocks with correct=false."
@@ -309,6 +330,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             "depends": depends,  # only used with DAG grader
             "group_info": group_info,  # only used with DAG grader
             "distractor_feedback": distractor_feedback,
+            "ordering_feedback": ordering_feedback,  # only used with DAG grader
+            "check_tag": check_tag,
             "uuid": pl.get_uuid(),
             "feedback_messages": [] # only used with DAG grader
         }
@@ -599,6 +622,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "indent": (attempt["indent"] or 0) * TAB_SIZE_PX,
                 "badge_type": attempt.get("badge_type", ""),
                 "icon": attempt.get("icon", ""),
+                "ordering_feedback": attempt.get("ordering_feedback", ""),
+                "is_disordered": attempt.get("is_disordered", False),
                 "return_messages": attempt.get("return_messages", ""),
             }
             for attempt in data["submitted_answers"].get(answer_name, [])
@@ -749,6 +774,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             answer["tag"] = (
                 matching_block["tag"] if matching_block is not None else None
             )
+            answer["is_disordered"] = False
             if grading_method is GradingMethodType.RANKING:
                 answer["ranking"] = (
                     matching_block["ranking"] if matching_block is not None else None
@@ -761,6 +787,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                     if block["inner_html"] == answer["inner_html"]
                 )
             answer["distractor_feedback"] = matching_block["distractor_feedback"]
+            answer["ordering_feedback"] = matching_block["ordering_feedback"]
+            answer["check_tag"] = matching_block.get("check_tag", None)
             answer["feedback_messages"] = matching_block["feedback_messages"]
             answer["return_messages"] = matching_block.get("return_messages", [])
 
@@ -872,7 +900,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         final_score = max(0.0, final_score)  # scores cannot be below 0
 
     elif grading_method in LCS_GRADABLE_TYPES:
-        submission = [{"tag": ans["tag"], "feedback_messages": ans["feedback_messages"]} for ans in student_answer]
+        for ans in student_answer:
+            if ans["ordering_feedback"] and not ans["check_tag"]:
+                ans["check_tag"] = ans["tag"]
+        submission = [{"tag": ans["tag"], "check_tag": ans.get("check_tag", None), "feedback_messages": ans["feedback_messages"]} for ans in student_answer]
         depends_graph = {}
         group_belonging = {}
 
@@ -902,6 +933,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
         elif grading_method is GradingMethodType.DAG:
             depends_graph, group_belonging = extract_dag(true_answer_list)
+            disordered_lines = get_wrong_order_lines(submission, depends_graph, group_belonging)
+            print(disordered_lines)
+            for i in disordered_lines:
+                student_answer[i]["is_disordered"] = True
         num_initial_correct, true_answer_length, edited_submission = grade_dag(
             submission, depends_graph, group_belonging)
         #print(edited_submission)
