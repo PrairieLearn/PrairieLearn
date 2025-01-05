@@ -3953,8 +3953,8 @@ __metadata:
     xml-formatter: "npm:^3.6.3"
     xml2js: "npm:^0.6.2"
     yargs-parser: "npm:^21.1.1"
-    zod-to-json-schema: "npm:^3.24.1"
     zod: "npm:^3.24.1"
+    zod-to-json-schema: "npm:^3.24.1"
   languageName: unknown
   linkType: soft
 
