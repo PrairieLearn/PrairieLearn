@@ -403,8 +403,7 @@ function GradeAllAssessmentInstancesModal({
     title: 'Grade all assessment instances',
     body: html`
       Are you sure you want to grade pending submissions for all assessment instances for
-      <strong> ${assessmentSetName} ${assessmentNumber} </strong>
-      ? This cannot be undone.
+      <strong>${assessmentSetName} ${assessmentNumber}</strong>? This cannot be undone.
     `,
     footer: html`
       <input type="hidden" name="__action" value="grade_all" />
@@ -429,8 +428,7 @@ function CloseAllAssessmentInstancesModal({
     title: 'Grade and Close all assessment instances',
     body: html`
       Are you sure you want to grade and close all assessment instances for
-      <strong> ${assessmentSetName} ${assessmentNumber} </strong>
-      ? This cannot be undone.
+      <strong>${assessmentSetName} ${assessmentNumber}</strong>? This cannot be undone.
     `,
     footer: html`
       <input type="hidden" name="__action" value="close_all" />

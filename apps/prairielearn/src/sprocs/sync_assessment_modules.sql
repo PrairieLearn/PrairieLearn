@@ -61,7 +61,7 @@ BEGIN
         ('Default', 0, syncing_course_id)
     ON CONFLICT (name, course_id) DO NOTHING;
 
-    IF ('Default' != ALL(used_assessment_module_names)) THEN
+    IF ('Default' != ALL (used_assessment_module_names)) THEN
         used_assessment_module_names := used_assessment_module_names || '{Default}';
     END IF;
 
@@ -104,7 +104,7 @@ BEGIN
         DELETE FROM assessment_modules AS am
         WHERE
             am.course_id = syncing_course_id
-            AND am.name NOT IN (SELECT unnest(used_assessment_module_names))
+            AND am.name != ALL (used_assessment_module_names)
             AND am.number != 0;
     END IF;
 

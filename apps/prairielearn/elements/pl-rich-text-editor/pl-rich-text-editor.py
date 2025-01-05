@@ -28,7 +28,7 @@ MARKDOWN_SHORTCUTS_DEFAULT = True
 
 
 def get_answer_name(file_name):
-    return "_rich_text_editor_{0}".format(
+    return "_rich_text_editor_{}".format(
         hashlib.sha1(file_name.encode("utf-8")).hexdigest()
     )
 
@@ -65,12 +65,14 @@ def prepare(element_html, data):
         raise Exception("There is more than one file editor with the same file name.")
     data["params"]["_required_file_names"].append(file_name)
 
-    if source_file_name is not None:
-        if element_text and not str(element_text).isspace():
-            raise Exception(
-                'Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.'
-                + element_text
-            )
+    if (
+        source_file_name is not None
+        and element_text
+        and not str(element_text).isspace()
+    ):
+        raise Exception(
+            'Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.'
+        )
 
 
 def render(element_html, data):
@@ -121,7 +123,8 @@ def render(element_html, data):
             else:
                 directory = os.path.join(data["options"]["question_path"], directory)
             file_path = os.path.join(directory, source_file_name)
-            text_display = open(file_path).read()
+            with open(file_path) as f:
+                text_display = f.read()
         else:
             if element_text is not None:
                 text_display = str(element_text)
@@ -144,7 +147,7 @@ def render(element_html, data):
             html_params["current_file_contents"] = html_params["original_file_contents"]
 
         html_params["question"] = data["panel"] == "question"
-        with open("pl-rich-text-editor.mustache", "r", encoding="utf-8") as f:
+        with open("pl-rich-text-editor.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
