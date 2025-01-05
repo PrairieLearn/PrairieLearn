@@ -116,3 +116,25 @@ has become increasingly complex, with many different possible combinations of op
   <pl-answer correct="true">second</pl-answer>
   <pl-answer correct="true">third</pl-answer>
 </pl-order-blocks>
+
+<pl-order-blocks answers-name="even-implies-odd" source-blocks-order="random" grading-method="dag" partial-credit="lcs" solution-placement="bottom">
+    <pl-answer correct="true" tag="1" depends=""  >Let $k,n$ be arbitrary positive integers.</pl-answer>
+    <pl-answer correct="true" tag="2" depends="1" check-tag = "3" ordering-feedback = "Your feedback">Assume that $k|n.$</pl-answer>
+    <pl-answer correct="true" tag="3" depends="2" >By definition of “divides”, there exists $q$ such that $n = k\cdot x.$</pl-answer>
+    <pl-answer correct="true" tag="4" depends="3" >From here, we see that $n^2 = (k\cdot x)^2=k^2\cdot x^2$.</pl-answer>
+    <pl-answer correct="true" tag="5" depends="4" >Since we found an example of a value $x^2$ that can take the role of $q$ in the definition, $k^2|n^2$, as desired.</pl-answer>
+</pl-order-blocks>
+
+<pl-order-blocks answers-name="test-1" source-blocks-order="random" grading-method="dag" partial-credit="lcs" solution-placement="bottom">
+        <pl-answer correct="true" tag="1" depends=""  >Let $k, n_1, n_2$ be arbitrary positive integers.</pl-answer>
+        <pl-answer correct="true" tag="2" depends="1" >Assume that $k|n_1$ and $k|n_2.$</pl-answer>
+        <pl-answer correct="true" tag="3" depends="2" >By definition, we know $q_1,q_2$ exist such that $n_1 = k\cdot q_1$ and $n_2=k\cdot q_2.$</pl-answer>
+        <pl-answer correct="true" tag="4" depends="3" >From here, $n_1+n_2=k\cdot q_1 + k\cdot q_2=k\cdot(q_1+q_2).$</pl-answer>
+        <pl-answer correct="true" tag="5" depends="4" >Now, by definition $k|(n_1+n_2).$</pl-answer>
+        <pl-feedback>
+            <pl-feedback-message condition-tag="1" condition="after" target-tag="4">Make sure you define k, n1, and n2 first</pl-feedback-message>
+            <pl-feedback-message condition-tag="4" condition="before" target-tag="2">Other feedback</pl-feedback-message>
+        </pl-feedback>
+</pl-order-blocks>
+
+
