@@ -1,6 +1,50 @@
 import { z } from 'zod';
 
-export default z
+const LegacyAccessRuleSchema = z
+  .object({
+    comment: z
+      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
+      .describe('Arbitrary comment for reference purposes.')
+      .optional(),
+    role: z
+      .enum(['Student', 'TA', 'Instructor', 'Superuser'])
+      .describe('DEPRECATED -- do not use.')
+      .optional(),
+    uids: z
+      .array(z.string())
+      .describe('A list of UIDs, one of which is required for access')
+      .optional(),
+    startDate: z.string().describe('The earliest date on which access is permitted.').optional(),
+    endDate: z.string().describe('The latest date on which access is permitted.').optional(),
+    institution: z.string().describe('The institution from which access is permitted.').optional(),
+  })
+  .strict()
+  .describe(
+    'An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.',
+  );
+
+const AccessRuleSchema = z.intersection(
+  LegacyAccessRuleSchema,
+  z.object({
+    role: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+  }),
+);
+
+const LegacyAccessControlSchema = z
+  .array(LegacyAccessRuleSchema)
+  .describe(
+    'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
+  );
+
+const AccessControlSchema = z
+  .array(AccessRuleSchema)
+  .describe(
+    'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
+  );
+
+const LegacyCourseInstanceSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -28,44 +72,7 @@ export default z
       )
       .optional(),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
-    allowAccess: z
-      .array(
-        z
-          .object({
-            comment: z
-              .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-              .describe('Arbitrary comment for reference purposes.')
-              .optional(),
-            role: z
-              .enum(['Student', 'TA', 'Instructor', 'Superuser'])
-              .describe('DEPRECATED -- do not use.')
-              .optional(),
-            uids: z
-              .array(z.string())
-              .describe('A list of UIDs, one of which is required for access')
-              .optional(),
-            startDate: z
-              .string()
-              .describe('The earliest date on which access is permitted.')
-              .optional(),
-            endDate: z
-              .string()
-              .describe('The latest date on which access is permitted.')
-              .optional(),
-            institution: z
-              .string()
-              .describe('The institution from which access is permitted.')
-              .optional(),
-          })
-          .strict()
-          .describe(
-            'An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.',
-          ),
-      )
-      .describe(
-        'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
-      )
-      .optional(),
+    allowAccess: LegacyAccessControlSchema.optional(),
     groupAssessmentsBy: z
       .enum(['Set', 'Module'])
       .describe(
@@ -75,3 +82,20 @@ export default z
   })
   .strict()
   .describe('The specification file for a course instance.');
+
+const CourseInstanceSchema = z.intersection(
+  LegacyCourseInstanceSchema,
+  z.object({
+    shortName: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+    allowIssueReporting: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+    userRoles: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+    allowAccess: AccessControlSchema.optional(),
+  }),
+);
+export { LegacyCourseInstanceSchema, CourseInstanceSchema };
