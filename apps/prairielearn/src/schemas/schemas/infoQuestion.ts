@@ -1,6 +1,127 @@
 import { z } from 'zod';
 
-export default z
+const LegacyDependencySchema = z
+  .object({
+    comment: z
+      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
+      .describe('Arbitrary comment for reference purposes.')
+      .optional(),
+    coreStyles: z
+      .array(z.string().describe('A .css file located in /public/stylesheets.'))
+      .describe(
+        '[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.',
+      )
+      .optional(),
+    coreScripts: z
+      .array(z.string().describe('A .js file located in /public/javascripts.'))
+      .describe(
+        '[DEPRECATED, DO NOT USE] The scripts required by this question from /public/javascripts.',
+      )
+      .optional(),
+    nodeModulesStyles: z
+      .array(z.string().describe('A .css file located in /node_modules.'))
+      .describe('The styles required by this question from /node_modules.')
+      .optional(),
+    nodeModulesScripts: z
+      .array(z.string().describe('A .js file located in /node_modules.'))
+      .describe('The scripts required by this question from /node_modules.')
+      .optional(),
+    clientFilesCourseStyles: z
+      .array(z.string().describe('A .css file located in clientFilesCourse.'))
+      .describe('The styles required by this question from clientFilesCourse.')
+      .optional(),
+    clientFilesCourseScripts: z
+      .array(z.string().describe('A .js file located in clientFilesCourse.'))
+      .describe('The styles required by this question from clientFilesCourse.')
+      .optional(),
+    clientFilesQuestionStyles: z
+      .array(z.string().describe('A .css file located in the clientFilesQuestion.'))
+      .describe('The styles required by this question from clientFilesQuestion.')
+      .optional(),
+    clientFilesQuestionScripts: z
+      .array(z.string().describe('A .js file located in the clientFilesQuestion.'))
+      .describe('The scripts required by this question from clientFilesQuestion.')
+      .optional(),
+  })
+  .strict()
+  .describe("The question's client-side dependencies.");
+
+const DependencySchema = z.intersection(
+  LegacyDependencySchema,
+  z.object({
+    coreStyles: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+    coreScripts: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+  }),
+);
+
+const LegacyWorkspaceOptionsSchema = z
+  .object({
+    comment: z
+      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
+      .describe('Arbitrary comment for reference purposes.')
+      .optional(),
+    image: z
+      .string()
+      .describe(
+        'The Docker image that will be used to serve this question. Should be specified as Dockerhub image.',
+      ),
+    port: z.number().int().describe('The port number used in the Docker image.'),
+    home: z.string().describe('The home directory of the workspace container.'),
+    args: z
+      .union([z.string(), z.array(z.string())])
+      .describe('Command line arguments to pass to the Docker.')
+      .optional(),
+    rewriteUrl: z
+      .boolean()
+      .describe(
+        'If true, the URL will be rewritten such that the workspace container will see all requests as originating from /.',
+      )
+      .optional(),
+    gradedFiles: z
+      .array(
+        z
+          .string()
+          .describe(
+            'A single file or directory that will be copied out of the workspace container when saving a submission.',
+          ),
+      )
+      .describe(
+        'The list of files or directories that will be copied out of the workspace container when saving a submission.',
+      )
+      .optional(),
+    enableNetworking: z
+      .boolean()
+      .describe('Whether the workspace should have network access. Access is disabled by default.')
+      .optional(),
+    environment: z
+      .object({})
+      .catchall(z.any())
+      .describe('Environment variables to set inside the workspace container.')
+      .optional(),
+    syncIgnore: z
+      .array(z.string().describe('A single file or directory that will be excluded from sync.'))
+      .describe(
+        '[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.',
+      )
+      .optional(),
+  })
+  .strict()
+  .describe('Options for workspace questions.');
+
+const WorkspaceOptionsSchema = z.intersection(
+  LegacyWorkspaceOptionsSchema,
+  z.object({
+    syncIgnore: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+  }),
+);
+
+const LegacyQuestionSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -114,108 +235,8 @@ export default z
       .strict()
       .describe('Options for externally graded questions.')
       .optional(),
-    dependencies: z
-      .object({
-        comment: z
-          .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-          .describe('Arbitrary comment for reference purposes.')
-          .optional(),
-        coreStyles: z
-          .array(z.string().describe('A .css file located in /public/stylesheets.'))
-          .describe(
-            '[DEPRECATED, DO NOT USE] The styles required by this question from /public/stylesheets.',
-          )
-          .optional(),
-        coreScripts: z
-          .array(z.string().describe('A .js file located in /public/javascripts.'))
-          .describe(
-            '[DEPRECATED, DO NOT USE] The scripts required by this question from /public/javascripts.',
-          )
-          .optional(),
-        nodeModulesStyles: z
-          .array(z.string().describe('A .css file located in /node_modules.'))
-          .describe('The styles required by this question from /node_modules.')
-          .optional(),
-        nodeModulesScripts: z
-          .array(z.string().describe('A .js file located in /node_modules.'))
-          .describe('The scripts required by this question from /node_modules.')
-          .optional(),
-        clientFilesCourseStyles: z
-          .array(z.string().describe('A .css file located in clientFilesCourse.'))
-          .describe('The styles required by this question from clientFilesCourse.')
-          .optional(),
-        clientFilesCourseScripts: z
-          .array(z.string().describe('A .js file located in clientFilesCourse.'))
-          .describe('The styles required by this question from clientFilesCourse.')
-          .optional(),
-        clientFilesQuestionStyles: z
-          .array(z.string().describe('A .css file located in the clientFilesQuestion.'))
-          .describe('The styles required by this question from clientFilesQuestion.')
-          .optional(),
-        clientFilesQuestionScripts: z
-          .array(z.string().describe('A .js file located in the clientFilesQuestion.'))
-          .describe('The scripts required by this question from clientFilesQuestion.')
-          .optional(),
-      })
-      .strict()
-      .describe("The question's client-side dependencies.")
-      .optional(),
-    workspaceOptions: z
-      .object({
-        comment: z
-          .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-          .describe('Arbitrary comment for reference purposes.')
-          .optional(),
-        image: z
-          .string()
-          .describe(
-            'The Docker image that will be used to serve this question. Should be specified as Dockerhub image.',
-          ),
-        port: z.number().int().describe('The port number used in the Docker image.'),
-        home: z.string().describe('The home directory of the workspace container.'),
-        args: z
-          .union([z.string(), z.array(z.string())])
-          .describe('Command line arguments to pass to the Docker.')
-          .optional(),
-        rewriteUrl: z
-          .boolean()
-          .describe(
-            'If true, the URL will be rewritten such that the workspace container will see all requests as originating from /.',
-          )
-          .optional(),
-        gradedFiles: z
-          .array(
-            z
-              .string()
-              .describe(
-                'A single file or directory that will be copied out of the workspace container when saving a submission.',
-              ),
-          )
-          .describe(
-            'The list of files or directories that will be copied out of the workspace container when saving a submission.',
-          )
-          .optional(),
-        enableNetworking: z
-          .boolean()
-          .describe(
-            'Whether the workspace should have network access. Access is disabled by default.',
-          )
-          .optional(),
-        environment: z
-          .object({})
-          .catchall(z.any())
-          .describe('Environment variables to set inside the workspace container.')
-          .optional(),
-        syncIgnore: z
-          .array(z.string().describe('A single file or directory that will be excluded from sync.'))
-          .describe(
-            '[DEPRECATED, DO NOT USE] The list of files or directories that will be excluded from sync.',
-          )
-          .optional(),
-      })
-      .strict()
-      .describe('Options for workspace questions.')
-      .optional(),
+    dependencies: LegacyDependencySchema.optional(),
+    workspaceOptions: LegacyWorkspaceOptionsSchema.optional(),
     sharingSets: z
       .array(z.string().describe('The name of a sharing set'))
       .describe('The list of sharing sets that this question belongs to.')
@@ -232,3 +253,16 @@ export default z
   })
   .strict()
   .describe('Info files for questions.');
+
+const QuestionSchema = z.intersection(
+  LegacyQuestionSchema,
+  z.object({
+    dependencies: DependencySchema.optional(),
+    sharedPublicly: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+    workspaceOptions: WorkspaceOptionsSchema.optional(),
+  }),
+);
+
+export { LegacyQuestionSchema, QuestionSchema };
