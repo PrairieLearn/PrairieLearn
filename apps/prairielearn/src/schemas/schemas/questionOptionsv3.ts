@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export default z
+const QuestionOptionsv3Schema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -8,3 +8,5 @@ export default z
       .optional(),
   })
   .describe('Options for a v3 question.');
+
+export { QuestionOptionsv3Schema };

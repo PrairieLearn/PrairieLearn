@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export default z
+const CalculationQuestionOptionsSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -8,3 +8,5 @@ export default z
       .optional(),
   })
   .describe('Options for a Calculation question.');
+
+export { CalculationQuestionOptionsSchema };
