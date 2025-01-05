@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export default z
+const AdminQuerySchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -30,3 +30,5 @@ export default z
   })
   .strict()
   .describe('Description of an administrator SQL query.');
+
+export { AdminQuerySchema };
