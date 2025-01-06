@@ -20,7 +20,6 @@ import {
 import type { SubmissionForRender } from '../components/SubmissionPanel.html.js';
 import { selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
-import { type RenderSelection } from '../question-servers/index.js';
 
 import { config } from './config.js';
 import {
@@ -125,7 +124,7 @@ const MAX_RECENT_SUBMISSIONS = 3;
  */
 async function render(
   variant_course: Course,
-  renderSelection: RenderSelection,
+  renderSelection: questionServers.RenderSelection,
   variant: Variant,
   question: Question,
   submission: Submission | null,
@@ -556,7 +555,7 @@ export async function getAndRenderVariant(
   const effectiveQuestionType = questionServers.getEffectiveQuestionType(locals.question.type);
   resultLocals.effectiveQuestionType = effectiveQuestionType;
 
-  const renderSelection: RenderSelection = {
+  const renderSelection: questionServers.RenderSelection = {
     header: true,
     question: true,
     submissions: true,
