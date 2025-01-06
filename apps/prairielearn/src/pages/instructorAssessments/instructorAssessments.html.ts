@@ -307,20 +307,20 @@ function CreateAssessmentModal({
       </div>
       <div class="form-group">
         <label for="type">Type</label>
-        <select class="form-select" id="type" name="type" required>
+        <select class="form-select" id="type" name="type" aria-describedby="type_help" required>
           <option value="Homework">Homework</option>
           <option value="Exam">Exam</option>
         </select>
-        <small class="form-text text-muted">
+        <small id="type_help" class="form-text text-muted">
           The type of the assessment. This can be either Homework or Exam.
         </small>
       </div>
       <div class="form-group">
         <label for="set">Set</label>
-        <select class="form-select" id="set" name="set" required>
+        <select class="form-select" id="set" name="set" aria-describedby="set_help" required>
           ${assessmentSets.map((set) => html`<option value="${set.name}">${set.name}</option>`)}
         </select>
-        <small class="form-text text-muted">
+        <small id="set_help" class="form-text text-muted">
           The <a href="${urlPrefix}/course_admin/sets">assessment set</a> this assessment belongs
           to.
         </small>
@@ -329,12 +329,18 @@ function CreateAssessmentModal({
         ? html`
             <div class="form-group">
               <label for="module">Module</label>
-              <select class="form-select" id="module" name="module" required>
+              <select
+                class="form-select"
+                id="module"
+                name="module"
+                aria-describedby="module_help"
+                required
+              >
                 ${assessmentModules.map(
                   (module) => html`<option value="${module.name}">${module.name}</option>`,
                 )}
               </select>
-              <small class="form-text text-muted">
+              <small id="module_help" class="form-text text-muted">
                 The <a href="${urlPrefix}/course_admin/modules">module</a> this assessment belongs
                 to.
               </small>
