@@ -981,15 +981,14 @@ export class CourseInstanceAddEditor extends Editor {
     );
 
     debug('Generate short_name and long_name');
-    const names = getUniqueNames({
+    const { shortName, longName } = getUniqueNames({
       shortNames: oldNamesShort,
       longNames: oldNamesLong,
       shortName: this.short_name,
       longName: this.long_name,
     });
 
-    const short_name = names.shortName;
-    const courseInstancePath = path.join(courseInstancesPath, short_name);
+    const courseInstancePath = path.join(courseInstancesPath, shortName);
 
     debug('Write infoCourseInstance.json');
 
@@ -1020,7 +1019,7 @@ export class CourseInstanceAddEditor extends Editor {
 
     const infoJson = {
       uuid: this.uuid,
-      longName: names.longName,
+      longName,
       allowAccess: allowAccess !== undefined ? [allowAccess] : [],
     };
 
@@ -1034,7 +1033,7 @@ export class CourseInstanceAddEditor extends Editor {
 
     return {
       pathsToAdd: [courseInstancePath],
-      commitMessage: `add course instance ${short_name}`,
+      commitMessage: `add course instance ${shortName}`,
     };
   }
 }
@@ -1102,9 +1101,12 @@ export class QuestionAddEditor extends Editor {
       const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
       debug('Generate qid and title');
-      const names = getUniqueNames({ shortNames: oldNamesShort, longNames: oldNamesLong });
+      const { shortName, longName } = getUniqueNames({
+        shortNames: oldNamesShort,
+        longNames: oldNamesLong,
+      });
 
-      return { qid: names.shortName, title: names.longName };
+      return { qid: shortName, title: longName };
     });
 
     const questionPath = path.join(questionsPath, qid);
