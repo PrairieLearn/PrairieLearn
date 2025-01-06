@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const CheckboxQuestionOptionsSchema = z
+export const CheckboxQuestionOptionsSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -35,4 +35,4 @@ const CheckboxQuestionOptionsSchema = z
   .strict()
   .describe('Options for a MultipleChoice question.');
 
-export { CheckboxQuestionOptionsSchema };
+export type CheckboxQuestionOptions = z.infer<typeof CheckboxQuestionOptionsSchema>;

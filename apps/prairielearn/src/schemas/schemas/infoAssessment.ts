@@ -24,7 +24,7 @@ const GroupRoleSchema = z
     'A custom role for use in group assessments that allows control over certain permissions.',
   );
 
-export const LegacyAccessRuleSchema = z
+export const AsssessmentAccessRuleSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -83,6 +83,8 @@ export const LegacyAccessRuleSchema = z
   .describe(
     'An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.',
   );
+
+export type AsssessmentAccessRule = z.infer<typeof AsssessmentAccessRuleSchema>;
 
 export const PointsSingleSchema = z.number().gte(0).describe('A single point value.');
 
@@ -230,7 +232,7 @@ const ZoneSchema = z.object({
     .optional(),
 });
 
-const LegacyAssessmentSchema = z
+export const AssessmentSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -265,7 +267,7 @@ const LegacyAssessmentSchema = z
       .describe('Whether the questions will be shuffled in the student view of an assessment')
       .optional(),
     allowAccess: z
-      .array(LegacyAccessRuleSchema)
+      .array(AsssessmentAccessRuleSchema)
       .describe(
         'List of access rules for the assessment. Access is permitted if any access rule is satisfied.',
       )
@@ -347,8 +349,11 @@ const LegacyAssessmentSchema = z
   .strict()
   .describe('Configuration data for an assessment.');
 
+export type Assessment = z.infer<typeof AssessmentSchema>;
+
+/*
 const AccessRuleSchema = z.intersection(
-  LegacyAccessRuleSchema,
+  AccessRuleSchema,
   z.object({
     role: z.undefined({
       invalid_type_error: 'DEPRECATED -- do not use.',
@@ -356,10 +361,9 @@ const AccessRuleSchema = z.intersection(
   }),
 );
 const AssessmentSchema = z.intersection(
-  LegacyAssessmentSchema,
+  AssessmentSchema,
   z.object({
     advanceScorePerc: AccessRuleSchema.optional(),
   }),
 );
-
-export { AssessmentSchema, LegacyAssessmentSchema };
+*/

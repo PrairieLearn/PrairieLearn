@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const LegacyDependencySchema = z
+const DependencySchema = z
   .object({
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
@@ -42,25 +42,13 @@ const LegacyDependencySchema = z
   .strict()
   .describe("The extension's client-side dependencies.");
 
-const DependencySchema = z.intersection(
-  LegacyDependencySchema,
-  z.object({
-    coreStyles: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-    coreScripts: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-  }),
-);
-
-const LegacyElementExtensionSchema = z
+export const ElementExtensionSchema = z
   .object({
     controller: z
       .string()
       .describe("The name of the extension's Python controller file.")
       .optional(),
-    dependencies: LegacyDependencySchema.optional(),
+    dependencies: DependencySchema.optional(),
     dynamicDependencies: z
       .object({
         comment: z
@@ -87,11 +75,24 @@ const LegacyElementExtensionSchema = z
   .strict()
   .describe('Info files for v3 element extensions.');
 
+export type ElementExtension = z.infer<typeof ElementExtensionSchema>;
+/*
+const DependencySchema = z.intersection(
+  DependencySchema,
+  z.object({
+    coreStyles: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+    coreScripts: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+  }),
+);
+
 const ElementExtensionSchema = z.intersection(
-  LegacyElementExtensionSchema,
+  ElementExtensionSchema,
   z.object({
     dependencies: DependencySchema.optional(),
   }),
 );
-
-export { LegacyElementExtensionSchema, ElementExtensionSchema };
+*/

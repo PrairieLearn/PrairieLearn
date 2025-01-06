@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const NewsItemSchema = z
+export const NewsItemSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -19,4 +19,4 @@ const NewsItemSchema = z
   .strict()
   .describe('Info files for news items.');
 
-export { NewsItemSchema };
+export type NewsItem = z.infer<typeof NewsItemSchema>;

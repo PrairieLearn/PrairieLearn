@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const MultipleChoiceQuestionOptionsSchema = z
+export const MultipleChoiceQuestionOptionsSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -22,4 +22,4 @@ const MultipleChoiceQuestionOptionsSchema = z
   .strict()
   .describe('Options for a MultipleChoice question.');
 
-export { MultipleChoiceQuestionOptionsSchema };
+export type MultipleChoiceQuestionOptions = z.infer<typeof MultipleChoiceQuestionOptionsSchema>;

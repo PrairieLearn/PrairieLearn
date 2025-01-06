@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const LegacyDependencySchema = z
+const DependencySchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -38,26 +38,14 @@ const LegacyDependencySchema = z
   .strict()
   .describe("The element's client-side dependencies.");
 
-const DependencySchema = z.intersection(
-  LegacyDependencySchema,
-  z.object({
-    coreStyles: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-    coreScripts: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-  }),
-);
-
-const LegacyElementCoreSchema = z
+export const ElementCoreSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
       .describe('Arbitrary comment for reference purposes.')
       .optional(),
     controller: z.string().describe("The name of the element's controller file."),
-    dependencies: LegacyDependencySchema.optional(),
+    dependencies: DependencySchema.optional(),
     dynamicDependencies: z
       .object({
         comment: z
@@ -86,10 +74,25 @@ const LegacyElementCoreSchema = z
   .strict()
   .describe('Info files for v3 elements.');
 
+/*
+const DependencySchema = z.intersection(
+  DependencySchema,
+  z.object({
+    coreStyles: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+    coreScripts: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+  }),
+);
+
+
 const ElementCoreSchema = z.intersection(
-  LegacyElementCoreSchema,
+  ElementCoreSchema,
   z.object({
     dependencies: DependencySchema.optional(),
   }),
 );
-export { LegacyElementCoreSchema, ElementCoreSchema };
+*/
+export type ElementCore = z.infer<typeof ElementCoreSchema>;

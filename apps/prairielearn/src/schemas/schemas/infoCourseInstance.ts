@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const LegacyAccessRuleSchema = z
+const AccessRuleSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -23,28 +23,13 @@ const LegacyAccessRuleSchema = z
     'An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.',
   );
 
-const AccessRuleSchema = z.intersection(
-  LegacyAccessRuleSchema,
-  z.object({
-    role: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-  }),
-);
-
-const LegacyAccessControlSchema = z
-  .array(LegacyAccessRuleSchema)
-  .describe(
-    'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
-  );
-
 const AccessControlSchema = z
   .array(AccessRuleSchema)
   .describe(
     'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
   );
 
-const LegacyCourseInstanceSchema = z
+export const CourseInstanceSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -72,7 +57,7 @@ const LegacyCourseInstanceSchema = z
       )
       .optional(),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
-    allowAccess: LegacyAccessControlSchema.optional(),
+    allowAccess: AccessControlSchema.optional(),
     groupAssessmentsBy: z
       .enum(['Set', 'Module'])
       .describe(
@@ -82,6 +67,24 @@ const LegacyCourseInstanceSchema = z
   })
   .strict()
   .describe('The specification file for a course instance.');
+
+export type CourseInstance = z.infer<typeof CourseInstanceSchema>;
+
+/*
+const AccessRuleSchema = z.intersection(
+  LegacyAccessRuleSchema,
+  z.object({
+    role: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+  }),
+);
+
+const AccessControlSchema = z
+  .array(AccessRuleSchema)
+  .describe(
+    'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
+  );
 
 const CourseInstanceSchema = z.intersection(
   LegacyCourseInstanceSchema,
@@ -98,4 +101,4 @@ const CourseInstanceSchema = z.intersection(
     allowAccess: AccessControlSchema.optional(),
   }),
 );
-export { LegacyCourseInstanceSchema, CourseInstanceSchema };
+*/

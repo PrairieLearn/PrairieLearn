@@ -9,7 +9,14 @@ import jju from 'jju';
 import _ from 'lodash';
 
 import { run } from '@prairielearn/run';
-
+import {
+  Assessment,
+  AssessmentSet,
+  Color,
+  Course,
+  CourseInstance,
+  Question,
+} from '../schemas/index.js';
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
@@ -32,7 +39,7 @@ const DEFAULT_COURSE_INSTANCE_INFO = {
 };
 const DEFAULT_ASSESSMENT_INFO = {};
 
-const DEFAULT_ASSESSMENT_SETS = [
+const DEFAULT_ASSESSMENT_SETS: AssessmentSet[] = [
   {
     abbreviation: 'HW',
     name: 'Homework',
@@ -74,7 +81,11 @@ const DEFAULT_ASSESSMENT_SETS = [
   { abbreviation: 'U', name: 'Unknown', heading: 'Unknown', color: 'red3' },
 ];
 
-const DEFAULT_TAGS = [
+const DEFAULT_TAGS: {
+  name: string;
+  color: Color;
+  description?: string;
+}[] = [
   {
     name: 'numeric',
     color: 'brown1',
@@ -185,216 +196,217 @@ const FILE_UUID_REGEX =
 // This type is used a lot, so make an alias
 type InfoFile<T> = infofile.InfoFile<T>;
 
-interface CourseOptions {
-  useNewQuestionRenderer: boolean;
-  devModeFeatures: Record<string, boolean> | string[];
-}
+// interface CourseOptions {
+//   useNewQuestionRenderer: boolean;
+//   devModeFeatures: Record<string, boolean> | string[];
+// }
 
-interface Tag {
-  name: string;
-  color: string;
-  description?: string;
-}
+// interface Tag {
+//   name: string;
+//   color: string;
+//   description?: string;
+// }
 
-interface SharingSet {
-  name: string;
-  description?: string;
-}
+// interface SharingSet {
+//   name: string;
+//   description?: string;
+// }
 
-interface Topic {
-  name: string;
-  color: string;
-  description?: string;
-}
+// interface Topic {
+//   name: string;
+//   color: string;
+//   description?: string;
+// }
 
-interface AssessmentSet {
-  abbreviation: string;
-  name: string;
-  heading: string;
-  color: string;
-}
+// interface AssessmentSet {
+//   abbreviation: string;
+//   name: string;
+//   heading: string;
+//   color: string;
+// }
 
-interface AssessmentModule {
-  name: string;
-  heading: string;
-}
+// interface AssessmentModule {
+//   name: string;
+//   heading: string;
+// }
 
-interface Course {
-  uuid: string;
-  name: string;
-  title: string;
-  path: string;
-  timezone: string;
-  exampleCourse: boolean;
-  options: CourseOptions;
-  tags: Tag[];
-  topics: Topic[];
-  assessmentSets: AssessmentSet[];
-  assessmentModules: AssessmentModule[];
-  sharingSets?: SharingSet[];
-}
+// interface Course {
+//   uuid: string;
+//   name: string;
+//   title: string;
+//   path: string;
+//   timezone: string;
+//   exampleCourse: boolean;
+//   options: CourseOptions;
+//   tags: Tag[];
+//   topics: Topic[];
+//   assessmentSets: AssessmentSet[];
+//   assessmentModules: AssessmentModule[];
+//   sharingSets?: SharingSet[];
+// }
 
-interface CourseInstanceAllowAccess {
-  role: string; // Role is only allowed in legacy questions
-  uids: string[];
-  startDate: string;
-  endDate: string;
-  institution: string;
-}
+// interface CourseInstanceAllowAccess {
+//   role: string; // Role is only allowed in legacy questions
+//   uids: string[];
+//   startDate: string;
+//   endDate: string;
+//   institution: string;
+// }
 
-export interface CourseInstance {
-  uuid: string;
-  longName: string;
-  /** @deprecated */
-  shortName?: string | null;
-  number: number;
-  timezone: string;
-  hideInEnrollPage: boolean;
-  allowAccess: CourseInstanceAllowAccess[];
-  allowIssueReporting: boolean;
-  groupAssessmentsBy: 'Set' | 'Module';
-}
+// export interface CourseInstance {
+//   uuid: string;
+//   longName: string;
+//   /** @deprecated */
+//   shortName?: string | null;
+//   number: number;
+//   timezone: string;
+//   hideInEnrollPage: boolean;
+//   allowAccess: CourseInstanceAllowAccess[];
+//   allowIssueReporting: boolean;
+//   groupAssessmentsBy: 'Set' | 'Module';
+// }
 
-export interface AssessmentAllowAccess {
-  mode: 'Public' | 'Exam';
-  examUuid: string;
-  role: string; // Role is only allowed in legacy questions
-  uids: string[];
-  credit: number;
-  startDate: string;
-  endDate: string;
-  active: boolean;
-  timeLimitMin: number;
-  password: string;
-}
+// AsssessmentAccessRule
+// export interface AssessmentAllowAccess {
+//   mode: 'Public' | 'Exam';
+//   examUuid: string;
+//   role: string; // Role is only allowed in legacy questions
+//   uids: string[];
+//   credit: number;
+//   startDate: string;
+//   endDate: string;
+//   active: boolean;
+//   timeLimitMin: number;
+//   password: string;
+// }
 
-interface QuestionAlternative {
-  points: number | number[];
-  autoPoints: number | number[];
-  maxPoints: number;
-  manualPoints: number;
-  maxAutoPoints: number;
-  id: string;
-  forceMaxPoints: boolean;
-  triesPerVariant: number;
-  advanceScorePerc: number;
-  gradeRateMinutes: number;
-  canView: string[];
-  canSubmit: string[];
-}
+// interface QuestionAlternative {
+//   points: number | number[];
+//   autoPoints: number | number[];
+//   maxPoints: number;
+//   manualPoints: number;
+//   maxAutoPoints: number;
+//   id: string;
+//   forceMaxPoints: boolean;
+//   triesPerVariant: number;
+//   advanceScorePerc: number;
+//   gradeRateMinutes: number;
+//   canView: string[];
+//   canSubmit: string[];
+// }
 
-interface ZoneQuestion {
-  points: number | number[];
-  autoPoints: number | number[];
-  maxPoints: number;
-  manualPoints: number;
-  maxAutoPoints: number;
-  id?: string;
-  forceMaxPoints: boolean;
-  alternatives?: QuestionAlternative[];
-  numberChoose: number;
-  triesPerVariant: number;
-  advanceScorePerc: number;
-  gradeRateMinutes: number;
-  canView: string[];
-  canSubmit: string[];
-}
+// interface ZoneQuestion {
+//   points: number | number[];
+//   autoPoints: number | number[];
+//   maxPoints: number;
+//   manualPoints: number;
+//   maxAutoPoints: number;
+//   id?: string;
+//   forceMaxPoints: boolean;
+//   alternatives?: QuestionAlternative[];
+//   numberChoose: number;
+//   triesPerVariant: number;
+//   advanceScorePerc: number;
+//   gradeRateMinutes: number;
+//   canView: string[];
+//   canSubmit: string[];
+// }
 
-interface Zone {
-  title: string;
-  maxPoints: number;
-  numberChoose: number;
-  bestQuestions: number;
-  questions: ZoneQuestion[];
-  advanceScorePerc: number;
-  gradeRateMinutes: number;
-  canView: string[];
-  canSubmit: string[];
-}
+// interface Zone {
+//   title: string;
+//   maxPoints: number;
+//   numberChoose: number;
+//   bestQuestions: number;
+//   questions: ZoneQuestion[];
+//   advanceScorePerc: number;
+//   gradeRateMinutes: number;
+//   canView: string[];
+//   canSubmit: string[];
+// }
 
-interface GroupRole {
-  name: string;
-  minimum: number;
-  maximum: number;
-  canAssignRoles: boolean;
-}
+// interface GroupRole {
+//   name: string;
+//   minimum: number;
+//   maximum: number;
+//   canAssignRoles: boolean;
+// }
 
-export interface Assessment {
-  uuid: string;
-  type: 'Homework' | 'Exam';
-  title: string;
-  set: string;
-  module: string;
-  number: string;
-  allowIssueReporting: boolean;
-  allowRealTimeGrading: boolean;
-  multipleInstance: boolean;
-  shuffleQuestions: boolean;
-  allowAccess: AssessmentAllowAccess[];
-  text: string;
-  maxBonusPoints: number;
-  maxPoints: number;
-  autoClose: boolean;
-  zones: Zone[];
-  constantQuestionValue: boolean;
-  groupWork: boolean;
-  groupMaxSize: number;
-  groupMinSize: number;
-  studentGroupCreate: boolean;
-  studentGroupJoin: boolean;
-  studentGroupLeave: boolean;
-  groupRoles: GroupRole[];
-  canView: string[];
-  canSubmit: string[];
-  advanceScorePerc: number;
-  gradeRateMinutes: number;
-}
+// export interface Assessment {
+//   uuid: string;
+//   type: 'Homework' | 'Exam';
+//   title: string;
+//   set: string;
+//   module: string;
+//   number: string;
+//   allowIssueReporting: boolean;
+//   allowRealTimeGrading: boolean;
+//   multipleInstance: boolean;
+//   shuffleQuestions: boolean;
+//   allowAccess: AssessmentAllowAccess[];
+//   text: string;
+//   maxBonusPoints: number;
+//   maxPoints: number;
+//   autoClose: boolean;
+//   zones: Zone[];
+//   constantQuestionValue: boolean;
+//   groupWork: boolean;
+//   groupMaxSize: number;
+//   groupMinSize: number;
+//   studentGroupCreate: boolean;
+//   studentGroupJoin: boolean;
+//   studentGroupLeave: boolean;
+//   groupRoles: GroupRole[];
+//   canView: string[];
+//   canSubmit: string[];
+//   advanceScorePerc: number;
+//   gradeRateMinutes: number;
+// }
 
-interface QuestionExternalGradingOptions {
-  enabled: boolean;
-  image: string;
-  entrypoint: string | string[];
-  serverFilesCourse: string[];
-  timeout: number;
-  enableNetworking: boolean;
-  environment: Record<string, string | null>;
-}
+// interface QuestionExternalGradingOptions {
+//   enabled: boolean;
+//   image: string;
+//   entrypoint: string | string[];
+//   serverFilesCourse: string[];
+//   timeout: number;
+//   enableNetworking: boolean;
+//   environment: Record<string, string | null>;
+// }
 
-interface QuestionWorkspaceOptions {
-  image: string;
-  port: number;
-  home: string;
-  args: string | string[];
-  gradedFiles: string[];
-  rewriteUrl: string;
-  enableNetworking: boolean;
-  environment: Record<string, string | null>;
-}
+// interface QuestionWorkspaceOptions {
+//   image: string;
+//   port: number;
+//   home: string;
+//   args: string | string[];
+//   gradedFiles: string[];
+//   rewriteUrl: string;
+//   enableNetworking: boolean;
+//   environment: Record<string, string | null>;
+// }
 
-export interface Question {
-  id: string;
-  qid: string;
-  uuid: string;
-  type: 'Calculation' | 'MultipleChoice' | 'Checkbox' | 'File' | 'MultipleTrueFalse' | 'v3';
-  title: string;
-  topic: string;
-  tags: string[];
-  clientFiles: string[];
-  clientTemplates: string[];
-  template: string;
-  gradingMethod: 'Internal' | 'External' | 'Manual';
-  singleVariant: boolean;
-  showCorrectAnswer: boolean;
-  partialCredit: boolean;
-  options: Record<string, any>;
-  externalGradingOptions: QuestionExternalGradingOptions;
-  workspaceOptions?: QuestionWorkspaceOptions;
-  dependencies: Record<string, string>;
-  sharingSets?: string[];
-  sharePublicly: boolean;
-  sharedPublicly: boolean;
-  shareSourcePublicly: boolean;
-}
+// export interface Question {
+//   id: string;
+//   qid: string;
+//   uuid: string;
+//   type: 'Calculation' | 'MultipleChoice' | 'Checkbox' | 'File' | 'MultipleTrueFalse' | 'v3';
+//   title: string;
+//   topic: string;
+//   tags: string[];
+//   clientFiles: string[];
+//   clientTemplates: string[];
+//   template: string;
+//   gradingMethod: 'Internal' | 'External' | 'Manual';
+//   singleVariant: boolean;
+//   showCorrectAnswer: boolean;
+//   partialCredit: boolean;
+//   options: Record<string, any>;
+//   externalGradingOptions: QuestionExternalGradingOptions;
+//   workspaceOptions?: QuestionWorkspaceOptions;
+//   dependencies: Record<string, string>;
+//   sharingSets?: string[];
+//   sharePublicly: boolean;
+//   sharedPublicly: boolean;
+//   shareSourcePublicly: boolean;
+// }
 
 export interface CourseInstanceData {
   courseInstance: InfoFile<CourseInstance>;

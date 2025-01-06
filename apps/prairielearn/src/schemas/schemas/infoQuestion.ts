@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const LegacyDependencySchema = z
+const DependencySchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -46,19 +46,7 @@ const LegacyDependencySchema = z
   .strict()
   .describe("The question's client-side dependencies.");
 
-const DependencySchema = z.intersection(
-  LegacyDependencySchema,
-  z.object({
-    coreStyles: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-    coreScripts: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-  }),
-);
-
-const LegacyWorkspaceOptionsSchema = z
+const WorkspaceOptionsSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -112,16 +100,7 @@ const LegacyWorkspaceOptionsSchema = z
   .strict()
   .describe('Options for workspace questions.');
 
-const WorkspaceOptionsSchema = z.intersection(
-  LegacyWorkspaceOptionsSchema,
-  z.object({
-    syncIgnore: z.undefined({
-      invalid_type_error: 'DEPRECATED -- do not use.',
-    }),
-  }),
-);
-
-const LegacyQuestionSchema = z
+export const QuestionSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -235,8 +214,8 @@ const LegacyQuestionSchema = z
       .strict()
       .describe('Options for externally graded questions.')
       .optional(),
-    dependencies: LegacyDependencySchema.optional(),
-    workspaceOptions: LegacyWorkspaceOptionsSchema.optional(),
+    dependencies: DependencySchema.optional(),
+    workspaceOptions: WorkspaceOptionsSchema.optional(),
     sharingSets: z
       .array(z.string().describe('The name of a sharing set'))
       .describe('The list of sharing sets that this question belongs to.')
@@ -254,8 +233,31 @@ const LegacyQuestionSchema = z
   .strict()
   .describe('Info files for questions.');
 
+export type Question = z.infer<typeof QuestionSchema>;
+/*
+const DependencySchema = z.intersection(
+  DependencySchema,
+  z.object({
+    coreStyles: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+    coreScripts: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+  }),
+);
+
+const WorkspaceOptionsSchema = z.intersection(
+  WorkspaceOptionsSchema,
+  z.object({
+    syncIgnore: z.undefined({
+      invalid_type_error: 'DEPRECATED -- do not use.',
+    }),
+  }),
+);
+
 const QuestionSchema = z.intersection(
-  LegacyQuestionSchema,
+  QuestionSchema,
   z.object({
     dependencies: DependencySchema.optional(),
     sharedPublicly: z.undefined({
@@ -265,4 +267,4 @@ const QuestionSchema = z.intersection(
   }),
 );
 
-export { LegacyQuestionSchema, QuestionSchema };
+*/

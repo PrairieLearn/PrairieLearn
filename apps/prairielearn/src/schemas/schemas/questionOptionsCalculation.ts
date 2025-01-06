@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const CalculationQuestionOptionsSchema = z
+export const CalculationQuestionOptionsSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -9,4 +9,4 @@ const CalculationQuestionOptionsSchema = z
   })
   .describe('Options for a Calculation question.');
 
-export { CalculationQuestionOptionsSchema };
+export type CalculationQuestionOptions = z.infer<typeof CalculationQuestionOptionsSchema>;

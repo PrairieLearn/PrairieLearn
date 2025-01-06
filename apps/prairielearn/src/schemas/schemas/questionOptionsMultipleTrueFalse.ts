@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const MultipleTrueFalseQuestionOptionsSchema = z
+export const MultipleTrueFalseQuestionOptionsSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -17,4 +17,6 @@ const MultipleTrueFalseQuestionOptionsSchema = z
   .strict()
   .describe('Options for a MultipleTrueFalse question.');
 
-export { MultipleTrueFalseQuestionOptionsSchema };
+export type MultipleTrueFalseQuestionOptions = z.infer<
+  typeof MultipleTrueFalseQuestionOptionsSchema
+>;

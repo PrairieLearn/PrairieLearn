@@ -1,7 +1,9 @@
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import {
-  /* no support for deprecated options */
+  QuestionSchema,
+  AssessmentSchema,
+  CourseInstanceSchema,
   CourseSchema,
   NewsItemSchema,
   CalculationQuestionOptionsSchema,
@@ -10,55 +12,62 @@ import {
   MultipleChoiceQuestionOptionsSchema,
   MultipleTrueFalseQuestionOptionsSchema,
   QuestionOptionsv3Schema,
-  /* supports deprecated options */
-  LegacyAssessmentSchema,
-  LegacyCourseInstanceSchema,
-  LegacyElementCoreSchema,
-  LegacyElementCourseSchema,
-  LegacyElementExtensionSchema,
-  LegacyQuestionSchema,
+  ElementCoreSchema,
+  ElementCourseSchema,
+  ElementExtensionSchema,
 } from './schemas/index.js';
+export * from './schemas/index.js';
+
+import { z } from 'zod';
 
 export const infoNewsItem = zodToJsonSchema(NewsItemSchema, {
   name: 'News Item Info',
   nameStrategy: 'title',
   target: 'jsonSchema2019-09',
 });
-export const infoAssessment = zodToJsonSchema(LegacyAssessmentSchema, {
+
+export const infoAssessment = zodToJsonSchema(AssessmentSchema, {
   name: 'Assessment info',
   nameStrategy: 'title',
   target: 'jsonSchema2019-09',
 });
+
 export const infoCourse = zodToJsonSchema(CourseSchema, {
   name: 'Course information',
   nameStrategy: 'title',
   target: 'jsonSchema2019-09',
 });
-export const infoCourseInstance = zodToJsonSchema(LegacyCourseInstanceSchema, {
+
+export const infoCourseInstance = zodToJsonSchema(CourseInstanceSchema, {
   name: 'Course instance information',
   nameStrategy: 'title',
   target: 'jsonSchema2019-09',
 });
-export const infoElementCore = zodToJsonSchema(LegacyElementCoreSchema, {
+
+export const infoElementCore = zodToJsonSchema(ElementCoreSchema, {
   name: 'Element Info',
   nameStrategy: 'title',
   target: 'jsonSchema2019-09',
 });
-export const infoElementCourse = zodToJsonSchema(LegacyElementCourseSchema, {
+
+export const infoElementCourse = zodToJsonSchema(ElementCourseSchema, {
   name: 'Element Info',
   nameStrategy: 'title',
   target: 'jsonSchema2019-09',
 });
-export const infoElementExtension = zodToJsonSchema(LegacyElementExtensionSchema, {
+
+export const infoElementExtension = zodToJsonSchema(ElementExtensionSchema, {
   name: 'Element Extension Info',
   nameStrategy: 'title',
   target: 'jsonSchema2019-09',
 });
-export const infoQuestion = zodToJsonSchema(LegacyQuestionSchema, {
+
+export const infoQuestion = zodToJsonSchema(QuestionSchema, {
   name: 'Question Info',
   nameStrategy: 'title',
   target: 'jsonSchema2019-09',
 });
+
 export const questionOptionsCalculation = zodToJsonSchema(CalculationQuestionOptionsSchema, {
   name: 'Calculation question options',
   nameStrategy: 'title',

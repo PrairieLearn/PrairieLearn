@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const FileQuestionOptionsSchema = z
+export const FileQuestionOptionsSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -11,4 +11,4 @@ const FileQuestionOptionsSchema = z
   .strict()
   .describe('Options for a File question.');
 
-export { FileQuestionOptionsSchema };
+export type FileQuestionOptions = z.infer<typeof FileQuestionOptionsSchema>;
