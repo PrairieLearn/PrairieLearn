@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-const DependencySchema = z
+export const DependencySchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
@@ -46,7 +46,7 @@ const DependencySchema = z
   .strict()
   .describe("The question's client-side dependencies.");
 
-const WorkspaceOptionsSchema = z
+export const WorkspaceOptionsSchema = z
   .object({
     comment: z
       .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])

@@ -37,6 +37,8 @@ import {
   ForceMaxPointsSchema,
   AdvanceScorePercSchema,
   AssessmentSetSchema,
+  WorkspaceOptionsSchema,
+  DependencySchema,
 } from './schemas/index.js';
 export * from './schemas/index.js';
 
@@ -94,6 +96,7 @@ export const infoQuestion = zodToJsonSchema(QuestionSchema, {
   name: 'Question Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
+  definitions: { WorkspaceOptionsSchema, DependencySchema },
 }) as JSONSchemaType<Question>;
 
 export const questionOptionsCalculation = zodToJsonSchema(CalculationQuestionOptionsSchema, {
@@ -134,3 +137,20 @@ export const questionOptionsv3 = zodToJsonSchema(QuestionOptionsv3Schema, {
   nameStrategy: 'title',
   target: 'jsonSchema7',
 }) as JSONSchemaType<QuestionOptionsv3>;
+
+export const ajvSchemas = {
+  infoNewsItem,
+  infoAssessment,
+  infoCourse,
+  infoCourseInstance,
+  infoElementCore,
+  infoElementCourse,
+  infoElementExtension,
+  infoQuestion,
+  questionOptionsCalculation,
+  questionOptionsCheckbox,
+  questionOptionsFile,
+  questionOptionsMultipleChoice,
+  questionOptionsMultipleTrueFalse,
+  questionOptionsv3,
+};
