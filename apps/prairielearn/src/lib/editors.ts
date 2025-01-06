@@ -103,7 +103,11 @@ export function getUniqueNames({
   longNames,
   shortName = 'New', // Defaults to 'New' because this function previously only handled the case where the shortName was 'New'
   longName = 'New', // Defaults to 'New' because this function previously only handled the case where the longName was 'New'
-  checkShortNameCase = true, // If true, shortName is treated as case-sensitive. Otherwise, it is not.
+  checkShortNameCase = true, // If true, handles duplicate short names case-sensitively, otherwise, case-insensitively.
+  // When shortName is used as a directory name, checkShortNameCase should be set to false, as directory names are case-insensitive.
+
+  // e.g. If a user tries to add an assessment with the short name "Test" when an assessment with the short name
+  // "test" already exists, the directory "test" would already exist, causing a conflict.
 }: {
   shortNames: string[];
   longNames: string[];
@@ -770,11 +774,7 @@ export class AssessmentAddEditor extends Editor {
       longNames: oldNamesLong,
       shortName: this.aid,
       longName: this.title,
-      checkShortNameCase: false, // This is enabled to handle duplicate short names case-insensitively. A duplicate in a different case
-      // results in a directory conflict.
-
-      // e.x. if the user tries to add an assessment with the short name "Test" when an assessment
-      // with the short name "test" already exists, the directory "test" would already exist, causing a conflict.
+      checkShortNameCase: false,
     });
 
     const tid = names.shortName;
