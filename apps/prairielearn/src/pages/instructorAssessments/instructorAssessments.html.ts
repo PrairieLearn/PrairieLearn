@@ -88,8 +88,6 @@ export function InstructorAssessments({
               ${authz_data.has_course_permission_edit && !course.example_course && rows.length > 0
                 ? html`
                     <button
-                      name="__action"
-                      value="add_assessment"
                       class="btn btn-sm btn-light ml-auto"
                       data-toggle="modal"
                       data-target="#createAssessmentModal"
@@ -191,8 +189,6 @@ export function InstructorAssessments({
                       }
                       return html`
                         <button
-                          name="__action"
-                          value="add_assessment"
                           class="btn btn-sm btn-primary"
                           data-toggle="modal"
                           data-target="#createAssessmentModal"

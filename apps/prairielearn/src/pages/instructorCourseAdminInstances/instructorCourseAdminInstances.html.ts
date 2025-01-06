@@ -74,8 +74,6 @@ export function InstructorCourseAdminInstances({
               courseInstances.length > 0
                 ? html`
                     <button
-                      name="__action"
-                      value="add_course_instance"
                       class="btn btn-sm btn-light"
                       data-toggle="modal"
                       data-target="#createCourseInstanceModal"
@@ -195,8 +193,6 @@ export function InstructorCourseAdminInstances({
                       }
                       return html`
                         <button
-                          name="__action"
-                          value="add_course_instance"
                           class="btn btn-sm btn-primary"
                           data-toggle="modal"
                           data-target="#createCourseInstanceModal"
