@@ -469,6 +469,8 @@ export async function loadCourseInfo(
     return maybeNullLoadedData;
   }
 
+  console.log(maybeNullLoadedData);
+
   if (!maybeNullLoadedData || !maybeNullLoadedData.data) {
     throw new Error('Could not load infoCourse.json');
   }
