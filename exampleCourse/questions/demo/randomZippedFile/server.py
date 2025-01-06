@@ -26,7 +26,7 @@ def file(data):
             "fileTemplates",
             "python_file_template.mustache",
         )
-        with open(template_path, "r") as template_file:
+        with open(template_path) as template_file:
             python_file_contents = chevron.render(
                 template_file, {"function_name": params_dict["function_name"]}
             )

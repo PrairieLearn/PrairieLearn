@@ -70,10 +70,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if correct_answer is not None and not isinstance(correct_answer, int):
         try:
             int(str(correct_answer), base)
-        except Exception:
+        except Exception as exc:
             raise ValueError(
                 f"Correct answer is not a valid base {base} integer: {correct_answer}"
-            )
+            ) from exc
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -91,7 +91,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
     score = data["partial_scores"].get(name, {"score": None}).get("score")
 
-    with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+    with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         template = f.read()
 
     if data["panel"] == "question":
@@ -130,7 +130,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "uuid": pl.get_uuid(),
             display.value: True,
             "parse_error": parse_error,
-            "use_numeric": True if 1 <= base <= 10 else False,
+            "use_numeric": 1 <= base <= 10,
             "raw_submitted_answer": raw_submitted_answer,
         }
 
@@ -234,7 +234,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     a_sub = str(a_sub)
 
-    with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+    with open(INTEGER_INPUT_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
         template = f.read()
 
     if a_sub.strip() == "":

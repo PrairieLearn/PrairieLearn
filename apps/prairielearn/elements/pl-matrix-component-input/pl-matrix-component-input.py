@@ -88,16 +88,14 @@ def render(element_html, data):
         else:
             if np.isscalar(a_tru):
                 raise Exception(
-                    'Value in data["correct_answers"] for variable %s in pl-matrix-component-input element cannot be a scalar.'
-                    % name
+                    f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element cannot be a scalar.'
                 )
             else:
                 a_tru = np.array(a_tru)
 
             if a_tru.ndim != 2:
                 raise Exception(
-                    'Value in data["correct_answers"] for variable %s in pl-matrix-component-input element must be a 2D array.'
-                    % name
+                    f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element must be a 2D array.'
                 )
             else:
                 m, n = np.shape(a_tru)
@@ -110,53 +108,44 @@ def render(element_html, data):
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
-                raise ValueError(
-                    "Attribute rtol = {:g} must be non-negative".format(rtol)
-                )
+                raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
             if atol < 0:
-                raise ValueError(
-                    "Attribute atol = {:g} must be non-negative".format(atol)
-                )
+                raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
             info_params = {
                 "format": True,
                 "relabs": True,
-                "rtol": "{:g}".format(rtol),
-                "atol": "{:g}".format(atol),
+                "rtol": f"{rtol:g}",
+                "atol": f"{atol:g}",
             }
         elif comparison == "sigfig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(
-                    "Attribute digits = {:d} must be non-negative".format(digits)
-                )
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "sigfig": True,
-                "digits": "{:d}".format(digits),
+                "digits": f"{digits:d}",
                 "comparison_eps": 0.51 * (10 ** -(digits - 1)),
             }
         elif comparison == "decdig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(
-                    "Attribute digits = {:d} must be non-negative".format(digits)
-                )
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "decdig": True,
-                "digits": "{:d}".format(digits),
+                "digits": f"{digits:d}",
                 "comparison_eps": 0.51 * (10 ** -(digits - 0)),
             }
         else:
             raise ValueError(
-                'method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")'
-                % comparison
+                f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
             )
 
         info_params["allow_fractions"] = allow_fractions
-        with open("pl-matrix-component-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
-        with open("pl-matrix-component-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
             info_params.pop("format", None)
             info_params["shortformat"] = True
             shortinfo = chevron.render(f, info_params).strip()
@@ -183,10 +172,10 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            except Exception as exc:
+                raise ValueError("invalid score" + score) from exc
 
-        with open("pl-matrix-component-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -220,8 +209,8 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            except Exception as exc:
+                raise ValueError("invalid score" + score) from exc
 
         if parse_error is None and name in data["submitted_answers"]:
             # Get submitted answer, raising an exception if it does not exist
@@ -262,7 +251,7 @@ def render(element_html, data):
             "missing_input", False
         )
 
-        with open("pl-matrix-component-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -300,8 +289,7 @@ def render(element_html, data):
                 )
             else:
                 raise ValueError(
-                    'method of comparison "%s" is not valid (must be "relabs", "sigfig", or "decdig")'
-                    % comparison
+                    f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
                 )
 
             html_params = {
@@ -310,13 +298,13 @@ def render(element_html, data):
                 "latex_data": latex_data,
             }
 
-            with open("pl-matrix-component-input.mustache", "r", encoding="utf-8") as f:
+            with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html = ""
 
     else:
-        raise Exception("Invalid panel type: %s" % data["panel"])
+        raise Exception("Invalid panel type: {}".format(data["panel"]))
 
     return html
 
@@ -341,7 +329,7 @@ def parse(element_html, data):
             raise ValueError("true answer must be a 2D array")
         else:
             m, n = np.shape(a_tru)
-    A = np.empty((m, n))
+    matrix = np.empty((m, n))
 
     # Create an array for the submitted answer to be stored in data['submitted_answer'][name]
     # used for display in the answer and submission panels
@@ -357,7 +345,7 @@ def parse(element_html, data):
                 a_sub, allow_fractions, allow_complex=False
             )
             if value is not None:
-                A[i, j] = value
+                matrix[i, j] = value
                 data["submitted_answers"][each_entry_name] = newdata[
                     "submitted_answers"
                 ]
@@ -367,13 +355,13 @@ def parse(element_html, data):
                 data["submitted_answers"][each_entry_name] = None
 
     if invalid_format:
-        with open("pl-matrix-component-input.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matrix-component-input.mustache", encoding="utf-8") as f:
             data["format_errors"][name] = chevron.render(
                 f, {"format_error": True, "allow_fractions": allow_fractions}
             ).strip()
         data["submitted_answers"][name] = None
     else:
-        data["submitted_answers"][name] = pl.to_json(A)
+        data["submitted_answers"][name] = pl.to_json(matrix)
 
 
 def grade(element_html, data):
@@ -391,12 +379,10 @@ def grade(element_html, data):
     if comparison == "relabs":
         rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
         atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
-    elif comparison == "sigfig":
-        digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
-    elif comparison == "decdig":
+    elif comparison == "sigfig" or comparison == "decdig":
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
     else:
-        raise ValueError('method of comparison "%s" is not valid' % comparison)
+        raise ValueError(f'method of comparison "{comparison}" is not valid')
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
@@ -499,7 +485,7 @@ def test(element_html, data):
                     data["raw_submitted_answers"][name] = ""
                     data["format_errors"][each_entry_name] = "(Invalid blank entry)"
             else:
-                raise Exception("invalid result: %s" % result)
+                raise Exception(f"invalid result: {result}")
 
     if result == "invalid":
         data["format_errors"][name] = (
