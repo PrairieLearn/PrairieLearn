@@ -9,19 +9,20 @@ import jju from 'jju';
 import _ from 'lodash';
 
 import { run } from '@prairielearn/run';
-import {
-  Assessment,
-  AssessmentSet,
-  Color,
-  Course,
-  CourseInstance,
-  Question,
-} from '../schemas/index.js';
+
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { validateJSON } from '../lib/json-load.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
+import {
+  type Assessment,
+  type AssessmentSet,
+  type Color,
+  type Course,
+  type CourseInstance,
+  type Question,
+} from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
 import * as infofile from './infofile.js';

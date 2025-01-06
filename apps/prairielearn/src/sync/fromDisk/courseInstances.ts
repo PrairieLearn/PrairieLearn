@@ -5,10 +5,10 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
+import { type CourseInstance } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
-import { CourseInstance } from '../../schemas/index.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 

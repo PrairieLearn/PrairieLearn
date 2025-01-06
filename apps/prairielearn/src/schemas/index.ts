@@ -1,3 +1,4 @@
+import { type JSONSchemaType } from 'ajv';
 import { zodToJsonSchema } from 'zod-to-json-schema';
 
 import {
@@ -15,24 +16,22 @@ import {
   ElementCoreSchema,
   ElementCourseSchema,
   ElementExtensionSchema,
-  NewsItem,
-  MultipleTrueFalseQuestionOptions,
-  QuestionOptionsv3,
-  MultipleChoiceQuestionOptions,
-  FileQuestionOptions,
-  CheckboxQuestionOptions,
-  CalculationQuestionOptions,
-  Question,
-  ElementExtension,
-  ElementCore,
-  CourseInstance,
-  Course,
-  Assessment,
-  ElementCourse,
+  type NewsItem,
+  type MultipleTrueFalseQuestionOptions,
+  type QuestionOptionsv3,
+  type MultipleChoiceQuestionOptions,
+  type FileQuestionOptions,
+  type CheckboxQuestionOptions,
+  type CalculationQuestionOptions,
+  type Question,
+  type ElementExtension,
+  type ElementCore,
+  type CourseInstance,
+  type Course,
+  type Assessment,
+  type ElementCourse,
 } from './schemas/index.js';
 export * from './schemas/index.js';
-
-import { JSONSchemaType } from 'ajv';
 
 export const infoNewsItem = zodToJsonSchema(NewsItemSchema, {
   name: 'News Item Info',

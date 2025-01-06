@@ -1,4 +1,4 @@
-import { z, ZodType } from 'zod';
+import { z, type ZodType } from 'zod';
 
 export function uniqueArray(schema: ZodType) {
   return z.array(schema).refine((items) => new Set(items).size === items.length, {
