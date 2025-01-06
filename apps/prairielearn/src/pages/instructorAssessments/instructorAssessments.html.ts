@@ -331,7 +331,7 @@ function CreateAssessmentModal({
               <label for="module">Module</label>
               <select class="form-select" id="module" name="module" required>
                 ${assessmentModules.map(
-                  (module) => html` <option value="${module.name}">${module.name}</option> `,
+                  (module) => html`<option value="${module.name}">${module.name}</option>`,
                 )}
               </select>
               <small class="form-text text-muted">
