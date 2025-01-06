@@ -298,6 +298,7 @@ function CreateAssessmentModal({
           id="aid"
           name="aid"
           required
+          pattern="[\\-A-Za-z0-9_\\/]+"
           aria-describedby="aid_help"
         />
         <small id="aid_help" class="form-text text-muted">
@@ -352,9 +353,7 @@ function CreateAssessmentModal({
       <input type="hidden" name="__action" value="add_assessment" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-primary">
-        Create
-      </button>
+      <button type="submit" class="btn btn-primary">Create</button>
     `,
   });
 }
