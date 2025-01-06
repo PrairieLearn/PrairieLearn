@@ -110,16 +110,21 @@ export const AdvanceScorePercSchema = z
   .lte(100)
   .describe('Minimum score percentage to unlock access to subsequent questions');
 
-const QuestionAlternativeSchema = z.object({
-  comment: z
-    .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-    .describe('Arbitrary comment for reference purposes.')
-    .optional(),
+const QuestionPointsSchema = z.object({
   points: PointsSchema.optional(),
   autoPoints: PointsSchema.optional(),
   maxPoints: PointsSingleSchema.optional(),
   maxAutoPoints: PointsSingleSchema.optional(),
   manualPoints: PointsSingleSchema.optional(),
+});
+
+export type QuestionPoints = z.infer<typeof QuestionPointsSchema>;
+
+const QuestionAlternativeSchema = QuestionPointsSchema.extend({
+  comment: z
+    .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
+    .describe('Arbitrary comment for reference purposes.')
+    .optional(),
   id: QuestionIdSchema, // .optional(),
   forceMaxPoints: ForceMaxPointsSchema.optional(),
   triesPerVariant: z
@@ -139,16 +144,16 @@ const QuestionAlternativeSchema = z.object({
   canSubmit: z.array(z.string()).nullable().optional(),
 });
 
-const ZoneQuestionSchema = z.object({
+const ZoneQuestionSchema = QuestionPointsSchema.extend({
   comment: z
     .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
     .describe('Arbitrary comment for reference purposes.')
     .optional(),
-  points: PointsSchema, // .optional(),
-  autoPoints: PointsSchema, // .optional(),
-  maxPoints: PointsSingleSchema, // .optional(),
-  maxAutoPoints: PointsSingleSchema, // .optional(),
-  manualPoints: PointsSingleSchema, // .optional(),
+  points: PointsSchema.optional(),
+  autoPoints: PointsSchema.optional(),
+  maxPoints: PointsSingleSchema.optional(),
+  maxAutoPoints: PointsSingleSchema.optional(),
+  manualPoints: PointsSingleSchema.optional(),
   id: QuestionIdSchema.optional(),
   forceMaxPoints: ForceMaxPointsSchema.optional(),
   alternatives: z

@@ -16,6 +16,7 @@ import { features } from '../lib/features/index.js';
 import { validateJSON } from '../lib/json-load.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
+  type QuestionPoints,
   type Assessment,
   type AssessmentSet,
   type Color,
@@ -966,13 +967,7 @@ async function validateAssessment(
       }
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      let alternatives: {
-        points: number | number[];
-        autoPoints: number | number[];
-        maxPoints: number;
-        maxAutoPoints: number;
-        manualPoints: number;
-      }[] = [];
+      let alternatives: QuestionPoints[] = [];
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       } else if (zoneQuestion?.alternatives) {
@@ -1064,11 +1059,19 @@ async function validateAssessment(
           }
 
           if (!courseInstanceExpired) {
-            if (alternative.points === 0 && alternative.maxPoints > 0) {
+            if (
+              alternative.points === 0 &&
+              alternative.maxPoints !== undefined &&
+              alternative.maxPoints > 0
+            ) {
               errors.push('Cannot specify "points": 0 when "maxPoints" > 0');
             }
 
-            if (alternative.autoPoints === 0 && alternative.maxAutoPoints > 0) {
+            if (
+              alternative.autoPoints === 0 &&
+              alternative.maxAutoPoints !== undefined &&
+              alternative.maxAutoPoints > 0
+            ) {
               errors.push('Cannot specify "autoPoints": 0 when "maxAutoPoints" > 0');
             }
           }
