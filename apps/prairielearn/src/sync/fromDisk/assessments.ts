@@ -154,7 +154,12 @@ function getParamsForAssessment(
                     question.triesPerVariant !== undefined
                   ? question.triesPerVariant
                   : 1,
-            advanceScorePerc: alternative.advanceScorePerc ?? 0,
+            advanceScorePerc:
+              alternative.advanceScorePerc ??
+              question.advanceScorePerc ??
+              zone.advanceScorePerc ??
+              assessment.advanceScorePerc ??
+              0,
             gradeRateMinutes:
               Object.prototype.hasOwnProperty.call(alternative, 'gradeRateMinutes') &&
               alternative.gradeRateMinutes !== undefined
@@ -175,7 +180,11 @@ function getParamsForAssessment(
             manualPoints: question.manualPoints ?? null,
             forceMaxPoints: question.forceMaxPoints || false,
             triesPerVariant: question.triesPerVariant || 1,
-            advanceScorePerc: question.advanceScorePerc ?? 0,
+            advanceScorePerc:
+              question.advanceScorePerc ??
+              zone.advanceScorePerc ??
+              assessment.advanceScorePerc ??
+              0,
             gradeRateMinutes: questionGradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
