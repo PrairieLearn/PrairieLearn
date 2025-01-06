@@ -69,13 +69,27 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     if (req.body.__action === 'add_question') {
+      if (!req.body.qid) {
+        throw new error.HttpStatusError(400, 'qid is required');
+      }
+      if (!req.body.title) {
+        throw new error.HttpStatusError(400, 'title is required');
+      }
+      if (!req.body.start_from) {
+        throw new error.HttpStatusError(400, 'start_from is required');
+      }
+
       const api = getCourseFilesClient();
+
+      // if (req.body.start_from === "Empty question")
 
       const result = await api.createQuestion.mutate({
         course_id: res.locals.course.id,
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+        qid: req.body.qid,
+        title: req.body.title,
       });
 
       if (result.status === 'error') {
@@ -83,6 +97,12 @@ router.post(
         return;
       }
 
+      // res.redirect(
+      //   res.locals.urlPrefix +
+      //     '/question/' +
+      //     result.question_id +
+      //     '/file_view'
+      // );
       res.redirect(res.locals.urlPrefix + '/question/' + result.question_id + '/settings');
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

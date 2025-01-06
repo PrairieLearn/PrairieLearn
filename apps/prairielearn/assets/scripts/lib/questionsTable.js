@@ -204,7 +204,7 @@ onDocumentReady(() => {
       icon: 'fa-plus',
       attributes: { title: 'Create a new question' },
       event: () => {
-        $('form[name=add-question-form]').submit();
+        $('#createQuestionModal').modal('show');
       },
     };
   }

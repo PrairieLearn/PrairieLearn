@@ -62,7 +62,8 @@ export const createQuestion = privateProcedure
 
     try {
       await editor.executeWithServerJob(serverJob);
-    } catch {
+    } catch (e) {
+      console.error(e);
       return {
         status: 'error',
         job_sequence_id: serverJob.jobSequenceId,

@@ -1058,7 +1058,7 @@ export class QuestionAddEditor extends Editor {
 
     const questionPath = path.join(questionsPath, qid);
 
-    const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
+    const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'empty');
     const toPath = questionPath;
 
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);

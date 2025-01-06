@@ -6,6 +6,8 @@ import { type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { type QuestionsPageData } from '../models/questions.js';
 
+import { Modal } from './Modal.html.js';
+
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
   // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way
@@ -60,17 +62,13 @@ export function QuestionsTable({
       },
       'questions-table-data',
     )}
-
+    ${CreateQuestionModal({
+      csrfToken: __csrf_token,
+    })}
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
         <h1>Questions</h1>
       </div>
-
-      <form class="ml-1 btn-group" name="add-question-form" method="POST">
-        <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-        <input type="hidden" name="__action" value="add_question" />
-      </form>
-
       <table
         id="questionsTable"
         aria-label="Questions"
@@ -215,4 +213,66 @@ export function QuestionsTable({
       </table>
     </div>
   `;
+}
+
+function CreateQuestionModal({ csrfToken }: { csrfToken: string }) {
+  return Modal({
+    id: 'createQuestionModal',
+    title: 'Create question',
+    formMethod: 'POST',
+    body: html`
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input
+          type="text"
+          class="form-control"
+          id="title"
+          name="title"
+          required
+          aria-describedby="title_help"
+        />
+        <small id="title_help" class="form-text text-muted">
+          The full name of the question, visible to users.
+        </small>
+      </div>
+      <div class="form-group">
+        <label for="qid">Question identifier (QID)</label>
+        <input
+          type="text"
+          class="form-control"
+          id="qid"
+          name="qid"
+          required
+          aria-describedby="qid_help"
+        />
+        <small id="qid_help" class="form-text text-muted">
+          A short unique identifier for this question, such as "addVectors" or "findDerivative". Use
+          only letters, numbers, dashes, and underscores, with no spaces.
+        </small>
+      </div>
+      <div class="form-group">
+        <label for="start_from">Start from</label>
+        <select
+          class="form-select"
+          id="start_from"
+          name="start_from"
+          required
+          aria-describedby="start_from_help"
+        >
+          <option value="Empty question">Empty question</option>
+          <option value="Template">Template</option>
+        </select>
+        <small id="start_from_help" class="form-text text-muted">
+          Begin with an empty question or premade question template.
+        </small>
+      </div>
+      
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="add_question" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button id="add_question_create_button" type="submit" class="btn btn-primary">Create</button>
+    `,
+  });
 }
