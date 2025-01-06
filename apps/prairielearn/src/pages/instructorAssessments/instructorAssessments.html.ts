@@ -352,7 +352,7 @@ function CreateAssessmentModal({
       <input type="hidden" name="__action" value="add_assessment" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      <button id="add_assessment_create_button" type="submit" class="btn btn-primary">
+      <button type="submit" class="btn btn-primary">
         Create
       </button>
     `,
