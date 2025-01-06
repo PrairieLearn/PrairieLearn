@@ -5,9 +5,10 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
-import { type CourseData, type CourseInstance } from '../course-db.js';
+import { type CourseData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
+import { CourseInstance } from '../../schemas/index.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
@@ -30,7 +31,6 @@ function getParamsForCourseInstance(courseInstance: CourseInstance | null | unde
   return {
     uuid: courseInstance.uuid,
     long_name: courseInstance.longName,
-    number: courseInstance.number,
     hide_in_enroll_page: courseInstance.hideInEnrollPage || false,
     display_timezone: courseInstance.timezone || null,
     access_rules: accessRules,
