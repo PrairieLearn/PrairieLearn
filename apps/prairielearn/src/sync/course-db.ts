@@ -1112,17 +1112,29 @@ async function validateAssessment(
 
     // Ensure values for role minimum and maximum are within bounds
     assessment.groupRoles.forEach((role) => {
-      if (role.minimum !== undefined && role.minimum > assessment.groupMinSize) {
+      if (
+        role.minimum !== undefined &&
+        assessment.groupMinSize &&
+        role.minimum > assessment.groupMinSize
+      ) {
         warnings.push(
           `Group role "${role.name}" has a minimum greater than the group's minimum size.`,
         );
       }
-      if (role.minimum !== undefined && role.minimum > assessment.groupMaxSize) {
+      if (
+        role.minimum !== undefined &&
+        assessment.groupMaxSize &&
+        role.minimum > assessment.groupMaxSize
+      ) {
         errors.push(
           `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`,
         );
       }
-      if (role.maximum !== undefined && role.maximum > assessment.groupMaxSize) {
+      if (
+        role.maximum !== undefined &&
+        assessment.groupMaxSize &&
+        role.maximum > assessment.groupMaxSize
+      ) {
         errors.push(
           `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`,
         );

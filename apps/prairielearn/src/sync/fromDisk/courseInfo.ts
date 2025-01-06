@@ -26,7 +26,7 @@ export async function sync(courseData: CourseData, courseId: string) {
     short_name: courseInfo.name,
     title: courseInfo.title,
     display_timezone: courseInfo.timezone || null,
-    example_course: undefined, // courseInfo.exampleCourse, // What is this?
+    example_course: courseInfo.exampleCourse ?? false,
     options: courseInfo.options || {},
     sync_warnings: infofile.stringifyWarnings(courseData.course),
   });

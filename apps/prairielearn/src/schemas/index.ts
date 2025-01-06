@@ -30,6 +30,13 @@ import {
   type Course,
   type Assessment,
   type ElementCourse,
+  ColorSchema,
+  PointsSingleSchema,
+  PointsSchema,
+  QuestionIdSchema,
+  ForceMaxPointsSchema,
+  AdvanceScorePercSchema,
+  AssessmentSetSchema,
 } from './schemas/index.js';
 export * from './schemas/index.js';
 
@@ -43,12 +50,20 @@ export const infoAssessment = zodToJsonSchema(AssessmentSchema, {
   name: 'Assessment info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
+  definitions: {
+    PointsSchema,
+    PointsSingleSchema,
+    QuestionIdSchema,
+    ForceMaxPointsSchema,
+    AdvanceScorePercSchema,
+  },
 }) as JSONSchemaType<Assessment>;
 
 export const infoCourse = zodToJsonSchema(CourseSchema, {
   name: 'Course information',
   nameStrategy: 'title',
   target: 'jsonSchema7',
+  definitions: { ColorSchema, AssessmentSetSchema },
 }) as JSONSchemaType<Course>;
 
 export const infoCourseInstance = zodToJsonSchema(CourseInstanceSchema, {

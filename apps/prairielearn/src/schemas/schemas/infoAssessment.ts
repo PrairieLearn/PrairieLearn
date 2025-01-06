@@ -326,8 +326,8 @@ export const AssessmentSchema = z
       .describe('Requires the student to accept an honor code before starting exam assessments.')
       .optional(),
     groupWork: z.boolean().describe('Whether the assessment will support group work.').optional(),
-    groupMaxSize: z.number().describe('Maximum number of students in a group.'), // .optional()
-    groupMinSize: z.number().describe('Minimum number of students in a group.'), // .optional()
+    groupMaxSize: z.number().describe('Maximum number of students in a group.').optional(),
+    groupMinSize: z.number().describe('Minimum number of students in a group.').optional(),
     groupRoles: z
       .array(GroupRoleSchema)
       .describe('Array of custom user roles in a group.')
