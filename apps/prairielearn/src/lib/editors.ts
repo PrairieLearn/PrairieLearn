@@ -1,19 +1,23 @@
 import assert from 'node:assert';
 import * as path from 'path';
 
+import { type Temporal } from '@js-temporal/polyfill';
 import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
 import fs from 'fs-extra';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
+import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
 import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { escapeRegExp } from '@prairielearn/sanitize';
 
 import {
@@ -92,6 +96,68 @@ async function cleanAndResetRepository(
     cwd: course.path,
     env,
   });
+}
+
+export function getNamesForAdd(
+  shortNames: string[],
+  longNames: string[],
+  shortName = 'New',
+  longName = 'New',
+): { shortName: string; longName: string } {
+  function getNumberShortName(oldShortNames: string[]): number {
+    let numberOfMostRecentCopy = 1;
+    oldShortNames.forEach((oldShortName) => {
+      // shortName is a copy of oldShortName if:
+      // it matches exactly, or
+      // if oldShortName matches {shortName}_{number from 0-9}
+      const found =
+        shortName === oldShortName || oldShortName.match(new RegExp(`^${shortName}_([0-9]+)$`));
+      if (found) {
+        const foundNumber = shortName === oldShortName ? 1 : parseInt(found[1]);
+        if (foundNumber >= numberOfMostRecentCopy) {
+          numberOfMostRecentCopy = foundNumber + 1;
+        }
+      }
+    });
+    return numberOfMostRecentCopy;
+  }
+
+  function getNumberLongName(oldLongNames: string[]): number {
+    let numberOfMostRecentCopy = 1;
+    // longName is a copy of oldLongName if:
+    // it matches exactly, or
+    // if oldLongName matches {longName} ({number from 0-9})
+    oldLongNames.forEach((oldLongName) => {
+      if (!_.isString(oldLongName)) return;
+      const found =
+        oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
+      if (found) {
+        const foundNumber = oldLongName === longName ? 1 : parseInt(found[1]);
+        if (foundNumber >= numberOfMostRecentCopy) {
+          numberOfMostRecentCopy = foundNumber + 1;
+        }
+      }
+    });
+    return numberOfMostRecentCopy;
+  }
+
+  const numberShortName = getNumberShortName(shortNames);
+  const numberLongName = getNumberLongName(longNames);
+  const number = numberShortName > numberLongName ? numberShortName : numberLongName;
+
+  if (number === 1 && shortName !== 'New' && longName !== 'New') {
+    // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
+    return {
+      shortName,
+      longName,
+    };
+  } else {
+    // If there are existing copies, a number is needed at the end of the names
+    return {
+      shortName: `${shortName}_${number}`,
+      longName: `${longName} (${number})`,
+    };
+  }
 }
 
 interface BaseEditorOptions {
@@ -487,48 +553,6 @@ export abstract class Editor {
       longName: `${baseLongName} (copy ${number})`,
     };
   }
-
-  getNamesForAdd(
-    shortNames: string[],
-    longNames: string[],
-  ): { shortName: string; longName: string } {
-    function getNumberShortName(oldnames: string[]): number {
-      let number = 1;
-      oldnames.forEach((oldname) => {
-        const found = oldname.match(new RegExp('^New_([0-9]+)$'));
-        if (found) {
-          const foundNumber = parseInt(found[1]);
-          if (foundNumber >= number) {
-            number = foundNumber + 1;
-          }
-        }
-      });
-      return number;
-    }
-
-    function getNumberLongName(oldnames: string[]): number {
-      let number = 1;
-      oldnames.forEach((oldname) => {
-        if (!_.isString(oldname)) return;
-        const found = oldname.match(new RegExp('^New \\(([0-9]+)\\)$'));
-        if (found) {
-          const foundNumber = parseInt(found[1]);
-          if (foundNumber >= number) {
-            number = foundNumber + 1;
-          }
-        }
-      });
-      return number;
-    }
-
-    const numberShortName = getNumberShortName(shortNames);
-    const numberLongName = getNumberLongName(longNames);
-    const number = numberShortName > numberLongName ? numberShortName : numberLongName;
-    return {
-      shortName: `New_${number}`,
-      longName: `New (${number})`,
-    };
-  }
 }
 
 export class AssessmentCopyEditor extends Editor {
@@ -707,7 +731,7 @@ export class AssessmentAddEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
-    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
+    const names = getNamesForAdd(oldNamesShort, oldNamesLong);
     const tid = names.shortName;
     const assessmentTitle = names.longName;
     const assessmentPath = path.join(assessmentsPath, tid);
@@ -861,13 +885,37 @@ export class CourseInstanceRenameEditor extends Editor {
 
 export class CourseInstanceAddEditor extends Editor {
   public readonly uuid: string;
+  private short_name: string;
+  private long_name: string;
+  private start_access_date?: Temporal.ZonedDateTime;
+  private end_access_date?: Temporal.ZonedDateTime;
 
-  constructor(params: BaseEditorOptions) {
+  constructor(
+    params: BaseEditorOptions & {
+      short_name: string;
+      long_name: string;
+      start_access_date?: Temporal.ZonedDateTime;
+      end_access_date?: Temporal.ZonedDateTime;
+    },
+  ) {
     super(params);
 
-    this.description = 'Add course instance';
-
     this.uuid = uuidv4();
+
+    this.description = 'Add course instance';
+    this.short_name = params.short_name;
+    this.long_name = params.long_name;
+
+    if (
+      params.start_access_date &&
+      params.end_access_date &&
+      params.start_access_date.epochMilliseconds > params.end_access_date.epochMilliseconds
+    ) {
+      throw new HttpStatusError(400, 'Start date must be before end date');
+    }
+
+    this.start_access_date = params.start_access_date;
+    this.end_access_date = params.end_access_date;
   }
 
   async write() {
@@ -887,16 +935,42 @@ export class CourseInstanceAddEditor extends Editor {
     );
 
     debug('Generate short_name and long_name');
-    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
+    const names = getNamesForAdd(oldNamesShort, oldNamesLong, this.short_name, this.long_name);
+
     const short_name = names.shortName;
     const courseInstancePath = path.join(courseInstancesPath, short_name);
 
     debug('Write infoCourseInstance.json');
 
+    let allowAccess: { startDate?: string; endDate?: string } | undefined = undefined;
+
+    if (this.start_access_date || this.end_access_date) {
+      allowAccess = {
+        startDate: this.start_access_date
+          ? formatDate(
+              new Date(this.start_access_date.epochMilliseconds),
+              this.course.display_timezone,
+              {
+                includeTz: false,
+              },
+            )
+          : undefined,
+        endDate: this.end_access_date
+          ? formatDate(
+              new Date(this.end_access_date.epochMilliseconds),
+              this.course.display_timezone,
+              {
+                includeTz: false,
+              },
+            )
+          : undefined,
+      };
+    }
+
     const infoJson = {
       uuid: this.uuid,
       longName: names.longName,
-      allowAccess: [],
+      allowAccess: allowAccess !== undefined ? [allowAccess] : [],
     };
 
     // We use outputJson to create the directory this.courseInstancePath if it
@@ -917,33 +991,71 @@ export class CourseInstanceAddEditor extends Editor {
 export class QuestionAddEditor extends Editor {
   public readonly uuid: string;
 
-  files?: Record<string, string>;
+  private qid?: string;
+  private title?: string;
+  private files?: Record<string, string>;
+  private isDraft?: boolean;
 
-  constructor(params: BaseEditorOptions & { files?: Record<string, string> }) {
+  constructor(
+    params: BaseEditorOptions & {
+      qid?: string;
+      title?: string;
+      files?: Record<string, string>;
+      isDraft?: boolean;
+    },
+  ) {
     super(params);
 
     this.description = 'Add question';
 
     this.uuid = uuidv4();
+    this.qid = params.qid;
+    this.title = params.title;
     this.files = params.files;
+    this.isDraft = params.isDraft;
   }
 
   async write() {
     debug('QuestionAddEditor: write()');
     const questionsPath = path.join(this.course.path, 'questions');
 
-    debug('Get all existing long names');
-    const result = await sqldb.queryAsync(sql.select_questions_with_course, {
-      course_id: this.course.id,
+    const { qid, title } = await run(async () => {
+      if (this.qid && this.title) {
+        return { qid: this.qid, title: this.title };
+      } else if (this.isDraft) {
+        let draftNumber = await sqldb.queryRow(
+          sql.update_draft_number,
+          { course_id: this.course.id },
+          z.number(),
+        );
+
+        while (fs.existsSync(path.join(questionsPath, '__drafts__', `draft_${draftNumber}`))) {
+          //increment and sync to postgres
+          draftNumber = await sqldb.queryRow(
+            sql.update_draft_number,
+            { course_id: this.course.id },
+            z.number(),
+          );
+        }
+
+        return { qid: `__drafts__/draft_${draftNumber}`, title: `draft #${draftNumber}` };
+      }
+
+      debug('Get all existing long names');
+      const result = await sqldb.queryAsync(sql.select_questions_with_course, {
+        course_id: this.course.id,
+      });
+      const oldNamesLong = _.map(result.rows, 'title');
+
+      debug('Get all existing short names');
+      const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
+
+      debug('Generate qid and title');
+      const names = getNamesForAdd(oldNamesShort, oldNamesLong);
+
+      return { qid: names.shortName, title: names.longName };
     });
-    const oldNamesLong = _.map(result.rows, 'title');
 
-    debug('Get all existing short names');
-    const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
-
-    debug('Generate qid and title');
-    const names = this.getNamesForAdd(oldNamesShort, oldNamesLong);
-    const qid = names.shortName;
     const questionPath = path.join(questionsPath, qid);
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
@@ -989,7 +1101,7 @@ export class QuestionAddEditor extends Editor {
     const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
 
     debug('Write info.json with new title and uuid');
-    infoJson.title = names.longName;
+    infoJson.title = title;
     infoJson.uuid = this.uuid;
     // The template question contains tags that shouldn't be copied to the new question.
     delete infoJson.tags;
@@ -998,6 +1110,53 @@ export class QuestionAddEditor extends Editor {
     return {
       pathsToAdd: [questionPath],
       commitMessage: `add question ${qid}`,
+    };
+  }
+}
+
+export class QuestionModifyEditor extends Editor {
+  private question: Question;
+  private origHash: string;
+  private files: Record<string, string>;
+
+  constructor(
+    params: BaseEditorOptions & {
+      files: Record<string, string>;
+    },
+  ) {
+    super(params);
+
+    this.question = params.locals.question;
+    this.files = params.files;
+    this.description = `Modify question ${this.question.qid}`;
+  }
+
+  async write() {
+    assert(this.question.qid, 'question.qid is required');
+
+    const questionPath = path.join(this.course.path, 'questions', this.question.qid);
+
+    // Validate that all file paths don't escape the question directory.
+    for (const filePath of Object.keys(this.files)) {
+      if (!contains(questionPath, filePath)) {
+        throw new Error(`Invalid file path: ${filePath}`);
+      }
+    }
+
+    // Note that we deliberately only modify files that were provided. We don't
+    // try to delete "excess" files that aren't in the `files` object because the
+    // user might have added extra files of their own, e.g. in the `tests` or
+    // `clientFilesQuestion` directory. We don't want to remove them, and we also
+    // don't want to mandate that the caller must always read all existing files
+    // and provide them in the `files` object.
+    for (const [filePath, contents] of Object.entries(this.files)) {
+      const resolvedPath = path.join(questionPath, filePath);
+      await fs.writeFile(resolvedPath, b64Util.b64DecodeUnicode(contents));
+    }
+
+    return {
+      pathsToAdd: [questionPath],
+      commitMessage: this.description,
     };
   }
 }
@@ -1045,6 +1204,7 @@ export class QuestionRenameEditor extends Editor {
     assert(this.question.qid, 'question.qid is required');
 
     debug('QuestionRenameEditor: write()');
+
     const questionsPath = path.join(this.course.path, 'questions');
     const oldPath = path.join(questionsPath, this.question.qid);
     const newPath = path.join(questionsPath, this.qid_new);
@@ -1166,6 +1326,7 @@ export class QuestionCopyEditor extends Editor {
     delete infoJson['sharingSets'];
     delete infoJson['sharePublicly'];
     delete infoJson['shareSourcePublicly'];
+
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
@@ -1177,7 +1338,7 @@ export class QuestionCopyEditor extends Editor {
 
 export class QuestionTransferEditor extends Editor {
   private from_qid: string;
-  private from_course_short_name: string;
+  private from_course: string;
   private from_path: string;
 
   public readonly uuid: string;
@@ -1185,16 +1346,19 @@ export class QuestionTransferEditor extends Editor {
   constructor(
     params: BaseEditorOptions & {
       from_qid: string;
-      from_course_short_name: string;
+      from_course_short_name: Course['short_name'];
       from_path: string;
     },
   ) {
     super(params);
 
     this.from_qid = params.from_qid;
-    this.from_course_short_name = params.from_course_short_name;
+    this.from_course =
+      params.from_course_short_name == null
+        ? 'unknown course'
+        : `course ${params.from_course_short_name}`;
     this.from_path = params.from_path;
-    this.description = `Copy question ${this.from_qid} from course ${this.from_course_short_name}`;
+    this.description = `Copy question ${this.from_qid} from ${this.from_course}`;
 
     this.uuid = uuidv4();
   }
@@ -1248,11 +1412,12 @@ export class QuestionTransferEditor extends Editor {
     delete infoJson['sharingSets'];
     delete infoJson['sharePublicly'];
     delete infoJson['shareSourcePublicly'];
+
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `copy question ${this.from_qid} (from course ${this.from_course_short_name}) to ${qid}`,
+      commitMessage: `copy question ${this.from_qid} (from ${this.from_course}) to ${qid}`,
     };
   }
 }

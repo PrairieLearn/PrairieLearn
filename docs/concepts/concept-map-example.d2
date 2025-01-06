@@ -1,0 +1,93 @@
+direction: right
+
+course: PrairieLearn 101 (Course) {
+  shape: rectangle
+  style: {
+    fill: "#e6f3ff"
+    stroke: "#0066cc"
+  }
+
+  instance: Fall 2024 (Course Instance) {
+    shape: rectangle
+    style: {
+      fill: "#fff0e6"
+      stroke: "#cc6600"
+    }
+
+    exam: Midterm (Exam) {
+      height: 100
+      shape: rectangle
+      style: {
+        fill: "#e6ffe6"
+        stroke: "#006600"
+      }
+    }
+    hw: HW 1 (Homework) {
+      height: 100
+      shape: rectangle
+      style: {
+        fill: "#e6ffe6"
+        stroke: "#006600"
+      }
+    }
+  }
+
+  q: {
+    style: {
+      opacity: 0
+    }
+    question1: PL Question 1 {
+      shape: rectangle
+      style: {
+        fill: "#ffe6e6"
+        stroke: "#cc0000"
+      }
+      element: Numeric Input {
+        shape: rectangle
+        style: {
+          fill: "#e6e6ff"
+          stroke: "#0000cc"
+        }
+      }
+    }
+
+    question2: PL Question 2 {
+      shape: rectangle
+      style: {
+        fill: "#ffe6e6"
+        stroke: "#cc0000"
+      }
+      element: Multiple Choice {
+        shape: rectangle
+        style: {
+          fill: "#e6e6ff"
+          stroke: "#0000cc"
+        }
+      }
+      element2: PL Diagram {
+        shape: rectangle
+        style: {
+          fill: "#e6e6ff"
+          stroke: "#0000cc"
+          stroke-dash: 3
+        }
+      }
+    }
+  }
+  custom: Custom PL Diagram Element {
+    shape: rectangle
+    style: {
+      fill: "#e6e6ff"
+      stroke: "#0000cc"
+    }
+  }
+
+  instance.hw -> q.question1
+  instance.hw -> q.question2
+  instance.exam -> q.question1
+  q.question2.element2 <- custom: {
+    style: {
+      bold: true
+    }
+  }
+}
