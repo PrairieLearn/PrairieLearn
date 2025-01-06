@@ -125,7 +125,7 @@ const QuestionAlternativeSchema = QuestionPointsSchema.extend({
     .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
     .describe('Arbitrary comment for reference purposes.')
     .optional(),
-  id: QuestionIdSchema.optional(),
+  id: QuestionIdSchema, // .optional(),
   forceMaxPoints: ForceMaxPointsSchema.optional(),
   triesPerVariant: z
     .number()

@@ -940,12 +940,7 @@ async function validateAssessment(
   const duplicateQids = new Set();
   const missingQids = new Set();
   const draftQids = new Set();
-  const checkAndRecordQid = (qid: string | undefined): void => {
-    // TODO: What to do in this case?
-    if (qid === undefined) {
-      return;
-    }
-
+  const checkAndRecordQid = (qid: string): void => {
     if (qid[0] === '@') {
       // Question is being imported from another course. We hold off on validating this until
       // sync time because we need to query the database to verify that the question exists
