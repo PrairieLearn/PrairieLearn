@@ -52,7 +52,7 @@ export function InstructorAssessments({
   csvFilename: string;
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
-  assessmentsGroupBy: string;
+  assessmentsGroupBy: 'Set' | 'Module';
 }) {
   const { urlPrefix, authz_data, course, __csrf_token } = resLocals;
 
@@ -269,7 +269,7 @@ function CreateAssessmentModal({
   urlPrefix: string;
   assessmentSets: AssessmentSet[];
   assessmentModules: AssessmentModule[];
-  assessmentsGroupBy: string;
+  assessmentsGroupBy: 'Set' | 'Module';
 }) {
   return Modal({
     id: 'createAssessmentModal',
