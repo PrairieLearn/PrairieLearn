@@ -96,7 +96,7 @@ function getParamsForAssessment(
 
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
-  const allRoleNames = (assessment.groupRoles ?? []).map((role) => role.name);
+  const allRoleNames = new Set((assessment.groupRoles ?? []).map((role) => role.name));
   const assessmentCanView = assessment?.canView ?? allRoleNames;
   const assessmentCanSubmit = assessment?.canSubmit ?? allRoleNames;
   const alternativeGroups = (assessment.zones ?? []).map((zone) => {
@@ -118,8 +118,8 @@ function getParamsForAssessment(
         forceMaxPoints: boolean;
         triesPerVariant: number;
         gradeRateMinutes: number;
-        canView: string[] | null;
-        canSubmit: string[] | null;
+        canView: Set<string> | null;
+        canSubmit: Set<string> | null;
         advanceScorePerc: number;
       }[] = [];
       const questionGradeRateMinutes =
@@ -165,8 +165,8 @@ function getParamsForAssessment(
               alternative.gradeRateMinutes !== undefined
                 ? alternative.gradeRateMinutes
                 : questionGradeRateMinutes,
-            canView: Array.from(alternative?.canView ?? questionCanView),
-            canSubmit: Array.from(alternative?.canSubmit ?? questionCanSubmit),
+            canView: alternative?.canView ?? questionCanView,
+            canSubmit: alternative?.canSubmit ?? questionCanSubmit,
           };
         });
       } else if (question.id) {
@@ -186,8 +186,8 @@ function getParamsForAssessment(
               assessment.advanceScorePerc ??
               0,
             gradeRateMinutes: questionGradeRateMinutes,
-            canView: Array.from(questionCanView),
-            canSubmit: Array.from(questionCanSubmit),
+            canView: questionCanView,
+            canSubmit: questionCanSubmit,
           },
         ];
       }
