@@ -145,28 +145,13 @@ describe('editors', () => {
       });
     });
 
-    describe('Duplicated short_name without number only if ignoring case, unique long_name, not ignoring case', () => {
-      it('should append _2 to the short_name and (2) to the long_name', () => {
-        const names = getUniqueNames({
-          shortNames: ['Fa18', 'Fa19'],
-          longNames: ['Fall 2018', 'Fall 2019'],
-          shortName: 'fa19',
-          longName: 'Fall 2019 Section M',
-        });
-
-        assert.equal(names['shortName'], 'fa19');
-        assert.equal(names['longName'], 'Fall 2019 Section M');
-      });
-    });
-
-    describe('Duplicated short_name without number, unique long_name, ignoring case', () => {
+    describe('Duplicated short_name without number with different casing, unique long_name', () => {
       it('should append _2 to the short_name and (2) to the long_name', () => {
         const names = getUniqueNames({
           shortNames: ['Fa18', 'Fa19'],
           longNames: ['Fall 2018', 'Fall 2019'],
           shortName: 'fa19',
           longName: 'Fall 2019',
-          checkShortNameCase: false,
         });
 
         assert.equal(names['shortName'], 'fa19_2');
@@ -174,7 +159,7 @@ describe('editors', () => {
       });
     });
 
-    describe('Duplicated short_name with number, unique long_name, ignoring case', () => {
+    describe('Duplicated short_name with number with different casing, unique long_name', () => {
       it('should increment the number for the short_name and append it to both short_name and long_name', () => {
         const names = getUniqueNames({
           shortNames: ['Fa18', 'Fa19', 'Fa19_2', 'Fa19_3'],
@@ -186,7 +171,6 @@ describe('editors', () => {
           ],
           shortName: 'fa19',
           longName: 'Fall 2019 Section 2',
-          checkShortNameCase: false,
         });
 
         assert.equal(names['shortName'], 'fa19_4');

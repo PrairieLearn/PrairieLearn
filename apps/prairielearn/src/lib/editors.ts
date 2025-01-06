@@ -103,38 +103,31 @@ export function getUniqueNames({
   longNames,
   shortName = 'New',
   longName = 'New',
-  checkShortNameCase = true,
 }: {
   shortNames: string[];
   longNames: string[];
   /**
    * Defaults to 'New' because this function previously only handled the case where the shortName was 'New'
+   * Long name is matched case-sensitively
    */
   shortName?: string;
   /**
    * Defaults to 'New' because this function previously only handled the case where the longName was 'New'
+   * Short name is always matched case-insensitively, as it is generally used to construct file paths
    */
   longName?: string;
-  /**
-   * If true, handles duplicate short names case-sensitively, otherwise, case-insensitively.
-   * When shortName is used as a directory name, checkShortNameCase should be set to false, as directory names are case-insensitive.
-   *
-   * e.g. If a user tries to add an assessment with the short name "Test" when an assessment with the short name
-   * "test" already exists, the directory "test" would already exist, causing a conflict.
-   */
-  checkShortNameCase?: boolean;
 }): { shortName: string; longName: string } {
   function getNumberShortName(oldShortNames: string[]): number {
     let numberOfMostRecentCopy = 1;
 
-    const shortNameCompare = checkShortNameCase ? shortName : shortName.toLowerCase();
+    const shortNameCompare = shortName.toLowerCase();
 
     oldShortNames.forEach((oldShortName) => {
       // shortName is a copy of oldShortName if:
-      // it matches (case-sensitive match if not ignoring case), or
+      // it matches (case-sensitively), or
       // if oldShortName matches {shortName}_{number from 0-9}
 
-      const oldShortNameCompare = checkShortNameCase ? oldShortName : oldShortName.toLowerCase();
+      const oldShortNameCompare = oldShortName.toLowerCase();
       const found =
         shortNameCompare === oldShortNameCompare ||
         oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
@@ -824,7 +817,6 @@ export class AssessmentAddEditor extends Editor {
       longNames: oldNamesLong,
       shortName: this.aid,
       longName: this.title,
-      checkShortNameCase: false,
     });
 
     const assessmentPath = path.join(assessmentsPath, tid);
