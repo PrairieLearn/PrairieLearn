@@ -110,11 +110,11 @@ function getParamsForAssessment(
     return zone.questions.map((question) => {
       let alternatives: {
         qid: string;
-        maxPoints: number | number[];
-        points: number | number[];
-        maxAutoPoints: number | number[];
-        autoPoints: number | number[];
-        manualPoints: number;
+        maxPoints: number | null;
+        points: number | number[] | null;
+        maxAutoPoints: number | null;
+        autoPoints: number | number[] | null;
+        manualPoints: number | null;
         forceMaxPoints: boolean;
         triesPerVariant: number;
         gradeRateMinutes: number;
