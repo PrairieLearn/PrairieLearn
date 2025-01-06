@@ -112,12 +112,12 @@ class CGrader:
         finally:
             proc.kill()
             try:
-                out = proc.communicate(timeout=timeout)[0]
+                out = proc.communicate(timeout=timeout)[0].decode(
+                    "utf-8", "backslashreplace"
+                )
             except subprocess.TimeoutExpired:
                 tostr = TIMEOUT_MESSAGE
 
-            if out:
-                out = out.decode("utf-8", "backslashreplace")
         return out + tostr
 
     def compile_file(
