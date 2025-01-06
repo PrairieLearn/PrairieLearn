@@ -175,6 +175,12 @@ const ZoneQuestionSchema = QuestionPointsSchema.extend({
     .describe('The maximum number of graded submissions allowed for each question instance.')
     .optional(),
   advanceScorePerc: AdvanceScorePercSchema.optional(),
+  singleVariant: z
+    .boolean()
+    .describe(
+      'Whether the question is not randomized and only generates a single variant (defaults to "false").',
+    )
+    .optional(),
   gradeRateMinutes: z
     .number()
     .gte(0)
