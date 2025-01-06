@@ -158,6 +158,9 @@ jobs:
           directory: apps/prairielearn/python
           flags: python
 
+  build-grader-images:
+    uses: ./workflows/grader-images.yml
+
   native-checks:
     runs-on: ubuntu-latest
     steps:
