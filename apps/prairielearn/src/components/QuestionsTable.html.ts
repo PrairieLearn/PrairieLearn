@@ -220,8 +220,8 @@ export function QuestionsTable({
             <div class="my-4 card-body text-center" style="text-wrap: balance;">
               <p class="font-weight-bold">No questions found.</p>
               <p class="mb-0">
-                A question is a single problem or task in an assessment, including its content,
-                configuration, variants, and grading criteria.
+                A question is a problem or task that tests a student's understanding of a specific
+                concept.
               </p>
               <p>
                 Learn more in the
