@@ -18,20 +18,19 @@ export function AccessDenied({ resLocals }: { resLocals: Record<string, any> }) 
             <div class="card-header bg-primary text-white">Assessment unavailable</div>
             <div class="card-body">
               <p>This assessment's configuration does not allow you to access it right now.</p>
+              <p>This is the intended behavior based on your current time or other factors.</p>
               <p>
-                This is the intended behavior based on your current time, access from a testing
-                center, or other parameters.
+                <a
+                  href="/pl/course_instance/${resLocals.course_instance.id}/assessments"
+                  class="btn btn-primary"
+                >
+                  Go to Assessments
+                </a>
+                <a href="${config.urlPrefix}" class="btn btn-primary">
+                  <i class="fa fa-home" aria-hidden="true"></i>
+                  PrairieLearn home
+                </a>
               </p>
-              <a
-                href="/pl/course_instance/${resLocals.course_instance.id}/assessments"
-                class="btn btn-primary"
-              >
-                Go to Assessments
-              </a>
-              <a href="${config.urlPrefix}" class="btn btn-primary">
-                <i class="fa fa-home" aria-hidden="true"></i>
-                PrairieLearn home
-              </a>
             </div>
           </div>
         </main>
