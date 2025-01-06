@@ -9,12 +9,10 @@ const GroupRoleSchema = z
       .optional(),
     minimum: z
       .number()
-      .describe('The minimum number of users that should be in this role in a group.')
-      .optional(),
+      .describe('The minimum number of users that should be in this role in a group.'), // .optional()
     maximum: z
       .number()
-      .describe('The maximum number of users that should be in this role in a group.')
-      .optional(),
+      .describe('The maximum number of users that should be in this role in a group.'), // .optional()
     canAssignRoles: z
       .boolean()
       .describe("Whether users with this role can assign other users' group roles.")
@@ -114,12 +112,12 @@ const QuestionAlternativeSchema = z.object({
     .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
     .describe('Arbitrary comment for reference purposes.')
     .optional(),
-  points: PointsSchema.optional(),
-  autoPoints: PointsSchema.optional(),
-  maxPoints: PointsSingleSchema.optional(),
-  maxAutoPoints: PointsSingleSchema.optional(),
-  manualPoints: PointsSingleSchema.optional(),
-  id: QuestionIdSchema.optional(),
+  points: PointsSchema, // .optional()
+  autoPoints: PointsSchema, // .optional()
+  maxPoints: PointsSingleSchema, // .optional()
+  maxAutoPoints: PointsSingleSchema, // .optional()
+  manualPoints: PointsSingleSchema, // .optional()
+  id: QuestionIdSchema, // .optional()
   forceMaxPoints: ForceMaxPointsSchema.optional(),
   triesPerVariant: z
     .number()
@@ -140,12 +138,12 @@ const ZoneQuestionSchema = z.object({
     .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
     .describe('Arbitrary comment for reference purposes.')
     .optional(),
-  points: PointsSchema.optional(),
-  autoPoints: PointsSchema.optional(),
-  maxPoints: PointsSingleSchema.optional(),
-  maxAutoPoints: PointsSingleSchema.optional(),
-  manualPoints: PointsSingleSchema.optional(),
-  id: QuestionIdSchema.optional(),
+  points: PointsSchema, // .optional() ?
+  autoPoints: PointsSchema, // .optional() ?
+  maxPoints: PointsSingleSchema, // .optional() ?
+  maxAutoPoints: PointsSingleSchema, // .optional() ?
+  manualPoints: PointsSingleSchema, // .optional() ?
+  id: QuestionIdSchema, // .optional() ?
   forceMaxPoints: ForceMaxPointsSchema.optional(),
   alternatives: z
     .array(QuestionAlternativeSchema)
@@ -314,8 +312,8 @@ export const AssessmentSchema = z
       .describe('Requires the student to accept an honor code before starting exam assessments.')
       .optional(),
     groupWork: z.boolean().describe('Whether the assessment will support group work.').optional(),
-    groupMaxSize: z.number().describe('Maximum number of students in a group.').optional(),
-    groupMinSize: z.number().describe('Minimum number of students in a group.').optional(),
+    groupMaxSize: z.number().describe('Maximum number of students in a group.'), // .optional()
+    groupMinSize: z.number().describe('Minimum number of students in a group.'), // .optional()
     groupRoles: z
       .array(GroupRoleSchema)
       .describe('Array of custom user roles in a group.')
