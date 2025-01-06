@@ -1,4 +1,3 @@
-// @ts-check
 import { EventEmitter } from 'events';
 import { PassThrough } from 'stream';
 
@@ -14,15 +13,30 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './aws.js';
-import { config as globalConfig } from './config.js';
+import { type Config, config as globalConfig } from './config.js';
+import {
+  type Course,
+  type GradingJob,
+  type Question,
+  type Submission,
+  type Variant,
+} from './db-types.js';
+import { type Grader } from './externalGraderCommon.js';
 import { getJobDirectory, buildDirectory } from './externalGraderCommon.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-let QUEUE_URL = null;
+let QUEUE_URL: string | undefined = undefined;
 
-export class ExternalGraderSqs {
-  handleGradingRequest(grading_job, submission, variant, question, course, configOverrides) {
+export class ExternalGraderSqs implements Grader {
+  handleGradingRequest(
+    grading_job: GradingJob,
+    submission: Submission,
+    variant: Variant,
+    question: Question,
+    course: Course,
+    configOverrides?: Partial<Config>,
+  ) {
     const config = _.cloneDeep(globalConfig);
     _.assign(config, configOverrides);
 
@@ -38,7 +52,7 @@ export class ExternalGraderSqs {
 
           // Now that we've built up our directory, let's zip it up and send
           // it off to S3
-          let tarball = tar.create({ gzip: true, cwd: dir }, ['.']);
+          const tarball = tar.create({ gzip: true, cwd: dir }, ['.']);
 
           const passthrough = new PassThrough();
           tarball.pipe(passthrough);

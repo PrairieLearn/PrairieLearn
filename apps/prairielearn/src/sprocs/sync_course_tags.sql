@@ -88,7 +88,7 @@ BEGIN
         DELETE FROM tags AS t
         WHERE
             t.course_id = syncing_course_id
-            AND t.name NOT IN (SELECT UNNEST(used_tag_names));
+            AND t.name != ALL (used_tag_names);
     END IF;
 
     -- Make a map from tag name to ID to return to the caller
