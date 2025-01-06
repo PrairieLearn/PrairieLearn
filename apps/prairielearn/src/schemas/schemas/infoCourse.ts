@@ -86,7 +86,12 @@ export const CourseOptionsSchema = z
       .describe('Feature flag to enable the new question renderer.')
       .optional(),
     devModeFeatures: z
-      .array(z.string().describe('A single feature flag.'))
+      .union([
+        z
+          .array(z.string().describe('A single feature flag.'))
+          .describe('"Legacy format; use an object instead.'),
+        z.record(z.string(), z.boolean()),
+      ])
       .describe('Feature flags to enable in development mode.')
       .optional(),
   })
