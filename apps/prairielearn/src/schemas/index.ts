@@ -1,12 +1,18 @@
 import * as fs from 'node:fs';
 import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+;
 
 /**
  * Reads a JSON file from the schemas directory.
  */
 function readSchema(filePath: string) {
   return JSON.parse(
-    fs.readFileSync(path.resolve(import.meta.dirname, 'schemas', filePath), 'utf8'),
+    fs.readFileSync(
+      path.resolve(fileURLToPath(import.meta.url), '..', 'schemas', filePath),
+      'utf8',
+    ),
   );
 }
 

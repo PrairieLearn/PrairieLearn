@@ -1,5 +1,3 @@
-// @ts-check
-
 // This is meant to be invoked from a Python code caller via `lib/code-caller`.
 // This allows us to isolate code from the main process that's handling requests,
 // and to execute code inside Docker containers in environments where
@@ -14,19 +12,19 @@
 // in order to update the file in `dist`.
 
 import * as path from 'node:path';
-import { createInterface } from 'node:readline';
+import { createInterface, type Interface } from 'node:readline';
 
+import { type Question, type Submission, type Variant } from '../lib/db-types.js';
 import requireFrontend from '../lib/require-frontend.js';
 
 /**
  * Attempts to load the server module that should be used for a particular
  * question.
  *
- * @param {string} questionServerPath The path to the JavaScript question server
- * @param {string} coursePath The path to the course root directory
- * @returns {Promise<any>}
+ * @param questionServerPath The path to the JavaScript question server
+ * @param coursePath The path to the course root directory
  */
-async function loadServer(questionServerPath, coursePath) {
+async function loadServer(questionServerPath: string, coursePath: string): Promise<any> {
   const configRequire = requireFrontend.config({
     paths: {
       clientFilesCourse: path.join(coursePath, 'clientFilesCourse'),
@@ -46,7 +44,7 @@ async function loadServer(questionServerPath, coursePath) {
         // This was added as a workaround for requireJS error handling weirdness.
         setTimeout(() => resolve(server), 0);
       },
-      (err) => {
+      (err: Error) => {
         const e = new Error(`Error loading ${path.basename(questionServerPath)}`, {
           cause: err,
         });
@@ -56,7 +54,10 @@ async function loadServer(questionServerPath, coursePath) {
   });
 }
 
-function generate(server, coursePath, question, variant_seed) {
+function generate(server: any, coursePath: string, question: Question, variant_seed: string) {
+  if (question.directory === null) {
+    throw new Error('Question directory is required');
+  }
   const questionDir = path.join(coursePath, 'questions', question.directory);
   const options = question.options || {};
 
@@ -68,7 +69,13 @@ function generate(server, coursePath, question, variant_seed) {
   };
 }
 
-function grade(server, coursePath, submission, variant, question) {
+function grade(
+  server: any,
+  coursePath: string,
+  submission: Submission,
+  variant: Variant,
+  question: Question,
+) {
   const vid = variant.variant_seed;
 
   // Note: v3 questions use `params` and `true_answer` from the submission instead
@@ -80,6 +87,9 @@ function grade(server, coursePath, submission, variant, question) {
 
   const submittedAnswer = submission.submitted_answer;
   const options = variant.options;
+  if (question.directory === null) {
+    throw new Error('Question directory is required');
+  }
   const questionDir = path.join(coursePath, 'questions', question.directory);
 
   const grading = server.gradeAnswer(
@@ -113,12 +123,7 @@ function grade(server, coursePath, submission, variant, question) {
   };
 }
 
-/**
- *
- * @param {import('readline').Interface} rl
- * @returns {Promise<string | null>}
- */
-function getLineOnce(rl) {
+function getLineOnce(rl: Interface): Promise<string | null> {
   return new Promise((resolve) => {
     let didResolve = false;
     rl.on('line', (line) => {
@@ -173,7 +178,7 @@ process.stdout.write = process.stderr.write.bind(process.stderr);
 
   const server = await loadServer(questionServerPath, coursePath);
 
-  let data;
+  let data: Record<string, any>;
   if (func === 'generate') {
     data = generate(server, coursePath, question, variant_seed);
   } else if (func === 'grade') {

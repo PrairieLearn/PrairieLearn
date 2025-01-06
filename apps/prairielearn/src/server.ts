@@ -1,10 +1,5 @@
-/* eslint-disable import-x/order */
 // IMPORTANT: this must come first so that it can properly instrument our
 // dependencies like `pg` and `express`.
-import * as opentelemetry from '@prairielearn/opentelemetry';
-import * as Sentry from '@prairielearn/sentry';
-/* eslint-enable import-x/order */
-
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
@@ -12,6 +7,7 @@ import * as path from 'node:path';
 import * as util from 'node:util';
 import * as url from 'url';
 
+import httpDevServer from '@vavite/reloader/http-dev-server';
 import * as async from 'async';
 import blocked from 'blocked';
 import blockedAt from 'blocked-at';
@@ -49,7 +45,9 @@ import {
   stopBatchedMigrations,
 } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
+import * as opentelemetry from '@prairielearn/opentelemetry';
 import * as sqldb from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 import { createSessionMiddleware } from '@prairielearn/session';
 
 import * as cron from './cron/index.js';
@@ -81,6 +79,7 @@ import staticNodeModules from './middlewares/staticNodeModules.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
+
 process.on('warning', (e) => console.warn(e));
 
 const argv = yargsParser(process.argv.slice(2));
@@ -115,7 +114,7 @@ function excludeRoutes(routes: string[], handler: RequestHandler) {
  */
 export async function initExpress(): Promise<Express> {
   const app = express();
-  app.set('views', path.join(import.meta.dirname, 'pages'));
+  app.set('views', path.join(fileURLToPath(import.meta.url), '..', 'pages'));
   app.set('trust proxy', config.trustProxy);
 
   // These should come first so that we get instrumentation on all our requests.
@@ -2211,7 +2210,18 @@ export async function startServer() {
 
   server.timeout = config.serverTimeout;
   server.keepAliveTimeout = config.serverKeepAliveTimeout;
-  server.listen(config.serverPort);
+
+  // In production, startup the server normally
+  if ((import.meta as any).env.PROD) {
+    server.listen(config.serverPort);
+  } else if (httpDevServer) {
+    // TODO: currently, must be a connect handler, not an instance of a http server
+    httpDevServer.on('request', app);
+    httpDevServer.on('error', (err) => {
+      throw err;
+    });
+    return;
+  }
 
   // Wait for the server to either start successfully or error out.
   await new Promise((resolve, reject) => {
@@ -2231,8 +2241,6 @@ export async function startServer() {
       }
     });
   });
-
-  return server;
 }
 
 export async function stopServer() {
@@ -2269,7 +2277,7 @@ export async function insertDevUser() {
   await sqldb.queryAsync(adminSql, { user_id });
 }
 
-if (esMain(import.meta) && config.startServer) {
+if ((esMain(import.meta) || import.meta.env?.DEV) && config.startServer) {
   async.series(
     [
       async () => {
@@ -2469,10 +2477,10 @@ if (esMain(import.meta) && config.startServer) {
         // call `enqueueBatchedMigration` which requires this to be initialized.
         const runner = initBatchedMigrations({
           project: 'prairielearn',
-          directories: [path.join(import.meta.dirname, 'batched-migrations')],
+          directories: [path.join(fileURLToPath(import.meta.url), '..', 'batched-migrations')],
         });
 
-        runner.on('error', (err) => {
+        runner?.on('error', (err) => {
           logger.error('Batched migration runner error', err);
           Sentry.captureException(err);
         });
@@ -2483,7 +2491,7 @@ if (esMain(import.meta) && config.startServer) {
         // running migrations as we do when we start the server.
         if (config.runMigrations || argv['migrate-and-exit']) {
           await migrations.init(
-            [path.join(import.meta.dirname, 'migrations'), SCHEMA_MIGRATIONS_PATH],
+            [path.join(fileURLToPath(import.meta.url), '..', 'migrations'), SCHEMA_MIGRATIONS_PATH],
             'prairielearn',
           );
 
