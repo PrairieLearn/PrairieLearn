@@ -1541,7 +1541,22 @@ def latex_from_2darray(
     return "".join(rv)
 
 
-def is_correct_ndarray2D_dd(a_sub, a_tru, digits=2):
+# This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
+def is_correct_ndarray2D_dd(*args, **kwargs):  # noqa: N802
+    return is_correct_ndarray2d_dd(*args, **kwargs)
+
+
+# This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
+def is_correct_ndarray2D_sf(*args, **kwargs):  # noqa: N802
+    return is_correct_ndarray2d_sf(*args, **kwargs)
+
+
+# This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
+def is_correct_ndarray2D_ra(*args, **kwargs):  # noqa: N802
+    return is_correct_ndarray2d_ra(*args, **kwargs)
+
+
+def is_correct_ndarray2d_dd(a_sub, a_tru, digits=2):
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
@@ -1554,7 +1569,7 @@ def is_correct_ndarray2D_dd(a_sub, a_tru, digits=2):
     return True
 
 
-def is_correct_ndarray2D_sf(a_sub, a_tru, digits=2):
+def is_correct_ndarray2d_sf(a_sub, a_tru, digits=2):
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
@@ -1567,7 +1582,7 @@ def is_correct_ndarray2D_sf(a_sub, a_tru, digits=2):
     return True
 
 
-def is_correct_ndarray2D_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
+def is_correct_ndarray2d_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
     # Check if each element is correct
     return np.allclose(a_sub, a_tru, rtol, atol)
 
