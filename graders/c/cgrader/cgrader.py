@@ -68,6 +68,10 @@ class UngradableError(Exception):
         pass
 
 
+UngradableException = UngradableError
+# This is a deprecated alias for UngradableError and should no longer be used.
+
+
 class CGrader:
     def __init__(self, compiler="gcc"):
         with open(DATAFILE) as file:
