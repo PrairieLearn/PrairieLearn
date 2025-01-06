@@ -101,18 +101,27 @@ async function cleanAndResetRepository(
 export function getUniqueNames({
   shortNames,
   longNames,
-  shortName = 'New', // Defaults to 'New' because this function previously only handled the case where the shortName was 'New'
-  longName = 'New', // Defaults to 'New' because this function previously only handled the case where the longName was 'New'
-  checkShortNameCase = true, // If true, handles duplicate short names case-sensitively, otherwise, case-insensitively.
-  // When shortName is used as a directory name, checkShortNameCase should be set to false, as directory names are case-insensitive.
-
-  // e.g. If a user tries to add an assessment with the short name "Test" when an assessment with the short name
-  // "test" already exists, the directory "test" would already exist, causing a conflict.
+  shortName = 'New',
+  longName = 'New',
+  checkShortNameCase = true,
 }: {
   shortNames: string[];
   longNames: string[];
+  /**
+   * Defaults to 'New' because this function previously only handled the case where the shortName was 'New'
+   */
   shortName?: string;
+  /**
+   * Defaults to 'New' because this function previously only handled the case where the longName was 'New'
+   */
   longName?: string;
+  /**
+   * If true, handles duplicate short names case-sensitively, otherwise, case-insensitively.
+   * When shortName is used as a directory name, checkShortNameCase should be set to false, as directory names are case-insensitive.
+   *
+   * e.g. If a user tries to add an assessment with the short name "Test" when an assessment with the short name
+   * "test" already exists, the directory "test" would already exist, causing a conflict.
+   */
   checkShortNameCase?: boolean;
 }): { shortName: string; longName: string } {
   function getNumberShortName(oldShortNames: string[]): number {
