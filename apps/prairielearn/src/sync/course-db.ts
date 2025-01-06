@@ -1098,7 +1098,7 @@ async function validateAssessment(
   if (assessment.groupRoles) {
     // Ensure at least one mandatory role can assign roles
     const foundCanAssignRoles = assessment.groupRoles.some(
-      (role) => role.canAssignRoles && role.minimum >= 1,
+      (role) => role.canAssignRoles && role.minimum !== undefined && role.minimum >= 1,
     );
 
     if (!foundCanAssignRoles) {
@@ -1107,22 +1107,22 @@ async function validateAssessment(
 
     // Ensure values for role minimum and maximum are within bounds
     assessment.groupRoles.forEach((role) => {
-      if (role.minimum > assessment.groupMinSize) {
+      if (role.minimum !== undefined && role.minimum > assessment.groupMinSize) {
         warnings.push(
           `Group role "${role.name}" has a minimum greater than the group's minimum size.`,
         );
       }
-      if (role.minimum && role.minimum > assessment.groupMaxSize) {
+      if (role.minimum !== undefined && role.minimum > assessment.groupMaxSize) {
         errors.push(
           `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`,
         );
       }
-      if (role.maximum && role.maximum > assessment.groupMaxSize) {
+      if (role.maximum !== undefined && role.maximum > assessment.groupMaxSize) {
         errors.push(
           `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`,
         );
       }
-      if (role.minimum > role.maximum) {
+      if (role.minimum !== undefined && role.maximum !== undefined && role.minimum > role.maximum) {
         errors.push(
           `Group role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`,
         );

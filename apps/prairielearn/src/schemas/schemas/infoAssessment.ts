@@ -10,10 +10,12 @@ const GroupRoleSchema = z
       .optional(),
     minimum: z
       .number()
-      .describe('The minimum number of users that should be in this role in a group.'), // .optional()
+      .describe('The minimum number of users that should be in this role in a group.')
+      .optional(),
     maximum: z
       .number()
-      .describe('The maximum number of users that should be in this role in a group.'), // .optional()
+      .describe('The maximum number of users that should be in this role in a group.')
+      .optional(),
     canAssignRoles: z
       .boolean()
       .describe("Whether users with this role can assign other users' group roles.")
