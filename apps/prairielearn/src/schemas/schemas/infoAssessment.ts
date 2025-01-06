@@ -1,13 +1,8 @@
 import { z } from 'zod';
 
-import { uniqueArray } from './utils.js';
-
 const GroupRoleSchema = z
   .object({
-    name: z
-      .string()
-      .describe("The group role's name (i.e. Manager, Reflector, Recorder).")
-      .optional(),
+    name: z.string().describe("The group role's name (i.e. Manager, Reflector, Recorder)."),
     minimum: z
       .number()
       .describe('The minimum number of users that should be in this role in a group.')
@@ -139,10 +134,9 @@ const QuestionAlternativeSchema = QuestionPointsSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  canView: uniqueArray(z.string())
-    .describe('The names of roles that can view this question.')
-    .optional(),
-  canSubmit: uniqueArray(z.string())
+  canView: z.set(z.string()).describe('The names of roles that can view this question.').optional(),
+  canSubmit: z
+    .set(z.string())
     .describe('The names of roles that can submit this question.')
     .optional(),
 });
@@ -188,12 +182,14 @@ const ZoneQuestionSchema = QuestionPointsSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  canSubmit: uniqueArray(z.string())
+  canSubmit: z
+    .set(z.string())
     .describe(
       'A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.',
     )
     .optional(),
-  canView: uniqueArray(z.string())
+  canView: z
+    .set(z.string())
     .describe(
       'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
     )
@@ -240,12 +236,14 @@ const ZoneSchema = z.object({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  canSubmit: uniqueArray(z.string())
+  canSubmit: z
+    .set(z.string())
     .describe(
       'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
     )
     .optional(),
-  canView: uniqueArray(z.string())
+  canView: z
+    .set(z.string())
     .describe(
       'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
     )
@@ -340,12 +338,14 @@ export const AssessmentSchema = z
       .array(GroupRoleSchema)
       .describe('Array of custom user roles in a group.')
       .optional(),
-    canSubmit: uniqueArray(z.string())
+    canSubmit: z
+      .set(z.string())
       .describe(
         'A list of group role names that can submit questions in this assessment. Only applicable for group assessments.',
       )
       .optional(),
-    canView: uniqueArray(z.string())
+    canView: z
+      .set(z.string())
       .describe(
         'A list of group role names that can view questions in this assessment. Only applicable for group assessments.',
       )

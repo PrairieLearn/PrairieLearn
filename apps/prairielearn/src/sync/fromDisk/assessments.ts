@@ -165,8 +165,8 @@ function getParamsForAssessment(
               alternative.gradeRateMinutes !== undefined
                 ? alternative.gradeRateMinutes
                 : questionGradeRateMinutes,
-            canView: alternative?.canView ?? questionCanView,
-            canSubmit: alternative?.canSubmit ?? questionCanSubmit,
+            canView: Array.from(alternative?.canView ?? questionCanView),
+            canSubmit: Array.from(alternative?.canSubmit ?? questionCanSubmit),
           };
         });
       } else if (question.id) {
@@ -186,8 +186,8 @@ function getParamsForAssessment(
               assessment.advanceScorePerc ??
               0,
             gradeRateMinutes: questionGradeRateMinutes,
-            canView: questionCanView,
-            canSubmit: questionCanSubmit,
+            canView: Array.from(questionCanView),
+            canSubmit: Array.from(questionCanSubmit),
           },
         ];
       }
