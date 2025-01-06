@@ -139,9 +139,16 @@ const QuestionAlternativeSchema = QuestionPointsSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  // TODO: What are these?
-  canView: z.array(z.string()).nullable().optional(),
-  canSubmit: z.array(z.string()).nullable().optional(),
+  canView: z
+    .array(z.string())
+    .nullable()
+    .describe('The names of roles that can view this question.')
+    .optional(),
+  canSubmit: z
+    .array(z.string())
+    .nullable()
+    .describe('The names of roles that can submit this question.')
+    .optional(),
 });
 
 const ZoneQuestionSchema = QuestionPointsSchema.extend({
