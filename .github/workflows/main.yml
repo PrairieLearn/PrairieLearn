@@ -232,6 +232,9 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
+  build-grader-images:
+    uses: ./workflows/grader-images.yml
+
   native-checks:
     runs-on: ubuntu-latest
 
