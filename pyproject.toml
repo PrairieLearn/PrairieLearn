@@ -56,6 +56,8 @@ ignore = [
 # Ignore uppercase function parameters (e.g. G for a graph)
 "apps/prairielearn/elements/**/*.py" = ["N803"]
 "apps/prairielearn/python/*.py" = ["N803"]
+# Do not require self in method params
+"apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
