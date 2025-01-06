@@ -125,7 +125,7 @@ const QuestionAlternativeSchema = QuestionPointsSchema.extend({
     .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
     .describe('Arbitrary comment for reference purposes.')
     .optional(),
-  id: QuestionIdSchema, // .optional(),
+  id: QuestionIdSchema,
   forceMaxPoints: ForceMaxPointsSchema.optional(),
   triesPerVariant: z
     .number()
@@ -139,14 +139,10 @@ const QuestionAlternativeSchema = QuestionPointsSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  canView: z
-    .array(z.string())
-    .nullable()
+  canView: uniqueArray(z.string())
     .describe('The names of roles that can view this question.')
     .optional(),
-  canSubmit: z
-    .array(z.string())
-    .nullable()
+  canSubmit: uniqueArray(z.string())
     .describe('The names of roles that can submit this question.')
     .optional(),
 });
