@@ -68,8 +68,9 @@ class UngradableError(Exception):
         pass
 
 
+# This is a deprecated alias for UngradableError, kept for backwards compatibility in existing question code.
+# It should no longer be used in any new code.
 UngradableException = UngradableError
-# This is a deprecated alias for UngradableError and should no longer be used.
 
 
 class CGrader:
