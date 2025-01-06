@@ -82,6 +82,7 @@ export const ElementCourseSchema = z
   .strict()
   .describe('Info files for v3 elements.');
 
+export type ElementCourse = z.infer<typeof ElementCourseSchema>;
 /*
 const DependencySchema = z.intersection(
   DependencySchema,
