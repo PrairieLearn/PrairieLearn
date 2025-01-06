@@ -732,7 +732,7 @@ export class AssessmentRenameEditor extends Editor {
     if (!contains(assessmentsPath, newPath)) {
       throw new AugmentedError('Invalid folder path', {
         info: html`
-          <p>The path of the assessments folder to add</p>
+          <p>The updated path of the assessments folder</p>
           <div class="container">
             <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
           </div>
@@ -820,7 +820,7 @@ export class AssessmentAddEditor extends Editor {
 
     const assessmentPath = path.join(assessmentsPath, tid);
 
-    // Ensure that the assessment folder path is fully contained in the assessments directory
+    // Ensure that the new assessment folder path is fully contained in the assessments directory
     if (!contains(assessmentsPath, assessmentPath)) {
       throw new AugmentedError('Invalid folder path', {
         info: html`
@@ -1081,7 +1081,7 @@ export class CourseInstanceAddEditor extends Editor {
 
     const courseInstancePath = path.join(courseInstancesPath, shortName);
 
-    // Ensure that the course instance folder path is fully contained in the course instances directory
+    // Ensure that the new course instance folder path is fully contained in the course instances directory
     if (!contains(courseInstancesPath, courseInstancePath)) {
       throw new AugmentedError('Invalid folder path', {
         info: html`
