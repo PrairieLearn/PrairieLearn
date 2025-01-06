@@ -769,7 +769,7 @@ export class AssessmentAddEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
-    const names = getUniqueNames({
+    const { shortName, longName } = getUniqueNames({
       shortNames: oldNamesShort,
       longNames: oldNamesLong,
       shortName: this.aid,
@@ -777,8 +777,8 @@ export class AssessmentAddEditor extends Editor {
       checkShortNameCase: false,
     });
 
-    const tid = names.shortName;
-    const assessmentTitle = names.longName;
+    const tid = shortName;
+    const assessmentTitle = longName;
     const assessmentPath = path.join(assessmentsPath, tid);
 
     debug('Write infoAssessment.json');
