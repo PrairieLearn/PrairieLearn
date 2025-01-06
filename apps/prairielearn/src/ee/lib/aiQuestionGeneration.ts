@@ -187,7 +187,7 @@ export async function generateQuestion({
   hasCoursePermissionEdit: boolean;
 }): Promise<{
   jobSequenceId: string;
-  questionQid: string;
+  questionId: string;
   htmlResult: string | undefined;
   pythonResult: string | undefined;
 }> {
@@ -316,7 +316,7 @@ Keep in mind you are not just generating an example; you are generating an actua
 
   return {
     jobSequenceId: serverJob.jobSequenceId,
-    questionQid: jobData.data.questionQid,
+    questionId: jobData.data.questionId,
     htmlResult: jobData.data.html,
     pythonResult: jobData.data.python,
   };
@@ -472,7 +472,7 @@ Keep in mind you are not just generating an example; you are generating an actua
     files['question.html'] = b64Util.b64EncodeUnicode(html);
   }
 
-  if (results?.python) {
+  if (results?.python && python !== undefined) {
     files['server.py'] = b64Util.b64EncodeUnicode(python);
   }
 

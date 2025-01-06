@@ -49,8 +49,8 @@ def init_logging(output_filename):
         if log_file != None:
             raise Exception("logging already initialized")
         log_file = open(output_filename, "w")
-    except Exception as e:
-        print("ERROR: failed to initialize logging:  s" % e)
+    except Exception as exc:
+        print("ERROR: failed to initialize logging:  s" % exc)
         sys.exit(1)
 
 def log(msg):
@@ -59,8 +59,8 @@ def log(msg):
         if log_file == None:
             raise Exception("logging not initialized")
         log_file.write(msg + "\n")
-    except Exception as e:
-        print("ERROR: logging failed for message '%s': %s" % (msg, e))
+    except Exception as exc:
+        print("ERROR: logging failed for message '%s': %s" % (msg, exc))
         sys.exit(1)
 
 def log_and_print(msg):
@@ -196,8 +196,8 @@ def read_library(input_filename):
     log_and_print("Reading library file: %s" % input_filename)
     try:
         input_file = open(input_filename, "r")
-    except Exception as e:
-        die("ERROR: Unable to open library file for reading: %s: %s" % (input_filename, e))
+    except Exception as exc:
+        die("ERROR: Unable to open library file for reading: %s: %s" % (input_filename, exc))
     library_regexps = [
         LibraryRegexp(name="begin_document", regexp=r"^\s*\\begin\{document\}(?P<tail>.*)$", no_tail=True),
         LibraryRegexp(name="zone", regexp=r"^\s*\\zone(?P<tail>.*)$"),
@@ -256,7 +256,7 @@ def read_library(input_filename):
             state.question.line_number = i_line + 1
             try:
                 state.question.points = float(match.group("points"))
-            except Exception as e:
+            except Exception:
                 file_die("unable to determine points for question")
         def new_variant():
             file_log("starting new variant")

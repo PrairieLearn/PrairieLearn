@@ -1,4 +1,3 @@
-// @ts-check
 import * as os from 'node:os';
 
 import debugfn from 'debug';
@@ -53,12 +52,13 @@ export async function init() {
     {
       create: async () => {
         const codeCallerOptions = {
+          dropPrivileges: false,
           questionTimeoutMilliseconds: config.questionTimeoutMilliseconds,
           pingTimeoutMilliseconds: config.workerPingTimeoutMilliseconds,
           errorLogger: logger.error.bind(logger),
         };
 
-        const codeCaller = run(() => {
+        const codeCaller: CodeCaller = run(() => {
           if (workersExecutionMode === 'container') {
             return new CodeCallerContainer(codeCallerOptions);
           } else if (workersExecutionMode === 'native') {

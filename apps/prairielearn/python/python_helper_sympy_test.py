@@ -1,6 +1,6 @@
 import json
 from itertools import chain, repeat
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 import python_helper_sympy as phs
@@ -196,7 +196,7 @@ class TestSympy:
     def test_json_conversion(
         self,
         a_pair: tuple[str, sympy.Expr],
-        custom_functions: Optional[list[str]],
+        custom_functions: list[str] | None,
         remove_assumptions: bool,
     ) -> None:
         a_sub, _ = a_pair

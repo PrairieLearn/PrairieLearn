@@ -390,7 +390,6 @@ export const CourseInstanceSchema = z.object({
   hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
   long_name: z.string().nullable(),
-  ps_linked: z.boolean(),
   short_name: z.string().nullable(),
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
@@ -449,6 +448,15 @@ export const CourseRequestSchema = z.object({
   work_email: z.string().nullable(),
 });
 export type CourseRequest = z.infer<typeof CourseRequestSchema>;
+
+export const DraftQuestionMetadataSchema = z.object({
+  created_at: DateFromISOString,
+  created_by: IdSchema.nullable(),
+  id: IdSchema,
+  question_id: IdSchema.nullable(),
+  updated_by: IdSchema.nullable(),
+});
+export type DraftQuestionMetadata = z.infer<typeof DraftQuestionMetadataSchema>;
 
 export const EnrollmentSchema = z.object({
   course_instance_id: IdSchema,
