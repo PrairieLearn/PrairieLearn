@@ -540,25 +540,23 @@ export async function getAndRenderVariant(
     })) satisfies SubmissionForRender[];
     const submission = submissions[0]; // most recent submission
 
-    if (!locals.assessment && locals.question.show_correct_answer) {
-      // instructor question pages, only show if true answer is
-      // allowed by this question
-      resultLocals.showTrueAnswer = true;
-    }
-
     return { submissions, submission };
   });
 
   resultLocals.submissions = submissions;
   resultLocals.submission = submission;
 
+  if (!locals.assessment && locals.question.show_correct_answer) {
+    // On instructor question pages, only show if true answer is allowed for this question.
+    resultLocals.showTrueAnswer = true;
+  }
+
   const effectiveQuestionType = questionServers.getEffectiveQuestionType(locals.question.type);
   resultLocals.effectiveQuestionType = effectiveQuestionType;
 
   const renderSelection: questionServers.RenderSelection = {
-    header: true,
     question: true,
-    submissions: true,
+    submissions: submissions.length > 0,
     answer: resultLocals.showTrueAnswer,
   };
   const htmls = await render(
@@ -610,7 +608,7 @@ export async function getAndRenderVariant(
       submittedAnswer: submission?.submitted_answer ?? null,
       feedback: submission?.feedback ?? null,
       trueAnswer: resultLocals.showTrueAnswer ? variant.true_answer : null,
-      submissions,
+      submissions: submissions.length > 0 ? submissions : null,
     });
 
     const encodedJson = encodeURIComponent(questionJson);

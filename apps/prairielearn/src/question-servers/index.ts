@@ -4,7 +4,6 @@ export type QuestionType = Question['type'];
 export type EffectiveQuestionType = 'Calculation' | 'Freeform';
 
 export interface RenderSelection {
-  header?: boolean;
   question?: boolean;
   submissions?: boolean;
   answer?: boolean;
