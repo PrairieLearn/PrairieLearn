@@ -132,6 +132,9 @@ const QuestionAlternativeSchema = z.object({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
+  // TODO: What are these?
+  canView: z.array(z.string()).nullable().optional(),
+  canSubmit: z.array(z.string()).nullable().optional(),
 });
 
 const ZoneQuestionSchema = z.object({
