@@ -160,6 +160,7 @@ jobs:
 
   build-grader-images:
     uses: ./workflows/grader-images.yml
+    secrets: inherit
 
   native-checks:
     runs-on: ubuntu-latest
