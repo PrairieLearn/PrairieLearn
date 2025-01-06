@@ -194,15 +194,17 @@ const ZoneQuestionSchema = QuestionPointsSchema.extend({
     .optional(),
 });
 
+const CommentSchema = z
+  .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
+  .describe('Arbitrary comment for reference purposes.');
 const ZoneSchema = z.object({
   title: z
     .string()
     .describe('Zone title, displayed to the students at the top of the question list for the zone.')
     .optional(),
-  comment: z
-    .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-    .describe('Arbitrary comment for reference purposes.')
-    .optional(),
+  comment: CommentSchema.optional(),
+  // Do we need to allow for additional keys?
+  // comments: CommentSchema.optional().describe('DEPRECATED -- do not use.'),
   maxPoints: z
     .number()
     .describe(
