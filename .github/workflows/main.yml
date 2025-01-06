@@ -124,7 +124,7 @@ jobs:
           flags: python
 
   build-grader-images:
-    uses: ./workflows/grader-images.yml
+    uses: ./.github/workflows/grader-images.yml
     secrets: inherit
 
   native-checks:
