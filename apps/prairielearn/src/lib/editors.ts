@@ -101,8 +101,8 @@ async function cleanAndResetRepository(
 export function getUniqueNames({
   shortNames,
   longNames,
-  shortName = 'New',
-  longName = 'New',
+  shortName = 'New', // Defaults to 'New' because this function previously only handled the case where the shortName was 'New'
+  longName = 'New', // Defaults to 'New' because this function previously only handled the case where the longName was 'New'
   checkShortNameCase = true, // If true, shortName is treated as case-sensitive. Otherwise, it is not.
 }: {
   shortNames: string[];
