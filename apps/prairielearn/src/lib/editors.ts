@@ -98,13 +98,19 @@ async function cleanAndResetRepository(
   });
 }
 
-export function getNamesForAdd(
-  shortNames: string[],
-  longNames: string[],
+export function getNamesForAdd({
+  shortNames,
+  longNames,
   shortName = 'New',
   longName = 'New',
   ignoreShortNameCase = false, // If true, shortName is treated as case-insensitive.
-): { shortName: string; longName: string } {
+}: {
+  shortNames: string[];
+  longNames: string[];
+  shortName?: string;
+  longName?: string;
+  ignoreShortNameCase?: boolean;
+}): { shortName: string; longName: string } {
   function getNumberShortName(oldShortNames: string[]): number {
     let numberOfMostRecentCopy = 1;
 
@@ -759,17 +765,17 @@ export class AssessmentAddEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
-    const names = getNamesForAdd(
-      oldNamesShort,
-      oldNamesLong,
-      this.aid,
-      this.title,
-      true, // This is enabled to handle duplicate short names case-insensitively. A duplicate in a different case
+    const names = getNamesForAdd({
+      shortNames: oldNamesShort,
+      longNames: oldNamesLong,
+      shortName: this.aid,
+      longName: this.title,
+      ignoreShortNameCase: true, // This is enabled to handle duplicate short names case-insensitively. A duplicate in a different case
       // results in a directory conflict.
 
       // e.x. if the user tries to add an assessment with the short name "Test" when an assessment
       // with the short name "test" already exists, the directory "test" would already exist, causing a conflict.
-    );
+    });
 
     const tid = names.shortName;
     const assessmentTitle = names.longName;
@@ -975,7 +981,12 @@ export class CourseInstanceAddEditor extends Editor {
     );
 
     debug('Generate short_name and long_name');
-    const names = getNamesForAdd(oldNamesShort, oldNamesLong, this.short_name, this.long_name);
+    const names = getNamesForAdd({
+      shortNames: oldNamesShort,
+      longNames: oldNamesLong,
+      shortName: this.short_name,
+      longName: this.long_name,
+    });
 
     const short_name = names.shortName;
     const courseInstancePath = path.join(courseInstancesPath, short_name);
@@ -1091,7 +1102,7 @@ export class QuestionAddEditor extends Editor {
       const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
       debug('Generate qid and title');
-      const names = getNamesForAdd(oldNamesShort, oldNamesLong);
+      const names = getNamesForAdd({ shortNames: oldNamesShort, longNames: oldNamesLong });
 
       return { qid: names.shortName, title: names.longName };
     });
