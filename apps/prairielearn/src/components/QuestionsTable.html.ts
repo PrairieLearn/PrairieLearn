@@ -266,13 +266,12 @@ function CreateQuestionModal({ csrfToken }: { csrfToken: string }) {
           Begin with an empty question or premade question template.
         </small>
       </div>
-      
     `,
     footer: html`
       <input type="hidden" name="__action" value="add_question" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      <button id="add_question_create_button" type="submit" class="btn btn-primary">Create</button>
+      <button type="submit" class="btn btn-primary">Create</button>
     `,
   });
 }

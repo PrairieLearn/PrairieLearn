@@ -81,29 +81,33 @@ router.post(
 
       const api = getCourseFilesClient();
 
-      // if (req.body.start_from === "Empty question")
+      if (req.body.start_from === 'Empty question') {
+        const result = await api.createQuestion.mutate({
+          course_id: res.locals.course.id,
+          user_id: res.locals.user.user_id,
+          authn_user_id: res.locals.authn_user.user_id,
+          has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
+          qid: req.body.qid,
+          title: req.body.title,
+        });
 
-      const result = await api.createQuestion.mutate({
-        course_id: res.locals.course.id,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
-        has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-        qid: req.body.qid,
-        title: req.body.title,
-      });
+        if (result.status === 'error') {
+          res.redirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
+          return;
+        }
 
-      if (result.status === 'error') {
-        res.redirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
-        return;
+        res.redirect(
+          res.locals.urlPrefix +
+            '/question/' +
+            result.question_id +
+            '/file_view/questions/' +
+            result.question_qid +
+            '/question.html',
+        );
+      } else if (req.body.start_from === 'Template') {
+        // TODO: Implement
       }
-
-      // res.redirect(
-      //   res.locals.urlPrefix +
-      //     '/question/' +
-      //     result.question_id +
-      //     '/file_view'
-      // );
-      res.redirect(res.locals.urlPrefix + '/question/' + result.question_id + '/settings');
+      // res.redirect(res.locals.urlPrefix + '/question/' + result.question_id + '/settings');
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
