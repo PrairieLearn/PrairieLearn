@@ -362,9 +362,7 @@ function CreateCourseInstanceModal({
       <input type="hidden" name="__action" value="add_course_instance" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
-      <button id="add_course_instance_create_button" type="submit" class="btn btn-primary">
-        Create
-      </button>
+      <button id="add_course_instance_button" type="submit" class="btn btn-primary">Create</button>
     `,
   });
 }
