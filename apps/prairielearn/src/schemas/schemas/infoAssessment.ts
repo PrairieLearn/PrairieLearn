@@ -113,12 +113,12 @@ const QuestionAlternativeSchema = z.object({
     .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
     .describe('Arbitrary comment for reference purposes.')
     .optional(),
-  points: PointsSchema, // .optional()
-  autoPoints: PointsSchema, // .optional()
-  maxPoints: PointsSingleSchema, // .optional()
-  maxAutoPoints: PointsSingleSchema, // .optional()
-  manualPoints: PointsSingleSchema, // .optional()
-  id: QuestionIdSchema, // .optional()
+  points: PointsSchema.optional(),
+  autoPoints: PointsSchema.optional(),
+  maxPoints: PointsSingleSchema.optional(),
+  maxAutoPoints: PointsSingleSchema.optional(),
+  manualPoints: PointsSingleSchema.optional(),
+  id: QuestionIdSchema, // .optional(),
   forceMaxPoints: ForceMaxPointsSchema.optional(),
   triesPerVariant: z
     .number()
@@ -142,12 +142,12 @@ const ZoneQuestionSchema = z.object({
     .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
     .describe('Arbitrary comment for reference purposes.')
     .optional(),
-  points: PointsSchema, // .optional() ?
-  autoPoints: PointsSchema, // .optional() ?
-  maxPoints: PointsSingleSchema, // .optional() ?
-  maxAutoPoints: PointsSingleSchema, // .optional() ?
-  manualPoints: PointsSingleSchema, // .optional() ?
-  id: QuestionIdSchema, // .optional() ?
+  points: PointsSchema, // .optional(),
+  autoPoints: PointsSchema, // .optional(),
+  maxPoints: PointsSingleSchema, // .optional(),
+  maxAutoPoints: PointsSingleSchema, // .optional(),
+  manualPoints: PointsSingleSchema, // .optional(),
+  id: QuestionIdSchema.optional(),
   forceMaxPoints: ForceMaxPointsSchema.optional(),
   alternatives: z
     .array(QuestionAlternativeSchema)
