@@ -1,3 +1,6 @@
+on:
+  workflow_call:
+
 jobs:
   build-graders:
     runs-on: ubuntu-latest
