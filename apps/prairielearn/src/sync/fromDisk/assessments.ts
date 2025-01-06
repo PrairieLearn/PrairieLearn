@@ -6,7 +6,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { type Assessment, type CourseInstanceData } from '../course-db.js';
+import { type Assessment } from '../../schemas/index.js';
+import { type CourseInstanceData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
@@ -99,9 +100,11 @@ function getParamsForAssessment(
   const assessmentCanView = assessment?.canView ?? allRoleNames;
   const assessmentCanSubmit = assessment?.canSubmit ?? allRoleNames;
   const alternativeGroups = (assessment.zones ?? []).map((zone) => {
-    const zoneGradeRateMinutes = _.has(zone, 'gradeRateMinutes')
-      ? zone.gradeRateMinutes
-      : assessment.gradeRateMinutes || 0;
+    const zoneGradeRateMinutes =
+      Object.prototype.hasOwnProperty.call(zone, 'gradeRateMinutes') &&
+      zone.gradeRateMinutes !== undefined
+        ? zone.gradeRateMinutes
+        : assessment.gradeRateMinutes || 0;
     const zoneCanView = zone?.canView ?? assessmentCanView;
     const zoneCanSubmit = zone?.canSubmit ?? assessmentCanSubmit;
     return zone.questions.map((question) => {
@@ -119,9 +122,11 @@ function getParamsForAssessment(
         canSubmit: string[] | null;
         advanceScorePerc: number;
       }[] = [];
-      const questionGradeRateMinutes = _.has(question, 'gradeRateMinutes')
-        ? question.gradeRateMinutes
-        : zoneGradeRateMinutes;
+      const questionGradeRateMinutes =
+        Object.prototype.hasOwnProperty.call(question, 'gradeRateMinutes') &&
+        question.gradeRateMinutes !== undefined
+          ? question.gradeRateMinutes
+          : zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
       const questionCanSubmit = question.canSubmit ?? zoneCanSubmit;
       if (question.alternatives) {
@@ -133,20 +138,28 @@ function getParamsForAssessment(
             maxAutoPoints: alternative.maxAutoPoints ?? question.maxAutoPoints ?? null,
             autoPoints: alternative.autoPoints ?? question.autoPoints ?? null,
             manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
-            forceMaxPoints: _.has(alternative, 'forceMaxPoints')
-              ? alternative.forceMaxPoints
-              : _.has(question, 'forceMaxPoints')
-                ? question.forceMaxPoints
-                : false,
-            triesPerVariant: _.has(alternative, 'triesPerVariant')
-              ? alternative.triesPerVariant
-              : _.has(question, 'triesPerVariant')
-                ? question.triesPerVariant
-                : 1,
-            advanceScorePerc: alternative.advanceScorePerc,
-            gradeRateMinutes: _.has(alternative, 'gradeRateMinutes')
-              ? alternative.gradeRateMinutes
-              : questionGradeRateMinutes,
+            forceMaxPoints:
+              Object.prototype.hasOwnProperty.call(alternative, 'forceMaxPoints') &&
+              alternative.forceMaxPoints !== undefined
+                ? alternative.forceMaxPoints
+                : Object.prototype.hasOwnProperty.call(question, 'forceMaxPoints') &&
+                    question.forceMaxPoints !== undefined
+                  ? question.forceMaxPoints
+                  : false,
+            triesPerVariant:
+              Object.prototype.hasOwnProperty.call(alternative, 'triesPerVariant') &&
+              alternative.triesPerVariant !== undefined
+                ? alternative.triesPerVariant
+                : Object.prototype.hasOwnProperty.call(question, 'triesPerVariant') &&
+                    question.triesPerVariant !== undefined
+                  ? question.triesPerVariant
+                  : 1,
+            advanceScorePerc: alternative.advanceScorePerc ?? 0,
+            gradeRateMinutes:
+              Object.prototype.hasOwnProperty.call(alternative, 'gradeRateMinutes') &&
+              alternative.gradeRateMinutes !== undefined
+                ? alternative.gradeRateMinutes
+                : questionGradeRateMinutes,
             canView: alternative?.canView ?? questionCanView,
             canSubmit: alternative?.canSubmit ?? questionCanSubmit,
           };
@@ -162,7 +175,7 @@ function getParamsForAssessment(
             manualPoints: question.manualPoints ?? null,
             forceMaxPoints: question.forceMaxPoints || false,
             triesPerVariant: question.triesPerVariant || 1,
-            advanceScorePerc: question.advanceScorePerc,
+            advanceScorePerc: question.advanceScorePerc ?? 0,
             gradeRateMinutes: questionGradeRateMinutes,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
