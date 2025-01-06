@@ -98,30 +98,30 @@ async function cleanAndResetRepository(
   });
 }
 
-export function getNamesForAdd({
+export function getUniqueNames({
   shortNames,
   longNames,
   shortName = 'New',
   longName = 'New',
-  ignoreShortNameCase = false, // If true, shortName is treated as case-insensitive.
+  checkShortNameCase = true, // If true, shortName is treated as case-sensitive. Otherwise, it is not.
 }: {
   shortNames: string[];
   longNames: string[];
   shortName?: string;
   longName?: string;
-  ignoreShortNameCase?: boolean;
+  checkShortNameCase?: boolean;
 }): { shortName: string; longName: string } {
   function getNumberShortName(oldShortNames: string[]): number {
     let numberOfMostRecentCopy = 1;
 
-    const shortNameCompare = ignoreShortNameCase ? shortName.toLowerCase() : shortName;
+    const shortNameCompare = checkShortNameCase ? shortName : shortName.toLowerCase();
 
     oldShortNames.forEach((oldShortName) => {
       // shortName is a copy of oldShortName if:
       // it matches (case-sensitive match if not ignoring case), or
       // if oldShortName matches {shortName}_{number from 0-9}
 
-      const oldShortNameCompare = ignoreShortNameCase ? oldShortName.toLowerCase() : oldShortName;
+      const oldShortNameCompare = checkShortNameCase ? oldShortName : oldShortName.toLowerCase();
       const found =
         shortNameCompare === oldShortNameCompare ||
         oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
@@ -765,12 +765,12 @@ export class AssessmentAddEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
-    const names = getNamesForAdd({
+    const names = getUniqueNames({
       shortNames: oldNamesShort,
       longNames: oldNamesLong,
       shortName: this.aid,
       longName: this.title,
-      ignoreShortNameCase: true, // This is enabled to handle duplicate short names case-insensitively. A duplicate in a different case
+      checkShortNameCase: false, // This is enabled to handle duplicate short names case-insensitively. A duplicate in a different case
       // results in a directory conflict.
 
       // e.x. if the user tries to add an assessment with the short name "Test" when an assessment
@@ -981,7 +981,7 @@ export class CourseInstanceAddEditor extends Editor {
     );
 
     debug('Generate short_name and long_name');
-    const names = getNamesForAdd({
+    const names = getUniqueNames({
       shortNames: oldNamesShort,
       longNames: oldNamesLong,
       shortName: this.short_name,
@@ -1102,7 +1102,7 @@ export class QuestionAddEditor extends Editor {
       const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
       debug('Generate qid and title');
-      const names = getNamesForAdd({ shortNames: oldNamesShort, longNames: oldNamesLong });
+      const names = getUniqueNames({ shortNames: oldNamesShort, longNames: oldNamesLong });
 
       return { qid: names.shortName, title: names.longName };
     });
