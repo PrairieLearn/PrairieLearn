@@ -28,8 +28,8 @@ from text_unidecode import unidecode
 from typing_extensions import NotRequired, assert_never
 
 import prairielearn.sympy_utils as phs
-import prairielearn.to_precision as to_precision
 from prairielearn.colors import PLColor
+from prairielearn.to_precision import to_precision
 
 
 class PartialScore(TypedDict):
@@ -841,7 +841,7 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
     if language == "python":
         if presentation_type == "sigfig":
             formatter = {
-                "float_kind": lambda x: to_precision.to_precision(x, digits),
+                "float_kind": lambda x: to_precision(x, digits),
                 "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
             }
         else:
@@ -862,7 +862,7 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
     elif language == "mathematica":
         if presentation_type == "sigfig":
             formatter = {
-                "float_kind": lambda x: to_precision.to_precision(x, digits),
+                "float_kind": lambda x: to_precision(x, digits),
                 "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
             }
         else:
@@ -883,7 +883,7 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
     elif language == "r":
         if presentation_type == "sigfig":
             formatter = {
-                "float_kind": lambda x: to_precision.to_precision(x, digits),
+                "float_kind": lambda x: to_precision(x, digits),
                 "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
             }
         else:
@@ -911,7 +911,7 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
     elif language == "sympy":
         if presentation_type == "sigfig":
             formatter = {
-                "float_kind": lambda x: to_precision.to_precision(x, digits),
+                "float_kind": lambda x: to_precision(x, digits),
                 "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
             }
         else:
@@ -951,7 +951,7 @@ def string_from_number_sigfig(a, digits=2):
     if np.iscomplexobj(a):
         return _string_from_complex_sigfig(a, digits=digits)
     else:
-        return to_precision.to_precision(a, digits)
+        return to_precision(a, digits)
 
 
 def _string_from_complex_sigfig(a, digits=2):
@@ -960,8 +960,8 @@ def _string_from_complex_sigfig(a, digits=2):
     This function assumes that "a" is a complex number. It returns "a" as a string
     in which the real and imaginary parts have digits significant digits.
     """
-    re = to_precision.to_precision(a.real, digits)
-    im = to_precision.to_precision(np.abs(a.imag), digits)
+    re = to_precision(a.real, digits)
+    im = to_precision(np.abs(a.imag), digits)
     if a.imag >= 0:
         return f"{re}+{im}j"
     elif a.imag < 0:
@@ -983,7 +983,7 @@ def numpy_to_matlab_sf(A, ndigits=2):
         if np.iscomplexobj(A):
             scalar_str = _string_from_complex_sigfig(A, ndigits)
         else:
-            scalar_str = to_precision.to_precision(A, ndigits)
+            scalar_str = to_precision(A, ndigits)
         return scalar_str
     elif A.ndim == 1:
         s = A.shape
@@ -993,7 +993,7 @@ def numpy_to_matlab_sf(A, ndigits=2):
             if np.iscomplexobj(A[i]):
                 vector_str += _string_from_complex_sigfig(A[i], ndigits)
             else:
-                vector_str += to_precision.to_precision(A[i], ndigits)
+                vector_str += to_precision(A[i], ndigits)
             if i < m - 1:
                 vector_str += ", "
         vector_str += "]"
@@ -1008,7 +1008,7 @@ def numpy_to_matlab_sf(A, ndigits=2):
                 if np.iscomplexobj(A[i, j]):
                     matrix_str += _string_from_complex_sigfig(A[i, j], ndigits)
                 else:
-                    matrix_str += to_precision.to_precision(A[i, j], ndigits)
+                    matrix_str += to_precision(A[i, j], ndigits)
                 if j == n - 1:
                     if i == m - 1:
                         matrix_str += "]"
@@ -1515,7 +1515,7 @@ def latex_from_2darray(
     # Using Any annotation here because of weird Pyright-isms.
     if presentation_type == "sigfig":
         formatter: Any = {
-            "float_kind": lambda x: to_precision.to_precision(x, digits),
+            "float_kind": lambda x: to_precision(x, digits),
             "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
         }
     else:
