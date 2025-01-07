@@ -576,9 +576,7 @@ def get_file_url(element, data):
         base_url = data["options"]["client_files_course_url"]
     else:
         msg = f'file-directory "{file_directory}" is not valid (must be "clientFilesQuestion" or "clientFilesCourse")'
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     # Get full url
     file_url = os.path.join(base_url, file_name)

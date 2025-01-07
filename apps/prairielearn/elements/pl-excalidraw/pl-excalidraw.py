@@ -69,16 +69,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if is_answer_name_required(gradable) and name is None:
         msg = f"Missing required attribute {ATTR_ANSWER_NAME} (Required when `{ATTR_GRADABLE}` is set)"
-        raise RuntimeError(
-            msg
-        )
+        raise RuntimeError(msg)
 
     source_dir = pl.get_string_attrib(element, ATTR_SOURCE_DIRECTORY, ".")
     if source_dir not in SOURCE_DIRECTORY_MAP:
         msg = f"{source_dir=} must be one of {list(SOURCE_DIRECTORY_MAP.keys())}"
-        raise RuntimeError(
-            msg
-        )
+        raise RuntimeError(msg)
 
 
 def load_file_content(element: HtmlElement, data: pl.QuestionData) -> str:

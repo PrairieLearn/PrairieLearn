@@ -74,9 +74,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             int(str(correct_answer), base)
         except Exception as exc:
             msg = f"Correct answer is not a valid base {base} integer: {correct_answer}"
-            raise ValueError(
-                msg
-            ) from exc
+            raise ValueError(msg) from exc
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:

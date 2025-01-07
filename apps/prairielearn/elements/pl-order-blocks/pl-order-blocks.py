@@ -214,9 +214,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 "Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>. \
                 Any html tags nested inside <pl-block-group> must be <pl-answer>"
             )
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
         if grading_method is GradingMethodType.EXTERNAL:
             pl.check_attribs(
@@ -279,10 +277,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             used_tags.add(tag)
 
         if check_indentation is False and answer_indent is not None:
-            msg = "<pl-answer> should not specify indentation if indentation is disabled."
-            raise ValueError(
-                msg
+            msg = (
+                "<pl-answer> should not specify indentation if indentation is disabled."
             )
+            raise ValueError(msg)
 
         if format is FormatType.CODE:
             inner_html = (
@@ -317,16 +315,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         elif html_tags.tag == "pl-block-group":
             if grading_method is not GradingMethodType.DAG:
                 msg = 'Block groups only supported in the "dag" grading mode.'
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
 
             group_tag, group_depends = get_graph_info(html_tags)
             if group_tag in used_tags:
                 msg = f'Tag "{group_tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
             else:
                 used_tags.add(group_tag)
 
@@ -393,9 +387,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if not incorrect_tags.issubset(correct_tags):
         msg = f"The following distractor-for tags do not have matching correct answer tags: {incorrect_tags - correct_tags}"
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     for block in all_blocks:
         if block["distractor_for"] is not None:
@@ -593,9 +585,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     html_params["incorrect"] = True
             except Exception as exc:
                 msg = f"invalid score: {data['partial_scores'][answer_name].get('score', 0)}"
-                raise ValueError(
-                    msg
-                ) from exc
+                raise ValueError(msg) from exc
 
         with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)

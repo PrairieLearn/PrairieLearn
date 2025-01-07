@@ -89,9 +89,7 @@ def categorize_options(
 
             if not (SCORE_INCORRECT_DEFAULT <= score <= SCORE_CORRECT_DEFAULT):
                 msg = f"Score {score} is invalid, must be in the range [0.0, 1.0]."
-                raise ValueError(
-                    msg
-                )
+                raise ValueError(msg)
 
             if correct and score != SCORE_CORRECT_DEFAULT:
                 msg = "Correct answers must give full credit."
@@ -110,9 +108,7 @@ def categorize_options(
 
         else:
             msg = f"Tags inside of pl-multiple-choice must be pl-answer, not '{child.tag}'."
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
     # NOTE Reading in answer choices from JSON is deprecated.
     file_path = pl.get_string_attrib(element, "external-json", EXTERNAL_JSON_DEFAULT)
@@ -176,9 +172,7 @@ def get_order_type(element: lxml.html.HtmlElement) -> OrderType:
 
     if pl.has_attrib(element, "fixed-order") and pl.has_attrib(element, "order"):
         msg = 'Setting answer choice order should be done with the "order" attribute.'
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     fixed_order = pl.get_boolean_attrib(element, "fixed-order", FIXED_ORDER_DEFAULT)
     order_type_default = OrderType.FIXED if fixed_order else OrderType.RANDOM
@@ -190,10 +184,10 @@ def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
     """Gets display type in a backwards-compatible way. New display overwrites old."""
 
     if pl.has_attrib(element, "inline") and pl.has_attrib(element, "display"):
-        msg = 'Setting answer choice display should be done with the "display" attribute.'
-        raise ValueError(
-            msg
+        msg = (
+            'Setting answer choice display should be done with the "display" attribute.'
         )
+        raise ValueError(msg)
 
     inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
     display_default = DisplayType.INLINE if inline else DisplayType.BLOCK
@@ -220,16 +214,12 @@ def prepare_answers_to_display(
     if aota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM} and len_correct < 2:
         # To prevent confusion on the client side
         msg = 'pl-multiple-choice element must have at least 2 correct answers when all-of-the-above is set to "correct" or "random"'
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     if nota in {AotaNotaType.INCORRECT, AotaNotaType.FALSE} and len_correct < 1:
         # There must be a correct answer
         msg = 'pl-multiple-choice element must have at least 1 correct answer, or add none-of-the-above set to "correct" or "random"'
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     if len_correct == 0:
         # If no correct option is provided, 'None of the above' will always
@@ -270,18 +260,14 @@ def prepare_answers_to_display(
         # raise exception when the *provided* number-answers can't be satisfied
         if set_num_answers and number_answers < expected_num_answers:
             msg = f"Not enough correct choices for all-of-the-above. Need {expected_num_answers - number_answers} more"
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
     if nota in {AotaNotaType.CORRECT, AotaNotaType.RANDOM}:
         # if nota correct
         number_answers = min(len_incorrect, number_answers)
         # raise exception when the *provided* number-answers can't be satisfied
         if set_num_answers and number_answers < expected_num_answers:
             msg = f"Not enough incorrect choices for none-of-the-above. Need {expected_num_answers - number_answers} more"
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
     # this is the case for
     # - 'All of the above' is incorrect
     # - 'None of the above' is incorrect
@@ -321,9 +307,7 @@ def prepare_answers_to_display(
 
     if not (0 <= number_incorrect <= len_incorrect):
         msg = f"INTERNAL ERROR: number_incorrect: ({number_incorrect}, {len_incorrect}, {number_answers})"
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     # 2. Sample correct and incorrect choices
     sampled_correct = random.sample(correct_answers, number_correct)
@@ -414,14 +398,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if get_display_type(element) is not DisplayType.DROPDOWN:
         if pl.has_attrib(element, "size"):
             msg = f'"size" attribute on "{name}" should only be set if display is "dropdown".'
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
         if pl.has_attrib(element, "placeholder"):
             msg = f'"placeholder" attribute on "{name}" should only be set if display is "dropdown".'
-            raise ValueError(
-                msg
-            )
+            raise ValueError(msg)
 
     if name in data["params"]:
         msg = f"Duplicate params variable name: {name}"
@@ -444,9 +424,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if duplicates:
         msg = f"pl-multiple-choice element has duplicate choices: {duplicates}"
-        raise ValueError(
-            msg
-        )
+        raise ValueError(msg)
 
     # Get answers to display to student, using a helper function to separate out logic.
     answers_to_display = prepare_answers_to_display(
