@@ -122,7 +122,7 @@ class _Constants:
 # More documentation of ast:
 # https://greentreesnakes.readthedocs.io/
 #
-# FIXME: As of 2017-08-27 there is an open sympy issue discussing a
+# TODO: As of 2017-08-27 there is an open sympy issue discussing a
 # similar approach: https://github.com/sympy/sympy/issues/10805 and an
 # associated PR: https://github.com/sympy/sympy/pull/12524 but it is
 # unclear when/if they will be merged. We should check once sympy 1.2
