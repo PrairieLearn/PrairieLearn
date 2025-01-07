@@ -14,7 +14,7 @@ RUN apt-get update && apt-get upgrade -y \
 USER coder
 
 # After installing C/C++ we install some VS Code extensions.
-# codelldb is installed from a downloaded file because the open-vsx version of
+# Install codelldb from a downloaded file because the open-vsx version of
 # the extension downloads the latest version of the extension upon loading,
 # which would not be appropriate in a containerized environment with restricted
 # network access.

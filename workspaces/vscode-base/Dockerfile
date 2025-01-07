@@ -51,10 +51,10 @@ RUN mkdir -p "/home/coder/workspace" "/home/coder/.local/share/code-server/User"
 WORKDIR "/home/coder/workspace"
 COPY --chmod=0644 --chown=coder:coder settings.json /home/coder/.local/share/code-server/User/
 
-# Prepare the entrypoint helper that steps down to a limited user in local dev mode
+# Prepare the entrypoint helper that steps down to a limited user in local dev mode.
 COPY --chmod=0755 --chown=root:root pl-gosu-helper.sh /usr/bin/
 
-# Make sure that code-server's entrypoint doesn't run fixuid unnecessarily
+# Make sure that code-server's entrypoint doesn't run fixuid unnecessarily.
 USER root
 RUN mkdir -p /run /var/run && \
     touch /run/fixuid.ran /var/run/fixuid.ran
