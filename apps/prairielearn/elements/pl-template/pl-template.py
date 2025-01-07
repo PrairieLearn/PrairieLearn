@@ -67,8 +67,7 @@ def get_file_path(element: lxml.html.HtmlElement, data: pl.QuestionData) -> str:
     )
 
     if dir_choice not in parent_dir_dict:
-        msg = f"Invalid directory choice: {dir_choice}"
-        raise ValueError(msg)
+        raise ValueError(f"Invalid directory choice: {dir_choice}")
 
     file_directory = data["options"][parent_dir_dict[dir_choice]]
     file_name = pl.get_string_attrib(element, "file-name")
@@ -103,16 +102,14 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             name = pl.get_string_attrib(child, "name")
 
             if name in variable_dict:
-                msg = f'Duplicate pl-template variable name: "{name}"'
-                raise ValueError(msg)
+                raise ValueError(f'Duplicate pl-template variable name: "{name}"')
 
             inner_html = pl.inner_html(child)
             has_template_file = pl.has_attrib(child, "file-name")
 
             if inner_html and has_template_file:
-                msg = f'pl-variable "{name}" must have at most one of file-name or its inner html defined'
                 raise ValueError(
-                    msg
+                    f'pl-variable "{name}" must have at most one of file-name or its inner html defined'
                 )
 
             elif has_template_file:
@@ -129,9 +126,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             continue
 
         else:
-            msg = f'Tags inside of pl-template must be pl-variable, not "{child.tag}".'
             raise ValueError(
-                msg
+                f'Tags inside of pl-template must be pl-variable, not "{child.tag}".'
             )
 
     log_variable_warnings = pl.get_boolean_attrib(

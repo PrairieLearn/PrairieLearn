@@ -39,34 +39,29 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             if ("left" not in child.attrib and "right" not in child.attrib) or (
                 "left" in child.attrib and "right" in child.attrib
             ):
-                msg = 'pl-location requires exactly one of "left" or "right" attributes.'
                 raise ValueError(
-                    msg
+                    'pl-location requires exactly one of "left" or "right" attributes.'
                 )
 
             if ("top" not in child.attrib and "bottom" not in child.attrib) or (
                 "top" in child.attrib and "bottom" in child.attrib
             ):
-                msg = 'pl-location requires exactly one of "top" or "bottom" attributes.'
                 raise ValueError(
-                    msg
+                    'pl-location requires exactly one of "top" or "bottom" attributes.'
                 )
 
             valign = pl.get_string_attrib(child, "valign", VALIGN_DEFAULT)
             if valign not in VALIGN_VALUES:
-                msg = f'Unknown vertical alignment "{valign}"'
-                raise ValueError(msg)
+                raise ValueError(f'Unknown vertical alignment "{valign}"')
 
             halign = pl.get_string_attrib(child, "halign", HALIGN_DEFAULT)
             if halign not in HALIGN_VALUES:
-                msg = f'Unknown horizontal alignment "{halign}"'
-                raise ValueError(msg)
+                raise ValueError(f'Unknown horizontal alignment "{halign}"')
         elif child.tag == "pl-background":
             pl.check_attribs(child, required_attribs=[], optional_attribs=[])
             num_backgrounds += 1
         else:
-            msg = f'Unknown tag "{child.tag}" found as child of pl-overlay'
-            raise ValueError(msg)
+            raise ValueError(f'Unknown tag "{child.tag}" found as child of pl-overlay')
 
     if num_backgrounds == 0:
         pl.check_attribs(
@@ -77,9 +72,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             element, required_attribs=[], optional_attribs=["clip", "width", "height"]
         )
     else:
-        msg = f"pl-overlay can have at most one <pl-background> child, found {num_backgrounds}."
         raise ValueError(
-            msg
+            f"pl-overlay can have at most one <pl-background> child, found {num_backgrounds}."
         )
 
 

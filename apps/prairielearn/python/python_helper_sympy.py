@@ -504,9 +504,8 @@ def convert_string_to_sympy_with_source(
             variables if variables is not None else []
         )
         if unbound_variables:
-            msg = f'Assumptions for variables that are not present: {",".join(unbound_variables)}'
             raise HasInvalidAssumptionError(
-                msg
+                f'Assumptions for variables that are not present: {",".join(unbound_variables)}'
             )
 
     # If there is a list of variables, add each one to the whitelist with assumptions
@@ -517,9 +516,8 @@ def convert_string_to_sympy_with_source(
             variable = greek_unicode_transform(variable)
             # Check for naming conflicts
             if variable in used_names:
-                msg = f"Conflicting variable name: {variable}"
                 raise HasConflictingVariableError(
-                    msg
+                    f"Conflicting variable name: {variable}"
                 )
             else:
                 used_names.add(variable)
@@ -538,9 +536,8 @@ def convert_string_to_sympy_with_source(
         for function in custom_functions:
             function = greek_unicode_transform(function)
             if function in used_names:
-                msg = f"Conflicting variable name: {function}"
                 raise HasConflictingFunctionError(
-                    msg
+                    f"Conflicting variable name: {function}"
                 )
 
             used_names.add(function)
@@ -612,14 +609,11 @@ def json_to_sympy(
     allow_trig_functions: bool = True,
 ) -> sympy.Expr:
     if "_type" not in sympy_expr_dict:
-        msg = "json must have key _type for conversion to sympy"
-        raise ValueError(msg)
+        raise ValueError("json must have key _type for conversion to sympy")
     if sympy_expr_dict["_type"] != "sympy":
-        msg = 'json must have _type == "sympy" for conversion to sympy'
-        raise ValueError(msg)
+        raise ValueError('json must have _type == "sympy" for conversion to sympy')
     if "_value" not in sympy_expr_dict:
-        msg = "json must have key _value for conversion to sympy"
-        raise ValueError(msg)
+        raise ValueError("json must have key _value for conversion to sympy")
     if "_variables" not in sympy_expr_dict:
         sympy_expr_dict["_variables"] = None
 

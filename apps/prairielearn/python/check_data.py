@@ -137,30 +137,23 @@ def check_prop(
 
     # Ensure that the prop is present.
     if new_value is None:
-        msg = f'data["{prop}"] is missing'
-        raise ValueError(msg)
+        raise ValueError(f'data["{prop}"] is missing')
 
     # Check the type.
     if value_type == "integer" and not isinstance(new_value, int):
-        msg = f'Expected data["{prop}"] to be an integer'
-        raise ValueError(msg)
+        raise ValueError(f'Expected data["{prop}"] to be an integer')
     elif value_type == "string" and not isinstance(new_value, str):
-        msg = f'Expected data["{prop}"] to be a string'
-        raise ValueError(msg)
+        raise ValueError(f'Expected data["{prop}"] to be a string')
     elif value_type == "number" and not isinstance(new_value, int | float):
-        msg = f'Expected data["{prop}"] to be a number'
-        raise ValueError(msg)
+        raise ValueError(f'Expected data["{prop}"] to be a number')
     elif value_type == "boolean" and not isinstance(new_value, bool):
-        msg = f'Expected data["{prop}"] to be a boolean'
-        raise ValueError(msg)
+        raise ValueError(f'Expected data["{prop}"] to be a boolean')
     elif value_type == "object" and not isinstance(new_value, dict):
-        msg = f'Expected data["{prop}"] to be an object'
-        raise ValueError(msg)
+        raise ValueError(f'Expected data["{prop}"] to be an object')
 
     # Check the value.
     if phase not in edit_phases and old_value != new_value:
-        msg = f'data["{prop}"] has been illegally modified'
-        raise ValueError(msg)
+        raise ValueError(f'data["{prop}"] has been illegally modified')
 
 
 def check_data(old_data: dict, new_data: dict, phase: Phase) -> None:
@@ -168,15 +161,13 @@ def check_data(old_data: dict, new_data: dict, phase: Phase) -> None:
     extra_keys = set(new_data.keys()) - set(PROPS.keys())
     if extra_keys:
         extra_keys_str = ", ".join(map(str, extra_keys))
-        msg = f"data contains extra keys: {extra_keys_str}"
-        raise ValueError(msg)
+        raise ValueError(f"data contains extra keys: {extra_keys_str}")
 
     # Then, check for missing keys on `new_data`.
     missing_keys = set(old_data.keys()) - set(new_data.keys())
     if missing_keys:
         missing_keys_str = ", ".join(map(str, missing_keys))
-        msg = f"data is missing keys: {missing_keys_str}"
-        raise ValueError(msg)
+        raise ValueError(f"data is missing keys: {missing_keys_str}")
 
     # Validate each entry in `new_data`.
     for key, new_value in new_data.items():

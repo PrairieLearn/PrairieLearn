@@ -50,8 +50,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     width = pl.get_string_attrib(element, "width", WIDTH_DEFAULT)
 
     if width not in {"25%", "50%", "75%", "auto"}:
-        msg = f"Invalid width: {width}."
-        raise ValueError(msg)
+        raise ValueError(f"Invalid width: {width}.")
 
     content = pl.inner_html(element)
 

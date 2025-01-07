@@ -32,42 +32,35 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             continue
 
         else:
-            msg = f'Tags inside of pl-external-grader-variables must be pl-variable, not "{child.tag}".'
             raise ValueError(
-                msg
+                f'Tags inside of pl-external-grader-variables must be pl-variable, not "{child.tag}".'
             )
 
     declared_empty = pl.get_boolean_attrib(element, "empty", EMPTY_DEFAULT)
 
     if declared_empty:
         if html_variables:
-            msg = f'Variable name "{params_name}" was declared empty, but has variables defined in "question.html".'
             raise ValueError(
-                msg
+                f'Variable name "{params_name}" was declared empty, but has variables defined in "question.html".'
             )
         elif params_name in data["params"]:
-            msg = f'Variable name "{params_name}" was declared empty, but has variables defined in "server.py".'
             raise ValueError(
-                msg
+                f'Variable name "{params_name}" was declared empty, but has variables defined in "server.py".'
             )
 
         data["params"][params_name] = []
     elif params_name not in data["params"]:
         if not html_variables:
-            msg = (
+            raise ValueError(
                 f'Variable name "{params_name}" has no variables defined in "question.html" or "server.py". '
                 "Did you mean to set it to be empty?"
-            )
-            raise ValueError(
-                msg
             )
 
         data["params"][params_name] = html_variables
     else:
         if html_variables:
-            msg = f'Cannot define variables from both "question.html" and "server.py" for variable name "{params_name}".'
             raise ValueError(
-                msg
+                f'Cannot define variables from both "question.html" and "server.py" for variable name "{params_name}".'
             )
 
 

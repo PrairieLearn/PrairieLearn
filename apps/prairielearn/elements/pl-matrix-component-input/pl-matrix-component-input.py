@@ -47,20 +47,17 @@ def prepare(element_html, data):
             msg = "Number of rows is not set in pl-matrix-component-input with no correct answer."
             raise ValueError(msg)
         if m < 1:
-            msg = "Number of rows in pl-matrix-component-input must be strictly positive."
             raise ValueError(
-                msg
+                "Number of rows in pl-matrix-component-input must be strictly positive."
             )
         n = pl.get_integer_attrib(element, "columns", None)
         if n is None:
-            msg = "Number of columns is not set in pl-matrix-component-input with no correct answer."
             raise ValueError(
-                msg
+                "Number of columns is not set in pl-matrix-component-input with no correct answer."
             )
         if n < 1:
-            msg = "Number of columns in pl-matrix-component-input must be strictly positive."
             raise ValueError(
-                msg
+                "Number of columns in pl-matrix-component-input must be strictly positive."
             )
 
 
@@ -106,11 +103,9 @@ def render(element_html, data):
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
-                msg = f"Attribute rtol = {rtol:g} must be non-negative"
-                raise ValueError(msg)
+                raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
             if atol < 0:
-                msg = f"Attribute atol = {atol:g} must be non-negative"
-                raise ValueError(msg)
+                raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
             info_params = {
                 "format": True,
                 "relabs": True,
@@ -120,8 +115,7 @@ def render(element_html, data):
         elif comparison == "sigfig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                msg = f"Attribute digits = {digits:d} must be non-negative"
-                raise ValueError(msg)
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "sigfig": True,
@@ -131,8 +125,7 @@ def render(element_html, data):
         elif comparison == "decdig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                msg = f"Attribute digits = {digits:d} must be non-negative"
-                raise ValueError(msg)
+                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
             info_params = {
                 "format": True,
                 "decdig": True,
@@ -140,9 +133,8 @@ def render(element_html, data):
                 "comparison_eps": 0.51 * (10 ** -(digits - 0)),
             }
         else:
-            msg = f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
             raise ValueError(
-                msg
+                f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
             )
 
         info_params["allow_fractions"] = allow_fractions
@@ -292,9 +284,8 @@ def render(element_html, data):
                     + "$"
                 )
             else:
-                msg = f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
                 raise ValueError(
-                    msg
+                    f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
                 )
 
             html_params = {
@@ -332,8 +323,7 @@ def parse(element_html, data):
     else:
         a_tru = np.array(a_tru)
         if a_tru.ndim != 2:
-            msg = "true answer must be a 2D array"
-            raise ValueError(msg)
+            raise ValueError("true answer must be a 2D array")
         else:
             m, n = np.shape(a_tru)
     matrix = np.empty((m, n))
@@ -389,8 +379,7 @@ def grade(element_html, data):
     elif comparison == "sigfig" or comparison == "decdig":
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
     else:
-        msg = f'method of comparison "{comparison}" is not valid'
-        raise ValueError(msg)
+        raise ValueError(f'method of comparison "{comparison}" is not valid')
 
     # Get true answer (if it does not exist, create no grade - leave it
     # up to the question code)
@@ -401,8 +390,7 @@ def grade(element_html, data):
     a_tru = np.array(a_tru)
     # Throw an error if true answer is not a 2D numpy array
     if a_tru.ndim != 2:
-        msg = "true answer must be a 2D array"
-        raise ValueError(msg)
+        raise ValueError("true answer must be a 2D array")
     else:
         m, n = np.shape(a_tru)
 
@@ -465,8 +453,7 @@ def test(element_html, data):
     a_tru = np.array(a_tru)
     # Throw an error if true answer is not a 2D numpy array
     if a_tru.ndim != 2:
-        msg = "true answer must be a 2D array"
-        raise ValueError(msg)
+        raise ValueError("true answer must be a 2D array")
     else:
         m, n = np.shape(a_tru)
 

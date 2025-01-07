@@ -70,13 +70,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
 
     if len(variables) > 1:
-        msg = f"Only one variable is supported for question {name}"
-        raise ValueError(msg)
+        raise ValueError(f"Only one variable is supported for question {name}")
 
     if pl.has_attrib(element, "correct-answer"):
         if name in data["correct_answers"]:
-            msg = f"duplicate correct_answers variable name: {name}"
-            raise ValueError(msg)
+            raise ValueError(f"duplicate correct_answers variable name: {name}")
 
         a_true = pl.get_string_attrib(element, "correct-answer")
         # Validate that the answer can be parsed before storing
@@ -85,9 +83,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 a_true, variables, allow_complex=False, allow_trig_functions=False
             )
         except phs.BaseSympyError as exc:
-            msg = f'Parsing correct answer "{a_true}" for "{name}" failed.'
             raise ValueError(
-                msg
+                f'Parsing correct answer "{a_true}" for "{name}" failed.'
             ) from exc
 
         data["correct_answers"][name] = a_true
