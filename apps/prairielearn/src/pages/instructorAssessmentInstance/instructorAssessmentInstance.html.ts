@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
@@ -13,7 +14,6 @@ import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentQuestionSchema, IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
-import { run } from '@prairielearn/run';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
