@@ -1,6 +1,11 @@
 on:
   workflow_call:
-
+    inputs:
+      tag_latest:
+        description: 'Whether to tag images as latest'
+        required: false
+        type: boolean
+        default: false
 env:
   COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
 
@@ -44,4 +49,4 @@ jobs:
           platforms: linux/amd64,linux/arm64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
-          tags: prairielearn/grader-${{ matrix.grader }}:${{ env.COMMIT_SHA }}
+          tags: prairielearn/grader-${{ matrix.grader }}:${{ env.COMMIT_SHA }}${{ inputs.tag_latest && format(',prairielearn/grader-{0}:latest', matrix.workspace) }}
