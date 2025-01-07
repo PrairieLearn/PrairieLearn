@@ -761,22 +761,6 @@ export class AssessmentAddEditor extends Editor {
     const assessmentTitle = names.longName;
     const assessmentPath = path.join(assessmentsPath, tid);
 
-    // Ensure that the new assessment folder path is fully contained in the assessments directory
-    if (!contains(assessmentsPath, assessmentPath)) {
-      throw new AugmentedError('Invalid folder path', {
-        info: html`
-          <p>The path of the assessments folder to add</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${assessmentPath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${assessmentsPath}</pre>
-          </div>
-        `,
-      });
-    }
-
     debug('Write infoAssessment.json');
 
     const infoJson = {
@@ -1137,22 +1121,6 @@ export class QuestionAddEditor extends Editor {
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'calculation');
     const toPath = questionPath;
-
-    // Ensure that the new question folder path is fully contained in the questions directory
-    if (!contains(questionsPath, toPath)) {
-      throw new AugmentedError('Invalid folder path', {
-        info: html`
-          <p>The path of the question folder to add</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${toPath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
-          </div>
-        `,
-      });
-    }
 
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
