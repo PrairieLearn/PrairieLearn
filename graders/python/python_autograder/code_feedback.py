@@ -21,7 +21,7 @@ THE SOFTWARE.
 """
 
 
-class GradingComplete(Exception):
+class GradingComplete(Exception):  # noqa: N818
     pass
 
 
@@ -140,8 +140,8 @@ class Feedback:
 
         if len(data.shape) != num_axes:
             cls.finish(
-                "'%s' does not have the correct number of axes--"
-                "got: %d, expected: %d" % (name, len(data.shape), num_axes)
+                f"'{name}' does not have the correct number of axes--"
+                f"got: {len(data.shape)}, expected: {num_axes}"
             )
 
         if data.dtype.kind not in "fc":
@@ -289,14 +289,13 @@ class Feedback:
 
         if len(ref) != len(data):
             return bad(
-                "'%s' has the wrong length--expected %d, got %d"
-                % (name, len(ref), len(data))
+                f"'{name}' has the wrong length--expected {len(ref)}, got {len(data)}"
             )
 
         if entry_type is not None:
             for i, entry in enumerate(data):
                 if not isinstance(entry, entry_type):
-                    return bad("'%s[%d]' has the wrong type" % (name, i))
+                    return bad(f"'{name}[{i}]' has the wrong type")
 
         return True
 
@@ -538,8 +537,7 @@ class Feedback:
 
         if len(user_lines) != len(ref_lines):
             return bad(
-                "%d lines were plotted in '%s' but %d lines were "
-                "expected" % (len(user_lines), name, len(ref_lines))
+                f"{len(user_lines)} lines were plotted in '{name}' but {ref_lines} lines were expected"
             )
 
         ref_datas = {}
