@@ -441,7 +441,7 @@ class CGrader:
                         if ignore_consec_spaces
                         else re.escape(t)
                     ),
-                    re.I if ignore_case else 0,
+                    re.IGNORECASE if ignore_case else 0,
                 ),
             )
 

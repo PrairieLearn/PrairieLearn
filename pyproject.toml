@@ -30,7 +30,9 @@ select = [
     # pyupgrade
     "UP",
     # ruff-specific rules
-    "RUF"
+    "RUF",
+    # refurb
+    "FURB"
 ]
 ignore = [
     # Ignore line length errors
