@@ -1,6 +1,12 @@
 #!/usr/bin/env python
 
-import os, time, requests, argparse, datetime
+import argparse
+import datetime
+import os
+import time
+
+import requests
+
 
 def main():
     parser = argparse.ArgumentParser(description='Download all PrairieLearn course data as JSON via the API')
@@ -16,7 +22,7 @@ def main():
 
     logfilename = os.path.join(args.output_dir, 'download_log.txt')
     print(f'opening log file {logfilename} ...')
-    with open(logfilename, 'wt') as logfile:
+    with open(logfilename, "w") as logfile:
         print(f'successfully opened log file')
         download_course_instance(args, logfile)
 
@@ -93,7 +99,7 @@ def get_and_save_json(endpoint, filename, args, logfile):
     full_filename = os.path.join(args.output_dir, filename + '.json')
     log(logfile, f'saving data to {full_filename} ...')
 
-    with open(full_filename, 'wt') as out_f:
+    with open(full_filename, "w") as out_f:
         out_f.write(r.text)
 
     log(logfile, f'successfully wrote data')

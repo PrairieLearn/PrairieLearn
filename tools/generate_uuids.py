@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
-import sys, os, json, re, uuid, argparse
+import argparse
+import json
+import os
+import re
+import sys
+import uuid
 
 parser = argparse.ArgumentParser(description="Generate UUIDs for info*.json files that don't already have them.")
 parser.add_argument("directory", help="the directory to search for info*.json files")
@@ -15,7 +20,7 @@ error_list = []
 
 def add_uuid_to_file(filename):
     try:
-        with open(filename, 'r') as in_f:
+        with open(filename) as in_f:
             contents = in_f.read()
         data = json.loads(contents)
         if "uuid" in data:
@@ -25,22 +30,22 @@ def add_uuid_to_file(filename):
 
             # replace the exising UUID
             (new_contents, n_sub) = re.subn(r'"uuid":(\s*)"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"',
-                                            r'"uuid":\1"%s"' % uuid.uuid4(),
+                                            rf'"uuid":\1"{uuid.uuid4()}"',
                                             contents)
             if n_sub == 0:
-                raise Exception("%s: file already contains a UUID, but the regexp failed to find it" % filename)
+                raise Exception(f"{filename}: file already contains a UUID, but the regexp failed to find it")
             if n_sub > 1:
-                raise Exception("%s: regexp found multiple UUIDs and we can't determine which one to replace" % filename)
+                raise Exception(f"{filename}: regexp found multiple UUIDs and we can't determine which one to replace")
 
         else:
             # file doesn't have a UUID, so insert one at the start of the file
             (new_contents, n_sub) = re.subn(r'^(\s*{)(\s*)',
-                                            r'\1\2"uuid": "%s",\2' % uuid.uuid4(),
+                                            rf'\1\2"uuid": "{uuid.uuid4()}",\2',
                                             contents)
             if n_sub == 0:
-                raise Exception("%s: file doesn't start with a { character, so we can't insert a UUID property" % filename)
+                raise Exception(f"{filename}: file doesn't start with a {{ character, so we can't insert a UUID property")
             if n_sub > 1:
-                raise Exception("%s: impossible internal error occurred" % filename)
+                raise Exception(f"{filename}: impossible internal error occurred")
 
         tmp_filename = filename + ".tmp_with_uuid"
         if os.path.exists(tmp_filename):
@@ -76,6 +81,6 @@ if error_list:
     print()
     print("Errors occurred during processing")
     for error in error_list:
-        print("%s" % error)
+        print(f"{error}")
 else:
     print("Processing successsfully complete with no errors")

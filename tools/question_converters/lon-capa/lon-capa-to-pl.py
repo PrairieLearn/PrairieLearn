@@ -1,4 +1,8 @@
-import os, sys, shutil, uuid, json
+import json
+import os
+import shutil
+import sys
+import uuid
 import xml.etree.ElementTree as ET
 
 ## # Top-level elements
@@ -105,7 +109,7 @@ def remove_outtext_tags(xml_str):
 
 
 def read_xml_from_file_and_remove_ampersands(xml_filename):
-    with open(xml_filename, 'r') as in_file:
+    with open(xml_filename) as in_file:
         lines = in_file.readlines()
 
         # remove the ampersands because they break xml parsing
@@ -218,7 +222,7 @@ def copy_resource(question_dir, file_path):
 
 def remove_unmatched_item_close_tags(xml_filename):
     new_lines = ''
-    with open(xml_filename, 'r') as in_file:
+    with open(xml_filename) as in_file:
         contents = in_file.read()
         index = contents.find('<item')
         if index == -1:

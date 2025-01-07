@@ -1,6 +1,10 @@
 import argparse
+import json
+import os
 from collections import OrderedDict
-import requests, json, os
+
+import requests
+
 
 class ExtendAction(argparse.Action):
     """ Add argparse action='extend' for pre-3.8 python """
@@ -389,7 +393,7 @@ class QuizQuestion(CourseSubObject):
         if quiz is None:
             if 'quiz_id' not in quiz_question_data:
                 raise RuntimeError(
-                    'No quiz provided and cannot find quiz id for: %s' % quiz_question_data)
+                    f'No quiz provided and cannot find quiz id for: {quiz_question_data}')
             quiz = course.quiz(quiz_question_data)
         super().__init__(quiz, "questions", quiz_question_data, request_param_name='question')
 

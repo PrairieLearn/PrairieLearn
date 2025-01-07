@@ -37,11 +37,11 @@ if not os.path.exists(os.path.join(args.pl_repo, 'infoCourse.json')):
 
 print('Reading data from Canvas...')
 course = canvas.course(args.course, prompt_if_needed=True)
-print('Using course: %s / %s' % (course['term']['name'],
+print('Using course: {} / {}'.format(course['term']['name'],
                                  course['course_code']))
 
 quiz = course.quiz(args.quiz, prompt_if_needed=True)
-print('Using quiz: %s' % (quiz['title']))
+print('Using quiz: {}'.format(quiz['title']))
 
 # Reading questions
 print('Retrieving quiz questions from Canvas...')
@@ -211,9 +211,9 @@ for question in questions.values():
         elif question['question_type'] == 'matching_question':
             template.write('<pl-matching answers-name="match">\n')
             for answer in question['answers']:
-                template.write(f'  <pl-statement match="m{answer["match_id"]}">{answer["text"]}</pl-statement>\n');
+                template.write(f'  <pl-statement match="m{answer["match_id"]}">{answer["text"]}</pl-statement>\n')
             for match in question['matches']:
-                template.write(f'  <pl-option name="m{match["match_id"]}">{match["text"]}</pl-option>\n');
+                template.write(f'  <pl-option name="m{match["match_id"]}">{match["text"]}</pl-option>\n')
             template.write('</pl-matching>\n')
 
         elif question['question_type'] == 'multiple_dropdowns_question':
