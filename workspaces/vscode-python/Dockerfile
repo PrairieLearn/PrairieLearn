@@ -28,12 +28,13 @@ RUN export arch=`uname -m` \
  && mamba clean --all --yes --quiet \
  && pip cache purge
 
-# Install VS Code extensions.
-# We have first installed Python in the previous step, as specified in the
-# documentation of the ms-python.python extension.
-USER coder
-RUN code-server --disable-telemetry --force \
+ USER coder
+ 
+ # After installing Python we install some VS Code extensions.
+ RUN code-server --disable-telemetry --force \
     # vscode support for python, including debugger
     --install-extension ms-python.python \
     # auto-fix indentation for multiline contexts
-    --install-extension KevinRose.vsc-python-indent
+    --install-extension KevinRose.vsc-python-indent \
+    # Clear the extension cache to reduce image size.
+    && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs
