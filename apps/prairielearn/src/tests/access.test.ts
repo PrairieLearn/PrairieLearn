@@ -204,15 +204,16 @@ describe('Access control', function () {
   /**********************************************************************/
 
   async function postAssessment(cookies, includePassword, expectedStatusCode) {
-    const form: Record<string, string> = {
+    const body = new URLSearchParams({
       __action: 'new_instance',
       __csrf_token,
-    };
-    if (includePassword) form.password = 'secret';
-    const res = await fetchCookie(fetch, cookies)(assessmentUrl, {
-      method: 'POST',
-      body: new URLSearchParams(form),
     });
+
+    if (includePassword) {
+      body.append('password', 'secret');
+    }
+
+    const res = await fetchCookie(fetch, cookies)(assessmentUrl, { method: 'POST', body });
     assert.equal(res.status, expectedStatusCode);
     page = await res.text();
   }
@@ -331,14 +332,13 @@ describe('Access control', function () {
       wx: 0,
       wy: 0,
     };
-    const form = {
-      __action: 'save',
-      __csrf_token,
-      postData: JSON.stringify({ variant, submittedAnswer }),
-    };
     const res = await fetchCookie(fetch, cookies)(q1Url, {
       method: 'POST',
-      body: new URLSearchParams(form),
+      body: new URLSearchParams({
+        __action: 'save',
+        __csrf_token,
+        postData: JSON.stringify({ variant, submittedAnswer }),
+      }),
     });
     assert.equal(res.status, expectedStatusCode);
   }

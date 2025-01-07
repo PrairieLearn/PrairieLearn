@@ -30,7 +30,7 @@ def generate(data):
 
     random_graph = nx.gnm_random_graph(5, 6)
 
-    for in_node, out_node, edge_data in random_graph.edges(data=True):
+    for _, _, edge_data in random_graph.edges(data=True):
         edge_data["label"] = random.choice(string.ascii_lowercase)
 
     data["params"]["random-graph"] = pl.to_json(random_graph)
@@ -57,7 +57,7 @@ def generate(data):
     extents = nx.utils.pairwise(itertools.accumulate((0,) + tuple(subset_sizes)))
     layers = [range(start, end) for start, end in extents]
     layered_graph = nx.Graph()
-    for i, (layer, color) in enumerate(zip(layers, subset_color)):
+    for i, (layer, color) in enumerate(zip(layers, subset_color, strict=True)):
         layered_graph.add_nodes_from(layer, layer=i, color=color)
 
     for layer1, layer2 in nx.utils.pairwise(layers):
