@@ -3,7 +3,7 @@ set -ex
 
 # If you need to rebuild this image without actually changing anything,
 # add a dot to the following line:
-# .
+# ..
 
 dnf update -y
 

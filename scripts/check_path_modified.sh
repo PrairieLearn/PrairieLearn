@@ -25,9 +25,11 @@ else
     DIFF_SOURCE="remotes/origin/master"
 fi
 
-if git diff --exit-code $DIFF_SOURCE..HEAD -- ${CHECK_PATH}; then
+if git diff --exit-code $DIFF_SOURCE..HEAD -- ${CHECK_PATH} && test -e ${CHECK_PATH}; then
     echo "${CHECK_PATH} files not modified"
+    echo "was-modified=false" >> $GITHUB_OUTPUT
 else
     echo "${CHECK_PATH} files modified"
     echo "${ENV_VAR}=true" >> $GITHUB_ENV
+    echo "was-modified=true" >> $GITHUB_OUTPUT
 fi
