@@ -14,13 +14,12 @@ import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { getCourseOwners } from '../../lib/course.js';
 import {
+  type Course,
   CourseSchema,
   QuestionSchema,
   TopicSchema,
-  type Course,
   type Question,
 } from '../../lib/db-types.js';
-import { QuestionTransferEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectQuestionById, selectQuestionByUuid } from '../../models/question.js';
@@ -29,6 +28,32 @@ import { selectQuestionsForCourse } from '../../models/questions.js';
 import { QuestionsPage } from './instructorQuestions.html.js';
 
 const router = Router();
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+async function getExampleCourse(): Promise<Course> {
+  const example_course = await sqldb.queryRow(sql.select_example_course, {}, CourseSchema);
+  return example_course;
+}
+
+async function getTemplateCourseQuestions(exampleCourse: Course): Promise<Question[]> {
+  const templateTopic = await sqldb.queryRow(
+    sql.select_template_topic_for_course_id,
+    {
+      course_id: exampleCourse.id,
+    },
+    TopicSchema,
+  );
+  const templateQuestions = await sqldb.queryRows(
+    sql.select_questions_for_course,
+    {
+      course_id: exampleCourse.id,
+      topic_id: templateTopic.id,
+    },
+    QuestionSchema,
+  );
+
+  return templateQuestions;
+}
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function getExampleCourse(): Promise<Course> {
@@ -90,10 +115,14 @@ router.get(
     const exampleCourse = await getExampleCourse();
     const templateQuestions = await getTemplateCourseQuestions(exampleCourse);
 
+    const exampleCourse = await getExampleCourse();
+    const templateQuestions = await getTemplateCourseQuestions(exampleCourse);
+
     const courseDirExists = await fs.pathExists(res.locals.course.path);
     res.send(
       QuestionsPage({
         questions,
+        templateQuestions,
         templateQuestions,
         course_instances: courseInstances,
         showAddQuestionButton:

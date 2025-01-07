@@ -71,7 +71,7 @@ export function QuestionsTable({
     )}
     ${CreateQuestionModal({
       csrfToken: __csrf_token,
-      templateQuestions: [],
+      templateQuestions,
     })}
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
@@ -316,8 +316,8 @@ function CreateQuestionModal({
         <label for="start_from">Template</label>
         <select
           class="form-select"
-          id="template"
-          name="template"
+          id="template_qid"
+          name="template_qid"
           required
           aria-describedby="template_help"
           disabled
