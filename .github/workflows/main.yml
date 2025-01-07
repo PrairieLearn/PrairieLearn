@@ -140,7 +140,7 @@ jobs:
       - name: Check whether workspaces/vscode-python was modified
         run: tools/check_path_modified.sh workspaces/vscode-python workspaces_vscode_python_modified
       - name: Build and push prairielearn/workspace-vscode-python
-        if: ${{ workspaces_vscode_base_modified || env.workspaces_vscode_python_modified }}
+        if: ${{ env.workspaces_vscode_base_modified || env.workspaces_vscode_python_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/vscode-python
@@ -154,7 +154,7 @@ jobs:
       - name: Check whether workspaces/vscode-cpp was modified
         run: tools/check_path_modified.sh workspaces/vscode-cpp workspaces_vscode_cpp_modified
       - name: Build and push prairielearn/workspace-vscode-cpp
-        if: ${{ workspaces_vscode_base_modified || env.workspaces_vscode_cpp_modified }}
+        if: ${{ env.workspaces_vscode_base_modified || env.workspaces_vscode_cpp_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/vscode-cpp
