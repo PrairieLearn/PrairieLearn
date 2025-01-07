@@ -24,7 +24,7 @@ pytest-repeat==0.9.3
 pytest==8.3.3
 recommonmark==0.7.1
 regex==2024.9.11
-ruff==0.7.2
+ruff==0.8.6
 schemdraw==0.19
 scikit-learn==1.5.2
 scipy==1.14.1

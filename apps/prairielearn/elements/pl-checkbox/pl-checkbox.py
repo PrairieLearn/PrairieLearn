@@ -102,15 +102,13 @@ def prepare(element_html, data):
     max_correct = min(len_correct, min(number_answers, max(min_correct, max_correct)))
     if not (0 <= min_correct <= max_correct <= len_correct):
         raise ValueError(
-            "INTERNAL ERROR: correct number: (%d, %d, %d, %d)"
-            % (min_correct, max_correct, len_correct, len_incorrect)
+            f"INTERNAL ERROR: correct number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
         )
     min_incorrect = number_answers - max_correct
     max_incorrect = number_answers - min_correct
     if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
         raise ValueError(
-            "INTERNAL ERROR: incorrect number: (%d, %d, %d, %d)"
-            % (min_incorrect, max_incorrect, len_incorrect, len_correct)
+            f"INTERNAL ERROR: incorrect number: ({min_incorrect}, {max_incorrect}, {len_incorrect}, {len_correct})"
         )
 
     min_select = pl.get_integer_attrib(element, "min-select", MIN_SELECT_DEFAULT)
