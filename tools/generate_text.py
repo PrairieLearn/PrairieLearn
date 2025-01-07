@@ -33,8 +33,8 @@ else:
     BASE_DIRS = sys.argv[1:]
 
 if len(BASE_DIRS) == 0:
-    if os.path.isdir('/course'):
-        BASE_DIRS = ['/course']
+    if os.path.isdir("/course"):
+        BASE_DIRS = ["/course"]
 
 if len(BASE_DIRS) == 0:
     print("Usage: generate_text <basedir1> <basedir2> ...")
@@ -48,16 +48,19 @@ else:
     print("Output directory: 'text/' within each subdirectory")
 print("Processing directories: %s" % (", ".join(BASE_DIRS)))
 
+
 def output_dir(filename):
     if MODE == "textdir":
         return TEXT_DIR
     else:
         return os.path.join(os.path.dirname(filename), "text")
 
+
 def ensure_dir_exists(d):
     if not os.path.isdir(d):
         os.mkdir(d)
-    
+
+
 escape_seqs = {
     "b": "\b",
     "f": "\f",
@@ -68,7 +71,8 @@ escape_seqs = {
     "'": "'",
     '"': '"',
     "\\": "\\",
-    }
+}
+
 
 def unescape(s):
     chars = []
@@ -84,6 +88,7 @@ def unescape(s):
                 chars.append(escape_seqs[s[i]])
         i += 1
     return "".join(chars)
+
 
 def process_file(filename):
     print(filename)
@@ -114,9 +119,18 @@ def process_file(filename):
                     print("Running pdflatex on " + tex_filename)
                     subprocess.check_call(["pdflatex", tex_filename], cwd=outdir)
                     print("Running convert on " + pdf_filename)
-                    subprocess.check_call([CONVERT_CMD, "-density", "96",
-                                           pdf_filename, "-trim", "+repage",
-                                           img_filename], cwd=outdir)
+                    subprocess.check_call(
+                        [
+                            CONVERT_CMD,
+                            "-density",
+                            "96",
+                            pdf_filename,
+                            "-trim",
+                            "+repage",
+                            img_filename,
+                        ],
+                        cwd=outdir,
+                    )
                 img_filenames.append(img_filename)
                 img_hi_filename = hash + "_hi.png"
                 img_hi_full_filename = os.path.join(outdir, img_hi_filename)
@@ -132,11 +146,21 @@ def process_file(filename):
                     print("Running pdflatex on " + tex_filename)
                     subprocess.check_call(["pdflatex", tex_filename], cwd=outdir)
                     print("Running convert on " + pdf_filename)
-                    subprocess.check_call([CONVERT_CMD, "-density", "600",
-                                           pdf_filename, "-trim", "+repage",
-                                           img_hi_filename], cwd=outdir)
+                    subprocess.check_call(
+                        [
+                            CONVERT_CMD,
+                            "-density",
+                            "600",
+                            pdf_filename,
+                            "-trim",
+                            "+repage",
+                            img_hi_filename,
+                        ],
+                        cwd=outdir,
+                    )
                 img_filenames.append(img_hi_filename)
     return img_filenames
+
 
 def delete_non_matching(basedir, nondelete_filenames):
     if not os.path.exists(basedir) or not os.path.isdir(basedir):
@@ -149,11 +173,12 @@ def delete_non_matching(basedir, nondelete_filenames):
                 print("deleting " + full_filename)
                 os.unlink(full_filename)
 
+
 if MODE == "subdir":
     for basedir in BASE_DIRS:
         print("########################################")
         print("Processing %s" % basedir)
-        for (dirpath, dirnames, filenames) in os.walk(basedir):
+        for dirpath, dirnames, filenames in os.walk(basedir):
             img_filenames = []
             for filename in fnmatch.filter(filenames, "*.js"):
                 img_filenames += process_file(os.path.join(dirpath, filename))
@@ -164,7 +189,7 @@ elif MODE == "textdir":
     for basedir in BASE_DIRS:
         print("########################################")
         print("Processing %s" % basedir)
-        for (dirpath, dirnames, filenames) in os.walk(basedir):
+        for dirpath, dirnames, filenames in os.walk(basedir):
             for filename in fnmatch.filter(filenames, "*.js"):
                 img_filenames += process_file(os.path.join(dirpath, filename))
     delete_non_matching(TEXT_DIR, img_filenames)

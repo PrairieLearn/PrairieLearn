@@ -3,6 +3,7 @@ import os
 import uuid
 import json
 import xml.etree.ElementTree as ET
+
 """
 Command line usage:
 
@@ -17,6 +18,7 @@ write_question().
 The question may require some cleanup. Known problems include '{' characters in LaTeX formulas (which 
 get replaced indiscriminantly), and images, which are just ignored.
 """
+
 
 def transform_code(xml_code):
     xml_code = xml_code.replace("^", "**")
@@ -154,4 +156,4 @@ if __name__ == "__main__":
     info = gen_info(my_id, xml_root)
     json.dump(info, open(dirname + "/info.json", "w"))
     write_server(xml_root, open(dirname + "/server.py", "w"))
-    write_question(xml_root, open(dirname + "/question.html","w"))
+    write_question(xml_root, open(dirname + "/question.html", "w"))
