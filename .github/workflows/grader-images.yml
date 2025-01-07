@@ -1,6 +1,9 @@
 on:
   workflow_call:
 
+env:
+  COMMIT_SHA: ${{ github.event.pull_request.head.sha || github.sha }}
+
 jobs:
   build-graders:
     runs-on: ubuntu-latest
@@ -34,7 +37,7 @@ jobs:
         run: tools/check_path_modified.sh graders/${{ matrix.grader }} graders_${{ matrix.grader }}_modified
 
       - name: Build and push prairielearn/grader-${{ matrix.grader }}
-        if: ${{ env.graders_${{ matrix.grader }}_modified }}
+        if: env[format('graders_{0}_modified', matrix.grader)] == 'true'
         uses: docker/build-push-action@v6
         with:
           context: graders/${{ matrix.grader }}
