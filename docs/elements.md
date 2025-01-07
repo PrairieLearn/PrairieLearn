@@ -1825,7 +1825,7 @@ Printing Pandas DataFrames with this element is deprecated. Please use the new [
 
 Displays boilerplate HTML from mustache templates in a reusable way.
 
-#### Sample elem
+#### Sample element
 
 ```html
 <pl-template file-name="templates/outer_template.mustache">
