@@ -126,7 +126,19 @@ jobs:
   build-grader-images:
     uses: ./.github/workflows/grader-images.yml
     secrets: inherit
-
+  build-grader-images-success:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    name: Final Results
+    needs: [build-grader-images]
+    steps:
+      - run: |
+          result="${{ needs.build-grader-images.result }}"
+          if [[ $result == "success" || $result == "skipped" ]]; then
+            exit 0
+          else
+            exit 1
+          fi
   native-checks:
     runs-on: ubuntu-latest
     steps:
