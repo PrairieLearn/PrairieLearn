@@ -19,6 +19,7 @@ The question may require some cleanup. Known problems include '{' characters in 
 get replaced indiscriminantly), and images, which are just ignored.
 """
 
+
 def transform_code(xml_code):
     xml_code = xml_code.replace("^", "**")
     return xml_code
@@ -148,11 +149,11 @@ if __name__ == "__main__":
     dirname = sys.argv[2]
     try:
         os.mkdir(dirname)
-    except:
+    except Exception:
         print("looks like ", dirname, "already exists")
         exit(1)
     my_id = uuid.uuid4()
     info = gen_info(my_id, xml_root)
     json.dump(info, open(dirname + "/info.json", "w"))
     write_server(xml_root, open(dirname + "/server.py", "w"))
-    write_question(xml_root, open(dirname + "/question.html","w"))
+    write_question(xml_root, open(dirname + "/question.html", "w"))
