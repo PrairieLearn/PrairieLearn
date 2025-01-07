@@ -373,7 +373,7 @@ def worker_loop() -> None:
                         # TODO: Once this has been running in production for a while,
                         # change this to raise an exception.
                         sys.stderr.write(
-                            f"Function {fcn!s}() in {file + '.py'!s} returned a data object other than the one that was passed in.\n\n"
+                            f"Function {fcn}() in {file + '.py'} returned a data object other than the one that was passed in.\n\n"
                             + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
                             + "For now, the return value will be used instead of the data object that was passed in.\n\n"
                             + "In the future, returning a different object will trigger a fatal error."
