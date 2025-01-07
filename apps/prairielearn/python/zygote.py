@@ -24,9 +24,10 @@ import subprocess
 import sys
 import time
 import types
+from collections.abc import Iterable, Sequence
 from importlib.abc import MetaPathFinder
 from inspect import signature
-from typing import Any, Iterable, Sequence
+from typing import Any
 
 import prairielearn.internal.zygote_utils as zu
 from prairielearn.internal import question_phases
@@ -470,10 +471,10 @@ with open(4, "w", encoding="utf-8") as exitf:
                 else:
                     # The worker did not exit gracefully
                     raise Exception(
-                        "worker process exited unexpectedly with status %d" % status
+                        f"worker process exited unexpectedly with status {status}"
                     )
             else:
                 # Something else happened that is weird
                 raise Exception(
-                    "worker process exited unexpectedly with status %d" % status
+                    f"worker process exited unexpectedly with status {status}"
                 )
