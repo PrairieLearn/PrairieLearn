@@ -206,4 +206,4 @@ def test(element_html, data):
         data["raw_submitted_answers"][answers_name] = "INVALID STRING"
         data["format_errors"][answers_name] = "format error message"
     else:
-        raise RuntimeError("invalid result: {}".format(data["test_type")
+        raise RuntimeError("invalid result: {}".format(data["test_type"]))

@@ -44,7 +44,9 @@ def prepare(element_html, data):
     if name not in data["correct_answers"]:
         m = pl.get_integer_attrib(element, "rows", None)
         if m is None:
-            raise ValueError("Number of rows is not set in pl-matrix-component-input with no correct answer.")
+            raise ValueError(
+                "Number of rows is not set in pl-matrix-component-input with no correct answer."
+            )
         if m < 1:
             raise ValueError(
                 "Number of rows in pl-matrix-component-input must be strictly positive."
@@ -298,7 +300,7 @@ def render(element_html, data):
             html = ""
 
     else:
-        raise ValueError("Invalid panel type: {}".format(data["panel")
+        raise ValueError("Invalid panel type: {}".format(data["panel"]))
 
     return html
 

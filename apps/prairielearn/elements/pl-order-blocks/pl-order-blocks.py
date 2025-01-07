@@ -183,7 +183,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if grading_method not in LCS_GRADABLE_TYPES and pl.has_attrib(
         element, "partial-credit"
     ):
-        raise ValueError("You may only specify partial credit options in the DAG, ordered, and ranking grading modes.")
+        raise ValueError(
+            "You may only specify partial credit options in the DAG, ordered, and ranking grading modes."
+        )
 
     if (
         grading_method is not GradingMethodType.DAG
@@ -263,7 +265,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
         if distractor_for is not None and is_correct:
-            raise ValueError("The distractor-for attribute may only be used on blocks with correct=false.")
+            raise ValueError(
+                "The distractor-for attribute may only be used on blocks with correct=false."
+            )
 
         tag, depends = get_graph_info(html_tags)
         if is_correct:
@@ -345,9 +349,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
 
     if min_incorrect > len(incorrect_answers) or max_incorrect > len(incorrect_answers):
-        raise ValueError("The min-incorrect or max-incorrect attribute may not exceed the number of incorrect <pl-answers>.")
+        raise ValueError(
+            "The min-incorrect or max-incorrect attribute may not exceed the number of incorrect <pl-answers>."
+        )
     if min_incorrect > max_incorrect:
-        raise ValueError("The attribute min-incorrect must be smaller than max-incorrect.")
+        raise ValueError(
+            "The attribute min-incorrect must be smaller than max-incorrect."
+        )
 
     incorrect_answers_count = random.randint(min_incorrect, max_incorrect)
 
@@ -489,7 +497,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         )
 
         if inline and check_indentation:
-            raise ValueError("The indentation attribute may not be used when inline is true.")
+            raise ValueError(
+                "The indentation attribute may not be used when inline is true."
+            )
 
         if grading_method is GradingMethodType.UNORDERED:
             help_text += "<p>Your answer ordering does not matter. </p>"
@@ -1000,4 +1010,4 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
 
     else:
-        raise ValueError("invalid result: {}".format(data["test_type")
+        raise ValueError("invalid result: {}".format(data["test_type"]))

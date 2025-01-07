@@ -246,7 +246,7 @@ def render(element_html, data):
             html = ""
 
     else:
-        raise ValueError("Invalid panel type: {}".format(data["panel")
+        raise ValueError("Invalid panel type: {}".format(data["panel"]))
 
     return html
 
