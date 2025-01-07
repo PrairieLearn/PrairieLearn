@@ -91,10 +91,7 @@ def prepare(element_html, data):
             f"The attribute min-correct is {min_correct:d} but must be at least 1"
         )
 
-    # FIXME: why enforce a maximum number of options?
-    max_answers = 26  # will not display more than 26 checkbox answers
-
-    number_answers = max(0, min(len_total, min(max_answers, number_answers)))
+    number_answers = max(0, min(len_total, number_answers))
     min_correct = min(
         len_correct,
         min(number_answers, max(0, max(number_answers - len_incorrect, min_correct))),
