@@ -9,6 +9,8 @@ jobs:
   build-grader-images:
     uses: ./.github/workflows/grader-images.yml
     secrets: inherit
+    with:
+      tag_latest: true
   docker:
     runs-on: ubuntu-latest
     steps:
