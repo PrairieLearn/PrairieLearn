@@ -134,9 +134,7 @@ By default, does not overwrite existing infoAssessment.json files; use -f instea
         try:
             with open(source) as f:
                 if not args.quiet:
-                    print(
-                        f"Converting assessment {assessment} in {adir} to {tdir}"
-                    )
+                    print(f"Converting assessment {assessment} in {adir} to {tdir}")
                 try:
                     if not os.path.isdir(tdir):
                         os.makedirs(tdir)  # 3.4 option: exist_ok=True
@@ -156,6 +154,4 @@ By default, does not overwrite existing infoAssessment.json files; use -f instea
                     )
         except:
             if not args.quiet:
-                print(
-                    f"Directory {adir} does not have a readable info.json file?"
-                )
+                print(f"Directory {adir} does not have a readable info.json file?")
