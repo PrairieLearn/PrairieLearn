@@ -471,9 +471,9 @@ def grade(element_html, data):
             if elements.grade(
                 ref_element, element, element["gradingName"], tol, angtol
             ):
-                if (
-                    ref_element.get("optional_grading")
-                ) or (disregard_extra_elements and matches[ref_element["id"]]):
+                if (ref_element.get("optional_grading")) or (
+                    disregard_extra_elements and matches[ref_element["id"]]
+                ):
                     # It's optional but correct, so the score should not be affected
                     # Or, it's a duplicate and we're okay with that.
                     num_optional += 1
