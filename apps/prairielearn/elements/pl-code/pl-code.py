@@ -142,9 +142,7 @@ def get_formatter(
     BaseStyle: type[pygments.style.Style], highlight_lines_color: str | None
 ) -> HighlightingHtmlFormatter:
     class CustomStyleWithAnsiColors(BaseStyle):
-        def __init__(self, *args, **kwargs):
-            super().__init__(*args, **kwargs)
-            self.styles = {**self.styles, **get_ansi_color_tokens()}
+        styles: typing.ClassVar = {**BaseStyle.styles, **get_ansi_color_tokens()}  # type: ignore (pygments did not annotate their class variables correctly)
 
         highlight_color = (
             highlight_lines_color or BaseStyle.highlight_color or "#b3d7ff"
