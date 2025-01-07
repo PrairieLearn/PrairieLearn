@@ -2,7 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, type HtmlSafeString } from '@prairielearn/html';
 
 import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets.js';
-import { type Question, type CourseInstance } from '../lib/db-types.js';
+import { type Question, type Question, type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { type QuestionsPageData } from '../models/questions.js';
 
@@ -71,6 +71,7 @@ export function QuestionsTable({
     )}
     ${CreateQuestionModal({
       csrfToken: __csrf_token,
+      templateQuestions: [],
     })}
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
@@ -315,8 +316,8 @@ function CreateQuestionModal({
         <label for="start_from">Template</label>
         <select
           class="form-select"
-          id="template_qid"
-          name="template_qid"
+          id="template"
+          name="template"
           required
           aria-describedby="template_help"
           disabled
