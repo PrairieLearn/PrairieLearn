@@ -28,6 +28,20 @@ jobs:
     uses: ./.github/workflows/workspace-images.yml
     secrets: inherit
 
+  build-workspace-images-results:
+    if: ${{ always() }}
+    runs-on: ubuntu-latest
+    name: Final Results of Workspace Images
+    needs: [build-workspace-images]
+    steps:
+      - run: |
+          result="${{ needs.build-workspace-images.result }}"
+          if [[ $result == "success" || $result == "skipped" ]]; then
+            exit 0
+          else
+            exit 1
+          fi
+
   build-grader-images:
     runs-on: ubuntu-latest
 
@@ -281,7 +295,7 @@ jobs:
   report-image-sizes:
     runs-on: ubuntu-latest
     needs:
-      - build-workspace-images
+      - build-workspace-images-results
       - build-grader-images
       - build-core-images
     if: ${{ always() }}
