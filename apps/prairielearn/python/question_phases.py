@@ -158,8 +158,7 @@ def process(
                 return element_value
             elif phase == "file":
                 if result is not None:
-                    msg = "Another element already returned a file"
-                    raise RuntimeError(msg)
+                    raise RuntimeError("Another element already returned a file")
                 result = element_value
             elif element_value is not None and element_value is not data:
                 # TODO: Once this has been running in production for a while,

@@ -35,12 +35,12 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         source_file_name is not None
         and (submitted_file_name is not None or contents is not None)
     ) or (submitted_file_name is not None and contents is not None):
-        msg = 'Only one of the attributes "source-file-name", "submitted-file-name" and "contents" can be used.'
-        raise ValueError(msg)
+        raise ValueError(
+            'Only one of the attributes "source-file-name", "submitted-file-name" and "contents" can be used.'
+        )
 
     if language not in ["html", "markdown"]:
-        msg = 'Attribute "language" must be either "html" or "markdown".'
-        raise ValueError(msg)
+        raise ValueError('Attribute "language" must be either "html" or "markdown".')
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:

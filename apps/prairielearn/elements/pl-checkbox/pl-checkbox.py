@@ -53,8 +53,9 @@ def prepare(element_html, data):
     )
     partial_credit_method = pl.get_string_attrib(element, "partial-credit-method", None)
     if not partial_credit and partial_credit_method is not None:
-        msg = "Cannot specify partial-credit-method if partial-credit is not enabled"
-        raise ValueError(msg)
+        raise ValueError(
+            "Cannot specify partial-credit-method if partial-credit is not enabled"
+        )
 
     correct_answers = []
     incorrect_answers = []

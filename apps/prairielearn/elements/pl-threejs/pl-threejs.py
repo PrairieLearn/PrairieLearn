@@ -190,8 +190,9 @@ def render(element_html, data):
         element, "text-pose-format", TEXT_POSE_FORMAT_DEFAULT
     )
     if text_pose_format not in ["matrix", "quaternion", "homogeneous"]:
-        msg = 'attribute "text-pose-format" must be either "matrix", "quaternion", or homogeneous'
-        raise ValueError(msg)
+        raise ValueError(
+            'attribute "text-pose-format" must be either "matrix", "quaternion", or homogeneous'
+        )
     objects = get_objects(element, data)
 
     if data["panel"] == "question":
@@ -376,8 +377,7 @@ def render(element_html, data):
         with open("pl-threejs.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
     else:
-        msg = "Invalid panel type: {}".format(data["panel"])
-        raise ValueError(msg)
+        raise ValueError("Invalid panel type: {}".format(data["panel"]))
 
     return html
 
@@ -494,8 +494,9 @@ def parse_correct_answer(f, a):
                 return np.reshape(p, (3,)), pyquaternion.Quaternion(matrix=rot_mat)
             raise ValueError
         except Exception as exc:
-            msg = 'correct answer must be a 4x4 homogeneous transformation matrix with format "[[...], [...], [...], [...]]"'
-            raise ValueError(msg) from exc
+            raise ValueError(
+                'correct answer must be a 4x4 homogeneous transformation matrix with format "[[...], [...], [...], [...]]"'
+            ) from exc
     elif f == "rpy":
         try:
             p = np.reshape(np.array(a[0], dtype=np.float64), (3,))
@@ -507,8 +508,9 @@ def parse_correct_answer(f, a):
                 return np.reshape(p, (3,)), qx * qy * qz
             raise ValueError
         except Exception as exc:
-            msg = 'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]"'
-            raise ValueError(msg) from exc
+            raise ValueError(
+                'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]"'
+            ) from exc
     elif f == "quaternion":
         try:
             p = np.reshape(np.array(a[0], dtype=np.float64), (3,))
@@ -517,16 +519,18 @@ def parse_correct_answer(f, a):
                 return np.reshape(p, (3,)), pyquaternion.Quaternion(np.roll(q, 1))
             raise ValueError
         except Exception as exc:
-            msg = 'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is a unit quaternion with format "[x, y, z, w]"'
-            raise ValueError(msg) from exc
+            raise ValueError(
+                'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is a unit quaternion with format "[x, y, z, w]"'
+            ) from exc
     elif f == "matrix":
         try:
             p = np.reshape(np.array(a[0], dtype=np.float64), (3,))
             rot_mat = np.array(a[1], dtype=np.float64)
             return np.reshape(p, (3,)), pyquaternion.Quaternion(matrix=rot_mat)
         except Exception as exc:
-            msg = 'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]"'
-            raise ValueError(msg) from exc
+            raise ValueError(
+                'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]"'
+            ) from exc
     elif f == "axisangle":
         try:
             p = np.reshape(np.array(a[0], dtype=np.float64), (3,))
@@ -545,8 +549,9 @@ def parse_correct_answer(f, a):
                 raise ValueError
             raise ValueError
         except Exception as exc:
-            msg = 'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees'
-            raise ValueError(msg) from exc
+            raise ValueError(
+                'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees'
+            ) from exc
     else:
         msg = f'"answer-pose-format" must be "rpy", "quaternion", "matrix", "axisangle", or "homogeneous": {f}'
         raise ValueError(msg)

@@ -44,8 +44,7 @@ def get_solution(element, data):
                 solution.append(child_html)
 
     if len(solution) > 1:
-        msg = "Multiple correct answers were set"
-        raise RuntimeError(msg)
+        raise RuntimeError("Multiple correct answers were set")
 
     return solution[0]
 
@@ -207,5 +206,4 @@ def test(element_html, data):
         data["raw_submitted_answers"][answers_name] = "INVALID STRING"
         data["format_errors"][answers_name] = "format error message"
     else:
-        msg = "invalid result: {}".format(data["test_type"])
-        raise RuntimeError(msg)
+        raise RuntimeError("invalid result: {}".format(data["test_type")

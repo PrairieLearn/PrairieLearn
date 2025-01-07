@@ -183,8 +183,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if grading_method not in LCS_GRADABLE_TYPES and pl.has_attrib(
         element, "partial-credit"
     ):
-        msg = "You may only specify partial credit options in the DAG, ordered, and ranking grading modes."
-        raise ValueError(msg)
+        raise ValueError("You may only specify partial credit options in the DAG, ordered, and ranking grading modes.")
 
     if (
         grading_method is not GradingMethodType.DAG
@@ -197,8 +196,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
     code_language = pl.get_string_attrib(element, "code-language", None)
     if format is FormatType.DEFAULT and code_language is not None:
-        msg = 'code-language attribute may only be used with format="code"'
-        raise ValueError(msg)
+        raise ValueError('code-language attribute may only be used with format="code"')
 
     correct_answers: list[OrderBlocksAnswerData] = []
     incorrect_answers: list[OrderBlocksAnswerData] = []
@@ -265,8 +263,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
         if distractor_for is not None and is_correct:
-            msg = "The distractor-for attribute may only be used on blocks with correct=false."
-            raise ValueError(msg)
+            raise ValueError("The distractor-for attribute may only be used on blocks with correct=false.")
 
         tag, depends = get_graph_info(html_tags)
         if is_correct:
@@ -337,8 +334,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             index += 1
 
     if grading_method is not GradingMethodType.EXTERNAL and len(correct_answers) == 0:
-        msg = "There are no correct answers specified for this question."
-        raise ValueError(msg)
+        raise ValueError("There are no correct answers specified for this question.")
 
     all_incorrect_answers = len(incorrect_answers)
     max_incorrect = pl.get_integer_attrib(
@@ -349,11 +345,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
 
     if min_incorrect > len(incorrect_answers) or max_incorrect > len(incorrect_answers):
-        msg = "The min-incorrect or max-incorrect attribute may not exceed the number of incorrect <pl-answers>."
-        raise ValueError(msg)
+        raise ValueError("The min-incorrect or max-incorrect attribute may not exceed the number of incorrect <pl-answers>.")
     if min_incorrect > max_incorrect:
-        msg = "The attribute min-incorrect must be smaller than max-incorrect."
-        raise ValueError(msg)
+        raise ValueError("The attribute min-incorrect must be smaller than max-incorrect.")
 
     incorrect_answers_count = random.randint(min_incorrect, max_incorrect)
 
@@ -495,8 +489,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         )
 
         if inline and check_indentation:
-            msg = "The indentation attribute may not be used when inline is true."
-            raise ValueError(msg)
+            raise ValueError("The indentation attribute may not be used when inline is true.")
 
         if grading_method is GradingMethodType.UNORDERED:
             help_text += "<p>Your answer ordering does not matter. </p>"
@@ -1007,5 +1000,4 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
 
     else:
-        msg = "invalid result: {}".format(data["test_type"])
-        raise ValueError(msg)
+        raise ValueError("invalid result: {}".format(data["test_type")

@@ -62,8 +62,9 @@ def prepare(element_html, data):
     if "_required_file_names" not in data["params"]:
         data["params"]["_required_file_names"] = []
     elif file_name in data["params"]["_required_file_names"]:
-        msg = "There is more than one file editor with the same file name."
-        raise RuntimeError(msg)
+        raise RuntimeError(
+            "There is more than one file editor with the same file name."
+        )
     data["params"]["_required_file_names"].append(file_name)
 
     if (

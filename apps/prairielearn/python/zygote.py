@@ -457,8 +457,9 @@ with open(4, "w", encoding="utf-8") as exitf:
                         if any(
                             p.username() == "executor" for p in psutil.process_iter()
                         ):
-                            msg = "found remaining processes belonging to executor user"
-                            raise RuntimeError(msg)
+                            raise RuntimeError(
+                                "found remaining processes belonging to executor user"
+                            )
 
                     # We'll need to write a confirmation message on file
                     # descriptor 4 so that PL knows that control was actually

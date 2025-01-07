@@ -1,3 +1,2 @@
 def generate(_data):
-    msg = "deliberately broken generate function"
-    raise RuntimeError(msg)
+    raise RuntimeError("deliberately broken generate function")
