@@ -548,7 +548,7 @@ def parse_correct_answer(f, a):
             msg = 'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees'
             raise ValueError(msg) from exc
     else:
-        msg = f'"answer-pose-format" must be "rpy", "quaternion", "matrix", "axisangle", or "homogeneous": {f:s}'
+        msg = f'"answer-pose-format" must be "rpy", "quaternion", "matrix", "axisangle", or "homogeneous": {f}'
         raise ValueError(msg)
 
 
@@ -600,7 +600,7 @@ def get_orientation(element, name_orientation, name_format):
                 return np.roll((qx * qy * qz).elements, -1).tolist()
             raise ValueError
         except Exception as exc:
-            msg = f'attribute "{name_orientation:s}" with format "{name_format:s}" must be a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]": {s:s}'
+            msg = f'attribute "{name_orientation}" with format "{name_format}" must be a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]": {s}'
             raise ValueError(msg) from exc
     elif f == "quaternion":
         try:
@@ -609,7 +609,7 @@ def get_orientation(element, name_orientation, name_format):
                 return q.tolist()
             raise ValueError
         except Exception as exc:
-            msg = f'attribute "{name_orientation:s}" with format "{name_format:s}" must be a unit quaternion with format "[x, y, z, w]": {s:s}'
+            msg = f'attribute "{name_orientation}" with format "{name_format}" must be a unit quaternion with format "[x, y, z, w]": {s}'
             raise ValueError(msg) from exc
     elif f == "matrix":
         try:
@@ -618,7 +618,7 @@ def get_orientation(element, name_orientation, name_format):
                 pyquaternion.Quaternion(matrix=rot_matrix).elements, -1
             ).tolist()
         except Exception as exc:
-            msg = f'attribute "{name_orientation:s}" with format "{name_format:s}" must be a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]": {s:s}'
+            msg = f'attribute "{name_orientation}" with format "{name_format}" must be a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]": {s}'
             raise ValueError(msg) from exc
     elif f == "axisangle":
         try:
@@ -633,10 +633,10 @@ def get_orientation(element, name_orientation, name_format):
                 raise ValueError
             raise ValueError
         except Exception as exc:
-            msg = f'attribute "{name_orientation:s}" with format "{name_format:s}" must have format "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees: {s:s}'
+            msg = f'attribute "{name_orientation}" with format "{name_format}" must have format "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees: {s}'
             raise ValueError(msg) from exc
     else:
-        msg = f'attribute "{name_format:s}" must be "rpy", "quaternion", "matrix", or "axisangle": {f:s}'
+        msg = f'attribute "{name_format}" must be "rpy", "quaternion", "matrix", or "axisangle": {f}'
         raise ValueError(msg)
 
 
@@ -650,10 +650,10 @@ def get_position(element, name_position, default=None, must_be_nonzero=False):
         p = np.array(json.loads(s), dtype=np.float64)
         if p.shape == (3,):
             if must_be_nonzero and np.allclose(p, np.array([0, 0, 0])):
-                msg = f'attribute "{name_position:s}" must be non-zero'
+                msg = f'attribute "{name_position}" must be non-zero'
                 raise ValueError(msg)
             return p.tolist()
         raise ValueError
     except Exception as exc:
-        msg = f'attribute "{name_position:s}" must have format "[x, y, z]": {s:s}'
+        msg = f'attribute "{name_position}" must have format "[x, y, z]": {s}'
         raise ValueError(msg) from exc
