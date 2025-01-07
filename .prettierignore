@@ -1,6 +1,5 @@
 node_modules
 .yarn
-.venv
 
 # Coverage reports
 coverage/
