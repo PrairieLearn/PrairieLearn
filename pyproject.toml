@@ -4,7 +4,7 @@ include = [
     "./apps/prairielearn/python/*.py",
     "./graders/**/*.py",
     "./exampleCourse/**/*.py",
-    "./testCourse/**/*.py"
+    "./testCourse/**/*.py",
 ]
 exclude = [
     # These files are intentionally not parseable as Python.
@@ -13,13 +13,14 @@ exclude = [
     # Files related to the Python autograder will often intentionally appear
     # broken in isolation. We'll exclude these files from linting.
     "exampleCourse/questions/**/tests/initial_code.py",
-    "exampleCourse/questions/**/tests/trailing_code.py"
+    "exampleCourse/questions/**/tests/trailing_code.py",
 ]
 target-version = "py310"
 
 [tool.ruff.lint]
 select = [
     "E",
+    "N",
     # isort
     "I",
     # flake8-bugbear
@@ -28,6 +29,8 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
+    # refurb
+    "FURB"
 ]
 ignore = [
     # Ignore line length errors
@@ -55,10 +58,13 @@ ignore = [
 # Ignore uppercase function parameters (e.g. G for a graph)
 "apps/prairielearn/elements/**/*.py" = ["N803"]
 "apps/prairielearn/python/*.py" = ["N803"]
+# Do not require self in method params
+"apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
+"exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
-    "./exampleCourse/questions/demo/autograder/python/square/tests/initial_code.py"
+    "./exampleCourse/questions/demo/autograder/python/square/tests/initial_code.py",
 ]
 
 [tool.pyright]
@@ -119,7 +125,4 @@ reportUnnecessaryTypeIgnoreComment = "error"
 
 [tool.pytest.ini_options]
 addopts = "--cov=apps"
-testpaths = [
-    "apps/prairielearn/elements",
-    "apps/prairielearn/python",
-]
+testpaths = ["apps/prairielearn/elements", "apps/prairielearn/python"]

@@ -1364,7 +1364,6 @@ export class QuestionCopyEditor extends Editor {
     // sharing settings because they cannot be undone
     delete infoJson['sharingSets'];
     delete infoJson['sharePublicly'];
-    delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
 
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
@@ -1468,7 +1467,6 @@ export class QuestionTransferEditor extends Editor {
     // We do not want to preserve sharing settings when copying a question to another course
     delete infoJson['sharingSets'];
     delete infoJson['sharePublicly'];
-    delete infoJson['sharedPublicly'];
     delete infoJson['shareSourcePublicly'];
 
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
