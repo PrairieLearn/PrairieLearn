@@ -111,7 +111,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
             if inner_html and has_template_file:
                 msg = f'pl-variable "{name}" must have at most one of file-name or its inner html defined'
-                raise ValueError(msg)
+                raise ValueError(
+                    msg
+                )
 
             elif has_template_file:
                 with open(get_file_path(child, data)) as f:
@@ -128,7 +130,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         else:
             msg = f'Tags inside of pl-template must be pl-variable, not "{child.tag}".'
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
     log_variable_warnings = pl.get_boolean_attrib(
         element, "log-variable-warnings", LOG_VARIABLE_WARNINGS_DEFAULT

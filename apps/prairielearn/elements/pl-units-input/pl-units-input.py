@@ -86,7 +86,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     if allow_blank and not pl.has_attrib(element, "blank-value"):
         msg = 'Attribute "blank-value" must be provided if "allow-blank" is enabled.'
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
 
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
@@ -106,7 +108,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     digits = pl.get_integer_attrib(element, "digits", None)
     if digits is not None and digits <= 0:
         msg = f"Number of digits specified must be at least 1, not {digits}."
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
 
     ureg = pl.get_unit_registry()
 
@@ -120,11 +124,15 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         if parsed_atol.dimensionless:
             atol = pl.get_string_attrib(element, "atol")
             msg = f'"atol" attribute "{atol}" must have units in "with-units" grading.'
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
         if pl.has_attrib(element, "comparison"):
             msg = 'Cannot set attribute "comparison" in "with-units" grading.'
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
         partial_credit = pl.get_float_attrib(
             element, "magnitude-partial-credit", MAGNITUDE_PARTIAL_CREDIT_DEFAULT
@@ -132,7 +140,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         if partial_credit is not None and not (0.0 <= partial_credit <= 1.0):
             msg = f'"magnitude-partial-credit" must be in the range [0.0, 1.0], not {partial_credit}'
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
         correct_answer_parsed = ureg.Quantity(correct_answer)
 
@@ -143,15 +153,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 f"Correct answer has dimensionality: {correct_answer_parsed.dimensionality}, "
                 f"which does not match atol dimensionality: {parsed_atol.dimensionality}."
             )
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
     else:
         atol = pl.get_string_attrib(element, "atol", ATOL_DEFAULT)
         parsed_atol = ureg.Quantity(atol)
         if not parsed_atol.dimensionless:
-            msg = (
-                f'"atol" attribute "{atol}" may only have units in with-units grading.'
+            msg = f'"atol" attribute "{atol}" may only have units in with-units grading.'
+            raise ValueError(
+                msg
             )
-            raise ValueError(msg)
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:

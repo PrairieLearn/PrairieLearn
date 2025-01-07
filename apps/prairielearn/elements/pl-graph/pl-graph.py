@@ -73,7 +73,9 @@ def graphviz_from_adj_matrix(
 
     if mat.shape[0] != mat.shape[1]:
         msg = f'Non-square adjacency matrix "{input_param_name}" of size ({mat.shape[0]}, {mat.shape[1]}) given as input.'
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
 
     if label is not None:
         mat_label = label
@@ -82,13 +84,17 @@ def graphviz_from_adj_matrix(
                 f'Dimension {mat_label.shape[0]} of the label "{input_label}"'
                 f'is not consistent with the dimension {mat.shape[0]} of the matrix "{input_param_name}".'
             )
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
     else:
         mat_label = range(mat.shape[1])
 
     if not directed and not np.allclose(mat, mat.T):
         msg = f'Input matrix "{input_param_name}" must be symmetric if rendering is set to be undirected.'
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
 
     # Auto detect showing weights if any of the weights are not 1 or 0
 
@@ -172,7 +178,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
     if len(str(element.text)) == 0 and input_param_name is None:
         msg = "No graph source given! Must either define graph in HTML or provide source in params."
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
 
     if input_param_name is not None:
         if input_type in matrix_backends:

@@ -72,7 +72,9 @@ def prepare(element_html, data):
         and not str(element_text).isspace()
     ):
         msg = 'Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.'
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
 
 
 def render(element_html, data):

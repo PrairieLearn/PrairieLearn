@@ -183,13 +183,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         lexer = get_lexer_by_name(language)
         if lexer is None:
             msg = f'Unknown language: "{language}". Must be one of the aliases listed in https://pygments.org/languages/, or the special language "ansi-color".'
-            raise KeyError(msg)
+            raise KeyError(
+                msg
+            )
 
     style = pl.get_string_attrib(element, "style", STYLE_DEFAULT)
     allowed_styles = STYLE_MAP.keys()
     if style not in allowed_styles:
         msg = f'Unknown style: "{style}". Must be one of {", ".join(allowed_styles)}'
-        raise KeyError(msg)
+        raise KeyError(
+            msg
+        )
 
     source_file_name = pl.get_string_attrib(
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
@@ -200,7 +204,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         and not str(element.text).isspace()
     ):
         msg = 'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
 
     highlight_lines = pl.get_string_attrib(
         element, "highlight-lines", HIGHLIGHT_LINES_DEFAULT

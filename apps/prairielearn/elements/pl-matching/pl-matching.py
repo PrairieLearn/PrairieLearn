@@ -140,7 +140,9 @@ def prepare(element_html, data):
         element, "allow-blank", ALLOW_BLANK_DEFAULT
     ) and not pl.get_boolean_attrib(element, "blank", BLANK_DEFAULT):
         msg = 'The attribute "allow-blank" cannot be enabled when blank dropdown entries are disabled by the "blank" attribute.'
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
 
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)

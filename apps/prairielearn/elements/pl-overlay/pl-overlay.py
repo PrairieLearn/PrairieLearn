@@ -39,18 +39,18 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             if ("left" not in child.attrib and "right" not in child.attrib) or (
                 "left" in child.attrib and "right" in child.attrib
             ):
-                msg = (
-                    'pl-location requires exactly one of "left" or "right" attributes.'
+                msg = 'pl-location requires exactly one of "left" or "right" attributes.'
+                raise ValueError(
+                    msg
                 )
-                raise ValueError(msg)
 
             if ("top" not in child.attrib and "bottom" not in child.attrib) or (
                 "top" in child.attrib and "bottom" in child.attrib
             ):
-                msg = (
-                    'pl-location requires exactly one of "top" or "bottom" attributes.'
+                msg = 'pl-location requires exactly one of "top" or "bottom" attributes.'
+                raise ValueError(
+                    msg
                 )
-                raise ValueError(msg)
 
             valign = pl.get_string_attrib(child, "valign", VALIGN_DEFAULT)
             if valign not in VALIGN_VALUES:
@@ -78,7 +78,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         )
     else:
         msg = f"pl-overlay can have at most one <pl-background> child, found {num_backgrounds}."
-        raise ValueError(msg)
+        raise ValueError(
+            msg
+        )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:

@@ -43,7 +43,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         if file_directory not in DIRECTORY_PATH_DICT:
             dict_keys = ", ".join(f'"{key}"' for key in DIRECTORY_PATH_DICT)
             msg = f'Invalid directory choice "{file_directory}", must be one of: {dict_keys}.'
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
         file_name = pl.get_string_attrib(element, "file-name")
         file_path = os.path.join(
@@ -53,7 +55,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         # If file not found on server, raise error
         if not os.path.isfile(file_path):
             msg = f'File "{file_name}" not found in directory "{file_directory}".'
-            raise FileNotFoundError(msg)
+            raise FileNotFoundError(
+                msg
+            )
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -84,7 +88,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     elif file_type is FileType.DYNAMIC:
         if pl.has_attrib(element, "directory"):
             msg = f'Attribute "directory" cannot be provided for type "{file_type}".'
-            raise ValueError(msg)
+            raise ValueError(
+                msg
+            )
 
         base_url = data["options"]["client_files_question_dynamic_url"]
 
