@@ -126,10 +126,10 @@ jobs:
   build-grader-images:
     uses: ./.github/workflows/grader-images.yml
     secrets: inherit
-  build-grader-images-success:
+  build-grader-images-results:
     if: ${{ always() }}
     runs-on: ubuntu-latest
-    name: Final Results
+    name: Final Results of Grader Image Builds
     needs: [build-grader-images]
     steps:
       - run: |
