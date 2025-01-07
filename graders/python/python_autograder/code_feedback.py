@@ -110,7 +110,8 @@ class Feedback:
         this autograder offers. You can also perform verification by hand with
         manual grading.
         """
-        raise RuntimeError("The use of this function is not allowed.")
+        msg = "The use of this function is not allowed."
+        raise RuntimeError(msg)
 
     @classmethod
     def check_numpy_array_sanity(cls, name, num_axes, data):

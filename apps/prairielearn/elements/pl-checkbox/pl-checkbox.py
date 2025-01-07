@@ -79,15 +79,17 @@ def prepare(element_html, data):
     len_total = len_correct + len_incorrect
 
     if len_correct == 0:
-        raise ValueError("At least one option must be true.")
+        msg = "At least one option must be true."
+        raise ValueError(msg)
 
     number_answers = pl.get_integer_attrib(element, "number-answers", len_total)
     min_correct = pl.get_integer_attrib(element, "min-correct", MIN_CORRECT_DEFAULT)
     max_correct = pl.get_integer_attrib(element, "max-correct", len(correct_answers))
 
     if min_correct < 1:
+        msg = f"The attribute min-correct is {min_correct:d} but must be at least 1"
         raise ValueError(
-            f"The attribute min-correct is {min_correct:d} but must be at least 1"
+            msg
         )
 
     # FIXME: why enforce a maximum number of options?
@@ -116,26 +118,31 @@ def prepare(element_html, data):
     max_select = pl.get_integer_attrib(element, "max-select", number_answers)
 
     if min_select < 1:
+        msg = f"The attribute min-select is {min_select} but must be at least 1"
         raise ValueError(
-            f"The attribute min-select is {min_select} but must be at least 1"
+            msg
         )
 
     # Check that min_select, max_select, number_answers, min_correct, and max_correct all have sensible values relative to each other.
     if min_select > max_select:
+        msg = f"min-select ({min_select}) is greater than max-select ({max_select})"
         raise ValueError(
-            f"min-select ({min_select}) is greater than max-select ({max_select})"
+            msg
         )
     if min_select > number_answers:
+        msg = f"min-select ({min_select}) is greater than the total number of answers to display ({number_answers})"
         raise ValueError(
-            f"min-select ({min_select}) is greater than the total number of answers to display ({number_answers})"
+            msg
         )
     if min_select > min_correct:
+        msg = f"min-select ({min_select}) is greater than the minimum possible number of correct answers ({min_correct})"
         raise ValueError(
-            f"min-select ({min_select}) is greater than the minimum possible number of correct answers ({min_correct})"
+            msg
         )
     if max_select < max_correct:
+        msg = f"max-select ({max_select}) is less than the maximum possible number of correct answers ({max_correct})"
         raise ValueError(
-            f"max-select ({max_select}) is less than the maximum possible number of correct answers ({max_correct})"
+            msg
         )
 
     number_correct = random.randint(min_correct, max_correct)
@@ -338,8 +345,9 @@ def render(element_html, data):
                         + "and <code>n</code> is the total number of options you select."
                     )
                 else:
+                    msg = f"Unknown value for partial_credit_method: {partial_credit_method}"
                     raise ValueError(
-                        f"Unknown value for partial_credit_method: {partial_credit_method}"
+                        msg
                     )
             else:
                 gradingtext = (
@@ -452,7 +460,8 @@ def render(element_html, data):
         ):
             correct_answer_list = data["correct_answers"].get(name, [])
             if len(correct_answer_list) == 0:
-                raise ValueError("At least one option must be true.")
+                msg = "At least one option must be true."
+                raise ValueError(msg)
             else:
                 html_params = {
                     "answer": True,
@@ -468,7 +477,8 @@ def render(element_html, data):
             html = ""
 
     else:
-        raise ValueError("Invalid panel type: {}".format(data["panel"]))
+        msg = "Invalid panel type: {}".format(data["panel"])
+        raise ValueError(msg)
 
     return html
 
@@ -561,8 +571,9 @@ def grade(element_html, data):
             guessing_factor = n_correct_answers / len(submitted_set)
             score = base_score * guessing_factor
         else:
+            msg = f"Unknown value for partial_credit_method: {partial_credit_method}"
             raise ValueError(
-                f"Unknown value for partial_credit_method: {partial_credit_method}"
+                msg
             )
 
     data["partial_scores"][name] = {
@@ -640,8 +651,9 @@ def test(element_html, data):
                 guessing_factor = n_correct_answers / len(set(ans))
                 score = base_score * guessing_factor
             else:
+                msg = f"Unknown value for partial_credit_method: {partial_credit_method}"
                 raise ValueError(
-                    f"Unknown value for partial_credit_method: {partial_credit_method}"
+                    msg
                 )
         else:
             score = 0

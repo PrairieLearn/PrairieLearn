@@ -113,13 +113,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     width = pl.get_integer_attrib(element, "width", WIDTH_DEFAULT)
 
     if varname not in data["params"]:
+        msg = f'Could not find "{varname}" in params. Please double check the parameter name is spelled correctly.'
         raise KeyError(
-            f'Could not find "{varname}" in params. Please double check the parameter name is spelled correctly.'
+            msg
         )
 
     if presentation_type not in VALID_PRESENTATION_TYPES:
+        msg = f'Invalid presentation type "{presentation_type}", must be one of {VALID_PRESENTATION_TYPES}.'
         raise ValueError(
-            f'Invalid presentation type "{presentation_type}", must be one of {VALID_PRESENTATION_TYPES}.'
+            msg
         )
 
     # Always assume that entry in params dict is serialized dataframe

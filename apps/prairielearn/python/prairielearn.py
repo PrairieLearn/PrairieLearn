@@ -74,7 +74,8 @@ class ElementTestData(QuestionData):
 def check_answers_names(data: QuestionData, name: str) -> None:
     """Checks that answers names are distinct using property in data dict."""
     if name in data["answers_names"]:
-        raise KeyError(f'Duplicate "answers-name" attribute: "{name}"')
+        msg = f'Duplicate "answers-name" attribute: "{name}"'
+        raise KeyError(msg)
     else:
         data["answers_names"][name] = True
 
@@ -181,16 +182,18 @@ def get_enum_attrib(
         return enum_val
 
     if enum_val != enum_val.lower():
+        msg = f'Value "{enum_val}" assigned to "{name}" cannot have uppercase characters.'
         raise ValueError(
-            f'Value "{enum_val}" assigned to "{name}" cannot have uppercase characters.'
+            msg
         )
 
     upper_enum_str = enum_val.upper()
     accepted_names = {member.name.replace("_", "-") for member in enum_type}
 
     if upper_enum_str not in accepted_names:
+        msg = f"{enum_val} is not a valid type, must be one of: {', '.join(member.name.lower().replace('_', '-') for member in enum_type)}."
         raise ValueError(
-            f"{enum_val} is not a valid type, must be one of: {', '.join(member.name.lower().replace('_', '-') for member in enum_type)}."
+            msg
         )
 
     return enum_type[upper_enum_str.replace("-", "_")]
@@ -209,7 +212,8 @@ def set_weighted_score_data(data: QuestionData, weight_default: int = 1) -> None
         weight = part.get("weight", weight_default)
 
         if score is None:
-            raise ValueError("Can't set weighted score data if score is None.")
+            msg = "Can't set weighted score data if score is None."
+            raise ValueError(msg)
 
         score_total += score * weight
         weight_total += weight
@@ -271,7 +275,8 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
     returned without change.
     """
     if np_encoding_version not in {1, 2}:
-        raise ValueError(f"Invaild np_encoding {np_encoding_version}, must be 1 or 2.")
+        msg = f"Invaild np_encoding {np_encoding_version}, must be 1 or 2."
+        raise ValueError(msg)
 
     if np_encoding_version == 2 and isinstance(v, np.number):
         return {
@@ -341,8 +346,9 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
             return {"_type": "dataframe_v2", "_value": pure_json_df}
 
         else:
+            msg = f"Invalid df_encoding_version: {df_encoding_version}. Must be 1 or 2"
             raise ValueError(
-                f"Invalid df_encoding_version: {df_encoding_version}. Must be 1 or 2"
+                msg
             )
     elif isinstance(v, nx.Graph | nx.DiGraph | nx.MultiGraph | nx.MultiDiGraph):
         return {"_type": "networkx_graph", "_value": nx.adjacency_data(v)}
@@ -377,15 +383,17 @@ def from_json(v):
             if ("_value" in v) and ("real" in v["_value"]) and ("imag" in v["_value"]):
                 return complex(v["_value"]["real"], v["_value"]["imag"])
             else:
+                msg = "variable of type complex should have value with real and imaginary pair"
                 raise ValueError(
-                    "variable of type complex should have value with real and imaginary pair"
+                    msg
                 )
         elif v["_type"] == "np_scalar":
             if "_concrete_type" in v and "_value" in v:
                 return getattr(np, v["_concrete_type"])(v["_value"])
             else:
+                msg = f"variable of type {v['_type']} needs both concrete type and value information"
                 raise ValueError(
-                    f"variable of type {v['_type']} needs both concrete type and value information"
+                    msg
                 )
         elif v["_type"] == "ndarray":
             if "_value" in v:
@@ -394,7 +402,8 @@ def from_json(v):
                 else:
                     return np.array(v["_value"])
             else:
-                raise ValueError("variable of type ndarray should have value")
+                msg = "variable of type ndarray should have value"
+                raise ValueError(msg)
         elif v["_type"] == "complex_ndarray":
             if ("_value" in v) and ("real" in v["_value"]) and ("imag" in v["_value"]):
                 if "_dtype" in v:
@@ -408,8 +417,9 @@ def from_json(v):
                         + np.array(v["_value"]["imag"]) * 1j
                     )
             else:
+                msg = "variable of type complex_ndarray should have value with real and imaginary pair"
                 raise ValueError(
-                    "variable of type complex_ndarray should have value with real and imaginary pair"
+                    msg
                 )
         elif v["_type"] == "sympy":
             return phs.json_to_sympy(v)
@@ -426,8 +436,9 @@ def from_json(v):
                         )
                 return matrix
             else:
+                msg = "variable of type sympy_matrix should have value, variables, and shape"
                 raise ValueError(
-                    "variable of type sympy_matrix should have value, variables, and shape"
+                    msg
                 )
         elif v["_type"] == "dataframe":
             if (
@@ -441,8 +452,9 @@ def from_json(v):
                     index=val["index"], columns=val["columns"], data=val["data"]
                 )
             else:
+                msg = "variable of type dataframe should have value with index, columns, and data"
                 raise ValueError(
-                    "variable of type dataframe should have value with index, columns, and data"
+                    msg
                 )
         elif v["_type"] == "dataframe_v2":
             # Convert native JSON back to a string representation so that
@@ -452,7 +464,8 @@ def from_json(v):
         elif v["_type"] == "networkx_graph":
             return nx.adjacency_graph(v["_value"])
         else:
-            raise ValueError("variable has unknown type {}".format(v["_type"]))
+            msg = "variable has unknown type {}".format(v["_type"])
+            raise ValueError(msg)
     return v
 
 
@@ -488,14 +501,16 @@ def check_attribs(
 ) -> None:
     for name in required_attribs:
         if not has_attrib(element, name):
-            raise ValueError(f'Required attribute "{name}" missing')
+            msg = f'Required attribute "{name}" missing'
+            raise ValueError(msg)
     extra_attribs = list(
         set(element.attrib)
         - set(compat_array(required_attribs))
         - set(compat_array(optional_attribs))
     )
     for name in extra_attribs:
-        raise ValueError(f'Unknown attribute "{name}"')
+        msg = f'Unknown attribute "{name}"'
+        raise ValueError(msg)
 
 
 def _get_attrib(element, name, *args):
@@ -515,7 +530,8 @@ def _get_attrib(element, name, *args):
     # to distinguish between default=None and no default being passed,
     # which means we need to explicitly handle the optional argument
     if len(args) > 1:
-        raise ValueError("Only one additional argument is allowed")
+        msg = "Only one additional argument is allowed"
+        raise ValueError(msg)
 
     if name in element.attrib:
         return (element.attrib[name], False)
@@ -529,7 +545,8 @@ def _get_attrib(element, name, *args):
     if len(args) == 1:
         return (args[0], True)
 
-    raise ValueError(f'Attribute "{name}" missing and no default is available')
+    msg = f'Attribute "{name}" missing and no default is available'
+    raise ValueError(msg)
 
 
 def has_attrib(element: lxml.html.HtmlElement, name: str) -> bool:
@@ -617,7 +634,8 @@ def get_boolean_attrib(element, name, *args):
     elif val in false_values:
         return False
     else:
-        raise ValueError(f'Attribute "{name}" must be a boolean value: {val}')
+        msg = f'Attribute "{name}" must be a boolean value: {val}'
+        raise ValueError(msg)
 
 
 # Order here matters, as we want to override the case where the args is omitted
@@ -655,7 +673,8 @@ def get_integer_attrib(element, name, *args):
     if int_val is None:
         # can't raise this exception directly in the above except
         # handler because it gives an overly complex displayed error
-        raise ValueError(f'Attribute "{name}" must be an integer: {val}')
+        msg = f'Attribute "{name}" must be an integer: {val}'
+        raise ValueError(msg)
     return int_val
 
 
@@ -677,7 +696,8 @@ def get_float_attrib(element, name, *args):
     if float_val is None:
         # can't raise this exception directly in the above except
         # handler because it gives an overly complex displayed error
-        raise ValueError(f'Attribute "{name}" must be a number: {val}')
+        msg = f'Attribute "{name}" must be a number: {val}'
+        raise ValueError(msg)
     return float_val
 
 
@@ -718,8 +738,9 @@ def get_color_attrib(element, name, *args):
         if PLColor.match(val) is not None:
             return PLColor(val).to_string(hex=True)
         else:
+            msg = f'Attribute "{name}" must be a CSS-style RGB string: {val}'
             raise ValueError(
-                f'Attribute "{name}" must be a CSS-style RGB string: {val}'
+                msg
             )
 
 
@@ -931,8 +952,9 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
         result = f"Matrix({result})"
         return result
     else:
+        msg = f'language "{language}" must be either "python", "matlab", "mathematica", "r", or "sympy"'
         raise ValueError(
-            f'language "{language}" must be either "python", "matlab", "mathematica", "r", or "sympy"'
+            msg
         )
 
 
@@ -1137,18 +1159,21 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
                 a_parse_r = string_to_number(a_sub_splt[1], allow_complex=allow_complex)
 
                 if a_parse_l is None or not np.isfinite(a_parse_l):
+                    msg = f"The numerator could not be interpreted as a decimal{ or_complex }number."
                     raise ValueError(
-                        f"The numerator could not be interpreted as a decimal{ or_complex }number."
+                        msg
                     )
                 if a_parse_r is None or not np.isfinite(a_parse_r):
+                    msg = f"The denominator could not be interpreted as a decimal{ or_complex }number."
                     raise ValueError(
-                        f"The denominator could not be interpreted as a decimal{ or_complex }number."
+                        msg
                     )
 
                 with np.errstate(divide="raise"):
                     a_frac = a_parse_l / a_parse_r
                 if not np.isfinite(a_frac):
-                    raise ValueError("The submitted answer is not a finite number.")
+                    msg = "The submitted answer is not a finite number."
+                    raise ValueError(msg)
 
                 value = a_frac
                 data["submitted_answers"] = to_json(value)
@@ -1165,11 +1190,13 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
         try:
             a_sub_parsed = string_to_number(a_sub, allow_complex=allow_complex)
             if a_sub_parsed is None:
+                msg = f"The submitted answer could not be interpreted as a decimal{ or_complex }number."
                 raise ValueError(
-                    f"The submitted answer could not be interpreted as a decimal{ or_complex }number."
+                    msg
                 )
             if not np.isfinite(a_sub_parsed):
-                raise ValueError("The submitted answer is not a finite number.")
+                msg = "The submitted answer is not a finite number."
+                raise ValueError(msg)
             value = a_sub_parsed
             data["submitted_answers"] = to_json(value)
         except ValueError as error:
@@ -1203,9 +1230,11 @@ def string_to_2darray(s, allow_complex=True):
             # Convert submitted answer (assumed to be a scalar) to float or (optionally) complex
             ans = string_to_number(s, allow_complex=allow_complex)
             if ans is None:
-                raise ValueError("invalid submitted answer (wrong type)")
+                msg = "invalid submitted answer (wrong type)"
+                raise ValueError(msg)
             if not np.isfinite(ans):
-                raise ValueError("invalid submitted answer (not finite)")
+                msg = "invalid submitted answer (not finite)"
+                raise ValueError(msg)
             matrix = np.array([[ans]])
             # Return it with no error
             return (matrix, {"format_type": "python"})
@@ -1311,11 +1340,13 @@ def string_to_2darray(s, allow_complex=True):
                     # Convert entry to float or (optionally) complex
                     ans = string_to_number(s_row[j], allow_complex=allow_complex)
                     if ans is None:
-                        raise ValueError("invalid submitted answer (wrong type)")
+                        msg = "invalid submitted answer (wrong type)"
+                        raise ValueError(msg)
 
                     # Return error if entry is not finite
                     if not np.isfinite(ans):
-                        raise ValueError("invalid submitted answer (not finite)")
+                        msg = "invalid submitted answer (not finite)"
+                        raise ValueError(msg)
 
                     # If the new entry is complex, convert the entire array in-place to np.complex128
                     if np.iscomplexobj(ans):
@@ -1409,8 +1440,9 @@ def string_to_2darray(s, allow_complex=True):
 
         # Check that number of rows is what we expected
         if number_of_rows != number_of_left_brackets - 1:
+            msg = f"Number of rows {number_of_rows} should have been one less than the number of brackets {number_of_left_brackets}"
             raise ValueError(
-                f"Number of rows {number_of_rows} should have been one less than the number of brackets {number_of_left_brackets}"
+                msg
             )
 
         # Split each row on comma
@@ -1457,11 +1489,13 @@ def string_to_2darray(s, allow_complex=True):
                     # Convert entry to float or (optionally) complex
                     ans = string_to_number(s_row[i][j], allow_complex=allow_complex)
                     if ans is None:
-                        raise ValueError("invalid submitted answer (wrong type)")
+                        msg = "invalid submitted answer (wrong type)"
+                        raise ValueError(msg)
 
                     # Return error if entry is not finite
                     if not np.isfinite(ans):
-                        raise ValueError("invalid submitted answer (not finite)")
+                        msg = "invalid submitted answer (not finite)"
+                        raise ValueError(msg)
 
                     # If the new entry is complex, convert the entire array in-place to np.complex128
                     if np.iscomplexobj(ans):
@@ -1482,7 +1516,8 @@ def string_to_2darray(s, allow_complex=True):
         return (matrix, {"format_type": "python"})
 
     # Should never get here
-    raise ValueError(f"Invalid number of left brackets: {number_of_left_brackets}")
+    msg = f"Invalid number of left brackets: {number_of_left_brackets}"
+    raise ValueError(msg)
 
 
 def latex_from_2darray(
@@ -1530,7 +1565,8 @@ def latex_from_2darray(
         }
 
     if A.ndim != 2:
-        raise ValueError("input should be a 2D numpy array")
+        msg = "input should be a 2D numpy array"
+        raise ValueError(msg)
     lines = (
         np.array2string(A, formatter=formatter)
         .replace("[", "")
@@ -1707,9 +1743,11 @@ def load_extension(data, extension_name):
     Returns a dictionary of defined variables and functions.
     """
     if "extensions" not in data:
-        raise ValueError("load_extension() must be called from an element!")
+        msg = "load_extension() must be called from an element!"
+        raise ValueError(msg)
     if extension_name not in data["extensions"]:
-        raise ValueError(f"Could not find extension {extension_name}!")
+        msg = f"Could not find extension {extension_name}!"
+        raise ValueError(msg)
 
     ext_info = data["extensions"][extension_name]
     if "controller" not in ext_info:
@@ -1759,7 +1797,8 @@ def load_all_extensions(data):
     """
 
     if "extensions" not in data:
-        raise ValueError("load_all_extensions() must be called from an element!")
+        msg = "load_all_extensions() must be called from an element!"
+        raise ValueError(msg)
     if len(data["extensions"]) == 0:
         return {}
 

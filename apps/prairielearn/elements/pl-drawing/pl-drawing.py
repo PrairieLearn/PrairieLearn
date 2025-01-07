@@ -57,7 +57,8 @@ def check_attributes_rec(element):
         try:
             pl.check_attribs(element, required_attribs=[], optional_attribs=attributes)
         except Exception as exc:
-            raise ValueError(f"Error in {name}: {exc}") from exc
+            msg = f"Error in {name}: {exc}"
+            raise ValueError(msg) from exc
     for child in element:
         check_attributes_rec(child)
 

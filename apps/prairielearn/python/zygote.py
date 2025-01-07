@@ -114,7 +114,8 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
             fullname == module or fullname.startswith(module + ".")
             for module in self.forbidden_modules
         ):
-            raise ImportError(f'module "{fullname}" is not allowed.')
+            msg = f'module "{fullname}" is not allowed.'
+            raise ImportError(msg)
         return None
 
 

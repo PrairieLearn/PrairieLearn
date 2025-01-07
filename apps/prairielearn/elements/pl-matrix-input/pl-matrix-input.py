@@ -56,9 +56,11 @@ def render(element_html, data):
             rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
             atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
             if rtol < 0:
-                raise ValueError(f"Attribute rtol = {rtol:g} must be non-negative")
+                msg = f"Attribute rtol = {rtol:g} must be non-negative"
+                raise ValueError(msg)
             if atol < 0:
-                raise ValueError(f"Attribute atol = {atol:g} must be non-negative")
+                msg = f"Attribute atol = {atol:g} must be non-negative"
+                raise ValueError(msg)
             info_params = {
                 "format": True,
                 "relabs": True,
@@ -68,7 +70,8 @@ def render(element_html, data):
         elif comparison == "sigfig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
+                msg = f"Attribute digits = {digits:d} must be non-negative"
+                raise ValueError(msg)
             info_params = {
                 "format": True,
                 "sigfig": True,
@@ -78,7 +81,8 @@ def render(element_html, data):
         elif comparison == "decdig":
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
             if digits < 0:
-                raise ValueError(f"Attribute digits = {digits:d} must be non-negative")
+                msg = f"Attribute digits = {digits:d} must be non-negative"
+                raise ValueError(msg)
             info_params = {
                 "format": True,
                 "decdig": True,
@@ -86,8 +90,9 @@ def render(element_html, data):
                 "comparison_eps": 0.51 * (10 ** -(digits - 0)),
             }
         else:
+            msg = f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
             raise ValueError(
-                f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
+                msg
             )
         info_params["allow_complex"] = pl.get_boolean_attrib(
             element, "allow-complex", ALLOW_COMPLEX_DEFAULT
@@ -225,8 +230,9 @@ def render(element_html, data):
                     a_tru, language="python", digits=digits, presentation_type="f"
                 )
             else:
+                msg = f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
                 raise ValueError(
-                    f'method of comparison "{comparison}" is not valid (must be "relabs", "sigfig", or "decdig")'
+                    msg
                 )
 
             html_params = {
@@ -307,7 +313,8 @@ def grade(element_html, data):
     a_tru = np.array(a_tru)
     # Throw an error if true answer is not a 2D numpy array
     if a_tru.ndim != 2:
-        raise ValueError("true answer must be a 2D array")
+        msg = "true answer must be a 2D array"
+        raise ValueError(msg)
 
     # Get submitted answer (if it does not exist, score is zero)
     a_sub = data["submitted_answers"].get(name, None)
@@ -340,7 +347,8 @@ def grade(element_html, data):
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
         correct = pl.is_correct_ndarray2D_dd(a_sub, a_tru, digits)
     else:
-        raise ValueError(f'method of comparison "{comparison}" is not valid')
+        msg = f'method of comparison "{comparison}" is not valid'
+        raise ValueError(msg)
 
     if correct:
         data["partial_scores"][name] = {"score": 1, "weight": weight}
@@ -424,7 +432,8 @@ def test(element_html, data):
             data["raw_submitted_answers"][name] = random.choice(invalid_cases[error])
             data["format_errors"][name] = error
         else:
-            raise RuntimeError(f"invalid result: {result}")
+            msg = f"invalid result: {result}"
+            raise RuntimeError(msg)
     else:
         # python
         if result == "correct":
@@ -441,4 +450,5 @@ def test(element_html, data):
             data["raw_submitted_answers"][name] = "[[1, 2, 3], [4, 5]]"
             data["format_errors"][name] = "invalid"
         else:
-            raise RuntimeError(f"invalid result: {result}")
+            msg = f"invalid result: {result}"
+            raise RuntimeError(msg)

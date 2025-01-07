@@ -182,15 +182,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if language is not None:
         lexer = get_lexer_by_name(language)
         if lexer is None:
+            msg = f'Unknown language: "{language}". Must be one of the aliases listed in https://pygments.org/languages/, or the special language "ansi-color".'
             raise KeyError(
-                f'Unknown language: "{language}". Must be one of the aliases listed in https://pygments.org/languages/, or the special language "ansi-color".'
+                msg
             )
 
     style = pl.get_string_attrib(element, "style", STYLE_DEFAULT)
     allowed_styles = STYLE_MAP.keys()
     if style not in allowed_styles:
+        msg = f'Unknown style: "{style}". Must be one of {", ".join(allowed_styles)}'
         raise KeyError(
-            f'Unknown style: "{style}". Must be one of {", ".join(allowed_styles)}'
+            msg
         )
 
     source_file_name = pl.get_string_attrib(
@@ -201,15 +203,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         and element.text is not None
         and not str(element.text).isspace()
     ):
+        msg = 'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
         raise ValueError(
-            'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
+            msg
         )
 
     highlight_lines = pl.get_string_attrib(
         element, "highlight-lines", HIGHLIGHT_LINES_DEFAULT
     )
     if highlight_lines is not None and parse_highlight_lines(highlight_lines) is None:
-        raise ValueError("Could not parse highlight-lines attribute; check your syntax")
+        msg = "Could not parse highlight-lines attribute; check your syntax"
+        raise ValueError(msg)
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -247,7 +251,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             base_path = os.path.join(data["options"]["question_path"], directory)
         file_path = os.path.join(base_path, source_file_name)
         if not os.path.exists(file_path):
-            raise ValueError(f'Unknown file path: "{file_path}".')
+            msg = f'Unknown file path: "{file_path}".'
+            raise ValueError(msg)
 
         with open(file_path) as f:
             code = f.read().removesuffix("\n").removesuffix("\r")
