@@ -31,7 +31,9 @@ select = [
     "UP",
     # flake8-errmsg
     "EM",
+    # flake8-blind-except
     "BLE",
+    # tryceratops
     "TRY",
 ]
 
@@ -40,7 +42,10 @@ ignore = [
     "E501",
     # Allow for ternary operators
     "SIM108",
-    "TRY300", "TRY301"
+    # Allow for returns in try blocks
+    "TRY300",
+    # Abstract raise to an inner function
+    "TRY301"
 ]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
