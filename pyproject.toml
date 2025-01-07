@@ -40,7 +40,7 @@ select = [
 ignore = [
     # Ignore line length errors
     "E501",
-    # Allow for ternary operators
+    # if-else blocks that could be shortened (https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp/)
     "SIM108",
     # Allow for returns in try blocks
     "TRY300",
