@@ -873,8 +873,6 @@ export class CourseInstanceRenameEditor extends Editor {
     const oldPath = path.join(this.course.path, 'courseInstances', this.course_instance.short_name);
     const newPath = path.join(this.course.path, 'courseInstances', this.ciid_new);
 
-    const courseInstancesPath = path.join(this.course.path, 'courseInstances');
-
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(
