@@ -875,22 +875,6 @@ export class CourseInstanceRenameEditor extends Editor {
 
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
-    // Ensure that the updated course instance folder path is fully contained in the course instances directory
-    if (!contains(courseInstancesPath, newPath)) {
-      throw new AugmentedError('Invalid folder path', {
-        info: html`
-          <p>The updated path of the course instance folder</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${courseInstancesPath}</pre>
-          </div>
-        `,
-      });
-    }
-
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(
@@ -1431,22 +1415,6 @@ export class QuestionTransferEditor extends Editor {
 
     const fromPath = this.from_path;
     const toPath = questionPath;
-
-    // Ensure that the new question folder path is fully contained in the questions directory
-    if (!contains(questionsPath, toPath)) {
-      throw new AugmentedError('Invalid folder path', {
-        info: html`
-          <p>The path of the question folder to add</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${toPath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
-          </div>
-        `,
-      });
-    }
 
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
