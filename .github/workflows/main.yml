@@ -135,13 +135,13 @@ jobs:
           no-cache: true
           tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
 
-      # This ensures that the subsequent images are built with the correct version 
-      # of `prairielearn/workspace-vscode-base`. We'll only tag this as `latest` 
-      # if we actually built it; if it wasn't built, we don't tag it, so Docker will 
-      # correctly fall back to pulling the `latest` version from the registry. 
-      - name: Tag workspace-vscode-base image as latest 
-        if: ${{ env.workspaces_vscode_base_modified }} 
-        run: docker tag prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }} prairielearn/workspace-vscode-base:latest 
+      # This ensures that the subsequent images are built with the correct version
+      # of `prairielearn/workspace-vscode-base`. We'll only tag this as `latest`
+      # if we actually built it; if it wasn't built, we don't tag it, so Docker will
+      # correctly fall back to pulling the `latest` version from the registry.
+      - name: Tag workspace-vscode-base image as latest
+        if: ${{ env.workspaces_vscode_base_modified }}
+        run: docker tag prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }} prairielearn/workspace-vscode-base:latest
       ######################################################################################################
       # prairielearn/workspace-vscode-python
       - name: Check whether workspaces/vscode-python was modified
