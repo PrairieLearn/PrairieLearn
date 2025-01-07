@@ -329,7 +329,7 @@ def test_grade_answer_parametrized_correct(
     question_name: str,
     student_answer: str,
     weight: int,
-    expected_grade: bool,
+    expected_grade: bool,  # noqa: FBT001
 ) -> None:
     question_data["submitted_answers"] = {question_name: student_answer}
 

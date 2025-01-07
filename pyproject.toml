@@ -56,12 +56,16 @@ ignore = [
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
 # Ignore uppercase function parameters (e.g. G for a graph)
-"apps/prairielearn/elements/**/*.py" = ["N803", "FBT001", "FBT002", "FBT003"]
-"apps/prairielearn/python/*.py" = ["N803", "FBT001"]
+"apps/prairielearn/elements/**/*.py" = [
+    "N803",
+    # Allow boolean trap pattern in method signatures
+    "FBT001", "FBT002", "FBT003"
+]
+"apps/prairielearn/python/*.py" = ["N803"]
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
-# Only lint exampleCourse and testCourse questions
+# Boolean default positional argument
 "graders/**/*.py" = ["FBT002"]
 [tool.ruff.format]
 exclude = [

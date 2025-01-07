@@ -70,7 +70,7 @@ class PrairieLearnColor(sRGB):
         self,
         string: str,
         start: int = 0,
-        fullmatch: bool = True,  # noqa: FBT002
+        fullmatch: bool = True,  # noqa: FBT001, FBT002
     ) -> tuple[tuple[Vector, float], int] | None:
         """
         Match a color string, first trying PrairieLearn.
