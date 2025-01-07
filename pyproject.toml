@@ -29,6 +29,8 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
+    # ruff-specific rules
+    "RUF"
 ]
 ignore = [
     # Ignore line length errors

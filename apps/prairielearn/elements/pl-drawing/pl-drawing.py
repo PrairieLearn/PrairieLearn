@@ -438,7 +438,7 @@ def grade(element_html, data):
     for ref_element in reference:
         if elements.is_gradable(ref_element["gradingName"]) and ref_element["graded"]:
             matches[ref_element["id"]] = False
-            if "optional_grading" in ref_element and ref_element["optional_grading"]:
+            if ref_element.get("optional_grading"):
                 continue
             num_total_ref += 1
 
@@ -472,8 +472,7 @@ def grade(element_html, data):
                 ref_element, element, element["gradingName"], tol, angtol
             ):
                 if (
-                    "optional_grading" in ref_element
-                    and ref_element["optional_grading"]
+                    ref_element.get("optional_grading")
                 ) or (disregard_extra_elements and matches[ref_element["id"]]):
                     # It's optional but correct, so the score should not be affected
                     # Or, it's a duplicate and we're okay with that.

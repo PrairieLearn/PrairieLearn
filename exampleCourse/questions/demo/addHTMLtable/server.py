@@ -12,7 +12,7 @@ def generate(data):
     )
     for name, age, name_greek in zip(name_list, age_list, name_greek_list, strict=True):
         mytable += (
-            f"<tr><td> {name} </td><td> {str(age)} </td><td> {name_greek} </td><tr>"
+            f"<tr><td> {name} </td><td> {age!s} </td><td> {name_greek} </td><tr>"
         )
     mytable += "</table>"
     data["params"]["mytable"] = mytable
@@ -21,7 +21,7 @@ def generate(data):
     mytable2 = "<tr><th> Name </th> <th> Age </th> <th> Id </th></tr>"
     for name, age, name_greek in zip(name_list, age_list, name_greek_list, strict=True):
         mytable2 += (
-            f"<tr><td> {name} </td><td> {str(age)} </td><td> {name_greek} </td><tr>"
+            f"<tr><td> {name} </td><td> {age!s} </td><td> {name_greek} </td><tr>"
         )
     data["params"]["mytable2"] = mytable2
 

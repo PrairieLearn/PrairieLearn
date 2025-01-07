@@ -406,7 +406,7 @@ def evaluate_with_source(
     global_dict = {}
     exec("from sympy import *", global_dict)
 
-    transformations = standard_transformations + (implicit_multiplication_application,)
+    transformations = (*standard_transformations, implicit_multiplication_application)
 
     try:
         code = stringify_expr(expr, local_dict, global_dict, transformations)

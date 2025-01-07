@@ -490,7 +490,7 @@ def parse(element_html, data):
         one_bad_key = submitted_key_set.difference(all_keys_set).pop()
         # FIXME: escape one_bad_key
         data["format_errors"][name] = (
-            f"You selected an invalid option: {str(one_bad_key)}"
+            f"You selected an invalid option: {one_bad_key!s}"
         )
         return
 

@@ -1,4 +1,5 @@
 import os
+import typing
 from collections.abc import Generator, Iterable, Iterator
 from functools import cache
 from html import escape, unescape
@@ -141,7 +142,7 @@ def get_formatter(
     BaseStyle: type[pygments.style.Style], highlight_lines_color: str | None
 ) -> HighlightingHtmlFormatter:
     class CustomStyleWithAnsiColors(BaseStyle):
-        styles = dict(BaseStyle.styles)
+        styles: typing.ClassVar = dict(BaseStyle.styles)
         styles.update(get_ansi_color_tokens())
 
         highlight_color = (

@@ -1,4 +1,5 @@
 import json
+import typing
 from itertools import chain, repeat
 from typing import Any
 
@@ -33,17 +34,17 @@ def test_evaluate() -> None:
 
 
 class TestSympy:
-    SYMBOL_NAMES = ["n", "m", "alpha", "\u03bc0"]
+    SYMBOL_NAMES: typing.ClassVar = ["n", "m", "alpha", "\u03bc0"]
     M, N, ALPHA, MU0 = sympy.symbols("m n alpha mu0")
 
-    FUNCTION_NAMES = ["f", "g", "beef", "\u03c6"]
+    FUNCTION_NAMES: typing.ClassVar = ["f", "g", "beef", "\u03c6"]
     # Any annotations here to ignore annoying typechecking complaining
     F: Any = sympy.Function("f")
     G: Any = sympy.Function("g")
     BEEF: Any = sympy.Function("beef")
     PHI: Any = sympy.Function("phi")
 
-    CUSTOM_FUNCTION_PAIRS = [
+    CUSTOM_FUNCTION_PAIRS: typing.ClassVar = [
         ("f(1) + g(2)", F(1) + G(2)),
         ("f(g(n), 1)", F(G(N), 1)),
         ("f(1) + g(2, 3) + sin n", F(1) + G(2, 3) + sympy.sin(N)),
@@ -52,12 +53,12 @@ class TestSympy:
         ("\u03c6(\u03bc0)", PHI(MU0)),
     ]
 
-    INCORRECT_FUNCTION_PAIRS = [
+    INCORRECT_FUNCTION_PAIRS: typing.ClassVar = [
         ("f(1) + g(2)", F(1) + G(2, 3)),
         ("f(1) + g(2)", G(1) + F(2)),
     ]
 
-    EXPR_PAIRS = [
+    EXPR_PAIRS: typing.ClassVar = [
         # Test unicode conversion
         ("1+\u03bc0", MU0 + 1),
         ("m \u2212 n", M - N),
@@ -272,17 +273,36 @@ class TestSympy:
 
 
 class TestExceptions:
-    VARIABLES = ["n"]
+    VARIABLES: typing.ClassVar = ["n"]
 
-    COMPLEX_CASES = ["i", "5 * i", "j", "I"]
-    NO_FLOATS_CASES = ["3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)"]
-    INVALID_EXPRESSION_CASES = ["5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5"]
-    INVALID_FUNCTION_CASES = ["eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))"]
-    INVALID_VARIABLE_CASES = ["x", "exp(y)", "z*n"]
-    FUNCTION_NOT_CALLED_CASES = ["2+exp", "cos*n"]
-    INVALID_PARSE_CASES = ["(", "n**", "n**2+", "!"]
-    INVALID_ESCAPE_CASES = ["\\", "n + 2 \\", "2 \\"]
-    INVALID_COMMENT_CASES = ["#", "n + 2 # comment", "# x"]
+    COMPLEX_CASES: typing.ClassVar = ["i", "5 * i", "j", "I"]
+    NO_FLOATS_CASES: typing.ClassVar = [
+        "3.5",
+        "4.2n",
+        "3.5*n",
+        "3.14159*n**2",
+        "sin(2.3)",
+    ]
+    INVALID_EXPRESSION_CASES: typing.ClassVar = [
+        "5==5",
+        "5!=5",
+        "5>5",
+        "5<5",
+        "5>=5",
+        "5<=5",
+    ]
+    INVALID_FUNCTION_CASES: typing.ClassVar = [
+        "eval(n)",
+        "f(n)",
+        "g(n)+cos(n)",
+        "dir(n)",
+        "sin(f(n))",
+    ]
+    INVALID_VARIABLE_CASES: typing.ClassVar = ["x", "exp(y)", "z*n"]
+    FUNCTION_NOT_CALLED_CASES: typing.ClassVar = ["2+exp", "cos*n"]
+    INVALID_PARSE_CASES: typing.ClassVar = ["(", "n**", "n**2+", "!"]
+    INVALID_ESCAPE_CASES: typing.ClassVar = ["\\", "n + 2 \\", "2 \\"]
+    INVALID_COMMENT_CASES: typing.ClassVar = ["#", "n + 2 # comment", "# x"]
 
     # Test exception cases
 
