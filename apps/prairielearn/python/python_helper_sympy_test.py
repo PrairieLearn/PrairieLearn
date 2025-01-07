@@ -276,28 +276,9 @@ class TestExceptions:
     VARIABLES = ("n",)
 
     COMPLEX_CASES = ("i", "5 * i", "j", "I")
-    NO_FLOATS_CASES = (
-        "3.5",
-        "4.2n",
-        "3.5*n",
-        "3.14159*n**2",
-        "sin(2.3)",
-    )
-    INVALID_EXPRESSION_CASES = (
-        "5==5",
-        "5!=5",
-        "5>5",
-        "5<5",
-        "5>=5",
-        "5<=5",
-    )
-    INVALID_FUNCTION_CASES = (
-        "eval(n)",
-        "f(n)",
-        "g(n)+cos(n)",
-        "dir(n)",
-        "sin(f(n))",
-    )
+    NO_FLOATS_CASES = ("3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)")
+    INVALID_EXPRESSION_CASES = ("5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5")
+    INVALID_FUNCTION_CASES = ("eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))")
     INVALID_VARIABLE_CASES = ("x", "exp(y)", "z*n")
     FUNCTION_NOT_CALLED_CASES = ("2+exp", "cos*n")
     INVALID_PARSE_CASES = ("(", "n**", "n**2+", "!")
