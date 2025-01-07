@@ -37,6 +37,3 @@ RUN code-server --disable-telemetry --force \
     --install-extension ms-python.python \
     # auto-fix indentation for multiline contexts
     --install-extension KevinRose.vsc-python-indent
-
-# USAGE:
-# docker build --platform linux/amd64 -t prairielearn/workspace-vscode-python .

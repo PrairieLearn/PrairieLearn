@@ -18,6 +18,3 @@ RUN /bin/bash /install.sh
 USER jovyan
 
 CMD ["start.sh", "jupyter", "lab"]
-
-# USAGE:
-# docker build --platform linux/amd64 -t prairielearn/workspace-jupyterlab .

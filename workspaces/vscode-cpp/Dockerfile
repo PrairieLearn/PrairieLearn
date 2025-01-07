@@ -9,6 +9,3 @@ RUN apt-get update && apt-get upgrade -y \
     && find /tmp -not -path /tmp -delete
 
 USER coder
-
-# USAGE:
-# docker build --platform linux/amd64 -t prairielearn/workspace-vscode-cpp .

@@ -18,6 +18,3 @@ COPY jupyter_server_config.py /etc/jupyter/
 
 USER jovyan
 CMD ["pl-gosu-helper.sh", "start.sh", "jupyter", "lab"]
-
-# USAGE:
-# docker build --platform linux/amd64 -t prairielearn/workspace-jupyterlab-python .

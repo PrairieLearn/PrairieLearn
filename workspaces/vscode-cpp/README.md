@@ -1,3 +1,3 @@
-# workspace-vscode-C/C++
+# workspace-vscode-cpp
 
-This image is a copy of `workspace-vscode-basic` with C/C++ installed.
+This image is based on `prairielearn/workspace-vscode-base` with C/C++ tools from [`build-essential`](https://packages.ubuntu.com/noble/build-essential), incuding `g++` and `gcc`.

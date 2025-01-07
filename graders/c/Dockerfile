@@ -25,6 +25,3 @@ RUN useradd -g sbuser sbuser
 ENV C_INCLUDE_PATH=/cgrader
 
 COPY cgrader /cgrader
-
-# USAGE:
-# docker build --platform linux/amd64 -t prairielearn/grader-c .
