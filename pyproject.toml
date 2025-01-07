@@ -43,7 +43,9 @@ ignore = [
     # Allow for returns in try blocks
     "TRY300",
     # Abstract raise to an inner function
-    "TRY301"
+    "TRY301",
+     # Avoid specifying long messages outside the exception class
+    "TRY003",
 ]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
