@@ -3236,6 +3236,7 @@ __metadata:
   resolution: "@prairielearn/bind-mount@workspace:packages/bind-mount"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
+    "@types/bindings": "npm:^1.5.5"
     "@types/node": "npm:^20.17.9"
     bindings: "npm:^1.5.0"
     nan: "npm:^2.22.0"
@@ -5082,6 +5083,15 @@ __metadata:
   version: 3.2.24
   resolution: "@types/async@npm:3.2.24"
   checksum: 10c0/4df8e108932fe9907fcb09aa192e57d4b97909803e92dc11ba5765347ca6bfa992ea4392fe6f78f3aef495580a1e9b342440878e1d639d5fc2ab1c44f1ad7862
+  languageName: node
+  linkType: hard
+
+"@types/bindings@npm:^1.5.5":
+  version: 1.5.5
+  resolution: "@types/bindings@npm:1.5.5"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/c8b252f44d9b45df870b31d464424fb93d022650fcb70cc54378cbc63cbe097ef30d51a69d2fb2df14ffb2e76230d222a24d3858735f6898be66d1ca47072eee
   languageName: node
   linkType: hard
 
