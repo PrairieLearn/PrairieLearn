@@ -29,6 +29,8 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
+    # refurb
+    "FURB"
 ]
 ignore = [
     # Ignore line length errors
