@@ -27,8 +27,12 @@ from pint import UnitRegistry
 from text_unidecode import unidecode
 from typing_extensions import NotRequired, assert_never
 
-import prairielearn.sympy_utils as phs
 from prairielearn.colors import PLColor
+from prairielearn.sympy_utils import (
+    convert_string_to_sympy,
+    json_to_sympy,
+    sympy_to_json,
+)
 from prairielearn.to_precision import to_precision
 
 
@@ -293,7 +297,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
                 "_dtype": str(v.dtype),
             }
     elif isinstance(v, sympy.Expr):
-        return phs.sympy_to_json(v)
+        return sympy_to_json(v)
     elif isinstance(v, sympy.Matrix | sympy.ImmutableMatrix):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
@@ -413,7 +417,7 @@ def from_json(v):
                     "variable of type complex_ndarray should have value with real and imaginary pair"
                 )
         elif v["_type"] == "sympy":
-            return phs.json_to_sympy(v)
+            return json_to_sympy(v)
         elif v["_type"] == "sympy_matrix":
             if ("_value" in v) and ("_variables" in v) and ("_shape" in v):
                 value = v["_value"]
@@ -422,9 +426,7 @@ def from_json(v):
                 matrix = sympy.Matrix.zeros(shape[0], shape[1])
                 for i in range(0, shape[0]):
                     for j in range(0, shape[1]):
-                        matrix[i, j] = phs.convert_string_to_sympy(
-                            value[i][j], variables
-                        )
+                        matrix[i, j] = convert_string_to_sympy(value[i][j], variables)
                 return matrix
             else:
                 raise Exception(
