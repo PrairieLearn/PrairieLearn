@@ -449,7 +449,7 @@ class Feedback:
                 try:
                     callable_name = f.__name__
                 except Exception as e_name:
-                    callable_name = f"<unable to retrieve name; encountered {type(e_name).__name__}: {e_name!s}>"
+                    callable_name = f"<unable to retrieve name; encountered {type(e_name).__name__}: {e_name}>"
                 from traceback import format_exc
 
                 cls.add_feedback(
