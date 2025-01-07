@@ -401,6 +401,10 @@ def parse(element_html, data):
         data["format_errors"][name] = "Invalid submitted answer."
         data["submitted_answers"][name] = None
         return
+    except Exception:  # noqa: BLE001
+        data["format_errors"][name] = f"Invalid submitted answer, unknown error."
+        data["submitted_answers"][name] = None
+        return
 
     # Put it into data
     data["submitted_answers"][name] = a_sub
@@ -494,7 +498,7 @@ def parse_correct_answer(f, a):
                 rot_mat = transform_mat[0:3, 0:3]
                 p = transform_mat[0:3, 3:4]
                 return np.reshape(p, (3,)), pyquaternion.Quaternion(matrix=rot_mat)
-            raise ValueError
+            raise ValueError("incorrect shape")
         except Exception as exc:
             raise ValueError(
                 'correct answer must be a 4x4 homogeneous transformation matrix with format "[[...], [...], [...], [...]]"'
@@ -508,7 +512,7 @@ def parse_correct_answer(f, a):
                 qy = pyquaternion.Quaternion(axis=[0, 1, 0], degrees=rpy[1])
                 qz = pyquaternion.Quaternion(axis=[0, 0, 1], degrees=rpy[2])
                 return np.reshape(p, (3,)), qx * qy * qz
-            raise ValueError
+            raise ValueError("incorrect shape")
         except Exception as exc:
             raise ValueError(
                 'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]"'

@@ -1,5 +1,6 @@
 import math
 import random
+from typing import assert_never
 
 import chevron
 import lxml.html
@@ -659,7 +660,7 @@ def test(element_html, data):
         data["raw_submitted_answers"][name] = None
         data["format_errors"][name] = "You must select at least one option."
     else:
-        raise RuntimeError(f"invalid result: {result}")
+        assert_never(result)
 
 
 def _get_min_options_to_select(element, default_val):

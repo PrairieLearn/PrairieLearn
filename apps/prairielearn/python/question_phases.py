@@ -169,8 +169,8 @@ def process(
                     + "For now, the return value will be used instead of the data object that was passed in.\n\n"
                     + "In the future, returning a different object will trigger a fatal error."
                 )
-        except Exception as err:
-            raise RuntimeError(f"Error processing element {element.tag}") from err
+        except Exception as exc:
+            raise RuntimeError(f"Error processing element {element.tag}") from exc
 
     def process_element_return_none(element: lxml.html.HtmlElement) -> None:
         process_element(element)

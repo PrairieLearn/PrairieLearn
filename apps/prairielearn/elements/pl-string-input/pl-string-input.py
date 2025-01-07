@@ -107,7 +107,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     "Leading and trailing spaces will be left as part of your answer."
                 )
             case _:
-                raise NotImplementedError("Should never reach here.")
+                assert_never("Should never reach here.")
 
         info_params = {"format": True, "space_hint": space_hint}
         info = chevron.render(template, info_params).strip()

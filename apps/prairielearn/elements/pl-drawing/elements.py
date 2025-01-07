@@ -2405,13 +2405,13 @@ elements["pl-switch"] = Switch
 
 class UnplaceableBaseElement(BaseElement):
     # Used only to get attributes
-    def generate(self):
+    def generate(element):
         raise RuntimeError("Cannot create element!")
 
     def is_gradable():
         return False
 
-    def grade(self, _st, _tol, _angtol):
+    def grade(element, _st, _tol, _angtol):
         raise NotImplementedError(
             "This element should not be graded!  If you see this message, something has gone terribly wrong!"
         )

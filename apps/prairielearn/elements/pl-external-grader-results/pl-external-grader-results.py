@@ -41,6 +41,8 @@ def ansi_to_html(output: str | None) -> str | None:
         return conv.convert(output, full=False)
     except (ValueError, RuntimeError) as exc:
         return f"[Error converting ANSI to HTML: {exc}]\n\n{output}"
+    except Exception as exc:  # noqa: BLE001
+        return f"[Unknown error converting ANSI to HTML: {exc}]\n\n{output}"
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
