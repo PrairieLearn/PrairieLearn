@@ -687,29 +687,6 @@ export class AssessmentRenameEditor extends Editor {
     const oldPath = path.join(basePath, this.assessment.tid);
     const newPath = path.join(basePath, this.tid_new);
 
-    const assessmentsPath = path.join(
-      this.course.path,
-      'courseInstances',
-      this.course_instance.short_name,
-      'assessments',
-    );
-
-    // Ensure that the assessment folder path is fully contained in the assessments directory
-    if (!contains(assessmentsPath, newPath)) {
-      throw new AugmentedError('Invalid folder path', {
-        info: html`
-          <p>The updated path of the assessments folder</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${assessmentsPath}</pre>
-          </div>
-        `,
-      });
-    }
-
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
     await this.removeEmptyPrecedingSubfolders(basePath, this.assessment.tid);
@@ -985,22 +962,6 @@ export class CourseInstanceAddEditor extends Editor {
     const short_name = names.shortName;
     const courseInstancePath = path.join(courseInstancesPath, short_name);
 
-    // Ensure that the new course instance folder path is fully contained in the course instances directory
-    if (!contains(courseInstancesPath, courseInstancePath)) {
-      throw new AugmentedError('Invalid folder path', {
-        info: html`
-          <p>The path of the course instance folder to add</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${courseInstancePath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${courseInstancesPath}</pre>
-          </div>
-        `,
-      });
-    }
-
     debug('Write infoCourseInstance.json');
 
     let allowAccess: { startDate?: string; endDate?: string } | undefined = undefined;
@@ -1269,22 +1230,6 @@ export class QuestionRenameEditor extends Editor {
     const questionsPath = path.join(this.course.path, 'questions');
     const oldPath = path.join(questionsPath, this.question.qid);
     const newPath = path.join(questionsPath, this.qid_new);
-
-    // Ensure that the updated question folder path is fully contained in the questions directory
-    if (!contains(questionsPath, newPath)) {
-      throw new AugmentedError('Invalid folder path', {
-        info: html`
-          <p>The updated path of the question folder</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
-          </div>
-        `,
-      });
-    }
 
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
