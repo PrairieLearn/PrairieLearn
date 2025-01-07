@@ -2,8 +2,8 @@ import traceback
 import unittest
 
 from code_feedback import Feedback, GradingComplete
-from pl_execute import UserCodeFailed
-from pl_helpers import DoNotRun, GradingSkipped, print_student_code
+from pl_execute import UserCodeFailedError
+from pl_helpers import DoNotRunError, GradingSkipped, print_student_code
 
 
 class PLTestResult(unittest.TestResult):
@@ -61,7 +61,7 @@ class PLTestResult(unittest.TestResult):
             # the remaining cases so that we have the correct point values
             self.results[-1]["points"] = 0
             self.skip_grading = True
-        elif isinstance(err[1], DoNotRun):
+        elif isinstance(err[1], DoNotRunError):
             self.results[-1]["points"] = 0
             self.results[-1]["max_points"] = 0
         elif isinstance(err[1], GradingSkipped):
@@ -70,7 +70,7 @@ class PLTestResult(unittest.TestResult):
             Feedback.add_feedback(
                 " - Grading was skipped because an earlier test failed - "
             )
-        elif isinstance(err[1], UserCodeFailed):
+        elif isinstance(err[1], UserCodeFailedError):
             # Student code raised Exception
             tr_list = traceback.format_exception(*err[1].err)
             name = "Your code raised an Exception"
