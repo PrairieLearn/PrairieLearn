@@ -12,14 +12,23 @@ RUN apt-get update \
   && apt-get clean \
   && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
 
+RUN apt install curl ca-certificates
+RUN install -d /usr/share/postgresql-common/pgdg
+RUN curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+
+# Create the repository configuration file:
+RUN sh -c 'echo "deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt jammy-pgdg main" > /etc/apt/sources.list.d/pgdg.list'
+
+# Must specify pip version due to compatibility issue between pip >= 24.1 and pgadmin >= 8.11
+# https://github.com/pgadmin-org/pgadmin4/issues/7836
 RUN apt-get update \
   && apt-get install -y libpq-dev python3-pip python3-dev sudo \
-  && DEBIAN_FRONTEND=noninteractive apt-get -yq install postgresql postgresql-contrib \
+  && DEBIAN_FRONTEND=noninteractive apt-get -yq install postgresql-16 postgresql-client-16 postgresql-contrib-16 \
   && rm -rf /var/lib/apt/lists/* \
-  && python3 -m pip install --upgrade pip \
+  && python3 -m pip install --upgrade pip==24 \
   && python3 -m pip install sqlparse psycopg2 \
   # && python3 -m pip install rstr \
-  && python3 -m pip install pgadmin4==8.10 \
+  && python3 -m pip install pgadmin4==8.14 \
   && mkdir /sql-scripts \
   && mkdir -p /var/run/postgresql && chown -R postgres:postgres /var/run/postgresql \
   && apt-get clean \

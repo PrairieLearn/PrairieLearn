@@ -1,7 +1,7 @@
 #! /bin/bash
 
 echo "[run] starting Postgres"
-/usr/lib/postgresql/14/bin/pg_ctl -D /pgdata start
+/usr/lib/postgresql/16/bin/pg_ctl -D /pgdata start
 echo "Waiting for postgres to start..."
 while ! pg_isready ; do sleep 1s ; done
 echo "[run] PostgreSQL started and configured"

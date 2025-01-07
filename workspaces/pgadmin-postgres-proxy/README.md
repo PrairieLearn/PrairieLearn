@@ -1,6 +1,6 @@
 # pgadmin and postgres Workspace
 
-This workspace provides a [pgadmin 4 8.10](https://www.pgadmin.org/docs/pgadmin4/8.10/index.html) frontend to a [postgresql 14](https://www.postgresql.org/docs/14/release-14.html) database for use in PrairieLearn. Once loaded, pgadmin will open and automatically connect to an empty database called `postgres`. You have a few options to create data inside for students.
+This workspace provides a [pgadmin 4 8.14](https://www.pgadmin.org/docs/pgadmin4/8.14/index.html) frontend to a [postgresql 16](https://www.postgresql.org/docs/16/release-16.html) database for use in PrairieLearn. Once loaded, pgadmin will open and automatically connect to an empty database called `postgres`. You have a few options to create data inside for students.
 
 1. **Not recommended:** At build of this image by including in the `/database` directory (this is empty due to make this a general image for all)
 2. **Recommended:** By creating your own Dockerfile using this image as a base (see `/extensions` directory for an example)
