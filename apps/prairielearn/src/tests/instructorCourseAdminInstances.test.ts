@@ -330,6 +330,7 @@ describe('Creating a course instance', () => {
         },
       );
 
+      assert.equal(courseInstanceCreationResponse.status, 200);
       assert.match(courseInstanceCreationResponse.url, /\/pl\/course\/1\/edit_error\/\d+$/);
     },
   );

@@ -962,6 +962,22 @@ export class CourseInstanceAddEditor extends Editor {
     const short_name = names.shortName;
     const courseInstancePath = path.join(courseInstancesPath, short_name);
 
+    // Ensure that the new course instance folder path is fully contained in the course instances directory
+    if (!contains(courseInstancesPath, courseInstancePath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The path of the course instance folder to add</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${courseInstancePath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${courseInstancesPath}</pre>
+          </div>
+        `,
+      });
+    }
+
     debug('Write infoCourseInstance.json');
 
     let allowAccess: { startDate?: string; endDate?: string } | undefined = undefined;
