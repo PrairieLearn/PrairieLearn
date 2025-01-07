@@ -19,7 +19,7 @@ def file(data):
         if fmax - fmin > 12:
             plt.yticks([y for y in range(fmin, fmax + 4, 4)], fontsize=14)
             plt.gca().set_yticks([y for y in range(fmin, fmax + 1, 1)], minor=True)
-            plt.gca().yaxis.grid(True, "minor")
+            plt.gca().yaxis.grid(visible=True, which="minor")
         else:
             plt.yticks([y for y in range(fmin, fmax + 1, 1)], fontsize=14)
         plt.grid()

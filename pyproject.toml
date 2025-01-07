@@ -29,6 +29,8 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
+    # flake8-boolean-trap
+    "FBT"
 ]
 ignore = [
     # Ignore line length errors
@@ -54,11 +56,13 @@ ignore = [
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
 # Ignore uppercase function parameters (e.g. G for a graph)
-"apps/prairielearn/elements/**/*.py" = ["N803"]
-"apps/prairielearn/python/*.py" = ["N803"]
+"apps/prairielearn/elements/**/*.py" = ["N803", "FBT001", "FBT002", "FBT003"]
+"apps/prairielearn/python/*.py" = ["N803", "FBT001", "FBT002", "FBT003"]
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
+# Only lint exampleCourse and testCourse questions
+"graders/**/*.py" = ["FBT002"]
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
