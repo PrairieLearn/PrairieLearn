@@ -445,12 +445,12 @@ def evaluate_with_source(
 
 def convert_string_to_sympy(
     expr: str,
-    variables: None | list[str] = None,
+    variables: None | list[str] | tuple[str, ...] = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | list[str] = None,
+    custom_functions: None | list[str] | tuple[str, ...] = None,
     assumptions: None | AssumptionsDictT = None,
 ) -> sympy.Expr:
     return convert_string_to_sympy_with_source(
@@ -466,12 +466,12 @@ def convert_string_to_sympy(
 
 def convert_string_to_sympy_with_source(
     expr: str,
-    variables: None | list[str] = None,
+    variables: None | list[str] | tuple[str, ...] = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | list[str] = None,
+    custom_functions: None | list[str] | tuple[str, ...] = None,
     assumptions: None | AssumptionsDictT = None,
 ) -> tuple[sympy.Expr, str]:
     const = _Constants()
@@ -630,7 +630,7 @@ def json_to_sympy(
 
 def validate_string_as_sympy(
     expr: str,
-    variables: None | list[str],
+    variables: None | list[str] | tuple[str, ...],
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,

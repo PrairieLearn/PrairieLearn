@@ -273,7 +273,7 @@ class TestSympy:
 
 
 class TestExceptions:
-    VARIABLES = "n"
+    VARIABLES = ("n",)
 
     COMPLEX_CASES = ("i", "5 * i", "j", "I")
     NO_FLOATS_CASES = (
