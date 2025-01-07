@@ -52,7 +52,7 @@ def render(element_html, data):
         html = (
             '<span class="badge badge-warning">'
             + '<i class="fa fa-circle-o" aria-hidden="true"></i>'
-            + f" partially correct: {math.floor(score * 100)}%"
+            + f" partially correct: {math.floor(score * 100):d}%"
             + ((" (" + feedback + ")") if feedback else "")
             + "</span>"
         )
@@ -60,7 +60,7 @@ def render(element_html, data):
         html = (
             '<span class="badge badge-danger">'
             + '<i class="fa fa-times" aria-hidden="true"></i>'
-            + f" incorrect: {math.floor(score * 100)}%"
+            + f" incorrect: {math.floor(score * 100):d}%"
             + ((" (" + feedback + ")") if feedback else "")
             + "</span>"
         )
