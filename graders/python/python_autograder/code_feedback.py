@@ -141,7 +141,7 @@ class Feedback:
         if len(data.shape) != num_axes:
             cls.finish(
                 f"'{name}' does not have the correct number of axes--"
-                f"got: {len(data.shape):d}, expected: {num_axes:d}"
+                f"got: {len(data.shape)}, expected: {num_axes}"
             )
 
         if data.dtype.kind not in "fc":
@@ -289,13 +289,13 @@ class Feedback:
 
         if len(ref) != len(data):
             return bad(
-                f"'{name}' has the wrong length--expected {len(ref):d}, got {len(data):d}"
+                f"'{name}' has the wrong length--expected {len(ref)}, got {len(data)}"
             )
 
         if entry_type is not None:
             for i, entry in enumerate(data):
                 if not isinstance(entry, entry_type):
-                    return bad(f"'{name}[{i:d}]' has the wrong type")
+                    return bad(f"'{name}[{i}]' has the wrong type")
 
         return True
 
@@ -537,7 +537,7 @@ class Feedback:
 
         if len(user_lines) != len(ref_lines):
             return bad(
-                f"{len(user_lines):d} lines were plotted in '{name}' but {ref_lines:d} lines were expected"
+                f"{len(user_lines)} lines were plotted in '{name}' but {ref_lines} lines were expected"
             )
 
         ref_datas = {}
