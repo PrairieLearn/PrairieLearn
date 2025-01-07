@@ -29,6 +29,8 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
+    # Perflint
+    "PERF",
 ]
 ignore = [
     # Ignore line length errors

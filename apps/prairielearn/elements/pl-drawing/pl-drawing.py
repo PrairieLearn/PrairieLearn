@@ -28,16 +28,9 @@ def union_drawing_items(e1, e2):
     if len(obj2) == 0:
         return e1
 
-    new_ids = []
-    for item in obj2:
-        new_ids.append(item["id"])
+    new_ids = [item["id"] for item in obj2]
 
-    newobj = []
-    for item in obj1:
-        if item["id"] not in new_ids:
-            newobj.append(item)
-    for item in obj2:
-        newobj.append(item)
+    newobj = [item for item in obj1 if item["id"] not in new_ids] + obj2
 
     return newobj
 
