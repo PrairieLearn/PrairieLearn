@@ -90,7 +90,7 @@ Before you start creating your assessments, make sure you have at least 4 questi
 - Use `"mode": "Public"`
 - Use `"type":"Homework"`
 - Questions appear in randomized order
-- Homework submitted at the deadline receive 100% credit. Homework submitted up to 4 days late receive 70% credit. Homework submitted at least 2 days before the deadline get 5% bonus if they receive full credit. Learn more about credit in the [access control docs](https://prairielearn.readthedocs.io/en/latest/accessControl/#credit).
+- Homework submitted by the deadline receives 100% credit. Homework submitted up to 4 days late is capped at 70% credit. Homework submitted at least 2 days before the deadline get 5% bonus if they receive full credit. Learn more about credit in the [access control docs](https://prairielearn.readthedocs.io/en/latest/accessControl/#credit).
 - Include two zones: one for easy questions, where each question has `"maxPoints": 5` and another one for more advanced questions, with `"maxPoints": 3`
 
 [Assessment template](https://us.prairielearn.com/pl/course_instance/4970/assessment/2316937) from the Example Course
