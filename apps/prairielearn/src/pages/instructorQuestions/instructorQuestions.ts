@@ -3,17 +3,53 @@ import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { getCourseOwners } from '../../lib/course.js';
+import {
+  type Course,
+  CourseSchema,
+  QuestionSchema,
+  TopicSchema,
+  type Question,
+} from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
+import { selectQuestionById } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
 
 import { QuestionsPage } from './instructorQuestions.html.js';
 
 const router = Router();
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+async function getExampleCourse(): Promise<Course> {
+  const example_course = await sqldb.queryRow(sql.select_example_course, {}, CourseSchema);
+  return example_course;
+}
+
+async function getTemplateCourseQuestions(exampleCourse: Course): Promise<Question[]> {
+  const templateTopic = await sqldb.queryRow(
+    sql.select_template_topic_for_course_id,
+    {
+      course_id: exampleCourse.id,
+    },
+    TopicSchema,
+  );
+  const templateQuestions = await sqldb.queryRows(
+    sql.select_questions_for_course,
+    {
+      course_id: exampleCourse.id,
+      topic_id: templateTopic.id,
+    },
+    QuestionSchema,
+  );
+
+  return templateQuestions;
+}
 
 router.get(
   '/',
@@ -46,10 +82,14 @@ router.get(
       courseInstances.map((ci) => ci.id),
     );
 
+    const exampleCourse = await getExampleCourse();
+    const templateQuestions = await getTemplateCourseQuestions(exampleCourse);
+
     const courseDirExists = await fs.pathExists(res.locals.course.path);
     res.send(
       QuestionsPage({
         questions,
+        templateQuestions,
         course_instances: courseInstances,
         showAddQuestionButton:
           res.locals.authz_data.has_course_permission_edit &&
@@ -105,7 +145,20 @@ router.post(
             '/question.html',
         );
       } else if (req.body.start_from === 'Template') {
-        // TODO: Implement
+        if (!req.body.template_qid) {
+          throw new error.HttpStatusError(400, 'template_qid is required');
+        }
+
+        const exampleCourse = await getExampleCourse();
+        const templateQuestion = await selectQuestionById(req.body.template_qid);
+
+        await copyQuestionBetweenCourses(res, {
+          fromCourse: exampleCourse,
+          toCourseId: res.locals.course.id,
+          question: templateQuestion,
+        });
+
+        // TODO: Update the name
       }
       // res.redirect(res.locals.urlPrefix + '/question/' + result.question_id + '/settings');
     } else {

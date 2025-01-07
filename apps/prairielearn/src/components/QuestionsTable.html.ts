@@ -27,6 +27,7 @@ export function QuestionsTableHead() {
 
 export function QuestionsTable({
   questions,
+  templateQuestions = [],
   showAddQuestionButton = false,
   showAiGenerateQuestionButton = false,
   showSharingSets = false,
@@ -38,6 +39,10 @@ export function QuestionsTable({
   __csrf_token,
 }: {
   questions: QuestionsPageData[];
+  templateQuestions?: Question[];
+  /**
+   * Does not need to be specified when showAddQuestionButton is false.
+   */
   showAddQuestionButton?: boolean;
   showAiGenerateQuestionButton?: boolean;
   showSharingSets?: boolean;
@@ -64,7 +69,7 @@ export function QuestionsTable({
     )}
     ${CreateQuestionModal({
       csrfToken: __csrf_token,
-      templateQuestions: [],
+      templateQuestions,
     })}
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
@@ -278,8 +283,8 @@ function CreateQuestionModal({
         <label for="start_from">Template</label>
         <select
           class="form-select"
-          id="template"
-          name="template"
+          id="template_qid"
+          name="template_qid"
           required
           aria-describedby="template_help"
           disabled

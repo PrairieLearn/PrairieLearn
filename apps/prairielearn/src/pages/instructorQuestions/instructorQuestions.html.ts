@@ -4,17 +4,19 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { type CourseInstance } from '../../lib/db-types.js';
+import { type Question, type CourseInstance } from '../../lib/db-types.js';
 import { type QuestionsPageData } from '../../models/questions.js';
 
 export const QuestionsPage = ({
   questions,
+  templateQuestions = [],
   course_instances,
   showAddQuestionButton,
   showAiGenerateQuestionButton,
   resLocals,
 }: {
   questions: QuestionsPageData[];
+  templateQuestions?: Question[];
   course_instances: CourseInstance[];
   showAddQuestionButton: boolean;
   showAiGenerateQuestionButton: boolean;
@@ -37,6 +39,7 @@ export const QuestionsPage = ({
           })}
           ${QuestionsTable({
             questions,
+            templateQuestions,
             course_instances,
             showAddQuestionButton,
             showAiGenerateQuestionButton,

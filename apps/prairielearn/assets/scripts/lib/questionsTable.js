@@ -224,7 +224,7 @@ onDocumentReady(() => {
   $('#questionsTable').bootstrapTable(tableSettings);
 
   const startFromInput = document.querySelector('#start_from');
-  const templateInput = document.querySelector('#template');
+  const templateInput = document.querySelector('#template_qid');
   const templateContainerDiv = document.querySelector('#templateContainer');
 
   if (!startFromInput || !templateInput) {

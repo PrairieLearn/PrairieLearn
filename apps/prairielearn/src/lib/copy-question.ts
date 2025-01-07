@@ -92,7 +92,13 @@ export async function copyQuestionBetweenCourses(
     storage_filename: path.join(relDir, f.slice(6)),
   };
 
+  console.log('params', params);
+  console.log('config', config);
+
   if (config.filesRoot == null) throw new Error('config.filesRoot is null');
+
+  console.log('Target path: ', path.join(config.filesRoot, params.storage_filename));
+
   await fs.copy(params.from_filename, path.join(config.filesRoot, params.storage_filename), {
     errorOnExist: true,
   });
