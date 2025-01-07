@@ -606,22 +606,6 @@ export class AssessmentCopyEditor extends Editor {
     const fromPath = path.join(assessmentsPath, this.assessment.tid);
     const toPath = assessmentPath;
 
-    // Ensure that the assessment folder path is fully contained in the assessments directory
-    if (!contains(assessmentsPath, assessmentPath)) {
-      throw new AugmentedError('Invalid folder path', {
-        info: html`
-          <p>The path of the assessments folder to add</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${assessmentPath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${assessmentsPath}</pre>
-          </div>
-        `,
-      });
-    }
-
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
 
@@ -864,22 +848,6 @@ export class CourseInstanceCopyEditor extends Editor {
 
     const fromPath = path.join(courseInstancesPath, this.course_instance.short_name);
     const toPath = courseInstancePath;
-
-    // Ensure that the new course instance folder path is fully contained in the course instances directory
-    if (!contains(courseInstancesPath, toPath)) {
-      throw new AugmentedError('Invalid folder path', {
-        info: html`
-          <p>The path of the course instance folder to add</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${toPath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${courseInstancesPath}</pre>
-          </div>
-        `,
-      });
-    }
 
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
@@ -1452,22 +1420,6 @@ export class QuestionCopyEditor extends Editor {
 
     const fromPath = path.join(questionsPath, this.question.qid);
     const toPath = questionPath;
-
-    // Ensure that the new question folder path is fully contained in the questions directory
-    if (!contains(questionsPath, toPath)) {
-      throw new AugmentedError('Invalid folder path', {
-        info: html`
-          <p>The path of the question folder to add</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${toPath}</pre>
-          </div>
-          <p>must be inside the root directory</p>
-          <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
-          </div>
-        `,
-      });
-    }
 
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
