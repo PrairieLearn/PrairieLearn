@@ -59,7 +59,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if not os.path.exists(file_path):
             raise Exception(f'Unknown file path: "{file_path}".')
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             contents = f.read()
 
     elif submitted_file_name is not None:
@@ -82,5 +82,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "uuid": pl.get_uuid(),
     }
 
-    with open("pl-xss-safe.mustache", "r", encoding="utf-8") as f:
+    with open("pl-xss-safe.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()
