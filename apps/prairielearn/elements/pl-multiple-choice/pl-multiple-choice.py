@@ -134,14 +134,22 @@ def categorize_options(
         for text in obj.get(correct_attrib, []):
             correct_answers.append(
                 AnswerTuple(
-                    next(index_counter), True, text, None, SCORE_CORRECT_DEFAULT
+                    next(index_counter),
+                    correct=True,
+                    html=text,
+                    feedback=None,
+                    score=SCORE_CORRECT_DEFAULT,
                 )
             )
 
         for text in obj.get(incorrect_attrib, []):
             incorrect_answers.append(
                 AnswerTuple(
-                    next(index_counter), False, text, None, SCORE_INCORRECT_DEFAULT
+                    next(index_counter),
+                    correct=False,
+                    html=text,
+                    feedback=None,
+                    score=SCORE_INCORRECT_DEFAULT,
                 )
             )
 
