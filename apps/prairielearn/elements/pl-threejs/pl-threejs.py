@@ -134,7 +134,7 @@ def get_objects(element, data):
             if position.shape == (3,):
                 position = position.tolist()
             else:
-                raise ValueError
+                raise ValueError("incorrect shape")
         except Exception as exc:
             raise ValueError(
                 f'attribute "position" must have format [x, y, z]: {p}'
@@ -523,7 +523,7 @@ def parse_correct_answer(f, a):
             q = np.array(a[1], dtype=np.float64)
             if (q.shape == (4,)) and np.allclose(np.linalg.norm(q), 1.0):
                 return np.reshape(p, (3,)), pyquaternion.Quaternion(np.roll(q, 1))
-            raise ValueError
+            raise ValueError("incorrect shape")
         except Exception as exc:
             raise ValueError(
                 'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is a unit quaternion with format "[x, y, z, w]"'
@@ -552,8 +552,8 @@ def parse_correct_answer(f, a):
                             -1,
                         ).tolist(),
                     )
-                raise ValueError
-            raise ValueError
+                raise ValueError("must be a unit vector")
+            raise ValueError("incorrect shape")
         except Exception as exc:
             raise ValueError(
                 'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees'
@@ -611,7 +611,7 @@ def get_orientation(element, name_orientation, name_format):
                 qy = pyquaternion.Quaternion(axis=[0, 1, 0], degrees=rpy[1])
                 qz = pyquaternion.Quaternion(axis=[0, 0, 1], degrees=rpy[2])
                 return np.roll((qx * qy * qz).elements, -1).tolist()
-            raise ValueError
+            raise ValueError("incorrect shape")
         except Exception as exc:
             raise ValueError(
                 f'attribute "{name_orientation}" with format "{name_format}" must be a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]": {s}'
@@ -621,7 +621,7 @@ def get_orientation(element, name_orientation, name_format):
             q = np.array(json.loads(s), dtype=np.float64)
             if (q.shape == (4,)) and np.allclose(np.linalg.norm(q), 1.0):
                 return q.tolist()
-            raise ValueError
+            raise ValueError("incorrect shape or not a unit quaternion")
         except Exception as exc:
             raise ValueError(
                 f'attribute "{name_orientation}" with format "{name_format}" must be a unit quaternion with format "[x, y, z, w]": {s}'
@@ -646,8 +646,8 @@ def get_orientation(element, name_orientation, name_format):
                     return np.roll(
                         pyquaternion.Quaternion(axis=axis, degrees=angle).elements, -1
                     ).tolist()
-                raise ValueError
-            raise ValueError
+                raise ValueError("must be a unit vector")
+            raise ValueError("incorrect shape")
         except Exception as exc:
             raise ValueError(
                 f'attribute "{name_orientation}" with format "{name_format}" must have format "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees: {s}'
@@ -670,7 +670,7 @@ def get_position(element, name_position, default=None, must_be_nonzero=False):
             if must_be_nonzero and np.allclose(p, np.array([0, 0, 0])):
                 raise ValueError(f'attribute "{name_position}" must be non-zero')
             return p.tolist()
-        raise ValueError
+        raise ValueError("incorrect shape")
     except Exception as exc:
         raise ValueError(
             f'attribute "{name_position}" must have format "[x, y, z]": {s}'
