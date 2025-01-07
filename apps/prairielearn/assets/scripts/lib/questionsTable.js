@@ -19,6 +19,7 @@ onDocumentReady(() => {
     urlPrefix,
     plainUrlPrefix,
   } = decodeData('questions-table-data');
+
   window.topicList = function () {
     var data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.topic.name));
@@ -221,6 +222,21 @@ onDocumentReady(() => {
   }
 
   $('#questionsTable').bootstrapTable(tableSettings);
+
+  const startFromInput = document.querySelector('#start_from');
+  const templateInput = document.querySelector('#template');
+  const templateContainerDiv = document.querySelector('#templateContainer');
+
+  if (!startFromInput || !templateInput) {
+    return;
+  }
+
+  startFromInput.addEventListener('change', () => {
+    console.log('startFromInput', startFromInput.value);
+
+    templateInput.disabled = startFromInput.value !== 'Template';
+    templateContainerDiv.hidden = startFromInput.value !== 'Template';
+  });
 
   $(document).keydown((event) => {
     if (

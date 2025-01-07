@@ -2,7 +2,7 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, type HtmlSafeString } from '@prairielearn/html';
 
 import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets.js';
-import { type CourseInstance } from '../lib/db-types.js';
+import { type Question, type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { type QuestionsPageData } from '../models/questions.js';
 
@@ -64,6 +64,7 @@ export function QuestionsTable({
     )}
     ${CreateQuestionModal({
       csrfToken: __csrf_token,
+      templateQuestions: [],
     })}
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
@@ -215,7 +216,13 @@ export function QuestionsTable({
   `;
 }
 
-function CreateQuestionModal({ csrfToken }: { csrfToken: string }) {
+function CreateQuestionModal({
+  csrfToken,
+  templateQuestions,
+}: {
+  csrfToken: string;
+  templateQuestions: Question[];
+}) {
   return Modal({
     id: 'createQuestionModal',
     title: 'Create question',
@@ -264,6 +271,25 @@ function CreateQuestionModal({ csrfToken }: { csrfToken: string }) {
         </select>
         <small id="start_from_help" class="form-text text-muted">
           Begin with an empty question or premade question template.
+        </small>
+      </div>
+
+      <div id="templateContainer" class="form-group" hidden>
+        <label for="start_from">Template</label>
+        <select
+          class="form-select"
+          id="template"
+          name="template"
+          required
+          aria-describedby="template_help"
+          disabled
+        >
+          ${templateQuestions.map(
+            (question) => html`<option value="${question.id}">${question.title}</option>`,
+          )}
+        </select>
+        <small id="template_help" class="form-text text-muted">
+          The question will be created from this template.
         </small>
       </div>
     `,

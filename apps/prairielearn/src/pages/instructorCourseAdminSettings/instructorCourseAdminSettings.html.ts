@@ -178,7 +178,7 @@ export function InstructorCourseAdminSettings({
                   hasCoursePermissionView: resLocals.authz_data.has_course_permission_view,
                   hasCoursePermissionEdit: resLocals.authz_data.has_course_permission_edit,
                   exampleCourse: resLocals.course.example_course,
-                  urlPrefix: resLocals.urlPrefix,
+                  urlPrefix: resLocals.urlPrefix, 
                   navPage: resLocals.navPage,
                 })}
               </form>
