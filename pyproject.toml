@@ -29,6 +29,8 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
+    # FIXME, XXX, HACK, messages
+    "FIX001", "FIX003", "FIX004"
 ]
 ignore = [
     # Ignore line length errors
@@ -54,7 +56,11 @@ ignore = [
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
 # Ignore uppercase function parameters (e.g. G for a graph)
-"apps/prairielearn/elements/**/*.py" = ["N803"]
+"apps/prairielearn/elements/**/*.py" = [
+    "N803",
+    # Ignore FIXME messages in elements
+    "FIX001"
+]
 "apps/prairielearn/python/*.py" = ["N803"]
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
