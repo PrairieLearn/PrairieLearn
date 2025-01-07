@@ -1368,7 +1368,9 @@ The HTML inside the inner `pl-variable` tag is used as the description. If the t
 
 Display a statically or dynamically generated image. Supports many image file formats, including PNG, JPEG, and SVG.
 
-This elements does _not_ support PDF files. To make a PDF file available for download, use the [`pl-file-download`](#pl-file-download-element) element.
+!!! warning
+
+    This elements does _not_ support PDF files. To make a PDF file available for download, use the [`pl-file-download`](#pl-file-download-element) element.
 
 #### Sample element
 
