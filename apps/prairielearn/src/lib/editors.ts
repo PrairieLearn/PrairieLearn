@@ -1024,6 +1024,8 @@ export class CourseInstanceAddEditor extends Editor {
       allowAccess: allowAccess !== undefined ? [allowAccess] : [],
     };
 
+    const courseInstancePath = path.join(courseInstancesPath, shortName);
+
     // We use outputJson to create the directory this.courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
     // throw an error if this.courseInstancePath already exists.
