@@ -246,6 +246,33 @@ WITH
         ELSE NULL
       END AS correct,
       s.feedback,
+      CASE
+        WHEN rg.id IS NOT NULL THEN (
+          SELECT
+            JSONB_BUILD_OBJECT(
+              'computed_points',
+              rg.computed_points,
+              'adjust_points',
+              rg.adjust_points,
+              'items',
+              COALESCE(
+                JSONB_AGG(
+                  JSONB_BUILD_OBJECT(
+                    'description',
+                    rgi.description,
+                    'points',
+                    rgi.points
+                  )
+                ),
+                '[]'::JSONB
+              )
+            )
+          FROM
+            rubric_grading_items rgi
+          WHERE
+            rgi.rubric_grading_id = rg.id
+        )
+      END AS rubric_grading,
       row_number() OVER (
         PARTITION BY
           v.id
@@ -295,6 +322,7 @@ WITH
       LEFT JOIN users AS su ON (su.user_id = s.auth_user_id)
       LEFT JOIN users AS agu ON (agu.user_id = iq.assigned_grader)
       LEFT JOIN users AS lgu ON (lgu.user_id = iq.last_grader)
+      LEFT JOIN rubric_gradings AS rg ON (rg.id = s.manual_rubric_grading_id)
     WHERE
       a.id = $assessment_id
   )

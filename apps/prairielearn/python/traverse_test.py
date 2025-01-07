@@ -1,11 +1,9 @@
-from typing import List
-
 from traverse import ElementReplacement, traverse_and_execute, traverse_and_replace
 
 
 def test_traverse_and_execute() -> None:
-    text: List[str] = []
-    tags: List[str] = []
+    text: list[str] = []
+    tags: list[str] = []
 
     def capture_element(element) -> None:
         if element.text:
