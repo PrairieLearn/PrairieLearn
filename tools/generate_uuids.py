@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
-import sys, os, json, re, uuid, argparse
+import argparse
+import json
+import os
+import re
+import sys
+import uuid
 
 parser = argparse.ArgumentParser(
     description="Generate UUIDs for info*.json files that don't already have them."
@@ -28,7 +33,7 @@ error_list = []
 
 def add_uuid_to_file(filename):
     try:
-        with open(filename, "r") as in_f:
+        with open(filename) as in_f:
             contents = in_f.read()
         data = json.loads(contents)
         if "uuid" in data:

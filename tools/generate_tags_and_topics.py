@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-import sys, os, json, random
+import json
+import os
+import random
+import sys
 
 if len(sys.argv) < 2:
     print("Usage: generate_tags_and_topics <coursedir>")

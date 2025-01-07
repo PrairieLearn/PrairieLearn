@@ -1,7 +1,7 @@
-import sys
-import os
-import uuid
 import json
+import os
+import sys
+import uuid
 import xml.etree.ElementTree as ET
 
 """

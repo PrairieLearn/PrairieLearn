@@ -13,7 +13,10 @@ Written for python3 (3.4); appears to be compatible with python2 (2.7).
 
 __author__ = "Dallas R. Trinkle"
 
-import json, uuid, re, os
+import json
+import os
+import re
+import uuid
 from collections import OrderedDict
 
 
@@ -129,34 +132,30 @@ By default, does not overwrite existing infoAssessment.json files; use -f instea
         tdir = os.path.join(targetdir, assessment)
         target = os.path.join(tdir, "infoAssessment.json")
         try:
-            with open(source, "r") as f:
+            with open(source) as f:
                 if not args.quiet:
                     print(
-                        "Converting assessment {} in {} to {}".format(
-                            assessment, adir, tdir
-                        )
+                        f"Converting assessment {assessment} in {adir} to {tdir}"
                     )
                 try:
                     if not os.path.isdir(tdir):
                         os.makedirs(tdir)  # 3.4 option: exist_ok=True
                 except:
-                    print("Error making directory {}".format(tdir))
+                    print(f"Error making directory {tdir}")
                 if not args.force:
                     if os.path.isfile(target):
                         if not args.quiet:
-                            print("Existing assessment {}; skipping".format(target))
+                            print(f"Existing assessment {target}; skipping")
                         continue
                 try:
                     with open(target, "w") as out:
                         json.dump(convassessment(json.load(f)), out, indent=4)
                 except:
                     print(
-                        "Error converting {} to {}. Could be file writing or JSON".format(
-                            source, target
-                        )
+                        f"Error converting {source} to {target}. Could be file writing or JSON"
                     )
         except:
             if not args.quiet:
                 print(
-                    "Directory {} does not have a readable info.json file?".format(adir)
+                    f"Directory {adir} does not have a readable info.json file?"
                 )

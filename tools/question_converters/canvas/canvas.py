@@ -1,6 +1,9 @@
 import argparse
+import json
+import os
 from collections import OrderedDict
-import requests, json, os
+
+import requests
 
 
 class ExtendAction(argparse.Action):

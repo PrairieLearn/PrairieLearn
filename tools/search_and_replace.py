@@ -4,7 +4,8 @@
 # questions directory and perform search-and-replace on the files for
 # each question.
 
-import os, re
+import os
+import re
 
 course_path = "/Users/mwest/git/pl-phys100"
 questions_path = os.path.join(course_path, "questions")
@@ -14,7 +15,7 @@ def read_file(path, filename):
     input_path = os.path.join(path, filename)
     print("reading %s" % input_path)
     try:
-        with open(input_path, "r") as input_file:
+        with open(input_path) as input_file:
             contents = input_file.read()
     except FileNotFoundError:
         return None

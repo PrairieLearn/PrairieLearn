@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
 
-import os, fnmatch, sys, re, hashlib, subprocess, platform, glob
+import fnmatch
+import glob
+import hashlib
+import os
+import platform
+import re
+import subprocess
+import sys
 
 CONVERT_CMD = "convert"
 if platform.system() == "Windows":

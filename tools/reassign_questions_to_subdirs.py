@@ -17,8 +17,8 @@ This script has been tested on the PHYS 213 repository. It's possible that some 
 """
 
 import glob
-import os
 import json
+import os
 
 
 def discover_to_move():
