@@ -116,8 +116,7 @@ def get_objects(element, data):
         # - frame
         frame = pl.get_string_attrib(child, "frame", "body")
         if frame not in ["body", "space"]:
-            msg = f'"frame" must be either "body" or "space": {frame}'
-            raise ValueError(msg)
+            raise ValueError(f'"frame" must be either "body" or "space": {frame}')
         if frame == "body":
             default_color = "#e84a27"
             default_opacity = 0.7
@@ -137,8 +136,9 @@ def get_objects(element, data):
             else:
                 raise ValueError
         except Exception as exc:
-            msg = f'attribute "position" must have format [x, y, z]: {p}'
-            raise ValueError(msg) from exc
+            raise ValueError(
+                f'attribute "position" must have format [x, y, z]: {p}'
+            ) from exc
         # - orientation (and format)
         orientation = get_orientation(child, "orientation", "format")
         # - scale
@@ -455,11 +455,13 @@ def grade(element_html, data):
     )
     tol_rotation = pl.get_float_attrib(element, "tol-rotation", TOL_ROTATION_DEFAULT)
     if tol_translation <= 0:
-        msg = f"tol_translation must be a positive real number: {tol_translation:g}"
-        raise ValueError(msg)
+        raise ValueError(
+            f"tol_translation must be a positive real number: {tol_translation:g}"
+        )
     if tol_rotation <= 0:
-        msg = f"tol_rotation must be a positive real number (angle in degrees): {tol_rotation:g}"
-        raise ValueError(msg)
+        raise ValueError(
+            f"tol_rotation must be a positive real number (angle in degrees): {tol_rotation:g}"
+        )
 
     # Check if angle is no greater than tolerance
     if (error_in_rotation <= tol_rotation) and (
@@ -553,8 +555,9 @@ def parse_correct_answer(f, a):
                 'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees'
             ) from exc
     else:
-        msg = f'"answer-pose-format" must be "rpy", "quaternion", "matrix", "axisangle", or "homogeneous": {f}'
-        raise ValueError(msg)
+        raise ValueError(
+            f'"answer-pose-format" must be "rpy", "quaternion", "matrix", "axisangle", or "homogeneous": {f}'
+        )
 
 
 def dict_to_b64(d):
@@ -606,8 +609,9 @@ def get_orientation(element, name_orientation, name_format):
                 return np.roll((qx * qy * qz).elements, -1).tolist()
             raise ValueError
         except Exception as exc:
-            msg = f'attribute "{name_orientation}" with format "{name_format}" must be a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]": {s}'
-            raise ValueError(msg) from exc
+            raise ValueError(
+                f'attribute "{name_orientation}" with format "{name_format}" must be a set of roll, pitch, yaw angles in degrees with format "[roll, pitch, yaw]": {s}'
+            ) from exc
     elif f == "quaternion":
         try:
             q = np.array(json.loads(s), dtype=np.float64)
@@ -615,8 +619,9 @@ def get_orientation(element, name_orientation, name_format):
                 return q.tolist()
             raise ValueError
         except Exception as exc:
-            msg = f'attribute "{name_orientation}" with format "{name_format}" must be a unit quaternion with format "[x, y, z, w]": {s}'
-            raise ValueError(msg) from exc
+            raise ValueError(
+                f'attribute "{name_orientation}" with format "{name_format}" must be a unit quaternion with format "[x, y, z, w]": {s}'
+            ) from exc
     elif f == "matrix":
         try:
             rot_matrix = np.array(json.loads(s), dtype=np.float64)
@@ -624,8 +629,9 @@ def get_orientation(element, name_orientation, name_format):
                 pyquaternion.Quaternion(matrix=rot_matrix).elements, -1
             ).tolist()
         except Exception as exc:
-            msg = f'attribute "{name_orientation}" with format "{name_format}" must be a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]": {s}'
-            raise ValueError(msg) from exc
+            raise ValueError(
+                f'attribute "{name_orientation}" with format "{name_format}" must be a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]": {s}'
+            ) from exc
     elif f == "axisangle":
         try:
             q = np.array(json.loads(s), dtype=np.float64)
@@ -639,11 +645,13 @@ def get_orientation(element, name_orientation, name_format):
                 raise ValueError
             raise ValueError
         except Exception as exc:
-            msg = f'attribute "{name_orientation}" with format "{name_format}" must have format "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees: {s}'
-            raise ValueError(msg) from exc
+            raise ValueError(
+                f'attribute "{name_orientation}" with format "{name_format}" must have format "[x, y, z, angle]" where (x, y, z) are the components of a unit vector and where the angle is in degrees: {s}'
+            ) from exc
     else:
-        msg = f'attribute "{name_format}" must be "rpy", "quaternion", "matrix", or "axisangle": {f}'
-        raise ValueError(msg)
+        raise ValueError(
+            f'attribute "{name_format}" must be "rpy", "quaternion", "matrix", or "axisangle": {f}'
+        )
 
 
 def get_position(element, name_position, default=None, must_be_nonzero=False):
@@ -656,10 +664,10 @@ def get_position(element, name_position, default=None, must_be_nonzero=False):
         p = np.array(json.loads(s), dtype=np.float64)
         if p.shape == (3,):
             if must_be_nonzero and np.allclose(p, np.array([0, 0, 0])):
-                msg = f'attribute "{name_position}" must be non-zero'
-                raise ValueError(msg)
+                raise ValueError(f'attribute "{name_position}" must be non-zero')
             return p.tolist()
         raise ValueError
     except Exception as exc:
-        msg = f'attribute "{name_position}" must have format "[x, y, z]": {s}'
-        raise ValueError(msg) from exc
+        raise ValueError(
+            f'attribute "{name_position}" must have format "[x, y, z]": {s}'
+        ) from exc

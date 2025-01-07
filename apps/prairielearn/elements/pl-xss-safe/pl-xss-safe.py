@@ -57,8 +57,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         base_path = data["options"]["question_path"]
         file_path = os.path.join(base_path, source_file_name)
         if not os.path.exists(file_path):
-            msg = f'Unknown file path: "{file_path}".'
-            raise RuntimeError(msg)
+            raise RuntimeError(f'Unknown file path: "{file_path}".')
 
         with open(file_path) as f:
             contents = f.read()

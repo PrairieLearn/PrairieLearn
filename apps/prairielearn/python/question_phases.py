@@ -170,8 +170,7 @@ def process(
                     + "In the future, returning a different object will trigger a fatal error."
                 )
         except Exception as err:
-            msg = f"Error processing element {element.tag}"
-            raise RuntimeError(msg) from err
+            raise RuntimeError(f"Error processing element {element.tag}") from err
 
     def process_element_return_none(element: lxml.html.HtmlElement) -> None:
         process_element(element)

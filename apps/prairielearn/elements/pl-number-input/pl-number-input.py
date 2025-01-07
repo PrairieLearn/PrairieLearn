@@ -75,8 +75,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     correct_answer = pl.get_float_attrib(element, "correct-answer", None)
     if correct_answer is not None:
         if name in data["correct_answers"]:
-            msg = f"duplicate correct_answers variable name: {name}"
-            raise ValueError(msg)
+            raise ValueError(f"duplicate correct_answers variable name: {name}")
         data["correct_answers"][name] = correct_answer
 
     custom_format = pl.get_string_attrib(element, "custom-format", None)
@@ -84,8 +83,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         try:
             _ = ("{:" + custom_format + "}").format(0)
         except ValueError:
-            msg = f"invalid custom format: {custom_format}"
-            raise ValueError(msg) from None
+            raise ValueError(f"invalid custom format: {custom_format}") from None
 
 
 def format_true_ans(

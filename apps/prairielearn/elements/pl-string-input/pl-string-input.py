@@ -61,8 +61,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     if correct_answer is not None:
         if name in data["correct_answers"]:
-            msg = f'Duplicate correct_answers variable name: "{name}"'
-            raise RuntimeError(msg)
+            raise RuntimeError(f'Duplicate correct_answers variable name: "{name}"')
         data["correct_answers"][name] = correct_answer
 
 

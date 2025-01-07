@@ -70,8 +70,9 @@ def draw_matrix(
     mat = mat.T
 
     if len(mat.shape) != 2:
-        msg = f"Input matrix has wrong dimensionality (gotten {len(mat.shape)}, expected 2)."
-        raise TypeError(msg)
+        raise TypeError(
+            f"Input matrix has wrong dimensionality (gotten {len(mat.shape)}, expected 2)."
+        )
     if directed is None:
         if mat.shape[0] == mat.shape[1]:
             directed = not np.allclose(mat.T, mat)

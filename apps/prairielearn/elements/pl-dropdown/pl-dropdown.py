@@ -71,8 +71,7 @@ def prepare(element_html, data):
     data["correct_answers"][answers_name] = get_solution(element, data)
 
     if data["correct_answers"][answers_name] is None:
-        msg = f"Correct answer not defined for answers-name: {answers_name}"
-        raise ValueError(msg)
+        raise ValueError(f"Correct answer not defined for answers-name: {answers_name}")
 
 
 def render(element_html, data):

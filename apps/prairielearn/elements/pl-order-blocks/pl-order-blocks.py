@@ -192,8 +192,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         and grading_method is not GradingMethodType.RANKING
         and feedback_type is not FeedbackType.NONE
     ):
-        msg = f"feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
-        raise ValueError(msg)
+        raise ValueError(
+            f"feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
+        )
 
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
     code_language = pl.get_string_attrib(element, "code-language", None)
@@ -272,8 +273,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         tag, depends = get_graph_info(html_tags)
         if is_correct:
             if tag in used_tags:
-                msg = f'Tag "{tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
-                raise ValueError(msg)
+                raise ValueError(
+                    f'Tag "{tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
+                )
             used_tags.add(tag)
 
         if check_indentation is False and answer_indent is not None:

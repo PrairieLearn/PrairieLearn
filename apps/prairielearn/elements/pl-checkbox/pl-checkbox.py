@@ -163,11 +163,9 @@ def prepare(element_html, data):
             correct_answer_list.append(keyed_answer)
 
     if name in data["params"]:
-        msg = f"duplicate params variable name: {name}"
-        raise ValueError(msg)
+        raise ValueError(f"duplicate params variable name: {name}")
     if name in data["correct_answers"]:
-        msg = f"duplicate correct_answers variable name: {name}"
-        raise ValueError(msg)
+        raise ValueError(f"duplicate correct_answers variable name: {name}")
     data["params"][name] = display_answers
     data["correct_answers"][name] = correct_answer_list
 
@@ -661,8 +659,7 @@ def test(element_html, data):
         data["raw_submitted_answers"][name] = None
         data["format_errors"][name] = "You must select at least one option."
     else:
-        msg = f"invalid result: {result}"
-        raise RuntimeError(msg)
+        raise RuntimeError(f"invalid result: {result}")
 
 
 def _get_min_options_to_select(element, default_val):

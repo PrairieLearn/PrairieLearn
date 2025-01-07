@@ -87,13 +87,15 @@ def render(element_html, data):
             n = pl.get_integer_attrib(element, "columns", None)
         else:
             if np.isscalar(a_tru):
-                msg = f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element cannot be a scalar.'
-                raise ValueError(msg)
+                raise ValueError(
+                    f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element cannot be a scalar.'
+                )
             a_tru = np.array(a_tru)
 
             if a_tru.ndim != 2:
-                msg = f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element must be a 2D array.'
-                raise ValueError(msg)
+                raise ValueError(
+                    f'Value in data["correct_answers"] for variable {name} in pl-matrix-component-input element must be a 2D array.'
+                )
             m, n = np.shape(a_tru)
 
         input_array = create_table_for_html_display(m, n, name, label, data, "input")
@@ -481,8 +483,7 @@ def test(element_html, data):
                     data["raw_submitted_answers"][name] = ""
                     data["format_errors"][each_entry_name] = "(Invalid blank entry)"
             else:
-                msg = f"invalid result: {result}"
-                raise RuntimeError(msg)
+                raise RuntimeError(f"invalid result: {result}")
 
     if result == "invalid":
         data["format_errors"][name] = (

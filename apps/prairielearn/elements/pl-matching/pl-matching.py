@@ -42,8 +42,9 @@ def get_counter(i, counter_type):
     elif counter_type == "full-text":
         return ""
     else:
-        msg = f'Illegal counter-type in pl-matching element: "{counter_type}" should be "decimal", "lower-alpha", "upper-alpha", or "full-text".'
-        raise ValueError(msg)
+        raise ValueError(
+            f'Illegal counter-type in pl-matching element: "{counter_type}" should be "decimal", "lower-alpha", "upper-alpha", or "full-text".'
+        )
 
 
 def legal_answer(answer, options):
