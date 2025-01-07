@@ -35,7 +35,7 @@ class PLTestResult(unittest.TestResult):
         # (but not execute them) so that we show the correct number of points on the grading panel
         self.skip_grading = False
 
-    def startTest(self, test):
+    def startTest(self, test):  # noqa: N802
         unittest.TestResult.startTest(self, test)
 
         options = getattr(test, test._testMethodName).__func__.__dict__
@@ -48,14 +48,14 @@ class PLTestResult(unittest.TestResult):
             name = test._testMethodName
         self.results.append({"name": name, "max_points": points, "filename": filename})
 
-    def addSuccess(self, test):
+    def addSuccess(self, test):  # noqa: N802
         unittest.TestResult.addSuccess(self, test)
         if test.points is None:
             self.results[-1]["points"] = self.results[-1]["max_points"]
         else:
             self.results[-1]["points"] = test.points * self.results[-1]["max_points"]
 
-    def addError(self, test, err):
+    def addError(self, test, err):  # noqa: N802
         if isinstance(err[1], GradingComplete):
             # If grading stopped early, we will flag that but still loop through
             # the remaining cases so that we have the correct point values
@@ -115,20 +115,20 @@ class PLTestResult(unittest.TestResult):
                 self.results[-1]["points"] = 0
                 Feedback.add_feedback(self.error_message + tr_message)
 
-    def addFailure(self, test, err):
+    def addFailure(self, test, err):  # noqa: N802
         unittest.TestResult.addFailure(self, test, err)
         if test.points is None:
             self.results[-1]["points"] = 0
         else:
             self.results[-1]["points"] = test.points * self.results[-1]["max_points"]
 
-    def stopTest(self, test):
+    def stopTest(self, test):  # noqa: N802
         # Never write output back to the console
         self._mirrorOutput = False
         unittest.TestResult.stopTest(self, test)
 
-    def getResults(self):
+    def getResults(self):  # noqa: N802
         return self.results
 
-    def getGradable(self):
+    def getGradable(self):  # noqa: N802
         return self.grading_succeeded
