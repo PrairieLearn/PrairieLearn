@@ -470,10 +470,10 @@ with open(4, "w", encoding="utf-8") as exitf:
                 else:
                     # The worker did not exit gracefully
                     raise Exception(
-                        "worker process exited unexpectedly with status %d" % status
+                        f"worker process exited unexpectedly with status {status:d}"
                     )
             else:
                 # Something else happened that is weird
                 raise Exception(
-                    "worker process exited unexpectedly with status %d" % status
+                    f"worker process exited unexpectedly with status {status:d}"
                 )
