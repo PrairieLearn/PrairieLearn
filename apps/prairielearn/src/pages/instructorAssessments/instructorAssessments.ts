@@ -219,7 +219,7 @@ router.post(
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.aid)) {
         throw new HttpStatusError(
           400,
-          `Invalid aid (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.assessment_id}`,
+          `Invalid aid (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.aid}`,
         );
       }
 
