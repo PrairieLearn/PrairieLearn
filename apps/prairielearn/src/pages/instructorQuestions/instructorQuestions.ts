@@ -1,59 +1,29 @@
-import path from 'path';
-
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
-import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { getCourseOwners } from '../../lib/course.js';
 import {
-  type Course,
   CourseSchema,
   QuestionSchema,
   TopicSchema,
+  type Course,
   type Question,
 } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
-import { selectQuestionById, selectQuestionByUuid } from '../../models/question.js';
+import { selectQuestionById } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
 
 import { QuestionsPage } from './instructorQuestions.html.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-async function getExampleCourse(): Promise<Course> {
-  const example_course = await sqldb.queryRow(sql.select_example_course, {}, CourseSchema);
-  return example_course;
-}
-
-async function getTemplateCourseQuestions(exampleCourse: Course): Promise<Question[]> {
-  const templateTopic = await sqldb.queryRow(
-    sql.select_template_topic_for_course_id,
-    {
-      course_id: exampleCourse.id,
-    },
-    TopicSchema,
-  );
-  const templateQuestions = await sqldb.queryRows(
-    sql.select_questions_for_course,
-    {
-      course_id: exampleCourse.id,
-      topic_id: templateTopic.id,
-    },
-    QuestionSchema,
-  );
-
-  return templateQuestions;
-}
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function getExampleCourse(): Promise<Course> {
@@ -115,14 +85,10 @@ router.get(
     const exampleCourse = await getExampleCourse();
     const templateQuestions = await getTemplateCourseQuestions(exampleCourse);
 
-    const exampleCourse = await getExampleCourse();
-    const templateQuestions = await getTemplateCourseQuestions(exampleCourse);
-
     const courseDirExists = await fs.pathExists(res.locals.course.path);
     res.send(
       QuestionsPage({
         questions,
-        templateQuestions,
         templateQuestions,
         course_instances: courseInstances,
         showAddQuestionButton:
@@ -196,9 +162,7 @@ router.post(
         }
 
         const exampleCourse = await getExampleCourse();
-        const templateQuestion = await selectQuestionById(
-          req.body.template_qid
-        )
+        const templateQuestion = await selectQuestionById(req.body.template_qid);
 
         await copyQuestionBetweenCourses(res, {
           fromCourse: exampleCourse,

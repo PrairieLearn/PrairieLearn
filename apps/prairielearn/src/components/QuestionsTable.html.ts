@@ -2,11 +2,9 @@ import { EncodedData } from '@prairielearn/browser-utils';
 import { html, type HtmlSafeString } from '@prairielearn/html';
 
 import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets.js';
-import { type Question, type Question, type CourseInstance } from '../lib/db-types.js';
+import { type Question, type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { type QuestionsPageData } from '../models/questions.js';
-
-import { Modal } from './Modal.html.js';
 
 import { Modal } from './Modal.html.js';
 
