@@ -43,6 +43,21 @@ jobs:
       - name: Create build context directory
         run: mkdir -p /tmp/build-contexts
 
+      # Print docker config.json for debugging
+      - run: cat /etc/docker/daemon.json
+
+      # Needed to export multi-platform images.
+      - name: Set up Docker
+        uses: docker/setup-docker-action@v4
+        with:
+          daemon-config: |
+            {
+              "features": {
+                "containerd-snapshotter": true
+              }
+            }
+      - run: cat /etc/docker/daemon.json
+
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
       - name: Set up Docker Buildx
@@ -138,10 +153,13 @@ jobs:
           platforms: linux/amd64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
+          load: true
           outputs: type=oci,tar=false,dest=/tmp/build-contexts/workspace-vscode-base
           tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
 
       - run: ls -lah /tmp/build-contexts/workspace-vscode-base
+      - run: ls -lah /tmp/build-contexts/workspace-vscode-base/blobs
+      - run: ls -lah /tmp/build-contexts/workspace-vscode-base/ingest
       - run: cat /tmp/build-contexts/workspace-vscode-base/index.json
       - run: cat /tmp/build-contexts/workspace-vscode-base/oci-layout
 
