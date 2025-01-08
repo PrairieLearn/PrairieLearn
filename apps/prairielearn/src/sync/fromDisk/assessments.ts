@@ -101,10 +101,9 @@ function getParamsForAssessment(
   const assessmentCanSubmit = assessment?.canSubmit ?? allRoleNames;
   const alternativeGroups = (assessment.zones ?? []).map((zone) => {
     const zoneGradeRateMinutes =
-      Object.prototype.hasOwnProperty.call(zone, 'gradeRateMinutes') &&
       zone.gradeRateMinutes !== undefined
         ? zone.gradeRateMinutes
-        : assessment.gradeRateMinutes || 0;
+        : (assessment.gradeRateMinutes ?? 0);
     const zoneCanView = zone?.canView ?? assessmentCanView;
     const zoneCanSubmit = zone?.canSubmit ?? assessmentCanSubmit;
     return zone.questions.map((question) => {
@@ -123,10 +122,7 @@ function getParamsForAssessment(
         advanceScorePerc: number;
       }[] = [];
       const questionGradeRateMinutes =
-        Object.prototype.hasOwnProperty.call(question, 'gradeRateMinutes') &&
-        question.gradeRateMinutes !== undefined
-          ? question.gradeRateMinutes
-          : zoneGradeRateMinutes;
+        question.gradeRateMinutes !== undefined ? question.gradeRateMinutes : zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
       const questionCanSubmit = question.canSubmit ?? zoneCanSubmit;
       if (question.alternatives) {
@@ -139,19 +135,15 @@ function getParamsForAssessment(
             autoPoints: alternative.autoPoints ?? question.autoPoints ?? null,
             manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
             forceMaxPoints:
-              Object.prototype.hasOwnProperty.call(alternative, 'forceMaxPoints') &&
               alternative.forceMaxPoints !== undefined
                 ? alternative.forceMaxPoints
-                : Object.prototype.hasOwnProperty.call(question, 'forceMaxPoints') &&
-                    question.forceMaxPoints !== undefined
+                : question.forceMaxPoints !== undefined
                   ? question.forceMaxPoints
                   : false,
             triesPerVariant:
-              Object.prototype.hasOwnProperty.call(alternative, 'triesPerVariant') &&
               alternative.triesPerVariant !== undefined
                 ? alternative.triesPerVariant
-                : Object.prototype.hasOwnProperty.call(question, 'triesPerVariant') &&
-                    question.triesPerVariant !== undefined
+                : question.triesPerVariant !== undefined
                   ? question.triesPerVariant
                   : 1,
             advanceScorePerc:
@@ -161,7 +153,6 @@ function getParamsForAssessment(
               assessment.advanceScorePerc ??
               0,
             gradeRateMinutes:
-              Object.prototype.hasOwnProperty.call(alternative, 'gradeRateMinutes') &&
               alternative.gradeRateMinutes !== undefined
                 ? alternative.gradeRateMinutes
                 : questionGradeRateMinutes,
