@@ -140,7 +140,9 @@ for i, new_topic in enumerate(new_topics_list):
     if i >= len(new_topics_list) - 1:
         trailing_comma = ""
     print(
-        '        {{"name": "{}", "color": "{}"}}{}'.format(new_topic["name"], new_topic["color"], trailing_comma)
+        '        {{"name": "{}", "color": "{}"}}{}'.format(
+            new_topic["name"], new_topic["color"], trailing_comma
+        )
     )
 print("    ],")
 
@@ -150,7 +152,9 @@ for i, new_tag in enumerate(new_tags_list):
     if i >= len(new_tags_list) - 1:
         trailing_comma = ""
     print(
-        '        {{"name": "{}", "color": "{}"}}{}'.format(new_tag["name"], new_tag["color"], trailing_comma)
+        '        {{"name": "{}", "color": "{}"}}{}'.format(
+            new_tag["name"], new_tag["color"], trailing_comma
+        )
     )
 print("    ]")
 
