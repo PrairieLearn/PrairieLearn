@@ -149,8 +149,8 @@ jobs:
         with:
           context: workspaces/vscode-base
           # TODO: restore; temporarily removing ARM build for iteration speed
-          # platforms: linux/amd64,linux/arm64
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
+          # platforms: linux/amd64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           load: true
@@ -162,6 +162,8 @@ jobs:
       # - run: ls -lah /tmp/build-contexts/workspace-vscode-base/ingest
       # - run: cat /tmp/build-contexts/workspace-vscode-base/index.json
       # - run: cat /tmp/build-contexts/workspace-vscode-base/oci-layout
+
+      - run: docker image ls
 
       ######################################################################################################
       # prairielearn/workspace-vscode-python
