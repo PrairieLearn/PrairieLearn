@@ -211,10 +211,6 @@ export const QuestionSchema = z
       .describe('The list of sharing sets that this question belongs to.')
       .optional(),
     sharePublicly: z.boolean().describe('Whether this question is publicly shared.').optional(),
-    sharedPublicly: z
-      .boolean()
-      .describe('[DEPRECATED, DO NOT USE] Whether this question is publicly shared.')
-      .optional(),
     shareSourcePublicly: z
       .boolean()
       .describe("Whether this questions's source code is publicly shared.")
