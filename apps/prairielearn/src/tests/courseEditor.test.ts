@@ -38,7 +38,7 @@ const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 const questionsUrl = `${courseInstanceUrl}/course_admin/questions`;
 const assessmentsUrl = `${courseInstanceUrl}/instance_admin/assessments`;
 
-
+const newQuestionUrl = `${courseInstanceUrl}/question/2/settings`;
 const newCourseInstanceUrl = baseUrl + '/course_instance/2/instructor';
 const newCourseInstanceSettingsUrl = `${newCourseInstanceUrl}/instance_admin/settings`;
 
@@ -67,6 +67,7 @@ const testEditData = [
     ]),
   },
   {
+    url: newQuestionUrl,
     formSelector: '#deleteQuestionModal',
     action: 'delete_question',
     files: new Set([
@@ -340,6 +341,9 @@ function testEdit(params) {
     if (params.url) {
       it('should load successfully', async () => {
         const res = await fetch(params.url);
+
+        console.log(params.url, res.status, res.statusText);
+
         assert.isOk(res.ok);
         locals.$ = cheerio.load(await res.text());
       });
