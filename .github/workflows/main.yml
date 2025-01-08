@@ -138,8 +138,10 @@ jobs:
           platforms: linux/amd64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
-          outputs: type=oci,dest=/tmp/build-contexts/workspace-vscode-base.tar
+          outputs: type=oci,tar=false,dest=/tmp/build-contexts/workspace-vscode-base
           tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
+
+      - run: ls /tmp/build-contexts
 
       ######################################################################################################
       # prairielearn/workspace-vscode-python
