@@ -1020,9 +1020,7 @@ export class QuestionAddEditor extends Editor {
     const questionsPath = path.join(this.course.path, 'questions');
 
     const { qid, title } = await run(async () => {
-      if (this.qid && this.title) {
-        return { qid: this.qid, title: this.title };
-      } else if (this.isDraft) {
+      if (!(this.qid && this.title) && this.isDraft) {
         let draftNumber = await sqldb.queryRow(
           sql.update_draft_number,
           { course_id: this.course.id },
@@ -1051,7 +1049,7 @@ export class QuestionAddEditor extends Editor {
       const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
       debug('Generate qid and title');
-      const names = getNamesForAdd(oldNamesShort, oldNamesLong);
+      const names = getNamesForAdd(oldNamesShort, oldNamesLong, this.qid, this.title);
 
       return { qid: names.shortName, title: names.longName };
     });
@@ -1162,6 +1160,22 @@ export class QuestionAddFromTemplateEditor extends Editor {
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', this.template_qid);
     const toPath = questionPath;
+
+    // Ensure that the question folder path is fully contained in the questions directory of the course
+    if (!contains(questionsPath, questionPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The path of the question folder to add</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${questionPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
+          </div>
+        `,
+      });
+    }
 
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
     await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });

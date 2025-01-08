@@ -119,6 +119,12 @@ router.post(
       if (req.body.start_from === 'Template' && !req.body.template_qid) {
         throw new error.HttpStatusError(400, 'template_qid is required');
       }
+      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.qid)) {
+        throw new error.HttpStatusError(
+          400,
+          `Invalid qid (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.qid}`,
+        );
+      }
 
       const api = getCourseFilesClient();
 
