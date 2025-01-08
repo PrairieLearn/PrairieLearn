@@ -77,7 +77,7 @@ const testEditData = [
       qid: 'custom_id',
       title: 'Custom Question',
       start_from: 'Empty Question',
-      template_qid: 'template/checkbox/feedback',
+      template_qid: 'template/string-input/random',
     },
     files: new Set([
       'README.md',
