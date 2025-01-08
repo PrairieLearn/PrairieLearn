@@ -125,14 +125,24 @@ jobs:
       # prairielearn/workspace-vscode-base
       - name: Check whether workspaces/vscode-base was modified
         run: tools/check_path_modified.sh workspaces/vscode-base workspaces_vscode_base_modified
-      - name: Build and push prairielearn/workspace-vscode-base
+      - name: Build and push prairielearn/workspace-vscode-base (amd64)
         if: ${{ env.workspaces_vscode_base_modified }}
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/vscode-base
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           # We need to load this image into Docker so that subsequent builds can use it.
-          load: true
+          load: true # load only on amd64, not on arm64
+          push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
+          no-cache: true
+          tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
+
+      - name: Build and push prairielearn/workspace-vscode-base (arm64)
+        if: ${{ env.workspaces_vscode_base_modified }}
+        uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
+        with:
+          context: workspaces/vscode-base
+          platforms: linux/arm64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
