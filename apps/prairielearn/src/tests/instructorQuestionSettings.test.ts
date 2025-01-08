@@ -235,7 +235,7 @@ describe('Editing question settings', () => {
     );
     assert.equal(settingsPageResponse.status, 200);
 
-    // Change the question id to a new, valid id (question2)
+    // Change the question id to a new, valid id
     const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
       method: 'POST',
       body: new URLSearchParams({

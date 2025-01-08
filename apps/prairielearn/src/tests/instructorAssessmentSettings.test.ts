@@ -329,7 +329,7 @@ describe('Editing assessment settings', () => {
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
     );
 
-    // Change the assessment id to a valid, new id (A1)
+    // Change the assessment id to a valid, new id
     const response = await fetch(
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
       {
