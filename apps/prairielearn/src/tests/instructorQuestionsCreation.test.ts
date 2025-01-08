@@ -74,7 +74,7 @@ describe('Creating a question', () => {
           orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
           title: 'Test Question',
           qid: 'test-question',
-          start_from: 'Empty Question',
+          start_from: 'Empty question',
         }),
       },
     );
@@ -192,7 +192,7 @@ describe('Creating a question', () => {
           orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
           title: 'Test Question',
           qid: 'test-question',
-          start_from: 'Empty Question',
+          start_from: 'Empty question',
         }),
       },
     );
@@ -231,7 +231,7 @@ describe('Creating a question', () => {
           __action: 'add_question',
           __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
           orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
-          start_from: 'Empty Question',
+          start_from: 'Empty question',
         }),
       },
     );
@@ -316,7 +316,7 @@ describe('Creating a question', () => {
             orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
             title: 'New Test Question',
             qid: '../new-test-question',
-            start_from: 'Empty Question',
+            start_from: 'Empty question',
           }),
         },
       );

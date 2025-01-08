@@ -52,7 +52,7 @@ const testEditData = [
     data: {
       qid: 'New',
       title: 'New',
-      start_from: 'Empty Question',
+      start_from: 'Empty question',
     },
     files: new Set([
       'README.md',
@@ -76,7 +76,7 @@ const testEditData = [
     data: {
       qid: 'custom_id',
       title: 'Custom Question',
-      start_from: 'Empty Question',
+      start_from: 'Empty question',
       template_qid: 'template/string-input/random',
     },
     files: new Set([
