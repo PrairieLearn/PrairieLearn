@@ -4,9 +4,7 @@
 # Version 0.0.2 edited by Harry Dankowicz with additional export of tikz figures
 # Version 0.1.0 edited by Dave Mussulman to convert to PL v3 question types
 
-
-VERSION = "0.1.0"
-RELEASE_DATE = "2020-03-20"
+# ruff: noqa: B023 -- script abuses inline functions; don't lint unbound variables
 
 import collections
 import csv
@@ -28,6 +26,8 @@ import uuid
 
 import numpy as np
 
+VERSION = "0.1.0"
+RELEASE_DATE = "2020-03-20"
 ######################################################################
 
 
@@ -63,7 +63,7 @@ def init_logging(output_filename):
     global log_file
     try:
         print("Logging information to file: %s" % output_filename)
-        if log_file != None:
+        if log_file is not None:
             raise Exception("logging already initialized")
         log_file = open(output_filename, "w")
     except Exception as exc:
@@ -74,7 +74,7 @@ def init_logging(output_filename):
 def log(msg):
     global log_file
     try:
-        if log_file == None:
+        if log_file is None:
             raise Exception("logging not initialized")
         log_file.write(msg + "\n")
     except Exception as exc:

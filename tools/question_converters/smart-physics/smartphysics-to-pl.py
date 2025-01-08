@@ -147,11 +147,7 @@ if __name__ == "__main__":
     xml_root = tree.getroot()
 
     dirname = sys.argv[2]
-    try:
-        os.mkdir(dirname)
-    except:
-        print("looks like ", dirname, "already exists")
-        exit(1)
+    os.makedirs(dirname, exist_ok=True)
     my_id = uuid.uuid4()
     info = gen_info(my_id, xml_root)
     json.dump(info, open(dirname + "/info.json", "w"))

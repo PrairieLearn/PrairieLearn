@@ -76,7 +76,7 @@ def main():
         url = f"{base_url}/assessment/{args.assessment}"
         with requests.get(url, cookies=cookies) as response:
             root = html.document_fromstring(response.text)
-            for start in root.cssselect(f"#confirm-form"):
+            for _start in root.cssselect(f"#confirm-form"):
                 # Need to start assessment (confirm form)
                 data = {
                     i.get("name"): i.get("value")

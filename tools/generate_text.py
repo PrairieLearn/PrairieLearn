@@ -39,9 +39,8 @@ else:
     MODE = "subdir"
     BASE_DIRS = sys.argv[1:]
 
-if len(BASE_DIRS) == 0:
-    if os.path.isdir("/course"):
-        BASE_DIRS = ["/course"]
+if len(BASE_DIRS) == 0 and os.path.isdir("/course"):
+    BASE_DIRS = ["/course"]
 
 if len(BASE_DIRS) == 0:
     print("Usage: generate_text <basedir1> <basedir2> ...")
@@ -174,18 +173,17 @@ def delete_non_matching(basedir, nondelete_filenames):
         return
     filenames = os.listdir(basedir)
     for filename in filenames:
-        if filename not in nondelete_filenames:
-            if FILENAME_RE.match(filename):
-                full_filename = os.path.join(basedir, filename)
-                print("deleting " + full_filename)
-                os.unlink(full_filename)
+        if filename not in nondelete_filenames and FILENAME_RE.match(filename):
+            full_filename = os.path.join(basedir, filename)
+            print("deleting " + full_filename)
+            os.unlink(full_filename)
 
 
 if MODE == "subdir":
     for basedir in BASE_DIRS:
         print("########################################")
         print("Processing %s" % basedir)
-        for dirpath, dirnames, filenames in os.walk(basedir):
+        for dirpath, _dirnames, filenames in os.walk(basedir):
             img_filenames = []
             for filename in fnmatch.filter(filenames, "*.js"):
                 img_filenames += process_file(os.path.join(dirpath, filename))
@@ -196,7 +194,7 @@ elif MODE == "textdir":
     for basedir in BASE_DIRS:
         print("########################################")
         print("Processing %s" % basedir)
-        for dirpath, dirnames, filenames in os.walk(basedir):
+        for dirpath, _dirnames, filenames in os.walk(basedir):
             for filename in fnmatch.filter(filenames, "*.js"):
                 img_filenames += process_file(os.path.join(dirpath, filename))
     delete_non_matching(TEXT_DIR, img_filenames)
