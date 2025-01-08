@@ -100,7 +100,7 @@ def format_true_ans(
         if custom_format is not None:
             correct_answer = ("{:" + custom_format + "}").format(correct_answer)
         elif comparison is ComparisonType.RELABS:
-            # FIXME: render correctly with respect to rtol and atol
+            # FIXME: render correctly with respect to rtol and atol  # noqa: FIX001
             correct_answer = f"{correct_answer:.12g}"
         elif comparison is ComparisonType.SIGFIG:
             digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
@@ -521,7 +521,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
 
         data["raw_submitted_answers"][name] = str(answer)
     elif result == "invalid":
-        # FIXME: add more invalid expressions, make text of format_errors
+        # FIXME: add more invalid expressions, make text of format_errors  # noqa: FIX001
         # correct, and randomize
         data["raw_submitted_answers"][name] = "1 + 2"
         data["format_errors"][name] = "invalid"

@@ -480,12 +480,12 @@ def parse(element_html, data):
         return
 
     # Check that the selected options are a subset of the valid options
-    # FIXME: raise ValueError instead of treating as parse error?
+    # FIXME: raise ValueError instead of treating as parse error?  # noqa: FIX001
     submitted_key_set = set(submitted_key)
     all_keys_set = set(all_keys)
     if not submitted_key_set.issubset(all_keys_set):
         one_bad_key = submitted_key_set.difference(all_keys_set).pop()
-        # FIXME: escape one_bad_key
+        # FIXME: escape one_bad_key  # noqa: FIX001
         data["format_errors"][name] = (
             f"You selected an invalid option: {str(one_bad_key)}"
         )
@@ -650,7 +650,7 @@ def test(element_html, data):
             "feedback": feedback,
         }
     elif result == "invalid":
-        # FIXME: add more invalid examples
+        # FIXME: add more invalid examples  # noqa: FIX001
         data["raw_submitted_answers"][name] = None
         data["format_errors"][name] = "You must select at least one option."
     else:

@@ -265,7 +265,7 @@ def render(element_html, data):
             if comparison == "relabs":
                 rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
                 atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
-                # FIXME: render correctly with respect to rtol and atol
+                # FIXME: render correctly with respect to rtol and atol  # noqa: FIX001
                 latex_data = (
                     "$"
                     + pl.latex_from_2darray(a_tru, presentation_type="g", digits=12)

@@ -699,6 +699,6 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["raw_submitted_answers"][name] = "0"
         data["format_errors"][name] = "INVALID choice"
 
-        # FIXME: add more invalid choices
+        # FIXME: add more invalid choices  # noqa: FIX001
     else:
         assert_never(result)

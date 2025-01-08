@@ -200,7 +200,7 @@ def render(element_html, data):
             if comparison == "relabs":
                 rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
                 atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
-                # FIXME: render correctly with respect to rtol and atol
+                # FIXME: render correctly with respect to rtol and atol  # noqa: FIX001
                 matlab_data = pl.string_from_2darray(
                     a_tru, language="matlab", digits=12, presentation_type="g"
                 )
@@ -434,7 +434,7 @@ def test(element_html, data):
             )
             data["partial_scores"][name] = {"score": 0, "weight": weight}
         elif result == "invalid":
-            # FIXME: add more invalid expressions, make text of format_errors
+            # FIXME: add more invalid expressions, make text of format_errors  # noqa: FIX001
             # correct, and randomize
             data["raw_submitted_answers"][name] = "[[1, 2, 3], [4, 5]]"
             data["format_errors"][name] = "invalid"
