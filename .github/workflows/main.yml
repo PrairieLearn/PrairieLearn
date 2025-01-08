@@ -53,7 +53,6 @@ jobs:
       - run: docker version
       - run: docker info
       - run: docker info -f '{{ .DriverStatus }}'
-      - run: exit 1
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
@@ -146,8 +145,8 @@ jobs:
         with:
           context: workspaces/vscode-base
           # TODO: restore; temporarily removing ARM build for iteration speed
-          platforms: linux/amd64,linux/arm64
-          # platforms: linux/amd64
+          # platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           load: true
