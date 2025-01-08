@@ -392,7 +392,6 @@ export interface Question {
   dependencies: Record<string, string>;
   sharingSets?: string[];
   sharePublicly: boolean;
-  sharedPublicly: boolean;
   shareSourcePublicly: boolean;
 }
 
@@ -1070,14 +1069,6 @@ async function validateQuestion(
         `External grading timeout value of ${question.externalGradingOptions.timeout} seconds exceeds the maximum value and has been limited to ${config.externalGradingMaximumTimeout} seconds.`,
       );
       question.externalGradingOptions.timeout = config.externalGradingMaximumTimeout;
-    }
-  }
-
-  if ('sharedPublicly' in question) {
-    if ('sharePublicly' in question) {
-      errors.push('Cannot specify both "sharedPublicly" and "sharePublicly" in one question.');
-    } else {
-      warnings.push('"sharedPublicly" is deprecated; use "sharePublicly" instead.');
     }
   }
 

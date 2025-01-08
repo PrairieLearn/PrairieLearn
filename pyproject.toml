@@ -5,6 +5,7 @@ include = [
     "./graders/**/*.py",
     "./exampleCourse/**/*.py",
     "./testCourse/**/*.py",
+    "./tools/**/*.py"
 ]
 exclude = [
     # These files are intentionally not parseable as Python.
@@ -30,7 +31,9 @@ select = [
     # pyupgrade
     "UP",
     # flake8-boolean-trap
-    "FBT"
+    "FBT",
+    # refurb
+    "FURB"
 ]
 ignore = [
     # Ignore line length errors
@@ -67,6 +70,8 @@ ignore = [
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
 # Boolean default positional argument
 "graders/**/*.py" = ["FBT002"]
+# TODO: These linter errors will be resolved in a future PR
+"tools/**/*.py" = ["SIM115", "E701", "E702", "N802", "N803", "N806", "UP031", "SIM118", "E722", "B023", "E711", "E402", "B007", "SIM102", "UP015"]
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
