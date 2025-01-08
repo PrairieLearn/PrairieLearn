@@ -206,7 +206,7 @@ const ZoneSchema = z.object({
     .optional(),
   comment: CommentSchema.optional(),
   // Do we need to allow for additional keys?
-  // comments: CommentSchema.optional().describe('DEPRECATED -- do not use.'),
+  comments: CommentSchema.optional().describe('DEPRECATED -- do not use.'),
   maxPoints: z
     .number()
     .describe(
