@@ -2,14 +2,16 @@ import * as path from 'path';
 
 import { assert } from 'chai';
 import { execa } from 'execa';
-import * as tmp from 'tmp';
 import fs from 'fs-extra';
-
-import * as helperServer from './helperServer.js';
-import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
 import { step } from 'mocha-steps';
-import { fetchCheerio } from './helperClient.js';
+import * as tmp from 'tmp';
+
+import { loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+
 import { config } from '../lib/config.js';
+
+import { fetchCheerio } from './helperClient.js';
+import * as helperServer from './helperServer.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 
