@@ -24,7 +24,6 @@ import pandas
 import sympy
 from numpy.typing import ArrayLike
 from pint import UnitRegistry
-from text_unidecode import unidecode
 from typing_extensions import NotRequired, assert_never
 
 from prairielearn.colors import PLColor
@@ -34,6 +33,7 @@ from prairielearn.sympy_utils import (
     sympy_to_json,
 )
 from prairielearn.to_precision import to_precision
+from prairielearn.unicode_utils import full_unidecode
 
 
 class PartialScore(TypedDict):
@@ -1809,11 +1809,6 @@ def index2key(i: int) -> str:
 
 def is_int_json_serializable(n: int) -> bool:
     return -((2**53) - 1) <= n <= 2**53 - 1
-
-
-def full_unidecode(input_str: str) -> str:
-    """Does unidecode of input and replaces the unicode minus with the normal one."""
-    return unidecode(input_str.replace("\u2212", "-"))
 
 
 def add_files_format_error(data: QuestionData, error: str) -> None:

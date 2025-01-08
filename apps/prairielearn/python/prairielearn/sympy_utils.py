@@ -14,8 +14,9 @@ from sympy.parsing.sympy_parser import (
     standard_transformations,
     stringify_expr,
 )
-from text_unidecode import unidecode
 from typing_extensions import NotRequired
+
+from prairielearn.unicode_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
@@ -389,10 +390,7 @@ def evaluate_with_source(
 ) -> tuple[sympy.Expr, str]:
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
-    # TODO: Split up full_unicode in prairielearn.py to prevent a circular import
-    expr = unidecode(greek_unicode_transform(expr).replace("\u2212", "-")).replace(
-        "^", "**"
-    )
+    expr = full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
 
     local_dict = {
         k: v
