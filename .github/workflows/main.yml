@@ -57,6 +57,8 @@ jobs:
               }
             }
       - run: cat /etc/docker/daemon.json
+      - run: docker version
+      - run: docker info
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
@@ -155,7 +157,7 @@ jobs:
           no-cache: true
           load: true
           # outputs: type=oci,tar=false,dest=/tmp/build-contexts/workspace-vscode-base
-          tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
+          tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }},docker.io/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
 
       # - run: ls -lah /tmp/build-contexts/workspace-vscode-base
       # - run: ls -lah /tmp/build-contexts/workspace-vscode-base/blobs
