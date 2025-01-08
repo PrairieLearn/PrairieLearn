@@ -1,4 +1,6 @@
-FROM prairielearn/workspace-vscode-base
+ARG BASE_IMAGE_TAG=latest
+
+FROM prairielearn/workspace-vscode-base:${BASE_IMAGE_TAG}
 
 USER root
 RUN apt-get update && apt-get upgrade -y \
