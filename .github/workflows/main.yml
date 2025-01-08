@@ -130,9 +130,12 @@ jobs:
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/vscode-base
-          platforms: linux/amd64,linux/arm64
+          # TODO: restore; temporarily removing ARM build for iteration speed
+          # platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
+          outputs: type=oci,dest=/tmp/build-contexts/workspace-vscode-base.tar
           tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
 
       ######################################################################################################
@@ -144,10 +147,14 @@ jobs:
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/vscode-python
-          platforms: linux/amd64,linux/arm64
+          # TODO: restore; temporarily removing ARM build for iteration speed
+          # platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           tags: prairielearn/workspace-vscode-python:${{ env.COMMIT_SHA }}
+          build-contexts: |
+            prairielearn/workspace-vscode-python:${{ env.COMMIT_SHA }}=/tmp/build-contexts/workspace-vscode-base.tar
           build-args: |
             BASE_IMAGE_TAG=${{ env.COMMIT_SHA }}
 
@@ -160,10 +167,14 @@ jobs:
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/vscode-cpp
-          platforms: linux/amd64,linux/arm64
+          # TODO: restore; temporarily removing ARM build for iteration speed
+          # platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           tags: prairielearn/workspace-vscode-cpp:${{ env.COMMIT_SHA }}
+          build-contexts: |
+            prairielearn/workspace-vscode-python:${{ env.COMMIT_SHA }}=/tmp/build-contexts/workspace-vscode-base.tar
           build-args: |
             BASE_IMAGE_TAG=${{ env.COMMIT_SHA }}
 
