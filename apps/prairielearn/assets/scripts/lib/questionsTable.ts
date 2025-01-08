@@ -265,7 +265,7 @@ onDocumentReady(() => {
   }
 
   startFromInput.addEventListener('change', () => {
-    console.log('startFromInput', startFromInput.value);
+    console.log('startFromInput', startFromInput.value); // TODO: Remove
 
     templateInput.disabled = startFromInput.value !== 'Template';
     templateContainerDiv.hidden = startFromInput.value !== 'Template';

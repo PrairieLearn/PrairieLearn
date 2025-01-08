@@ -321,7 +321,7 @@ function CreateQuestionModal({
           disabled
         >
           ${templateQuestions.map(
-            (question) => html`<option value="${question.id}">${question.title}</option>`,
+            (question) => html`<option value="${question.qid}">${question.title}</option>`,
           )}
         </select>
         <small id="template_help" class="form-text text-muted">

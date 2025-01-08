@@ -21,16 +21,16 @@ import { run } from '@prairielearn/run';
 import { escapeRegExp } from '@prairielearn/sanitize';
 
 import {
-  getLockNameForCoursePath,
   getCourseCommitHash,
-  updateCourseCommitHash,
+  getLockNameForCoursePath,
   getOrUpdateCourseCommitHash,
+  updateCourseCommitHash,
 } from '../models/course.js';
 import * as courseDB from '../sync/course-db.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import * as b64Util from './base64-util.js';
-import { updateChunksForCourse, logChunkChangesToJob } from './chunks.js';
+import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
 import { config } from './config.js';
 import {
   type Assessment,
@@ -1058,7 +1058,7 @@ export class QuestionAddEditor extends Editor {
 
     const questionPath = path.join(questionsPath, qid);
 
-    const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'demo', 'empty');
+    const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'template', 'empty');
     const toPath = questionPath;
 
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
@@ -1105,11 +1105,88 @@ export class QuestionAddEditor extends Editor {
     infoJson.uuid = this.uuid;
     // The template question contains tags that shouldn't be copied to the new question.
     delete infoJson.tags;
+
+    console.log('infoJson', infoJson);
+
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
       pathsToAdd: [questionPath],
       commitMessage: `add question ${qid}`,
+    };
+  }
+}
+
+export class QuestionAddFromTemplateEditor extends Editor {
+  public readonly uuid: string;
+
+  private qid: string;
+  private title: string;
+  private template_qid: string;
+
+  constructor(
+    params: BaseEditorOptions & {
+      qid: string;
+      title: string;
+      template_qid: string;
+    },
+  ) {
+    super(params);
+
+    this.description = 'Add question from a template';
+
+    this.uuid = uuidv4();
+    this.qid = params.qid;
+    this.title = params.title;
+    this.template_qid = params.template_qid;
+  }
+
+  async write() {
+    debug('QuestionAddFromTemplateEditor: write()');
+    const questionsPath = path.join(this.course.path, 'questions');
+
+    debug('Get all existing long names');
+    const result = await sqldb.queryAsync(sql.select_questions_with_course, {
+      course_id: this.course.id,
+    });
+
+    const oldNamesLong = _.map(result.rows, 'title');
+
+    debug('Get all existing short names');
+    const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
+
+    debug('Generate qid and title');
+    const names = getNamesForAdd(oldNamesShort, oldNamesLong, this.qid, this.title);
+
+    const questionPath = path.join(questionsPath, names.shortName);
+
+    const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', this.template_qid);
+    const toPath = questionPath;
+
+    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
+    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+
+    debug('Read info.json');
+    const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
+
+    debug('Write info.json with the new title and uuid');
+    infoJson.title = this.title;
+    infoJson.uuid = this.uuid;
+
+    // The template question may contain tags that shouldn't be copied to the new question.
+    delete infoJson.tags;
+
+    // The template question may have a topic that should be reset
+    infoJson.topic = 'Demo';
+
+    // The template question may have a shareSourcePublicly property that should be set to false.
+    delete infoJson.shareSourcePublicly;
+
+    await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
+
+    return {
+      pathsToAdd: [questionPath],
+      commitMessage: `add question from template ${this.qid}`,
     };
   }
 }
@@ -1340,8 +1417,6 @@ export class QuestionTransferEditor extends Editor {
   private from_qid: string;
   private from_course: string;
   private from_path: string;
-  private to_title_custom?: string;
-  private to_qid_custom?: string;
 
   public readonly uuid: string;
 
@@ -1350,8 +1425,6 @@ export class QuestionTransferEditor extends Editor {
       from_qid: string;
       from_course_short_name: Course['short_name'];
       from_path: string;
-      to_title_custom?: string;
-      to_qid_custom?: string;
     },
   ) {
     super(params);
@@ -1363,9 +1436,6 @@ export class QuestionTransferEditor extends Editor {
         : `course ${params.from_course_short_name}`;
     this.from_path = params.from_path;
     this.description = `Copy question ${this.from_qid} from ${this.from_course}`;
-
-    this.to_title_custom = params.to_title_custom;
-    this.to_qid_custom = params.to_qid_custom;
 
     this.uuid = uuidv4();
   }
@@ -1388,14 +1458,14 @@ export class QuestionTransferEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
     debug('Generate qid and title');
-    let newQid = this.to_qid_custom ?? this.from_qid;
-    let newQuestionTitle = this.to_title_custom ?? from_title;
-    if (oldNamesShort.includes(newQid) || oldNamesLong.includes(newQuestionTitle)) {
-      const names = this.getNamesForCopy(newQid, oldNamesShort, from_title, oldNamesLong);
-      newQid = names.shortName;
-      newQuestionTitle = names.longName;
+    let qid = this.from_qid;
+    let questionTitle = from_title;
+    if (oldNamesShort.includes(this.from_qid) || oldNamesLong.includes(from_title)) {
+      const names = this.getNamesForCopy(this.from_qid, oldNamesShort, from_title, oldNamesLong);
+      qid = names.shortName;
+      questionTitle = names.longName;
     }
-    const questionPath = path.join(questionsPath, newQid);
+    const questionPath = path.join(questionsPath, qid);
 
     const fromPath = this.from_path;
     const toPath = questionPath;
@@ -1406,7 +1476,7 @@ export class QuestionTransferEditor extends Editor {
     const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
 
     debug('Write info.json with new title and uuid');
-    infoJson.title = newQuestionTitle;
+    infoJson.title = questionTitle;
     infoJson.uuid = this.uuid;
 
     // When transferring a question from an example/template course, drop the tags. They
@@ -1424,7 +1494,7 @@ export class QuestionTransferEditor extends Editor {
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `copy question ${this.from_qid} (from ${this.from_course}) to ${newQid}`,
+      commitMessage: `copy question ${this.from_qid} (from ${this.from_course}) to ${qid}`,
     };
   }
 }

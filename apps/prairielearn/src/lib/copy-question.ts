@@ -9,11 +9,9 @@ import * as sqldb from '@prairielearn/postgres';
 import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { selectCoursesWithEditAccess } from '../models/course.js';
-import { selectQuestionByUuid } from '../models/question.js';
 
 import { config } from './config.js';
 import { type Course, type Question } from './db-types.js';
-import { QuestionTransferEditor } from './editors.js';
 import { idsEqual } from './id.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -65,14 +63,10 @@ export async function copyQuestionBetweenCourses(
     fromCourse,
     toCourseId,
     question,
-    toTitleCustom,
-    toQidCustom,
   }: {
     fromCourse: Course;
     toCourseId: string;
     question: Question;
-    toTitleCustom?: string;
-    toQidCustom?: string;
   },
 ) {
   // In this case, we are sending a copy of this question to a different course.
@@ -98,45 +92,13 @@ export async function copyQuestionBetweenCourses(
     storage_filename: path.join(relDir, f.slice(6)),
   };
 
-  console.log('params', params);
-  console.log('config', config);
-
   if (config.filesRoot == null) throw new Error('config.filesRoot is null');
-
-  console.log('Target path: ', path.join(config.filesRoot, params.storage_filename));
-
   await fs.copy(params.from_filename, path.join(config.filesRoot, params.storage_filename), {
     errorOnExist: true,
   });
 
-  if (!toTitleCustom && !toQidCustom) {
-    const result = await sqldb.queryOneRowAsync(sql.insert_file_transfer, params);
-    res.redirect(
-      `${res.locals.plainUrlPrefix}/course/${params.to_course_id}/file_transfer/${result.rows[0].id}`,
-    );
-  } else {
-    const editor = new QuestionTransferEditor({
-      locals: res.locals,
-      from_qid: question.qid,
-      from_course_short_name: fromCourse.short_name,
-      from_path: path.join(config.filesRoot, params.storage_filename),
-      to_title_custom: toTitleCustom,
-      to_qid_custom: toQidCustom,
-    });
-
-    const serverJob = await editor.prepareServerJob();
-    try {
-      await editor.executeWithServerJob(serverJob);
-    } catch (e) {
-      console.error(e);
-      res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
-      return;
-    }
-    const copiedQuestion = await selectQuestionByUuid({
-      course_id: res.locals.course.id,
-      uuid: editor.uuid,
-    });
-
-    res.redirect(`${res.locals.urlPrefix}/question/${copiedQuestion.id}/settings`);
-  }
+  const result = await sqldb.queryOneRowAsync(sql.insert_file_transfer, params);
+  res.redirect(
+    `${res.locals.plainUrlPrefix}/course/${params.to_course_id}/file_transfer/${result.rows[0].id}`,
+  );
 }

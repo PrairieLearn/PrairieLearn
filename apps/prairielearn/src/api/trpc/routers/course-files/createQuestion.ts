@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { IdSchema } from '../../../../lib/db-types.js';
-import { QuestionAddEditor } from '../../../../lib/editors.js';
+import { QuestionAddEditor, QuestionAddFromTemplateEditor } from '../../../../lib/editors.js';
 import { selectCourseById } from '../../../../models/course.js';
 import { selectQuestionByUuid } from '../../../../models/question.js';
 import { privateProcedure, selectUsers } from '../../trpc.js';
@@ -20,6 +20,9 @@ export const createQuestion = privateProcedure
       title: z.string().optional(),
       files: z.record(z.string()).optional(),
       is_draft: z.boolean().optional(),
+
+      // Optional: a template question qid to copy from.
+      template_qid: z.string().optional(),
     }),
   )
   .output(
@@ -43,20 +46,37 @@ export const createQuestion = privateProcedure
       authn_user_id: opts.input.authn_user_id,
     });
 
-    const editor = new QuestionAddEditor({
-      locals: {
-        authz_data: {
-          has_course_permission_edit: opts.input.has_course_permission_edit,
-          authn_user,
+    let editor: QuestionAddFromTemplateEditor | QuestionAddEditor;
+    if (opts.input.template_qid && opts.input.qid && opts.input.title) {
+      editor = new QuestionAddFromTemplateEditor({
+        locals: {
+          authz_data: {
+            has_course_permission_edit: opts.input.has_course_permission_edit,
+            authn_user,
+          },
+          course,
+          user,
         },
-        course,
-        user,
-      },
-      files: opts.input.files,
-      qid: opts.input.qid,
-      title: opts.input.title,
-      isDraft: opts.input.is_draft,
-    });
+        qid: opts.input.qid,
+        title: opts.input.title,
+        template_qid: opts.input.template_qid,
+      });
+    } else {
+      editor = new QuestionAddEditor({
+        locals: {
+          authz_data: {
+            has_course_permission_edit: opts.input.has_course_permission_edit,
+            authn_user,
+          },
+          course,
+          user,
+        },
+        files: opts.input.files,
+        qid: opts.input.qid,
+        title: opts.input.title,
+        isDraft: opts.input.is_draft,
+      });
+    }
 
     const serverJob = await editor.prepareServerJob();
 
