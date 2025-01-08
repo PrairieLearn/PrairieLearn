@@ -1130,6 +1130,8 @@ export class QuestionAddEditor extends Editor {
     const questionPath = path.join(questionsPath, qid);
 
     const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'template', 'empty');
+    // A template question with question.html and server.py files that are empty
+
     const toPath = questionPath;
 
     debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
@@ -1176,8 +1178,6 @@ export class QuestionAddEditor extends Editor {
     infoJson.uuid = this.uuid;
     // The template question contains tags that shouldn't be copied to the new question.
     delete infoJson.tags;
-
-    console.log('infoJson', infoJson);
 
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 

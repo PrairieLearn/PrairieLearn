@@ -257,17 +257,24 @@ onDocumentReady(() => {
   $('#questionsTable').bootstrapTable(tableSettings);
 
   const startFromInput = document.querySelector('#start_from');
-  const templateInput = document.querySelector('#template_qid');
-  const templateContainerDiv = document.querySelector('#templateContainer');
+  // The startFromInput either has value 'Template' or 'Empty question'
 
-  if (!startFromInput || !templateInput) {
+  const templateQuestionInput = document.querySelector('#template_qid');
+  // The templateQuestionInput lets the user select the template question to start from, and is only
+  // enabled when the startFromInput is set to 'Template'
+
+  const templateContainerDiv = document.querySelector('#templateContainer');
+  // The templateContainerDiv is hidden when the startFromInput is set to 'Empty question',
+  // otherwise it is shown.
+
+  if (!startFromInput || !templateQuestionInput) {
     return;
   }
 
   startFromInput.addEventListener('change', () => {
-    console.log('startFromInput', startFromInput.value); // TODO: Remove
-
-    templateInput.disabled = startFromInput.value !== 'Template';
+    // If the startFromInput is set to 'Template', the templateQuestionInput should be visible and enabled
+    // Otherwise, it should be hidden and disabled.
+    templateQuestionInput.disabled = startFromInput.value !== 'Template';
     templateContainerDiv.hidden = startFromInput.value !== 'Template';
   });
 

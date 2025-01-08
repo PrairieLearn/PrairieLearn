@@ -20,6 +20,9 @@ import { QuestionsPage } from './instructorQuestions.html.js';
 
 const router = Router();
 
+/**
+ * Get a list of template question qids and titles that can be used as starting points for new questions.
+ */
 async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title: string }[]> {
   let templateQuestions: { qid: string; title: string }[] = [];
   const templateQuestionsPath = path.join(EXAMPLE_COURSE_PATH, 'questions');
@@ -49,7 +52,7 @@ async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title:
         // Info file exists, we can use this directory
         const infoJson = await fs.readJson(infoPath);
 
-        // Only use add the question if it has a title and has the topic of Template
+        // Only use add the question if it has a title and topic equal to Template
         if (infoJson.title && infoJson.topic === 'Template') {
           templateQuestions.push({ qid: subdirPath, title: infoJson.title });
         }

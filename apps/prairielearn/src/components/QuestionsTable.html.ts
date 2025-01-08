@@ -41,7 +41,7 @@ export function QuestionsTable({
   questions: QuestionsPageData[];
   templateQuestions?: { qid: string; title: string }[];
   /**
-   * Does not need to be specified when showAddQuestionButton is false.
+   * The template questions the user can select as a starting point when creating a new question.
    */
   showAddQuestionButton?: boolean;
   showAiGenerateQuestionButton?: boolean;
@@ -289,8 +289,8 @@ function CreateQuestionModal({
           aria-describedby="qid_help"
         />
         <small id="qid_help" class="form-text text-muted">
-          A short unique identifier for this question, such as "addVectors" or "findDerivative". Use
-          only letters, numbers, dashes, and underscores, with no spaces.
+          A short unique identifier for this question, such as "add-vectors" or "find-derivative".
+          Use only letters, numbers, dashes, and underscores, with no spaces.
         </small>
       </div>
       <div class="form-group">
@@ -306,7 +306,7 @@ function CreateQuestionModal({
           <option value="Template">Template</option>
         </select>
         <small id="start_from_help" class="form-text text-muted">
-          Begin with an empty question or premade question template.
+          Begin with an empty question or a pre-made question template.
         </small>
       </div>
 

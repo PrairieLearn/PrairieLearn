@@ -153,10 +153,13 @@ describe('Creating a question', () => {
       'server.py',
     );
 
-    const newQuestionServerFile = await fs.readFile(newQuestionServerFilePath, 'utf8');
-    const originalQuestionServerFile = await fs.readFile(originalQuestionServerFilePath, 'utf8');
+    const newQuestionServerFileContent = await fs.readFile(newQuestionServerFilePath, 'utf8');
+    const originalQuestionServerFileContent = await fs.readFile(
+      originalQuestionServerFilePath,
+      'utf8',
+    );
 
-    assert.equal(newQuestionServerFile, originalQuestionServerFile);
+    assert.equal(newQuestionServerFileContent, originalQuestionServerFileContent);
 
     // Check that the question.html file has the correct contents
     const newQuestionHtmlFilePath = path.join(questionLivePath, 'question.html');
@@ -169,10 +172,10 @@ describe('Creating a question', () => {
       'question.html',
     );
 
-    const newQuestionHtmlFile = await fs.readFile(newQuestionHtmlFilePath, 'utf8');
-    const originalQuestionHtmlFile = await fs.readFile(originalQuestionHtmlFilePath, 'utf8');
+    const newQuestionHtmlFileContent = await fs.readFile(newQuestionHtmlFilePath, 'utf8');
+    const originalQuestionHtmlFileContent = await fs.readFile(originalQuestionHtmlFilePath, 'utf8');
 
-    assert.equal(newQuestionHtmlFile, originalQuestionHtmlFile);
+    assert.equal(newQuestionHtmlFileContent, originalQuestionHtmlFileContent);
   });
 
   step('create new question with duplicate qid, title', async () => {
