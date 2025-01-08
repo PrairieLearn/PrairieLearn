@@ -38,7 +38,7 @@ export const AsssessmentAccessRuleSchema = z
     role: z.enum(['Student', 'TA', 'Instructor']).describe('DEPRECATED -- do not use.').optional(),
     uids: z
       .array(z.string())
-      .describe("A list of UIDs (like 'username@example.com', one of which is required for access")
+      .describe("A list of UIDs (like 'username@example.com'), one of which is required for access")
       .optional(),
     credit: z
       .number()
