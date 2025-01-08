@@ -1,6 +1,12 @@
-import { z } from 'zod';
+import { z, type ZodSchema } from 'zod';
 
 import { CommentSchema } from './comment.js';
+
+function uniqueArray<T extends ZodSchema>(schema: T) {
+  return z.array(schema).refine((items) => new Set(items).size === items.length, {
+    message: 'All items must be unique, no duplicate values allowed',
+  });
+}
 
 const GroupRoleSchema = z
   .object({
@@ -130,14 +136,15 @@ const QuestionAlternativeSchema = QuestionPointsSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  canView: z.set(z.string()).describe('The names of roles that can view this question.').optional(),
-  canSubmit: z
-    .set(z.string())
+  canView: uniqueArray(z.string())
+    .describe('The names of roles that can view this question.')
+    .optional(),
+  canSubmit: uniqueArray(z.string())
     .describe('The names of roles that can submit this question.')
     .optional(),
 });
 
-const ZoneQuestionSchema = QuestionPointsSchema.extend({
+export const ZoneQuestionSchema = QuestionPointsSchema.extend({
   comment: CommentSchema.optional(),
   points: PointsSchema.optional(),
   autoPoints: PointsSchema.optional(),
@@ -175,18 +182,14 @@ const ZoneQuestionSchema = QuestionPointsSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  canSubmit: z
-    .set(z.string())
+  canSubmit: uniqueArray(z.string())
     .describe(
       'A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.',
     )
     .optional(),
-  canView: z
-    .set(z.string())
-    .describe(
-      'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
-    )
-    .optional(),
+  canView: uniqueArray(z.string()).describe(
+    'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
+  ),
 });
 
 const ZoneSchema = z.object({
@@ -226,18 +229,14 @@ const ZoneSchema = z.object({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  canSubmit: z
-    .set(z.string())
+  canSubmit: uniqueArray(z.string())
     .describe(
       'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
     )
     .optional(),
-  canView: z
-    .set(z.string())
-    .describe(
-      'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
-    )
-    .optional(),
+  canView: uniqueArray(z.string()).describe(
+    'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
+  ),
 });
 
 export const AssessmentSchema = z
@@ -325,18 +324,14 @@ export const AssessmentSchema = z
       .array(GroupRoleSchema)
       .describe('Array of custom user roles in a group.')
       .optional(),
-    canSubmit: z
-      .set(z.string())
+    canSubmit: uniqueArray(z.string())
       .describe(
         'A list of group role names that can submit questions in this assessment. Only applicable for group assessments.',
       )
       .optional(),
-    canView: z
-      .set(z.string())
-      .describe(
-        'A list of group role names that can view questions in this assessment. Only applicable for group assessments.',
-      )
-      .optional(),
+    canView: uniqueArray(z.string()).describe(
+      'A list of group role names that can view questions in this assessment. Only applicable for group assessments.',
+    ),
     studentGroupCreate: z.boolean().describe('Whether students can create groups.').optional(),
     studentGroupJoin: z.boolean().describe('Whether students can join groups.').optional(),
     studentGroupLeave: z.boolean().describe('Whether students can leave groups.').optional(),

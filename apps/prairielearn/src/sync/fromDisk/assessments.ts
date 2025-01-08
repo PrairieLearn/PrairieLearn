@@ -96,7 +96,7 @@ function getParamsForAssessment(
 
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
-  const allRoleNames = new Set((assessment.groupRoles ?? []).map((role) => role.name));
+  const allRoleNames = (assessment.groupRoles ?? []).map((role) => role.name);
   const assessmentCanView = assessment?.canView ?? allRoleNames;
   const assessmentCanSubmit = assessment?.canSubmit ?? allRoleNames;
   const alternativeGroups = (assessment.zones ?? []).map((zone) => {
@@ -118,8 +118,8 @@ function getParamsForAssessment(
         forceMaxPoints: boolean;
         triesPerVariant: number;
         gradeRateMinutes: number;
-        canView: Set<string> | null;
-        canSubmit: Set<string> | null;
+        canView: string[] | null;
+        canSubmit: string[] | null;
         advanceScorePerc: number;
       }[] = [];
       const questionGradeRateMinutes =

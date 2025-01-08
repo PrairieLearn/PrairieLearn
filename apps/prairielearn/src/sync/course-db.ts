@@ -1146,8 +1146,8 @@ async function validateAssessment(
     });
 
     const validateViewAndSubmitRolePermissions = (
-      canView: Set<string> | null | undefined,
-      canSubmit: Set<string> | null | undefined,
+      canView: string[] | null | undefined,
+      canSubmit: string[] | null | undefined,
       area: string,
     ): void => {
       if (canView) {
