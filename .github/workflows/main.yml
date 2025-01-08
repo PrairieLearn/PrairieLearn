@@ -142,7 +142,8 @@ jobs:
           tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
 
       - run: ls -lah /tmp/build-contexts/workspace-vscode-base
-      - run: cat /tmp/build-contexts/workspace-vscode-base/manifest.json
+      - run: cat /tmp/build-contexts/workspace-vscode-base/index.json
+      - run: cat /tmp/build-contexts/workspace-vscode-base/oci-layout
 
       ######################################################################################################
       # prairielearn/workspace-vscode-python
