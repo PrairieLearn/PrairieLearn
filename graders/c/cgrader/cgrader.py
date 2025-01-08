@@ -7,7 +7,7 @@ import re
 import shlex
 import subprocess
 import tempfile
-from typing import Literal
+from typing import Any, Literal
 
 import lxml.etree as et
 
@@ -64,7 +64,7 @@ could also mean that scanf does not support the input provided
 
 
 class UngradableError(Exception):
-    def __init__(self):
+    def __init__(self) -> None:
         pass
 
 
@@ -74,12 +74,19 @@ UngradableException = UngradableError
 
 
 class CGrader:
-    def __init__(self, compiler="gcc"):
+    def __init__(self, compiler="gcc") -> None:
         with open(DATAFILE) as file:
             self.data = json.load(file)
         self.compiler = compiler
 
-    def run_command(self, command, input=None, sandboxed=True, timeout=None, env=None):
+    def run_command(
+        self,
+        command: str | list[str],
+        input: Any | None = None,
+        sandboxed: bool = True,
+        timeout: float | None = None,
+        env: subprocess._ENV | None = None,
+    ):
         if isinstance(command, str):
             command = shlex.split(command)
         if sandboxed:
@@ -104,7 +111,9 @@ class CGrader:
             return ""
         out = ""
         tostr = ""
-        if input is not None and not isinstance(input, bytes | bytearray):
+        if isinstance(input, bytearray):
+            input = bytes(input)
+        if input is not None and not isinstance(input, bytes):
             input = str(input).encode("utf-8")
         try:
             proc.communicate(input=input, timeout=timeout)[0]
@@ -123,18 +132,18 @@ class CGrader:
 
     def compile_file(
         self,
-        c_file,
-        exec_file=None,
-        add_c_file=None,
-        compiler=None,
-        flags=None,
-        pkg_config_flags=None,
+        c_file: list[str] | str,
+        exec_file: str | None = None,
+        add_c_file: str | list[str] | None = None,
+        compiler: str | None = None,
+        flags: str | list[str] | None = None,
+        pkg_config_flags: str | list[str] | None = None,
         add_warning_result_msg=True,
         ungradable_if_failed=True,
         return_objects=False,
         enable_asan=False,
-        reject_symbols=None,
-        objcopy_args=None,
+        reject_symbols: list[str] | None = None,
+        objcopy_args: list[str] | None = None,
     ):
         cflags = flags
         if cflags and not isinstance(cflags, list):
@@ -163,7 +172,7 @@ class CGrader:
         std_obj_files = []
         objs = []
         for std_c_file in c_file if isinstance(c_file, list) else [c_file]:
-            obj_file = pathlib.Path(std_c_file).with_suffix(".o")
+            obj_file = pathlib.Path(std_c_file).with_suffix(".o").absolute().as_posix()
             std_obj_files.append(obj_file)
             out += self.run_command(
                 [compiler, "-save-temps", "-c", std_c_file, "-o", obj_file] + cflags,
@@ -250,15 +259,15 @@ class CGrader:
 
     def link_object_files(
         self,
-        student_obj_files,
-        add_obj_files,
-        exec_file,
-        compiler=None,
-        flags=None,
-        pkg_config_flags=None,
-        add_warning_result_msg=True,
-        ungradable_if_failed=True,
-        enable_asan=False,
+        student_obj_files: str | list[str] | None,
+        add_obj_files: str | list[str] | None,
+        exec_file: str,
+        compiler: str | None = None,
+        flags: str | list[str] | None = None,
+        pkg_config_flags: str | list[str] | None = None,
+        add_warning_result_msg: bool = True,
+        ungradable_if_failed: bool = True,
+        enable_asan: bool = False,
     ):
         if flags and not isinstance(flags, list):
             flags = shlex.split(flags)
@@ -312,21 +321,21 @@ class CGrader:
 
     def test_compile_file(
         self,
-        c_file,
-        exec_file=None,
-        main_file=None,
-        add_c_file=None,
-        compiler=None,
+        c_file: str | list[str],
+        exec_file: str | None = None,
+        main_file: str | None = None,
+        add_c_file: str | list[str] | None = None,
+        compiler: str | None = None,
         points=1,
-        field=None,
-        flags=None,
-        pkg_config_flags=False,
+        field: str | None = None,
+        flags: str | list[str] | None = None,
+        pkg_config_flags: str | list[str] | None = None,
         name="Compilation",
         add_warning_result_msg=True,
         ungradable_if_failed=True,
         enable_asan=False,
-        reject_symbols=None,
-        objcopy_args=None,
+        reject_symbols: list[str] | None = None,
+        objcopy_args: list[str] | None = None,
     ):
         if not add_c_file:
             add_c_file = []
@@ -363,7 +372,7 @@ class CGrader:
             field=field,
         )
 
-    def change_mode(self, file, mode="744", change_parent=True):
+    def change_mode(self, file: str, mode="744", change_parent=True):
         file = os.path.abspath(file)
         self.run_command(["chmod", mode, file], sandboxed=False)
         parent = os.path.dirname(file)
@@ -371,29 +380,29 @@ class CGrader:
         if change_parent and parent and not os.path.samefile(file, parent):
             self.change_mode(parent, "a+x")
 
-    def test_send_in_check_out(self, *args, **kwargs):
+    def test_send_in_check_out(self, *args, **kwargs) -> dict[str, int | float | str]:
         """Old deprecated function name,
         retained for compatibility reasons."""
         return self.test_run(*args, **kwargs)
 
     def test_run(
         self,
-        command,
-        input=None,
-        exp_output=None,
+        command: str | list[str],
+        input: str | None = None,
+        exp_output: str | list[str] | None = None,
         must_match_all_outputs: OutputMatchingOption | bool = "any",
-        reject_output=None,
-        field=None,
+        reject_output: str | list[str] | None = None,
+        field: str | None = None,
         ignore_case=True,
         timeout=1,
         size_limit=10240,
         ignore_consec_spaces=True,
-        args=None,
-        name=None,
-        msg=None,
+        args: str | list[str] | None = None,
+        name: str | None = None,
+        msg: str | None = None,
         max_points=1,
         highlight_matches=False,
-    ):
+    ) -> dict[str, int | float | str]:
         if args is not None:
             if not isinstance(args, list):
                 args = [args]
@@ -424,7 +433,7 @@ class CGrader:
         elif must_match_all_outputs is False:
             must_match_all_outputs = "any"
 
-        def compile_re(t):
+        def compile_re(t: str | re.Pattern | Any) -> tuple[str, re.Pattern]:
             if isinstance(t, re.Pattern):
                 return (t.pattern, t)
             # If t is not a string, convert it to its string representation
@@ -441,11 +450,12 @@ class CGrader:
                 ),
             )
 
-        exp_output = [compile_re(t) for t in exp_output]
-        reject_output = [compile_re(t) for t in reject_output]
+        exp_output_with_regex = [compile_re(t) for t in exp_output]
+        reject_output_with_regex = [compile_re(t) for t in reject_output]
+        command = shlex.split(command) if isinstance(command, str) else command
 
         out = self.run_command(
-            command if args is None else ([command] + args),
+            command if args is None else (command + args),
             input,
             sandboxed=True,
             timeout=timeout,
@@ -453,31 +463,35 @@ class CGrader:
 
         outcmp = out
         if highlight_matches and out:
-            for _, r in exp_output:
+            for _, r in exp_output_with_regex:
                 out = r.sub(r"\033[32m\g<0>\033[0m", out)
-            for _, r in reject_output:
+            for _, r in reject_output_with_regex:
                 out = r.sub(r"\033[31m\g<0>\033[0m", out)
         if not out:
             out = "(NO OUTPUT)"
         elif not out.endswith("\n"):
             out += "\n(NO ENDING LINE BREAK)"
 
-        if msg is None and exp_output:
+        if msg is None and exp_output_with_regex:
             quantifier = ""
-            if len(exp_output) > 1:
+            if len(exp_output_with_regex) > 1:
                 quantifier = " one of" if must_match_all_outputs == "any" else " all of"
-            join_str = "\n\n" if any("\n" in t for t, _ in exp_output) else "\n\t"
+            join_str = (
+                "\n\n" if any("\n" in t for t, _ in exp_output_with_regex) else "\n\t"
+            )
             msg = f"Expected{quantifier}:{join_str}" + join_str.join(
                 (
                     f"\033[32m{t}\033[0m"
                     if highlight_matches and r.search(outcmp) is not None
                     else t
                 )
-                for t, r in exp_output
+                for t, r in exp_output_with_regex
             )
-            if reject_output:
+            if reject_output_with_regex:
                 join_str = (
-                    "\n\n" if any("\n" in t for t, _ in reject_output) else "\n\t"
+                    "\n\n"
+                    if any("\n" in t for t, _ in reject_output_with_regex)
+                    else "\n\t"
                 )
                 msg += f"\nBut not:{join_str}" + join_str.join(
                     (
@@ -485,7 +499,7 @@ class CGrader:
                         if highlight_matches and r.search(outcmp) is not None
                         else t
                     )
-                    for t, r in reject_output
+                    for t, r in reject_output_with_regex
                 )
         elif msg is None:
             msg = ""
@@ -496,16 +510,19 @@ class CGrader:
         elif size_limit and len(outcmp) > size_limit:
             out = out[0:size_limit] + "\nTRUNCATED: Output too long."
             points = 0
-        elif any(r.search(outcmp) is not None for _, r in reject_output):
+        elif any(r.search(outcmp) is not None for _, r in reject_output_with_regex):
             points = 0
         elif must_match_all_outputs == "partial":
             points = (
                 max_points
-                * sum(1 if r.search(outcmp) is not None else 0 for _, r in exp_output)
-                / len(exp_output)
+                * sum(
+                    1 if r.search(outcmp) is not None else 0
+                    for _, r in exp_output_with_regex
+                )
+                / len(exp_output_with_regex)
             )
         elif not (all if must_match_all_outputs == "all" else any)(
-            r.search(outcmp) is not None for _, r in exp_output
+            r.search(outcmp) is not None for _, r in exp_output_with_regex
         ):
             points = 0
 
@@ -518,7 +535,9 @@ class CGrader:
             field=field,
         )
 
-    def add_manual_grading(self, points=1, name=None, description=None):
+    def add_manual_grading(
+        self, points=1, name: str | None = None, description: str | None = None
+    ) -> dict[str, int | float | str]:
         """Old deprecated function, retained for compatibility reasons."""
         if not name:
             name = "Manual Grading - to be reviewed by a human grader"
@@ -530,13 +549,13 @@ class CGrader:
         self,
         name,
         description="",
-        points=True,
+        points: bool | int | float = True,
         msg="",
         output="",
         max_points=1,
-        field=None,
-        images=None,
-    ):
+        field: str | None = None,
+        images: str | list[str] | None = None,
+    ) -> dict[str, int | float | str]:
         if not isinstance(points, int | float):
             points = max_points if points else 0.0
         test = {
@@ -570,16 +589,16 @@ class CGrader:
 
     def run_check_suite(
         self,
-        exec_file,
-        args=None,
+        exec_file: str,
+        args: str | list[str] | None = None,
         use_suite_title=False,
         use_case_name=True,
         use_unit_test_id=True,
         use_iteration=False,
         sandboxed=False,
         use_malloc_debug=False,
-        env=None,
-    ):
+        env: dict[str, str] | None = None,
+    ) -> None:
         if not args:
             args = []
         if not isinstance(args, list):
@@ -635,7 +654,7 @@ class CGrader:
                     self.add_test_result(
                         f"{suite_title}{separator_1}{case_name}{separator_2}{test_id}{iteration}",
                         points=result == "success",
-                        output=test.findtext("{*}message"),
+                        output=test.findtext("{*}message") or "",
                     )
         except FileNotFoundError as exc:
             self.result["message"] += (
@@ -643,10 +662,10 @@ class CGrader:
             )
             raise UngradableError() from exc
         except et.ParseError as exc:
-            self.result["message"] += f"Error parsing test suite log.\n\n{e}\n"
+            self.result["message"] += f"Error parsing test suite log.\n\n{exc}\n"
             raise UngradableError() from exc
 
-    def save_results(self):
+    def save_results(self) -> None:
         if self.result["max_points"] > 0:
             self.result["score"] = self.result["points"] / self.result["max_points"]
         if "partial_scores" in self.result:
@@ -658,7 +677,7 @@ class CGrader:
         with open("/grade/results/results.json", "w") as resfile:
             json.dump(self.result, resfile)
 
-    def start(self):
+    def start(self) -> None:
         self.result = {
             "score": 0.0,
             "points": 0,
@@ -693,12 +712,12 @@ class CGrader:
         finally:
             self.save_results()
 
-    def tests(self):
+    def tests(self) -> None:
         pass
 
 
 class CPPGrader(CGrader):
-    def __init__(self, compiler="g++"):
+    def __init__(self, compiler="g++") -> None:
         super().__init__(compiler)
 
 

@@ -121,6 +121,7 @@ include = [
     "./apps/prairielearn/python/zygote.py",
     "./apps/prairielearn/python/zygote_utils.py",
     "./apps/prairielearn/python/zygote_utils_test.py",
+    "./graders/c/cgrader/**/*.py",
 ]
 extraPaths = ["./apps/prairielearn/python"]
 pythonVersion = "3.10"
