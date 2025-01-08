@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
+import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
@@ -142,6 +143,8 @@ router.post(
         res.redirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
         return;
       }
+
+      flash('success', 'Question created successfully.');
 
       if (req.body.start_from === 'Template') {
         res.redirect(`${res.locals.urlPrefix}/question/${result.question_id}/settings`);

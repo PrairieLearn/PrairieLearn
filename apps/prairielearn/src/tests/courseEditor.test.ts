@@ -38,15 +38,21 @@ const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 const questionsUrl = `${courseInstanceUrl}/course_admin/questions`;
 const assessmentsUrl = `${courseInstanceUrl}/instance_admin/assessments`;
 
+
 const newCourseInstanceUrl = baseUrl + '/course_instance/2/instructor';
 const newCourseInstanceSettingsUrl = `${newCourseInstanceUrl}/instance_admin/settings`;
 
 const testEditData = [
   {
     url: questionsUrl,
-    formSelector: 'form[name="add-question-form"]',
+    formSelector: '#createQuestionModal',
     action: 'add_question',
     info: 'questions/New_1/info.json',
+    data: {
+      qid: 'New',
+      title: 'New',
+      start_from: 'Empty Question',
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
