@@ -782,6 +782,22 @@ export class AssessmentAddEditor extends Editor {
 
     const assessmentPath = path.join(assessmentsPath, tid);
 
+    // Ensure that the assessment folder path is fully contained in the assessments directory
+    if (!contains(assessmentsPath, assessmentPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The path of the assessments folder to add</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${assessmentPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${assessmentsPath}</pre>
+          </div>
+        `,
+      });
+    }
+
     debug('Write infoAssessment.json');
 
     const infoJson = {
