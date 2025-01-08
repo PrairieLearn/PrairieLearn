@@ -141,7 +141,7 @@ jobs:
           outputs: type=oci,tar=false,dest=/tmp/build-contexts/workspace-vscode-base
           tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
 
-      - run: ls /tmp/build-contexts
+      - run: ls /tmp/build-contexts/workspace-vscode-base
 
       ######################################################################################################
       # prairielearn/workspace-vscode-python
