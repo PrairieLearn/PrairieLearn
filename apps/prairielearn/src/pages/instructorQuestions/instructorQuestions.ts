@@ -124,7 +124,19 @@ router.post(
         throw new error.HttpStatusError(400, 'start_from is required');
       }
 
+      if (!req.body.qid) {
+        throw new error.HttpStatusError(400, 'qid is required');
+      }
+      if (!req.body.title) {
+        throw new error.HttpStatusError(400, 'title is required');
+      }
+      if (!req.body.start_from) {
+        throw new error.HttpStatusError(400, 'start_from is required');
+      }
+
       const api = getCourseFilesClient();
+
+      // if (req.body.start_from === "Empty question")
 
       if (req.body.start_from === 'Empty question') {
         const result = await api.createQuestion.mutate({

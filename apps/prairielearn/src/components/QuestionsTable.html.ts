@@ -8,6 +8,8 @@ import { type QuestionsPageData } from '../models/questions.js';
 
 import { Modal } from './Modal.html.js';
 
+import { Modal } from './Modal.html.js';
+
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
   // from a javascript file. However, bootstrap-table is doing some hacky stuff that prevents us from importing it that way
@@ -69,7 +71,6 @@ export function QuestionsTable({
     )}
     ${CreateQuestionModal({
       csrfToken: __csrf_token,
-      templateQuestions,
     })}
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
