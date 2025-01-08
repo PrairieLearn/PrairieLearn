@@ -154,14 +154,14 @@ jobs:
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           load: true
-          outputs: type=oci,tar=false,dest=/tmp/build-contexts/workspace-vscode-base
+          # outputs: type=oci,tar=false,dest=/tmp/build-contexts/workspace-vscode-base
           tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
 
-      - run: ls -lah /tmp/build-contexts/workspace-vscode-base
-      - run: ls -lah /tmp/build-contexts/workspace-vscode-base/blobs
-      - run: ls -lah /tmp/build-contexts/workspace-vscode-base/ingest
-      - run: cat /tmp/build-contexts/workspace-vscode-base/index.json
-      - run: cat /tmp/build-contexts/workspace-vscode-base/oci-layout
+      # - run: ls -lah /tmp/build-contexts/workspace-vscode-base
+      # - run: ls -lah /tmp/build-contexts/workspace-vscode-base/blobs
+      # - run: ls -lah /tmp/build-contexts/workspace-vscode-base/ingest
+      # - run: cat /tmp/build-contexts/workspace-vscode-base/index.json
+      # - run: cat /tmp/build-contexts/workspace-vscode-base/oci-layout
 
       ######################################################################################################
       # prairielearn/workspace-vscode-python
