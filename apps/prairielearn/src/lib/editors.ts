@@ -1122,6 +1122,8 @@ export class QuestionAddEditor extends Editor {
       const { shortName, longName } = getUniqueNames({
         shortNames: oldNamesShort,
         longNames: oldNamesLong,
+        shortName: this.qid,
+        longName: this.title,
       });
 
       return { qid: shortName, title: longName };
@@ -1227,7 +1229,12 @@ export class QuestionAddFromTemplateEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
     debug('Generate qid and title');
-    const names = getNamesForAdd(oldNamesShort, oldNamesLong, this.qid, this.title);
+    const names = getUniqueNames({
+      shortNames: oldNamesShort,
+      longNames: oldNamesLong,
+      shortName: this.qid,
+      longName: this.title,
+    });
 
     const questionPath = path.join(questionsPath, names.shortName);
 
