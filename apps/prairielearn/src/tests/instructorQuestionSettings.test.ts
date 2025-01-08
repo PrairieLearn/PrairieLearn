@@ -228,4 +228,61 @@ describe('Editing question settings', () => {
     assert.equal(response.status, 200);
     assert.match(response.url, /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/);
   });
+
+  step('change question id', async () => {
+    // TODO: move this and the other question id tests downward
+    const settingsPageResponse = await fetchCheerio(
+      `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+    );
+    assert.equal(settingsPageResponse.status, 200);
+
+    // Change the question id to a new, valid id (question2)
+    const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'update_question',
+        __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+        orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+        title: 'Test title',
+        qid: 'question2',
+        topic: 'Test',
+      }),
+    });
+
+    assert.equal(response.status, 200);
+    assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`);
+  });
+
+  step('verify question id changed', async () => {
+    questionLiveInfoPath = path.join(questionLiveDir, 'question2', 'info.json');
+    assert.equal(await fs.pathExists(questionLiveInfoPath), true);
+  });
+
+  step(
+    'should not be able to submit if changed question id is not in the root directory',
+    async () => {
+      const settingsPageResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+      );
+      assert.equal(settingsPageResponse.status, 200);
+
+      // Change the question id to an invalid id that exits the root directory
+      const response = await fetch(
+        `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'update_question',
+            __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
+            orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
+            title: 'Test title',
+            qid: '../question3',
+            topic: 'Test',
+          }),
+        },
+      );
+
+      assert.equal(response.status, 400);
+    },
+  );
 });

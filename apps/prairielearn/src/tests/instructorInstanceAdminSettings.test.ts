@@ -73,9 +73,6 @@ describe('Updating a course instance ID', () => {
       },
     );
 
-    console.log('Response Status: ', courseInstanceCreationResponse.status);
-    console.log('Response body: ', await courseInstanceCreationResponse.text());
-
     assert.equal(courseInstanceCreationResponse.status, 200);
     assert.equal(
       courseInstanceCreationResponse.url,
@@ -90,10 +87,8 @@ describe('Updating a course instance ID', () => {
       'infoCourseInstance.json',
     );
 
-    const courseInstanceInfo = JSON.parse(await fs.readFile(courseInstanceInfoPath, 'utf8'));
-
-    // If courseInstanceInfo is populated, the course instance id was successfully changed
-    assert.isNotNull(courseInstanceInfo);
+    // If the folder at path courseInstancesCourseLiveDir exists, then the course instance id was successfully changed
+    assert.equal(await fs.pathExists(courseInstanceInfoPath), true);
   });
 
   step(
