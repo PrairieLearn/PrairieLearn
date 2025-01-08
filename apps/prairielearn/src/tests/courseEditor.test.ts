@@ -43,6 +43,9 @@ const newQuestionFromTemplateUrl = `${courseInstanceUrl}/question/3/settings`;
 const newCourseInstanceUrl = baseUrl + '/course_instance/2/instructor';
 const newCourseInstanceSettingsUrl = `${newCourseInstanceUrl}/instance_admin/settings`;
 
+const newAssessmentUrl = `${courseInstanceUrl}/assessment/2`;
+const newAssessmentSettingsUrl = `${newAssessmentUrl}/settings`;
+
 const testEditData = [
   {
     url: questionsUrl,
@@ -164,9 +167,15 @@ const testEditData = [
   },
   {
     url: assessmentsUrl,
-    formSelector: 'form[name="add-assessment-form"]',
+    formSelector: '#createAssessmentModal',
     action: 'add_assessment',
     info: 'courseInstances/Fa18/assessments/New_1/infoAssessment.json',
+    data: {
+      title: 'New',
+      aid: 'New',
+      type: 'Homework',
+      set: 'Homework',
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -179,6 +188,7 @@ const testEditData = [
     ]),
   },
   {
+    url: newAssessmentSettingsUrl,
     formSelector: '#deleteAssessmentModal',
     action: 'delete_assessment',
     files: new Set([
