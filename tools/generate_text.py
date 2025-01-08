@@ -14,10 +14,10 @@ if platform.system() == "Windows":
     globspec = "C:\Program Files\ImageMagick*\convert.exe"
     magicks = glob.glob(globspec)
     if len(magicks) < 1:
-        print("ERROR: No files match %s" % globspec)
+        print(f"ERROR: No files match {globspec}")
         sys.exit(1)
     if len(magicks) > 1:
-        print("ERROR: Multiple files match %s" % globspec)
+        print(f"ERROR: Multiple files match {globspec}")
         for m in magicks:
             print(m)
         sys.exit(1)
@@ -47,12 +47,12 @@ if len(BASE_DIRS) == 0:
     print("or: generate_text --outdir <outputdir> <basedir1> <basedir2> ...")
     sys.exit(0)
 
-print("Using convert command: %s" % CONVERT_CMD)
+print(f"Using convert command: {CONVERT_CMD}")
 if MODE == "textdir":
-    print("Output directory: %s" % TEXT_DIR)
+    print(f"Output directory: {TEXT_DIR}")
 else:
     print("Output directory: 'text/' within each subdirectory")
-print("Processing directories: %s" % (", ".join(BASE_DIRS)))
+print("Processing directories: {}".format(", ".join(BASE_DIRS)))
 
 
 def output_dir(filename):
@@ -182,7 +182,7 @@ def delete_non_matching(basedir, nondelete_filenames):
 if MODE == "subdir":
     for basedir in BASE_DIRS:
         print("########################################")
-        print("Processing %s" % basedir)
+        print(f"Processing {basedir}")
         for dirpath, _dirnames, filenames in os.walk(basedir):
             img_filenames = []
             for filename in fnmatch.filter(filenames, "*.js"):
@@ -193,7 +193,7 @@ elif MODE == "textdir":
     img_filenames = []
     for basedir in BASE_DIRS:
         print("########################################")
-        print("Processing %s" % basedir)
+        print(f"Processing {basedir}")
         for dirpath, _dirnames, filenames in os.walk(basedir):
             for filename in fnmatch.filter(filenames, "*.js"):
                 img_filenames += process_file(os.path.join(dirpath, filename))

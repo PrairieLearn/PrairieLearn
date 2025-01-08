@@ -51,10 +51,10 @@ if not os.path.exists(os.path.join(args.pl_repo, "infoCourse.json")):
 
 print("Reading data from Canvas...")
 course = canvas.course(args.course, prompt_if_needed=True)
-print("Using course: %s / %s" % (course["term"]["name"], course["course_code"]))
+print("Using course: {} / {}".format(course["term"]["name"], course["course_code"]))
 
 quiz = course.quiz(args.quiz, prompt_if_needed=True)
-print("Using quiz: %s" % (quiz["title"]))
+print("Using quiz: {}".format(quiz["title"]))
 
 # Reading questions
 print("Retrieving quiz questions from Canvas...")

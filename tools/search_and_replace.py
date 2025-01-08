@@ -13,7 +13,7 @@ questions_path = os.path.join(course_path, "questions")
 
 def read_file(path, filename):
     input_path = os.path.join(path, filename)
-    print("reading %s" % input_path)
+    print(f"reading {input_path}")
     try:
         with open(input_path) as input_file:
             contents = input_file.read()
@@ -25,12 +25,12 @@ def read_file(path, filename):
 def write_file(path, filename, contents):
     input_path = os.path.join(path, filename)
     output_path = input_path + ".new"
-    print("writing %s" % output_path)
+    print(f"writing {output_path}")
     if os.path.exists(output_file):
         os.remove(tmp_filename)  # needed on Windows
     with open(output_path, "w") as output_file:
         output_file.write(contents)
-    print("renaming %s -> %s" % (output_path, input_path))
+    print(f"renaming {output_path} -> {input_path}")
     os.remove(input_path)  # needed on Windows
     os.rename(output_path, input_path)
 

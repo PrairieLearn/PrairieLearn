@@ -33,7 +33,7 @@ RELEASE_DATE = "2020-03-20"
 
 def main():
     if len(sys.argv) != 4:
-        print("randexam2pl2 version %s (%s)" % (VERSION, RELEASE_DATE))
+        print(f"randexam2pl2 version {VERSION} ({RELEASE_DATE})")
         print()
         print("usage: randexam2pl2 mylibrary.tex topic outputdir")
         sys.exit(0)
@@ -62,12 +62,12 @@ log_file = None
 def init_logging(output_filename):
     global log_file
     try:
-        print("Logging information to file: %s" % output_filename)
+        print(f"Logging information to file: {output_filename}")
         if log_file is not None:
             raise Exception("logging already initialized")
         log_file = open(output_filename, "w")
     except Exception as exc:
-        print("ERROR: failed to initialize logging:  s" % exc)
+        print(f"ERROR: failed to initialize logging: {exc}")
         sys.exit(1)
 
 
@@ -78,7 +78,7 @@ def log(msg):
             raise Exception("logging not initialized")
         log_file.write(msg + "\n")
     except Exception as exc:
-        print("ERROR: logging failed for message '%s': %s" % (msg, exc))
+        print(f"ERROR: logging failed for message '{msg}': {exc}")
         sys.exit(1)
 
 
@@ -94,16 +94,12 @@ def die(msg):
 
 def log_array(arr, arr_name, dim_names):
     if len(arr.shape) != len(dim_names):
-        die("log_array length mismatch for %s" % arr_name)
+        die(f"log_array length mismatch for {arr_name}")
     log(
-        "%s array: (%s)"
-        % (
+        "{} array: ({})".format(
             arr_name,
             ", ".join(
-                [
-                    "%s = %d" % (dim_names[i], arr.shape[i])
-                    for i in range(len(arr.shape))
-                ]
+                [f"{dim_names[i]} = {arr.shape[i]}" for i in range(len(arr.shape))]
             ),
         )
     )
@@ -240,14 +236,11 @@ def read_library(input_filename):
     Reads the library.tex file and returns a tree of
     Library()/Zone()/Question()/Variant()/Answer() objects.
     """
-    log_and_print("Reading library file: %s" % input_filename)
+    log_and_print(f"Reading library file: {input_filename}")
     try:
         input_file = open(input_filename)
     except Exception as exc:
-        die(
-            "ERROR: Unable to open library file for reading: %s: %s"
-            % (input_filename, exc)
-        )
+        die(f"ERROR: Unable to open library file for reading: {input_filename}: {exc}")
     library_regexps = [
         LibraryRegexp(
             name="begin_document",
@@ -299,12 +292,12 @@ def read_library(input_filename):
     for i_line, line in enumerate(input_file):
 
         def file_log(msg):
-            log("%s:%d: %s" % (input_filename, i_line + 1, msg))
+            log(f"{input_filename}:{i_line + 1}: {msg}")
 
         def file_die(msg):
-            die("%s:%d: ERROR: %s" % (input_filename, i_line + 1, msg))
+            die(f"{input_filename}:{i_line + 1}: ERROR: {msg}")
 
-        file_log('read line: "%s"' % line)
+        file_log(f'read line: "{line}"')
 
         match_name = None
         match = None
@@ -316,20 +309,19 @@ def read_library(input_filename):
                     extra_text = match.group("tail").strip()
                     if len(extra_text) > 0 and extra_text[0] != "%":
                         file_die(
-                            "invalid extra text following '%s': %s"
-                            % (match_name, extra_text)
+                            f"invalid extra text following '{match_name}': {extra_text}"
                         )
                 break
         else:
             file_die("no matches found for line")
-        file_log("found match '%s'" % match_name)
+        file_log(f"found match '{match_name}'")
 
         def transition(new_state_name):
-            file_log(r"state transition: '%s' -> '%s'" % (state.name, new_state_name))
+            file_log(rf"state transition: '{state.name}' -> '{new_state_name}'")
             state.name = new_state_name
 
         def bad_transition():
-            file_die("'%s' not allowed in state '%s'" % (match_name, state.name))
+            file_die(f"'{match_name}' not allowed in state '{state.name}'")
 
         def new_zone():
             file_log("starting new zone")
@@ -367,7 +359,7 @@ def read_library(input_filename):
             else:
                 state.variant.incorrect_answers.append(state.answer.body)
             if len(state.variant.answers) > 5:
-                print("Too many answers at line %d" % state.answer.line_number)
+                print(f"Too many answers at line {state.answer.line_number}")
                 exit(1)
 
         def append_to_preamble():
@@ -500,7 +492,7 @@ def read_library(input_filename):
             else:
                 bad_transition()
         else:
-            file_die("unknown state '%s'" % state.name)
+            file_die(f"unknown state '{state.name}'")
 
     input_file.close()
     log("Successfully completed library reading")
@@ -522,43 +514,37 @@ def check_library(library):
     total_points = 0
     Qi = 0
     for i_zone, zone in enumerate(library.zones):
-        log_and_print("Zone %d: %d questions" % (i_zone + 1, len(zone.questions)))
+        log_and_print(f"Zone {i_zone + 1}: {len(zone.questions)} questions")
         for question in zone.questions:
             variant_infos = []
             if len(question.variants) == 0:
                 errors.append(
-                    "question %d (line %d): no variants"
-                    % (Qi + 1, question.line_number)
+                    f"question {Qi + 1} (line {question.line_number}): no variants"
                 )
             for i_variant, variant in enumerate(question.variants):
                 if len(variant.body) == 0:
                     errors.append(
-                        "question %d, variant %d (line %d): no body text"
-                        % (Qi + 1, i_variant + 1, variant.line_number)
+                        f"question {Qi + 1}, variant {i_variant + 1} (line {variant.line_number}): no body text"
                     )
                 if len(variant.answers) == 1:
                     errors.append(
-                        "question %d, variant %d (line %d): only 1 answer"
-                        % (Qi + 1, i_variant + 1, variant.line_number)
+                        f"question {Qi + 1}, variant {i_variant + 1} (line {variant.line_number}): only 1 answer"
                     )
                 correct_answer_indexes = []
                 for i_answer, answer in enumerate(variant.answers):
                     if len(answer.body) == 0:
                         errors.append(
-                            "question %d, variant %d, answer %d (line %d): no body text"
-                            % (Qi + 1, i_variant + 1, i_answer + 1, answer.line_number)
+                            f"question {Qi + 1}, variant {i_variant + 1}, answer {i_answer + 1} (line {answer.line_number}): no body text"
                         )
                     if answer.correct:
                         correct_answer_indexes.append(i_answer)
                 if len(variant.answers) > 0 and len(correct_answer_indexes) == 0:
                     errors.append(
-                        "question %d, variant %d (line %d): no correct answer"
-                        % (Qi + 1, i_variant + 1, variant.line_number)
+                        f"question {Qi + 1}, variant {i_variant + 1} (line {variant.line_number}): no correct answer"
                     )
                 if len(correct_answer_indexes) > 1:
                     errors.append(
-                        "question %d, variant %d (line %d): more than one correct answer"
-                        % (Qi + 1, i_variant + 1, variant.line_number)
+                        f"question {Qi + 1}, variant {i_variant + 1} (line {variant.line_number}): more than one correct answer"
                     )
                 if len(variant.answers) > 0:
                     answer_letters = "".join(
@@ -567,20 +553,19 @@ def check_library(library):
                 else:
                     answer_letters = "*"
                 variant_infos.append(
-                    "V%d-S%d-%s" % (i_variant + 1, len(variant.answers), answer_letters)
+                    f"V{i_variant + 1}-S{len(variant.answers)}-{answer_letters}"
                 )
             log_and_print(
-                "    Question %d (%g points): %s"
-                % (Qi + 1, question.points, ", ".join(variant_infos))
+                f"    Question {Qi + 1} ({question.points:g} points): {', '.join(variant_infos)}"
             )
             total_points += question.points
             Qi += 1
     if Qi == 0:
         errors.append("no questions in library")
-    log_and_print("Total points: %g" % total_points)
+    log_and_print(f"Total points: {total_points:g}")
     if len(errors) > 0:
         for error in errors:
-            log_and_print("ERROR: %s" % error)
+            log_and_print(f"ERROR: {error}")
         die("Errors found during library checking")
     log("Successfully completed library checking")
 
@@ -591,7 +576,7 @@ def mkdirOrDie(dir):
         os.makedirs(dir)
 
     if not os.path.isdir(dir):
-        print("Could not create directory (%s)" % (dir))
+        print(f"Could not create directory ({dir})")
         sys.exit(1)
 
 
@@ -604,19 +589,19 @@ def escapeJsonString(s):
 ######################################################################
 def printJsonKeyValue(out_f, key, value):
     escapedValue = escapeJsonString(value)
-    out_f.write('"%s" : "%s",\n' % (key, escapedValue))
+    out_f.write(f'"{key}" : "{escapedValue}",\n')
 
 
 ######################################################################
 def printJsonKeyValueArray(out_f, key, values):
-    out_f.write('"%s" : [' % (key))
+    out_f.write(f'"{key}" : [')
     needComma = False
     for v in values:
         if needComma:
             out_f.write(",\n")
         needComma = True
         escapedValue = escapeJsonString(v)
-        out_f.write('"%s"' % (escapedValue))
+        out_f.write(f'"{escapedValue}"')
     out_f.write("],\n")
 
 
@@ -624,10 +609,10 @@ def printJsonKeyValueArray(out_f, key, values):
 def export_one_question(
     question_base_directory, qi, question, i_variant, variant, topic, tags
 ):
-    question_name = "%s_q_%d" % (topic, qi)
+    question_name = f"{topic}_q_{qi}"
 
     if len(question.variants) > 1:
-        question_name = "%s_v%d" % (question_name, i_variant + 1)
+        question_name = f"{question_name}_v{i_variant + 1}"
 
     question_directory = os.path.join(question_base_directory, question_name)
     clientFilesQuestion_directory = os.path.join(
@@ -639,10 +624,11 @@ def export_one_question(
     question_json_file = os.path.join(question_directory, "info.json")
     question_html_file = os.path.join(question_directory, "question.html")
 
+    variant_ans = "\n".join(variant.correct_answers)
     uuidString = str(
         uuid.uuid5(
             uuid.NAMESPACE_DNS,
-            "%s%s%d" % (variant.body, "\n".join(variant.correct_answers), qi),
+            f"{variant.body}{variant_ans}{qi}",
         )
     )
 
@@ -660,28 +646,29 @@ def export_one_question(
             latex_f.write("\\usetikzlibrary{snakes,shapes,arrows,shapes.misc}\n")
             latex_f.write("\\pgfrealjobname{figure}\n")
             latex_f.write("\\begin{document}\n")
-            latex_f.write("\\beginpgfgraphicnamed{%s}" % question_name)
+            latex_f.write(f"\\beginpgfgraphicnamed{{{question_name}}}")
             latex_f.write(text[start + 14 : end - 1])
             latex_f.write("\n")
             latex_f.write("\\endpgfgraphicnamed\n")
             latex_f.write("\\end{document}\n")
         nofig = nofig - 1
-        log_and_print("generating figure for question %s" % question_name)
+        log_and_print(f"generating figure for question {question_name}")
         os.system(
             "pdflatex -jobname="
             + question_name
             + " -output-directory="
             + clientFilesQuestion_directory
             + " -interaction=nonstopmode"
-            + " %s" % figure_file
+            + f" {figure_file}"
         )
         figure_file = os.path.join(clientFilesQuestion_directory, question_name)
         os.system(
-            "gs -dNOCACHE -q -dNOPAUSE -dBATCH -sDEVICE=pngalpha -r300 -sOutputFile=%s %s"
-            % (figure_file + ".png", figure_file + ".pdf")
+            "gs -dNOCACHE -q -dNOPAUSE -dBATCH -sDEVICE=pngalpha -r300 -sOutputFile={} {}".format(
+                figure_file + ".png", figure_file + ".pdf"
+            )
         )
         log_and_print("finished generating figure\n")
-        fig_html = '<p><pl-figure file-name="%s.png"></pl-figure><p>' % question_name
+        fig_html = f'<p><pl-figure file-name="{question_name}.png"></pl-figure><p>'
 
         text = text.replace(text[start : end + 13], fig_html)
 
@@ -707,15 +694,15 @@ def export_one_question(
             element = "pl-multiple-choice"
 
         if element:
-            out_f.write('<%s answers-name="ans">\n' % element)
+            out_f.write(f'<{element} answers-name="ans">\n')
 
             for a in variant.answers:
                 out_f.write("<pl-answer")
                 if a.correct:
                     out_f.write(' correct="true"')
-                out_f.write(">%s</pl-answer>\n" % a.body)
+                out_f.write(f">{a.body}</pl-answer>\n")
 
-            out_f.write("</%s>\n" % element)
+            out_f.write(f"</{element}>\n")
 
         if variant.solution:
             out_f.write("\n<pl-answer-panel><br><br>\n")
@@ -726,7 +713,7 @@ def export_one_question(
 
 
 def write_qids(OUTPUT_DIRECTORY, topic, qids):
-    qid_file = os.path.join(OUTPUT_DIRECTORY, "%s_qids.txt" % topic)
+    qid_file = os.path.join(OUTPUT_DIRECTORY, f"{topic}_qids.txt")
 
     with open(qid_file, "w") as out_f:
         out_f.write('"')
@@ -735,14 +722,14 @@ def write_qids(OUTPUT_DIRECTORY, topic, qids):
 
 
 def export_library(OUTPUT_DIRECTORY, library, topic, tags, LIBRARY_FILENAME):
-    log_and_print("Exporting to %s" % (OUTPUT_DIRECTORY))
+    log_and_print(f"Exporting to {OUTPUT_DIRECTORY}")
     question_base_directory = os.path.join(OUTPUT_DIRECTORY, "questions")
     mkdirOrDie(question_base_directory)
     qi = 1
     total_points = 0
     qids = []
     for i_zone, zone in enumerate(library.zones):
-        log_and_print("Zone %d: %d questions" % (i_zone + 1, len(zone.questions)))
+        log_and_print(f"Zone {i_zone + 1}: {len(zone.questions)} questions")
         for question in zone.questions:
             for i_variant, variant in enumerate(question.variants):
                 qids.append(
@@ -761,7 +748,7 @@ def export_library(OUTPUT_DIRECTORY, library, topic, tags, LIBRARY_FILENAME):
             qi = qi + 1
 
     write_qids(OUTPUT_DIRECTORY, topic, qids)
-    log_and_print("Total points: %g" % total_points)
+    log_and_print(f"Total points: {total_points:g}")
 
     log("Successfully exported library")
 
