@@ -52,6 +52,7 @@ jobs:
       - run: cat /etc/docker/daemon.json
       - run: docker version
       - run: docker info
+      - run: docker info -f '{{ .DriverStatus }}'
       - run: exit 1
 
       - name: Set up QEMU
