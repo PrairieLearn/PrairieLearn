@@ -107,8 +107,8 @@ describe('Creating a question', () => {
     );
 
     assert.equal(questionsResponse.status, 200);
-    // Create the new template question based on the random graph template question
 
+    // Create the new template question based on the random graph template question
     const createQuestionResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
       {
@@ -184,7 +184,8 @@ describe('Creating a question', () => {
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
     );
     assert.equal(questionsResponse.status, 200);
-    // Create the new empty question
+
+    // Create the new empty question with the same qid and title as the first question
     const createQuestionResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
       {
@@ -213,7 +214,7 @@ describe('Creating a question', () => {
       'info.json',
     );
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
-    assert.equal(questionInfo.title, 'Test Question (2)');
+    assert.equal(questionInfo.title, 'Test Question (2)'); // Verify that the title had (2) appended to it
     assert.equal(questionInfo.topic, 'Demo');
     assert.isUndefined(questionInfo.shareSourcePublicly);
   });
@@ -225,7 +226,7 @@ describe('Creating a question', () => {
     );
     assert.equal(questionsResponse.status, 200);
 
-    // Create the new empty question
+    // Create a new empty question without a title or qid
     const createQuestionResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
       {
@@ -248,7 +249,7 @@ describe('Creating a question', () => {
     );
     assert.equal(questionsResponse.status, 200);
 
-    // Create the new empty question
+    // Create a new empty question without specifying start_from
     const createQuestionResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
       {
@@ -274,7 +275,7 @@ describe('Creating a question', () => {
       );
       assert.equal(questionsResponse.status, 200);
 
-      // Create the new empty question
+      // Create a new empty question with a non-existent template question qid
       const createQuestionResponse = await fetchCheerio(
         `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
         {
@@ -308,7 +309,7 @@ describe('Creating a question', () => {
       );
       assert.equal(questionsResponse.status, 200);
 
-      // Create the new empty question
+      // Create a new empty question with a qid not contained in the root directory
       const createQuestionResponse = await fetchCheerio(
         `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
         {
