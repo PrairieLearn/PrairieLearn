@@ -131,6 +131,8 @@ jobs:
         with:
           context: workspaces/vscode-base
           platforms: linux/amd64,linux/arm64
+          # We need to load this image into Docker so that subsequent builds can use it.
+          load: true
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
