@@ -871,14 +871,6 @@ async function validateQuestion(
     }
   }
 
-  if ('sharedPublicly' in question) {
-    if ('sharePublicly' in question) {
-      errors.push('Cannot specify both "sharedPublicly" and "sharePublicly" in one question.');
-    } else {
-      warnings.push('"sharedPublicly" is deprecated; use "sharePublicly" instead.');
-    }
-  }
-
   return { warnings, errors };
 }
 
