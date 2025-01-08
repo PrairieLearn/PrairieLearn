@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { CommentSchema } from './comment.js';
 
-const AdminQuerySchema = z
+export const AdminQuerySchema = z
   .object({
     comment: CommentSchema.optional(),
     description: z.string().describe('Brief one-line description of the query.'),
@@ -26,5 +26,3 @@ const AdminQuerySchema = z
   })
   .strict()
   .describe('Description of an administrator SQL query.');
-
-export { AdminQuerySchema };
