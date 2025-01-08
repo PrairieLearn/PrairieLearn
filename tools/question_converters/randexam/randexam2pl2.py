@@ -38,20 +38,20 @@ def main():
         print("usage: randexam2pl2 mylibrary.tex topic outputdir")
         sys.exit(0)
 
-    LIBRARY_FILENAME = sys.argv[1]
+    library_filename = sys.argv[1]
     topic = sys.argv[2]
-    OUTPUT_DIRECTORY = sys.argv[3]
+    output_directory = sys.argv[3]
 
-    mkdirOrDie(OUTPUT_DIRECTORY)
+    mkdir_or_die(output_directory)
 
-    init_logging(os.path.join(OUTPUT_DIRECTORY, "log.txt"))
+    init_logging(os.path.join(output_directory, "log.txt"))
 
-    library = read_library(LIBRARY_FILENAME)
+    library = read_library(library_filename)
     check_library(library)
 
     tags = ["MC", topic]
 
-    export_library(OUTPUT_DIRECTORY, library, topic, tags, LIBRARY_FILENAME)
+    export_library(output_directory, library, topic, tags, library_filename)
 
 
 ######################################################################
@@ -65,7 +65,7 @@ def init_logging(output_filename):
         print(f"Logging information to file: {output_filename}")
         if log_file is not None:
             raise Exception("logging already initialized")
-        log_file = open(output_filename, "w")
+        log_file = open(output_filename, "w")  # noqa: SIM115
     except Exception as exc:
         print(f"ERROR: failed to initialize logging: {exc}")
         sys.exit(1)
@@ -238,7 +238,7 @@ def read_library(input_filename):
     """
     log_and_print(f"Reading library file: {input_filename}")
     try:
-        input_file = open(input_filename)
+        input_file = open(input_filename)  # noqa: SIM115
     except Exception as exc:
         die(f"ERROR: Unable to open library file for reading: {input_filename}: {exc}")
     library_regexps = [
@@ -512,39 +512,39 @@ def check_library(library):
     log_and_print("For each question variant listed below, V#-S#-# shows:")
     log_and_print("  variant number - number of answers - correct answer letter")
     total_points = 0
-    Qi = 0
+    question_i = 0
     for i_zone, zone in enumerate(library.zones):
         log_and_print(f"Zone {i_zone + 1}: {len(zone.questions)} questions")
         for question in zone.questions:
             variant_infos = []
             if len(question.variants) == 0:
                 errors.append(
-                    f"question {Qi + 1} (line {question.line_number}): no variants"
+                    f"question {question_i + 1} (line {question.line_number}): no variants"
                 )
             for i_variant, variant in enumerate(question.variants):
                 if len(variant.body) == 0:
                     errors.append(
-                        f"question {Qi + 1}, variant {i_variant + 1} (line {variant.line_number}): no body text"
+                        f"question {question_i + 1}, variant {i_variant + 1} (line {variant.line_number}): no body text"
                     )
                 if len(variant.answers) == 1:
                     errors.append(
-                        f"question {Qi + 1}, variant {i_variant + 1} (line {variant.line_number}): only 1 answer"
+                        f"question {question_i + 1}, variant {i_variant + 1} (line {variant.line_number}): only 1 answer"
                     )
                 correct_answer_indexes = []
                 for i_answer, answer in enumerate(variant.answers):
                     if len(answer.body) == 0:
                         errors.append(
-                            f"question {Qi + 1}, variant {i_variant + 1}, answer {i_answer + 1} (line {answer.line_number}): no body text"
+                            f"question {question_i + 1}, variant {i_variant + 1}, answer {i_answer + 1} (line {answer.line_number}): no body text"
                         )
                     if answer.correct:
                         correct_answer_indexes.append(i_answer)
                 if len(variant.answers) > 0 and len(correct_answer_indexes) == 0:
                     errors.append(
-                        f"question {Qi + 1}, variant {i_variant + 1} (line {variant.line_number}): no correct answer"
+                        f"question {question_i + 1}, variant {i_variant + 1} (line {variant.line_number}): no correct answer"
                     )
                 if len(correct_answer_indexes) > 1:
                     errors.append(
-                        f"question {Qi + 1}, variant {i_variant + 1} (line {variant.line_number}): more than one correct answer"
+                        f"question {question_i + 1}, variant {i_variant + 1} (line {variant.line_number}): more than one correct answer"
                     )
                 if len(variant.answers) > 0:
                     answer_letters = "".join(
@@ -556,11 +556,11 @@ def check_library(library):
                     f"V{i_variant + 1}-S{len(variant.answers)}-{answer_letters}"
                 )
             log_and_print(
-                f"    Question {Qi + 1} ({question.points:g} points): {', '.join(variant_infos)}"
+                f"    Question {question_i + 1} ({question.points:g} points): {', '.join(variant_infos)}"
             )
             total_points += question.points
-            Qi += 1
-    if Qi == 0:
+            question_i += 1
+    if question_i == 0:
         errors.append("no questions in library")
     log_and_print(f"Total points: {total_points:g}")
     if len(errors) > 0:
@@ -571,7 +571,7 @@ def check_library(library):
 
 
 ######################################################################
-def mkdirOrDie(dir):
+def mkdir_or_die(dir):
     if not os.path.exists(dir):
         os.makedirs(dir)
 
@@ -581,27 +581,27 @@ def mkdirOrDie(dir):
 
 
 ######################################################################
-def escapeJsonString(s):
+def escape_json_string(s):
     s = s.replace("\n", "").replace("\[", "$$").replace("\]", "$$")  # Harry modified
     return s.replace("\\", "\\\\").replace('"', '\\"')  # Harry modified
 
 
 ######################################################################
-def printJsonKeyValue(out_f, key, value):
-    escapedValue = escapeJsonString(value)
-    out_f.write(f'"{key}" : "{escapedValue}",\n')
+def print_json_key_value(out_f, key, value):
+    escaped_value = escape_json_string(value)
+    out_f.write(f'"{key}" : "{escaped_value}",\n')
 
 
 ######################################################################
-def printJsonKeyValueArray(out_f, key, values):
+def print_json_key_value_array(out_f, key, values):
     out_f.write(f'"{key}" : [')
-    needComma = False
+    need_comma = False
     for v in values:
-        if needComma:
+        if need_comma:
             out_f.write(",\n")
-        needComma = True
-        escapedValue = escapeJsonString(v)
-        out_f.write(f'"{escapedValue}"')
+        need_comma = True
+        escaped_value = escape_json_string(v)
+        out_f.write(f'"{escaped_value}"')
     out_f.write("],\n")
 
 
@@ -615,17 +615,17 @@ def export_one_question(
         question_name = f"{question_name}_v{i_variant + 1}"
 
     question_directory = os.path.join(question_base_directory, question_name)
-    clientFilesQuestion_directory = os.path.join(
+    client_files_question_directory = os.path.join(
         question_directory, "clientFilesQuestion"
     )
 
-    mkdirOrDie(question_directory)
+    mkdir_or_die(question_directory)
 
     question_json_file = os.path.join(question_directory, "info.json")
     question_html_file = os.path.join(question_directory, "question.html")
 
     variant_ans = "\n".join(variant.correct_answers)
-    uuidString = str(
+    uuid_string = str(
         uuid.uuid5(
             uuid.NAMESPACE_DNS,
             f"{variant.body}{variant_ans}{qi}",
@@ -635,10 +635,10 @@ def export_one_question(
     text = variant.body.rstrip()
     nofig = text.count("\\begin{center}")
     while nofig > 0:
-        mkdirOrDie(clientFilesQuestion_directory)
+        mkdir_or_die(client_files_question_directory)
         start = text.find("\\begin{center}")
         end = text.find("\\end{center}")
-        figure_file = os.path.join(clientFilesQuestion_directory, "figure")
+        figure_file = os.path.join(client_files_question_directory, "figure")
         latex_file = figure_file + ".tex"
         with open(latex_file, "w") as latex_f:
             latex_f.write("\\documentclass[11pt]{amsart}\n")
@@ -657,11 +657,11 @@ def export_one_question(
             "pdflatex -jobname="
             + question_name
             + " -output-directory="
-            + clientFilesQuestion_directory
+            + client_files_question_directory
             + " -interaction=nonstopmode"
             + f" {figure_file}"
         )
-        figure_file = os.path.join(clientFilesQuestion_directory, question_name)
+        figure_file = os.path.join(client_files_question_directory, question_name)
         os.system(
             "gs -dNOCACHE -q -dNOPAUSE -dBATCH -sDEVICE=pngalpha -r300 -sOutputFile={} {}".format(
                 figure_file + ".png", figure_file + ".pdf"
@@ -675,10 +675,10 @@ def export_one_question(
     with open(question_json_file, "w") as out_f:
         out_f.write("{\n")
 
-        printJsonKeyValue(out_f, "uuid", uuidString)
-        printJsonKeyValue(out_f, "title", "Question")
-        printJsonKeyValue(out_f, "topic", topic)
-        printJsonKeyValueArray(out_f, "tags", tags)
+        print_json_key_value(out_f, "uuid", uuid_string)
+        print_json_key_value(out_f, "title", "Question")
+        print_json_key_value(out_f, "topic", topic)
+        print_json_key_value_array(out_f, "tags", tags)
         out_f.write('"type": "v3"\n')
         out_f.write("}")  # end of question object
 
@@ -712,8 +712,8 @@ def export_one_question(
     return question_name
 
 
-def write_qids(OUTPUT_DIRECTORY, topic, qids):
-    qid_file = os.path.join(OUTPUT_DIRECTORY, f"{topic}_qids.txt")
+def write_qids(output_directory, topic, qids):
+    qid_file = os.path.join(output_directory, f"{topic}_qids.txt")
 
     with open(qid_file, "w") as out_f:
         out_f.write('"')
@@ -721,10 +721,10 @@ def write_qids(OUTPUT_DIRECTORY, topic, qids):
         out_f.write('"\n')
 
 
-def export_library(OUTPUT_DIRECTORY, library, topic, tags, LIBRARY_FILENAME):
-    log_and_print(f"Exporting to {OUTPUT_DIRECTORY}")
-    question_base_directory = os.path.join(OUTPUT_DIRECTORY, "questions")
-    mkdirOrDie(question_base_directory)
+def export_library(output_directory, library, topic, tags, library_filename):
+    log_and_print(f"Exporting to {output_directory}")
+    question_base_directory = os.path.join(output_directory, "questions")
+    mkdir_or_die(question_base_directory)
     qi = 1
     total_points = 0
     qids = []
@@ -747,13 +747,13 @@ def export_library(OUTPUT_DIRECTORY, library, topic, tags, LIBRARY_FILENAME):
             total_points += question.points
             qi = qi + 1
 
-    write_qids(OUTPUT_DIRECTORY, topic, qids)
+    write_qids(output_directory, topic, qids)
     log_and_print(f"Total points: {total_points:g}")
 
     log("Successfully exported library")
 
-    # log_and_print("testing latex on %s" % LIBRARY_FILENAME)
-    # os.system('pdflatex ' + LIBRARY_FILENAME + " %s" % OUTPUT_DIRECTORY)
+    # log_and_print("testing latex on %s" % library_filename)
+    # os.system('pdflatex ' + library_filename + " %s" % output_directory)
     # log_and_print("finished testing latex")
 
 

@@ -26,27 +26,29 @@ def discover_to_move():
     for d in glob.glob("questions/*"):
         info = d + "/info.json"
         if os.path.isfile(d + "/info.json"):
-            df = json.load(open(info))
-            if "topic" in df and df["topic"] != "":
-                alldata[d.replace("questions/", "")] = df["topic"]
+            with open(info) as f:
+                df = json.load(f)
+                if "topic" in df and df["topic"] != "":
+                    alldata[d.replace("questions/", "")] = df["topic"]
     return alldata
 
 
 def fix_assessments(to_move):
-    for f in glob.glob("courseInstances/*/assessments/*/infoAssessment.json"):
-        print(f)
-        info = json.load(open(f))
-        for zone in info["zones"]:
-            for question in zone["questions"]:
-                if "id" in question and question["id"] in to_move:
-                    print(question)
-                    question["id"] = to_move[question["id"]] + "/" + question["id"]
-                if "alternatives" in question:
-                    for ques in question["alternatives"]:
-                        if ques["id"] in to_move:
-                            ques["id"] = to_move[ques["id"]] + "/" + ques["id"]
-
-        json.dump(info, open(f, "w"), sort_keys=True, indent=4, separators=(",", ": "))
+    for fname in glob.glob("courseInstances/*/assessments/*/infoAssessment.json"):
+        print(fname)
+        with open(fname) as f:
+            info = json.load(f)
+            for zone in info["zones"]:
+                for question in zone["questions"]:
+                    if "id" in question and question["id"] in to_move:
+                        print(question)
+                        question["id"] = to_move[question["id"]] + "/" + question["id"]
+                    if "alternatives" in question:
+                        for ques in question["alternatives"]:
+                            if ques["id"] in to_move:
+                                ques["id"] = to_move[ques["id"]] + "/" + ques["id"]
+        with open(fname, "w") as f:
+            json.dump(info, f, sort_keys=True, indent=4, separators=(",", ": "))
 
 
 def move(to_move):

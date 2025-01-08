@@ -150,6 +150,9 @@ if __name__ == "__main__":
     os.makedirs(dirname, exist_ok=True)
     my_id = uuid.uuid4()
     info = gen_info(my_id, xml_root)
-    json.dump(info, open(dirname + "/info.json", "w"))
-    write_server(xml_root, open(dirname + "/server.py", "w"))
-    write_question(xml_root, open(dirname + "/question.html", "w"))
+    with open(dirname + "/info.json", "w") as f:
+        json.dump(info, f)
+    with open(dirname + "/server.py", "w") as f:
+        write_server(xml_root, f)
+    with open(dirname + "/question.html", "w") as f:
+        write_question(xml_root, f)
