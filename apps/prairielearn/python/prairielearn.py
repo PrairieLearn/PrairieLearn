@@ -1080,7 +1080,7 @@ def string_to_number(s, allow_complex=True):
     try:
         s_float = float(s)
         return np.float64(s_float)
-    except ValueError:
+    except Exception:
         # If that didn't work, either pass (and try to parse as complex) or return None
         if allow_complex:
             pass
@@ -1090,7 +1090,7 @@ def string_to_number(s, allow_complex=True):
     try:
         s_complex = complex(s)
         return np.complex128(s_complex)
-    except ValueError:
+    except Exception:
         # If that didn't work, return None
         return None
 
@@ -1156,7 +1156,7 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
                 data["format_errors"] = (
                     "Your expression resulted in a division by zero."
                 )
-            except ValueError as exc:
+            except Exception as exc:
                 data["format_errors"] = f"Invalid format: {str(exc)}"
         else:
             data["format_errors"] = "Fractional answers are not allowed in this input."
@@ -1172,7 +1172,7 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
                 raise ValueError("The submitted answer is not a finite number.")
             value = a_sub_parsed
             data["submitted_answers"] = to_json(value)
-        except ValueError as exc:
+        except Exception as exc:
             data["format_errors"] = f"Invalid format: {str(exc)}"
 
     return (value, data)
@@ -1209,7 +1209,7 @@ def string_to_2darray(s, allow_complex=True):
             matrix = np.array([[ans]])
             # Return it with no error
             return (matrix, {"format_type": "python"})
-        except ValueError:
+        except Exception:
             # Return error if submitted answer could not be converted to float or complex
             if allow_complex:
                 return (
@@ -1323,7 +1323,7 @@ def string_to_2darray(s, allow_complex=True):
 
                     # Insert the new entry
                     matrix[i, j] = ans
-                except ValueError:
+                except Exception:
                     # Return error if entry could not be converted to float or complex
                     return (
                         None,
@@ -1469,7 +1469,7 @@ def string_to_2darray(s, allow_complex=True):
 
                     # Insert the new entry
                     matrix[i, j] = ans
-                except ValueError:
+                except Exception:
                     # Return error if entry could not be converted to float or complex
                     return (
                         None,
@@ -1481,8 +1481,7 @@ def string_to_2darray(s, allow_complex=True):
         # Return result with no error
         return (matrix, {"format_type": "python"})
 
-    # Should never get here
-    raise ValueError(f"Invalid number of left brackets: {number_of_left_brackets}")
+    assert_never(number_of_left_brackets)
 
 
 def latex_from_2darray(

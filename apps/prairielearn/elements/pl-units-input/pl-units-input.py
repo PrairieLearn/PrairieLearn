@@ -351,7 +351,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     except errors.UndefinedUnitError:  # incorrect units
         data["format_errors"][name] = "Invalid unit."
         return
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         data["format_errors"][name] = f"Exception when parsing submission: {exc}"
         return
 

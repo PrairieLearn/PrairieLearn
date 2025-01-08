@@ -164,7 +164,7 @@ def get_nota_aota_attrib(
             element, name, default != AotaNotaType.FALSE
         )
         return AotaNotaType.RANDOM if boolean_value else AotaNotaType.FALSE
-    except ValueError:
+    except Exception:
         return pl.get_enum_attrib(element, name, AotaNotaType, default)
 
 

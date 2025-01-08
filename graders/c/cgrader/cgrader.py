@@ -100,7 +100,7 @@ class CGrader:
                 stdout=subprocess.PIPE,
                 stderr=subprocess.STDOUT,
             )
-        except Exception:  # noqa: BLE001
+        except Exception:
             return ""
         out = ""
         tostr = ""

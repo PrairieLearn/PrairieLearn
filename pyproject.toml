@@ -29,8 +29,6 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
-    # flake8-blind-except
-    "BLE",
     # tryceratops
     "TRY",
 ]

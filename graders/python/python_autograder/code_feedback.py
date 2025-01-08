@@ -449,7 +449,7 @@ class Feedback:
             if callable(f):
                 try:
                     callable_name = f.__name__
-                except Exception as e_name:  # noqa: BLE001
+                except Exception as e_name:
                     callable_name = f"<unable to retrieve name; encountered {type(e_name).__name__}: {str(e_name)}>"
                 from traceback import format_exc
 
@@ -633,7 +633,7 @@ class Feedback:
 
             try:
                 assert_frame_equal(ref, data, check_like=allow_order_variance)
-            except AssertionError:
+            except Exception:
                 return bad(f"{name} is inaccurate")
 
         cls.add_feedback(f"{name} looks good")

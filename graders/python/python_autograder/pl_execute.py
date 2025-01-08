@@ -161,7 +161,7 @@ def execute_code(
     try:
         exec(str_student, student_code)
         err = None
-    except Exception:  # noqa: BLE001
+    except Exception:
         err = sys.exc_info()
 
     # Now that user code has been run, replace deleted files in case we are to run the tests again.
