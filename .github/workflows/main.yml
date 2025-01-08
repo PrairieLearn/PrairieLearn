@@ -160,6 +160,8 @@ jobs:
       # - run: cat /tmp/build-contexts/workspace-vscode-base/oci-layout
 
       - run: docker image ls
+      - run: docker context ls
+      - run: docker context show
 
       ######################################################################################################
       # prairielearn/workspace-vscode-python
