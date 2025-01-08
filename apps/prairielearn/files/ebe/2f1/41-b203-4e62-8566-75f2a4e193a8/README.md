@@ -1,1 +1,0 @@
-The question gives two numbers and a mathematical expressions, all of them randomly generated. Students should evaluate the mathematical expression given the two numbers. The numerical submission is checked for correction using the default values for relative and absolute tolerances.
