@@ -28,9 +28,11 @@ import { AssessmentQuestionRow } from './instructorAssessmentQuestions.types.js'
 export function InstructorAssessmentQuestions({
   resLocals,
   questions,
+  origHash,
 }: {
   resLocals: Record<string, any>;
   questions: AssessmentQuestionRow[];
+  origHash: string;
 }) {
   return html`
     <!doctype html>
@@ -73,7 +75,12 @@ export function InstructorAssessmentQuestions({
             course: resLocals.course,
             urlPrefix: resLocals.urlPrefix,
           })}
-
+          <form method="POST" id="zonesForm">
+            <input type="hidden" name="__action" value="edit_assessment_questions" />
+            <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+            <input type="hidden" name="__orig_hash" value="${origHash}" />
+            <input class="js-zones-input" type="hidden" name="zones" value="" />
+          </form>
           <div class="card mb-4">
             <div class="card-header bg-primary text-white d-flex align-items-center">
               <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Questions</h1>

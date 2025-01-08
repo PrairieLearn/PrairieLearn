@@ -58,6 +58,12 @@ SELECT
   aq.effective_advance_score_perc AS assessment_question_advance_score_perc,
   q.sync_errors,
   q.sync_warnings,
+  ARRAY(
+    SELECT
+      points - aq.max_manual_points
+    FROM
+      UNNEST(aq.points_list) AS points
+  ) AS auto_points_list,
   CASE
     WHEN q.course_id = $course_id THEN qid
     ELSE '@' || c.sharing_name || '/' || q.qid

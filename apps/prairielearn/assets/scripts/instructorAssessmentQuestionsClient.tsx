@@ -14,8 +14,6 @@ import { onDocumentReady, templateFromAttributes, decodeData } from '@prairielea
 import { histmini } from './lib/histmini.js';
 
 import { AssessmentQuestionRow } from '../../src/pages/instructorAssessmentQuestions/instructorAssessmentQuestions.types.js';
-import { auto } from 'async';
-import { edit } from 'ace-builds';
 
 onDocumentReady(() => {
   $('#resetQuestionVariantsModal').on('show.bs.modal', (e) => {
@@ -50,7 +48,10 @@ onDocumentReady(() => {
           </button>
         ) : (
           <span class="js-edit-mode-buttons">
-            <button class="btn btn-sm btn-light js-save-and-sync-button mx-1">
+            <button
+              class="btn btn-sm btn-light js-save-and-sync-button mx-1"
+              onClick={() => handleSave()}
+            >
               <i class="fa fa-save" aria-hidden="true"></i> Save and sync
             </button>
             <button class="btn btn-sm btn-light" onClick={() => window.location.reload()}>
@@ -75,17 +76,17 @@ onDocumentReady(() => {
     function maxPoints({
       max_auto_points,
       max_manual_points,
-      points_list,
+      auto_points_list,
       init_points,
     }: {
       max_auto_points: number;
       max_manual_points: number;
-      points_list: number[];
+      auto_points_list: number[];
       init_points: number;
     }) {
       if (max_auto_points || !max_manual_points) {
         if (assessmentType === 'Exam') {
-          return (points_list || [max_manual_points]).map((p) => p - max_manual_points).join(',');
+          return auto_points_list.join(',');
         }
         if (assessmentType === 'Homework') {
           return `${init_points - max_manual_points}/${max_auto_points}`;
@@ -94,12 +95,6 @@ onDocumentReady(() => {
         return '—';
       }
     }
-
-    // const handleEdit = (question: AssessmentQuestionRow, i: number) => {
-    //   const update = questionState.map((q) => ({ ...q }));
-    //   update[i].title = 'EDITED';
-    //   setQuestionState([...update]);
-    // };
 
     const handleEdit = (question: AssessmentQuestionRow, i: number) => {
       editedQuestion.value = { ...question };
@@ -247,7 +242,7 @@ onDocumentReady(() => {
               {maxPoints({
                 max_auto_points: question.max_auto_points ?? 0,
                 max_manual_points: question.max_manual_points ?? 0,
-                points_list: question.points_list ?? [],
+                auto_points_list: question.auto_points_list ?? [],
                 init_points: question.init_points ?? 0,
               })}
             </td>
@@ -416,7 +411,9 @@ onDocumentReady(() => {
                       class="form-control"
                       id="gradingMethod"
                       name="gradingMethod"
-                      onChange={(e) => setAutoGraded(e.target?.value === 'auto')}
+                      onChange={(e) =>
+                        setAutoGraded((e.target as HTMLSelectElement)?.value === 'auto')
+                      }
                     >
                       <option value="auto" selected={autoGraded}>
                         Auto
@@ -525,10 +522,12 @@ onDocumentReady(() => {
                       class="form-control points-list"
                       id="autoPointsInput"
                       name="autoPoints"
-                      value={editedQuestion.value?.points_list?.join(',')}
+                      value={editedQuestion.value?.auto_points_list?.join(',')}
                       onChange={(e) => {
                         if (editedQuestion.value) {
-                          editedQuestion.value.points_list = (e.target as HTMLInputElement).value
+                          editedQuestion.value.auto_points_list = (
+                            e.target as HTMLInputElement
+                          ).value
                             .split(',')
                             .map((v) => Number(v));
                         }
@@ -576,6 +575,67 @@ onDocumentReady(() => {
     );
   }
 
-  // To do: we should now be able to render these directly in the questionRowMap
+  function handleSave() {
+    interface Zone {
+      title?: string;
+      maxPoints?: number;
+      numberChoose?: number;
+      bestQuestions?: number;
+      questions?: Record<string, any>[];
+      advanceScorePerc?: number;
+      gradeRateMinutes?: number;
+    }
+    let zones: Zone[] = [];
+    let currentZone: Zone = {
+      questions: [],
+    };
+    function addZone() {
+      const resolvedZone: Zone = Object.fromEntries(
+        Object.entries(currentZone).filter(([_, value]) => value && value !== 0),
+      );
+      zones.push(resolvedZone);
+    }
+    questions.value.map((question, i) => {
+      if (question.start_new_zone && i !== 0) {
+        addZone();
+      }
+      if (question.start_new_zone) {
+        currentZone = {
+          title: question.zone_title ?? undefined,
+          maxPoints: question.zone_max_points ?? 0,
+          numberChoose: question.zone_number_choose ?? 0,
+          bestQuestions: question.zone_best_questions ?? 0,
+          questions: [],
+          advanceScorePerc: question.assessment_question_advance_score_perc ?? 0,
+          gradeRateMinutes: question.grade_rate_minutes ?? 0,
+        };
+      }
+      if (question.number_in_alternative_group === 1) {
+        const questionData = {
+          id: question.alternative_group_size === 1 ? question.qid : null,
+          autoPoints:
+            assessmentType === 'Homework' ? question.init_points : question.auto_points_list,
+          maxAutoPoints: assessmentType === 'Homework' ? question.max_auto_points : null,
+          manualPoints: question.max_manual_points ?? null,
+          alternatives: question.alternative_group_size > 1 ? [question.qid] : null,
+          forceMaxPoints: question.force_max_points ?? false,
+          triesPerVariant: question.tries_per_variant === 1 ? null : question.tries_per_variant,
+        };
+        currentZone.questions?.push(
+          Object.fromEntries(
+            Object.entries(questionData).filter(([_, value]) => value && value !== 0),
+          ),
+        );
+      } else {
+        if (currentZone.questions) {
+          currentZone.questions[currentZone.questions.length - 1].alternatives.push(question.qid);
+        }
+      }
+    });
+    addZone();
+    document.querySelector('.js-zones-input')?.setAttribute('value', JSON.stringify(zones));
+    (document.querySelector('#zonesForm') as HTMLFormElement)?.submit();
+  }
+
   document.querySelectorAll<HTMLElement>('.js-histmini').forEach((element) => histmini(element));
 });

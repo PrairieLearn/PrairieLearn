@@ -15,6 +15,7 @@ export const AssessmentQuestionRowSchema = AssessmentQuestionSchema.extend({
   alternative_group_number: AlternativeGroupSchema.shape.number,
   alternative_group_size: z.number(),
   assessment_question_advance_score_perc: AlternativeGroupSchema.shape.advance_score_perc,
+  auto_points_list: z.array(z.number()).nullable(),
   display_name: z.string().nullable(),
   number: z.string().nullable(),
   open_issue_count: z.coerce.number().nullable(),
