@@ -22,18 +22,14 @@ USER root
 RUN find /etc/sudoers.d -type f -not -name README -delete && \
     sudo -u coder bash -c 'if sudo echo "Test failed: User can sudo" ; then false ; fi'
 
-# Apt installs: Enable manpages with "unminimize", and then install common utilities.
+# Apt installs: Enable manpages with "unminimize", and common utilities.
 USER root
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
-    apt-get install -y man-db unminimize && \
-    yes | unminimize && \
-    apt-get clean && \
-    rm -rf /var/lib/apt/lists/* && \
-    find /tmp -not -path /tmp -delete
-RUN apt-get update && \
     apt-get install -y --no-install-recommends \
+    man-db unminimize \
     gosu curl git htop less nano unzip vim wget zip && \
+    yes | unminimize && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
     find /tmp -not -path /tmp -delete
