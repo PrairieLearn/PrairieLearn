@@ -61,7 +61,7 @@ describe('Updating a course instance ID', () => {
 
     assert.equal(courseInstancePageResponse.status, 200);
 
-    // Update the course instance to have a short_name that is valid
+    // Change the id of the course instance to a valid value
     const courseInstanceCreationResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
       {
@@ -85,11 +85,11 @@ describe('Updating a course instance ID', () => {
   step('verify course instance id changed', async () => {
     const courseInstanceInfoPath = path.join(
       courseInstancesCourseLiveDir,
-      'Sp23', // This validates that the course instance id was updated
+      'Sp23', // Sp23 is the new course instance id
       'infoCourseInstance.json',
     );
 
-    // If the folder at path courseInstancesCourseLiveDir exists, then the course instance id was successfully changed
+    // If the folder at path courseInstanceInfoPath exists, then the course instance id was successfully changed
     assert.equal(await fs.pathExists(courseInstanceInfoPath), true);
   });
 

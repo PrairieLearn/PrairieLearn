@@ -230,7 +230,6 @@ describe('Editing question settings', () => {
   });
 
   step('change question id', async () => {
-    // TODO: move this and the other question id tests downward
     const settingsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
     );
@@ -254,7 +253,13 @@ describe('Editing question settings', () => {
   });
 
   step('verify question id changed', async () => {
-    questionLiveInfoPath = path.join(questionLiveDir, 'question2', 'info.json');
+    questionLiveInfoPath = path.join(
+      questionLiveDir,
+      'question2', // The new question id
+      'info.json',
+    );
+
+    // If the file at path questionLiveInfoPath exists, then the question id was successfully changed
     assert.equal(await fs.pathExists(questionLiveInfoPath), true);
   });
 
@@ -266,7 +271,7 @@ describe('Editing question settings', () => {
       );
       assert.equal(settingsPageResponse.status, 200);
 
-      // Change the question id to an invalid id that exits the root directory
+      // Change the question id to one that is not contained within the root directory
       const response = await fetch(
         `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
         {
