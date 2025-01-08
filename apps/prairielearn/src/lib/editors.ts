@@ -1341,6 +1341,8 @@ export class QuestionTransferEditor extends Editor {
   private from_qid: string;
   private from_course: string;
   private from_path: string;
+  private to_title_custom?: string;
+  private to_qid_custom?: string;
 
   public readonly uuid: string;
 
@@ -1349,6 +1351,8 @@ export class QuestionTransferEditor extends Editor {
       from_qid: string;
       from_course_short_name: Course['short_name'];
       from_path: string;
+      to_title_custom?: string;
+      to_qid_custom?: string;
     },
   ) {
     super(params);
@@ -1360,6 +1364,9 @@ export class QuestionTransferEditor extends Editor {
         : `course ${params.from_course_short_name}`;
     this.from_path = params.from_path;
     this.description = `Copy question ${this.from_qid} from ${this.from_course}`;
+
+    this.to_title_custom = params.to_title_custom;
+    this.to_qid_custom = params.to_qid_custom;
 
     this.uuid = uuidv4();
   }
@@ -1382,14 +1389,14 @@ export class QuestionTransferEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
     debug('Generate qid and title');
-    let qid = this.from_qid;
-    let questionTitle = from_title;
-    if (oldNamesShort.includes(this.from_qid) || oldNamesLong.includes(from_title)) {
-      const names = this.getNamesForCopy(this.from_qid, oldNamesShort, from_title, oldNamesLong);
-      qid = names.shortName;
-      questionTitle = names.longName;
+    let newQid = this.to_qid_custom ?? this.from_qid;
+    let newQuestionTitle = this.to_title_custom ?? from_title;
+    if (oldNamesShort.includes(newQid) || oldNamesLong.includes(newQuestionTitle)) {
+      const names = this.getNamesForCopy(newQid, oldNamesShort, from_title, oldNamesLong);
+      newQid = names.shortName;
+      newQuestionTitle = names.longName;
     }
-    const questionPath = path.join(questionsPath, qid);
+    const questionPath = path.join(questionsPath, newQid);
 
     const fromPath = this.from_path;
     const toPath = questionPath;
@@ -1400,7 +1407,7 @@ export class QuestionTransferEditor extends Editor {
     const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
 
     debug('Write info.json with new title and uuid');
-    infoJson.title = questionTitle;
+    infoJson.title = newQuestionTitle;
     infoJson.uuid = this.uuid;
 
     // When transferring a question from an example/template course, drop the tags. They
@@ -1419,7 +1426,7 @@ export class QuestionTransferEditor extends Editor {
 
     return {
       pathsToAdd: [questionPath],
-      commitMessage: `copy question ${this.from_qid} (from ${this.from_course}) to ${qid}`,
+      commitMessage: `copy question ${this.from_qid} (from ${this.from_course}) to ${newQid}`,
     };
   }
 }

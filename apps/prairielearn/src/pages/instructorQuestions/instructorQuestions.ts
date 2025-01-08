@@ -1,24 +1,29 @@
+import path from 'path';
+
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
+import { v4 as uuidv4 } from 'uuid';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-question.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { getCourseOwners } from '../../lib/course.js';
 import {
-  type Course,
   CourseSchema,
   QuestionSchema,
   TopicSchema,
+  type Course,
   type Question,
 } from '../../lib/db-types.js';
+import { QuestionTransferEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
-import { selectQuestionById } from '../../models/question.js';
+import { selectQuestionById, selectQuestionByUuid } from '../../models/question.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
 
 import { QuestionsPage } from './instructorQuestions.html.js';
@@ -150,17 +155,50 @@ router.post(
         }
 
         const exampleCourse = await getExampleCourse();
-        const templateQuestion = await selectQuestionById(req.body.template_qid);
+        const templateQuestion = await selectQuestionById(
+          req.body.template_qid
+        )
 
         await copyQuestionBetweenCourses(res, {
           fromCourse: exampleCourse,
           toCourseId: res.locals.course.id,
           question: templateQuestion,
+          toTitleCustom: req.body.title,
+          toQidCustom: req.body.qid,
         });
 
-        // TODO: Update the name
+        // const f = uuidv4();
+        // const relDir = path.join(f.slice(0, 3), f.slice(3, 6));
+
+        // const storage_filename = path.join(relDir, f.slice(6));
+
+        // if (config.filesRoot == null) throw new Error('config.filesRoot is null');
+
+        // const editor = new QuestionTransferEditor({
+        //   locals: res.locals,
+        //   from_qid: req.body.template_qid,
+        //   from_course_short_name: exampleCourse.short_name,
+        //   from_path: path.join(config.filesRoot, storage_filename),
+        //   to_title_custom: req.body.title,
+        //   to_qid_custom: req.body.qid,
+        // });
+
+        // const serverJob = await editor.prepareServerJob();
+        // try {
+        //   await editor.executeWithServerJob(serverJob);
+        // } catch (e) {
+        //   console.error(e);
+        //   res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        //   return;
+        // }
+
+        // const question = await selectQuestionByUuid({
+        //   course_id: res.locals.course.id,
+        //   uuid: editor.uuid,
+        // });
+
+        // res.redirect(`${res.locals.urlPrefix}/question/${question.id}/settings`);
       }
-      // res.redirect(res.locals.urlPrefix + '/question/' + result.question_id + '/settings');
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
