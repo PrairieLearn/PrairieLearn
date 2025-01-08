@@ -210,17 +210,17 @@ router.post(
       if (!req.body.aid) {
         throw new HttpStatusError(400, 'aid is required');
       }
-      if (!req.body.type) {
-        throw new HttpStatusError(400, 'type is required');
-      }
-      if (!req.body.set) {
-        throw new HttpStatusError(400, 'set is required');
-      }
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.aid)) {
         throw new HttpStatusError(
           400,
           `Invalid aid (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.aid}`,
         );
+      }
+      if (!req.body.type) {
+        throw new HttpStatusError(400, 'type is required');
+      }
+      if (!req.body.set) {
+        throw new HttpStatusError(400, 'set is required');
       }
 
       const editor = new AssessmentAddEditor({
