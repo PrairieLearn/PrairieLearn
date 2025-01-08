@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { CommentSchema } from './comment.js';
+
 const GroupRoleSchema = z
   .object({
     name: z.string().describe("The group role's name (i.e. Manager, Reflector, Recorder)."),
@@ -22,10 +24,7 @@ const GroupRoleSchema = z
 
 export const AsssessmentAccessRuleSchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     mode: z.enum(['Public', 'Exam']).describe('The server mode required for access.').optional(),
     examUuid: z
       .string()
@@ -116,10 +115,7 @@ const QuestionPointsSchema = z.object({
 export type QuestionPoints = z.infer<typeof QuestionPointsSchema>;
 
 const QuestionAlternativeSchema = QuestionPointsSchema.extend({
-  comment: z
-    .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-    .describe('Arbitrary comment for reference purposes.')
-    .optional(),
+  comment: CommentSchema.optional(),
   id: QuestionIdSchema,
   forceMaxPoints: ForceMaxPointsSchema.optional(),
   triesPerVariant: z
@@ -142,10 +138,7 @@ const QuestionAlternativeSchema = QuestionPointsSchema.extend({
 });
 
 const ZoneQuestionSchema = QuestionPointsSchema.extend({
-  comment: z
-    .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-    .describe('Arbitrary comment for reference purposes.')
-    .optional(),
+  comment: CommentSchema.optional(),
   points: PointsSchema.optional(),
   autoPoints: PointsSchema.optional(),
   maxPoints: PointsSingleSchema.optional(),
@@ -196,9 +189,6 @@ const ZoneQuestionSchema = QuestionPointsSchema.extend({
     .optional(),
 });
 
-const CommentSchema = z
-  .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-  .describe('Arbitrary comment for reference purposes.');
 const ZoneSchema = z.object({
   title: z
     .string()
@@ -252,10 +242,7 @@ const ZoneSchema = z.object({
 
 export const AssessmentSchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     uuid: z
       .string()
       .regex(

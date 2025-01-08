@@ -13,3 +13,4 @@ export * from './questionOptionsFile.js';
 export * from './questionOptionsMultipleChoice.js';
 export * from './questionOptionsMultipleTrueFalse.js';
 export * from './questionOptionsv3.js';
+export * from './comment.js';

@@ -1,11 +1,10 @@
 import { z } from 'zod';
 
+import { CommentSchema } from './comment.js';
+
 const AccessRuleSchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     role: z
       .enum(['Student', 'TA', 'Instructor', 'Superuser'])
       .describe('DEPRECATED -- do not use.')
@@ -31,10 +30,7 @@ const AccessControlSchema = z
 
 export const CourseInstanceSchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     uuid: z
       .string()
       .regex(

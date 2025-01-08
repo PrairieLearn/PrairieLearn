@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { CommentSchema } from './comment.js';
+
 export const ColorSchema = z
   .enum([
     'red1',
@@ -38,10 +40,7 @@ export const ColorSchema = z
 export type Color = z.infer<typeof ColorSchema>;
 export const TopicSchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     shortName: z.string().describe('Short name (preferably 2 to 7 characters).').optional(),
     name: z.string().describe('Long descriptive name (preferably less than 10 words).'),
     color: ColorSchema,
@@ -52,10 +51,7 @@ export const TopicSchema = z
 export type Topic = z.infer<typeof TopicSchema>;
 export const AssessmentSetSchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     abbreviation: z
       .string()
       .describe("Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc."),
@@ -77,10 +73,7 @@ export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
 
 export const CourseOptionsSchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     useNewQuestionRenderer: z
       .boolean()
       .describe('Feature flag to enable the new question renderer.')
@@ -102,10 +95,7 @@ export type CourseOptions = z.infer<typeof CourseOptionsSchema>;
 
 export const CourseSchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     exampleCourse: z.boolean().describe('DEPRECATED -- do not use.').optional(),
     uuid: z
       .string()
@@ -141,10 +131,7 @@ export const CourseSchema = z
       .array(
         z
           .object({
-            comment: z
-              .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-              .describe('Arbitrary comment for reference purposes.')
-              .optional(),
+            comment: CommentSchema.optional(),
             shortName: z.string().describe('Short name (preferably 2 to 7 characters).').optional(),
             name: z.string().describe('Long descriptive name (preferably less than 10 words).'),
             color: ColorSchema,

@@ -1,11 +1,10 @@
 import { z } from 'zod';
 
+import { CommentSchema } from './comment.js';
+
 export const MultipleTrueFalseQuestionOptionsSchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     text: z.string().describe('Text to precede the set of statements being given.').optional(),
     trueStatements: z
       .array(z.string())

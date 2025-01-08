@@ -1,11 +1,10 @@
 import { z } from 'zod';
 
+import { CommentSchema } from './comment.js';
+
 const AdminQuerySchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     description: z.string().describe('Brief one-line description of the query.'),
     resultFormats: z
       .record(z.enum(['pre']))
@@ -15,10 +14,7 @@ const AdminQuerySchema = z
       .array(
         z
           .object({
-            comment: z
-              .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-              .describe('Arbitrary comment for reference purposes.')
-              .optional(),
+            comment: CommentSchema.optional(),
             name: z.string().describe('Name of the parameter. Must match a $name in the SQL.'),
             description: z.string().describe('Brief one-line description of the parameter.'),
             default: z.string().describe('Default value.').optional(),

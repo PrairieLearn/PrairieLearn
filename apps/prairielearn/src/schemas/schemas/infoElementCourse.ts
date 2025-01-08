@@ -1,11 +1,10 @@
 import { z } from 'zod';
 
+import { CommentSchema } from './comment.js';
+
 const DependencySchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
       .describe(
@@ -48,18 +47,12 @@ const DependencySchema = z
 
 export const ElementCourseSchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     controller: z.string().describe("The name of the element's controller file."),
     dependencies: DependencySchema.optional(),
     dynamicDependencies: z
       .object({
-        comment: z
-          .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-          .describe('Arbitrary comment for reference purposes.')
-          .optional(),
+        comment: CommentSchema.optional(),
         nodeModulesScripts: z
           .record(z.string())
           .describe('The scripts required by this element from /node_modules as an importmap.')

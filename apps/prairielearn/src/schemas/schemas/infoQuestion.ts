@@ -1,11 +1,10 @@
 import { z } from 'zod';
 
+import { CommentSchema } from './comment.js';
+
 export const DependencySchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
       .describe(
@@ -48,10 +47,7 @@ export const DependencySchema = z
 
 export const WorkspaceOptionsSchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     image: z
       .string()
       .describe(
@@ -102,10 +98,7 @@ export const WorkspaceOptionsSchema = z
 
 export const QuestionSchema = z
   .object({
-    comment: z
-      .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-      .describe('Arbitrary comment for reference purposes.')
-      .optional(),
+    comment: CommentSchema.optional(),
     uuid: z
       .string()
       .regex(
@@ -166,10 +159,7 @@ export const QuestionSchema = z
       .optional(),
     externalGradingOptions: z
       .object({
-        comment: z
-          .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
-          .describe('Arbitrary comment for reference purposes.')
-          .optional(),
+        comment: CommentSchema.optional(),
         enabled: z
           .boolean()
           .describe(
