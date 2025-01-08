@@ -42,8 +42,12 @@ jobs:
 
       # Print docker config.json for debugging
       - run: cat /etc/docker/daemon.json
-      - run: |
-          sudo jq '.features |= (. // {}) + {"containerd-snapshotter": true}' /etc/docker/daemon.json | sudo tee /etc/docker/daemon.json
+      - shell: bash
+        run: |
+          [ -f /etc/docker/daemon.json ] || echo "{}" | sudo tee /etc/docker/daemon.json
+          jq '. | .+{"features": {"containerd-snapshotter": true}}' /etc/docker/daemon.json > /tmp/docker-daemon-with-containerd.json
+          sudo mv /tmp/docker-daemon-with-containerd.json /etc/docker/daemon.json
+          cat /etc/docker/daemon.json
           sudo systemctl restart docker
       - run: cat /etc/docker/daemon.json
       - run: docker version
