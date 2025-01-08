@@ -4,7 +4,7 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { type Question, type CourseInstance } from '../../lib/db-types.js';
+import { type CourseInstance } from '../../lib/db-types.js';
 import { type QuestionsPageData } from '../../models/questions.js';
 
 export const QuestionsPage = ({
@@ -16,7 +16,7 @@ export const QuestionsPage = ({
   resLocals,
 }: {
   questions: QuestionsPageData[];
-  templateQuestions?: Question[];
+  templateQuestions?: { qid: string; title: string }[];
   course_instances: CourseInstance[];
   showAddQuestionButton: boolean;
   showAiGenerateQuestionButton: boolean;

@@ -1,8 +1,8 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, type HtmlSafeString } from '@prairielearn/html';
 
-import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets.js';
-import { type Question, type CourseInstance } from '../lib/db-types.js';
+import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
+import { type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { type QuestionsPageData } from '../models/questions.js';
 
@@ -39,7 +39,7 @@ export function QuestionsTable({
   __csrf_token,
 }: {
   questions: QuestionsPageData[];
-  templateQuestions?: Question[];
+  templateQuestions?: { qid: string; title: string }[];
   /**
    * Does not need to be specified when showAddQuestionButton is false.
    */
@@ -257,7 +257,7 @@ function CreateQuestionModal({
   templateQuestions,
 }: {
   csrfToken: string;
-  templateQuestions: Question[];
+  templateQuestions: { qid: string; title: string }[];
 }) {
   return Modal({
     id: 'createQuestionModal',

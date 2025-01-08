@@ -1,51 +1,68 @@
+import path from 'path';
+
+import * as async from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import * as sqldb from '@prairielearn/postgres';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { getCourseOwners } from '../../lib/course.js';
-import {
-  CourseSchema,
-  QuestionSchema,
-  TopicSchema,
-  type Course,
-  type Question,
-} from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
+import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
 
 import { QuestionsPage } from './instructorQuestions.html.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-async function getExampleCourse(): Promise<Course> {
-  const example_course = await sqldb.queryRow(sql.select_example_course, {}, CourseSchema);
-  return example_course;
-}
+async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title: string }[]> {
+  let templateQuestions: { qid: string; title: string }[] = [];
+  const templateQuestionsPath = path.join(EXAMPLE_COURSE_PATH, 'questions');
 
-async function getTemplateCourseQuestions(exampleCourse: Course): Promise<Question[]> {
-  const templateTopic = await sqldb.queryRow(
-    sql.select_template_topic_for_course_id,
-    {
-      course_id: exampleCourse.id,
-    },
-    TopicSchema,
-  );
-  const templateQuestions = await sqldb.queryRows(
-    sql.select_questions_for_course,
-    {
-      course_id: exampleCourse.id,
-      topic_id: templateTopic.id,
-    },
-    QuestionSchema,
-  );
+  const walk = async (relativeDir: string) => {
+    const directories = await fs
+      .readdir(path.join(templateQuestionsPath, relativeDir))
+      .catch((err) => {
+        // If the directory doesn't exist, then we have nothing to load
+        if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
+          return [] as string[];
+        }
+        throw err;
+      });
+
+    // For each subdirectory, try to find an Info file
+    await async.each(directories, async (dir) => {
+      // Relative path to the current folder
+      const subdirPath = path.join(relativeDir, dir);
+
+      // Absolute path to the info file
+      const infoPath = path.join(templateQuestionsPath, subdirPath, 'info.json');
+
+      // Check if the info file exists
+      const hasInfoFile = await fs.pathExists(infoPath);
+      if (hasInfoFile) {
+        // Info file exists, we can use this directory
+        const infoJson = await fs.readJson(infoPath);
+
+        // Only use add the question if it has a title and has the topic of Template
+        if (infoJson.title && infoJson.topic === 'Template') {
+          templateQuestions.push({ qid: subdirPath, title: infoJson.title });
+        }
+      } else {
+        // Info file doesn't exist, let's try recursing
+        await walk(subdirPath);
+      }
+    });
+  };
+
+  await walk('template');
+
+  templateQuestions = templateQuestions.sort((a, b) => a.title.localeCompare(b.title));
 
   return templateQuestions;
 }
@@ -81,8 +98,7 @@ router.get(
       courseInstances.map((ci) => ci.id),
     );
 
-    const exampleCourse = await getExampleCourse();
-    const templateQuestions = await getTemplateCourseQuestions(exampleCourse);
+    const templateQuestions = await getTemplateCourseQuestionOptions();
 
     const courseDirExists = await fs.pathExists(res.locals.course.path);
     res.send(
