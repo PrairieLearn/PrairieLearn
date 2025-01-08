@@ -2,15 +2,21 @@ import base64
 import io
 import os
 import urllib
+from collections.abc import Callable
 from functools import wraps
 from os.path import join, splitext
+from typing import Any
 
+import matplotlib
+import matplotlib.pyplot
 import pygments
 from code_feedback import Feedback
 from IPython.core.interactiveshell import InteractiveShell
 from nbformat import read
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer
+
+from graders.python.python_autograder.pl_unit_test import PLTestCase
 
 
 class DoNotRunError(Exception):
@@ -21,7 +27,7 @@ class GradingSkipped(Exception):  # noqa: N818
     pass
 
 
-def extract_ipynb_contents(f, ipynb_key):
+def extract_ipynb_contents(f, ipynb_key: str) -> str:
     """
     Extract all cells from a ipynb notebook that start with a given
     delimiter
@@ -38,7 +44,7 @@ def extract_ipynb_contents(f, ipynb_key):
     return content
 
 
-def save_plot(plt, iternum=0):
+def save_plot(plt: Any, iternum=0):
     """
     Save plot(s) to files as png images.
     """
@@ -57,26 +63,26 @@ def save_plot(plt, iternum=0):
             f.write(imgsrc)
 
 
-def points(points):
+def points(points: float | int):
     """
     Set the number of points that a test case should award.
     """
 
-    def decorator(f):
+    def decorator(f: Any):
         f.__dict__["points"] = points
         return f
 
     return decorator
 
 
-def name(name):
+def name(name: str):
     """
     Set the name of a test case, this will appear on the "results" tab.
     """
 
-    def decorator(f):
+    def decorator(f: Callable):
         @wraps(f)
-        def wrapped(test_instance):
+        def wrapped(test_instance: PLTestCase):
             Feedback.set_name(f.__name__)
             if test_instance.total_iters > 1 and getattr(
                 test_instance, "print_iteration_prefix", True
@@ -90,13 +96,13 @@ def name(name):
     return decorator
 
 
-def not_repeated(f):
+def not_repeated(f: Callable):
     """
     Marks this test as running only once, if the test suite is to be run multiple times.
     """
 
     @wraps(f)
-    def wrapped(test_instance):
+    def wrapped(test_instance: PLTestCase):
         if test_instance.iter_num > 0:
             raise DoNotRunError
         Feedback.clear_iteration_prefix()
@@ -107,7 +113,9 @@ def not_repeated(f):
     return wrapped
 
 
-def print_student_code(st_code="user_code.py", ipynb_key="#grade", as_feedback=True):
+def print_student_code(
+    st_code: str = "user_code.py", ipynb_key: str = "#grade", as_feedback=True
+) -> None | str:
     """
     Print the student's code, with syntax highlighting.
     """

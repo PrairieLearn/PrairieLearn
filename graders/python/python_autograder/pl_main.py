@@ -3,6 +3,7 @@ import os
 import traceback
 from collections import defaultdict
 from os.path import join
+from typing import Any
 from unittest import TestLoader
 
 from pl_result import PLTestResult
@@ -15,7 +16,7 @@ Loads and executes test cases.
 OUTPUT_FILE = "output-fname.txt"
 
 
-def add_files(results):
+def add_files(results: list[dict[str, Any]]) -> None:
     base_dir = os.environ.get("MERGE_DIR")
 
     for test in results:

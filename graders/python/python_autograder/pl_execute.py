@@ -6,6 +6,7 @@ import random
 import sys
 from copy import deepcopy
 from types import ModuleType
+from typing import Any
 
 import numpy as np
 import pl_helpers
@@ -13,18 +14,18 @@ from faker import Faker
 
 
 class UserCodeFailedError(Exception):
-    def __init__(self, err, *args):
+    def __init__(self, err, *args) -> None:
         self.err = err
         super().__init__(err, *args)
 
 
-def set_random_seed(seed=None):
+def set_random_seed(seed=None) -> None:
     np.random.seed(seed)
     random.seed(seed)
     Faker.seed(seed)
 
 
-def try_read(fname):
+def try_read(fname: str) -> str:
     try:
         with open(fname, encoding="utf-8") as f:
             contents = f.read()
@@ -34,13 +35,13 @@ def try_read(fname):
 
 
 def execute_code(
-    fname_ref,
-    fname_student,
+    fname_ref: str,
+    fname_student: str,
     include_plt=False,
-    console_output_fname=None,
+    console_output_fname: str | None = None,
     test_iter_num=0,
     ipynb_key="#grade",
-):
+) -> tuple[dict[str, Any], dict[str, Any], ModuleType | None]:
     """
     execute_code(fname_ref, fname_student)
 

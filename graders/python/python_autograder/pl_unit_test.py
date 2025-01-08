@@ -28,7 +28,7 @@ class PLTestCase(unittest.TestCase):
     ipynb_key = "#grade"
 
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         """
         On start, run the user code and generate answer tuples.
         """
@@ -59,7 +59,7 @@ class PLTestCase(unittest.TestCase):
             cls.display_plot()
 
     @classmethod
-    def tearDownClass(cls):
+    def tearDownClass(cls) -> None:
         """
         Close all plots and increment the iteration number on test finish
         """
@@ -69,13 +69,13 @@ class PLTestCase(unittest.TestCase):
         cls.iter_num += 1
 
     @classmethod
-    def display_plot(cls):
+    def display_plot(cls) -> None:
         axes = cls.plt.gca()
         if axes.get_lines() or axes.collections or axes.patches or axes.images:
             save_plot(cls.plt, cls.iter_num)
 
     @classmethod
-    def get_total_points(cls):
+    def get_total_points(cls) -> float:
         """
         Get the total number of points awarded by this test suite, including
         cases where the test suite is run multiple times.
@@ -109,7 +109,7 @@ class PLTestCase(unittest.TestCase):
             total = cls.total_iters * several + once
         return total
 
-    def setUp(self):
+    def setUp(self) -> None:
         """
         On test start, initialise the points and set up the code feedback library
         to provide feedback for this test.
@@ -117,7 +117,7 @@ class PLTestCase(unittest.TestCase):
         self.points = 0
         Feedback.set_test(self)
 
-    def run(self, result):
+    def run(self, result) -> None:
         """
         Run the actual test suite, saving the results in 'result'.
         """
@@ -139,7 +139,7 @@ class PLTestCaseWithPlot(PLTestCase):
     include_plt = True
 
     @name("Check plot labels")
-    def optional_test_plot_labels(self):
+    def optional_test_plot_labels(self) -> None:
         axes = self.plt.gca()
         title = axes.get_title()
         xlabel = axes.get_xlabel()
