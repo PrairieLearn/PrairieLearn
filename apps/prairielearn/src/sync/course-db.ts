@@ -19,10 +19,10 @@ import {
   type QuestionPoints,
   type Assessment,
   type AssessmentSet,
-  type Color,
   type Course,
   type CourseInstance,
   type Question,
+  type Tag,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
@@ -83,11 +83,7 @@ const DEFAULT_ASSESSMENT_SETS: AssessmentSet[] = [
   { abbreviation: 'U', name: 'Unknown', heading: 'Unknown', color: 'red3' },
 ];
 
-const DEFAULT_TAGS: {
-  name: string;
-  color: Color;
-  description?: string;
-}[] = [
+const DEFAULT_TAGS: Tag[] = [
   {
     name: 'numeric',
     color: 'brown1',

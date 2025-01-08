@@ -49,6 +49,19 @@ export const TopicSchema = z
   .describe('A single assessment set description.');
 
 export type Topic = z.infer<typeof TopicSchema>;
+
+export const TagSchema = z
+  .object({
+    comment: CommentSchema.optional(),
+    shortName: z.string().describe('Short name (preferably 2 to 7 characters).').optional(),
+    name: z.string().describe('Long descriptive name (preferably less than 10 words).'),
+    color: ColorSchema,
+    description: z.string().describe('Description of the tag.').optional(),
+  })
+  .describe('A single tag description.');
+
+export type Tag = z.infer<typeof TagSchema>;
+
 export const AssessmentSetSchema = z
   .object({
     comment: CommentSchema.optional(),
@@ -127,20 +140,7 @@ export const CourseSchema = z
       .describe('Course modules.')
       .optional(),
     topics: z.array(TopicSchema).describe('Question topics (visible to students).'),
-    tags: z
-      .array(
-        z
-          .object({
-            comment: CommentSchema.optional(),
-            shortName: z.string().describe('Short name (preferably 2 to 7 characters).').optional(),
-            name: z.string().describe('Long descriptive name (preferably less than 10 words).'),
-            color: ColorSchema,
-            description: z.string().describe('Description of the tag.').optional(),
-          })
-          .describe('A single tag description.'),
-      )
-      .describe('Question tags (not visible to students).')
-      .optional(),
+    tags: z.array(TagSchema).describe('Question tags (not visible to students).').optional(),
     sharingSets: z
       .array(
         z
