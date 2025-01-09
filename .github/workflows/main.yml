@@ -59,7 +59,7 @@ jobs:
       - run: docker version
       - run: docker info
       - run: docker info -f '{{ .DriverStatus }}'
-      - run: curl http://localhost:5000
+      - run: curl http://127.0.0.1:5000
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
