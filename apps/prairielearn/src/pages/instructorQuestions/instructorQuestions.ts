@@ -25,6 +25,7 @@ const router = Router();
  */
 async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title: string }[]> {
   if (!config.devMode) {
+    // Check if the template questions are cached
     const cachedTemplateQuestions = await cache.get('templateCourseQuestionOptions');
     if (cachedTemplateQuestions) {
       return cachedTemplateQuestions;
@@ -47,6 +48,7 @@ async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title:
   );
 
   if (!config.devMode) {
+    // Cache the template questions
     cache.set(
       'templateCourseQuestionOptions',
       sortedTemplateQuestionOptions,
