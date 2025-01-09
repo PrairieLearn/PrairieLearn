@@ -29,7 +29,7 @@ class PLTestCase(unittest.TestCase):
     iter_num = 0
     total_iters = 1
     ipynb_key = "#grade"
-    plt: ModuleType
+    plt: ModuleType | None
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -73,12 +73,14 @@ class PLTestCase(unittest.TestCase):
         Close all plots and increment the iteration number on test finish
         """
 
-        if cls.include_plt:
+        if cls.include_plt and cls.plt:
             cls.plt.close("all")
         cls.iter_num += 1
 
     @classmethod
     def display_plot(cls) -> None:
+        if not cls.plt:
+            raise ValueError("No plot to display")
         axes = cls.plt.gca()
         if axes.get_lines() or axes.collections or axes.patches or axes.images:
             save_plot(cls.plt, cls.iter_num)
@@ -141,7 +143,7 @@ class PLTestCase(unittest.TestCase):
         elif result.skip_grading:
             result.startTest(self)
             self.setUp()
-            result.addError(self, (None, GradingSkipped()))
+            result.addError(self, (None, GradingSkipped()))  # type: ignore
 
 
 class PLTestCaseWithPlot(PLTestCase):
@@ -154,6 +156,10 @@ class PLTestCaseWithPlot(PLTestCase):
 
     @name("Check plot labels")
     def optional_test_plot_labels(self) -> None:
+        if not self.plt:
+            Feedback.add_feedback("No plot to check")
+            Feedback.set_score(0)
+            return
         axes = self.plt.gca()
         title = axes.get_title()
         xlabel = axes.get_xlabel()

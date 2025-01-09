@@ -11,8 +11,8 @@ import matplotlib
 import matplotlib.pyplot
 import pygments
 from code_feedback import Feedback
-from IPython.core.interactiveshell import InteractiveShell
-from nbformat import read
+from IPython.core.interactiveshell import InteractiveShell  # type: ignore
+from nbformat import read  # type: ignore
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer
 
@@ -49,6 +49,8 @@ def save_plot(plt: Any, iternum=0):
     Save plot(s) to files as png images.
     """
     base_dir = os.environ.get("MERGE_DIR")
+    if base_dir is None:
+        raise ValueError("MERGE_DIR not set in environment variables")
 
     for i in plt.get_fignums():
         plt.figure(i)
@@ -56,7 +58,7 @@ def save_plot(plt: Any, iternum=0):
         imgdata = io.BytesIO()
         fig.savefig(imgdata, format="png")
         imgdata.seek(0)
-        imgsrc = "data:image/png;base64," + urllib.parse.quote(
+        imgsrc = "data:image/png;base64," + urllib.parse.quote(  # type: ignore
             base64.b64encode(imgdata.read())
         )
         with open(join(base_dir, f"image_{iternum}_{i - 1}.png"), "w") as f:
@@ -106,10 +108,10 @@ def not_repeated(f: Callable):
         if test_instance.iter_num > 0:
             raise DoNotRunError
         Feedback.clear_iteration_prefix()
-        test_instance.print_iteration_prefix = False
+        test_instance.print_iteration_prefix = False  # type: ignore
         f(test_instance)
 
-    wrapped.__repeated__ = False
+    wrapped.__repeated__ = False  # type: ignore
     return wrapped
 
 

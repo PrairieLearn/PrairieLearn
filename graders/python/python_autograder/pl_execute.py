@@ -60,6 +60,8 @@ def execute_code(
     """
 
     filenames_dir = os.environ.get("FILENAMES_DIR")
+    if filenames_dir is None:
+        raise ValueError("FILENAMES_DIR not set in environment variables")
 
     with open(path.join(filenames_dir, "data.json"), encoding="utf-8") as f:
         data = json.load(f)

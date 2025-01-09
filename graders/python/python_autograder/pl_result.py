@@ -98,7 +98,7 @@ class PLTestResult(unittest.TestResult):
         else:
             tr_message = "".join(traceback.format_exception(*err))
 
-            if isinstance(test, unittest.suite._ErrorHolder):
+            if isinstance(test, unittest.suite._ErrorHolder):  # type: ignore
                 # Error occurred outside of a test case, like in setup code for example
                 # We can't really recover from this
 

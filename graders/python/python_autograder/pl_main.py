@@ -56,7 +56,7 @@ if __name__ == "__main__":
             output_fname = output_f.read()
         os.remove(join(filenames_dir, OUTPUT_FILE))
 
-        from filenames.test import Test as TestCase
+        from filenames.test import Test as TestCase  # type: ignore
 
         # Update the working directory so tests may access local files
         prev_wd = os.getcwd()

@@ -570,7 +570,7 @@ class Feedback:
             for j, ref in ref_datas.items():
                 if data.shape == ref.shape and np.allclose(data, ref):
                     num_correct += 1
-                    del [ref_datas[j]]
+                    del ref_datas[j]
                     break
 
         if num_correct == len(ref_lines):
