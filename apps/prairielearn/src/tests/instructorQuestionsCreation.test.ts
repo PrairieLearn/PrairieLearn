@@ -267,6 +267,35 @@ describe('Creating a question', () => {
   });
 
   step(
+    'should not be able to create a question with qid not contained in the root directory',
+    async () => {
+      // Fetch the questions page for the course instance
+      const questionsResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
+      );
+      assert.equal(questionsResponse.status, 200);
+
+      // Create a new empty question with a qid not contained in the root directory
+      const createQuestionResponse = await fetchCheerio(
+        `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
+        {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'add_question',
+            __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
+            orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
+            title: 'New Test Question',
+            qid: '../new-test-question',
+            start_from: 'Empty question',
+          }),
+        },
+      );
+
+      assert.equal(createQuestionResponse.status, 400);
+    },
+  );
+
+  step(
     'should not be able to create a question from a non-existent template question',
     async () => {
       // Fetch the questions page for the course instance
@@ -301,7 +330,7 @@ describe('Creating a question', () => {
   );
 
   step(
-    'should not be able to create a question with qid not contained in the root directory',
+    'should not be able to create a question with template_qid not contained in the root directory',
     async () => {
       // Fetch the questions page for the course instance
       const questionsResponse = await fetchCheerio(
@@ -309,7 +338,7 @@ describe('Creating a question', () => {
       );
       assert.equal(questionsResponse.status, 200);
 
-      // Create a new empty question with a qid not contained in the root directory
+      // Create a new question from a template with a template_qid not contained in the correct root directory
       const createQuestionResponse = await fetchCheerio(
         `${siteUrl}/pl/course_instance/1/instructor/course_admin/questions`,
         {
@@ -319,13 +348,18 @@ describe('Creating a question', () => {
             __csrf_token: questionsResponse.$('input[name=__csrf_token]').val() as string,
             orig_hash: questionsResponse.$('input[name=orig_hash]').val() as string,
             title: 'New Test Question',
-            qid: '../new-test-question',
-            start_from: 'Empty question',
+            qid: 'new-test-question',
+            start_from: 'Template',
+            template_qid: '../template/matrix-component-input/random-graph',
           }),
         },
       );
 
-      assert.equal(createQuestionResponse.status, 400);
+      assert.equal(createQuestionResponse.status, 200);
+      assert.match(
+        createQuestionResponse.url,
+        /\/pl\/course_instance\/1\/instructor\/edit_error\/\d+$/,
+      );
     },
   );
 });

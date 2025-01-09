@@ -1,20 +1,20 @@
-import path from 'path';
-
-import * as async from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 
+import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectQuestionsForCourse } from '../../models/questions.js';
+import { loadQuestions } from '../../sync/course-db.js';
 
 import { QuestionsPage } from './instructorQuestions.html.js';
 
@@ -24,48 +24,37 @@ const router = Router();
  * Get a list of template question qids and titles that can be used as starting points for new questions.
  */
 async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title: string }[]> {
+  if (!config.devMode) {
+    const cachedTemplateQuestions = await cache.get('templateCourseQuestionOptions');
+    if (cachedTemplateQuestions) {
+      return cachedTemplateQuestions;
+    }
+  }
+
+  const questions = await loadQuestions(EXAMPLE_COURSE_PATH);
+
   const templateQuestions: { qid: string; title: string }[] = [];
-  const templateQuestionsPath = path.join(EXAMPLE_COURSE_PATH, 'questions');
 
-  const walk = async (relativeDir: string) => {
-    const directories = await fs
-      .readdir(path.join(templateQuestionsPath, relativeDir))
-      .catch((err) => {
-        // If the directory doesn't exist, then we have nothing to load
-        if (err.code === 'ENOENT' || err.code === 'ENOTDIR') {
-          return [] as string[];
-        }
-        throw err;
-      });
+  for (const qid of Object.keys(questions)) {
+    const question = questions[qid];
+    if (question.data?.topic === 'Template') {
+      templateQuestions.push({ qid, title: question.data.title });
+    }
+  }
 
-    // For each subdirectory, try to find an Info file
-    await async.each(directories, async (dir) => {
-      // Relative path to the current folder
-      const subdirPath = path.join(relativeDir, dir);
+  const sortedTemplateQuestionOptions = templateQuestions.sort((a, b) =>
+    a.title.localeCompare(b.title),
+  );
 
-      // Absolute path to the info file
-      const infoPath = path.join(templateQuestionsPath, subdirPath, 'info.json');
+  if (!config.devMode) {
+    cache.set(
+      'templateCourseQuestionOptions',
+      sortedTemplateQuestionOptions,
+      1000 * 60 * 60 * 12, // Cache for 12 hours
+    );
+  }
 
-      // Check if the info file exists
-      const hasInfoFile = await fs.pathExists(infoPath);
-      if (hasInfoFile) {
-        // Info file exists, we can use this directory
-        const infoJson = await fs.readJson(infoPath);
-
-        // Only use add the question if it has a title and topic equal to Template
-        if (infoJson.title && infoJson.topic === 'Template') {
-          templateQuestions.push({ qid: subdirPath, title: infoJson.title });
-        }
-      } else {
-        // Info file doesn't exist, let's try recursing
-        await walk(subdirPath);
-      }
-    });
-  };
-
-  await walk('template');
-
-  return templateQuestions.sort((a, b) => a.title.localeCompare(b.title));
+  return sortedTemplateQuestionOptions;
 }
 
 router.get(
@@ -134,14 +123,14 @@ router.post(
       if (!req.body.start_from) {
         throw new error.HttpStatusError(400, 'start_from is required');
       }
-      if (req.body.start_from === 'Template' && !req.body.template_qid) {
-        throw new error.HttpStatusError(400, 'template_qid is required');
-      }
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.qid)) {
         throw new error.HttpStatusError(
           400,
           `Invalid qid (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.qid}`,
         );
+      }
+      if (req.body.start_from === 'Template' && !req.body.template_qid) {
+        throw new error.HttpStatusError(400, 'template_qid is required');
       }
 
       const api = getCourseFilesClient();
@@ -168,7 +157,7 @@ router.post(
       } else {
         res.redirect(
           `${res.locals.urlPrefix}/question/${result.question_id}/file_view/questions/${result.question_qid}/question.html`,
-        ); 
+        );
       }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

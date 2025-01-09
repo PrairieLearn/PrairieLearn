@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { IdSchema } from '../../../../lib/db-types.js';
-import { QuestionAddEditor, QuestionAddFromTemplateEditor } from '../../../../lib/editors.js';
+import { QuestionAddEditor } from '../../../../lib/editors.js';
 import { selectCourseById } from '../../../../models/course.js';
 import { selectQuestionByUuid } from '../../../../models/question.js';
 import { privateProcedure, selectUsers } from '../../trpc.js';
@@ -46,37 +46,21 @@ export const createQuestion = privateProcedure
       authn_user_id: opts.input.authn_user_id,
     });
 
-    let editor: QuestionAddFromTemplateEditor | QuestionAddEditor;
-    if (opts.input.template_qid && opts.input.qid && opts.input.title) {
-      editor = new QuestionAddFromTemplateEditor({
-        locals: {
-          authz_data: {
-            has_course_permission_edit: opts.input.has_course_permission_edit,
-            authn_user,
-          },
-          course,
-          user,
+    const editor = new QuestionAddEditor({
+      locals: {
+        authz_data: {
+          has_course_permission_edit: opts.input.has_course_permission_edit,
+          authn_user,
         },
-        qid: opts.input.qid,
-        title: opts.input.title,
-        template_qid: opts.input.template_qid,
-      });
-    } else {
-      editor = new QuestionAddEditor({
-        locals: {
-          authz_data: {
-            has_course_permission_edit: opts.input.has_course_permission_edit,
-            authn_user,
-          },
-          course,
-          user,
-        },
-        files: opts.input.files,
-        qid: opts.input.qid,
-        title: opts.input.title,
-        isDraft: opts.input.is_draft,
-      });
-    }
+        course,
+        user,
+      },
+      files: opts.input.files,
+      qid: opts.input.qid,
+      title: opts.input.title,
+      template_qid: opts.input.template_qid,
+      isDraft: opts.input.is_draft,
+    });
 
     const serverJob = await editor.prepareServerJob();
 
