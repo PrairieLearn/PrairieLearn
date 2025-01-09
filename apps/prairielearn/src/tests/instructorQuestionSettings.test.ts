@@ -235,14 +235,14 @@ describe('Editing question settings', () => {
     );
     assert.equal(settingsPageResponse.status, 200);
 
-    // Change the question id to a new, valid id
+    // Change the question id to a new, valid id. Leave the title, qid, and topic unchanged.
     const response = await fetch(`${siteUrl}/pl/course_instance/1/instructor/question/1/settings`, {
       method: 'POST',
       body: new URLSearchParams({
         __action: 'update_question',
         __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
         orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
-        title: 'Test title',
+        title: 'Test title - changed',
         qid: 'question2',
         topic: 'Test',
       }),
@@ -271,7 +271,7 @@ describe('Editing question settings', () => {
       );
       assert.equal(settingsPageResponse.status, 200);
 
-      // Change the question id to one that is not contained within the root directory
+      // Change the question id to one that is not contained within the root directory. Leave the title, qid, and topic unchanged.
       const response = await fetch(
         `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
         {
@@ -280,7 +280,7 @@ describe('Editing question settings', () => {
             __action: 'update_question',
             __csrf_token: settingsPageResponse.$('input[name=__csrf_token]').val() as string,
             orig_hash: settingsPageResponse.$('input[name=orig_hash]').val() as string,
-            title: 'Test title',
+            title: 'Test title - changed',
             qid: '../question3',
             topic: 'Test',
           }),

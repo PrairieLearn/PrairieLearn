@@ -54,7 +54,7 @@ describe('Updating a course instance ID', () => {
   after(helperServer.after);
 
   step(
-    'should not be able to change course instance id to short name that falls outside correct root directory',
+    'should not be able to change course instance id to one that falls outside the correct root directory',
     async () => {
       const courseInstancePageResponse = await fetchCheerio(
         `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
@@ -62,7 +62,7 @@ describe('Updating a course instance ID', () => {
 
       assert.equal(courseInstancePageResponse.status, 200);
 
-      // Attempt to update the course instance to have a short_name that falls outside the correct root directory
+      // Attempt to update the course instance id to one that falls outside the correct root directory
       // It should fail
       const courseInstanceCreationResponse = await fetchCheerio(
         `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
