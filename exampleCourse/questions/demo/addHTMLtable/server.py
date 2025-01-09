@@ -28,7 +28,7 @@ def generate(data):
     # Generate table from console output
     output = io.StringIO()
     for name, age in zip(name_list, age_list, strict=True):
-        print("%12s%12s" % (name, age), file=output)
+        print(f"{name:>12}{age:>12}", file=output)
     mytable3 = output.getvalue()
     output.close()
     data["params"]["mytable3"] = mytable3
