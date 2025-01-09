@@ -71,6 +71,7 @@ describe('Updating a course instance ID', () => {
           body: new URLSearchParams({
             __action: 'change_id',
             __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
+            id: '../Fa25',
           }),
         },
       );
