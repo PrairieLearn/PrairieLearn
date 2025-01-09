@@ -120,7 +120,7 @@ describe('Editing question settings', () => {
 
   step('verify changing qid did not leave any empty directories', async () => {
     const questionDir = path.join(courseLiveDir, 'question');
-    assert.equal(await fs.pathExists(questionDir), false);
+    assert.notOk(await fs.pathExists(questionDir));
   });
 
   step('pull and verify changes', async () => {
@@ -260,7 +260,7 @@ describe('Editing question settings', () => {
     );
 
     // If the file at path questionLiveInfoPath exists, then the question id was successfully changed
-    assert.equal(await fs.pathExists(questionLiveInfoPath), true);
+    assert.ok(await fs.pathExists(questionLiveInfoPath));
   });
 
   step(

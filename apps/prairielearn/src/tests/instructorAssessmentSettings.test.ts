@@ -132,7 +132,7 @@ describe('Editing assessment settings', () => {
 
   step('verify changing aid did not leave empty directories', async () => {
     const assessmentDir = path.join(assessmentLiveDir, 'HW2');
-    assert.equal(await fs.pathExists(assessmentDir), false);
+    assert.notOk(await fs.pathExists(assessmentDir));
   });
 
   step('verify reverting a nested assessment id works correctly', async () => {
@@ -349,7 +349,7 @@ describe('Editing assessment settings', () => {
 
   step('verify change assessment id', async () => {
     const assessmentDir = path.join(assessmentLiveDir, 'A1');
-    assert.equal(await fs.pathExists(assessmentDir), true);
+    assert.ok(await fs.pathExists(assessmentDir));
   });
 
   step(

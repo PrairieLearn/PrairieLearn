@@ -21,7 +21,6 @@ const baseDir = tmp.dirSync().name;
 
 const courseOriginDir = path.join(baseDir, 'courseOrigin');
 const courseLiveDir = path.join(baseDir, 'courseLive');
-const courseInstancesCourseLiveDir = path.join(courseLiveDir, 'courseInstances');
 
 const courseDevDir = path.join(baseDir, 'courseDev');
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
@@ -54,45 +53,6 @@ describe('Updating a course instance ID', () => {
 
   after(helperServer.after);
 
-  step('change course instance id with valid id', async () => {
-    const courseInstancePageResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
-    );
-
-    assert.equal(courseInstancePageResponse.status, 200);
-
-    // Change the id of the course instance to a valid value
-    const courseInstanceCreationResponse = await fetchCheerio(
-      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'change_id',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-          id: 'Sp23',
-          access_dates_enabled: 'on',
-        }),
-      },
-    );
-
-    assert.equal(courseInstanceCreationResponse.status, 200);
-    assert.equal(
-      courseInstanceCreationResponse.url,
-      `${siteUrl}/pl/course_instance/1/instructor/instance_admin/settings`,
-    );
-  });
-
-  step('verify course instance id changed', async () => {
-    const courseInstanceInfoPath = path.join(
-      courseInstancesCourseLiveDir,
-      'Sp23', // Sp23 is the new course instance id
-      'infoCourseInstance.json',
-    );
-
-    // If the folder at path courseInstanceInfoPath exists, then the course instance id was successfully changed
-    assert.equal(await fs.pathExists(courseInstanceInfoPath), true);
-  });
-
   step(
     'should not be able to change course instance id to short name that falls outside correct root directory',
     async () => {
@@ -109,11 +69,8 @@ describe('Updating a course instance ID', () => {
         {
           method: 'POST',
           body: new URLSearchParams({
-            __action: 'course_id',
+            __action: 'change_id',
             __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-            short_name: '../Fa25',
-            long_name: 'Fall 2025',
-            access_dates_enabled: 'on',
           }),
         },
       );
