@@ -239,9 +239,8 @@ export function QuestionsTable({
                   >question documentation</a
                 >.
               </p>
-              <form class="ml-1 btn-group" name="add-question-form" method="POST">
-                <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                <button name="__action" value="add_question" class="btn btn-sm btn-primary">
+              <form class="ml-1 btn-group" method="POST">
+                <button class="btn btn-sm btn-primary">
                   <i class="fa fa-plus" aria-hidden="true"></i>
                   <span>Add question</span>
                 </button>
