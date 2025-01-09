@@ -33,6 +33,7 @@ jobs:
       # the secret here and use this value in conditionals below.
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
+    # TODO: remove?
     services:
       registry:
         image: registry:2
@@ -65,6 +66,12 @@ jobs:
       - run: docker info
       - run: docker info -f '{{ .DriverStatus }}'
       - run: docker container ls
+      # Because we switch to use the containerd snapshotter, we can't use Action's support
+      # for service containers: https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
+      # Instead, we need to manually run the registry container ourselves.
+      - run: |
+          docker pull registry:2
+          docker run -d -p 5000:5000 --name registry --restart always registry:2
       # Print logs for all running containers using `docker logs`
       - run: docker ps -q | xargs -n 1 docker logs
       - run: dig localhost
