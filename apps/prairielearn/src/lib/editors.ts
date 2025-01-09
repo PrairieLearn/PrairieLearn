@@ -1178,6 +1178,7 @@ export class QuestionAddEditor extends Editor {
     debug('Write info.json with new title and uuid');
     infoJson.title = title;
     infoJson.uuid = this.uuid;
+    infoJson.topic = 'Demo';
     // The template question contains tags that shouldn't be copied to the new question.
     delete infoJson.tags;
 
