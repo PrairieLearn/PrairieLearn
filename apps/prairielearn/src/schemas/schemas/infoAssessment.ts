@@ -136,11 +136,11 @@ const QuestionAlternativeSchema = QuestionPointsSchema.extend({
       'Minimum amount of time (in minutes) between graded submissions to the same question.',
     )
     .optional(),
-  canView: uniqueArray(z.string())
-    .describe('The names of roles that can view this question.')
-    .optional(),
   canSubmit: uniqueArray(z.string())
     .describe('The names of roles that can submit this question.')
+    .optional(),
+  canView: uniqueArray(z.string())
+    .describe('The names of roles that can view this question.')
     .optional(),
 });
 
@@ -187,9 +187,11 @@ export const ZoneQuestionSchema = QuestionPointsSchema.extend({
       'A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.',
     )
     .optional(),
-  canView: uniqueArray(z.string()).describe(
-    'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
-  ),
+  canView: uniqueArray(z.string())
+    .describe(
+      'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
+    )
+    .optional(),
 });
 
 const ZoneSchema = z.object({
@@ -234,9 +236,11 @@ const ZoneSchema = z.object({
       'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
     )
     .optional(),
-  canView: uniqueArray(z.string()).describe(
-    'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
-  ),
+  canView: uniqueArray(z.string())
+    .describe(
+      'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
+    )
+    .optional(),
 });
 
 export const AssessmentSchema = z
@@ -329,9 +333,11 @@ export const AssessmentSchema = z
         'A list of group role names that can submit questions in this assessment. Only applicable for group assessments.',
       )
       .optional(),
-    canView: uniqueArray(z.string()).describe(
-      'A list of group role names that can view questions in this assessment. Only applicable for group assessments.',
-    ),
+    canView: uniqueArray(z.string())
+      .describe(
+        'A list of group role names that can view questions in this assessment. Only applicable for group assessments.',
+      )
+      .optional(),
     studentGroupCreate: z.boolean().describe('Whether students can create groups.').optional(),
     studentGroupJoin: z.boolean().describe('Whether students can join groups.').optional(),
     studentGroupLeave: z.boolean().describe('Whether students can leave groups.').optional(),
