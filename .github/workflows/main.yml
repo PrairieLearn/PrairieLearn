@@ -46,6 +46,10 @@ jobs:
           # what images need to be built.
           fetch-depth: 0
 
+      - run: docker container ls
+      # Print logs for all running containers using `docker logs`
+      - run: docker ps -q | xargs -n 1 docker logs
+
       # Print docker config.json for debugging
       - run: cat /etc/docker/daemon.json
       - shell: bash
