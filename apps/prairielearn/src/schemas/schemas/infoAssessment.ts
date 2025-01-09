@@ -28,7 +28,7 @@ const GroupRoleSchema = z
     'A custom role for use in group assessments that allows control over certain permissions.',
   );
 
-export const AsssessmentAccessRuleSchema = z
+export const AssessmentAccessRuleSchema = z
   .object({
     comment: CommentSchema.optional(),
     mode: z.enum(['Public', 'Exam']).describe('The server mode required for access.').optional(),
@@ -85,7 +85,7 @@ export const AsssessmentAccessRuleSchema = z
     'An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.',
   );
 
-export type AsssessmentAccessRule = z.infer<typeof AsssessmentAccessRuleSchema>;
+export type AssessmentAccessRule = z.infer<typeof AssessmentAccessRuleSchema>;
 
 export const PointsSingleSchema = z.number().gte(0).describe('A single point value.');
 
@@ -271,7 +271,7 @@ export const AssessmentSchema = z
       .describe('Whether the questions will be shuffled in the student view of an assessment')
       .optional(),
     allowAccess: z
-      .array(AsssessmentAccessRuleSchema)
+      .array(AssessmentAccessRuleSchema)
       .describe(
         'List of access rules for the assessment. Access is permitted if any access rule is satisfied.',
       )
