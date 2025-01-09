@@ -155,9 +155,7 @@ jobs:
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/vscode-base
-          # TODO: restore; temporarily removing ARM build for iteration speed
-          # platforms: linux/amd64,linux/arm64
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           load: true
@@ -181,9 +179,7 @@ jobs:
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/vscode-python
-          # TODO: restore; temporarily removing ARM build for iteration speed
-          # platforms: linux/amd64,linux/arm64
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           tags: prairielearn/workspace-vscode-python:${{ env.COMMIT_SHA }}
@@ -200,9 +196,7 @@ jobs:
         uses: docker/build-push-action@v6 # https://github.com/marketplace/actions/build-and-push-docker-images
         with:
           context: workspaces/vscode-cpp
-          # TODO: restore; temporarily removing ARM build for iteration speed
-          # platforms: linux/amd64,linux/arm64
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           tags: prairielearn/workspace-vscode-cpp:${{ env.COMMIT_SHA }}
