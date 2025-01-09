@@ -1298,7 +1298,8 @@ export class QuestionAddFromTemplateEditor extends Editor {
     delete infoJson.sharingSets;
     delete infoJson.sharePublicly;
 
-    await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeJson(path.join(questionPath, 'info.json'), formattedJson, { spaces: 4 });
 
     return {
       pathsToAdd: [questionPath],
