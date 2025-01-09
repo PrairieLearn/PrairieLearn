@@ -18,6 +18,8 @@ OUTPUT_FILE = "output-fname.txt"
 
 def add_files(results: list[dict[str, Any]]) -> None:
     base_dir = os.environ.get("MERGE_DIR")
+    if base_dir is None:
+        raise ValueError("MERGE_DIR not set in environment variables")
 
     for test in results:
         test["files"] = test.get("files", [])
@@ -38,9 +40,14 @@ def add_files(results: list[dict[str, Any]]) -> None:
 
 
 if __name__ == "__main__":
+    output_fname = None
     try:
         filenames_dir = os.environ.get("FILENAMES_DIR")
+        if filenames_dir is None:
+            raise ValueError("FILENAMES_DIR not set in environment variables")
         base_dir = os.environ.get("MERGE_DIR")
+        if base_dir is None:
+            raise ValueError("MERGE_DIR not set in environment variables")
 
         # Read the output filename from a file, and then delete it
         # We could do this via command-line arg but there's a chance of
@@ -149,6 +156,6 @@ if __name__ == "__main__":
         grading_result["score"] = 0.0
         grading_result["succeeded"] = False
         grading_result["output"] = traceback.format_exc()
-
-        with open(output_fname, mode="w") as out:
-            json.dump(grading_result, out)
+        if output_fname:
+            with open(output_fname, mode="w") as out:
+                json.dump(grading_result, out)

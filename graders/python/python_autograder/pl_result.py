@@ -6,6 +6,8 @@ from code_feedback import Feedback, GradingComplete
 from pl_execute import UserCodeFailedError
 from pl_helpers import DoNotRunError, GradingSkipped, print_student_code
 
+from graders.python.python_autograder.pl_unit_test import PLTestCase
+
 
 class PLTestResult(unittest.TestResult):
     """
@@ -50,6 +52,8 @@ class PLTestResult(unittest.TestResult):
         self.results.append({"name": name, "max_points": points, "filename": filename})
 
     def addSuccess(self, test) -> None:  # noqa: N802
+        if not isinstance(test, PLTestCase):
+            return
         unittest.TestResult.addSuccess(self, test)
         if test.points is None:
             self.results[-1]["points"] = self.results[-1]["max_points"]
@@ -118,6 +122,8 @@ class PLTestResult(unittest.TestResult):
 
     def addFailure(self, test, err) -> None:  # noqa: N802
         unittest.TestResult.addFailure(self, test, err)
+        if not isinstance(test, PLTestCase):
+            return
         if test.points is None:
             self.results[-1]["points"] = 0
         else:

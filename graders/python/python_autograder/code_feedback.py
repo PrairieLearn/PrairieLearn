@@ -87,6 +87,9 @@ class Feedback:
 
         Adds some text to the feedback output for the current test.
         """
+        if cls.feedback_file is None:
+            raise RuntimeError("Cannot add feedback without a feedback file set. ")
+
         with open(
             "/grade/run/" + cls.feedback_file + ".txt", "a+", encoding="utf-8"
         ) as f:

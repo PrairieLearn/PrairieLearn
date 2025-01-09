@@ -3,12 +3,15 @@ import os
 import unittest
 from collections import namedtuple
 from os.path import join
+from types import ModuleType
 
 # Needed to ensure matplotlib runs on Docker
 import matplotlib
 from code_feedback import Feedback
 from pl_execute import execute_code
 from pl_helpers import GradingSkipped, name, save_plot
+
+from graders.python.python_autograder.pl_result import PLTestResult
 
 matplotlib.use("Agg")
 
@@ -26,6 +29,7 @@ class PLTestCase(unittest.TestCase):
     iter_num = 0
     total_iters = 1
     ipynb_key = "#grade"
+    plt: ModuleType
 
     @classmethod
     def setUpClass(cls) -> None:
@@ -34,11 +38,16 @@ class PLTestCase(unittest.TestCase):
         """
         Feedback.set_test(cls)
         base_dir = os.environ.get("MERGE_DIR")
+        if base_dir is None:
+            raise ValueError("MERGE_DIR not set in environment variables")
+
         filenames_dir = os.environ.get("FILENAMES_DIR")
+        if filenames_dir is None:
+            raise ValueError("FILENAMES_DIR not set in environment variables")
+
         cls.student_code_abs_path = join(base_dir, cls.student_code_file)
 
         # Load data so that we can use it in the test cases
-        filenames_dir = os.environ.get("FILENAMES_DIR")
         with open(join(filenames_dir, "data.json"), encoding="utf-8") as f:
             cls.data = json.load(f)
 
@@ -117,12 +126,17 @@ class PLTestCase(unittest.TestCase):
         self.points = 0
         Feedback.set_test(self)
 
-    def run(self, result) -> None:
+    def run(self, result: unittest.TestResult | None = None) -> None:
         """
         Run the actual test suite, saving the results in 'result'.
         """
 
-        if not result.done_grading and not result.skip_grading:
+        if (
+            result is None
+            or not isinstance(result, PLTestResult)
+            or result.done_grading
+            and not result.skip_grading
+        ):
             super().run(result)
         elif result.skip_grading:
             result.startTest(self)
