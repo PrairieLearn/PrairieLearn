@@ -59,6 +59,9 @@ jobs:
       - run: docker version
       - run: docker info
       - run: docker info -f '{{ .DriverStatus }}'
+      - run: docker container ls
+      # Print logs for all running containers using `docker logs`
+      - run: docker ps -q | xargs -n 1 docker logs
       - run: dig localhost
       - run: curl http://127.0.0.1:5000
 
