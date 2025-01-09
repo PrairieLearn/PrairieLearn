@@ -698,18 +698,34 @@ export class AssessmentRenameEditor extends Editor {
     assert(this.assessment.tid, 'assessment.tid is required');
 
     debug('AssessmentRenameEditor: write()');
-    const basePath = path.join(
+    const assessmentsPath = path.join(
       this.course.path,
       'courseInstances',
       this.course_instance.short_name,
       'assessments',
     );
-    const oldPath = path.join(basePath, this.assessment.tid);
-    const newPath = path.join(basePath, this.tid_new);
+    const oldPath = path.join(assessmentsPath, this.assessment.tid);
+    const newPath = path.join(assessmentsPath, this.tid_new);
+
+    // Ensure that the assessment folder path is fully contained in the assessments directory
+    if (!contains(assessmentsPath, newPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The updated path of the assessments folder</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${assessmentsPath}</pre>
+          </div>
+        `,
+      });
+    }
 
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
-    await this.removeEmptyPrecedingSubfolders(basePath, this.assessment.tid);
+    await this.removeEmptyPrecedingSubfolders(assessmentsPath, this.assessment.tid);
 
     return {
       pathsToAdd: [oldPath, newPath],
@@ -931,8 +947,25 @@ export class CourseInstanceRenameEditor extends Editor {
     assert(this.course_instance.short_name, 'course_instance.short_name is required');
 
     debug('CourseInstanceRenameEditor: write()');
-    const oldPath = path.join(this.course.path, 'courseInstances', this.course_instance.short_name);
-    const newPath = path.join(this.course.path, 'courseInstances', this.ciid_new);
+    const courseInstancesPath = path.join(this.course.path, 'courseInstances');
+    const oldPath = path.join(courseInstancesPath, this.course_instance.short_name);
+    const newPath = path.join(courseInstancesPath, this.ciid_new);
+
+    // Ensure that the updated course instance folder path is fully contained in the course instances directory
+    if (!contains(courseInstancesPath, newPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The updated path of the course instance folder</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${courseInstancesPath}</pre>
+          </div>
+        `,
+      });
+    }
 
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
@@ -1007,6 +1040,24 @@ export class CourseInstanceAddEditor extends Editor {
       longName: this.long_name,
     });
 
+    const courseInstancePath = path.join(courseInstancesPath, shortName);
+
+    // Ensure that the new course instance folder path is fully contained in the course instances directory
+    if (!contains(courseInstancesPath, courseInstancePath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The path of the course instance folder to add</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${courseInstancePath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${courseInstancesPath}</pre>
+          </div>
+        `,
+      });
+    }
+
     debug('Write infoCourseInstance.json');
 
     let allowAccess: { startDate?: string; endDate?: string } | undefined = undefined;
@@ -1039,8 +1090,6 @@ export class CourseInstanceAddEditor extends Editor {
       longName,
       allowAccess: allowAccess !== undefined ? [allowAccess] : [],
     };
-
-    const courseInstancePath = path.join(courseInstancesPath, shortName);
 
     // We use outputJson to create the directory this.courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
@@ -1368,6 +1417,22 @@ export class QuestionRenameEditor extends Editor {
     const questionsPath = path.join(this.course.path, 'questions');
     const oldPath = path.join(questionsPath, this.question.qid);
     const newPath = path.join(questionsPath, this.qid_new);
+
+    // Ensure that the updated question folder path is fully contained in the questions directory
+    if (!contains(questionsPath, newPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The updated path of the question folder</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${newPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
+          </div>
+        `,
+      });
+    }
 
     debug(`Move files\n from ${oldPath}\n to ${newPath}`);
     await fs.move(oldPath, newPath, { overwrite: false });
