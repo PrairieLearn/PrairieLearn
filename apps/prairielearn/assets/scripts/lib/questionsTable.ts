@@ -256,16 +256,16 @@ onDocumentReady(() => {
 
   $('#questionsTable').bootstrapTable(tableSettings);
 
-  const startFromInput = document.querySelector<HTMLInputElement>('#start_from');
   // The startFromInput either has value 'Template' or 'Empty question'
+  const startFromInput = document.querySelector<HTMLInputElement>('#start_from');
 
-  const templateQuestionInput = document.querySelector<HTMLInputElement>('#template_qid');
   // The templateQuestionInput lets the user select the template question to start from, and is only
   // enabled when the startFromInput is set to 'Template'
+  const templateQuestionInput = document.querySelector<HTMLInputElement>('#template_qid');
 
-  const templateContainerDiv = document.querySelector<HTMLDivElement>('#templateContainer');
   // The templateContainerDiv is hidden when the startFromInput is set to 'Empty question',
   // otherwise it is shown.
+  const templateContainerDiv = document.querySelector<HTMLDivElement>('#templateContainer');
 
   if (!startFromInput || !templateQuestionInput || !templateContainerDiv) {
     return;
