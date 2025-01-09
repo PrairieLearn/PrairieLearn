@@ -1148,13 +1148,13 @@ export class QuestionAddEditor extends Editor {
 
     debug(`Create an empty question at ${questionPath}`);
 
-    const questionInfoPath = path.join(questionPath, 'info.json');
-    const questionHTMLPath = path.join(questionPath, 'question.html');
-    const questionScriptPath = path.join(questionPath, 'server.py');
+    const newQuestionInfoFilePath = path.join(questionPath, 'info.json');
+    const newQuestionHtmlFilePath = path.join(questionPath, 'question.html');
+    const newQuestionScriptFilePath = path.join(questionPath, 'server.py');
 
     await fs.ensureDir(questionPath);
     await fs.writeFile(
-      questionInfoPath,
+      newQuestionInfoFilePath,
       JSON.stringify(
         {
           uuid: this.uuid,
@@ -1166,8 +1166,8 @@ export class QuestionAddEditor extends Editor {
         2,
       ),
     );
-    await fs.ensureFile(questionHTMLPath);
-    await fs.ensureFile(questionScriptPath);
+    await fs.ensureFile(newQuestionHtmlFilePath);
+    await fs.ensureFile(newQuestionScriptFilePath);
 
     if (this.files != null) {
       debug('Remove template files when file texts provided');
