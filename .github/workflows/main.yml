@@ -163,8 +163,14 @@ jobs:
           load: true
           tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
 
-      - run: docker tag prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }} 127.0.0.1:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
-      - run: docker push 127.0.0.1:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
+      # The container builder doesn't have access to Docker's image store, so
+      # we need to push it to a local registry to make it available to other
+      # containers that need it.
+      # https://github.com/docker/build-push-action/issues/1116
+      - name: Tag prairielearn/workspace-vscode-base for local registry
+        run: docker tag prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }} localhost:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
+      - name: Push prairielearn/workspace-vscode-base to local registry
+        run: docker push localhost:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
 
       ######################################################################################################
       # prairielearn/workspace-vscode-python
@@ -182,7 +188,7 @@ jobs:
           no-cache: true
           tags: prairielearn/workspace-vscode-python:${{ env.COMMIT_SHA }}
           build-args: |
-            BASE_IMAGE=127.0.0.1:5000/prairielearn/workspace-vscode-base
+            BASE_IMAGE=localhost:5000/prairielearn/workspace-vscode-base
             BASE_IMAGE_TAG=${{ env.COMMIT_SHA }}
 
       ######################################################################################################
@@ -201,7 +207,7 @@ jobs:
           no-cache: true
           tags: prairielearn/workspace-vscode-cpp:${{ env.COMMIT_SHA }}
           build-args: |
-            BASE_IMAGE=127.0.0.1:5000/prairielearn/workspace-vscode-base
+            BASE_IMAGE=localhost:5000/prairielearn/workspace-vscode-base
             BASE_IMAGE_TAG=${{ env.COMMIT_SHA }}
 
   build-grader-images:
