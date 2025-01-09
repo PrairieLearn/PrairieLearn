@@ -71,8 +71,8 @@ RUN export arch=`uname -m` \
 
 # Also add mamba init to /etc/profile.d/ so that noninteractive login shells
 # can use "pip install" (e.g. during additional Docker RUN commands). This is
-# somewhat redundant in light of the "init bash" already performed above, but
-# the normal bash hook will only activate for interactive shells.
+# necessary because the bash hook installed with "init bash" above will only
+# activate for interactive shells.
 USER 0
 RUN /home/coder/conda/bin/mamba init --system
 
