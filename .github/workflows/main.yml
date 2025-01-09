@@ -33,14 +33,6 @@ jobs:
       # the secret here and use this value in conditionals below.
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
-    # TODO: remove?
-    services:
-      registry:
-        image: registry:2
-        options: --restart=always
-        ports:
-          - 5000:5000
-
     steps:
       - uses: actions/checkout@v4
         with:
@@ -48,34 +40,27 @@ jobs:
           # what images need to be built.
           fetch-depth: 0
 
-      - run: docker container ls
-      # Print logs for all running containers using `docker logs`
-      - run: docker ps -q | xargs -n 1 docker logs
-
-      # Print docker config.json for debugging
-      - run: cat /etc/docker/daemon.json
-      - shell: bash
+      # This is needed to support exporting (loading) multiplatform images to Docker.
+      - name: Use the containerd image store
+        shell: bash
         run: |
           [ -f /etc/docker/daemon.json ] || echo "{}" | sudo tee /etc/docker/daemon.json
           jq '. | .+{"features": {"containerd-snapshotter": true}}' /etc/docker/daemon.json > /tmp/docker-daemon-with-containerd.json
           sudo mv /tmp/docker-daemon-with-containerd.json /etc/docker/daemon.json
           cat /etc/docker/daemon.json
           sudo systemctl restart docker
-      - run: cat /etc/docker/daemon.json
-      - run: docker version
-      - run: docker info
-      - run: docker info -f '{{ .DriverStatus }}'
-      - run: docker container ls
-      # Because we switch to use the containerd snapshotter, we can't use Action's support
-      # for service containers: https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
+          docker info -f '{{ .DriverStatus }}'
+
+      # Because we switch to use the containerd image store, we can't use
+      # Action's support for service containers:
+      # https://docs.github.com/en/actions/use-cases-and-examples/using-containerized-services/about-service-containers
+      # After updating the configuration and restarting docker, the old
+      # image (and thus the container) is no longer available.
+      #
       # Instead, we need to manually run the registry container ourselves.
       - run: |
           docker pull registry:2
           docker run -d -p 5000:5000 --name registry --restart always registry:2
-      # Print logs for all running containers using `docker logs`
-      - run: docker ps -q | xargs -n 1 docker logs
-      - run: dig localhost
-      - run: curl http://127.0.0.1:5000
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
@@ -176,22 +161,10 @@ jobs:
           push: ${{ env.CAN_PUSH_IMAGE == 'true' }}
           no-cache: true
           load: true
-          # outputs: type=oci,tar=false,dest=/tmp/build-contexts/workspace-vscode-base
-          tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }},docker.io/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
-
-      # - run: ls -lah /tmp/build-contexts/workspace-vscode-base
-      # - run: ls -lah /tmp/build-contexts/workspace-vscode-base/blobs
-      # - run: ls -lah /tmp/build-contexts/workspace-vscode-base/ingest
-      # - run: cat /tmp/build-contexts/workspace-vscode-base/index.json
-      # - run: cat /tmp/build-contexts/workspace-vscode-base/oci-layout
-
+          tags: prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
 
       - run: docker tag prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }} 127.0.0.1:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
       - run: docker push 127.0.0.1:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
-
-      - run: docker image ls
-      - run: docker context ls
-      - run: docker context show
 
       ######################################################################################################
       # prairielearn/workspace-vscode-python
