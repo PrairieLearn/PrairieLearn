@@ -36,8 +36,7 @@ jobs:
     services:
       registry:
         image: registry:2
-        options:
-          restart=always
+        options: --restart=always
         ports:
           - 5000:5000
 
