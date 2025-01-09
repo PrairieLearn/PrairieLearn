@@ -9,14 +9,14 @@
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/bind-mount"
   },
+  "scripts": {
+    "build": "tsc && node-gyp rebuild",
+    "install": "node-gyp rebuild"
+  },
   "dependencies": {
     "bindings": "^1.5.0",
     "nan": "^2.22.0",
     "node-gyp": "^11.0.0"
-  },
-  "scripts": {
-    "build": "tsc && node-gyp rebuild",
-    "install": "node-gyp rebuild"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
