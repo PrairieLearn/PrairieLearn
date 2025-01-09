@@ -98,22 +98,41 @@ async function cleanAndResetRepository(
   });
 }
 
-export function getNamesForAdd(
-  shortNames: string[],
-  longNames: string[],
+export function getUniqueNames({
+  shortNames,
+  longNames,
   shortName = 'New',
   longName = 'New',
-): { shortName: string; longName: string } {
+}: {
+  shortNames: string[];
+  longNames: string[];
+  /**
+   * Defaults to 'New' because this function previously only handled the case where the shortName was 'New'
+   * Long name is matched case-sensitively
+   */
+  shortName?: string;
+  /**
+   * Defaults to 'New' because this function previously only handled the case where the longName was 'New'
+   * Short name is always matched case-insensitively, as it is generally used to construct file paths
+   */
+  longName?: string;
+}): { shortName: string; longName: string } {
   function getNumberShortName(oldShortNames: string[]): number {
     let numberOfMostRecentCopy = 1;
+
+    const shortNameCompare = shortName.toLowerCase();
+
     oldShortNames.forEach((oldShortName) => {
       // shortName is a copy of oldShortName if:
-      // it matches exactly, or
+      // it matches (case-sensitively), or
       // if oldShortName matches {shortName}_{number from 0-9}
+
+      const oldShortNameCompare = oldShortName.toLowerCase();
       const found =
-        shortName === oldShortName || oldShortName.match(new RegExp(`^${shortName}_([0-9]+)$`));
+        shortNameCompare === oldShortNameCompare ||
+        oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
       if (found) {
-        const foundNumber = shortName === oldShortName ? 1 : parseInt(found[1]);
+        const foundNumber = shortNameCompare === oldShortNameCompare ? 1 : parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
           numberOfMostRecentCopy = foundNumber + 1;
         }
@@ -127,6 +146,7 @@ export function getNamesForAdd(
     // longName is a copy of oldLongName if:
     // it matches exactly, or
     // if oldLongName matches {longName} ({number from 0-9})
+
     oldLongNames.forEach((oldLongName) => {
       if (!_.isString(oldLongName)) return;
       const found =
@@ -718,14 +738,34 @@ export class AssessmentAddEditor extends Editor {
   private course_instance: CourseInstance;
 
   public readonly uuid: string;
+  private aid: string;
+  private title: string;
+  private type: 'Homework' | 'Exam';
+  private set: string;
+  private module?: string;
 
-  constructor(params: BaseEditorOptions) {
+  constructor(
+    params: BaseEditorOptions & {
+      aid: string;
+      title: string;
+      type: 'Homework' | 'Exam';
+      set: string;
+      module?: string;
+    },
+  ) {
     super(params);
 
     this.course_instance = params.locals.course_instance;
+
     this.description = `${this.course_instance.short_name}: add assessment`;
 
     this.uuid = uuidv4();
+
+    this.aid = params.aid;
+    this.title = params.title;
+    this.type = params.type;
+    this.set = params.set;
+    this.module = params.module;
   }
 
   async write() {
@@ -749,18 +789,39 @@ export class AssessmentAddEditor extends Editor {
     const oldNamesShort = await this.getExistingShortNames(assessmentsPath, 'infoAssessment.json');
 
     debug('Generate TID and Title');
-    const names = getNamesForAdd(oldNamesShort, oldNamesLong);
-    const tid = names.shortName;
-    const assessmentTitle = names.longName;
+    const { shortName: tid, longName: assessmentTitle } = getUniqueNames({
+      shortNames: oldNamesShort,
+      longNames: oldNamesLong,
+      shortName: this.aid,
+      longName: this.title,
+    });
+
     const assessmentPath = path.join(assessmentsPath, tid);
+
+    // Ensure that the assessment folder path is fully contained in the assessments directory
+    if (!contains(assessmentsPath, assessmentPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The path of the assessments folder to add</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${assessmentPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${assessmentsPath}</pre>
+          </div>
+        `,
+      });
+    }
 
     debug('Write infoAssessment.json');
 
     const infoJson = {
       uuid: this.uuid,
-      type: 'Homework',
+      type: this.type,
       title: assessmentTitle,
-      set: 'Homework',
+      set: this.set,
+      module: this.module,
       number: '1',
       allowAccess: [],
       zones: [],
@@ -886,7 +947,6 @@ export class CourseInstanceRenameEditor extends Editor {
     assert(this.course_instance.short_name, 'course_instance.short_name is required');
 
     debug('CourseInstanceRenameEditor: write()');
-
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
     const oldPath = path.join(courseInstancesPath, this.course_instance.short_name);
     const newPath = path.join(courseInstancesPath, this.ciid_new);
@@ -973,10 +1033,12 @@ export class CourseInstanceAddEditor extends Editor {
     );
 
     debug('Generate short_name and long_name');
-    const names = getNamesForAdd(oldNamesShort, oldNamesLong, this.short_name, this.long_name);
-
-    const short_name = names.shortName;
-    const courseInstancePath = path.join(courseInstancesPath, short_name);
+    const { shortName, longName } = getUniqueNames({
+      shortNames: oldNamesShort,
+      longNames: oldNamesLong,
+      shortName: this.short_name,
+      longName: this.long_name,
+    });
 
     // Ensure that the new course instance folder path is fully contained in the course instances directory
     if (!contains(courseInstancesPath, courseInstancePath)) {
@@ -1023,9 +1085,11 @@ export class CourseInstanceAddEditor extends Editor {
 
     const infoJson = {
       uuid: this.uuid,
-      longName: names.longName,
+      longName,
       allowAccess: allowAccess !== undefined ? [allowAccess] : [],
     };
+
+    const courseInstancePath = path.join(courseInstancesPath, shortName);
 
     // We use outputJson to create the directory this.courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
@@ -1037,7 +1101,7 @@ export class CourseInstanceAddEditor extends Editor {
 
     return {
       pathsToAdd: [courseInstancePath],
-      commitMessage: `add course instance ${short_name}`,
+      commitMessage: `add course instance ${shortName}`,
     };
   }
 }
@@ -1105,9 +1169,12 @@ export class QuestionAddEditor extends Editor {
       const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
       debug('Generate qid and title');
-      const names = getNamesForAdd(oldNamesShort, oldNamesLong);
+      const { shortName, longName } = getUniqueNames({
+        shortNames: oldNamesShort,
+        longNames: oldNamesLong,
+      });
 
-      return { qid: names.shortName, title: names.longName };
+      return { qid: shortName, title: longName };
     });
 
     const questionPath = path.join(questionsPath, qid);
