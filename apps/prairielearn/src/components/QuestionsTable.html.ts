@@ -311,7 +311,7 @@ function CreateQuestionModal({
       </div>
 
       <div id="templateContainer" class="form-group" hidden>
-        <label for="start_from">Template</label>
+        <label for="template_qid">Template</label>
         <select
           class="form-select"
           id="template_qid"
