@@ -59,6 +59,7 @@ jobs:
       - run: docker version
       - run: docker info
       - run: docker info -f '{{ .DriverStatus }}'
+      - run: curl http://localhost:5000
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v3 # https://github.com/marketplace/actions/docker-setup-qemu
@@ -168,8 +169,9 @@ jobs:
       # - run: cat /tmp/build-contexts/workspace-vscode-base/index.json
       # - run: cat /tmp/build-contexts/workspace-vscode-base/oci-layout
 
-      - run: docker tag prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }} registry:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
-      - run: docker push registry:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
+
+      - run: docker tag prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }} 127.0.0.1:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
+      - run: docker push 127.0.0.1:5000/prairielearn/workspace-vscode-base:${{ env.COMMIT_SHA }}
 
       - run: docker image ls
       - run: docker context ls
@@ -191,7 +193,7 @@ jobs:
           no-cache: true
           tags: prairielearn/workspace-vscode-python:${{ env.COMMIT_SHA }}
           build-args: |
-            BASE_IMAGE=registry:5000/prairielearn/workspace-vscode-base
+            BASE_IMAGE=127.0.0.1:5000/prairielearn/workspace-vscode-base
             BASE_IMAGE_TAG=${{ env.COMMIT_SHA }}
 
       ######################################################################################################
@@ -210,7 +212,7 @@ jobs:
           no-cache: true
           tags: prairielearn/workspace-vscode-cpp:${{ env.COMMIT_SHA }}
           build-args: |
-            BASE_IMAGE=registry:5000/prairielearn/workspace-vscode-base
+            BASE_IMAGE=127.0.0.1:5000/prairielearn/workspace-vscode-base
             BASE_IMAGE_TAG=${{ env.COMMIT_SHA }}
 
   build-grader-images:
