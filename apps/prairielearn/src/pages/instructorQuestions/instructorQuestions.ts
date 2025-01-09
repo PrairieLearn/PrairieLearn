@@ -24,7 +24,7 @@ const router = Router();
  * Get a list of template question qids and titles that can be used as starting points for new questions.
  */
 async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title: string }[]> {
-  let templateQuestions: { qid: string; title: string }[] = [];
+  const templateQuestions: { qid: string; title: string }[] = [];
   const templateQuestionsPath = path.join(EXAMPLE_COURSE_PATH, 'questions');
 
   const walk = async (relativeDir: string) => {
@@ -164,7 +164,7 @@ router.post(
       flash('success', 'Question created successfully.');
 
       if (req.body.start_from === 'Template') {
-        res.redirect(`${res.locals.urlPrefix}/question/${result.question_id}/settings`);
+        res.redirect(`${res.locals.urlPrefix}/question/${result.question_id}/preview`);
       } else {
         res.redirect(
           `${res.locals.urlPrefix}/question/${result.question_id}/file_view/questions/${result.question_qid}/question.html`,
