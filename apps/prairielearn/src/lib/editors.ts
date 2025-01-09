@@ -1118,7 +1118,6 @@ export class QuestionAddEditor extends Editor {
       const oldNamesShort = await this.getExistingShortNames(questionsPath, 'info.json');
 
       debug('Generate qid and title');
-
       const { shortName, longName } = getUniqueNames({
         shortNames: oldNamesShort,
         longNames: oldNamesLong,
@@ -1131,29 +1130,60 @@ export class QuestionAddEditor extends Editor {
 
     const questionPath = path.join(questionsPath, qid);
 
-    const fromPath = path.join(EXAMPLE_COURSE_PATH, 'questions', 'template', 'empty');
-    // A template question with question.html and server.py files that are empty
+    // Ensure that the question folder path is fully contained in the questions directory of the course
+    if (!contains(questionsPath, questionPath)) {
+      throw new AugmentedError('Invalid folder path', {
+        info: html`
+          <p>The path of the question folder to add</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${questionPath}</pre>
+          </div>
+          <p>must be inside the root directory</p>
+          <div class="container">
+            <pre class="bg-dark text-white rounded p-2">${questionsPath}</pre>
+          </div>
+        `,
+      });
+    }
 
-    const toPath = questionPath;
+    debug(`Create an empty question at ${questionPath}`);
 
-    debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-    await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+    const questionInfoPath = path.join(questionPath, 'info.json');
+    const questionHTMLPath = path.join(questionPath, 'question.html');
+    const questionScriptPath = path.join(questionPath, 'server.py');
+
+    await fs.ensureDir(questionPath);
+    await fs.writeFile(
+      questionInfoPath,
+      JSON.stringify(
+        {
+          uuid: this.uuid,
+          title,
+          topic: 'Unknown',
+          type: 'v3',
+        },
+        null,
+        2,
+      ),
+    );
+    await fs.ensureFile(questionHTMLPath);
+    await fs.ensureFile(questionScriptPath);
 
     if (this.files != null) {
       debug('Remove template files when file texts provided');
-      await fs.remove(path.join(toPath, 'question.html'));
-      await fs.remove(path.join(toPath, 'server.py'));
+      await fs.remove(path.join(questionPath, 'question.html'));
+      await fs.remove(path.join(questionPath, 'server.py'));
 
       if ('info.json' in this.files) {
-        await fs.remove(path.join(toPath, 'info.json'));
+        await fs.remove(path.join(questionPath, 'info.json'));
       }
 
       debug('Load files from text');
       for (const file of Object.keys(this.files)) {
-        const newPath = path.join(toPath, file);
+        const newPath = path.join(questionPath, file);
 
         // Ensure that files are fully contained in the question directory.
-        if (contains(toPath, newPath)) {
+        if (contains(questionPath, newPath)) {
           await fs.writeFile(newPath, this.files[file]);
         } else {
           throw new AugmentedError('Invalid file path', {
@@ -1164,25 +1194,13 @@ export class QuestionAddEditor extends Editor {
               </div>
               <p>must be inside the root directory</p>
               <div class="container">
-                <pre class="bg-dark text-white rounded p-2">${toPath}</pre>
+                <pre class="bg-dark text-white rounded p-2">${questionPath}</pre>
               </div>
             `,
           });
         }
       }
     }
-
-    debug('Read info.json');
-    const infoJson = await fs.readJson(path.join(questionPath, 'info.json'));
-
-    debug('Write info.json with new title and uuid');
-    infoJson.title = title;
-    infoJson.uuid = this.uuid;
-    infoJson.topic = 'Demo';
-    // The template question contains tags that shouldn't be copied to the new question.
-    delete infoJson.tags;
-
-    await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 
     return {
       pathsToAdd: [questionPath],
@@ -1272,10 +1290,13 @@ export class QuestionAddFromTemplateEditor extends Editor {
     delete infoJson.tags;
 
     // The template question may have a topic that should be reset
-    infoJson.topic = 'Demo';
+    infoJson.topic = 'Unknown';
 
-    // The template question may have a shareSourcePublicly property that should be set to false.
+    // The template question may have a shareSourcePublicly, sharingSets, or sharePublicly field
+    // that should be removed
     delete infoJson.shareSourcePublicly;
+    delete infoJson.sharingSets;
+    delete infoJson.sharePublicly;
 
     await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
 

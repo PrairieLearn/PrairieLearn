@@ -168,7 +168,7 @@ router.post(
       } else {
         res.redirect(
           `${res.locals.urlPrefix}/question/${result.question_id}/file_view/questions/${result.question_qid}/question.html`,
-        );
+        ); 
       }
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
