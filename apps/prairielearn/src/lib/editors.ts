@@ -1128,15 +1128,15 @@ export class QuestionAddEditor extends Editor {
       return { qid: shortName, title: longName };
     });
 
-    const questionPath = path.join(questionsPath, qid);
+    const newQuestionPath = path.join(questionsPath, qid);
 
     // Ensure that the question folder path is fully contained in the questions directory of the course
-    if (!contains(questionsPath, questionPath)) {
+    if (!contains(questionsPath, newQuestionPath)) {
       throw new AugmentedError('Invalid folder path', {
         info: html`
           <p>The path of the question folder to add</p>
           <div class="container">
-            <pre class="bg-dark text-white rounded p-2">${questionPath}</pre>
+            <pre class="bg-dark text-white rounded p-2">${newQuestionPath}</pre>
           </div>
           <p>must be inside the root directory</p>
           <div class="container">
@@ -1146,13 +1146,13 @@ export class QuestionAddEditor extends Editor {
       });
     }
 
-    debug(`Create an empty question at ${questionPath}`);
+    debug(`Create an empty question at ${newQuestionPath}`);
 
-    const newQuestionInfoFilePath = path.join(questionPath, 'info.json');
-    const newQuestionHtmlFilePath = path.join(questionPath, 'question.html');
-    const newQuestionScriptFilePath = path.join(questionPath, 'server.py');
+    const newQuestionInfoFilePath = path.join(newQuestionPath, 'info.json');
+    const newQuestionHtmlFilePath = path.join(newQuestionPath, 'question.html');
+    const newQuestionScriptFilePath = path.join(newQuestionPath, 'server.py');
 
-    await fs.ensureDir(questionPath);
+    await fs.ensureDir(newQuestionPath);
     await fs.writeFile(
       newQuestionInfoFilePath,
       JSON.stringify(
@@ -1171,19 +1171,19 @@ export class QuestionAddEditor extends Editor {
 
     if (this.files != null) {
       debug('Remove template files when file texts provided');
-      await fs.remove(path.join(questionPath, 'question.html'));
-      await fs.remove(path.join(questionPath, 'server.py'));
+      await fs.remove(path.join(newQuestionPath, 'question.html'));
+      await fs.remove(path.join(newQuestionPath, 'server.py'));
 
       if ('info.json' in this.files) {
-        await fs.remove(path.join(questionPath, 'info.json'));
+        await fs.remove(path.join(newQuestionPath, 'info.json'));
       }
 
       debug('Load files from text');
       for (const file of Object.keys(this.files)) {
-        const newPath = path.join(questionPath, file);
+        const newPath = path.join(newQuestionPath, file);
 
         // Ensure that files are fully contained in the question directory.
-        if (contains(questionPath, newPath)) {
+        if (contains(newQuestionPath, newPath)) {
           await fs.writeFile(newPath, this.files[file]);
         } else {
           throw new AugmentedError('Invalid file path', {
@@ -1194,7 +1194,7 @@ export class QuestionAddEditor extends Editor {
               </div>
               <p>must be inside the root directory</p>
               <div class="container">
-                <pre class="bg-dark text-white rounded p-2">${questionPath}</pre>
+                <pre class="bg-dark text-white rounded p-2">${newQuestionPath}</pre>
               </div>
             `,
           });
@@ -1203,7 +1203,7 @@ export class QuestionAddEditor extends Editor {
     }
 
     return {
-      pathsToAdd: [questionPath],
+      pathsToAdd: [newQuestionPath],
       commitMessage: `add question ${qid}`,
     };
   }
