@@ -1,9 +1,9 @@
 {
   "uuid": "f245b152-d69f-4505-96f4-9fd7de92c990",
-  "title": "BB",
-  "topic": "Variables",
+  "title": "Workspace demo: VS Code (C++)",
+  "topic": "Workspace",
   "singleVariant": true,
-  "tags": ["jgfoster", "Jan-2025"],
+  "tags": ["jgfoster"],
   "type": "v3",
   "workspaceOptions": {
     "image": "prairielearn/workspace-vscode-cpp",
@@ -14,7 +14,7 @@
   "gradingMethod": "External",
   "externalGradingOptions": {
     "enabled": true,
-    "image": "prairielearn/grader-c:4acb346d6d60b53c4e8f47d2a1c200a791c3e6dd",
+    "image": "prairielearn/grader-c",
     "entrypoint": "python3 /grade/tests/test.py",
     "timeout": 5
   }
