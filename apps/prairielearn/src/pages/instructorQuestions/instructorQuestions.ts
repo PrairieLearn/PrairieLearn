@@ -65,9 +65,7 @@ async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title:
 
   await walk('template');
 
-  templateQuestions = templateQuestions.sort((a, b) => a.title.localeCompare(b.title));
-
-  return templateQuestions;
+  return templateQuestions.sort((a, b) => a.title.localeCompare(b.title));
 }
 
 router.get(
