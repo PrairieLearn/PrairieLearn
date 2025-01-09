@@ -100,10 +100,7 @@ function getParamsForAssessment(
   const assessmentCanView = assessment?.canView ?? allRoleNames;
   const assessmentCanSubmit = assessment?.canSubmit ?? allRoleNames;
   const alternativeGroups = (assessment.zones ?? []).map((zone) => {
-    const zoneGradeRateMinutes =
-      zone.gradeRateMinutes !== undefined
-        ? zone.gradeRateMinutes
-        : (assessment.gradeRateMinutes ?? 0);
+    const zoneGradeRateMinutes = zone.gradeRateMinutes ?? assessment.gradeRateMinutes ?? 0;
     const zoneCanView = zone?.canView ?? assessmentCanView;
     const zoneCanSubmit = zone?.canSubmit ?? assessmentCanSubmit;
     return zone.questions.map((question) => {
@@ -121,8 +118,7 @@ function getParamsForAssessment(
         canSubmit: string[] | null;
         advanceScorePerc: number;
       }[] = [];
-      const questionGradeRateMinutes =
-        question.gradeRateMinutes !== undefined ? question.gradeRateMinutes : zoneGradeRateMinutes;
+      const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionCanView = question.canView ?? zoneCanView;
       const questionCanSubmit = question.canSubmit ?? zoneCanSubmit;
       if (question.alternatives) {
@@ -134,28 +130,15 @@ function getParamsForAssessment(
             maxAutoPoints: alternative.maxAutoPoints ?? question.maxAutoPoints ?? null,
             autoPoints: alternative.autoPoints ?? question.autoPoints ?? null,
             manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
-            forceMaxPoints:
-              alternative.forceMaxPoints !== undefined
-                ? alternative.forceMaxPoints
-                : question.forceMaxPoints !== undefined
-                  ? question.forceMaxPoints
-                  : false,
-            triesPerVariant:
-              alternative.triesPerVariant !== undefined
-                ? alternative.triesPerVariant
-                : question.triesPerVariant !== undefined
-                  ? question.triesPerVariant
-                  : 1,
+            forceMaxPoints: alternative.forceMaxPoints ?? question.forceMaxPoints ?? false,
+            triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant ?? 1,
             advanceScorePerc:
               alternative.advanceScorePerc ??
               question.advanceScorePerc ??
               zone.advanceScorePerc ??
               assessment.advanceScorePerc ??
               0,
-            gradeRateMinutes:
-              alternative.gradeRateMinutes !== undefined
-                ? alternative.gradeRateMinutes
-                : questionGradeRateMinutes,
+            gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             canView: alternative?.canView ?? questionCanView,
             canSubmit: alternative?.canSubmit ?? questionCanSubmit,
           };
