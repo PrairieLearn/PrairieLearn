@@ -83,7 +83,7 @@ describe('Creating a question', () => {
 
     assert.equal(
       createQuestionResponse.url,
-      `${siteUrl}/pl/course_instance/1/instructor/question/2/file_view/questions/test-question/question.html`,
+      `${siteUrl}/pl/course_instance/1/instructor/question/2/file_edit/questions/test-question/question.html`,
     );
   });
 
@@ -203,7 +203,7 @@ describe('Creating a question', () => {
     assert.equal(createQuestionResponse.status, 200);
     assert.equal(
       createQuestionResponse.url,
-      `${siteUrl}/pl/course_instance/1/instructor/question/4/file_view/questions/test-question_2/question.html`,
+      `${siteUrl}/pl/course_instance/1/instructor/question/4/file_edit/questions/test-question_2/question.html`,
     );
   });
 
