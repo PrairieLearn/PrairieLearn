@@ -137,7 +137,7 @@ class Course(Canvas):
             # individually for each page.
             for page_data in result:
                 new_page_datas = self.request(
-                    f'{self.url_prefix}/pages/{page_data["url"]}'
+                    f"{self.url_prefix}/pages/{page_data['url']}"
                 )
                 if len(new_page_datas) == 1:
                     pages.append(Page(self, new_page_datas[0]))

@@ -68,37 +68,37 @@ def download_course_instance(args, logfile):
 
     for assessment in assessments:
         assessment_instances = get_and_save_json(
-            f'{course_instance_path}/assessments/{assessment["assessment_id"]}/assessment_instances',
-            f'assessment_{assessment["assessment_id"]}_instances',
+            f"{course_instance_path}/assessments/{assessment['assessment_id']}/assessment_instances",
+            f"assessment_{assessment['assessment_id']}_instances",
             args,
             logfile,
         )
 
         assessment_access_rules = get_and_save_json(
-            f'{course_instance_path}/assessments/{assessment["assessment_id"]}/assessment_access_rules',
-            f'assessment_{assessment["assessment_id"]}_access_rules',
+            f"{course_instance_path}/assessments/{assessment['assessment_id']}/assessment_access_rules",
+            f"assessment_{assessment['assessment_id']}_access_rules",
             args,
             logfile,
         )
 
         for assessment_instance in assessment_instances:
             instance_questions = get_and_save_json(
-                f'{course_instance_path}/assessment_instances/{assessment_instance["assessment_instance_id"]}/instance_questions',
-                f'assessment_instance_{assessment_instance["assessment_instance_id"]}_instance_questions',
+                f"{course_instance_path}/assessment_instances/{assessment_instance['assessment_instance_id']}/instance_questions",
+                f"assessment_instance_{assessment_instance['assessment_instance_id']}_instance_questions",
                 args,
                 logfile,
             )
 
             submissions = get_and_save_json(
-                f'{course_instance_path}/assessment_instances/{assessment_instance["assessment_instance_id"]}/submissions',
-                f'assessment_instance_{assessment_instance["assessment_instance_id"]}_submissions',
+                f"{course_instance_path}/assessment_instances/{assessment_instance['assessment_instance_id']}/submissions",
+                f"assessment_instance_{assessment_instance['assessment_instance_id']}_submissions",
                 args,
                 logfile,
             )
 
             submission_log = get_and_save_json(
-                f'{course_instance_path}/assessment_instances/{assessment_instance["assessment_instance_id"]}/log',
-                f'assessment_instance_{assessment_instance["assessment_instance_id"]}_log',
+                f"{course_instance_path}/assessment_instances/{assessment_instance['assessment_instance_id']}/log",
+                f"assessment_instance_{assessment_instance['assessment_instance_id']}_log",
                 args,
                 logfile,
             )
@@ -137,7 +137,7 @@ def get_and_save_json(endpoint, filename, args, logfile):
     end_time = time.time()
     log(
         logfile,
-        f'successfully downloaded {r.headers["content-length"]} bytes in {end_time - start_time} seconds',
+        f"successfully downloaded {r.headers['content-length']} bytes in {end_time - start_time} seconds",
     )
 
     full_filename = os.path.join(args.output_dir, filename + ".json")
