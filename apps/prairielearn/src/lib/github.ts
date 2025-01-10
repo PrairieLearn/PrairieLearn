@@ -128,8 +128,6 @@ export async function createCourseRepoJob(
   },
   authn_user: User,
 ) {
-  console.log('Create the repository.');
-
   const createCourseRepo = async (job: ServerJob) => {
     const client = getGithubClient();
     if (client === null) {
@@ -149,11 +147,6 @@ export async function createCourseRepoJob(
     await createEmptyRepository(client, options.repo_short_name);
     job.info(`Created repository ${options.repo_short_name}`);
 
-    // Find main branch (which is the only branch in the new repo).
-    // The output of this is array of objects following:
-    // https://docs.github.com/en/rest/reference/repos#list-branches
-
-    // Create the infoCourse.json file based on the template version.
     job.info('Creating infoCourse.json');
 
     const infoCoursePath = path.join(TEMPLATE_COURSE_PATH, 'infoCourse.json');
@@ -190,6 +183,11 @@ export async function createCourseRepoJob(
 
     job.info('Uploaded new README.md file');
 
+    // Find main branch (which is the only branch in the new repo).
+    // The output of this is array of objects following:
+    // https://docs.github.com/en/rest/reference/repos#list-branches
+
+    // Create the infoCourse.json file based on the template version.
     const branches = (
       await client.repos.listBranches({
         owner: config.githubCourseOwner,
