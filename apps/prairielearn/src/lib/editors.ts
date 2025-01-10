@@ -1246,14 +1246,11 @@ export class QuestionAddEditor extends Editor {
       infoJson.title = this.title;
       infoJson.uuid = this.uuid;
 
-      // The template question may contain tags that shouldn't be copied to the new question.
-      delete infoJson.tags;
-
-      // The template question may have a topic that should be reset
+      // Reset the topic.
       infoJson.topic = 'Unknown';
 
-      // The template question may have a shareSourcePublicly, sharingSets, or sharePublicly field
-      // that should be removed
+      // Delete values that might not make sense in the target course.
+      delete infoJson.tags;
       delete infoJson.shareSourcePublicly;
       delete infoJson.sharingSets;
       delete infoJson.sharePublicly;
