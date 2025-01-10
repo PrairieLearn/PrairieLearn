@@ -88,9 +88,7 @@ def prepare(element_html, data):
 
     if min_correct < 1:
         raise ValueError(
-            "The attribute min-correct is {:d} but must be at least 1".format(
-                min_correct
-            )
+            f"The attribute min-correct is {min_correct:d} but must be at least 1"
         )
 
     # FIXME: why enforce a maximum number of options?
@@ -104,15 +102,13 @@ def prepare(element_html, data):
     max_correct = min(len_correct, min(number_answers, max(min_correct, max_correct)))
     if not (0 <= min_correct <= max_correct <= len_correct):
         raise ValueError(
-            "INTERNAL ERROR: correct number: (%d, %d, %d, %d)"
-            % (min_correct, max_correct, len_correct, len_incorrect)
+            f"INTERNAL ERROR: correct number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
         )
     min_incorrect = number_answers - max_correct
     max_incorrect = number_answers - min_correct
     if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
         raise ValueError(
-            "INTERNAL ERROR: incorrect number: (%d, %d, %d, %d)"
-            % (min_incorrect, max_incorrect, len_incorrect, len_correct)
+            f"INTERNAL ERROR: incorrect number: ({min_incorrect}, {max_incorrect}, {len_incorrect}, {len_correct})"
         )
 
     min_select = pl.get_integer_attrib(element, "min-select", MIN_SELECT_DEFAULT)
@@ -158,16 +154,16 @@ def prepare(element_html, data):
 
     display_answers = []
     correct_answer_list = []
-    for i, (index, correct, html, feedback) in enumerate(sampled_answers):
+    for i, (_index, correct, html, feedback) in enumerate(sampled_answers):
         keyed_answer = {"key": pl.index2key(i), "html": html, "feedback": feedback}
         display_answers.append(keyed_answer)
         if correct:
             correct_answer_list.append(keyed_answer)
 
     if name in data["params"]:
-        raise Exception("duplicate params variable name: %s" % name)
+        raise Exception(f"duplicate params variable name: {name}")
     if name in data["correct_answers"]:
-        raise Exception("duplicate correct_answers variable name: %s" % name)
+        raise Exception(f"duplicate correct_answers variable name: {name}")
     data["params"][name] = display_answers
     data["correct_answers"][name] = correct_answer_list
 
@@ -353,7 +349,7 @@ def render(element_html, data):
 
             info_params.update({"gradingtext": gradingtext})
 
-        with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+        with open("pl-checkbox.mustache", encoding="utf-8") as f:
             info = chevron.render(f, info_params).strip()
 
         html_params = {
@@ -380,10 +376,10 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            except Exception as exc:
+                raise ValueError("invalid score" + score) from exc
 
-        with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+        with open("pl-checkbox.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -433,10 +429,10 @@ def render(element_html, data):
                         html_params["partial"] = math.floor(score * 100)
                     else:
                         html_params["incorrect"] = True
-                except Exception:
-                    raise ValueError("invalid score" + score)
+                except Exception as exc:
+                    raise ValueError("invalid score" + score) from exc
 
-            with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+            with open("pl-checkbox.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
         else:
             html_params = {
@@ -444,7 +440,7 @@ def render(element_html, data):
                 "parse_error": parse_error,
                 "inline": inline,
             }
-            with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+            with open("pl-checkbox.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -463,13 +459,13 @@ def render(element_html, data):
                         element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
                     ),
                 }
-                with open("pl-checkbox.mustache", "r", encoding="utf-8") as f:
+                with open("pl-checkbox.mustache", encoding="utf-8") as f:
                     html = chevron.render(f, html_params).strip()
         else:
             html = ""
 
     else:
-        raise ValueError("Invalid panel type: %s" % data["panel"])
+        raise ValueError("Invalid panel type: {}".format(data["panel"]))
 
     return html
 
@@ -493,8 +489,8 @@ def parse(element_html, data):
     if not submitted_key_set.issubset(all_keys_set):
         one_bad_key = submitted_key_set.difference(all_keys_set).pop()
         # FIXME: escape one_bad_key
-        data["format_errors"][name] = "You selected an invalid option: {:s}".format(
-            str(one_bad_key)
+        data["format_errors"][name] = (
+            f"You selected an invalid option: {str(one_bad_key)}"
         )
         return
 
@@ -537,29 +533,29 @@ def grade(element_html, data):
         option["key"]: option.get("feedback", None) for option in data["params"][name]
     }
 
-    submittedSet = set(submitted_keys)
-    correctSet = set(correct_keys)
+    submitted_set = set(submitted_keys)
+    correct_set = set(correct_keys)
 
     score = 0
-    if not partial_credit and submittedSet == correctSet:
+    if not partial_credit and submitted_set == correct_set:
         score = 1
     elif partial_credit:
         if partial_credit_method == "PC":
-            if submittedSet == correctSet:
+            if submitted_set == correct_set:
                 score = 1
             else:
-                n_correct_answers = len(correctSet) - len(correctSet - submittedSet)
-                points = n_correct_answers - len(submittedSet - correctSet)
-                score = max(0, points / len(correctSet))
+                n_correct_answers = len(correct_set) - len(correct_set - submitted_set)
+                points = n_correct_answers - len(submitted_set - correct_set)
+                score = max(0, points / len(correct_set))
         elif partial_credit_method == "EDC":
-            number_wrong = len(submittedSet - correctSet) + len(
-                correctSet - submittedSet
+            number_wrong = len(submitted_set - correct_set) + len(
+                correct_set - submitted_set
             )
             score = 1 - 1.0 * number_wrong / number_answers
         elif partial_credit_method == "COV":
-            n_correct_answers = len(correctSet & submittedSet)
-            base_score = n_correct_answers / len(correctSet)
-            guessing_factor = n_correct_answers / len(submittedSet)
+            n_correct_answers = len(correct_set & submitted_set)
+            base_score = n_correct_answers / len(correct_set)
+            guessing_factor = n_correct_answers / len(submitted_set)
             score = base_score * guessing_factor
         else:
             raise ValueError(
@@ -661,7 +657,7 @@ def test(element_html, data):
         data["raw_submitted_answers"][name] = None
         data["format_errors"][name] = "You must select at least one option."
     else:
-        raise Exception("invalid result: %s" % result)
+        raise Exception(f"invalid result: {result}")
 
 
 def _get_min_options_to_select(element, default_val):

@@ -52,6 +52,7 @@ export async function init() {
     {
       create: async () => {
         const codeCallerOptions = {
+          dropPrivileges: false,
           questionTimeoutMilliseconds: config.questionTimeoutMilliseconds,
           pingTimeoutMilliseconds: config.workerPingTimeoutMilliseconds,
         };
