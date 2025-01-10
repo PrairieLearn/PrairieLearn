@@ -153,7 +153,7 @@ router.post(
         res.redirect(`${res.locals.urlPrefix}/question/${result.question_id}/preview`);
       } else {
         res.redirect(
-          `${res.locals.urlPrefix}/question/${result.question_id}/file_view/questions/${result.question_qid}/question.html`,
+          `${res.locals.urlPrefix}/question/${result.question_id}/file_edit/questions/${result.question_qid}/question.html`,
         );
       }
     } else {
