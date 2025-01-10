@@ -5,7 +5,11 @@ import { loadSqlEquiv, queryRows, queryRow, queryAsync } from '@prairielearn/pos
 
 import * as b64Util from '../../lib/base64-util.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import { QuestionGenerationContextEmbeddingSchema, QuestionSchema } from '../../lib/db-types.js';
+import {
+  type Issue,
+  QuestionGenerationContextEmbeddingSchema,
+  QuestionSchema,
+} from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { selectCourseById } from '../../models/course.js';
@@ -58,21 +62,32 @@ async function checkRender(
   userId: string,
   questionId: string,
 ) {
-  if (status === 'success' && errors.length === 0) {
-    const question = await selectQuestionById(questionId);
-    const course = await selectCourseById(courseId);
-    const user = await selectUserById(userId);
-    const authnUser = await selectUserById(userId); //user id == authn user id in this case
+  // If there was any issue generating the question, we won't yet check rendering.
+  if (status === 'error' || errors.length > 0) return [];
 
-    const locals: Record<string, any> = { question, course, user, authn_user: authnUser };
-    await getAndRenderVariant(null, null, locals);
+  const question = await selectQuestionById(questionId);
+  const course = await selectCourseById(courseId);
+  const user = await selectUserById(userId);
+  const authnUser = await selectUserById(userId); //user id == authn user id in this case
 
-    return locals.issues.map(
-      (issue) =>
-        `When trying to render, your code created an error with the following stack trace: ${issue.system_data.courseErrData.outputBoth}\nPlease fix it.`,
-    );
-  }
-  return [];
+  const locals = {
+    // The URL prefix doesn't matter here since we won't ever show the result to the user.
+    urlPrefix: '',
+    question,
+    course,
+    user,
+    authn_user: authnUser,
+  };
+  await getAndRenderVariant(null, null, locals);
+
+  // Errors should generally have stack traces. If they don't, we'll filter
+  // them out, but they may not help us much.
+  return ((locals as any).issues as Issue[])
+    .map((issue) => issue.system_data?.courseErrData?.outputBoth as string)
+    .filter((output) => output !== undefined)
+    .map((output) => {
+      return `When trying to render, your code created an error with the following stack trace: ${output}\n\nPlease fix it.`;
+    });
 }
 
 /**
