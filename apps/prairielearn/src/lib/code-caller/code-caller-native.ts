@@ -19,6 +19,7 @@ import {
   type CodeCallerResult,
   type CallType,
 } from './code-caller-shared.js';
+import { run } from '@prairielearn/run';
 
 interface CodeCallerNativeChildProcess extends ChildProcess {
   stdio: [Writable, Readable, Readable, Readable, Readable];
@@ -111,28 +112,23 @@ export class CodeCallerNative implements CodeCaller {
   forbiddenModules: string[];
 
   /**
-   * Determine which Python executable to use. We'll try a list of potential
-   * venv directories first, and if none of them exist, we'll use the system
-   * Python executable.
-   */
-  private static async findPythonExecutable(venvSearchPaths: string[]): Promise<string> {
-    for (const p of venvSearchPaths) {
-      const venvPython = path.resolve(REPOSITORY_ROOT_PATH, path.join(p, 'bin', 'python3.10'));
-      if (await fs.pathExists(venvPython)) return venvPython;
-    }
-
-    // Assume we're using the system Python.
-    return 'python3.10';
-  }
-
-  /**
    * Creating a new {@link CodeCallerNative} instance requires some async work,
    * so we use this static method to create a new instance since a constructor
    * cannot be async.
    */
   static async create(options: CodeCallerNativeOptions): Promise<CodeCallerNative> {
+    const pythonExecutable = await run(async () => {
+      for (const p of options.pythonVenvSearchPaths) {
+        const venvPython = path.resolve(REPOSITORY_ROOT_PATH, path.join(p, 'bin', 'python3.10'));
+        if (await fs.pathExists(venvPython)) return venvPython;
+      }
+
+      // Assume we're using the system Python.
+      return 'python3.10';
+    });
+
     const codeCaller = new CodeCallerNative({
-      pythonExecutable: await this.findPythonExecutable(options.pythonVenvSearchPaths),
+      pythonExecutable,
       ...options,
     });
     await codeCaller.ensureChild();
