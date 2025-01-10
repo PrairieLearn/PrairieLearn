@@ -124,7 +124,7 @@ class Course(Canvas):
         super().__init__(canvas.token)
         self.data = course_data
         self.id = course_data["id"]
-        self.url_prefix = "/courses/%d" % self.id
+        self.url_prefix = f"/courses/{self.id}"
 
     def __getitem__(self, index):
         return self.data[index]
@@ -425,8 +425,7 @@ class QuizQuestion(CourseSubObject):
         if quiz is None:
             if "quiz_id" not in quiz_question_data:
                 raise RuntimeError(
-                    "No quiz provided and cannot find quiz id for: %s"
-                    % quiz_question_data
+                    f"No quiz provided and cannot find quiz id for: {quiz_question_data}"
                 )
             quiz = course.quiz(quiz_question_data)
         super().__init__(

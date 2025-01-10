@@ -137,21 +137,20 @@ By default, does not overwrite existing infoAssessment.json files; use -f instea
                     print(f"Converting assessment {assessment} in {adir} to {tdir}")
                 try:
                     if not os.path.isdir(tdir):
-                        os.makedirs(tdir)  # 3.4 option: exist_ok=True
-                except:
+                        os.makedirs(tdir, exist_ok=True)
+                except Exception:
                     print(f"Error making directory {tdir}")
-                if not args.force:
-                    if os.path.isfile(target):
-                        if not args.quiet:
-                            print(f"Existing assessment {target}; skipping")
-                        continue
+                if not args.force and os.path.isfile(target):
+                    if not args.quiet:
+                        print(f"Existing assessment {target}; skipping")
+                    continue
                 try:
                     with open(target, "w") as out:
                         json.dump(convassessment(json.load(f)), out, indent=4)
-                except:
+                except Exception:
                     print(
                         f"Error converting {source} to {target}. Could be file writing or JSON"
                     )
-        except:
+        except Exception:
             if not args.quiet:
                 print(f"Directory {adir} does not have a readable info.json file?")

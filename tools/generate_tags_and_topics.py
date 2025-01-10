@@ -11,7 +11,7 @@ if len(sys.argv) < 2:
 
 course_dir = sys.argv[1]
 if not os.path.isdir(course_dir):
-    print("ERROR: Not a directory: %s" % course_dir)
+    print(f"ERROR: Not a directory: {course_dir}")
     sys.exit(1)
 
 ######################################################################
@@ -19,10 +19,10 @@ if not os.path.isdir(course_dir):
 
 course_info_file_name = os.path.join(course_dir, "infoCourse.json")
 try:
-    with open(course_info_file_name, "rU") as course_info_file:
+    with open(course_info_file_name) as course_info_file:
         course_info = json.load(course_info_file)
 except Exception as error:
-    print("ERROR: Unable to read %s: %s" % (course_info_file_name, error))
+    print(f"ERROR: Unable to read {course_info_file_name}: {error}")
     sys.exit(1)
 
 existing_tags = set()
@@ -39,7 +39,7 @@ if "topics" in course_info:
 
 questions_dir = os.path.join(course_dir, "questions")
 if not os.path.isdir(questions_dir):
-    print("ERROR: Not a directory: %s" % questions_dir)
+    print(f"ERROR: Not a directory: {questions_dir}")
     sys.exit(1)
 
 ######################################################################
@@ -54,14 +54,14 @@ for question_dir_name in question_dir_names:
     if os.path.isdir(question_path):
         info_file_name = os.path.join(question_path, "info.json")
         try:
-            with open(info_file_name, "rU") as info_file:
+            with open(info_file_name) as info_file:
                 question_info = json.load(info_file)
                 if "tags" in question_info:
                     tags |= set(question_info["tags"])
                 if "topic" in question_info:
                     topics.add(question_info["topic"])
         except Exception as error:
-            print("WARNING: skipping %s: %s" % (question_path, error))
+            print(f"WARNING: skipping {question_path}: {error}")
 
 new_tags = tags - existing_tags
 new_topics = topics - existing_topics
@@ -131,7 +131,7 @@ new_topics_list.sort(key=lambda x: x["name"])
 ######################################################################
 # print output
 
-print("New tags and topics not already present in %s" % course_info_file_name)
+print(f"New tags and topics not already present in {course_info_file_name}")
 print("{")
 
 print('    "topics": [')
@@ -140,8 +140,9 @@ for i, new_topic in enumerate(new_topics_list):
     if i >= len(new_topics_list) - 1:
         trailing_comma = ""
     print(
-        '        {"name": "%s", "color": "%s"}%s'
-        % (new_topic["name"], new_topic["color"], trailing_comma)
+        '        {{"name": "{}", "color": "{}"}}{}'.format(
+            new_topic["name"], new_topic["color"], trailing_comma
+        )
     )
 print("    ],")
 
@@ -151,8 +152,9 @@ for i, new_tag in enumerate(new_tags_list):
     if i >= len(new_tags_list) - 1:
         trailing_comma = ""
     print(
-        '        {"name": "%s", "color": "%s"}%s'
-        % (new_tag["name"], new_tag["color"], trailing_comma)
+        '        {{"name": "{}", "color": "{}"}}{}'.format(
+            new_tag["name"], new_tag["color"], trailing_comma
+        )
     )
 print("    ]")
 
