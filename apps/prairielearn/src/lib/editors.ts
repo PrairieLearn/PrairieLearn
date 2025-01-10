@@ -1989,11 +1989,11 @@ export class CourseInfoCreateEditor extends Editor {
     debug('CourseInfoEditor: write()');
     const infoPath = path.join(this.course.path, 'infoCourse.json');
 
-    // This will error if:
-    // - this.course.path does not exist (use of writeJson)
-    // - Creating a new file and infoPath does exist (use of 'wx')
-
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(this.infoJson));
+
+    // This will error if:
+    // - this.course.path does not exist (use of writeFile)
+    // - Creating a new file and infoPath does exist (use of 'wx')
     await fs.writeFile(infoPath, formattedJson, { flag: 'wx' });
 
     return {
