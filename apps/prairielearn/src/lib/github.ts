@@ -1,7 +1,8 @@
-import fs from 'node:fs/promises';
+import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
 
 import { Octokit } from '@octokit/rest';
+import fs from 'fs-extra';
 import { v4 as uuidv4 } from 'uuid';
 
 import { logger } from '@prairielearn/logger';
@@ -43,10 +44,36 @@ function getGithubClient() {
  * @param repo Name of the new repository to create
  */
 async function createEmptyRepository(client: Octokit, repo: string) {
-  await client.repos.createForAuthenticatedUser({
+  await client.repos.createInOrg({
+    org: config.githubCourseOwner,
+    owner: config.githubCourseOwner,
     name: repo,
     private: true,
   });
+
+  // Poll until the repository is created, or until 30 seconds pass.
+  for (let i = 0; i < 30; i++) {
+    try {
+      const repoExists = await client.repos.get({
+        owner: config.githubCourseOwner,
+        repo,
+      });
+      if (repoExists) {
+        return;
+      }
+    } catch (err) {
+      // We'll get a 404 if the repo is not ready yet. If we get any other
+      // error, then something unexpected happened and we should bail out.
+      if (err.status !== 404) {
+        throw err;
+      }
+
+      await sleep(1000);
+    }
+  }
+
+  // If we get here, the repo didn't become ready in time.
+  throw new Error('Repository contents were not ready after 30 seconds.');
 }
 
 /**
