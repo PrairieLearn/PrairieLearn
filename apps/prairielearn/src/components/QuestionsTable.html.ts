@@ -39,10 +39,10 @@ export function QuestionsTable({
   __csrf_token,
 }: {
   questions: QuestionsPageData[];
-  templateQuestions?: { qid: string; title: string }[];
   /**
    * The template questions the user can select as a starting point when creating a new question.
    */
+  templateQuestions?: { qid: string; title: string }[];
   showAddQuestionButton?: boolean;
   showAiGenerateQuestionButton?: boolean;
   showSharingSets?: boolean;
