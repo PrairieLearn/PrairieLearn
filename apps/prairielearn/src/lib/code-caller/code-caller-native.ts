@@ -9,6 +9,8 @@ import fs from 'fs-extra';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
+import { run } from '@prairielearn/run';
+
 import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
 
@@ -19,7 +21,6 @@ import {
   type CodeCallerResult,
   type CallType,
 } from './code-caller-shared.js';
-import { run } from '@prairielearn/run';
 
 interface CodeCallerNativeChildProcess extends ChildProcess {
   stdio: [Writable, Readable, Readable, Readable, Readable];
