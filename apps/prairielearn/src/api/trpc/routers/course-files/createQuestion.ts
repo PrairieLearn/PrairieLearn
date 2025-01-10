@@ -18,11 +18,9 @@ export const createQuestion = privateProcedure
       // Question data.
       qid: z.string().optional(),
       title: z.string().optional(),
+      template_qid: z.string().optional(),
       files: z.record(z.string()).optional(),
       is_draft: z.boolean().optional(),
-
-      // Optional: a template question qid to copy from.
-      template_qid: z.string().optional(),
     }),
   )
   .output(
