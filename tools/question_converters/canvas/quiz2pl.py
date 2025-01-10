@@ -90,7 +90,7 @@ pl_quiz = {
     "number": args.assessment_number,
     "allowAccess": [{"startDate": quiz["unlock_at"], "credit": 100}],
     "zones": [{"questions": []}],
-    "comment": f'Imported from Canvas, quiz {quiz["id"]}',
+    "comment": f"Imported from Canvas, quiz {quiz['id']}",
 }
 
 if quiz["access_code"]:
@@ -107,7 +107,7 @@ for question in questions.values():
     else:
         print("\033c", end="")
 
-    print(f'Handling question {question["id"]}...')
+    print(f"Handling question {question['id']}...")
     print(question["question_text"])
     print()
     for answer in question.get("answers", []):
@@ -160,7 +160,7 @@ for question in questions.values():
         if question["question_type"] == "calculated_question":
             for variable in question["variables"]:
                 question["question_text"] = question["question_text"].replace(
-                    f'[{variable["name"]}]', "{{params." + variable["name"] + "}}"
+                    f"[{variable['name']}]", "{{params." + variable["name"] + "}}"
                 )
 
         if (
@@ -228,7 +228,7 @@ for question in questions.values():
                 )
             else:
                 input(
-                    f'Invalid numerical answer type: {answer["numerical_answer_type"]}'
+                    f"Invalid numerical answer type: {answer['numerical_answer_type']}"
                 )
                 template.write(
                     f'<pl-number-input answers-name="value"></pl-number-input>\n'
@@ -285,7 +285,7 @@ for question in questions.values():
                     dropdown += "  <pl-answer"
                     if answer["weight"] > 0:
                         dropdown += ' correct="true"'
-                    dropdown += f'>{answer["text"]}</pl-answer>\n'
+                    dropdown += f">{answer['text']}</pl-answer>\n"
                 dropdown += "</pl-multiple-choice>"
                 question_text = question_text.replace(f"[{blank}]", dropdown)
             template.write(question_text + "\n")
@@ -313,15 +313,15 @@ for question in questions.values():
             for variable in question["variables"]:
                 if not variable.get("scale", False):
                     script.write(
-                        f'    {variable["name"]} = random.randint({int(variable["min"])}, {int(variable["max"])})\n'
+                        f"    {variable['name']} = random.randint({int(variable['min'])}, {int(variable['max'])})\n"
                     )
                 else:
                     multip = 10 ** variable["scale"]
                     script.write(
-                        f'    {variable["name"]} = random.randint({int(variable["min"] * multip)}, {int(variable["max"] * multip)}) / {multip}\n'
+                        f"    {variable['name']} = random.randint({int(variable['min'] * multip)}, {int(variable['max'] * multip)}) / {multip}\n"
                     )
             for formula in question["formulas"]:
-                script.write(f'    {formula["formula"]}\n')
+                script.write(f"    {formula['formula']}\n")
             for variable in question["variables"]:
                 script.write(
                     f'    data["params"]["{variable["name"]}"] = {variable["name"]}\n'
