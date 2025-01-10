@@ -168,8 +168,8 @@ export async function createCourseRepoJob(
     job.info(`Creating course ${options.short_name}`);
     job.info(JSON.stringify(options, null, 4));
 
-    // Create base github repo from template course folder
-    job.info('Creating repository from template');
+    // Create an empty repository for the course
+    job.info('Creating empty repository');
 
     await createEmptyRepository(client, options.repo_short_name);
     job.info(`Created repository ${options.repo_short_name}`);
