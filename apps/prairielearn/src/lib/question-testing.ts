@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { selectUserById } from '../models/user.js';
 import * as questionServers from '../question-servers/index.js';
 
 import {
@@ -299,11 +300,14 @@ async function testQuestion(
 
   const renderStart = Date.now();
   try {
+    const user = await selectUserById(user_id);
+    const authn_user = await selectUserById(authn_user_id);
     await getAndRenderVariant(variant.id, null, {
       question,
       course: variant_course,
       urlPrefix: `/pl/course/${variant_course.id}`,
-      authz_data: {},
+      user,
+      authn_user,
     });
   } finally {
     const renderEnd = Date.now();
