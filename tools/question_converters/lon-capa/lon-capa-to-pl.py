@@ -130,7 +130,7 @@ def read_xml_from_file_and_remove_ampersands(xml_filename):
 def extract_elements(root):
     out_str = ""
 
-    for item in root.findall(".//numericalresponse"):
+    for _ in root.findall(".//numericalresponse"):
         # print item.tag
         out_str += '<pl-number-input answers-name="val" comparison="sigfig" digits="2" label="$c=$"></pl-number-input>\n'
 
