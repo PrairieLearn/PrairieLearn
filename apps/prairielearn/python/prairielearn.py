@@ -1136,11 +1136,11 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
 
                 if a_parse_l is None or not np.isfinite(a_parse_l):
                     raise ValueError(
-                        f"The numerator could not be interpreted as a decimal{ or_complex }number."
+                        f"The numerator could not be interpreted as a decimal{or_complex}number."
                     )
                 if a_parse_r is None or not np.isfinite(a_parse_r):
                     raise ValueError(
-                        f"The denominator could not be interpreted as a decimal{ or_complex }number."
+                        f"The denominator could not be interpreted as a decimal{or_complex}number."
                     )
 
                 with np.errstate(divide="raise"):
@@ -1164,7 +1164,7 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
             a_sub_parsed = string_to_number(a_sub, allow_complex=allow_complex)
             if a_sub_parsed is None:
                 raise ValueError(
-                    f"The submitted answer could not be interpreted as a decimal{ or_complex }number."
+                    f"The submitted answer could not be interpreted as a decimal{or_complex}number."
                 )
             if not np.isfinite(a_sub_parsed):
                 raise ValueError("The submitted answer is not a finite number.")
@@ -1776,8 +1776,7 @@ def load_host_script(script_name):
     """
 
     # Chop off the file extension because it's unnecessary here
-    if script_name.endswith(".py"):
-        script_name = script_name[:-3]
+    script_name = script_name.removesuffix(".py")
     return __import__(script_name)
 
 
