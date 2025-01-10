@@ -2,7 +2,6 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 
-import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
@@ -20,15 +19,16 @@ import { QuestionsPage } from './instructorQuestions.html.js';
 
 const router = Router();
 
+let cachedTemplateQuestionOptions: { qid: string; title: string }[] | null = null;
+
 /**
  * Get a list of template question qids and titles that can be used as starting points for new questions.
  */
 async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title: string }[]> {
   if (!config.devMode) {
     // Check if the template questions are cached
-    const cachedTemplateQuestions = await cache.get('templateCourseQuestionOptions');
-    if (cachedTemplateQuestions) {
-      return cachedTemplateQuestions;
+    if (cachedTemplateQuestionOptions) {
+      return cachedTemplateQuestionOptions;
     }
   }
 
@@ -38,7 +38,8 @@ async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title:
 
   for (const qid of Object.keys(questions)) {
     const question = questions[qid];
-    if (question.data?.topic === 'Template') {
+    const qidParts = qid.split('/');
+    if (qidParts.length > 0 && qidParts[0] === 'template' && question?.data?.title) {
       templateQuestions.push({ qid, title: question.data.title });
     }
   }
@@ -49,11 +50,7 @@ async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title:
 
   if (!config.devMode) {
     // Cache the template questions
-    cache.set(
-      'templateCourseQuestionOptions',
-      sortedTemplateQuestionOptions,
-      1000 * 60 * 60 * 12, // Cache for 12 hours
-    );
+    cachedTemplateQuestionOptions = sortedTemplateQuestionOptions;
   }
 
   return sortedTemplateQuestionOptions;
