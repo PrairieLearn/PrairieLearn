@@ -36,10 +36,8 @@ async function getTemplateCourseQuestionOptions(): Promise<{ qid: string; title:
 
   const templateQuestions: { qid: string; title: string }[] = [];
 
-  for (const qid of Object.keys(questions)) {
-    const question = questions[qid];
-    const qidParts = qid.split('/');
-    if (qidParts.length > 0 && qidParts[0] === 'template' && question?.data?.title) {
+  for (const [qid, question] of Object.entries(questions)) {
+    if (qid.startsWith('template/') && question?.data?.title) {
       templateQuestions.push({ qid, title: question.data.title });
     }
   }
