@@ -9,8 +9,6 @@ import fs from 'fs-extra';
 import _ from 'lodash';
 import { v4 as uuidv4 } from 'uuid';
 
-import { logger } from '@prairielearn/logger';
-
 import { deferredPromise } from '../deferred.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
 
@@ -47,7 +45,8 @@ interface CodeCallerNativeOptions {
   dropPrivileges: boolean;
   questionTimeoutMilliseconds: number;
   pingTimeoutMilliseconds: number;
-  errorLogger?: (msg: string, data?: any) => void;
+  pythonVenvSearchPaths: string[];
+  errorLogger: (msg: string, data?: any) => void;
 }
 
 interface CodeCallerNativeOptionsInternal extends Required<CodeCallerNativeOptions> {
@@ -112,23 +111,28 @@ export class CodeCallerNative implements CodeCaller {
   forbiddenModules: string[];
 
   /**
+   * Determine which Python executable to use. We'll try a list of potential
+   * venv directories first, and if none of them exist, we'll use the system
+   * Python executable.
+   */
+  private static async findPythonExecutable(venvSearchPaths: string[]): Promise<string> {
+    for (const p of venvSearchPaths) {
+      const venvPython = path.resolve(REPOSITORY_ROOT_PATH, path.join(p, 'bin', 'python3.10'));
+      if (await fs.pathExists(venvPython)) return venvPython;
+    }
+
+    // Assume we're using the system Python.
+    return 'python3.10';
+  }
+
+  /**
    * Creating a new {@link CodeCallerNative} instance requires some async work,
    * so we use this static method to create a new instance since a constructor
    * cannot be async.
    */
   static async create(options: CodeCallerNativeOptions): Promise<CodeCallerNative> {
-    // Determine which Python executable to use. If there's a `.venv` directory
-    // at the root of the repository, use the Python executable in that
-    // directory. Otherwise, use the system Python executable.
-    let pythonExecutable = 'python3.10';
-    const venvPython = path.join(REPOSITORY_ROOT_PATH, '.venv', 'bin', pythonExecutable);
-    if (await fs.pathExists(venvPython)) {
-      pythonExecutable = venvPython;
-    }
-
     const codeCaller = new CodeCallerNative({
-      pythonExecutable,
-      errorLogger: logger.error.bind(logger),
+      pythonExecutable: await this.findPythonExecutable(options.pythonVenvSearchPaths),
       ...options,
     });
     await codeCaller.ensureChild();
