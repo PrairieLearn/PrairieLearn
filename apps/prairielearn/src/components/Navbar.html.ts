@@ -19,12 +19,12 @@ export function Navbar({
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
 }) {
-  const { __csrf_token, course, urlPrefix, is_iframe } = resLocals;
+  const { __csrf_token, course, urlPrefix, isIframe } = resLocals;
   navPage ??= resLocals.navPage;
   navSubPage ??= resLocals.navSubPage;
   navbarType ??= resLocals.navbarType;
 
-  if (is_iframe) {
+  if (isIframe) {
     return NavbarIframe({ resLocals });
   }
 
@@ -109,8 +109,6 @@ export function Navbar({
 
 /**
  * A simple navbar without admin links designed to be used when PL is in an iframe
- * @param { resLocals }
- * @returns Navbar HTML
  */
 export function NavbarIframe({ resLocals }: { resLocals: Record<string, any> }) {
   return html`

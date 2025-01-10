@@ -144,11 +144,13 @@ router.post(
       sub: ltiClaim.get('sub'),
     });
 
+    // If we're running in an iframe, don't redirect but display a page
+    // with links that open in a new window
     if (res.locals.is_iframe) {
       res.end(
         Lti13Iframe({
           resLocals: res.locals,
-          target_url: ltiClaim.target_link_uri ?? '/pl',
+          targetUrl: ltiClaim.target_link_uri ?? '/pl',
         }),
       );
       return;

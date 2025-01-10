@@ -5,7 +5,7 @@ import { Navbar } from '../../../components/Navbar.html.js';
 import { type LoadUserAuth } from '../../../lib/authn.js';
 import { type Lti13Instance } from '../../../lib/db-types.js';
 
-export const Lti13Test = ({
+export const Lti13Test = function ({
   resLocals,
   lti13_claims,
   userInfo,
@@ -17,7 +17,7 @@ export const Lti13Test = ({
   userInfo: LoadUserAuth;
   lti13_instance: Lti13Instance;
   url: URL;
-}) => {
+}) {
   return html`
     <!DOCTYPE html>
     <html lang="en">
@@ -48,13 +48,13 @@ export const Lti13Test = ({
   `.toString();
 };
 
-export const Lti13Iframe = ({
+export const Lti13Iframe = function ({
   resLocals,
-  target_url,
+  targetUrl,
 }: {
   resLocals: Record<string, any>;
-  target_url: string;
-}) => {
+  targetUrl: string;
+}) {
   return html`
     <!doctype html>
     <html lang="en">
@@ -63,8 +63,8 @@ export const Lti13Iframe = ({
       </head>
       <body>
         ${Navbar({ resLocals })}
-        <main>
-          <a class="btn btn-primary btn-lg m-3" href="${target_url}" target="_blank"
+        <main id="content">
+          <a class="btn btn-primary btn-lg m-3" href="${targetUrl}" target="_blank"
             >Open PrairieLearn in a new window</a
           >
         </main>

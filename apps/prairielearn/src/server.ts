@@ -185,6 +185,10 @@ export async function initExpress(): Promise<Express> {
     } else {
       res.locals.userAgent = null;
     }
+    next();
+  });
+
+  app.use(function (req, res, next) {
     res.locals.is_iframe = req.headers['sec-fetch-dest'] === 'iframe';
     next();
   });
