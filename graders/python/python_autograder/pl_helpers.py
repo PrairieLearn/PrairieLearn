@@ -13,11 +13,11 @@ from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer
 
 
-class DoNotRun(Exception):
+class DoNotRunError(Exception):
     pass
 
 
-class GradingSkipped(Exception):
+class GradingSkipped(Exception):  # noqa: N818
     pass
 
 
@@ -76,13 +76,13 @@ def name(name):
 
     def decorator(f):
         @wraps(f)
-        def wrapped(Test_instance):
+        def wrapped(test_instance):
             Feedback.set_name(f.__name__)
-            if Test_instance.total_iters > 1 and getattr(
-                Test_instance, "print_iteration_prefix", True
+            if test_instance.total_iters > 1 and getattr(
+                test_instance, "print_iteration_prefix", True
             ):
-                Feedback.add_iteration_prefix(Test_instance.iter_num)
-            f(Test_instance)
+                Feedback.add_iteration_prefix(test_instance.iter_num)
+            f(test_instance)
 
         wrapped.__dict__["name"] = name
         return wrapped
@@ -96,12 +96,12 @@ def not_repeated(f):
     """
 
     @wraps(f)
-    def wrapped(Test_instance):
-        if Test_instance.iter_num > 0:
-            raise DoNotRun
+    def wrapped(test_instance):
+        if test_instance.iter_num > 0:
+            raise DoNotRunError
         Feedback.clear_iteration_prefix()
-        Test_instance.print_iteration_prefix = False
-        f(Test_instance)
+        test_instance.print_iteration_prefix = False
+        f(test_instance)
 
     wrapped.__repeated__ = False
     return wrapped
@@ -112,7 +112,7 @@ def print_student_code(st_code="user_code.py", ipynb_key="#grade", as_feedback=T
     Print the student's code, with syntax highlighting.
     """
 
-    with open(st_code, "r", encoding="utf-8") as f:
+    with open(st_code, encoding="utf-8") as f:
         filename, extension = splitext(st_code)
         if extension == ".ipynb":
             contents = extract_ipynb_contents(f, ipynb_key).strip()
