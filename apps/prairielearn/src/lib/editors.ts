@@ -1218,8 +1218,6 @@ export class QuestionAddEditor extends Editor {
         });
       }
 
-      const toPath = newQuestionPath;
-
       // Ensure that the question folder path is fully contained in the questions directory of the course
       if (!contains(questionsPath, newQuestionPath)) {
         throw new AugmentedError('Invalid folder path', {
@@ -1236,8 +1234,8 @@ export class QuestionAddEditor extends Editor {
         });
       }
 
-      debug(`Copy template\n from ${fromPath}\n to ${toPath}`);
-      await fs.copy(fromPath, toPath, { overwrite: false, errorOnExist: true });
+      debug(`Copy template\n from ${fromPath}\n to ${newQuestionPath}`);
+      await fs.copy(fromPath, newQuestionPath, { overwrite: false, errorOnExist: true });
 
       debug('Read info.json');
       const infoJson = await fs.readJson(path.join(newQuestionPath, 'info.json'));
