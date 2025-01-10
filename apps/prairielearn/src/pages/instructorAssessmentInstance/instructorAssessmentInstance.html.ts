@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
@@ -353,9 +354,14 @@ export function InstructorAssessmentInstance({
                       </td>
                       <td>
                         I-${instance_question.instructor_question_number}. ${instance_question.qid}
-                        (<a href="${resLocals.urlPrefix}/question/${instance_question.question_id}/"
-                          >instructor view</a
-                        >)
+                        ${resLocals.authz_data.has_course_permission_preview
+                          ? html`
+                              (<a
+                                href="${resLocals.urlPrefix}/question/${instance_question.question_id}/"
+                                >instructor view</a
+                              >)
+                            `
+                          : ''}
                       </td>
                       <td class="text-center">
                         ${InstanceQuestionPoints({
@@ -502,7 +508,13 @@ export function InstructorAssessmentInstance({
                     <tr>
                       <td>
                         I-${row.number}.
-                        <a href="${resLocals.urlPrefix}/question/${row.question_id}/">${row.qid}</a>
+                        ${resLocals.authz_data.has_course_permission_preview
+                          ? html`
+                              <a href="${resLocals.urlPrefix}/question/${row.question_id}/"
+                                >${row.qid}</a
+                              >
+                            `
+                          : row.qid}
                       </td>
                       <td>${row.some_submission}</td>
                       <td>${row.some_perfect_submission}</td>
@@ -614,13 +626,16 @@ export function InstructorAssessmentInstance({
                         : ''}
                       <td><span class="badge color-${row.event_color}">${row.event_name}</span></td>
                       <td>
-                        ${row.qid
-                          ? html`
-                              <a href="${resLocals.urlPrefix}/question/${row.question_id}/">
-                                I-${row.instructor_question_number} (${row.qid})
-                              </a>
-                            `
-                          : ''}
+                        ${run(() => {
+                          if (!row.qid) return '';
+                          const text = `I-${row.instructor_question_number}. ${row.qid}`;
+                          if (!resLocals.authz_data.has_course_permission_preview) return text;
+                          return html`
+                            <a href="${resLocals.urlPrefix}/question/${row.question_id}/"
+                              >${text}</a
+                            >
+                          `;
+                        })}
                       </td>
                       <td>
                         ${row.student_question_number
@@ -634,7 +649,7 @@ export function InstructorAssessmentInstance({
                                   S-${row.student_question_number}#${row.variant_number}
                                 </a>
                               `
-                            : html`S-${row.student_question_number}}`
+                            : html`S-${row.student_question_number}`
                           : ''}
                       </td>
                       ${row.event_name !== 'External grading results'

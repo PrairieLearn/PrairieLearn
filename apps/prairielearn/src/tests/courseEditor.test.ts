@@ -29,11 +29,20 @@ const courseDir = courseLiveDir;
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
+
+const courseUrl = baseUrl + '/course/1';
+const courseInstancesUrl = `${courseUrl}/course_admin/instances`;
+
 const courseInstanceUrl = baseUrl + '/course_instance/1/instructor';
 
 const questionsUrl = `${courseInstanceUrl}/course_admin/questions`;
 const assessmentsUrl = `${courseInstanceUrl}/instance_admin/assessments`;
-const courseInstancesUrl = `${courseInstanceUrl}/course_admin/instances`;
+
+const newCourseInstanceUrl = baseUrl + '/course_instance/2/instructor';
+const newCourseInstanceSettingsUrl = `${newCourseInstanceUrl}/instance_admin/settings`;
+
+const newAssessmentUrl = `${courseInstanceUrl}/assessment/2`;
+const newAssessmentSettingsUrl = `${newAssessmentUrl}/settings`;
 
 const testEditData = [
   {
@@ -104,9 +113,15 @@ const testEditData = [
   },
   {
     url: assessmentsUrl,
-    formSelector: 'form[name="add-assessment-form"]',
+    formSelector: '#createAssessmentModal',
     action: 'add_assessment',
     info: 'courseInstances/Fa18/assessments/New_1/infoAssessment.json',
+    data: {
+      title: 'New',
+      aid: 'New',
+      type: 'Homework',
+      set: 'Homework',
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -119,6 +134,7 @@ const testEditData = [
     ]),
   },
   {
+    url: newAssessmentSettingsUrl,
     formSelector: '#deleteAssessmentModal',
     action: 'delete_assessment',
     files: new Set([
@@ -162,9 +178,13 @@ const testEditData = [
   },
   {
     url: courseInstancesUrl,
-    formSelector: 'form[name="add-course-instance-form"]',
+    formSelector: '#createCourseInstanceModal',
     action: 'add_course_instance',
     info: 'courseInstances/New_1/infoCourseInstance.json',
+    data: {
+      short_name: 'New',
+      long_name: 'New',
+    },
     files: new Set([
       'README.md',
       'infoCourse.json',
@@ -177,6 +197,7 @@ const testEditData = [
     ]),
   },
   {
+    url: newCourseInstanceSettingsUrl,
     button: '.js-change-id-button',
     formSelector: 'form[name="change-id-form"]',
     data: {
@@ -350,14 +371,13 @@ function testEdit(params) {
 
   describe(`POST to ${params.url} with action ${params.action}`, function () {
     it('should load successfully', async () => {
-      const form = {
-        __action: params.action,
-        __csrf_token: locals.__csrf_token,
-        ...(params?.data ?? {}),
-      };
       const res = await fetch(params.url || locals.url, {
         method: 'POST',
-        body: new URLSearchParams(form),
+        body: new URLSearchParams({
+          __action: params.action,
+          __csrf_token: locals.__csrf_token,
+          ...(params?.data ?? {}),
+        }),
       });
       assert.isOk(res.ok);
       locals.url = res.url;

@@ -6,11 +6,13 @@ There are multiple locations within each course where files can be stored for ac
 
 `ServerFiles` directories are only accessible from code running on the server, so are useful for libraries that can solve questions or generate random question instances. Files in a `serverFiles` directory cannot be directly accessed by the student's web browser.
 
+See an [example of how to use `serverFilesCourse`](python-grader/index.md#example-usage-of-serverfilescourse-for-static-data) in a Python autograder.
+
 ## Directory layout
 
 A `clientFiles*` subdirectory can be associated with the course, a question, a course instance, or an assessment, as shown below. The `serverFilesCourse` subdirectory is associated with the course as a whole.
 
-```text
+```bash
 exampleCourse
 +-- clientFilesCourse                     # client files for the entire course
 |   +-- library.js
@@ -32,7 +34,7 @@ exampleCourse
 
 ## Access control
 
-Each different `clientFiles*` directory is accessible under the same [access control rules](accessControl.md) for the course instances and assessments. That is, `clientFilesCourse` is accessible to any student who has access to some course instance, while `clientFilesQuestion`, `clientFilesCourseInstance`, and `clientFilesAssessment` are accessible to students with access to the corresponding question, course instance, or assessment.
+Each different `clientFiles*` directory is accessible under the same [access control rules](accessControl/index.md) for the course instances and assessments. That is, `clientFilesCourse` is accessible to any student who has access to some course instance, while `clientFilesQuestion`, `clientFilesCourseInstance`, and `clientFilesAssessment` are accessible to students with access to the corresponding question, course instance, or assessment.
 
 ## Accessing files from HTML templates
 

@@ -8,6 +8,8 @@ import fs from 'fs-extra';
 import jju from 'jju';
 import _ from 'lodash';
 
+import { run } from '@prairielearn/run';
+
 import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
@@ -16,6 +18,7 @@ import { selectInstitutionForCourse } from '../models/institution.js';
 import * as schemas from '../schemas/index.js';
 
 import * as infofile from './infofile.js';
+import { isDraftQid } from './question.js';
 
 // We use a single global instance so that schemas aren't recompiled every time they're used
 const ajv = new Ajv({ allErrors: true });
@@ -184,6 +187,7 @@ type InfoFile<T> = infofile.InfoFile<T>;
 
 interface CourseOptions {
   useNewQuestionRenderer: boolean;
+  devModeFeatures: Record<string, boolean> | string[];
 }
 
 interface Tag {
@@ -349,7 +353,7 @@ export interface Assessment {
 interface QuestionExternalGradingOptions {
   enabled: boolean;
   image: string;
-  entrypoint: string;
+  entrypoint: string | string[];
   serverFilesCourse: string[];
   timeout: number;
   enableNetworking: boolean;
@@ -360,7 +364,7 @@ interface QuestionWorkspaceOptions {
   image: string;
   port: number;
   home: string;
-  args: string;
+  args: string | string[];
   gradedFiles: string[];
   rewriteUrl: string;
   enableNetworking: boolean;
@@ -388,7 +392,6 @@ export interface Question {
   dependencies: Record<string, string>;
   sharingSets?: string[];
   sharePublicly: boolean;
-  sharedPublicly: boolean;
   shareSourcePublicly: boolean;
 }
 
@@ -725,8 +728,19 @@ export async function loadCourseInfo(
 
   const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
 
-  const devModeFeatures: string[] = _.get(info, 'options.devModeFeatures', []);
-  if (devModeFeatures.length > 0) {
+  const devModeFeatures = run(() => {
+    const features = info?.options?.devModeFeatures ?? {};
+
+    // Support for legacy values, where features were an array of strings instead
+    // of an object mapping feature names to booleans.
+    if (Array.isArray(features)) {
+      return Object.fromEntries(features.map((feature) => [feature, true]));
+    }
+
+    return features;
+  });
+
+  if (Object.keys(devModeFeatures).length > 0) {
     if (courseId == null) {
       if (!config.devMode) {
         infofile.addWarning(
@@ -737,7 +751,7 @@ export async function loadCourseInfo(
     } else {
       const institution = await selectInstitutionForCourse({ course_id: courseId });
 
-      for (const feature of new Set(devModeFeatures)) {
+      for (const [feature, overrideEnabled] of Object.entries(devModeFeatures)) {
         // Check if the feature even exists.
         if (!features.hasFeature(feature)) {
           infofile.addWarning(loadedData, `Feature "${feature}" does not exist.`);
@@ -752,8 +766,16 @@ export async function loadCourseInfo(
           institution_id: institution.id,
           course_id: courseId,
         });
-        if (!featureEnabled) {
-          infofile.addWarning(loadedData, `Feature "${feature}" is not enabled for this course.`);
+        if (overrideEnabled && !featureEnabled) {
+          infofile.addWarning(
+            loadedData,
+            `Feature "${feature}" is enabled in devModeFeatures, but is actually disabled.`,
+          );
+        } else if (!overrideEnabled && featureEnabled) {
+          infofile.addWarning(
+            loadedData,
+            `Feature "${feature}" is disabled in devModeFeatures, but is actually enabled.`,
+          );
         }
       }
     }
@@ -777,7 +799,7 @@ export async function loadCourseInfo(
     sharingSets,
     exampleCourse,
     options: {
-      useNewQuestionRenderer: _.get(info, 'options.useNewQuestionRenderer', false),
+      useNewQuestionRenderer: info.options?.useNewQuestionRenderer ?? false,
       devModeFeatures,
     },
   };
@@ -1050,14 +1072,6 @@ async function validateQuestion(
     }
   }
 
-  if ('sharedPublicly' in question) {
-    if ('sharePublicly' in question) {
-      errors.push('Cannot specify both "sharedPublicly" and "sharePublicly" in one question.');
-    } else {
-      warnings.push('"sharedPublicly" is deprecated; use "sharePublicly" instead.');
-    }
-  }
-
   return { warnings, errors };
 }
 
@@ -1112,6 +1126,7 @@ async function validateAssessment(
   const foundQids = new Set();
   const duplicateQids = new Set();
   const missingQids = new Set();
+  const draftQids = new Set();
   const checkAndRecordQid = (qid: string): void => {
     if (qid[0] === '@') {
       // Question is being imported from another course. We hold off on validating this until
@@ -1125,6 +1140,10 @@ async function validateAssessment(
       foundQids.add(qid);
     } else {
       duplicateQids.add(qid);
+    }
+
+    if (isDraftQid(qid)) {
+      draftQids.add(qid);
     }
   };
   (assessment.zones || []).forEach((zone) => {
@@ -1257,6 +1276,12 @@ async function validateAssessment(
   if (missingQids.size > 0) {
     errors.push(
       `The following questions do not exist in this course: ${[...missingQids].join(', ')}`,
+    );
+  }
+
+  if (draftQids.size > 0) {
+    errors.push(
+      `The following questions are marked as draft and therefore cannot be used in assessments: ${[...draftQids].join(', ')}`,
     );
   }
 

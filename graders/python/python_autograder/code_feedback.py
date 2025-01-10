@@ -1,7 +1,3 @@
-# -*- coding: utf-8 -*-
-
-from __future__ import division, print_function
-
 __copyright__ = "Copyright (C) 2014 Andreas Kloeckner"
 
 __license__ = """
@@ -25,7 +21,7 @@ THE SOFTWARE.
 """
 
 
-class GradingComplete(Exception):
+class GradingComplete(Exception):  # noqa: N818
     pass
 
 
@@ -131,27 +127,27 @@ class Feedback:
         import numpy as np
 
         if data is None:
-            cls.finish("'%s' is None or not defined" % name)
+            cls.finish(f"'{name}' is None or not defined")
 
         if not isinstance(data, np.ndarray):
-            cls.finish("'%s' is not a numpy array" % name)
+            cls.finish(f"'{name}' is not a numpy array")
 
         if isinstance(data, np.matrix):
             cls.finish(
-                "'%s' is a numpy matrix. Do not use those. "
-                "bit.ly/array-vs-matrix" % name
+                f"'{name}' is a numpy matrix. Do not use those. "
+                "https://docs.scipy.org/doc/scipy/tutorial/linalg.html#numpy-matrix-vs-2-d-numpy-ndarray"
             )
 
         if len(data.shape) != num_axes:
             cls.finish(
-                "'%s' does not have the correct number of axes--"
-                "got: %d, expected: %d" % (name, len(data.shape), num_axes)
+                f"'{name}' does not have the correct number of axes--"
+                f"got: {len(data.shape)}, expected: {num_axes}"
             )
 
         if data.dtype.kind not in "fc":
             cls.finish(
-                "'%s' does not consist of floating point numbers--"
-                "got: '%s'" % (name, data.dtype)
+                f"'{name}' does not consist of floating point numbers--"
+                f"got: '{data.dtype}'"
             )
 
     @classmethod
@@ -181,27 +177,27 @@ class Feedback:
                 return False
 
         if data is None:
-            return bad("'%s' is None or not defined" % name)
+            return bad(f"'{name}' is None or not defined")
 
         if not isinstance(data, np.ndarray):
-            return bad("'%s' is not a numpy array" % name)
+            return bad(f"'{name}' is not a numpy array")
 
         if isinstance(data, np.matrix):
             return bad(
-                "'%s' is a numpy matrix. Do not use those. "
-                "bit.ly/array-vs-matrix" % name
+                f"'{name}' is a numpy matrix. Do not use those. "
+                "https://docs.scipy.org/doc/scipy/tutorial/linalg.html#numpy-matrix-vs-2-d-numpy-ndarray"
             )
 
         if ref.shape != data.shape:
             return bad(
-                "'%s' does not have correct shape--"
-                "got: '%s', expected: '%s'" % (name, data.shape, ref.shape)
+                f"'{name}' does not have correct shape--"
+                f"got: '{data.shape}', expected: '{ref.shape}'"
             )
 
         if ref.dtype.kind != data.dtype.kind:
             return bad(
-                "'%s' does not have correct data type--"
-                "got: '%s', expected: '%s'" % (name, data.dtype, ref.dtype)
+                f"'{name}' does not have correct data type--"
+                f"got: '{data.dtype}', expected: '{ref.dtype}'"
             )
 
         return True
@@ -244,10 +240,10 @@ class Feedback:
 
         if not good:
             if report_failure:
-                cls.add_feedback("'%s' is inaccurate" % name)
+                cls.add_feedback(f"'{name}' is inaccurate")
         else:
             if report_success:
-                cls.add_feedback("'%s' looks good" % name)
+                cls.add_feedback(f"'{name}' looks good")
 
         if accuracy_critical and not good:
             raise GradingComplete()
@@ -286,21 +282,20 @@ class Feedback:
                 return False
 
         if data is None:
-            return bad("'%s' is None or not defined" % name)
+            return bad(f"'{name}' is None or not defined")
 
         if not isinstance(data, list):
-            return bad("'%s' is not a list" % name)
+            return bad(f"'{name}' is not a list")
 
         if len(ref) != len(data):
             return bad(
-                "'%s' has the wrong length--expected %d, got %d"
-                % (name, len(ref), len(data))
+                f"'{name}' has the wrong length--expected {len(ref)}, got {len(data)}"
             )
 
         if entry_type is not None:
             for i, entry in enumerate(data):
                 if not isinstance(entry, entry_type):
-                    return bad("'%s[%d]' has the wrong type" % (name, i))
+                    return bad(f"'{name}[{i}]' has the wrong type")
 
         return True
 
@@ -337,14 +332,14 @@ class Feedback:
                 return False
 
         if data is None:
-            return bad("{} is None or not defined".format(name))
+            return bad(f"{name} is None or not defined")
 
         if not isinstance(data, tuple):
-            return bad("{} is not a tuple".format(name))
+            return bad(f"{name} is not a tuple")
 
         nref = len(ref)
         if len(data) != nref:
-            return bad("{} should be of length {}".format(name, nref))
+            return bad(f"{name} should be of length {nref}")
 
         good = True
         for i in range(nref):
@@ -352,18 +347,16 @@ class Feedback:
                 good = False
                 if report_failure:
                     cls.add_feedback(
-                        "{}[{}] should be of type {}".format(
-                            name, i, type(ref[i]).__name__
-                        )
+                        f"{name}[{i}] should be of type {type(ref[i]).__name__}"
                     )
             elif data[i] != ref[i]:
                 good = False
 
         if not good:
-            return bad("'%s' is inaccurate" % name)
+            return bad(f"'{name}' is inaccurate")
         else:
             if report_success:
-                cls.add_feedback("'%s' looks good" % name)
+                cls.add_feedback(f"'{name}' looks good")
 
         return True
 
@@ -412,17 +405,17 @@ class Feedback:
                 return False
 
         if data is None:
-            return bad("'%s' is None or not defined" % name)
+            return bad(f"'{name}' is None or not defined")
 
-        if not isinstance(data, (complex, float, int, np.number)):
+        if not isinstance(data, complex | float | int | np.number):
             try:
                 # Check whether data is a sympy number because sympy
                 # numbers do not follow the typical interface
                 # See https://github.com/inducer/relate/pull/284
                 if not data.is_number:
-                    return bad("'%s' is not a number" % name)
+                    return bad(f"'{name}' is not a number")
             except AttributeError:
-                return bad("'%s' is not a number" % name)
+                return bad(f"'{name}' is not a number")
 
         good = False
 
@@ -432,10 +425,10 @@ class Feedback:
             good = True
 
         if not good:
-            return bad("'%s' is inaccurate" % name)
+            return bad(f"'{name}' is inaccurate")
         else:
             if report_success:
-                cls.add_feedback("'%s' looks good" % name)
+                cls.add_feedback(f"'{name}' looks good")
 
         return True
 
@@ -451,22 +444,19 @@ class Feedback:
 
         try:
             return f(*args, **kwargs)
-        except Exception:
+        except Exception as exc:
             if callable(f):
                 try:
                     callable_name = f.__name__
                 except Exception as e_name:
-                    callable_name = "<unable to retrieve name; encountered %s: %s>" % (
-                        type(e_name).__name__,
-                        str(e_name),
-                    )
+                    callable_name = f"<unable to retrieve name; encountered {type(e_name).__name__}: {str(e_name)}>"
                 from traceback import format_exc
 
                 cls.add_feedback(
-                    "The callable '%s' supplied in your code failed with "
+                    "The callable '{}' supplied in your code failed with "
                     "an exception while it was being called by the "
                     "grading code:"
-                    "%s" % (callable_name, "".join(format_exc()))
+                    "{}".format(callable_name, "".join(format_exc()))
                 )
             else:
                 cls.add_feedback(
@@ -475,7 +465,7 @@ class Feedback:
                     "callable."
                 )
 
-            raise GradingComplete()
+            raise GradingComplete() from exc
 
     @classmethod
     def check_plot(
@@ -515,10 +505,10 @@ class Feedback:
                 return False
 
         if plot is None:
-            return bad("'%s' is None or not defined" % name)
+            return bad(f"'{name}' is None or not defined")
 
         if not isinstance(plot, matplotlib.axes.Axes):
-            return bad("'%s' is not an object of matplotlib axes" % name)
+            return bad(f"'{name}' is not an object of matplotlib axes")
 
         # check_axes_scale can be None, 'x', 'y', or 'xy'
         if check_axes_scale:
@@ -537,18 +527,17 @@ class Feedback:
                     scales_match = False
 
             if not scales_match:
-                return bad("'%s' does not have the correct scale for its axes" % name)
+                return bad(f"'{name}' does not have the correct scale for its axes")
 
         user_lines = plot.get_lines()
         ref_lines = ref.get_lines()
 
         if user_lines is None:
-            return bad("No lines were plotted in '%s'" % name)
+            return bad(f"No lines were plotted in '{name}'")
 
         if len(user_lines) != len(ref_lines):
             return bad(
-                "%d lines were plotted in '%s' but %d lines were "
-                "expected" % (len(user_lines), name, len(ref_lines))
+                f"{len(user_lines)} lines were plotted in '{name}' but {ref_lines} lines were expected"
             )
 
         ref_datas = {}
@@ -558,7 +547,7 @@ class Feedback:
             ref_datas[i] = ref_data
 
         num_correct = 0
-        for i, line in enumerate(user_lines):
+        for line in user_lines:
             data = np.array([line.get_data()[0], line.get_data()[1]])
             data = data[np.lexsort(data.T)]
             for j, ref in ref_datas.items():
@@ -569,10 +558,10 @@ class Feedback:
 
         if num_correct == len(ref_lines):
             if report_success:
-                cls.add_feedback("'%s' looks good" % name)
+                cls.add_feedback(f"'{name}' looks good")
             return True
         else:
-            return bad("'%s' is inaccurate" % name)
+            return bad(f"'{name}' is inaccurate")
 
     @classmethod
     def check_dataframe(
@@ -580,7 +569,7 @@ class Feedback:
         name,
         ref,
         data,
-        subset_columns=[],
+        subset_columns=None,
         check_values=True,
         allow_order_variance=True,
         display_input=False,
@@ -598,7 +587,7 @@ class Feedback:
         - ``name``, String: The human-readable name of the DataFrame being checked
         - ``ref``, DataFrame: The reference (correct) DataFrame
         - ``data``, DataFrame: The student DataFrame
-        - ``subset_columns`` = [], Array of Strings:
+        - ``subset_columns`` = None, Array of Strings:
           If ``subset_columns`` is an empty array, all columns are used in the check.
           Otherwise, only columns named in ``subset_columns`` are used in the check and other columns are dropped.
         - ``check_values`` = True, Boolean: Check the values of each cell, in addition to the dimensions of the DataFrame
@@ -625,6 +614,8 @@ class Feedback:
         if len(ref) != len(data):
             return bad(f"{name} is inaccurate")
 
+        if subset_columns is None:
+            subset_columns = []
         # If `subset_columns` is non-empty, use only the columns
         # specified for grading
         if len(subset_columns) > 0:
