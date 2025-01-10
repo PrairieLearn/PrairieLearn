@@ -637,7 +637,6 @@ export class AssessmentCopyEditor extends Editor {
     infoJson.uuid = this.uuid;
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-
     await fs.writeFile(path.join(assessmentPath, 'infoAssessment.json'), formattedJson);
 
     return {
@@ -899,7 +898,6 @@ export class CourseInstanceCopyEditor extends Editor {
     infoJson.uuid = this.uuid;
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
 
     return {
@@ -1230,7 +1228,6 @@ export class QuestionAddEditor extends Editor {
     delete infoJson.tags;
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-
     await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
 
     return {
@@ -1471,7 +1468,6 @@ export class QuestionCopyEditor extends Editor {
     delete infoJson['shareSourcePublicly'];
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-
     await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
 
     return {
@@ -1560,7 +1556,6 @@ export class QuestionTransferEditor extends Editor {
     delete infoJson['shareSourcePublicly'];
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-
     await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
 
     return {
@@ -1999,7 +1994,6 @@ export class CourseInfoCreateEditor extends Editor {
     // - Creating a new file and infoPath does exist (use of 'wx')
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(this.infoJson));
-
     await fs.writeFile(infoPath, formattedJson, { flag: 'wx' });
 
     return {
