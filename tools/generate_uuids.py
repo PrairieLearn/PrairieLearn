@@ -103,6 +103,6 @@ if error_list:
     print()
     print("Errors occurred during processing")
     for error in error_list:
-        print(f"{error}")
+        print(error)
 else:
     print("Processing successsfully complete with no errors")
