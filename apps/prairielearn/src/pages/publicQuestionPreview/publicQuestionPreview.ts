@@ -79,6 +79,8 @@ router.get(
       authorizedEdit: false,
       // Score panels are never rendered on the public question preview page.
       renderScorePanels: false,
+      // Group role permissions are not used in this context.
+      groupRolePermissions: null,
     });
     res.json(panels);
   }),
@@ -90,7 +92,7 @@ router.get(
     await setLocals(req, res);
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
-    await getAndRenderVariant(variant_id, variant_seed, res.locals);
+    await getAndRenderVariant(variant_id, variant_seed, res.locals as any);
     await logPageView('publicQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
     setRendererHeader(res);

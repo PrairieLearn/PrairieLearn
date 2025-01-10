@@ -181,7 +181,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         "show_widget": show_widget,
     }
 
-    with open("pl-excalidraw.mustache", "r", encoding="utf-8") as template:
+    with open("pl-excalidraw.mustache", encoding="utf-8") as template:
         return chevron.render(template, render_data)
 
 
@@ -194,9 +194,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             # Check the submissions if available
             if drawing_name in data["submitted_answers"]:
                 json.loads(data["submitted_answers"][drawing_name])
-        except Exception as e:
+        except Exception as exc:
             if drawing_name not in data["format_errors"]:
                 data["format_errors"][drawing_name] = []
             data["format_errors"][drawing_name].append(
-                f"Invalid drawing submission: {e}"
+                f"Invalid drawing submission: {exc}"
             )

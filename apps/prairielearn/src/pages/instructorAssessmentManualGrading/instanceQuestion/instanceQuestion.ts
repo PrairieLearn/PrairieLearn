@@ -40,7 +40,7 @@ async function prepareLocalsForRender(query: Record<string, any>, resLocals: Rec
     throw new error.HttpStatusError(404, 'Instance question does not have a gradable submission.');
   }
   resLocals.manualGradingInterface = true;
-  await getAndRenderVariant(variant_with_submission_id, null, resLocals);
+  await getAndRenderVariant(variant_with_submission_id, null, resLocals as any);
 
   let conflict_grading_job: GradingJobData | null = null;
   if (query.conflict_grading_job_id) {
@@ -89,6 +89,8 @@ router.get(
       authorizedEdit: false,
       // The score panels never need to be live-updated in this context.
       renderScorePanels: false,
+      // Group role permissions are not used in this context.
+      groupRolePermissions: null,
     });
     res.json(panels);
   }),

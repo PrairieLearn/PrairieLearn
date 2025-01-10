@@ -12,7 +12,7 @@ import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
 interface CourseOptions {
   useNewQuestionRenderer: boolean;
-  devModeFeatures: string[];
+  devModeFeatures: Record<string, boolean> | string[];
 }
 
 interface Tag {
@@ -187,7 +187,6 @@ export interface Question {
   tags?: string[];
   sharingSets?: string[];
   sharePublicly?: boolean;
-  sharedPublicly?: boolean;
   shareSourcePublicly?: boolean;
   clientFiles?: string[];
   clientTemplates?: string[];

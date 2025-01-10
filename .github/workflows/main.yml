@@ -4,6 +4,8 @@ on:
   push:
     branches:
       - master
+      # Build on all code freeze branches since we will deploy from them.
+      - '**-code-freeze'
   pull_request:
   merge_group:
 
@@ -309,7 +311,7 @@ jobs:
       - name: Copy coverage reports to the host
         run: ./tools/copy_docker_coverage_reports.sh test_container
       - name: Upload coverage reports to Codecov
-        uses: codecov/codecov-action@v5.0.7
+        uses: codecov/codecov-action@v5.1.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
@@ -321,6 +323,9 @@ jobs:
 
       - name: Install OS packages
         run: sudo apt-get install -y graphviz graphviz-dev
+
+      - name: Install additional dependencies
+        run: sudo curl -fsSL https://d2lang.com/install.sh | sh -s --
 
       - name: Set up Python
         uses: actions/setup-python@v5

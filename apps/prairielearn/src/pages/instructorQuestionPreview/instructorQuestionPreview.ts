@@ -53,6 +53,8 @@ router.get(
       authorizedEdit: false,
       // score panels are never rendered on the instructor question preview page.
       renderScorePanels: false,
+      // Group role permissions are not used in this context.
+      groupRolePermissions: null,
     });
     res.json(panels);
   }),
@@ -64,7 +66,7 @@ router.get(
     const variant_seed = req.query.variant_seed ? z.string().parse(req.query.variant_seed) : null;
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
     // req.query.variant_id might be undefined, which will generate a new variant
-    await getAndRenderVariant(variant_id, variant_seed, res.locals);
+    await getAndRenderVariant(variant_id, variant_seed, res.locals as any);
     await logPageView('instructorQuestionPreview', req, res);
     await setQuestionCopyTargets(res);
 
