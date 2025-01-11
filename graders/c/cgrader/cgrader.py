@@ -89,7 +89,7 @@ class CGrader:
                 "-s",
                 "/bin/bash",
                 "-c",
-                shlex.join(["PATH=" + self.path] + command),
+                shlex.join(["PATH=" + self.path, *command]),
             ]
 
         try:
@@ -155,7 +155,7 @@ class CGrader:
         if pkg_config_flags:
             if isinstance(pkg_config_flags, str):
                 pkg_config_flags = shlex.split(pkg_config_flags)
-            out_flags = self.run_command(["pkg-config", "--cflags"] + pkg_config_flags)
+            out_flags = self.run_command(["pkg-config", "--cflags", *pkg_config_flags])
             if out_flags:
                 cflags.extend(shlex.split(out_flags))
 
@@ -166,7 +166,7 @@ class CGrader:
             obj_file = pathlib.Path(std_c_file).with_suffix(".o")
             std_obj_files.append(obj_file)
             out += self.run_command(
-                [compiler, "-save-temps", "-c", std_c_file, "-o", obj_file] + cflags,
+                [compiler, "-save-temps", "-c", std_c_file, "-o", obj_file, *cflags],
                 sandboxed=False,
             )
             # Identify references to functions intended to disable sanitizers from object file
@@ -212,7 +212,7 @@ class CGrader:
                     os.unlink(obj_file)
                 if objcopy_args:
                     self.run_command(
-                        ["objcopy", obj_file] + objcopy_args, sandboxed=False
+                        ["objcopy", obj_file, *objcopy_args], sandboxed=False
                     )
 
         if all(os.path.isfile(obj) for obj in std_obj_files):
@@ -220,7 +220,7 @@ class CGrader:
             for added_c_file in add_c_file:
                 obj_file = pathlib.Path(added_c_file).with_suffix(".o")
                 out += self.run_command(
-                    [compiler, "-c", added_c_file, "-o", obj_file] + cflags,
+                    [compiler, "-c", added_c_file, "-o", obj_file, *cflags],
                     sandboxed=False,
                 )
                 objs.append(obj_file)
@@ -285,17 +285,21 @@ class CGrader:
         if pkg_config_flags:
             if isinstance(pkg_config_flags, str):
                 pkg_config_flags = shlex.split(pkg_config_flags)
-            out_flags = self.run_command(["pkg-config", "--libs"] + pkg_config_flags)
+            out_flags = self.run_command(["pkg-config", "--libs", *pkg_config_flags])
             if out_flags:
                 flags.extend(shlex.split(out_flags))
 
         # The student C files must be the last so its functions can be overwritten
         out = self.run_command(
-            [compiler]
-            + add_obj_files
-            + student_obj_files
-            + ["-o", exec_file, "-lm"]
-            + flags,
+            [
+                compiler,
+                *add_obj_files,
+                *student_obj_files,
+                "-o",
+                exec_file,
+                "-lm",
+                *flags,
+            ],
             sandboxed=False,
         )
 
@@ -445,7 +449,7 @@ class CGrader:
         reject_output = [compile_re(t) for t in reject_output]
 
         out = self.run_command(
-            command if args is None else ([command] + args),
+            command if args is None else ([command, *args]),
             input,
             sandboxed=True,
             timeout=timeout,
@@ -602,7 +606,7 @@ class CGrader:
         if use_malloc_debug:
             env["LD_PRELOAD"] = "/lib/x86_64-linux-gnu/libc_malloc_debug.so"
 
-        out = self.run_command([exec_file] + args, env=env, sandboxed=sandboxed)
+        out = self.run_command([exec_file, *args], env=env, sandboxed=sandboxed)
 
         print(out)  # Printing so it shows in the grading job log
 

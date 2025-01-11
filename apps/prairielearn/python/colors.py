@@ -115,9 +115,7 @@ class PrairieLearnColor(sRGB):
             if alpha_float is None:
                 alpha_float = 1.0
 
-            coords = serialize.get_coords(parent, fit, none=False, legacy=False) + [
-                alpha_float
-            ]
+            coords = [*serialize.get_coords(parent, fit, none=False, legacy=False), alpha_float]
 
             # See if the color value is a match, if so, return the string
             value = cast(ColorTuple, tuple(alg.round_half_up(c * 255) for c in coords))

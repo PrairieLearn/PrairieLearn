@@ -3235,9 +3235,13 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "@prairielearn/bind-mount@workspace:packages/bind-mount"
   dependencies:
+    "@prairielearn/tsconfig": "workspace:^"
+    "@types/bindings": "npm:^1.5.5"
+    "@types/node": "npm:^20.17.9"
     bindings: "npm:^1.5.0"
     nan: "npm:^2.22.0"
     node-gyp: "npm:^11.0.0"
+    typescript: "npm:^5.7.2"
   languageName: unknown
   linkType: soft
 
@@ -3818,7 +3822,6 @@ __metadata:
     ansi_up: "npm:^6.0.2"
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.6"
-    async-mutex: "npm:^0.5.0"
     axe-core: "npm:^4.10.2"
     backbone: "npm:^1.6.0"
     better-ajv-errors: "npm:^1.2.0"
@@ -5082,6 +5085,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/bindings@npm:^1.5.5":
+  version: 1.5.5
+  resolution: "@types/bindings@npm:1.5.5"
+  dependencies:
+    "@types/node": "npm:*"
+  checksum: 10c0/c8b252f44d9b45df870b31d464424fb93d022650fcb70cc54378cbc63cbe097ef30d51a69d2fb2df14ffb2e76230d222a24d3858735f6898be66d1ca47072eee
+  languageName: node
+  linkType: hard
+
 "@types/blocked-at@npm:^1.0.4":
   version: 1.0.4
   resolution: "@types/blocked-at@npm:1.0.4"
@@ -5794,12 +5806,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.17.11":
-  version: 20.17.11
-  resolution: "@types/node@npm:20.17.11"
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:>=8.1.0, @types/node@npm:^20.17.11, @types/node@npm:^20.17.9":
+  version: 20.17.12
+  resolution: "@types/node@npm:20.17.12"
   dependencies:
     undici-types: "npm:~6.19.2"
-  checksum: 10c0/16cb9c63d5b8903a6ee05b2948af3379e34b438682cb219f7877521fb24cf3ec5dbd7016dc95a156ae60821a936dea0018f460a7016cc3228b7f572d862bad68
+  checksum: 10c0/340b65a11e4486e597163991532a08e525beee40f082cf73dc830c060426fa9ea8690a4e3931d91375e946816a884d6140d96e99ac048b51f280f21cc70d22ed
   languageName: node
   linkType: hard
 

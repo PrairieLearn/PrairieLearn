@@ -124,7 +124,7 @@ class Course(Canvas):
         super().__init__(canvas.token)
         self.data = course_data
         self.id = course_data["id"]
-        self.url_prefix = "/courses/%d" % self.id
+        self.url_prefix = f"/courses/{self.id}"
 
     def __getitem__(self, index):
         return self.data[index]
@@ -137,7 +137,7 @@ class Course(Canvas):
             # individually for each page.
             for page_data in result:
                 new_page_datas = self.request(
-                    f'{self.url_prefix}/pages/{page_data["url"]}'
+                    f"{self.url_prefix}/pages/{page_data['url']}"
                 )
                 if len(new_page_datas) == 1:
                     pages.append(Page(self, new_page_datas[0]))
@@ -426,8 +426,7 @@ class QuizQuestion(CourseSubObject):
         if quiz is None:
             if "quiz_id" not in quiz_question_data:
                 raise RuntimeError(
-                    "No quiz provided and cannot find quiz id for: %s"
-                    % quiz_question_data
+                    f"No quiz provided and cannot find quiz id for: {quiz_question_data}"
                 )
             quiz = course.quiz(quiz_question_data)
         super().__init__(

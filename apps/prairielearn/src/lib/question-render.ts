@@ -511,9 +511,9 @@ export async function getAndRenderVariant(
   );
   const submissionCount = basicSubmissions.length;
 
-  const { submissions, submission } = await run(async () => {
+  const submissions = await run(async () => {
     if (submissionCount === 0) {
-      return { submissions: [], submission: null };
+      return [];
     }
 
     // Load detailed information for the submissions that we'll render.
@@ -531,23 +531,21 @@ export async function getAndRenderVariant(
       SubmissionDetailedSchema,
     );
 
-    const submissions = basicSubmissions.map((s, idx) => ({
+    return basicSubmissions.map((s, idx) => ({
       submission_number: submissionCount - idx,
       ...s,
       // Both queries order results consistently, so we can just use
       // the array index to match up the basic and detailed results.
       ...(idx < submissionDetails.length ? submissionDetails[idx] : {}),
     })) satisfies SubmissionForRender[];
-    const submission = submissions[0]; // most recent submission
-
-    return { submissions, submission };
   });
 
+  const submission = submissions[0] ?? null;
   resultLocals.submissions = submissions;
   resultLocals.submission = submission;
 
-  if (!locals.assessment && locals.question.show_correct_answer) {
-    // On instructor question pages, only show if true answer is allowed for this question.
+  if (!locals.assessment && locals.question.show_correct_answer && submissionCount > 0) {
+    // On instructor question pages, only show if true answer is allowed for this question and there is at least one submission.
     resultLocals.showTrueAnswer = true;
   }
 
