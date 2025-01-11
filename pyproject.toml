@@ -5,6 +5,7 @@ include = [
     "./graders/**/*.py",
     "./exampleCourse/**/*.py",
     "./testCourse/**/*.py",
+    "./tools/**/*.py"
 ]
 exclude = [
     # These files are intentionally not parseable as Python.
@@ -31,6 +32,10 @@ select = [
     "UP",
     # Perflint
     "PERF",
+    # ruff-specific rules
+    "RUF",
+    # refurb
+    "FURB"
 ]
 ignore = [
     # Ignore line length errors
