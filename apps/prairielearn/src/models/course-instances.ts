@@ -99,7 +99,7 @@ export async function selectCourseInstanceGraderStaff({
 }
 
 /**
- *
+ * Returns if the course has any non-deleted course instances.
  */
 export async function selectCourseHasCourseInstances({
   course_id,
