@@ -160,7 +160,6 @@ class BaseSympyError(Exception):
     """Exception base class for sympy parsing errors"""
 
 
-
 class HasConflictingVariableError(BaseSympyError):
     pass
 
