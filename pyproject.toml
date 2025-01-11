@@ -30,6 +30,8 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
+    # flake8-pie
+    "PIE",
     # Perflint
     "PERF",
     # ruff-specific rules
