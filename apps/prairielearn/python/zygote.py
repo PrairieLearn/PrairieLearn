@@ -281,8 +281,8 @@ def worker_loop() -> None:
                 # be much faster than the current implementation that does an IPC
                 # call for each element.
 
-                data = args[0]
-                context = args[1]
+                context = args[0]
+                data = args[1]
 
                 result, processed_elements = question_phases.process(fcn, data, context)
                 val = {
