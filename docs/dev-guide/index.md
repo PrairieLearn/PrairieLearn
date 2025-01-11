@@ -60,7 +60,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 ## Debugging SQL and PL/pgSQL
 
-- Use the [`psql`](https://www.postgresql.org/docs/current/app-psql.html) commandline interface to test SQL separately. A default development PrairieLearn install uses the `postgres` database, so you should run:
+- Use the [`psql`](https://www.postgresql.org/docs/current/app-psql.html) command-line interface to test SQL separately. A default development PrairieLearn install uses the `postgres` database, so you should run:
 
   ```sh
   psql postgres
@@ -111,7 +111,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 ## SQL usage
 
-- [PostgreSQL](https://www.postgresql.org) v15 is used as the database.
+- [PostgreSQL](https://www.postgresql.org) v16 is used as the database.
 
 - The [PostgreSQL manual](https://www.postgresql.org/docs/manuals/) is an excellent reference.
 
@@ -184,7 +184,7 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
   await sqldb.callAsync('workspaces_message_update', [workspace_id, message]);
   ```
 
-- The stored procedures are all contained in a separate [database schema](https://www.postgresql.org/docs/12/ddl-schemas.html) with a name like `server_2021-07-07T20:25:04.779Z_T75V6Y`. To see a list of the schemas use the `\dn` command in `psql`.
+- The stored procedures are all contained in a separate [database schema](https://www.postgresql.org/docs/current/ddl-schemas.html) with a name like `server_2021-07-07T20:25:04.779Z_T75V6Y`. To see a list of the schemas use the `\dn` command in `psql`.
 
 - To be able to use the stored procedures from the `psql` command line it is necessary to get the most recent schema name using `\dn` and set the `search_path` to use this _quoted_ schema name and the `public` schema:
 
@@ -314,7 +314,7 @@ WHERE
     ($points_list::INTEGER[]);
   ```
 
-- To use a JavaScript array for membership testing in SQL use [`unnest()`](https://www.postgresql.org/docs/9.5/static/functions-array.html) like:
+- To use a JavaScript array for membership testing in SQL use `= ANY ($array)` (or its negative form `!= ALL ($array)`) like:
 
   ```javascript
   const questions = await sqldb.queryRows(
@@ -331,10 +331,7 @@ WHERE
   FROM
     questions
   WHERE
-    id IN (
-      SELECT
-        unnest($id_list::INTEGER[])
-    );
+    id = ANY ($id_list::BIGINT[]);
   ```
 
 - To pass a lot of data to SQL a useful pattern is to send a JSON object array and unpack it in SQL to the equivalent of a table. This is the pattern used by the "sync" code, such as [sprocs/sync_news_items.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/sprocs/sync_news_items.sql). For example:

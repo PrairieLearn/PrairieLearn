@@ -1,7 +1,9 @@
 import os
+import typing
+from collections.abc import Generator, Iterable, Iterator
 from functools import cache
 from html import escape, unescape
-from typing import Any, Generator, Iterable, Iterator, Optional
+from typing import Any
 
 import chevron
 import lxml.html
@@ -71,7 +73,7 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
     with highlighted lines.
     """
 
-    def set_highlighted_lines(self, hl_lines: Optional[list[int]]) -> None:
+    def set_highlighted_lines(self, hl_lines: list[int] | None) -> None:
         self.hl_lines.clear()
         if hl_lines:
             for line in hl_lines:
@@ -106,7 +108,7 @@ class HighlightingHtmlFormatter(pygments.formatters.HtmlFormatter):
 # lexers to avoid this cost if `<pl-code>` is used with the same language
 # multiple times in the same question.
 @cache
-def get_lexer_by_name(name: str) -> Optional[pygments.lexer.Lexer]:
+def get_lexer_by_name(name: str) -> pygments.lexer.Lexer | None:
     """
     Tries to find a lexer by both its proper name and any aliases it has.
     """
@@ -137,11 +139,11 @@ def get_ansi_color_tokens():
 # member, so the caller must take care to set or clear it as needed before use.
 @cache
 def get_formatter(
-    BaseStyle: type[pygments.style.Style], highlight_lines_color: Optional[str]
+    BaseStyle: type[pygments.style.Style], highlight_lines_color: str | None
 ) -> HighlightingHtmlFormatter:
     class CustomStyleWithAnsiColors(BaseStyle):
-        styles = dict(BaseStyle.styles)
-        styles.update(get_ansi_color_tokens())
+        # pygments did not annotate their class variables correctly (https://github.com/pygments/pygments/pull/2838)
+        styles = {**BaseStyle.styles, **get_ansi_color_tokens()}  # noqa: RUF012
 
         highlight_color = (
             highlight_lines_color or BaseStyle.highlight_color or "#b3d7ff"
@@ -195,20 +197,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     source_file_name = pl.get_string_attrib(
         element, "source-file-name", SOURCE_FILE_NAME_DEFAULT
     )
-    if source_file_name is not None:
-        if element.text is not None and not str(element.text).isspace():
-            raise ValueError(
-                'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
-            )
+    if (
+        source_file_name is not None
+        and element.text is not None
+        and not str(element.text).isspace()
+    ):
+        raise ValueError(
+            'Existing code cannot be added inside html element when "source-file-name" attribute is used.'
+        )
 
     highlight_lines = pl.get_string_attrib(
         element, "highlight-lines", HIGHLIGHT_LINES_DEFAULT
     )
-    if highlight_lines is not None:
-        if parse_highlight_lines(highlight_lines) is None:
-            raise ValueError(
-                "Could not parse highlight-lines attribute; check your syntax"
-            )
+    if highlight_lines is not None and parse_highlight_lines(highlight_lines) is None:
+        raise ValueError("Could not parse highlight-lines attribute; check your syntax")
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -248,7 +250,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         if not os.path.exists(file_path):
             raise ValueError(f'Unknown file path: "{file_path}".')
 
-        with open(file_path, "r") as f:
+        with open(file_path) as f:
             code = f.read().removesuffix("\n").removesuffix("\r")
 
         # Automatically escape code in file source (important for: html/xml).
@@ -291,5 +293,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         ),
     }
 
-    with open("pl-code.mustache", "r", encoding="utf-8") as f:
+    with open("pl-code.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

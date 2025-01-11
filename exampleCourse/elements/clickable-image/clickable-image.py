@@ -40,7 +40,7 @@ def render(element_html, data):
     elif data["panel"] == "answer":
         html_params = {"answer": True, "correct": data["correct_answers"][name]}
 
-    with open("clickable-image.mustache", "r") as f:
+    with open("clickable-image.mustache") as f:
         return chevron.render(f, html_params).strip()
 
 

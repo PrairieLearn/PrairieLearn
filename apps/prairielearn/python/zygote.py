@@ -24,9 +24,10 @@ import subprocess
 import sys
 import time
 import types
+from collections.abc import Iterable, Sequence
 from importlib.abc import MetaPathFinder
 from inspect import signature
-from typing import Any, Iterable, Sequence
+from typing import Any
 
 import question_phases
 import zygote_utils as zu
@@ -258,7 +259,7 @@ def worker_loop() -> None:
             # question happens to contain multiple occurrences of the same element, the
             # randomizations for each occurrence are independent of each other but still
             # dependent on the variant seed.
-            if type(args[-1]) is dict and not seeded:  # noqa: E721
+            if type(args[-1]) is dict and not seeded:
                 variant_seed = args[-1].get("variant_seed", None)
                 random.seed(variant_seed)
                 numpy.random.seed(variant_seed)
@@ -280,8 +281,8 @@ def worker_loop() -> None:
                 # be much faster than the current implementation that does an IPC
                 # call for each element.
 
-                data = args[0]
-                context = args[1]
+                context = args[0]
+                data = args[1]
 
                 result, processed_elements = question_phases.process(fcn, data, context)
                 val = {
@@ -372,7 +373,7 @@ def worker_loop() -> None:
                         # TODO: Once this has been running in production for a while,
                         # change this to raise an exception.
                         sys.stderr.write(
-                            f"Function {str(fcn)}() in {str(file + '.py')} returned a data object other than the one that was passed in.\n\n"
+                            f"Function {fcn}() in {file + '.py'} returned a data object other than the one that was passed in.\n\n"
                             + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
                             + "For now, the return value will be used instead of the data object that was passed in.\n\n"
                             + "In the future, returning a different object will trigger a fatal error."
@@ -469,10 +470,10 @@ with open(4, "w", encoding="utf-8") as exitf:
                 else:
                     # The worker did not exit gracefully
                     raise Exception(
-                        "worker process exited unexpectedly with status %d" % status
+                        f"worker process exited unexpectedly with status {status}"
                     )
             else:
                 # Something else happened that is weird
                 raise Exception(
-                    "worker process exited unexpectedly with status %d" % status
+                    f"worker process exited unexpectedly with status {status}"
                 )
