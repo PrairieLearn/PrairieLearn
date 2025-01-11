@@ -51,7 +51,7 @@ interface CodeCallerNativeOptions {
   errorLogger: (msg: string, data?: any) => void;
 }
 
-interface CodeCallerNativeInternalOptions extends Required<CodeCallerNativeOptions> {
+interface CodeCallerNativeOptionsInternal extends Required<CodeCallerNativeOptions> {
   pythonExecutable: string;
 }
 
@@ -102,7 +102,7 @@ export class CodeCallerNative implements CodeCaller {
   child: CodeCallerNativeChildProcess | null;
   callback: ((err: CodeCallerError | null, data?: any, output?: string) => void) | null;
   timeoutID: NodeJS.Timeout | null;
-  options: CodeCallerNativeInternalOptions;
+  options: CodeCallerNativeOptionsInternal;
   outputStdout: string[];
   outputStderr: string[];
   outputBoth: string[];
@@ -139,7 +139,7 @@ export class CodeCallerNative implements CodeCaller {
   /**
    * Creates a new {@link CodeCallerNative} with the specified options.
    */
-  private constructor(options: CodeCallerNativeInternalOptions) {
+  private constructor(options: CodeCallerNativeOptionsInternal) {
     this.state = CREATED;
     this.uuid = uuidv4();
 
@@ -244,7 +244,6 @@ export class CodeCallerNative implements CodeCaller {
       }
     };
 
-    /** @type {number} */
     const timeout =
       type === 'ping'
         ? this.options.pingTimeoutMilliseconds

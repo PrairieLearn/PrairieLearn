@@ -126,11 +126,6 @@ async function ensureImage() {
   }
 }
 
-interface CodeCallerContainerOptions {
-  questionTimeoutMilliseconds: number;
-  pingTimeoutMilliseconds: number;
-}
-
 export class CodeCallerContainer implements CodeCaller {
   state: CallerState;
   uuid: string;
