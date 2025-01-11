@@ -17,9 +17,15 @@ ENV_VAR=$2
 
 BRANCH="$(git rev-parse --abbrev-ref HEAD)"
 
-# If this script is being run *on* the master branch, then we want to diff
-# with the previous commit on master. Otherwise, we diff with master itself.
-if [[ "$BRANCH" == "master" ]]; then
+# The branch we compare to depends on the current branch:
+#
+# - If this script is being run *on* the master branch, then we want to diff
+#   with the previous commit on master.
+# - If this script is being run on a GitHub merge queue branch, then we'll
+#   diff with whatever the previous commit was. We'll trust that the merge
+#   queue will have tested all previous commits correctly.
+# - Otherwise, we diff with master itself.
+if [[ "$BRANCH" == "master" ]] || [[ "$BRANCH" =~ ^gh-readonly-queue/ ]]; then
   DIFF_SOURCE="HEAD^1"
 else
   DIFF_SOURCE="remotes/origin/master"
