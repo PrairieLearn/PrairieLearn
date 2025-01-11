@@ -1154,8 +1154,8 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
                 data["format_errors"] = (
                     "Your expression resulted in a division by zero."
                 )
-            except Exception as error:
-                data["format_errors"] = f"Invalid format: {str(error)}"
+            except Exception as exc:
+                data["format_errors"] = f"Invalid format: {exc}"
         else:
             data["format_errors"] = "Fractional answers are not allowed in this input."
     else:
@@ -1170,8 +1170,8 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
                 raise ValueError("The submitted answer is not a finite number.")
             value = a_sub_parsed
             data["submitted_answers"] = to_json(value)
-        except Exception as error:
-            data["format_errors"] = f"Invalid format: {str(error)}"
+        except Exception as exc:
+            data["format_errors"] = f"Invalid format: {exc}"
 
     return (value, data)
 

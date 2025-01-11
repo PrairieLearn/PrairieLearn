@@ -635,9 +635,9 @@ export class AssessmentCopyEditor extends Editor {
     debug('Write infoAssessment.json with new title and uuid');
     infoJson.title = assessmentTitle;
     infoJson.uuid = this.uuid;
-    await fs.writeJson(path.join(assessmentPath, 'infoAssessment.json'), infoJson, {
-      spaces: 4,
-    });
+
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(path.join(assessmentPath, 'infoAssessment.json'), formattedJson);
 
     return {
       pathsToAdd: [assessmentPath],
@@ -896,9 +896,9 @@ export class CourseInstanceCopyEditor extends Editor {
     debug('Write infoCourseInstance.json with new longName and uuid');
     infoJson.longName = names.longName;
     infoJson.uuid = this.uuid;
-    await fs.writeJson(path.join(courseInstancePath, 'infoCourseInstance.json'), infoJson, {
-      spaces: 4,
-    });
+
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
 
     return {
       pathsToAdd: [courseInstancePath],
@@ -1310,7 +1310,6 @@ export class QuestionAddEditor extends Editor {
         }
       }
     }
-
     return {
       pathsToAdd: [newQuestionPath],
       commitMessage: `add question ${qid}`,
@@ -1548,7 +1547,8 @@ export class QuestionCopyEditor extends Editor {
     delete infoJson['sharePublicly'];
     delete infoJson['shareSourcePublicly'];
 
-    await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
 
     return {
       pathsToAdd: [questionPath],
@@ -1635,7 +1635,8 @@ export class QuestionTransferEditor extends Editor {
     delete infoJson['sharePublicly'];
     delete infoJson['shareSourcePublicly'];
 
-    await fs.writeJson(path.join(questionPath, 'info.json'), infoJson, { spaces: 4 });
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+    await fs.writeFile(path.join(questionPath, 'info.json'), formattedJson);
 
     return {
       pathsToAdd: [questionPath],
@@ -2068,10 +2069,12 @@ export class CourseInfoCreateEditor extends Editor {
     debug('CourseInfoEditor: write()');
     const infoPath = path.join(this.course.path, 'infoCourse.json');
 
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(this.infoJson));
+
     // This will error if:
-    // - this.course.path does not exist (use of writeJson)
+    // - this.course.path does not exist (use of writeFile)
     // - Creating a new file and infoPath does exist (use of 'wx')
-    await fs.writeJson(infoPath, this.infoJson, { spaces: 4, flag: 'wx' });
+    await fs.writeFile(infoPath, formattedJson, { flag: 'wx' });
 
     return {
       pathsToAdd: [infoPath],
