@@ -210,7 +210,7 @@ describe('Creating a question', () => {
   step('verify that the title and qid had 2 appended to them', async () => {
     const questionLiveInfoPath = path.join(
       questionsLiveDir,
-      'test-question_2', // Verify that the qid with 2 appended to it was used as the question folder's name
+      'test-question_2', // Verify that the qid with 2 appended to it was used as the name of the question folder
       'info.json',
     );
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
