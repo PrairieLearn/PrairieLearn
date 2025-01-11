@@ -1762,8 +1762,10 @@ export async function initExpress(): Promise<Express> {
 
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin',
-    (await import('./pages/instructorCourseAdmin/instructorCourseAdminLandingPageSwitcher.js')).default,
+    (await import('./pages/instructorCourseAdmin/instructorCourseAdminLandingPageSwitcher.js'))
+      .default,
   );
+
   app.use('/pl/course/:course_id(\\d+)/course_admin', function (req, res, next) {
     res.locals.navPage = 'course_admin';
     next();

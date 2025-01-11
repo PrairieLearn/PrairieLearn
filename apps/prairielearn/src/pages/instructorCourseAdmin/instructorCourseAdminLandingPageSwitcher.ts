@@ -16,14 +16,12 @@ router.get(
       authn_is_administrator: res.locals.authz_data.authn_is_administrator,
     });
 
-    console.log('course_instances', course_instances);
-
-    const course_id = req.params.course_id;
-
     if (course_instances.length === 0) {
-      res.redirect(`/pl/course/${course_id}/course_admin/questions`);
+      // Redirect to the questions page of the course
+      res.redirect(`/pl/course/${res.locals.course.id}/course_admin/questions`);
     } else {
-      res.redirect(`/pl/course/${course_id}/course_admin/instances`);
+      // Redirect to the instances page of the course
+      res.redirect(`/pl/course/${res.locals.course.id}/course_admin/instances`);
     }
   }),
 );
