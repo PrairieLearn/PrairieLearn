@@ -33,5 +33,5 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if missing_files:
         pl.add_files_format_error(
             data,
-            f'The following required files were missing: {", ".join(missing_files)}',
+            f"The following required files were missing: {', '.join(missing_files)}",
         )

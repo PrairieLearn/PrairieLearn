@@ -63,6 +63,8 @@ export async function init() {
           } else if (workersExecutionMode === 'native') {
             return await CodeCallerNative.create({
               ...codeCallerOptions,
+              pythonVenvSearchPaths: config.pythonVenvSearchPaths,
+              errorLogger: logger.error.bind(logger),
               // We can only drop privileges if this code caller is running in a container.
               dropPrivileges: false,
             });

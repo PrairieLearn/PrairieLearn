@@ -40,6 +40,11 @@ type CallerState =
   | typeof EXITING
   | typeof EXITED;
 
+interface CodeCallerContainerOptions {
+  questionTimeoutMilliseconds: number;
+  pingTimeoutMilliseconds: number;
+}
+
 const MOUNT_DIRECTORY_PREFIX = 'prairielearn-worker-';
 
 const debug = debugfn('prairielearn:code-caller-container');
@@ -163,7 +168,6 @@ export class CodeCallerContainer implements CodeCaller {
 
     this.debug('enter constructor()');
 
-    /** @type {import('dockerode').Container | null} */
     this.container = null;
     this.callback = null;
     this.timeoutID = null;
@@ -173,9 +177,7 @@ export class CodeCallerContainer implements CodeCaller {
     this.options = options;
 
     // These will accumulate output from the container.
-    /** @type {string[]} */
     this.outputStdout = [];
-    /** @type {string[]} */
     this.outputStderr = [];
     this.outputBoth = '';
 
@@ -359,8 +361,7 @@ export class CodeCallerContainer implements CodeCaller {
     this.debug('exit done()');
   }
 
-  /** @private */
-  async ensureChild() {
+  private async ensureChild() {
     this.debug('enter ensureChild()');
     this._checkState();
 
@@ -526,11 +527,6 @@ export class CodeCallerContainer implements CodeCaller {
     this.debug('exit _handleContainerExit()');
   }
 
-  /**
-   * @param {(Error & { data?: any }) | null} err
-   * @param {any} [data]
-   * @param {string} [output]
-   */
   _callCallback(err: (Error & { data?: any }) | null, data?: any, output?: string) {
     this.debug('enter _callCallback()');
     if (err) err.data = this._errorData();
