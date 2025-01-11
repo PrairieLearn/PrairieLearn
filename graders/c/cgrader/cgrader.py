@@ -74,7 +74,7 @@ UngradableException = UngradableError
 
 
 class CGrader:
-    def __init__(self, compiler="gcc") -> None:
+    def __init__(self, compiler: str = "gcc") -> None:
         with open(DATAFILE) as file:
             self.data = json.load(file)
         self.compiler = compiler
@@ -138,10 +138,10 @@ class CGrader:
         compiler: str | None = None,
         flags: str | list[str] | None = None,
         pkg_config_flags: str | list[str] | None = None,
-        add_warning_result_msg=True,
-        ungradable_if_failed=True,
-        return_objects=False,
-        enable_asan=False,
+        add_warning_result_msg: bool = True,
+        ungradable_if_failed: bool = True,
+        return_objects: bool = False,
+        enable_asan: bool = False,
         reject_symbols: list[str] | None = None,
         objcopy_args: list[str] | None = None,
     ):
@@ -330,14 +330,14 @@ class CGrader:
         main_file: str | None = None,
         add_c_file: str | list[str] | None = None,
         compiler: str | None = None,
-        points=1,
+        points: int | float = 1,
         field: str | None = None,
         flags: str | list[str] | None = None,
         pkg_config_flags: str | list[str] | None = None,
-        name="Compilation",
-        add_warning_result_msg=True,
-        ungradable_if_failed=True,
-        enable_asan=False,
+        name: str = "Compilation",
+        add_warning_result_msg: bool = True,
+        ungradable_if_failed: bool = True,
+        enable_asan: bool = False,
         reject_symbols: list[str] | None = None,
         objcopy_args: list[str] | None = None,
     ):
@@ -376,7 +376,7 @@ class CGrader:
             field=field,
         )
 
-    def change_mode(self, file: str, mode="744", change_parent=True):
+    def change_mode(self, file: str, mode: str = "744", change_parent: bool = True):
         file = os.path.abspath(file)
         self.run_command(["chmod", mode, file], sandboxed=False)
         parent = os.path.dirname(file)
@@ -397,15 +397,15 @@ class CGrader:
         must_match_all_outputs: OutputMatchingOption | bool = "any",
         reject_output: str | list[str] | None = None,
         field: str | None = None,
-        ignore_case=True,
-        timeout=1,
-        size_limit=10240,
-        ignore_consec_spaces=True,
+        ignore_case: bool = True,
+        timeout: float = 1,
+        size_limit: int = 10240,
+        ignore_consec_spaces: bool = True,
         args: str | list[str] | None = None,
         name: str | None = None,
         msg: str | None = None,
-        max_points=1,
-        highlight_matches=False,
+        max_points: int | float = 1,
+        highlight_matches: bool = False,
     ) -> dict[str, int | float | str]:
         if args is not None:
             if not isinstance(args, list):
@@ -540,7 +540,10 @@ class CGrader:
         )
 
     def add_manual_grading(
-        self, points=1, name: str | None = None, description: str | None = None
+        self,
+        points: float | int = 1,
+        name: str | None = None,
+        description: str | None = None,
     ) -> dict[str, int | float | str]:
         """Old deprecated function, retained for compatibility reasons."""
         if not name:
@@ -551,12 +554,12 @@ class CGrader:
 
     def add_test_result(
         self,
-        name,
-        description="",
+        name: str,
+        description: str = "",
         points: bool | int | float = True,
-        msg="",
-        output="",
-        max_points=1,
+        msg: str | None = "",
+        output: str = "",
+        max_points: int | float = 1,
         field: str | None = None,
         images: str | list[str] | None = None,
     ) -> dict[str, int | float | str]:
@@ -595,12 +598,12 @@ class CGrader:
         self,
         exec_file: str,
         args: str | list[str] | None = None,
-        use_suite_title=False,
-        use_case_name=True,
-        use_unit_test_id=True,
-        use_iteration=False,
-        sandboxed=False,
-        use_malloc_debug=False,
+        use_suite_title: bool = False,
+        use_case_name: bool = True,
+        use_unit_test_id: bool = True,
+        use_iteration: bool = False,
+        sandboxed: bool = False,
+        use_malloc_debug: bool = False,
         env: dict[str, str] | None = None,
     ) -> None:
         if not args:
