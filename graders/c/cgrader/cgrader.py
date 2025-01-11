@@ -227,7 +227,7 @@ class CGrader:
         if all(os.path.isfile(obj) for obj in std_obj_files):
             # Add new C files that maybe overwrite some existing functions.
             for added_c_file in add_c_file:
-                obj_file = pathlib.Path(added_c_file).with_suffix(".o")
+                obj_file = str(pathlib.Path(added_c_file).with_suffix(".o"))
                 out += self.run_command(
                     [compiler, "-c", added_c_file, "-o", obj_file, *cflags],
                     sandboxed=False,
@@ -459,7 +459,7 @@ class CGrader:
         command = shlex.split(command) if isinstance(command, str) else command
 
         out = self.run_command(
-            command if args is None else ([command, *args]),
+            command if args is None else command + args,
             input,
             sandboxed=True,
             timeout=timeout,
