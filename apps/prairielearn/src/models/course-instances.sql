@@ -83,7 +83,7 @@ WHERE
 
 -- BLOCK select_course_has_course_instances
 SELECT
-  (COUNT(*) > 0) AS has_course_instances
+  COUNT(*) > 0
 FROM
   course_instances AS ci
 WHERE
