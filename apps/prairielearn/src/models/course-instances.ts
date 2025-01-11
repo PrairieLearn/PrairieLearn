@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import {
   type CourseInstance,
@@ -96,4 +96,22 @@ export async function selectCourseInstanceGraderStaff({
     course_instance_id,
     minimal_role: 'Student Data Editor',
   });
+}
+
+/**
+ *
+ */
+export async function selectCourseHasCourseInstances({
+  course_id,
+}: {
+  course_id: string;
+}): Promise<boolean> {
+  // Check if the course has any non-deleted course instances.
+  const has_course_instances = await queryRow(
+    sql.select_course_has_course_instances,
+    { course_id },
+    z.boolean(),
+  );
+
+  return has_course_instances;
 }
