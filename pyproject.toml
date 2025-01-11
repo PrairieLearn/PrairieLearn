@@ -30,6 +30,8 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
+    # Perflint
+    "PERF",
     # ruff-specific rules
     "RUF",
     # refurb
