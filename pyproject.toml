@@ -45,7 +45,27 @@ select = [
     # refurb
     "FURB",
     # pylint
-    "PLR5501"
+    "PLR5501",
+    # flake8-2020
+    "YTT",
+    # flake8-async
+    "ASYNC",
+    # flake8-datetimez
+    "DTZ",
+    # flake8-debugger
+    "T10",
+    # flake8-logging
+    "LOG",
+    # flake8-pyi
+    # "PYI",
+    # flake8-slots
+    "SLOT",
+    # flake8-gettext
+    "INT",
+    # pygrep-hooks
+    # "PGH",
+    # flynt
+    "FLY"
 ]
 ignore = [
     # Ignore line length errors
