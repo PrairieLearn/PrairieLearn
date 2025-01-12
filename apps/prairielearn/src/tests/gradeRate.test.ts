@@ -36,13 +36,12 @@ describe('Exam assessment with grade rate set', function () {
   });
 
   step('start the exam', async () => {
-    const form = {
-      __action: 'new_instance',
-      __csrf_token: context.__csrf_token,
-    };
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'new_instance',
+        __csrf_token: context.__csrf_token,
+      }),
     });
     assert.isTrue(response.ok);
 
@@ -70,15 +69,14 @@ describe('Exam assessment with grade rate set', function () {
   });
 
   step('submit an answer to the question', async () => {
-    const form = {
-      __action: 'grade',
-      __csrf_token: context.__csrf_token,
-      __variant_id: context.__variant_id,
-      s: '50', // To get 50% of the question
-    };
-    const response = await helperClient.fetchCheerio(context.question1Url, {
+    const response = await fetch(context.question1Url, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'grade',
+        __csrf_token: context.__csrf_token,
+        __variant_id: context.__variant_id,
+        s: '50', // To get 50% of the question
+      }),
     });
 
     assert.isTrue(response.ok);

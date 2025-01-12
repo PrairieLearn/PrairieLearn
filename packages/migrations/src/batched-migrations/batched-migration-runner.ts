@@ -6,15 +6,15 @@ import { loadSqlEquiv, queryAsync, queryRow, queryOptionalRow } from '@prairiele
 
 import {
   BatchedMigrationJobRowSchema,
-  BatchedMigrationJobStatus,
-  BatchedMigrationJobRow,
+  type BatchedMigrationJobStatus,
+  type BatchedMigrationJobRow,
 } from './batched-migration-job.js';
 import {
-  BatchedMigrationStatus,
-  BatchedMigrationRow,
+  type BatchedMigrationStatus,
+  type BatchedMigrationRow,
   updateBatchedMigrationStatus,
   BatchedMigrationStatusSchema,
-  BatchedMigrationImplementation,
+  type BatchedMigrationImplementation,
 } from './batched-migration.js';
 
 const sql = loadSqlEquiv(import.meta.filename);

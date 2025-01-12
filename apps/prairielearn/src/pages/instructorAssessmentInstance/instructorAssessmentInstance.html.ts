@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
+import { run } from '@prairielearn/run';
 
 import { EditQuestionPointsScoreButton } from '../../components/EditQuestionPointsScore.html.js';
 import { HeadContents } from '../../components/HeadContents.html.js';
@@ -9,7 +10,7 @@ import { Navbar } from '../../components/Navbar.html.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.html.js';
 import { Scorebar } from '../../components/Scorebar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
-import { InstanceLogEntry } from '../../lib/assessment.js';
+import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { nodeModulesAssetPath, compiledScriptTag } from '../../lib/assets.js';
 import { AssessmentQuestionSchema, IdSchema, InstanceQuestionSchema } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
@@ -169,19 +170,19 @@ export function InstructorAssessmentInstance({
                         <th>Fingerprint Changes</th>
                         <td colspan="2">
                           ${resLocals.assessment_instance.client_fingerprint_id_change_count}
-                          <a
-                            tabindex="0"
-                            class="btn btn-xs"
-                            role="button"
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-ghost"
                             id="fingerprintDescriptionPopover"
                             data-toggle="popover"
                             data-container="body"
                             data-html="false"
                             title="Client Fingerprint Changes"
                             aria-label="Client Fingerprint Changes"
-                            data-content="Client fingerprints are a record of a user's IP address, user agent and sesssion. These attributes are tracked while a user is accessing an assessment. This value indicates the amount of times that those attributes changed as the student accessed the assessment, while the assessment was active. Some changes may naturally occur during an assessment, such as if a student changes network connections or browsers. However, a high number of changes in an exam-like environment could be an indication of multiple people accessing the same assessment simultaneously, which may suggest an academic integrity issue. Accesses taking place after the assessment has been closed are not counted, as they typically indicate scenarios where a student is reviewing their results, which may happen outside of a controlled environment."
-                            ><i class="fa fa-question-circle"></i
-                          ></a>
+                            data-content="Client fingerprints are a record of a user's IP address, user agent and session. These attributes are tracked while a user is accessing an assessment. This value indicates the amount of times that those attributes changed as the student accessed the assessment, while the assessment was active. Some changes may naturally occur during an assessment, such as if a student changes network connections or browsers. However, a high number of changes in an exam-like environment could be an indication of multiple people accessing the same assessment simultaneously, which may suggest an academic integrity issue. Accesses taking place after the assessment has been closed are not counted, as they typically indicate scenarios where a student is reviewing their results, which may happen outside of a controlled environment."
+                          >
+                            <i class="fa fa-question-circle"></i>
+                          </button>
                         </td>
                       </tr>
                     `
@@ -258,31 +259,31 @@ export function InstructorAssessmentInstance({
                     ${resLocals.assessment_instance.include_in_statistics
                       ? html`
                           Included
-                          <a
-                            tabindex="0"
-                            class="btn btn-xs"
-                            role="button"
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-ghost"
                             data-toggle="popover"
                             data-container="body"
                             data-html="true"
                             title="Included in statistics"
                             data-content="This assessment is included in the calculation of assessment and question statistics"
-                            ><i class="fa fa-question-circle"></i
-                          ></a>
+                          >
+                            <i class="fa fa-question-circle"></i>
+                          </button>
                         `
                       : html`
                           Not included
-                          <a
-                            tabindex="0"
-                            class="btn btn-xs"
-                            role="button"
+                          <button
+                            type="button"
+                            class="btn btn-xs btn-ghost"
                             data-toggle="popover"
                             data-container="body"
                             data-html="true"
                             title="Not included in statistics"
                             data-content="This assessment is not included in the calculation of assessment and question statistics because it was created by a course staff member"
-                            ><i class="fa fa-question-circle"></i
-                          ></a>
+                          >
+                            <i class="fa fa-question-circle"></i>
+                          </button>
                         `}
                   </td>
                 </tr>
@@ -353,9 +354,14 @@ export function InstructorAssessmentInstance({
                       </td>
                       <td>
                         I-${instance_question.instructor_question_number}. ${instance_question.qid}
-                        (<a href="${resLocals.urlPrefix}/question/${instance_question.question_id}/"
-                          >instructor view</a
-                        >)
+                        ${resLocals.authz_data.has_course_permission_preview
+                          ? html`
+                              (<a
+                                href="${resLocals.urlPrefix}/question/${instance_question.question_id}/"
+                                >instructor view</a
+                              >)
+                            `
+                          : ''}
                       </td>
                       <td class="text-center">
                         ${InstanceQuestionPoints({
@@ -502,7 +508,13 @@ export function InstructorAssessmentInstance({
                     <tr>
                       <td>
                         I-${row.number}.
-                        <a href="${resLocals.urlPrefix}/question/${row.question_id}/">${row.qid}</a>
+                        ${resLocals.authz_data.has_course_permission_preview
+                          ? html`
+                              <a href="${resLocals.urlPrefix}/question/${row.question_id}/"
+                                >${row.qid}</a
+                              >
+                            `
+                          : row.qid}
                       </td>
                       <td>${row.some_submission}</td>
                       <td>${row.some_perfect_submission}</td>
@@ -575,17 +587,16 @@ export function InstructorAssessmentInstance({
                   return html`
                     <tr>
                       <td class="text-nowrap">${row.formatted_date}</td>
-                      <td>${row.auth_user_uid ?? html`$mdash;`}</td>
+                      <td>${row.auth_user_uid ?? html`&mdash;`}</td>
                       ${resLocals.instance_user
                         ? row.client_fingerprint && row.client_fingerprint_number !== null
                           ? html`
                               <td>
-                                <a
-                                  tabindex="0"
-                                  class="badge color-${FINGERPRINT_COLORS[
+                                <button
+                                  type="button"
+                                  class="btn btn-xs color-${FINGERPRINT_COLORS[
                                     row.client_fingerprint_number % 6
-                                  ]} color-hover"
-                                  role="button"
+                                  ]}"
                                   id="fingerprintPopover${row.client_fingerprint?.id}-${index}"
                                   data-toggle="popover"
                                   data-container="body"
@@ -608,20 +619,23 @@ export function InstructorAssessmentInstance({
                                   `)}"
                                 >
                                   ${row.client_fingerprint_number}
-                                </a>
+                                </button>
                               </td>
                             `
                           : html`<td>&mdash;</td>`
                         : ''}
                       <td><span class="badge color-${row.event_color}">${row.event_name}</span></td>
                       <td>
-                        ${row.qid
-                          ? html`
-                              <a href="${resLocals.urlPrefix}/question/${row.question_id}/">
-                                I-${row.instructor_question_number} (${row.qid})
-                              </a>
-                            `
-                          : ''}
+                        ${run(() => {
+                          if (!row.qid) return '';
+                          const text = `I-${row.instructor_question_number}. ${row.qid}`;
+                          if (!resLocals.authz_data.has_course_permission_preview) return text;
+                          return html`
+                            <a href="${resLocals.urlPrefix}/question/${row.question_id}/"
+                              >${text}</a
+                            >
+                          `;
+                        })}
                       </td>
                       <td>
                         ${row.student_question_number
@@ -635,7 +649,7 @@ export function InstructorAssessmentInstance({
                                   S-${row.student_question_number}#${row.variant_number}
                                 </a>
                               `
-                            : html`S-${row.student_question_number}}`
+                            : html`S-${row.student_question_number}`
                           : ''}
                       </td>
                       ${row.event_name !== 'External grading results'
@@ -706,6 +720,7 @@ function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) 
             class="form-control"
             name="points"
             value="${resLocals.assessment_instance.points}"
+            aria-label="Total points"
           />
           <span class="input-group-addon">/${resLocals.assessment_instance.max_points}</span>
         </div>
@@ -740,6 +755,7 @@ function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> 
             class="form-control"
             name="score_perc"
             value="${resLocals.assessment_instance.score_perc}"
+            aria-label="Total score percentage"
           />
           <span class="input-group-addon">%</span>
         </div>

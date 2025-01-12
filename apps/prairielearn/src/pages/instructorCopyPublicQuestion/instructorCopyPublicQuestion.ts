@@ -40,7 +40,7 @@ router.post(
       }),
     );
 
-    if (!result.course.template_course && !result.question.shared_publicly_with_source) {
+    if (!result.course.template_course && !result.question.share_source_publicly) {
       throw new error.HttpStatusError(400, 'Copying this question is not permitted');
     }
 

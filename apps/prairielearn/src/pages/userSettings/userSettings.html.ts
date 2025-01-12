@@ -6,7 +6,7 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.html.js';
 import { type Purchase } from '../../ee/lib/billing/purchases.js';
-import { IdSchema, Institution, User } from '../../lib/db-types.js';
+import { IdSchema, type Institution, type User } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 
 export const AccessTokenSchema = z.object({

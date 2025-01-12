@@ -4,10 +4,7 @@ WITH
     DELETE FROM institution_authn_providers
     WHERE
       institution_id = $institution_id
-      AND authn_provider_id NOT IN (
-        SELECT
-          unnest($enabled_authn_provider_ids::bigint[])
-      )
+      AND authn_provider_id != ALL ($enabled_authn_provider_ids::bigint[])
     RETURNING
       *
   ),

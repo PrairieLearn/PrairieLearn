@@ -38,3 +38,12 @@ FROM
 WHERE
   q.course_id = $course_id
   AND q.deleted_at IS NULL;
+
+-- BLOCK update_draft_number
+UPDATE pl_courses
+SET
+  draft_number = draft_number + 1
+WHERE
+  id = $course_id
+RETURNING
+  draft_number;

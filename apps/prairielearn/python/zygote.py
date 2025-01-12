@@ -24,9 +24,10 @@ import subprocess
 import sys
 import time
 import types
+from collections.abc import Iterable, Sequence
 from importlib.abc import MetaPathFinder
 from inspect import signature
-from typing import Any, Iterable, Sequence
+from typing import Any
 
 import question_phases
 import zygote_utils as zu
@@ -117,6 +118,26 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
         return None
 
 
+# We want to initialize the Faker seed, but only if faker is loaded
+class FakerInitializeMetaPathFinder(MetaPathFinder):
+    def __init__(self, seed: int) -> None:
+        self.seed = seed
+
+    def find_spec(
+        self,
+        fullname: str,
+        path: Sequence[str] | None,
+        target: types.ModuleType | None = None,
+    ):
+        if fullname == "faker" or fullname.startswith("faker."):
+            # Once this initialization is done we no longer need this meta path finder
+            sys.meta_path.remove(self)
+            from faker import Faker
+
+            Faker.seed(self.seed)
+        return None
+
+
 # This function tries to convert a python object to valid JSON. If an exception
 # is raised, this function prints the object and re-raises the exception. This is
 # helpful because the object - which contains something that cannot be converted
@@ -137,6 +158,13 @@ def worker_loop() -> None:
 
     path_finder = ForbidModuleMetaPathFinder()
     sys.meta_path.insert(0, path_finder)
+
+    # We'll cache instantiated modules for two reasons:
+    # - This allows us to avoid re-reading/compiling/executing them if the same
+    #   element is used multiple times.
+    # - This allows element code to maintain state across multiple calls. This is useful
+    #   specifically for elements that want to maintain a cache of expensive-to-compute data.
+    mod_cache: dict[str, dict[str, Any]] = {}
 
     # file descriptor 3 is for output data
     with open(3, "w", encoding="utf-8") as outf:
@@ -231,10 +259,11 @@ def worker_loop() -> None:
             # question happens to contain multiple occurrences of the same element, the
             # randomizations for each occurrence are independent of each other but still
             # dependent on the variant seed.
-            if type(args[-1]) is dict and not seeded:  # noqa: E721
+            if type(args[-1]) is dict and not seeded:
                 variant_seed = args[-1].get("variant_seed", None)
                 random.seed(variant_seed)
                 numpy.random.seed(variant_seed)
+                sys.meta_path.insert(0, FakerInitializeMetaPathFinder(variant_seed))
                 seeded = True
 
             # reset and then set up the path
@@ -252,8 +281,8 @@ def worker_loop() -> None:
                 # be much faster than the current implementation that does an IPC
                 # call for each element.
 
-                data = args[0]
-                context = args[1]
+                context = args[0]
+                data = args[1]
 
                 result, processed_elements = question_phases.process(fcn, data, context)
                 val = {
@@ -274,14 +303,20 @@ def worker_loop() -> None:
 
                 continue
 
-            mod = {}
             file_path = os.path.join(cwd, file + ".py")
-            with open(file_path, encoding="utf-8") as inf:
-                # use compile to associate filename with code object, so the
-                # filename appears in the traceback if there is an error
-                # (https://stackoverflow.com/a/437857)
-                code = compile(inf.read(), file_path, "exec")
+
+            mod = mod_cache.get(file_path)
+            if mod is None:
+                mod = {}
+
+                with open(file_path, encoding="utf-8") as inf:
+                    # Use `compile` to associate filename with code object, so the
+                    # filename appears in the traceback if there is an error:
+                    # https://stackoverflow.com/a/437857
+                    code = compile(inf.read(), file_path, "exec")
+
                 exec(code, mod)
+                mod_cache[file_path] = mod
 
             # check whether we have the desired fcn in the module
             if fcn in mod:
@@ -338,7 +373,7 @@ def worker_loop() -> None:
                         # TODO: Once this has been running in production for a while,
                         # change this to raise an exception.
                         sys.stderr.write(
-                            f"Function {str(fcn)}() in {str(file + '.py')} returned a data object other than the one that was passed in.\n\n"
+                            f"Function {fcn}() in {file + '.py'} returned a data object other than the one that was passed in.\n\n"
                             + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
                             + "For now, the return value will be used instead of the data object that was passed in.\n\n"
                             + "In the future, returning a different object will trigger a fatal error."
@@ -435,10 +470,10 @@ with open(4, "w", encoding="utf-8") as exitf:
                 else:
                     # The worker did not exit gracefully
                     raise Exception(
-                        "worker process exited unexpectedly with status %d" % status
+                        f"worker process exited unexpectedly with status {status}"
                     )
             else:
                 # Something else happened that is weird
                 raise Exception(
-                    "worker process exited unexpectedly with status %d" % status
+                    f"worker process exited unexpectedly with status {status}"
                 )

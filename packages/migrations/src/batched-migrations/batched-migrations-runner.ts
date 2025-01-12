@@ -5,17 +5,20 @@ import { setTimeout as sleep } from 'node:timers/promises';
 import { doWithLock } from '@prairielearn/named-locks';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import { MigrationFile, readAndValidateMigrationsFromDirectories } from '../load-migrations.js';
+import {
+  type MigrationFile,
+  readAndValidateMigrationsFromDirectories,
+} from '../load-migrations.js';
 
 import { BatchedMigrationRunner } from './batched-migration-runner.js';
 import {
   BatchedMigrationRowSchema,
-  BatchedMigrationRow,
+  type BatchedMigrationRow,
   insertBatchedMigration,
-  BatchedMigrationStatus,
+  type BatchedMigrationStatus,
   selectBatchedMigrationForTimestamp,
   updateBatchedMigrationStatus,
-  BatchedMigrationImplementation,
+  type BatchedMigrationImplementation,
   validateBatchedMigrationImplementation,
 } from './batched-migration.js';
 
@@ -195,7 +198,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
         // when we're shutting down.
         try {
           await sleep(sleepDurationMs, null, { ref: false, signal: this.abortController.signal });
-        } catch (err) {
+        } catch {
           // We don't care about errors here, they should only ever occur when
           // the AbortController is aborted. Continue to the next iteration of
           // the loop so we can shut down.

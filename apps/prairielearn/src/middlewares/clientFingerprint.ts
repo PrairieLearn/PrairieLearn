@@ -1,4 +1,4 @@
-import { Request, Response } from 'express';
+import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as sqldb from '@prairielearn/postgres';

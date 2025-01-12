@@ -1,6 +1,17 @@
 import { escapeHtml, html } from '@prairielearn/html';
 
-import { AssessmentQuestion, InstanceQuestion } from '../lib/db-types.js';
+import { type AssessmentQuestion, type InstanceQuestion } from '../lib/db-types.js';
+
+type EditableField = 'points' | 'auto_points' | 'manual_points' | 'score_perc';
+
+function findLabel(field: EditableField) {
+  return {
+    points: 'points',
+    auto_points: 'auto points',
+    manual_points: 'manual points',
+    score_perc: 'score percentage',
+  }[field];
+}
 
 export function EditQuestionPointsScoreButton({
   field,
@@ -22,12 +33,6 @@ export function EditQuestionPointsScoreButton({
     urlPrefix,
     csrfToken,
   });
-  const label = {
-    points: 'points',
-    auto_points: 'auto points',
-    manual_points: 'manual points',
-    score_perc: 'score percentage',
-  }[field];
 
   return html`<button
     type="button"
@@ -36,8 +41,7 @@ export function EditQuestionPointsScoreButton({
     data-container="body"
     data-html="true"
     data-placement="auto"
-    title="Change question ${label}"
-    aria-label="Change question ${label}"
+    aria-label="Change question ${findLabel(field)}"
     data-content="${escapeHtml(editForm)}"
     data-testid="edit-question-points-score-button-${field}"
   >
@@ -59,7 +63,10 @@ function EditQuestionPointsScoreForm({
   csrfToken: string;
 }) {
   const manualGradingUrl = `${urlPrefix}/assessment/${assessment_question.assessment_id}/manual_grading/instance_question/${instance_question.id}`;
-  if (assessment_question.manual_rubric_id != null) {
+  // If the question is configured to use rubrics, don't allow editing the
+  // points, unless there is no submission, in which case we allow editing the
+  // points manually since the manual grading page will not be available.
+  if (assessment_question.manual_rubric_id != null && instance_question.status !== 'unanswered') {
     return html`
       <div>
         <p>
@@ -94,6 +101,7 @@ function EditQuestionPointsScoreForm({
             class="form-control"
             name="${field}"
             value="${pointsOrScore}"
+            aria-label="${findLabel(field)}"
           />
           <div class="input-group-append">
             <span class="input-group-text">
@@ -105,9 +113,11 @@ function EditQuestionPointsScoreForm({
       <p>
         <small>
           This will also recalculate the total points and total score at 100% credit. This change
-          will be overwritten if the question is answered again by the student. You may also update
-          the score
-          <a href="${manualGradingUrl}">via the manual grading page</a>.
+          will be overwritten if the question is answered again by the student.
+          ${instance_question.status !== 'unanswered'
+            ? html`You may also update the score
+                <a href="${manualGradingUrl}">via the manual grading page</a>.`
+            : ''}
         </small>
       </p>
       <div class="text-right">

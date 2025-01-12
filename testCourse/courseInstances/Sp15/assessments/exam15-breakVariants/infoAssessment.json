@@ -5,7 +5,7 @@
   "set": "Exam",
   "number": "15",
   "requireHonorCode": false,
-  "allowAccess": [{ "mode": "Public", "credit": 100 }],
+  "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
       "title": "Questions",

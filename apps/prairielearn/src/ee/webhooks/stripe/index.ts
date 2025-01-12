@@ -1,6 +1,6 @@
 import express from 'express';
 import asyncHandler from 'express-async-handler';
-import Stripe from 'stripe';
+import type Stripe from 'stripe';
 
 import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';

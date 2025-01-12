@@ -3,20 +3,25 @@ import { z } from 'zod';
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import {
-  EnumPlanGrantType,
-  Institution,
+  type EnumPlanGrantType,
+  type Institution,
   InstitutionSchema,
-  PlanGrant,
+  type PlanGrant,
   PlanGrantSchema,
 } from '../../../lib/db-types.js';
-import { WithRequiredKeys } from '../../../lib/types.js';
+import { type WithRequiredKeys } from '../../../lib/types.js';
 import {
   insertCourseInstanceRequiredPlan,
   deleteCourseInstanceRequiredPlan,
 } from '../../models/course-instance-required-plans.js';
 import { ensurePlanGrant, updatePlanGrant, deletePlanGrant } from '../../models/plan-grants.js';
 
-import { PLAN_NAMES, PlanFeatureName, PlanName, getFeaturesForPlans } from './plans-types.js';
+import {
+  PLAN_NAMES,
+  type PlanFeatureName,
+  type PlanName,
+  getFeaturesForPlans,
+} from './plans-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

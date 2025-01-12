@@ -31,7 +31,10 @@ SELECT
     FROM
       questions AS q
     WHERE
-      q.shared_publicly
+      (
+        q.shared_publicly
+        OR q.share_source_publicly
+      )
       AND course_id = $course_id
       AND q.deleted_at IS NULL
   );

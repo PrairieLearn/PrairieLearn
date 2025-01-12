@@ -4,7 +4,7 @@ import pathlib
 import random
 from collections import Counter
 from enum import Enum
-from typing import NamedTuple, Optional
+from typing import NamedTuple
 
 import chevron
 import lxml.etree
@@ -37,7 +37,7 @@ class AnswerTuple(NamedTuple):
     idx: int
     correct: bool
     html: str
-    feedback: Optional[str]
+    feedback: str | None
     score: float
 
 
@@ -56,6 +56,7 @@ FEEDBACK_DEFAULT = None
 HIDE_SCORE_BADGE_DEFAULT = False
 ALLOW_BLANK_DEFAULT = False
 SIZE_DEFAULT = None
+PLACEHOLDER_DEFAULT = "Select an option"
 SUBMITTED_ANSWER_BLANK = {"html": "No answer submitted"}
 
 MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME = "pl-multiple-choice.mustache"
@@ -127,18 +128,18 @@ def categorize_options(
                 file_path
             )
 
-        with open(json_file, mode="r", encoding="utf-8") as f:
+        with open(json_file, encoding="utf-8") as f:
             obj = json.load(f)
 
         for text in obj.get(correct_attrib, []):
-            correct_answers.append(
+            correct_answers.append(  # noqa: PERF401
                 AnswerTuple(
                     next(index_counter), True, text, None, SCORE_CORRECT_DEFAULT
                 )
             )
 
         for text in obj.get(incorrect_attrib, []):
-            incorrect_answers.append(
+            incorrect_answers.append(  # noqa: PERF401
                 AnswerTuple(
                     next(index_counter), False, text, None, SCORE_INCORRECT_DEFAULT
                 )
@@ -201,11 +202,11 @@ def prepare_answers_to_display(
     correct_answers: list[AnswerTuple],
     incorrect_answers: list[AnswerTuple],
     *,
-    number_answers: Optional[int],
+    number_answers: int | None,
     aota: AotaNotaType,
     nota: AotaNotaType,
-    aota_feedback: Optional[str],
-    nota_feedback: Optional[str],
+    aota_feedback: str | None,
+    nota_feedback: str | None,
     order_type: OrderType,
     display_type: DisplayType,
 ) -> list[AnswerTuple]:
@@ -396,18 +397,21 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "hide-score-badge",
         "allow-blank",
         "size",
+        "placeholder",
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     # Before going to the trouble of preparing answers list, check for name duplication
     name = pl.get_string_attrib(element, "answers-name")
 
-    if (
-        pl.has_attrib(element, "size")
-        and get_display_type(element) is not DisplayType.DROPDOWN
-    ):
-        raise ValueError(
-            f'"size" attribute on "{name}" should only be set if display is "dropdown".'
-        )
+    if get_display_type(element) is not DisplayType.DROPDOWN:
+        if pl.has_attrib(element, "size"):
+            raise ValueError(
+                f'"size" attribute on "{name}" should only be set if display is "dropdown".'
+            )
+        if pl.has_attrib(element, "placeholder"):
+            raise ValueError(
+                f'"placeholder" attribute on "{name}" should only be set if display is "dropdown".'
+            )
 
     if name in data["params"]:
         raise ValueError(f"Duplicate params variable name: {name}")
@@ -457,7 +461,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     # NOTE: The saved correct answer is just the one that gets shown to the student, it is not used for grading
     display_answers = []
     correct_answer = None
-    for key, answer in zip(pl.iter_keys(), answers_to_display):
+    for key, answer in zip(pl.iter_keys(), answers_to_display, strict=False):
         keyed_answer = {
             "key": key,
             "html": answer.html,
@@ -521,12 +525,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             # https://www.unitconverters.net/typography/character-x-to-pixel-x.htm
             size = pl.get_integer_attrib(element, "size") * 8
 
+        placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
+
         html_params = {
             "question": True,
             "inline": inline,
             "feedback": feedback,
             "radio": display_radio,
             "size": size,
+            "placeholder": placeholder,
             "uuid": pl.get_uuid(),
             "name": name,
             "editable": editable,
@@ -542,7 +549,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             score_type, score_value = pl.determine_score_params(score)
             html_params[score_type] = score_value
 
-        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "submission":
@@ -578,7 +585,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 html_params["display_feedback"] = True
                 html_params["feedback"] = feedback
 
-        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     elif data["panel"] == "answer":
@@ -598,7 +605,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
             ),
         }
-        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, "r", encoding="utf-8") as f:
+        with open(MULTIPLE_CHOICE_MUSTACHE_TEMPLATE_NAME, encoding="utf-8") as f:
             return chevron.render(f, html_params).strip()
 
     assert_never(data["panel"])
@@ -636,7 +643,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         else SCORE_INCORRECT_DEFAULT
     )
 
-    def grade_multiple_choice(submitted_key: str) -> tuple[float, Optional[str]]:
+    def grade_multiple_choice(submitted_key: str) -> tuple[float, str | None]:
         for option in data["params"][name]:
             if option["key"] == submitted_key:
                 return option.get("score", default_score), option.get("feedback", "")

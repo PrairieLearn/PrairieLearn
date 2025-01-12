@@ -1,5 +1,6 @@
 import { assert } from 'chai';
 import { step } from 'mocha-steps';
+import fetch from 'node-fetch';
 
 import * as sqldb from '@prairielearn/postgres';
 
@@ -36,13 +37,12 @@ describe('Exam assessment with real-time grading disabled', function () {
   });
 
   step('start the exam', async () => {
-    const form = {
-      __action: 'new_instance',
-      __csrf_token: context.__csrf_token,
-    };
     const response = await helperClient.fetchCheerio(context.assessmentUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'new_instance',
+        __csrf_token: context.__csrf_token,
+      }),
     });
     assert.isTrue(response.ok);
 
@@ -72,13 +72,12 @@ describe('Exam assessment with real-time grading disabled', function () {
   });
 
   step('try to manually grade request on the question page', async () => {
-    const form = {
-      __action: 'grade',
-      __csrf_token: context.__csrf_token,
-    };
-    const response = await helperClient.fetchCheerio(context.assessmentInstanceUrl, {
+    const response = await fetch(context.assessmentInstanceUrl, {
       method: 'POST',
-      form,
+      body: new URLSearchParams({
+        __action: 'grade',
+        __csrf_token: context.__csrf_token,
+      }),
     });
 
     assert.isFalse(response.ok);

@@ -1,6 +1,5 @@
 {
   "uuid": "a2c16a02-7f73-43d0-b5ec-5eb1efb8ae51",
-  "shortName": "Sp15",
   "longName": "Spring 2015",
   "comment": "to organize this course instance by module, use `groupAssessmentsBy:Module`",
   "allowAccess": [

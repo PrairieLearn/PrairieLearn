@@ -21,7 +21,7 @@ export default function (options = { publicEndpoint: false }) {
         res.locals.question = await selectQuestionById(req.params.question_id);
 
         if (
-          !res.locals.question.shared_publicly ||
+          !(res.locals.question.shared_publicly || res.locals.question.share_source_publicly) ||
           res.locals.course.id !== res.locals.question.course_id
         ) {
           throw new HttpStatusError(404, 'Not Found');
@@ -48,6 +48,8 @@ export default function (options = { publicEndpoint: false }) {
         variant,
         res.locals.question,
         res.locals.course,
+        // `res.locals.user` isn't populated for publicly-shared question previews.
+        res.locals.user?.user_id ?? res.locals.authn_user.user_id,
         res.locals.authn_user.user_id,
       );
       res.attachment(filename);

@@ -5,7 +5,7 @@ import os
 import random
 from copy import deepcopy
 from enum import Enum
-from typing import Optional, TypedDict
+from typing import TypedDict
 
 import chevron
 import lxml.html
@@ -51,21 +51,21 @@ class FormatType(Enum):
 
 
 class GroupInfo(TypedDict):
-    tag: Optional[str]
-    depends: Optional[list[str]]
+    tag: str | None
+    depends: list[str] | None
 
 
 class OrderBlocksAnswerData(TypedDict):
     inner_html: str
-    indent: Optional[int]
+    indent: int | None
     ranking: int
     index: int
     tag: str
-    distractor_for: Optional[str]
+    distractor_for: str | None
     depends: list[str]  # only used with DAG grader
     group_info: GroupInfo  # only used with DAG grader
     distractor_bin: NotRequired[str]
-    distractor_feedback: Optional[str]
+    distractor_feedback: str | None
     uuid: str
 
 
@@ -110,7 +110,7 @@ def get_graph_info(html_tags: lxml.html.HtmlElement) -> tuple[str, list[str]]:
 
 def extract_dag(
     answers_list: list[OrderBlocksAnswerData],
-) -> tuple[dict[str, list[str]], dict[str, Optional[str]]]:
+) -> tuple[dict[str, list[str]], dict[str, str | None]]:
     depends_graph = {ans["tag"]: ans["depends"] for ans in answers_list}
     group_belonging = {ans["tag"]: ans["group_info"]["tag"] for ans in answers_list}
     group_depends = {
@@ -468,9 +468,15 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             element, "solution-header", SOLUTION_HEADER_DEFAULT
         )
 
-        all_blocks = data["params"][answer_name]
-        student_previous_submission = data["submitted_answers"].get(answer_name, [])
+        # We aren't allowed to mutate the `data` object during render, so we'll
+        # make a deep copy of the submitted answer so we can update the `indent`
+        # to a value suitable for rendering.
+        student_previous_submission = deepcopy(
+            data["submitted_answers"].get(answer_name, [])
+        )
         submitted_block_ids = {block["uuid"] for block in student_previous_submission}
+
+        all_blocks = data["params"][answer_name]
         source_blocks = [
             block for block in all_blocks if block["uuid"] not in submitted_block_ids
         ]
@@ -499,14 +505,16 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             )
 
         if grading_method is GradingMethodType.UNORDERED:
-            help_text += "<br>Your answer ordering does not matter. "
+            help_text += "<p>Your answer ordering does not matter. </p>"
         elif grading_method is not GradingMethodType.EXTERNAL:
-            help_text += "<br>The ordering of your answer matters and is graded."
+            help_text += "<p>The ordering of your answer matters and is graded.</p>"
         else:
-            help_text += "<br>Your answer will be autograded; be sure to indent and order your answer properly."
+            help_text += "<p>Your answer will be autograded; be sure to indent and order your answer properly.</p>"
 
         if check_indentation:
-            help_text += "<br><b>Your answer should be indented. </b> Indent your tiles by dragging them horizontally in the answer area."
+            help_text += "<p><strong>Your answer should be indented.</strong> Indent your tiles by dragging them horizontally in the answer area.</p>"
+
+        help_text += "<p>Keyboard Controls: Arrows to navigate; Enter to select; Escape to deselect blocks.</p>"
 
         uuid = pl.get_uuid()
         html_params = {
@@ -531,7 +539,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "block_layout": "pl-order-blocks-horizontal" if inline else "",
         }
 
-        with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
+        with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
         return html
 
@@ -582,12 +590,12 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                     html_params["partially_correct"] = math.floor(score)
                 else:
                     html_params["incorrect"] = True
-            except Exception:
+            except Exception as exc:
                 raise ValueError(
                     f"invalid score: {data['partial_scores'][answer_name].get('score', 0)}"
-                )
+                ) from exc
 
-        with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
+        with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
         return html
 
@@ -596,7 +604,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             try:
                 base_path = data["options"]["question_path"]
                 file_lead_path = os.path.join(base_path, "tests/ans.py")
-                with open(file_lead_path, "r") as file:
+                with open(file_lead_path) as file:
                     solution_file = file.read()
                 return f'<pl-code language="python">{solution_file}</pl-code>'
             except FileNotFoundError:
@@ -649,7 +657,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 else "pl-order-blocks-right"
             ),
         }
-        with open("pl-order-blocks.mustache", "r", encoding="utf-8") as f:
+        with open("pl-order-blocks.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params)
         return html
 
@@ -716,7 +724,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         file_name = pl.get_string_attrib(element, "file-name", FILE_NAME_DEFAULT)
 
         answer_code = ""
-        for index, answer in enumerate(student_answer):
+        for answer in student_answer:
             indent = int(answer["indent"] or 0)
             answer_code += (
                 ("    " * indent)
@@ -740,8 +748,8 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
 def construct_feedback(
     feedback_type: FeedbackType,
-    first_wrong: Optional[int],
-    group_belonging: dict[str, Optional[str]],
+    first_wrong: int | None,
+    group_belonging: dict[str, str | None],
     check_indentation: bool,
     first_wrong_is_distractor: bool,
 ) -> str:
@@ -808,7 +816,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         correct_selections = len(true_answer_uuids.intersection(student_answer_uuids))
         incorrect_selections = len(student_answer) - correct_selections
 
-        final_score = float((correct_selections - incorrect_selections)) / len(
+        final_score = float(correct_selections - incorrect_selections) / len(
             true_answer_list
         )
         final_score = max(0.0, final_score)  # scores cannot be below 0
@@ -1005,4 +1013,4 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
 
     else:
-        raise Exception("invalid result: %s" % data["test_type"])
+        raise Exception("invalid result: {}".format(data["test_type"]))

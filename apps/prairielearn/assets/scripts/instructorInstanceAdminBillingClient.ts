@@ -4,7 +4,7 @@ import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 
 import {
   InstructorInstanceAdminBillingForm,
-  InstructorInstanceAdminBillingFormProps,
+  type InstructorInstanceAdminBillingFormProps,
 } from '../../src/ee/lib/billing/components/InstructorInstanceAdminBillingForm.html.js';
 import { type PlanName } from '../../src/ee/lib/billing/plans-types.js';
 

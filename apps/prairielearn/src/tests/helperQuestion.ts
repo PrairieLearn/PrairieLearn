@@ -211,6 +211,7 @@ export function postInstanceQuestion(locals: Record<string, any>) {
       }
       const questionUrl =
         locals.questionBaseUrl + '/' + locals.question.id + (locals.questionPreviewTabUrl || '');
+
       locals.preEndTime = Date.now();
       const response = await fetch(questionUrl, {
         method: 'POST',

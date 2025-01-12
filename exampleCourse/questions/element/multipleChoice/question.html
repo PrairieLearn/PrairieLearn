@@ -237,8 +237,9 @@
       <p>
         Here, we observe the dropdown display option. This lets students input an answer from a
         dropdown list instead of choosing from multiple choice radio buttons. Note that the
-        dropdown list supports $\LaTeX$ rendering. We have also set <code>size="25"</code> to
-        keep the display a fixed size.
+        dropdown list supports $\LaTeX$ rendering. We have set <code>size="25"</code> to
+        keep the display a fixed size. The default text has also been changed by setting
+        <code>placeholder="Select a color"</code>.
       </p>
 
       <p>What is the color of the sky?</p>
@@ -246,7 +247,7 @@
 
     <p>
       The sky is
-      <pl-multiple-choice answers-name="sky-color10" display="dropdown" allow-blank="true" order="random" size="25">
+      <pl-multiple-choice answers-name="sky-color10" display="dropdown" allow-blank="true" order="random" size="25" placeholder="Select a color">
         <pl-answer correct="true" feedback="Correct! The sky is indeed blue.">Blue ($470nm$)</pl-answer>
         <pl-answer score="0.5">Purple ($400nm$)</pl-answer>
         <pl-answer feedback="Hint: The correct answer is a complementary color to this one." score="0.1">

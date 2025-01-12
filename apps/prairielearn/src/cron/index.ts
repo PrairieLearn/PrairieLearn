@@ -388,9 +388,9 @@ async function tryJobWithTime(job: CronJob, cronUuid: string) {
 async function runJob(job: CronJob, cronUuid: string) {
   debug(`runJob(): ${job.name}`);
   logger.verbose('cron: starting ' + job.name, { cronUuid });
-  const startTime = Date.now();
+  const startTime = performance.now();
   await job.module.run();
-  const endTime = Date.now();
+  const endTime = performance.now();
   const elapsedTimeMS = endTime - startTime;
   debug(`runJob(): ${job.name}: success, duration ${elapsedTimeMS} ms`);
   logger.verbose('cron: ' + job.name + ' success', {

@@ -1,7 +1,13 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-const router = Router();
+import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
+import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
+
+const router = Router({ mergeParams: true });
+
+router.use(selectAndAuthzAssessmentInstance);
+router.use(studentAssessmentAccess);
 
 router.get(
   '/',

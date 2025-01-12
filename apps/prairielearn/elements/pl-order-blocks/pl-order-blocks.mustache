@@ -12,15 +12,21 @@ $(function() {
 </script>
 
 
-    <div class="d-flex flex-wrap">
+    <div class="d-flex flex-wrap pl-order-blocks-question-{{uuid}}">
         <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} ">
-            <div class="card-header pl-order-blocks-header list-group-item-primary">{{source-header}}</div>
+            <div class="card-header pl-order-blocks-header list-group-item-primary">
+                <span class="mr-2">{{source-header}}</span>
+                <button type="button" style="vertical-align:middle;" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}">
+                    <i class="fa fa-question-circle" aria-hidden="true"></i>
+                </button>
+            </div>
             <ul id="order-blocks-options-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable">
                 {{#options}}
                     <li class="{{block_formatting}} shadow pl-order-block {{^editable}}nodrag{{/editable}}"
                         uuid="{{uuid}}"
                         string="{{inner_html}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
+                        tabindex="0"
                         >{{{inner_html}}}
                     </li>
                 {{/options}}
@@ -29,9 +35,6 @@ $(function() {
         <div class="pl-order-blocks-container {{block_layout}} {{dropzone_layout}} ">
             <div class="card-header pl-order-blocks-header list-group-item-primary">
                 <span class="mr-2">{{solution-header}}</span>
-                <a role="button" style="vertical-align:middle;" class="btn btn-light btn-sm" data-toggle="popover" data-html="true" title="Order Blocks" data-content="{{help_text}}" data-trigger="focus" tabindex="0">
-                    <i class="fa fa-question-circle" aria-hidden="true"></i>
-                </a>
             </div>
             <ul id="order-blocks-dropzone-{{uuid}}" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable dropzone">
                 {{#submission_dict}}
@@ -106,7 +109,7 @@ $(function() {
         <strong>Your answer: </strong>
         <div id="pl-order-blocks" class="d-inline-block">
             <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-            <a role="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-trigger="focus" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" tabindex="0" data-content="{{parse-error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
+            <button type="button" class="btn btn-sm btn-secondary small border" data-placement="auto" data-toggle="popover" data-html="true" style="margin-left: 5px" title="Format Error" data-content="{{parse-error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
         </div>
     {{/parse-error}}
 {{/submission}}

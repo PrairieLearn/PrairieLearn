@@ -2,7 +2,7 @@ import * as crypto from 'crypto';
 import { URL } from 'url';
 import { callbackify } from 'util';
 
-import { Router, type Request, Response, NextFunction } from 'express';
+import { Router, type Request, type Response, type NextFunction } from 'express';
 import asyncHandler from 'express-async-handler';
 import { Issuer, Strategy, type TokenSet } from 'openid-client';
 import * as passport from 'passport';

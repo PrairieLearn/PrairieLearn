@@ -38,7 +38,7 @@ export function StudentGradebook({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${Navbar({ resLocals, navPage: 'gradebook' })}
+        ${Navbar({ resLocals, navPage: 'gradebook', navSubPage: 'gradebook' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
@@ -65,9 +65,7 @@ export function StudentGradebook({
                       : ''}
                     <tr>
                       <td class="align-middle" style="width: 1%">
-                        <span class="badge color-${row.assessment_set_color} color-hover">
-                          ${row.label}
-                        </span>
+                        <span class="badge color-${row.assessment_set_color}">${row.label}</span>
                       </td>
                       <td class="align-middle">
                         ${row.title}
@@ -77,7 +75,7 @@ export function StudentGradebook({
                       </td>
                       <td class="text-center align-middle">
                         ${row.show_closed_assessment_score
-                          ? Scorebar(row.assessment_instance_score_perc)
+                          ? Scorebar(row.assessment_instance_score_perc, { classes: 'mx-auto' })
                           : 'Score not shown'}
                       </td>
                     </tr>

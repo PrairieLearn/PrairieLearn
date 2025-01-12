@@ -62,7 +62,7 @@ def create_markov_matrix(website_list, npages, max_n_links, min_n_links=0):
 
     for i in range(npages):
         nlinks = random.randint(min_n_links, max_n_links)
-        list_links = random.sample(list(range(0, npages)), nlinks)
+        list_links = random.sample(list(range(npages)), nlinks)
         for j in list_links:
             if i != j:
                 A[j, i] = 1

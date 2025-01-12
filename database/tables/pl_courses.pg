@@ -7,6 +7,7 @@ columns
     created_at: timestamp with time zone not null default now()
     deleted_at: timestamp with time zone
     display_timezone: text not null
+    draft_number: integer not null default 0
     example_course: boolean not null default false
     id: bigint not null default nextval('pl_courses_id_seq'::regclass)
     institution_id: bigint not null default 1

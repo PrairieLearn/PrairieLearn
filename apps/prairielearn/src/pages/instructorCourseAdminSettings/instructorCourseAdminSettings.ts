@@ -92,7 +92,7 @@ router.post(
         await editor.executeWithServerJob(serverJob);
         flash('success', 'Course configuration updated successfully');
         return res.redirect(req.originalUrl);
-      } catch (err) {
+      } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     }
@@ -117,7 +117,7 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
         return res.redirect(req.originalUrl);
-      } catch (err) {
+      } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
     } else {

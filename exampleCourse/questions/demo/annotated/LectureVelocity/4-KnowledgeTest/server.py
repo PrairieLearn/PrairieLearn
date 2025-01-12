@@ -74,7 +74,7 @@ def generate(data):
         tag1 = "true"
         tag2 = "false"
 
-    for i, p in enumerate(points):
+    for p in points:
         if p > 1.3 * tmax:
             dic.append({"tag": tag1, "ans": str(p)})
         elif p < 0.7 * tmax:

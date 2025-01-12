@@ -16,7 +16,23 @@ describe('Course syncing', () => {
 
   beforeEach('reset testing database', helperDb.resetDatabase);
 
-  it('syncs for known features', async () => {
+  it('syncs for known features as object', async () => {
+    const courseData = util.getCourseData();
+    courseData.course.options = {
+      useNewQuestionRenderer: true,
+      devModeFeatures: { [sampleFeature1]: true },
+    };
+
+    const courseDir = await util.writeCourseToTempDirectory(courseData);
+    await util.syncCourseData(courseDir);
+
+    const syncedCourses = await util.dumpTable('pl_courses');
+    const syncedCourse = syncedCourses[0];
+    assert.isNotOk(syncedCourse?.sync_warnings);
+    assert.isNotOk(syncedCourse?.sync_errors);
+  });
+
+  it('syncs for known features as array', async () => {
     const courseData = util.getCourseData();
     courseData.course.options = {
       useNewQuestionRenderer: true,
@@ -36,7 +52,7 @@ describe('Course syncing', () => {
     const courseData = util.getCourseData();
     courseData.course.options = {
       useNewQuestionRenderer: true,
-      devModeFeatures: [invalidFeature],
+      devModeFeatures: { [invalidFeature]: true },
     };
 
     const courseDir = await util.writeCourseToTempDirectory(courseData);
@@ -59,7 +75,10 @@ describe('Course syncing', () => {
       const courseData = util.getCourseData();
       courseData.course.options = {
         useNewQuestionRenderer: true,
-        devModeFeatures: [sampleFeature1, sampleFeature2],
+        devModeFeatures: {
+          [sampleFeature1]: true,
+          [sampleFeature2]: true,
+        },
       };
 
       const courseDir = await util.writeCourseToTempDirectory(courseData);
@@ -78,7 +97,9 @@ describe('Course syncing', () => {
       const syncedCourse = syncedCourses[0];
       assert.match(
         syncedCourse?.sync_warnings,
-        new RegExp(`Feature "${sampleFeature2}" is not enabled for this course.`),
+        new RegExp(
+          `Feature "${sampleFeature2}" is enabled in devModeFeatures, but is actually disabled.`,
+        ),
       );
       assert.notMatch(syncedCourse?.sync_warnings, new RegExp(sampleFeature1));
       assert.isNotOk(syncedCourse?.sync_errors);

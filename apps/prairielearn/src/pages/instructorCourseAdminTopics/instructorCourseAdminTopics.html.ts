@@ -4,7 +4,7 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TopicBadge } from '../../components/TopicBadge.html.js';
-import { Topic } from '../../lib/db-types.js';
+import { type Topic } from '../../lib/db-types.js';
 
 export function InstructorCourseAdminTopics({
   resLocals,

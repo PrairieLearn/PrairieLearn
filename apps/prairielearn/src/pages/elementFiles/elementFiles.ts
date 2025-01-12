@@ -9,7 +9,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
-import { Course } from '../../lib/db-types.js';
+import { type Course } from '../../lib/db-types.js';
 import { APP_ROOT_PATH } from '../../lib/paths.js';
 import { selectCourseById } from '../../models/course.js';
 

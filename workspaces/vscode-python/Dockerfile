@@ -1,5 +1,5 @@
 # noble is the codename for Ubuntu 24.04 LTS
-FROM codercom/code-server:4.92.2-noble
+FROM codercom/code-server:4.96.2-noble
 
 # On PL, we want to standardize on using 1001:1001 for the user. We change the
 # "coder" account's UID and GID here so that fixuid has no work to do later.
@@ -26,6 +26,7 @@ RUN find /etc/sudoers.d -type f -not -name README -delete && \
 USER root
 ARG DEBIAN_FRONTEND=noninteractive
 RUN apt-get update && \
+    apt-get install -y man-db unminimize && \
     yes | unminimize && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
@@ -35,9 +36,7 @@ RUN apt-get update && \
     gosu curl git htop less nano unzip vim wget zip && \
     apt-get clean && \
     rm -rf /var/lib/apt/lists/* && \
-    find /tmp -not -path /tmp -delete && \
-    # Test the gosu installation:
-    gosu nobody true
+    find /tmp -not -path /tmp -delete
 
 # Make sure to build using bash as the shell so that conda/mamba hooks will
 # work during installation.

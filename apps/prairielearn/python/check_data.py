@@ -144,7 +144,7 @@ def check_prop(
         raise ValueError(f'Expected data["{prop}"] to be an integer')
     elif value_type == "string" and not isinstance(new_value, str):
         raise ValueError(f'Expected data["{prop}"] to be a string')
-    elif value_type == "number" and not isinstance(new_value, (int, float)):
+    elif value_type == "number" and not isinstance(new_value, int | float):
         raise ValueError(f'Expected data["{prop}"] to be a number')
     elif value_type == "boolean" and not isinstance(new_value, bool):
         raise ValueError(f'Expected data["{prop}"] to be a boolean')

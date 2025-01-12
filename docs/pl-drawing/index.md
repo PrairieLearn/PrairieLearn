@@ -1775,7 +1775,7 @@ This button deletes objects that were previously placed on the canvas.
 </pl-drawing-initial>
 ```
 
-#### Example implementations
+### Example implementations
 
 - [demo/drawing/graphs]: Example that highlights graph sketching
 

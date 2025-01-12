@@ -1,4 +1,4 @@
-import fetch, { Response } from 'node-fetch';
+import fetch, { type Response } from 'node-fetch';
 
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';

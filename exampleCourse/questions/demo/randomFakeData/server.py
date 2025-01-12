@@ -15,7 +15,7 @@ def generate(data):
     employees = []
 
     for alias, birthday in zip(
-        ["youngest", "employee1", "employee2", "employee3"], birthdays
+        ["youngest", "employee1", "employee2", "employee3"], birthdays, strict=True
     ):
         name = fake.unique.name()
         data["params"][alias] = name

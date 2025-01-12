@@ -1,6 +1,7 @@
 import json
+import typing
 from itertools import chain, repeat
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 import python_helper_sympy as phs
@@ -33,31 +34,31 @@ def test_evaluate() -> None:
 
 
 class TestSympy:
-    SYMBOL_NAMES = ["n", "m", "alpha", "\u03bc0"]
+    SYMBOL_NAMES = ("n", "m", "alpha", "\u03bc0")
     M, N, ALPHA, MU0 = sympy.symbols("m n alpha mu0")
 
-    FUNCTION_NAMES = ["f", "g", "beef", "\u03c6"]
+    FUNCTION_NAMES = ("f", "g", "beef", "\u03c6")
     # Any annotations here to ignore annoying typechecking complaining
     F: Any = sympy.Function("f")
     G: Any = sympy.Function("g")
     BEEF: Any = sympy.Function("beef")
     PHI: Any = sympy.Function("phi")
 
-    CUSTOM_FUNCTION_PAIRS = [
+    CUSTOM_FUNCTION_PAIRS = (
         ("f(1) + g(2)", F(1) + G(2)),
         ("f(g(n), 1)", F(G(N), 1)),
         ("f(1) + g(2, 3) + sin n", F(1) + G(2, 3) + sympy.sin(N)),
         ("beef(m + n)", BEEF(N + M)),
         ("beef(n) + f(m)", BEEF(N) + F(M)),
         ("\u03c6(\u03bc0)", PHI(MU0)),
-    ]
+    )
 
-    INCORRECT_FUNCTION_PAIRS = [
+    INCORRECT_FUNCTION_PAIRS = (
         ("f(1) + g(2)", F(1) + G(2, 3)),
         ("f(1) + g(2)", G(1) + F(2)),
-    ]
+    )
 
-    EXPR_PAIRS = [
+    EXPR_PAIRS = (
         # Test unicode conversion
         ("1+\u03bc0", MU0 + 1),
         ("m \u2212 n", M - N),
@@ -121,7 +122,7 @@ class TestSympy:
         ("atanh(m)", sympy.atanh(M)),
         ("asinh(m)", sympy.asinh(M)),
         ("acosh(m)", sympy.acosh(M)),
-    ]
+    )
 
     @pytest.mark.parametrize("a_sub, sympy_ref", CUSTOM_FUNCTION_PAIRS)
     def test_custom_function_conversion(
@@ -196,7 +197,7 @@ class TestSympy:
     def test_json_conversion(
         self,
         a_pair: tuple[str, sympy.Expr],
-        custom_functions: Optional[list[str]],
+        custom_functions: list[str] | None,
         remove_assumptions: bool,
     ) -> None:
         a_sub, _ = a_pair
@@ -262,7 +263,7 @@ class TestSympy:
     def test_bad_assumption_conversion(
         self, expr: str, bad_assumptions: phs.AssumptionsDictT
     ) -> None:
-        with pytest.raises(phs.HasInvalidAssumption):
+        with pytest.raises(phs.HasInvalidAssumptionError):
             phs.convert_string_to_sympy(
                 expr,
                 custom_functions=["f"],
@@ -272,17 +273,17 @@ class TestSympy:
 
 
 class TestExceptions:
-    VARIABLES = ["n"]
+    VARIABLES = ("n",)
 
-    COMPLEX_CASES = ["i", "5 * i", "j", "I"]
-    NO_FLOATS_CASES = ["3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)"]
-    INVALID_EXPRESSION_CASES = ["5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5"]
-    INVALID_FUNCTION_CASES = ["eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))"]
-    INVALID_VARIABLE_CASES = ["x", "exp(y)", "z*n"]
-    FUNCTION_NOT_CALLED_CASES = ["2+exp", "cos*n"]
-    INVALID_PARSE_CASES = ["(", "n**", "n**2+", "!"]
-    INVALID_ESCAPE_CASES = ["\\", "n + 2 \\", "2 \\"]
-    INVALID_COMMENT_CASES = ["#", "n + 2 # comment", "# x"]
+    COMPLEX_CASES = ("i", "5 * i", "j", "I")
+    NO_FLOATS_CASES = ("3.5", "4.2n", "3.5*n", "3.14159*n**2", "sin(2.3)")
+    INVALID_EXPRESSION_CASES = ("5==5", "5!=5", "5>5", "5<5", "5>=5", "5<=5")
+    INVALID_FUNCTION_CASES = ("eval(n)", "f(n)", "g(n)+cos(n)", "dir(n)", "sin(f(n))")
+    INVALID_VARIABLE_CASES = ("x", "exp(y)", "z*n")
+    FUNCTION_NOT_CALLED_CASES = ("2+exp", "cos*n")
+    INVALID_PARSE_CASES = ("(", "n**", "n**2+", "!")
+    INVALID_ESCAPE_CASES = ("\\", "n + 2 \\", "2 \\")
+    INVALID_COMMENT_CASES = ("#", "n + 2 # comment", "# x")
 
     # Test exception cases
 
@@ -293,11 +294,11 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", COMPLEX_CASES)
     def test_reserved_variables(self, a_sub: str) -> None:
-        with pytest.raises(phs.HasConflictingVariable):
+        with pytest.raises(phs.HasConflictingVariableError):
             phs.convert_string_to_sympy(a_sub, ["i", "j"], allow_complex=True)
 
     def test_reserved_functions(self) -> None:
-        with pytest.raises(phs.HasConflictingFunction):
+        with pytest.raises(phs.HasConflictingFunctionError):
             phs.convert_string_to_sympy("sin 1", custom_functions=["sin", "f"])
 
     @pytest.mark.parametrize("a_sub", NO_FLOATS_CASES)

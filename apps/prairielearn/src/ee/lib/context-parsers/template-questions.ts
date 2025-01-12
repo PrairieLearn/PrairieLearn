@@ -2,7 +2,9 @@ import * as path from 'path';
 
 import fs from 'fs-extra';
 
-export async function buildContextForQuestion(dir: string): Promise<string> {
+import { validateHTML } from '../validateHTML.js';
+
+export async function buildContextForQuestion(dir: string): Promise<string | undefined> {
   const readmePath = path.join(dir, 'README.md');
   const hasReadme = await fs.pathExists(readmePath);
 
@@ -13,6 +15,10 @@ export async function buildContextForQuestion(dir: string): Promise<string> {
   const hasPython = await fs.pathExists(pythonPath);
 
   const context: string[] = [];
+
+  if (validateHTML(html, false, hasPython).length > 0) {
+    return undefined;
+  }
 
   if (hasReadme) {
     const readme = await fs.readFile(readmePath, 'utf-8');

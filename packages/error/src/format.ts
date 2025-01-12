@@ -46,7 +46,7 @@ export function formatErrorStack(err: any, depth = 0, prefix = ''): string {
 export function formatErrorStackSafe(err: any): string {
   try {
     return formatErrorStack(err);
-  } catch (e) {
+  } catch {
     return err.stack;
   }
 }

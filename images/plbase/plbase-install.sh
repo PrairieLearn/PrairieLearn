@@ -24,9 +24,9 @@ dnf -y install \
     lsof \
     make \
     openssl \
-    postgresql15 \
-    postgresql15-server \
-    postgresql15-contrib \
+    postgresql16 \
+    postgresql16-server \
+    postgresql16-contrib \
     procps-ng \
     redis6 \
     tar \
@@ -50,7 +50,7 @@ mkdir /var/postgres && chown postgres:postgres /var/postgres
 su postgres -c "initdb -D /var/postgres"
 
 echo "installing pgvector..."
-dnf -y install postgresql15-server-devel
+dnf -y install postgresql16-server-devel
 cd /tmp
 git clone --branch v0.7.0 https://github.com/pgvector/pgvector.git
 cd pgvector
@@ -61,7 +61,7 @@ cd pgvector
 make OPTFLAGS=""
 make install
 rm -rf /tmp/pgvector
-dnf -y remove postgresql15-server-devel
+dnf -y remove postgresql16-server-devel
 dnf -y autoremove
 
 # TODO: use standard OS Python installation? The only reason we switched to Conda
@@ -70,7 +70,8 @@ dnf -y autoremove
 echo "setting up conda..."
 cd /
 arch=`uname -m`
-curl -LO https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh
+# Pinning the Conda version so the default Python version is 3.10. Later conda versions use 3.12 as the default.
+curl -LO https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Miniforge3-Linux-${arch}.sh
 bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
 
 echo "installing Python packages..."

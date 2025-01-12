@@ -10,9 +10,12 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../lib/assets.js';
-import { User } from '../../lib/db-types.js';
+import { type User } from '../../lib/db-types.js';
 
-import { CourseAssessmentRow, InstructorGradebookData } from './instructorGradebook.types.js';
+import {
+  type CourseAssessmentRow,
+  type InstructorGradebookData,
+} from './instructorGradebook.types.js';
 
 export function InstructorGradebook({
   resLocals,

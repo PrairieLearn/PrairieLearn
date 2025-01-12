@@ -4,7 +4,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { InstructorInstanceAdminBillingForm } from '../../lib/billing/components/InstructorInstanceAdminBillingForm.html.js';
-import { PlanName } from '../../lib/billing/plans-types.js';
+import { type PlanName } from '../../lib/billing/plans-types.js';
 
 export type EnrollmentLimitSource = 'course_instance' | 'institution';
 

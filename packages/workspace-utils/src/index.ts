@@ -3,7 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import type { Emitter as SocketIOEmitter } from '@socket.io/redis-emitter';
-import fg, { Entry } from 'fast-glob';
+import fg, { type Entry } from 'fast-glob';
 import { filesize } from 'filesize';
 import type { Server as SocketIOServer } from 'socket.io';
 

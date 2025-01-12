@@ -2,7 +2,7 @@ import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
-import { Institution } from '../../../lib/db-types.js';
+import { type Institution } from '../../../lib/db-types.js';
 
 export function AdministratorInstitutionAdmins({
   institution,

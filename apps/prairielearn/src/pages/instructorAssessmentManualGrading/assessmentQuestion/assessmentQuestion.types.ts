@@ -25,7 +25,7 @@ export interface InstanceQuestionTableData {
   groupWork: boolean;
   maxPoints: number | null;
   maxAutoPoints: number | null;
-  botGradingEnabled: boolean;
+  aiGradingEnabled: boolean;
   courseStaff: User[];
   csrfToken: string;
 }

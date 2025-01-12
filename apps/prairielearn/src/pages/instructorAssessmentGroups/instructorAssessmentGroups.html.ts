@@ -7,7 +7,7 @@ import { Modal } from '../../components/Modal.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
-import { GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
+import { type GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
@@ -73,7 +73,7 @@ export function InstructorAssessmentGroups({
                 ${resLocals.authz_data.has_course_instance_permission_edit
                   ? html`
                       ${UploadAssessmentGroupsModal({ csrfToken: resLocals.__csrf_token })}
-                      ${AutoAssessmentGroupsModal({
+                      ${RandomAssessmentGroupsModal({
                         groupMin: groupConfigInfo.minimum ? groupConfigInfo.minimum : 2,
                         groupMax: groupConfigInfo.maximum ? groupConfigInfo.maximum : 5,
                         csrfToken: resLocals.__csrf_token,
@@ -132,11 +132,11 @@ export function InstructorAssessmentGroups({
                                 type="button"
                                 class="btn btn-primary text-nowrap"
                                 data-toggle="modal"
-                                data-target="#autoAssessmentGroupsModal"
+                                data-target="#randomAssessmentGroupsModal"
                               >
-                                <i class="fas fa-robot" aria-hidden="true"></i> Auto
+                                <i class="fas fa-shuffle" aria-hidden="true"></i> Random
                               </button>
-                              <div class="mt-2">Automatically assign students to groups.</div>
+                              <div class="mt-2">Randomly assign students to groups.</div>
                             </div>
                           </div>
                         </div>
@@ -176,8 +176,9 @@ export function InstructorAssessmentGroups({
                                     <div class="dropdown js-group-action-dropdown">
                                       <button
                                         type="button"
-                                        class="btn btn-xs dropdown-toggle"
+                                        class="btn btn-xs btn-ghost dropdown-toggle"
                                         data-toggle="dropdown"
+                                        data-boundary="window"
                                         aria-haspopup="true"
                                         aria-expanded="false"
                                       >
@@ -403,7 +404,7 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
   });
 }
 
-function AutoAssessmentGroupsModal({
+function RandomAssessmentGroupsModal({
   groupMin,
   groupMax,
   csrfToken,
@@ -413,13 +414,15 @@ function AutoAssessmentGroupsModal({
   csrfToken: string;
 }) {
   return Modal({
-    id: 'autoAssessmentGroupsModal',
-    title: 'Auto new group setting',
+    id: 'randomAssessmentGroupsModal',
+    title: 'Random group assignments',
     body: html`
       <div class="form-group">
         <label for="formMin">Min number of members in a group</label>
         <input
-          type="text"
+          type="number"
+          required
+          min="1"
           value="${groupMin}"
           class="form-control"
           id="formMin"
@@ -429,7 +432,9 @@ function AutoAssessmentGroupsModal({
       <div class="form-group">
         <label for="formMax">Max number of members in a group</label>
         <input
-          type="text"
+          type="number"
+          required
+          min="1"
           value="${groupMax}"
           class="form-control"
           id="formMax"
@@ -438,7 +443,7 @@ function AutoAssessmentGroupsModal({
       </div>
     `,
     footer: html`
-      <input type="hidden" name="__action" value="auto_assessment_groups" />
+      <input type="hidden" name="__action" value="random_assessment_groups" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Group</button>

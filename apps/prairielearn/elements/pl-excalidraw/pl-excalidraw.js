@@ -28,15 +28,9 @@ const Footer = ({ unsaved, readOnly }) => {
 };
 
 const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
-  const [readOnly, setReadOnly] = React.useState(false);
   const [unsaved, setUnsaved] = React.useState(false);
   const [lib, setLib] = React.useState(null);
   const [sceneVer, setSceneVer] = React.useState(0);
-
-  // First time setup
-  React.useEffect(() => {
-    setReadOnly(metadata.read_only);
-  }, [metadata]);
 
   // Autosave
   React.useEffect(() => {
@@ -63,7 +57,7 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
     initialData: metadata.scene || {},
     isCollaborating: false,
     excalidrawAPI: (it) => setLib(it),
-    viewModeEnabled: readOnly,
+    viewModeEnabled: metadata.read_only,
     onChange: (elts) => {
       let thisVersion = ExcalidrawLib.getSceneVersion(elts);
       if (sceneVer >= thisVersion) return;
@@ -88,7 +82,7 @@ const DrawWidget = ({ sketchName, metadata, setHiddenInput }) => {
           elt(ExcalidrawLib.MainMenu.DefaultItems.Export),
           elt(ExcalidrawLib.MainMenu.DefaultItems.SaveAsImage),
         ),
-        elt(Footer, { unsaved, readOnly }),
+        elt(Footer, { unsaved, readOnly: metadata.read_only }),
       ),
     ),
   );

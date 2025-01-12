@@ -1,4 +1,4 @@
-import { GradingJob } from '../lib/db-types.js';
+import { type GradingJob } from '../lib/db-types.js';
 
 export type GradingJobStatus = 'none' | 'canceled' | 'queued' | 'grading' | 'graded' | 'requested';
 

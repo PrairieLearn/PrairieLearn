@@ -19,7 +19,7 @@ import * as opsbot from '../../lib/opsbot.js';
 import {
   RequestCourse,
   CourseRequestRowSchema,
-  Lti13CourseRequestInput,
+  type Lti13CourseRequestInput,
 } from './instructorRequestCourse.html.js';
 
 const router = express.Router();
@@ -49,7 +49,7 @@ router.get(
             ltiClaim.get(['https://purl.imsglobal.org/spec/lti/claim/context', 'title']) ?? '',
           'cr-institution': res.locals.authn_institution.long_name ?? '',
         };
-      } catch (err) {
+      } catch {
         // If LTI information expired or otherwise errors, don't error here.
         // Continue on like there isn't LTI 1.3 information.
         lti13Info = null;

@@ -1,6 +1,5 @@
 import * as path from 'node:path';
 
-import { AnsiUp } from 'ansi_up';
 import * as async from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
@@ -12,6 +11,7 @@ import { isBinaryFile } from 'isbinaryfile';
 import * as error from '@prairielearn/error';
 import { contains } from '@prairielearn/path-utils';
 
+import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { getCourseOwners } from '../../lib/course.js';
 import * as editorUtil from '../../lib/editorUtil.js';
 import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors.js';
@@ -24,7 +24,6 @@ import {
   type DirectoryEntryFile,
   type FileInfo,
   InstructorFileBrowser,
-  InstructorFileBrowserNoPermission,
 } from './instructorFileBrowser.html.js';
 
 const router = Router();
@@ -39,7 +38,6 @@ async function browseDirectory({
   paths: InstructorFilePaths;
 }): Promise<DirectoryListings> {
   const filenames = await fs.readdir(paths.workingPath);
-  const ansiUp = new AnsiUp();
   const all_files = await async.mapLimit(
     filenames
       .sort()
@@ -72,9 +70,7 @@ async function browseDirectory({
             contains(invalidRootPath, filepath),
           ),
           sync_errors: sync_data.errors,
-          sync_errors_ansified: ansiUp.ansi_to_html(sync_data.errors ?? ''),
           sync_warnings: sync_data.warnings,
-          sync_warnings_ansified: ansiUp.ansi_to_html(sync_data.warnings ?? ''),
         } as DirectoryEntryFile;
       } else if (stats.isDirectory()) {
         return {
@@ -175,9 +171,14 @@ router.get(
       // Access denied, but instead of sending them to an error page, we'll show
       // them an explanatory message and prompt them to get view permissions.
       const courseOwners = await getCourseOwners(res.locals.course.id);
-      res
-        .status(403)
-        .send(InstructorFileBrowserNoPermission({ resLocals: res.locals, courseOwners }));
+      res.status(403).send(
+        InsufficientCoursePermissionsCardPage({
+          resLocals: res.locals,
+          courseOwners,
+          pageTitle: 'Files',
+          requiredPermissions: 'Viewer',
+        }),
+      );
       return;
     }
 
@@ -240,7 +241,7 @@ router.post(
       let deletePath: string;
       try {
         deletePath = path.join(res.locals.course.path, req.body.file_path);
-      } catch (err) {
+      } catch {
         throw new Error(`Invalid file path: ${req.body.file_path}`);
       }
       const editor = new FileDeleteEditor({
@@ -251,7 +252,7 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-      } catch (err) {
+      } catch {
         res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
         return;
       }
@@ -260,7 +261,7 @@ router.post(
       let oldPath: string;
       try {
         oldPath = path.join(req.body.working_path, req.body.old_file_name);
-      } catch (err) {
+      } catch {
         throw new Error(
           `Invalid old file path: ${req.body.working_path} / ${req.body.old_file_name}`,
         );
@@ -280,7 +281,7 @@ router.post(
       let newPath: string;
       try {
         newPath = path.join(req.body.working_path, req.body.new_file_name);
-      } catch (err) {
+      } catch {
         throw new Error(
           `Invalid new file path: ${req.body.working_path} / ${req.body.new_file_name}`,
         );
@@ -301,7 +302,7 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-      } catch (err) {
+      } catch {
         res.redirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
         return;
       }
@@ -321,13 +322,13 @@ router.post(
       if (req.body.file_path) {
         try {
           filePath = path.join(res.locals.course.path, req.body.file_path);
-        } catch (err) {
+        } catch {
           throw new Error(`Invalid file path: ${req.body.file_path}`);
         }
       } else {
         try {
           filePath = path.join(req.body.working_path, req.file.originalname);
-        } catch (err) {
+        } catch {
           throw new Error(`Invalid file path: ${req.body.working_path} / ${req.file.originalname}`);
         }
       }
@@ -341,7 +342,7 @@ router.post(
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
-      } catch (err) {
+      } catch {
         res.redirect(`${res.locals.urlPrefix}/edit_error/${serverJob.jobSequenceId}`);
         return;
       }

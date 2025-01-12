@@ -30,7 +30,7 @@ See below for detailed information about each question type.
 
 A `MultipleChoice` question has an `info.json` that provides the question text, one or more correct answers, and one or more incorrect answers. One correct answer is randomly chosen, and enough incorrect answers to make `numberAnswers` total answers, which are then displayed to the student in a random order. For example:
 
-```json
+```json title="info.json"
 {
   "title": "Advantages of fossil fuels (radio)",
   "topic": "Energy",
@@ -61,7 +61,7 @@ A `MultipleChoice` question has an `info.json` that provides the question text, 
 
 A `MultipleTrueFalse` question has an `info.json` that provides the question text, zero or more true statements, and zero or more false statements. All the given statements are used, and are displayed to the students in a random order. For example:
 
-```json
+```json title="info.json"
 {
   "title": "Advantages of fossil fuels (MTF)",
   "topic": "Energy",
@@ -92,7 +92,7 @@ A `MultipleTrueFalse` question has an `info.json` that provides the question tex
 
 A `Checkbox` question has an `info.json` that provides the question text, one or more correct answers, and one or more incorrect answers. Several correct answers are randomly chosen (between `minCorrectAnswers` and `maxCorrectAnswers`, inclusive), and enough incorrect answers to make `numberAnswers` total answers, which are then displayed to the student in a random order. Depending on the values of `minCorrectAnswers` and `maxCorrectAnswers` it is possible to have all or none of the possible answers be correct. For example:
 
-```json
+```json title="info.json"
 {
   "title": "Advantages of fossil fuels (checkbox)",
   "topic": "Energy",
@@ -125,7 +125,7 @@ A `Checkbox` question has an `info.json` that provides the question text, one or
 
 A `File` question gives the student a file to download, and then requires an uploaded file for the answer. The downloaded file is specified in the `info.json` like:
 
-```json
+```json title="info.json"
 {
   "title": "Write a Fibonacci function",
   "topic": "Functions",

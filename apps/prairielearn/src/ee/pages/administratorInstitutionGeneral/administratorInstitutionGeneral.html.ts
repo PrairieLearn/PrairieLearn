@@ -6,7 +6,7 @@ import { html, type HtmlValue } from '@prairielearn/html';
 import { HeadContents } from '../../../components/HeadContents.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { type PlanGrant, type Institution } from '../../../lib/db-types.js';
-import { formatTimezone, Timezone } from '../../../lib/timezones.js';
+import { formatTimezone, type Timezone } from '../../../lib/timezones.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.html.js';
 
 export const InstitutionStatisticsSchema = z.object({

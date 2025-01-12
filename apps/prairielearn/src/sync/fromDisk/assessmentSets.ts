@@ -1,10 +1,7 @@
 import * as sqldb from '@prairielearn/postgres';
 
-import { CourseData } from '../course-db.js';
+import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
-import { makePerformance } from '../performance.js';
-
-const perf = makePerformance('assessmentSets');
 
 export async function sync(courseId: string, courseData: CourseData) {
   // We can only safely remove unused assessment sets if both `infoCourse.json`
@@ -32,7 +29,6 @@ export async function sync(courseId: string, courseData: CourseData) {
   });
   const assessmentSetNames = [...knownAssessmentSetNames];
 
-  perf.start('sproc:sync_assessment_sets');
   await sqldb.callOneRowAsync('sync_assessment_sets', [
     isInfoCourseValid,
     deleteUnused,
@@ -40,5 +36,4 @@ export async function sync(courseId: string, courseData: CourseData) {
     assessmentSetNames,
     courseId,
   ]);
-  perf.end('sproc:sync_assessment_sets');
 }

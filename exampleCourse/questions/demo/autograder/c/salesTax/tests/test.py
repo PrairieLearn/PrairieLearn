@@ -19,7 +19,7 @@ class Grader(cgrader.CPPGrader):
 
         for inval in [10.23, 121.14, 210.11, 1.92, 40.23]:
             outval = inval * tax
-            self.test_run("./tax", "%s\n" % inval, "%0.2f" % outval)
+            self.test_run("./tax", f"{inval}\n", f"{outval:0.2f}")
 
 
 g = Grader()

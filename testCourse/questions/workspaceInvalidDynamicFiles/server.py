@@ -39,6 +39,11 @@ def generate(data):
             "questionFile": "../workspace/server.py",
         },
         {
+            # File that points outside the serverFilesCourse directory in serverFilesCourseFile
+            "name": "course.json",
+            "serverFilesCourseFile": "../infoCourse.json",
+        },
+        {
             # File without contents or questionFile
             "name": "no_contents.txt",
         },

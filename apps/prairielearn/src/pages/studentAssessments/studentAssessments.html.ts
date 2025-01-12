@@ -52,7 +52,7 @@ export function StudentAssessments({
         ${HeadContents({ resLocals })}
       </head>
       <body>
-        ${Navbar({ resLocals, navPage: 'assessments' })}
+        ${Navbar({ resLocals, navPage: 'assessments', navSubPage: 'assessments' })}
         <main id="content" class="container">
           <div class="card mb-4">
             <div class="card-header bg-primary text-white">
@@ -138,7 +138,7 @@ export function StudentAssessments({
 function AssessmentScore(row: StudentAssessmentsRow) {
   if (row.assessment_instance_id == null) return 'Not started';
   if (!row.show_closed_assessment_score) return 'Score not shown';
-  return Scorebar(row.assessment_instance_score_perc);
+  return Scorebar(row.assessment_instance_score_perc, { classes: 'mx-auto' });
 }
 
 function NewInstanceButton({ urlPrefix, row }: { urlPrefix: string; row: StudentAssessmentsRow }) {

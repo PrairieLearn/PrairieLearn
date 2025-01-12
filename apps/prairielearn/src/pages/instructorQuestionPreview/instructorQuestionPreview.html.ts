@@ -66,7 +66,6 @@ export function InstructorQuestionPreview({ resLocals }: { resLocals: Record<str
                 course_instance: resLocals.course_instance,
                 question: resLocals.question,
                 variant: resLocals.variant,
-                user: resLocals.user,
                 authz_data: resLocals.authz_data,
                 question_is_shared: resLocals.question_is_shared,
                 questionContext: 'instructor',

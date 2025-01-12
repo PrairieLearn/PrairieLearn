@@ -7,7 +7,7 @@ import express from 'express';
 import { hashElement, type HashElementNode } from 'folder-hash';
 
 import * as compiledAssets from '@prairielearn/compiled-assets';
-import { HtmlSafeString } from '@prairielearn/html';
+import { type HtmlSafeString } from '@prairielearn/html';
 
 import staticNodeModules from '../middlewares/staticNodeModules.js';
 import elementFiles from '../pages/elementFiles/elementFiles.js';

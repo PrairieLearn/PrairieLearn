@@ -72,5 +72,5 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "title": title  # https://github.com/noahmorrison/chevron/issues/117
         }
 
-    with open("pl-card.mustache", "r", encoding="utf-8") as f:
+    with open("pl-card.mustache", encoding="utf-8") as f:
         return chevron.render(f, html_params).strip()

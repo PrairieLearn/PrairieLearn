@@ -2,7 +2,7 @@ import { html, escapeHtml } from '@prairielearn/html';
 
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
-import { User } from '../../lib/db-types.js';
+import { type User } from '../../lib/db-types.js';
 
 export function AdministratorAdmins({
   admins,

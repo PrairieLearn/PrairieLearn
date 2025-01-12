@@ -1,6 +1,6 @@
 import * as opentelemetry from '@prairielearn/opentelemetry';
 import { loadSqlEquiv, queryAsync, queryOptionalRow } from '@prairielearn/postgres';
-import { SessionStore } from '@prairielearn/session';
+import { type SessionStore } from '@prairielearn/session';
 
 import { UserSessionSchema } from './db-types.js';
 

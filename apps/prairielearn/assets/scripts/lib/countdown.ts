@@ -47,7 +47,8 @@ export function setupCountdown(options: {
   initialServerTimeLimitMS: number;
   serverUpdateURL?: string;
   onTimerOut?: () => void;
-  onServerUpdateFail?: () => void;
+  onRemainingTime?: Record<number, () => void>;
+  onServerUpdateFail?: (remainingMS: number) => void;
   getBackgroundColor?: (remainingSec: number) => string;
 }) {
   const countdownDisplay = document.querySelector<HTMLElement>(options.displaySelector);
@@ -57,6 +58,7 @@ export function setupCountdown(options: {
 
   let serverRemainingMS: number;
   let serverTimeLimitMS: number;
+  let lastRemainingMS: number = options.initialServerRemainingMS;
   let clientStart: number;
   let updateServerIfExpired = true;
   let nextCountdownDisplay: ReturnType<typeof setTimeout> | null = null;
@@ -96,7 +98,12 @@ export function setupCountdown(options: {
         })
         .catch((err) => {
           console.log('Error retrieving remaining time', err);
-          options.onServerUpdateFail?.();
+          const remainingMS = Math.max(0, serverRemainingMS - (Date.now() - clientStart));
+          options.onServerUpdateFail?.(remainingMS);
+          if (remainingMS <= 0) {
+            updateServerIfExpired = false;
+          }
+          displayCountdown();
         });
     }
   }
@@ -115,6 +122,15 @@ export function setupCountdown(options: {
     countdownDisplay.innerText = remainingSec >= 60 ? remainingMin + ' min' : remainingSec + ' sec';
 
     if (remainingMS > 0) {
+      // Perform any timer-based callbacks falling between last and current tick
+      if (options.onRemainingTime) {
+        for (const time in options.onRemainingTime) {
+          if (remainingMS <= +time && +time < lastRemainingMS) {
+            options.onRemainingTime[time]();
+          }
+        }
+      }
+      lastRemainingMS = remainingMS;
       // cancel any existing scheduled call to displayCountdown
       if (nextCountdownDisplay != null) clearTimeout(nextCountdownDisplay);
       // reschedule for the next half-second time

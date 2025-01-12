@@ -61,7 +61,7 @@ check-dependencies:
 lint: lint-js lint-python lint-html lint-links
 lint-js:
 	@yarn eslint --ext js --report-unused-disable-directives "**/*.{js,ts}"
-	@yarn prettier --check "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
+	@yarn prettier --check "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
 lint-python:
 	@python3 -m ruff check ./
 	@python3 -m ruff format --check ./
@@ -73,7 +73,7 @@ lint-links:
 format: format-js format-python
 format-js:
 	@yarn eslint --ext js --fix "**/*.{js,ts}"
-	@yarn prettier --write "**/*.{js,ts,mjs,cjs,mts,cts,md,sql,json,yml,html,css}"
+	@yarn prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,html,css,scss}"
 format-python:
 	@python3 -m ruff check --fix ./
 	@python3 -m ruff format ./
@@ -96,7 +96,8 @@ changeset:
 
 build-docs:
 	@python3 -m venv /tmp/pldocs/venv
+	@d2 --version >/dev/null
 	@/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt
 	@/tmp/pldocs/venv/bin/python3 -m mkdocs build --strict
 
-ci: lint typecheck check-dependencies test build-docs
+ci: lint typecheck check-dependencies test

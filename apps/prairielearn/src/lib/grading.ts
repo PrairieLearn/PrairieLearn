@@ -9,16 +9,16 @@ import * as sqldb from '@prairielearn/postgres';
 import * as questionServers from '../question-servers/index.js';
 
 import {
-  Course,
+  type Course,
   DateFromISOString,
   GradingJobSchema,
   IdSchema,
   IntervalSchema,
-  Question,
+  type Question,
   QuestionSchema,
-  Submission,
+  type Submission,
   SubmissionSchema,
-  Variant,
+  type Variant,
   VariantSchema,
 } from './db-types.js';
 import * as externalGrader from './externalGrader.js';
@@ -53,6 +53,7 @@ const VariantForSubmissionSchema = VariantSchema.extend({
 type SubmissionDataForSaving = Pick<Submission, 'variant_id' | 'auth_user_id'> &
   Pick<Partial<Submission>, 'credit' | 'mode' | 'client_fingerprint_id'> & {
     submitted_answer: NonNullable<Submission['submitted_answer']>;
+    user_id: string;
   };
 
 export async function insertSubmission({
@@ -61,6 +62,7 @@ export async function insertSubmission({
   format_errors,
   gradable,
   broken,
+  params,
   true_answer,
   feedback,
   credit,
@@ -74,6 +76,7 @@ export async function insertSubmission({
   format_errors: Record<string, any> | null;
   gradable: boolean | null;
   broken: boolean | null;
+  params: Record<string, any> | null;
   true_answer: Record<string, any> | null;
   feedback: Record<string, any> | null;
   credit?: number | null;
@@ -85,9 +88,9 @@ export async function insertSubmission({
   return await sqldb.runInTransactionAsync(async () => {
     await sqldb.callAsync('variants_lock', [variant_id]);
 
-    // Select the variant, while updating the variant's `correct_answer`, which
-    // is permitted to change during the `parse` phase (which occurs before this
-    // submission is inserted).
+    // Select the variant, while updating the variant's `params` and
+    // `correct_answer`, which is permitted to change during the `parse` phase
+    // (which occurs before this submission is inserted).
     //
     // Note that we do this mutation as part of the selection process to avoid another
     // database round trip. This mutation is safe to do before the access checks below
@@ -95,7 +98,7 @@ export async function insertSubmission({
     // not be updated.
     const variant = await sqldb.queryRow(
       sql.update_variant_true_answer,
-      { variant_id, true_answer },
+      { variant_id, params, true_answer },
       VariantForSubmissionSchema,
     );
 
@@ -136,7 +139,7 @@ export async function insertSubmission({
         credit,
         mode,
         delta,
-        params: variant.params,
+        params,
         true_answer,
         feedback,
         gradable,
@@ -232,6 +235,7 @@ export async function saveSubmission(
   await writeCourseIssues(
     courseIssues,
     variant,
+    submission.user_id,
     submission.auth_user_id,
     studentMessage,
     courseData,
@@ -312,6 +316,7 @@ async function selectSubmissionForGrading(
  * @param check_submission_id - The submission_id that must be graded (or null to skip this check).
  * @param question - The question for the variant.
  * @param variant_course - The course for the variant.
+ * @param user_id - The current effective user.
  * @param authn_user_id - The currently authenticated user.
  * @param overrideGradeRateCheck - Whether to override grade rate limits.
  */
@@ -320,6 +325,7 @@ export async function gradeVariant(
   check_submission_id: string | null,
   question: Question,
   variant_course: Course,
+  user_id: string | null,
   authn_user_id: string | null,
   overrideGradeRateCheck: boolean,
 ): Promise<void> {
@@ -365,6 +371,7 @@ export async function gradeVariant(
     await writeCourseIssues(
       courseIssues,
       variant,
+      user_id,
       submission.auth_user_id,
       studentMessage,
       courseData,
@@ -435,14 +442,16 @@ export async function saveAndGradeSubmission(
   );
 
   await gradeVariant(
-    // Note that parsing a submission may modify the `true_answer` of the variant
-    // (for v3 questions, this is `data["correct_answers"])`. This is why we need
-    // to use the variant returned from `saveSubmission` rather than the one passed
-    // to this function.
+    // Note that parsing a submission may modify the `params` and `true_answer`
+    // of the variant (for v3 questions, this is `data["params"]` and
+    // `data["correct_answers"])`. This is why we need to use the variant
+    // returned from `saveSubmission` rather than the one passed to this
+    // function.
     updated_variant,
     submission_id,
     question,
     course,
+    submissionData.user_id,
     submissionData.auth_user_id,
     overrideGradeRateCheck,
   );

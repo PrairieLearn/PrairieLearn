@@ -50,7 +50,7 @@ export async function inService() {
   try {
     await autoscaling.completeLifecycleAction(params);
     logger.info('lifecycle.inService(): completed action', params);
-  } catch (e) {
+  } catch {
     // don't return the error, because there is nothing to be done about it
     logger.error('lifecycle.inService(): error completing action', params);
   }
@@ -76,7 +76,7 @@ export async function abandonLaunch() {
     try {
       await autoscaling.completeLifecycleAction(params);
       logger.info('lifecycle.abandonLaunch(): completed action', params);
-    } catch (e) {
+    } catch {
       // don't return the error, because there is nothing to be done about it
       logger.error('lifecycle.abandonLaunch(): error completing action', params);
     }

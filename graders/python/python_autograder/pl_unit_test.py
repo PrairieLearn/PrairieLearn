@@ -28,54 +28,54 @@ class PLTestCase(unittest.TestCase):
     ipynb_key = "#grade"
 
     @classmethod
-    def setUpClass(self):
+    def setUpClass(cls):
         """
         On start, run the user code and generate answer tuples.
         """
-        Feedback.set_test(self)
+        Feedback.set_test(cls)
         base_dir = os.environ.get("MERGE_DIR")
         filenames_dir = os.environ.get("FILENAMES_DIR")
-        self.student_code_abs_path = join(base_dir, self.student_code_file)
+        cls.student_code_abs_path = join(base_dir, cls.student_code_file)
 
         # Load data so that we can use it in the test cases
         filenames_dir = os.environ.get("FILENAMES_DIR")
         with open(join(filenames_dir, "data.json"), encoding="utf-8") as f:
-            self.data = json.load(f)
+            cls.data = json.load(f)
 
         ref_result, student_result, plot_value = execute_code(
             join(filenames_dir, "ans.py"),
-            join(base_dir, self.student_code_file),
-            self.include_plt,
+            join(base_dir, cls.student_code_file),
+            cls.include_plt,
             join(base_dir, "output.txt"),
-            self.iter_num,
-            self.ipynb_key,
+            cls.iter_num,
+            cls.ipynb_key,
         )
         answerTuple = namedtuple("answerTuple", ref_result.keys())
-        self.ref = answerTuple(**ref_result)
+        cls.ref = answerTuple(**ref_result)
         studentTuple = namedtuple("studentTuple", student_result.keys())
-        self.st = studentTuple(**student_result)
-        self.plt = plot_value
-        if self.include_plt:
-            self.display_plot()
+        cls.st = studentTuple(**student_result)
+        cls.plt = plot_value
+        if cls.include_plt:
+            cls.display_plot()
 
     @classmethod
-    def tearDownClass(self):
+    def tearDownClass(cls):
         """
         Close all plots and increment the iteration number on test finish
         """
 
-        if self.include_plt:
-            self.plt.close("all")
-        self.iter_num += 1
+        if cls.include_plt:
+            cls.plt.close("all")
+        cls.iter_num += 1
 
     @classmethod
-    def display_plot(self):
-        axes = self.plt.gca()
+    def display_plot(cls):
+        axes = cls.plt.gca()
         if axes.get_lines() or axes.collections or axes.patches or axes.images:
-            save_plot(self.plt, self.iter_num)
+            save_plot(cls.plt, cls.iter_num)
 
     @classmethod
-    def get_total_points(self):
+    def get_total_points(cls):
         """
         Get the total number of points awarded by this test suite, including
         cases where the test suite is run multiple times.
@@ -83,13 +83,13 @@ class PLTestCase(unittest.TestCase):
 
         methods = [
             y
-            for x, y in self.__dict__.items()
+            for x, y in cls.__dict__.items()
             if callable(y)
             and hasattr(y, "__dict__")
             and x.startswith("test_")
             and "points" in y.__dict__
         ]
-        if self.total_iters == 1:
+        if cls.total_iters == 1:
             total = sum([m.__dict__["points"] for m in methods])
         else:
             once = sum(
@@ -106,7 +106,7 @@ class PLTestCase(unittest.TestCase):
                     if m.__dict__.get("__repeated__", True)
                 ]
             )
-            total = self.total_iters * several + once
+            total = cls.total_iters * several + once
         return total
 
     def setUp(self):
@@ -123,7 +123,7 @@ class PLTestCase(unittest.TestCase):
         """
 
         if not result.done_grading and not result.skip_grading:
-            super(PLTestCase, self).run(result)
+            super().run(result)
         elif result.skip_grading:
             result.startTest(self)
             self.setUp()

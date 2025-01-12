@@ -5,8 +5,7 @@ columns
 
 indexes
     group_users_pkey: PRIMARY KEY (group_id, user_id) USING btree (group_id, user_id)
-    group_users_group_id_key: USING btree (group_id)
-    group_users_user_id_key: USING btree (user_id)
+    group_users_user_id_group_config_id_key: UNIQUE (user_id, group_config_id) USING btree (user_id, group_config_id)
 
 foreign-key constraints
     group_users_group_config_id_fkey: FOREIGN KEY (group_config_id) REFERENCES group_configs(id) ON UPDATE CASCADE ON DELETE CASCADE

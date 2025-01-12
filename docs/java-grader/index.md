@@ -41,7 +41,7 @@ The question should be first set up to enable [external grading](../externalGrad
 
 A full `info.json` file should look something like:
 
-```json
+```json title="info.json"
 {
   "uuid": "...",
   "title": "...",
@@ -151,7 +151,7 @@ public class ExampleJUnit5Test {
 
 By default the Java compiler will show all compilation warnings to the user, except for `serial` (missing `serialVersionUID` on serializable classes). If you would like to change the compilation warnings or other compilation settings, you may do so by setting the `JDK_JAVAC_OPTIONS` environment variable in `info.json`, as follows:
 
-```json
+```json title="info.json"
 {
   "externalGradingOptions": {
     "enabled": true,
@@ -180,7 +180,7 @@ Instructors may provide additional libraries and classes as part of the Java cla
 
 Some questions may include libraries and base classes that are common across multiple questions. For such questions, it is possible to save these libraries and classes in the course's `serverFilesCourse/java/libs` directory, using the same conventions as above. If this option is used, however, the question's `info.json` file should indicate that this directory should be added to the grading container, as below:
 
-```json
+```json title="info.json"
 {
   "externalGradingOptions": {
     "enabled": true,

@@ -178,7 +178,7 @@ def prepare(element_html, data):
 
     # Organize the list of options to use.
     # First, select all the options associated with the chosen statements.
-    needed_options_keys = set((s["match"] for s in statements))
+    needed_options_keys = set(s["match"] for s in statements)
     needed_options, distractors = partition(
         options, lambda opt: opt["name"] in needed_options_keys
     )
@@ -229,7 +229,7 @@ def prepare(element_html, data):
     # Build the options to display to the student.
     chosen_option_names = []
     display_options = []
-    for i, opt in enumerate(options):
+    for opt in options:
         keyed_option = {"key": opt["name"], "html": opt["html"]}
         display_options.append(keyed_option)
         chosen_option_names.append(opt["name"])
@@ -365,10 +365,10 @@ def render(element_html, data):
                     html_params["partial"] = math.floor(score * 100)
                 else:
                     html_params["incorrect"] = True
-            except Exception:
-                raise ValueError("invalid score" + score)
+            except Exception as exc:
+                raise ValueError("invalid score" + score) from exc
 
-        with open("pl-matching.mustache", "r", encoding="utf-8") as f:
+        with open("pl-matching.mustache", encoding="utf-8") as f:
             html = chevron.render(f, html_params).strip()
     elif data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
@@ -428,10 +428,10 @@ def render(element_html, data):
                         html_params["partial"] = math.floor(score * 100)
                     else:
                         html_params["incorrect"] = True
-                except Exception:
-                    raise ValueError("invalid score" + score)
+                except Exception as exc:
+                    raise ValueError("invalid score" + score) from exc
 
-            with open("pl-matching.mustache", "r", encoding="utf-8") as f:
+            with open("pl-matching.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
     elif data["panel"] == "answer":
         if not pl.get_boolean_attrib(
@@ -466,7 +466,7 @@ def render(element_html, data):
                 "counter_type": counter_type,
                 "no_counters": no_counters,
             }
-            with open("pl-matching.mustache", "r", encoding="utf-8") as f:
+            with open("pl-matching.mustache", encoding="utf-8") as f:
                 html = chevron.render(f, html_params).strip()
 
     return html

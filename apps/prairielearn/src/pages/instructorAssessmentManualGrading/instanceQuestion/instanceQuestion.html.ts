@@ -10,7 +10,7 @@ import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.html.
 import { QuestionContainer } from '../../../components/QuestionContainer.html.js';
 import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.html.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
-import { DateFromISOString, GradingJobSchema, User } from '../../../lib/db-types.js';
+import { DateFromISOString, GradingJobSchema, type User } from '../../../lib/db-types.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
 import { RubricSettingsModal } from './rubricSettingsModal.html.js';
@@ -117,7 +117,6 @@ export function InstanceQuestion({
                 instance_question: resLocals.instance_question,
                 question: resLocals.question,
                 variant: resLocals.variant,
-                user: resLocals.user,
                 instance_group: resLocals.instance_group,
                 instance_group_uid_list: resLocals.instance_group_uid_list,
                 instance_user: resLocals.instance_user,

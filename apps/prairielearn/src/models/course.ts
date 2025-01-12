@@ -13,7 +13,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { Course, CourseSchema } from '../lib/db-types.js';
+import { type Course, CourseSchema } from '../lib/db-types.js';
 
 import { insertAuditLog } from './audit-log.js';
 

@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.html.js';
-import { QuestionsPageData } from '../../models/questions.js';
+import { type QuestionsPageData } from '../../models/questions.js';
 
 export const QuestionsPage = ({
   questions,

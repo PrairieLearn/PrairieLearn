@@ -4,7 +4,7 @@ import { HeadContents } from '../../components/HeadContents.html.js';
 import { Navbar } from '../../components/Navbar.html.js';
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.html.js';
 import { TagBadge } from '../../components/TagBadge.html.js';
-import { Tag } from '../../lib/db-types.js';
+import { type Tag } from '../../lib/db-types.js';
 
 export function InstructorCourseAdminTags({
   resLocals,

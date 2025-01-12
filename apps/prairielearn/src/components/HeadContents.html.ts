@@ -2,7 +2,12 @@ import { html } from '@prairielearn/html';
 
 import { compiledScriptTag, nodeModulesAssetPath, assetPath } from '../lib/assets.js';
 import { config } from '../lib/config.js';
-import { Assessment, AssessmentSet, Course, CourseInstance } from '../lib/db-types.js';
+import {
+  type Assessment,
+  type AssessmentSet,
+  type Course,
+  type CourseInstance,
+} from '../lib/db-types.js';
 
 interface TitleOptions {
   resLocals: {

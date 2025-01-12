@@ -17,7 +17,7 @@
     }
   },
 
-  "[javascript][typescript]": {
+  "[javascript][typescript][javascriptreact][typescriptreact]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
@@ -25,7 +25,7 @@
     }
   },
 
-  "[html][css][json][yaml][sql][markdown]": {
+  "[html][css][scss][json][yaml][sql][markdown]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },

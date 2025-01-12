@@ -17,3 +17,9 @@ FROM
 WHERE
   doc_path = $doc_path
   AND chunk_id = $chunk_id;
+
+-- BLOCK delete_unused_doc_chunks
+DELETE FROM question_generation_context_embeddings
+WHERE
+  doc_path <> ALL ($doc_paths)
+  OR chunk_id <> ALL ($chunk_ids);
