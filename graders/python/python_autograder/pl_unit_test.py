@@ -5,12 +5,12 @@ from collections import namedtuple
 from os.path import join
 
 # Needed to ensure matplotlib runs on Docker
-import matplotlib
+import matplotlib as mpl
 from code_feedback import Feedback
 from pl_execute import execute_code
 from pl_helpers import GradingSkipped, name, save_plot
 
-matplotlib.use("Agg")
+mpl.use("Agg")
 
 
 class PLTestCase(unittest.TestCase):

@@ -20,7 +20,7 @@ from typing import Any, Literal, TypedDict, TypeVar, overload
 import lxml.html
 import networkx as nx
 import numpy as np
-import pandas
+import pandas as pd
 import python_helper_sympy as phs
 import sympy
 import to_precision
@@ -306,7 +306,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
             "_variables": s,
             "_shape": [num_rows, num_cols],
         }
-    elif isinstance(v, pandas.DataFrame):
+    elif isinstance(v, pd.DataFrame):
         if df_encoding_version == 1:
             return {
                 "_type": "dataframe",
@@ -435,7 +435,7 @@ def from_json(v):
                 and ("data" in v["_value"])
             ):
                 val = v["_value"]
-                return pandas.DataFrame(
+                return pd.DataFrame(
                     index=val["index"], columns=val["columns"], data=val["data"]
                 )
             else:
@@ -446,7 +446,7 @@ def from_json(v):
             # Convert native JSON back to a string representation so that
             # pandas read_json() can process it.
             value_str = StringIO(json.dumps(v["_value"]))
-            return pandas.read_json(value_str, orient="table")
+            return pd.read_json(value_str, orient="table")
         elif v["_type"] == "networkx_graph":
             return nx.adjacency_graph(v["_value"])
         else:

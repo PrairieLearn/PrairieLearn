@@ -382,7 +382,7 @@ def test_grade_answer_parametrized_key_error_blank(
     question_data["submitted_answers"] = {question_name: "True"}
 
     def grading_function(_: str) -> tuple[bool, str | None]:
-        decoy_dict: dict[str, str] = dict()
+        decoy_dict: dict[str, str] = {}
         decoy_dict["junk"]  # This is to throw a key error
         return (True, None)
 
@@ -390,8 +390,8 @@ def test_grade_answer_parametrized_key_error_blank(
         pl.grade_answer_parameterized(question_data, question_name, grading_function)
 
     # Empty out submitted answers
-    question_data["submitted_answers"] = dict()
-    question_data["format_errors"] = dict()
+    question_data["submitted_answers"] = {}
+    question_data["format_errors"] = {}
     pl.grade_answer_parameterized(question_data, question_name, grading_function)
 
     assert question_data["partial_scores"][question_name]["score"] == 0.0

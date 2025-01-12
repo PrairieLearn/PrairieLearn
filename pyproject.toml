@@ -34,8 +34,14 @@ select = [
     "PIE",
     # Perflint
     "PERF",
+    # flake8-comprehensions
+    "C4",
     # ruff-specific rules
     "RUF",
+    # flake8-import-conventions
+    "ICN",
+    # flake8-implicit-str-concat
+    "ISC",
     # refurb
     "FURB",
     # pylint
@@ -49,7 +55,9 @@ ignore = [
     # Too many statements, too many branches, too many arguments, too many returns
     "PLR0912", "PLR0915", "PLR0913", "PLR0911",
     # Magic value used in comparison (foo == 5)
-    "PLR2004"
+    "PLR2004",
+    # Explicit string concatenation
+    "ISC003"
 ]
 
 [tool.ruff.lint.per-file-ignores]

@@ -177,7 +177,7 @@ def prepare(element_html, data):
 
     # Organize the list of options to use.
     # First, select all the options associated with the chosen statements.
-    needed_options_keys = set(s["match"] for s in statements)
+    needed_options_keys = {s["match"] for s in statements}
     needed_options, distractors = partition(
         options, lambda opt: opt["name"] in needed_options_keys
     )
@@ -196,7 +196,7 @@ def prepare(element_html, data):
             # Add a sample of the distractors.
             distractor_sample = random.sample(distractors, more_needed)
             needed_options_keys = needed_options_keys.union(
-                set(o["name"] for o in distractor_sample)
+                {o["name"] for o in distractor_sample}
             )
             needed_options = [o for o in options if o["name"] in needed_options_keys]
         options = needed_options

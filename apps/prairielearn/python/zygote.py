@@ -74,15 +74,14 @@ import random
 
 import chevron
 import lxml.html
-import matplotlib
-import matplotlib.font_manager
+import matplotlib as mpl
 import nltk
-import numpy
+import numpy as np
 import pint
 import prairielearn
 import sklearn
 
-matplotlib.use("PDF")
+mpl.use("PDF")
 
 # Construct initial unit registry to create initial cache file.
 prairielearn.get_unit_registry()
@@ -261,7 +260,7 @@ def worker_loop() -> None:
             if type(args[-1]) is dict and not seeded:
                 variant_seed = args[-1].get("variant_seed", None)
                 random.seed(variant_seed)
-                numpy.random.seed(variant_seed)
+                np.random.seed(variant_seed)
                 sys.meta_path.insert(0, FakerInitializeMetaPathFinder(variant_seed))
                 seeded = True
 

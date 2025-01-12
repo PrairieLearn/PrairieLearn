@@ -226,10 +226,8 @@ def lcs_partial_credit(
             ) != group_belonging.get(node2):
                 continue
             if not all(
-                [
-                    group_belonging[x] == group_belonging[node1]
-                    for x in submission_no_distractors[i : j + 1]
-                ]
+                group_belonging[x] == group_belonging[node1]
+                for x in submission_no_distractors[i : j + 1]
             ):
                 problematic_subgraph.add_nodes_from(
                     submission_no_distractors[i : j + 1]
