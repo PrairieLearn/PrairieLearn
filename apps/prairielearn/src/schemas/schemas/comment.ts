@@ -1,5 +1,5 @@
 import { z } from 'zod';
 
-export const CommentSchema = z
+export const CommentJsonSchema = z
   .union([z.string(), z.array(z.any()), z.object({}).catchall(z.any())])
   .describe('Arbitrary comment for reference purposes.');

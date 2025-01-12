@@ -1,13 +1,13 @@
 import { z } from 'zod';
 
-import { CommentSchema } from './comment.js';
+import { CommentJsonSchema } from './comment.js';
 
-export const FileQuestionOptionsSchema = z
+export const QuestionFileOptionsJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     fileName: z.string().describe('Filename of the file to download').optional(),
   })
   .strict()
   .describe('Options for a File question.');
 
-export type FileQuestionOptions = z.infer<typeof FileQuestionOptionsSchema>;
+export type QuestionFileOptionsJson = z.infer<typeof QuestionFileOptionsJsonSchema>;

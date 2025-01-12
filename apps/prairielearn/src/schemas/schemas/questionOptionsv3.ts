@@ -1,11 +1,11 @@
 import { z } from 'zod';
 
-import { CommentSchema } from './comment.js';
+import { CommentJsonSchema } from './comment.js';
 
-export const QuestionOptionsv3Schema = z
+export const QuestionOptionsv3JsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
   })
   .describe('Options for a v3 question.');
 
-export type QuestionOptionsv3 = z.infer<typeof QuestionOptionsv3Schema>;
+export type QuestionOptionsv3Json = z.infer<typeof QuestionOptionsv3JsonSchema>;

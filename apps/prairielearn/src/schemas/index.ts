@@ -9,43 +9,43 @@ import {
 } from 'zod-to-json-schema';
 
 import {
-  QuestionSchema,
-  AssessmentSchema,
-  CourseInstanceSchema,
-  CourseSchema,
-  NewsItemSchema,
-  CalculationQuestionOptionsSchema,
-  CheckboxQuestionOptionsSchema,
-  FileQuestionOptionsSchema,
-  MultipleChoiceQuestionOptionsSchema,
-  MultipleTrueFalseQuestionOptionsSchema,
-  QuestionOptionsv3Schema,
-  ElementCoreSchema,
-  ElementCourseSchema,
-  ElementExtensionSchema,
-  type NewsItem,
-  type MultipleTrueFalseQuestionOptions,
-  type QuestionOptionsv3,
-  type MultipleChoiceQuestionOptions,
-  type FileQuestionOptions,
-  type CheckboxQuestionOptions,
-  type CalculationQuestionOptions,
-  type Question,
-  type ElementExtension,
-  type ElementCore,
-  type CourseInstance,
-  type Course,
-  type Assessment,
-  type ElementCourse,
-  ColorSchema,
-  PointsSingleSchema,
-  PointsSchema,
-  QuestionIdSchema,
-  ForceMaxPointsSchema,
-  AdvanceScorePercSchema,
-  AssessmentSetSchema,
-  WorkspaceOptionsSchema,
-  DependencySchema,
+  QuestionJsonSchema,
+  AssessmentJsonSchema,
+  CourseInstanceJsonSchema,
+  CourseJsonSchema,
+  NewsItemJsonSchema,
+  CalculationQuestionOptionsJsonSchema,
+  QuestionCheckboxOptionsJsonSchema,
+  QuestionFileOptionsJsonSchema,
+  QuestionMultipleChoiceOptionsJsonSchema,
+  QuestionMultipleTrueFalseOptionsJsonSchema,
+  QuestionOptionsv3JsonSchema,
+  ElementCoreJsonSchema,
+  ElementCourseJsonSchema,
+  ElementExtensionJsonSchema,
+  type NewsItemJson,
+  type QuestionMultipleTrueFalseOptionsJson,
+  type QuestionOptionsv3Json,
+  type QuestionMultipleChoiceOptionsJson,
+  type QuestionFileOptionsJson,
+  type QuestionCheckboxOptionsJson,
+  type CalculationQuestionOptionsJson,
+  type QuestionJson,
+  type ElementExtensionJson,
+  type ElementCoreJson,
+  type CourseInstanceJson,
+  type CourseJson,
+  type AssessmentJson,
+  type ElementCourseJson,
+  ColorJsonSchema,
+  PointsSingleJsonSchema,
+  PointsJsonSchema,
+  QuestionIdJsonSchema,
+  ForceMaxPointsJsonSchema,
+  AdvanceScorePercJsonSchema,
+  AssessmentSetJsonSchema,
+  WorkspaceOptionsJsonSchema,
+  DependencyJsonSchema,
 } from './schemas/index.js';
 export * from './schemas/index.js';
 
@@ -86,107 +86,113 @@ const prairielearnZodToJsonSchema = (
   });
 };
 
-export const infoNewsItem = prairielearnZodToJsonSchema(NewsItemSchema, {
+export const infoNewsItem = prairielearnZodToJsonSchema(NewsItemJsonSchema, {
   name: 'News Item Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-}) as JSONSchemaType<NewsItem>;
+}) as JSONSchemaType<NewsItemJson>;
 
-export const infoAssessment = prairielearnZodToJsonSchema(AssessmentSchema, {
+export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, {
   name: 'Assessment info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
   definitions: {
-    PointsSchema,
-    PointsSingleSchema,
-    QuestionIdSchema,
-    ForceMaxPointsSchema,
-    AdvanceScorePercSchema,
+    PointsSchema: PointsJsonSchema,
+    PointsSingleSchema: PointsSingleJsonSchema,
+    QuestionIdSchema: QuestionIdJsonSchema,
+    ForceMaxPointsSchema: ForceMaxPointsJsonSchema,
+    AdvanceScorePercSchema: AdvanceScorePercJsonSchema,
   },
-}) as JSONSchemaType<Assessment>;
+}) as JSONSchemaType<AssessmentJson>;
 
-export const infoCourse = prairielearnZodToJsonSchema(CourseSchema, {
+export const infoCourse = prairielearnZodToJsonSchema(CourseJsonSchema, {
   name: 'Course information',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-  definitions: { ColorSchema, AssessmentSetSchema },
-}) as JSONSchemaType<Course>;
+  definitions: { ColorSchema: ColorJsonSchema, AssessmentSetSchema: AssessmentSetJsonSchema },
+}) as JSONSchemaType<CourseJson>;
 
-export const infoCourseInstance = prairielearnZodToJsonSchema(CourseInstanceSchema, {
+export const infoCourseInstance = prairielearnZodToJsonSchema(CourseInstanceJsonSchema, {
   name: 'Course instance information',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-}) as JSONSchemaType<CourseInstance>;
+}) as JSONSchemaType<CourseInstanceJson>;
 
-export const infoElementCore = prairielearnZodToJsonSchema(ElementCoreSchema, {
+export const infoElementCore = prairielearnZodToJsonSchema(ElementCoreJsonSchema, {
   name: 'Element Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-}) as JSONSchemaType<ElementCore>;
+}) as JSONSchemaType<ElementCoreJson>;
 
-export const infoElementCourse = prairielearnZodToJsonSchema(ElementCourseSchema, {
+export const infoElementCourse = prairielearnZodToJsonSchema(ElementCourseJsonSchema, {
   name: 'Element Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-}) as JSONSchemaType<ElementCourse>;
+}) as JSONSchemaType<ElementCourseJson>;
 
-export const infoElementExtension = prairielearnZodToJsonSchema(ElementExtensionSchema, {
+export const infoElementExtension = prairielearnZodToJsonSchema(ElementExtensionJsonSchema, {
   name: 'Element Extension Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-}) as JSONSchemaType<ElementExtension>;
+}) as JSONSchemaType<ElementExtensionJson>;
 
-export const infoQuestion = prairielearnZodToJsonSchema(QuestionSchema, {
+export const infoQuestion = prairielearnZodToJsonSchema(QuestionJsonSchema, {
   name: 'Question Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-  definitions: { WorkspaceOptionsSchema, DependencySchema },
-}) as JSONSchemaType<Question>;
+  definitions: {
+    WorkspaceOptionsSchema: WorkspaceOptionsJsonSchema,
+    DependencySchema: DependencyJsonSchema,
+  },
+}) as JSONSchemaType<QuestionJson>;
 
 export const questionOptionsCalculation = prairielearnZodToJsonSchema(
-  CalculationQuestionOptionsSchema,
+  CalculationQuestionOptionsJsonSchema,
   {
     name: 'Calculation question options',
     nameStrategy: 'title',
     target: 'jsonSchema7',
   },
-) as JSONSchemaType<CalculationQuestionOptions>;
+) as JSONSchemaType<CalculationQuestionOptionsJson>;
 
-export const questionOptionsCheckbox = prairielearnZodToJsonSchema(CheckboxQuestionOptionsSchema, {
-  name: 'MultipleChoice question options',
-  nameStrategy: 'title',
-  target: 'jsonSchema7',
-}) as JSONSchemaType<CheckboxQuestionOptions>;
-
-export const questionOptionsFile = prairielearnZodToJsonSchema(FileQuestionOptionsSchema, {
-  name: 'File question options',
-  nameStrategy: 'title',
-  target: 'jsonSchema7',
-}) as JSONSchemaType<FileQuestionOptions>;
-
-export const questionOptionsMultipleChoice = prairielearnZodToJsonSchema(
-  MultipleChoiceQuestionOptionsSchema,
+export const questionOptionsCheckbox = prairielearnZodToJsonSchema(
+  QuestionCheckboxOptionsJsonSchema,
   {
     name: 'MultipleChoice question options',
     nameStrategy: 'title',
     target: 'jsonSchema7',
   },
-) as JSONSchemaType<MultipleChoiceQuestionOptions>;
+) as JSONSchemaType<QuestionCheckboxOptionsJson>;
+
+export const questionOptionsFile = prairielearnZodToJsonSchema(QuestionFileOptionsJsonSchema, {
+  name: 'File question options',
+  nameStrategy: 'title',
+  target: 'jsonSchema7',
+}) as JSONSchemaType<QuestionFileOptionsJson>;
+
+export const questionOptionsMultipleChoice = prairielearnZodToJsonSchema(
+  QuestionMultipleChoiceOptionsJsonSchema,
+  {
+    name: 'MultipleChoice question options',
+    nameStrategy: 'title',
+    target: 'jsonSchema7',
+  },
+) as JSONSchemaType<QuestionMultipleChoiceOptionsJson>;
 
 export const questionOptionsMultipleTrueFalse = prairielearnZodToJsonSchema(
-  MultipleTrueFalseQuestionOptionsSchema,
+  QuestionMultipleTrueFalseOptionsJsonSchema,
   {
     name: 'MultipleTrueFalse question options',
     nameStrategy: 'title',
     target: 'jsonSchema7',
   },
-) as JSONSchemaType<MultipleTrueFalseQuestionOptions>;
+) as JSONSchemaType<QuestionMultipleTrueFalseOptionsJson>;
 
-export const questionOptionsv3 = prairielearnZodToJsonSchema(QuestionOptionsv3Schema, {
+export const questionOptionsv3 = prairielearnZodToJsonSchema(QuestionOptionsv3JsonSchema, {
   name: 'v3 question options',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-}) as JSONSchemaType<QuestionOptionsv3>;
+}) as JSONSchemaType<QuestionOptionsv3Json>;
 
 export const ajvSchemas = {
   infoNewsItem,

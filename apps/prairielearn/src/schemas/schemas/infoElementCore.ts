@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-import { CommentSchema } from './comment.js';
+import { CommentJsonSchema } from './comment.js';
 
-const DependencySchema = z
+const DependencyJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
       .describe(
@@ -37,14 +37,14 @@ const DependencySchema = z
   .strict()
   .describe("The element's client-side dependencies.");
 
-export const ElementCoreSchema = z
+export const ElementCoreJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     controller: z.string().describe("The name of the element's controller file."),
-    dependencies: DependencySchema.optional(),
+    dependencies: DependencyJsonSchema.optional(),
     dynamicDependencies: z
       .object({
-        comment: CommentSchema.optional(),
+        comment: CommentJsonSchema.optional(),
         nodeModulesScripts: z
           .record(z.string())
           .describe('The scripts required by this element from /node_modules as an importmap.')
@@ -88,4 +88,4 @@ const ElementCoreSchema = z.intersection(
   }),
 );
 */
-export type ElementCore = z.infer<typeof ElementCoreSchema>;
+export type ElementCoreJson = z.infer<typeof ElementCoreJsonSchema>;

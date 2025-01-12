@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-import { CommentSchema } from './comment.js';
+import { CommentJsonSchema } from './comment.js';
 
-export const NewsItemSchema = z
+export const NewsItemJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
       .regex(
@@ -18,4 +18,4 @@ export const NewsItemSchema = z
   .strict()
   .describe('Info files for news items.');
 
-export type NewsItem = z.infer<typeof NewsItemSchema>;
+export type NewsItemJson = z.infer<typeof NewsItemJsonSchema>;

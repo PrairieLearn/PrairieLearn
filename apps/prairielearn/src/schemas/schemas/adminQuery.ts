@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-import { CommentSchema } from './comment.js';
+import { CommentJsonSchema } from './comment.js';
 
-export const AdminQuerySchema = z
+export const AdminQueryJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     description: z.string().describe('Brief one-line description of the query.'),
     resultFormats: z
       .record(z.enum(['pre']))
@@ -14,7 +14,7 @@ export const AdminQuerySchema = z
       .array(
         z
           .object({
-            comment: CommentSchema.optional(),
+            comment: CommentJsonSchema.optional(),
             name: z.string().describe('Name of the parameter. Must match a $name in the SQL.'),
             description: z.string().describe('Brief one-line description of the parameter.'),
             default: z.string().describe('Default value.').optional(),

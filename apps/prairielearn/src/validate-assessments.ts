@@ -4,7 +4,7 @@ import { globby } from 'globby';
 
 import { run } from '@prairielearn/run';
 
-import { AssessmentSchema } from './schemas/index.js';
+import { AssessmentJsonSchema } from './schemas/index.js';
 
 const files = await globby([
   '/Users/nathan/Downloads/us-prod-assessments/**/*.json',
@@ -28,7 +28,7 @@ for (const file of files) {
 
   if (!data) continue;
 
-  const result = AssessmentSchema.safeParse(data);
+  const result = AssessmentJsonSchema.safeParse(data);
   if (!result.success) {
     console.error(`Error validating ${file}`);
     console.error(result.error.issues);

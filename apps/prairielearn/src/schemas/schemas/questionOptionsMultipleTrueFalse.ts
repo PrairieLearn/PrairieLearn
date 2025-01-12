@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-import { CommentSchema } from './comment.js';
+import { CommentJsonSchema } from './comment.js';
 
-export const MultipleTrueFalseQuestionOptionsSchema = z
+export const QuestionMultipleTrueFalseOptionsJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     text: z.string().describe('Text to precede the set of statements being given.').optional(),
     trueStatements: z
       .array(z.string())
@@ -16,6 +16,6 @@ export const MultipleTrueFalseQuestionOptionsSchema = z
   .strict()
   .describe('Options for a MultipleTrueFalse question.');
 
-export type MultipleTrueFalseQuestionOptions = z.infer<
-  typeof MultipleTrueFalseQuestionOptionsSchema
+export type QuestionMultipleTrueFalseOptionsJson = z.infer<
+  typeof QuestionMultipleTrueFalseOptionsJsonSchema
 >;

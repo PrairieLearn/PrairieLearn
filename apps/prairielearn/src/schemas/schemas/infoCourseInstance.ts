@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-import { CommentSchema } from './comment.js';
+import { CommentJsonSchema } from './comment.js';
 
-const AccessRuleSchema = z
+const AccessRuleJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     role: z
       .enum(['Student', 'TA', 'Instructor', 'Superuser'])
       .describe('DEPRECATED -- do not use.')
@@ -22,15 +22,15 @@ const AccessRuleSchema = z
     'An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.',
   );
 
-const AccessControlSchema = z
-  .array(AccessRuleSchema)
+const AccessControlJsonSchema = z
+  .array(AccessRuleJsonSchema)
   .describe(
     'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
   );
 
-export const CourseInstanceSchema = z
+export const CourseInstanceJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
       .regex(
@@ -53,7 +53,7 @@ export const CourseInstanceSchema = z
       )
       .optional(),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
-    allowAccess: AccessControlSchema.optional(),
+    allowAccess: AccessControlJsonSchema.optional(),
     groupAssessmentsBy: z
       .enum(['Set', 'Module'])
       .describe(
@@ -64,7 +64,7 @@ export const CourseInstanceSchema = z
   .strict()
   .describe('The specification file for a course instance.');
 
-export type CourseInstance = z.infer<typeof CourseInstanceSchema>;
+export type CourseInstanceJson = z.infer<typeof CourseInstanceJsonSchema>;
 
 /*
 const AccessRuleSchema = z.intersection(

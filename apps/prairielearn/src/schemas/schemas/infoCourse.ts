@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import { CommentSchema } from './comment.js';
+import { CommentJsonSchema } from './comment.js';
 
-export const ColorSchema = z
+export const ColorJsonSchema = z
   .enum([
     'red1',
     'red2',
@@ -37,34 +37,34 @@ export const ColorSchema = z
   ])
   .describe('A color name.');
 
-export type Color = z.infer<typeof ColorSchema>;
-export const TopicSchema = z
+export type ColorJson = z.infer<typeof ColorJsonSchema>;
+export const TopicJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     shortName: z.string().describe('Short name (preferably 2 to 7 characters).').optional(),
     name: z.string().describe('Long descriptive name (preferably less than 10 words).'),
-    color: ColorSchema,
+    color: ColorJsonSchema,
     description: z.string().describe('Description of the topic.').optional(),
   })
   .describe('A single assessment set description.');
 
-export type Topic = z.infer<typeof TopicSchema>;
+export type TopicJson = z.infer<typeof TopicJsonSchema>;
 
-export const TagSchema = z
+export const TagJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     shortName: z.string().describe('Short name (preferably 2 to 7 characters).').optional(),
     name: z.string().describe('Long descriptive name (preferably less than 10 words).'),
-    color: ColorSchema,
+    color: ColorJsonSchema,
     description: z.string().describe('Description of the tag.').optional(),
   })
   .describe('A single tag description.');
 
-export type Tag = z.infer<typeof TagSchema>;
+export type TagJson = z.infer<typeof TagJsonSchema>;
 
-export const AssessmentSetSchema = z
+export const AssessmentSetJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     abbreviation: z
       .string()
       .describe("Abbreviation (preferably 1 to 3 characters), e.g., 'HW', 'Q', 'PQ', etc."),
@@ -78,15 +78,15 @@ export const AssessmentSetSchema = z
       .describe(
         "Plural heading for a group of assessments (preferably 1 to 3 words), e.g., 'Homeworks', 'Quizzes'.",
       ),
-    color: ColorSchema,
+    color: ColorJsonSchema,
   })
   .describe('A single assessment set description.');
 
-export type AssessmentSet = z.infer<typeof AssessmentSetSchema>;
+export type AssessmentSetJson = z.infer<typeof AssessmentSetJsonSchema>;
 
-export const CourseOptionsSchema = z
+export const CourseOptionsJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     useNewQuestionRenderer: z
       .boolean()
       .describe('Feature flag to enable the new question renderer.')
@@ -104,11 +104,11 @@ export const CourseOptionsSchema = z
   .strict()
   .describe('Options for this course.');
 
-export type CourseOptions = z.infer<typeof CourseOptionsSchema>;
+export type CourseOptionsJson = z.infer<typeof CourseOptionsJsonSchema>;
 
-export const CourseSchema = z
+export const CourseJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     exampleCourse: z.boolean().describe('DEPRECATED -- do not use.').optional(),
     uuid: z
       .string()
@@ -124,8 +124,8 @@ export const CourseSchema = z
         'The timezone for all date input and display (e.g., "America/Chicago", from the TZ column at https://en.wikipedia.org/wiki/List_of_tz_database_time_zones).',
       )
       .optional(),
-    options: CourseOptionsSchema.optional(),
-    assessmentSets: z.array(AssessmentSetSchema).describe('Assessment sets.').optional(),
+    options: CourseOptionsJsonSchema.optional(),
+    assessmentSets: z.array(AssessmentSetJsonSchema).describe('Assessment sets.').optional(),
     assessmentModules: z
       .array(
         z
@@ -139,8 +139,8 @@ export const CourseSchema = z
       )
       .describe('Course modules.')
       .optional(),
-    topics: z.array(TopicSchema).describe('Question topics (visible to students).'),
-    tags: z.array(TagSchema).describe('Question tags (not visible to students).').optional(),
+    topics: z.array(TopicJsonSchema).describe('Question topics (visible to students).'),
+    tags: z.array(TagJsonSchema).describe('Question tags (not visible to students).').optional(),
     sharingSets: z
       .array(
         z
@@ -156,4 +156,4 @@ export const CourseSchema = z
   .strict()
   .describe('The specification file for a course.');
 
-export type Course = z.infer<typeof CourseSchema>;
+export type CourseJson = z.infer<typeof CourseJsonSchema>;

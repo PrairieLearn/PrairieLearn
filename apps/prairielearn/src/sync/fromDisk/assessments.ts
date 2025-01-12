@@ -6,14 +6,14 @@ import * as sqldb from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { type Assessment } from '../../schemas/index.js';
+import { type AssessmentJson } from '../../schemas/index.js';
 import { type CourseInstanceData } from '../course-db.js';
 import { isAccessRuleAccessibleInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-type AssessmentInfoFile = infofile.InfoFile<Assessment>;
+type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
 
 /**
  * SYNCING PROCESS:

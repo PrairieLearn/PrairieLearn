@@ -16,13 +16,13 @@ import { features } from '../lib/features/index.js';
 import { validateJSON } from '../lib/json-load.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
-  type QuestionPoints,
-  type Assessment,
-  type AssessmentSet,
-  type Course,
-  type CourseInstance,
-  type Question,
-  type Tag,
+  type QuestionPointsJson,
+  type AssessmentJson,
+  type AssessmentSetJson,
+  type CourseJson,
+  type CourseInstanceJson,
+  type QuestionJson,
+  type TagJson,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
@@ -41,7 +41,7 @@ const DEFAULT_COURSE_INSTANCE_INFO = {
 };
 const DEFAULT_ASSESSMENT_INFO = {};
 
-const DEFAULT_ASSESSMENT_SETS: AssessmentSet[] = [
+const DEFAULT_ASSESSMENT_SETS: AssessmentSetJson[] = [
   {
     abbreviation: 'HW',
     name: 'Homework',
@@ -83,7 +83,7 @@ const DEFAULT_ASSESSMENT_SETS: AssessmentSet[] = [
   { abbreviation: 'U', name: 'Unknown', heading: 'Unknown', color: 'red3' },
 ];
 
-const DEFAULT_TAGS: Tag[] = [
+const DEFAULT_TAGS: TagJson[] = [
   {
     name: 'numeric',
     color: 'brown1',
@@ -195,13 +195,13 @@ const FILE_UUID_REGEX =
 type InfoFile<T> = infofile.InfoFile<T>;
 
 export interface CourseInstanceData {
-  courseInstance: InfoFile<CourseInstance>;
-  assessments: Record<string, InfoFile<Assessment>>;
+  courseInstance: InfoFile<CourseInstanceJson>;
+  assessments: Record<string, InfoFile<AssessmentJson>>;
 }
 
 export interface CourseData {
-  course: InfoFile<Course>;
-  questions: Record<string, InfoFile<Question>>;
+  course: InfoFile<CourseJson>;
+  questions: Record<string, InfoFile<QuestionJson>>;
   courseInstances: Record<string, CourseInstanceData>;
 }
 
@@ -453,8 +453,8 @@ export async function loadInfoFile<T extends { uuid: string }>({
 export async function loadCourseInfo(
   courseId: string | null,
   coursePath: string,
-): Promise<InfoFile<Course>> {
-  const maybeNullLoadedData: InfoFile<Course> | null = await loadInfoFile({
+): Promise<InfoFile<CourseJson>> {
+  const maybeNullLoadedData: InfoFile<CourseJson> | null = await loadInfoFile({
     coursePath,
     filePath: 'infoCourse.json',
     schema: schemas.infoCourse,
@@ -482,7 +482,7 @@ export async function loadCourseInfo(
    */
   function getFieldWithoutDuplicates<
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
-  >(fieldName: K, entryIdentifier: string, defaults?: Course[K] | undefined): Course[K] {
+  >(fieldName: K, entryIdentifier: string, defaults?: CourseJson[K] | undefined): CourseJson[K] {
     const known = new Map();
     const duplicateEntryIds = new Set();
 
@@ -847,7 +847,7 @@ function checkAllowAccessDates(rule: { startDate?: string; endDate?: string }): 
 }
 
 async function validateQuestion(
-  question: Question,
+  question: QuestionJson,
 ): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -875,8 +875,8 @@ async function validateQuestion(
 }
 
 async function validateAssessment(
-  assessment: Assessment,
-  questions: Record<string, InfoFile<Question>>,
+  assessment: AssessmentJson,
+  questions: Record<string, InfoFile<QuestionJson>>,
   courseInstanceExpired: boolean,
 ): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
@@ -955,7 +955,7 @@ async function validateAssessment(
       }
       // We'll normalize either single questions or alternative groups
       // to make validation easier
-      let alternatives: QuestionPoints[] = [];
+      let alternatives: QuestionPointsJson[] = [];
       if ('alternatives' in zoneQuestion && 'id' in zoneQuestion) {
         errors.push('Cannot specify both "alternatives" and "id" in one question');
       } else if (zoneQuestion?.alternatives) {
@@ -1184,7 +1184,7 @@ async function validateAssessment(
 }
 
 async function validateCourseInstance(
-  courseInstance: CourseInstance,
+  courseInstance: CourseInstanceJson,
 ): Promise<{ warnings: string[]; errors: string[] }> {
   const warnings: string[] = [];
   const errors: string[] = [];
@@ -1243,7 +1243,7 @@ async function validateCourseInstance(
  */
 export async function loadQuestions(
   coursePath: string,
-): Promise<Record<string, InfoFile<Question>>> {
+): Promise<Record<string, InfoFile<QuestionJson>>> {
   const questions = await loadInfoForDirectory({
     coursePath,
     directory: 'questions',
@@ -1272,7 +1272,7 @@ export async function loadQuestions(
  */
 export async function loadCourseInstances(
   coursePath: string,
-): Promise<Record<string, InfoFile<CourseInstance>>> {
+): Promise<Record<string, InfoFile<CourseInstanceJson>>> {
   const courseInstances = await loadInfoForDirectory({
     coursePath,
     directory: 'courseInstances',
@@ -1296,8 +1296,8 @@ export async function loadAssessments(
   coursePath: string,
   courseInstance: string,
   courseInstanceExpired: boolean,
-  questions: Record<string, InfoFile<Question>>,
-): Promise<Record<string, InfoFile<Assessment>>> {
+  questions: Record<string, InfoFile<QuestionJson>>,
+): Promise<Record<string, InfoFile<AssessmentJson>>> {
   const assessmentsPath = path.join('courseInstances', courseInstance, 'assessments');
   const assessments = await loadInfoForDirectory({
     coursePath,
@@ -1305,7 +1305,7 @@ export async function loadAssessments(
     infoFilename: 'infoAssessment.json',
     defaultInfo: DEFAULT_ASSESSMENT_INFO,
     schema: schemas.infoAssessment,
-    validate: (assessment: Assessment) =>
+    validate: (assessment: AssessmentJson) =>
       validateAssessment(assessment, questions, courseInstanceExpired),
     recursive: true,
   });

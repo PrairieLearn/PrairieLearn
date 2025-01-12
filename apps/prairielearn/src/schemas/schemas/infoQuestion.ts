@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
-import { CommentSchema } from './comment.js';
+import { CommentJsonSchema } from './comment.js';
 
-export const DependencySchema = z
+export const DependencyJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
       .describe(
@@ -45,9 +45,9 @@ export const DependencySchema = z
   .strict()
   .describe("The question's client-side dependencies.");
 
-export const WorkspaceOptionsSchema = z
+export const WorkspaceOptionsJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     image: z
       .string()
       .describe(
@@ -96,9 +96,9 @@ export const WorkspaceOptionsSchema = z
   .strict()
   .describe('Options for workspace questions.');
 
-export const QuestionSchema = z
+export const QuestionJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
       .regex(
@@ -159,7 +159,7 @@ export const QuestionSchema = z
       .optional(),
     externalGradingOptions: z
       .object({
-        comment: CommentSchema.optional(),
+        comment: CommentJsonSchema.optional(),
         enabled: z
           .boolean()
           .describe(
@@ -204,8 +204,8 @@ export const QuestionSchema = z
       .strict()
       .describe('Options for externally graded questions.')
       .optional(),
-    dependencies: DependencySchema.optional(),
-    workspaceOptions: WorkspaceOptionsSchema.optional(),
+    dependencies: DependencyJsonSchema.optional(),
+    workspaceOptions: WorkspaceOptionsJsonSchema.optional(),
     sharingSets: z
       .array(z.string().describe('The name of a sharing set'))
       .describe('The list of sharing sets that this question belongs to.')
@@ -219,7 +219,7 @@ export const QuestionSchema = z
   .strict()
   .describe('Info files for questions.');
 
-export type Question = z.infer<typeof QuestionSchema>;
+export type QuestionJson = z.infer<typeof QuestionJsonSchema>;
 /*
 const DependencySchema = z.intersection(
   DependencySchema,

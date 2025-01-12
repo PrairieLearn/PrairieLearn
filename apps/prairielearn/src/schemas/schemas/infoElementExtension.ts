@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
-import { CommentSchema } from './comment.js';
+import { CommentJsonSchema } from './comment.js';
 
-const DependencySchema = z
+const DependencyJsonSchema = z
   .object({
     coreStyles: z
       .array(z.string().describe('A .css file located in /public/stylesheets.'))
@@ -44,16 +44,16 @@ const DependencySchema = z
   .strict()
   .describe("The extension's client-side dependencies.");
 
-export const ElementExtensionSchema = z
+export const ElementExtensionJsonSchema = z
   .object({
     controller: z
       .string()
       .describe("The name of the extension's Python controller file.")
       .optional(),
-    dependencies: DependencySchema.optional(),
+    dependencies: DependencyJsonSchema.optional(),
     dynamicDependencies: z
       .object({
-        comment: CommentSchema.optional(),
+        comment: CommentJsonSchema.optional(),
         nodeModulesScripts: z
           .record(z.string())
           .describe('The scripts required by this element from /node_modules as an importmap.')
@@ -74,7 +74,7 @@ export const ElementExtensionSchema = z
   .strict()
   .describe('Info files for v3 element extensions.');
 
-export type ElementExtension = z.infer<typeof ElementExtensionSchema>;
+export type ElementExtensionJson = z.infer<typeof ElementExtensionJsonSchema>;
 /*
 const DependencySchema = z.intersection(
   DependencySchema,

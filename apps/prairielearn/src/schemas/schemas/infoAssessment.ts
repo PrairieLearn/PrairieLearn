@@ -1,6 +1,6 @@
 import { z, type ZodSchema } from 'zod';
 
-import { CommentSchema } from './comment.js';
+import { CommentJsonSchema } from './comment.js';
 
 function uniqueArray<T extends ZodSchema>(schema: T) {
   return z.array(schema).refine((items) => new Set(items).size === items.length, {
@@ -8,7 +8,7 @@ function uniqueArray<T extends ZodSchema>(schema: T) {
   });
 }
 
-const GroupRoleSchema = z
+const GroupRoleJsonSchema = z
   .object({
     name: z.string().describe("The group role's name (i.e. Manager, Reflector, Recorder)."),
     minimum: z
@@ -28,9 +28,9 @@ const GroupRoleSchema = z
     'A custom role for use in group assessments that allows control over certain permissions.',
   );
 
-export const AssessmentAccessRuleSchema = z
+export const AssessmentAccessRuleJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     mode: z.enum(['Public', 'Exam']).describe('The server mode required for access.').optional(),
     examUuid: z
       .string()
@@ -85,50 +85,50 @@ export const AssessmentAccessRuleSchema = z
     'An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.',
   );
 
-export type AssessmentAccessRule = z.infer<typeof AssessmentAccessRuleSchema>;
+export type AssessmentAccessRuleJson = z.infer<typeof AssessmentAccessRuleJsonSchema>;
 
-export const PointsSingleSchema = z.number().gte(0).describe('A single point value.');
+export const PointsSingleJsonSchema = z.number().gte(0).describe('A single point value.');
 
-export const PointsListSchema = z
-  .array(PointsSingleSchema)
+export const PointsListJsonSchema = z
+  .array(PointsSingleJsonSchema)
   .min(1)
   .describe('An array of point values.');
 
-export const PointsSchema = z.union([PointsSingleSchema, PointsListSchema]);
+export const PointsJsonSchema = z.union([PointsSingleJsonSchema, PointsListJsonSchema]);
 
-export const QuestionIdSchema = z
+export const QuestionIdJsonSchema = z
   .string()
   .describe('Question ID (directory name of the question).');
 
-export const ForceMaxPointsSchema = z
+export const ForceMaxPointsJsonSchema = z
   .boolean()
   .describe('Whether to force this question to be awarded maximum points on a regrade.');
 
-export const AdvanceScorePercSchema = z
+export const AdvanceScorePercJsonSchema = z
   .number()
   .gte(0)
   .lte(100)
   .describe('Minimum score percentage to unlock access to subsequent questions');
 
-const QuestionPointsSchema = z.object({
-  points: PointsSchema.optional(),
-  autoPoints: PointsSchema.optional(),
-  maxPoints: PointsSingleSchema.optional(),
-  maxAutoPoints: PointsSingleSchema.optional(),
-  manualPoints: PointsSingleSchema.optional(),
+const QuestionPointsJsonSchema = z.object({
+  points: PointsJsonSchema.optional(),
+  autoPoints: PointsJsonSchema.optional(),
+  maxPoints: PointsSingleJsonSchema.optional(),
+  maxAutoPoints: PointsSingleJsonSchema.optional(),
+  manualPoints: PointsSingleJsonSchema.optional(),
 });
 
-export type QuestionPoints = z.infer<typeof QuestionPointsSchema>;
+export type QuestionPointsJson = z.infer<typeof QuestionPointsJsonSchema>;
 
-const QuestionAlternativeSchema = QuestionPointsSchema.extend({
-  comment: CommentSchema.optional(),
-  id: QuestionIdSchema,
-  forceMaxPoints: ForceMaxPointsSchema.optional(),
+const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
+  comment: CommentJsonSchema.optional(),
+  id: QuestionIdJsonSchema,
+  forceMaxPoints: ForceMaxPointsJsonSchema.optional(),
   triesPerVariant: z
     .number()
     .describe('The maximum number of graded submissions allowed for each question instance.')
     .optional(),
-  advanceScorePerc: AdvanceScorePercSchema.optional(),
+  advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
   gradeRateMinutes: z
     .number()
     .gte(0)
@@ -144,17 +144,17 @@ const QuestionAlternativeSchema = QuestionPointsSchema.extend({
     .optional(),
 });
 
-export const ZoneQuestionSchema = QuestionPointsSchema.extend({
-  comment: CommentSchema.optional(),
-  points: PointsSchema.optional(),
-  autoPoints: PointsSchema.optional(),
-  maxPoints: PointsSingleSchema.optional(),
-  maxAutoPoints: PointsSingleSchema.optional(),
-  manualPoints: PointsSingleSchema.optional(),
-  id: QuestionIdSchema.optional(),
-  forceMaxPoints: ForceMaxPointsSchema.optional(),
+export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
+  comment: CommentJsonSchema.optional(),
+  points: PointsJsonSchema.optional(),
+  autoPoints: PointsJsonSchema.optional(),
+  maxPoints: PointsSingleJsonSchema.optional(),
+  maxAutoPoints: PointsSingleJsonSchema.optional(),
+  manualPoints: PointsSingleJsonSchema.optional(),
+  id: QuestionIdJsonSchema.optional(),
+  forceMaxPoints: ForceMaxPointsJsonSchema.optional(),
   alternatives: z
-    .array(QuestionAlternativeSchema)
+    .array(QuestionAlternativeJsonSchema)
     .min(1)
     .describe('Array of question alternatives to choose from.')
     .optional(),
@@ -168,7 +168,7 @@ export const ZoneQuestionSchema = QuestionPointsSchema.extend({
     .number()
     .describe('The maximum number of graded submissions allowed for each question instance.')
     .optional(),
-  advanceScorePerc: AdvanceScorePercSchema.optional(),
+  advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
   singleVariant: z
     .boolean()
     .describe(
@@ -194,14 +194,14 @@ export const ZoneQuestionSchema = QuestionPointsSchema.extend({
     .optional(),
 });
 
-const ZoneSchema = z.object({
+const ZoneJsonSchema = z.object({
   title: z
     .string()
     .describe('Zone title, displayed to the students at the top of the question list for the zone.')
     .optional(),
-  comment: CommentSchema.optional(),
+  comment: CommentJsonSchema.optional(),
   // Do we need to allow for additional keys?
-  comments: CommentSchema.optional().describe('DEPRECATED -- do not use.'),
+  comments: CommentJsonSchema.optional().describe('DEPRECATED -- do not use.'),
   maxPoints: z
     .number()
     .describe(
@@ -222,8 +222,8 @@ const ZoneSchema = z.object({
       'Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points.',
     )
     .optional(),
-  questions: z.array(ZoneQuestionSchema).min(1).describe('Array of questions in the zone.'),
-  advanceScorePerc: AdvanceScorePercSchema.optional(),
+  questions: z.array(ZoneQuestionJsonSchema).min(1).describe('Array of questions in the zone.'),
+  advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
   gradeRateMinutes: z
     .number()
     .gte(0)
@@ -243,9 +243,9 @@ const ZoneSchema = z.object({
     .optional(),
 });
 
-export const AssessmentSchema = z
+export const AssessmentJsonSchema = z
   .object({
-    comment: CommentSchema.optional(),
+    comment: CommentJsonSchema.optional(),
     uuid: z
       .string()
       .regex(
@@ -275,7 +275,7 @@ export const AssessmentSchema = z
       .describe('Whether the questions will be shuffled in the student view of an assessment')
       .optional(),
     allowAccess: z
-      .array(AssessmentAccessRuleSchema)
+      .array(AssessmentAccessRuleJsonSchema)
       .describe(
         'List of access rules for the assessment. Access is permitted if any access rule is satisfied.',
       )
@@ -300,7 +300,7 @@ export const AssessmentSchema = z
       .describe('Whether to automatically close the assessment after a period of inactivity.')
       .optional(),
     zones: z
-      .array(ZoneSchema)
+      .array(ZoneJsonSchema)
       .describe(
         'Array of "zones" in the assessment, each containing questions that can be randomized within the zone.',
       )
@@ -325,7 +325,7 @@ export const AssessmentSchema = z
     groupMaxSize: z.number().describe('Maximum number of students in a group.').optional(),
     groupMinSize: z.number().describe('Minimum number of students in a group.').optional(),
     groupRoles: z
-      .array(GroupRoleSchema)
+      .array(GroupRoleJsonSchema)
       .describe('Array of custom user roles in a group.')
       .optional(),
     canSubmit: uniqueArray(z.string())
@@ -341,7 +341,7 @@ export const AssessmentSchema = z
     studentGroupCreate: z.boolean().describe('Whether students can create groups.').optional(),
     studentGroupJoin: z.boolean().describe('Whether students can join groups.').optional(),
     studentGroupLeave: z.boolean().describe('Whether students can leave groups.').optional(),
-    advanceScorePerc: AdvanceScorePercSchema.optional(),
+    advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
     gradeRateMinutes: z
       .number()
       .gte(0)
@@ -357,7 +357,7 @@ export const AssessmentSchema = z
   .strict()
   .describe('Configuration data for an assessment.');
 
-export type Assessment = z.infer<typeof AssessmentSchema>;
+export type AssessmentJson = z.infer<typeof AssessmentJsonSchema>;
 
 /*
 const AccessRuleSchema = z.intersection(
