@@ -148,4 +148,29 @@ Set the score for the test case, should be a floating point value between 0 and 
 
 ---
 
+### _class_ pl_unit_test.PLTestCase(methodName='runTest')
+
+Base class for test suites, using the Python unittest library.
+Handles automatic setup and teardown of testing logic.
+
+Methods here do not need to be overridden by test suites.
+
+#### _classmethod_ get_total_points()
+
+Get the total number of points awarded by this test suite, including
+cases where the test suite is run multiple times.
+
+#### _classmethod_ setUpClass()
+
+On start, run the user code and generate answer tuples.
+
+#### _classmethod_ tearDownClass()
+
+Close all plots and increment the iteration number on test finish
+
 ---
+
+### _class_ pl_unit_test.PLTestCaseWithPlot(methodName='runTest')
+
+Test suite that includes plot grading. Will automatically check plots
+for appropriate labels.
