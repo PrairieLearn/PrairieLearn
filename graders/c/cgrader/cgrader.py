@@ -86,7 +86,7 @@ class CGrader:
         sandboxed: bool = True,
         timeout: float | None = None,
         env: subprocess._ENV | None = None,
-    ):
+    ) -> str:
         if isinstance(command, str):
             command = shlex.split(command)
         if sandboxed:
@@ -144,7 +144,7 @@ class CGrader:
         enable_asan: bool = False,
         reject_symbols: list[str] | None = None,
         objcopy_args: list[str] | None = None,
-    ):
+    ) -> tuple[str, list[str]] | str:
         cflags = flags
         if cflags and not isinstance(cflags, list):
             cflags = shlex.split(cflags)
@@ -169,8 +169,8 @@ class CGrader:
                 cflags.extend(shlex.split(out_flags))
 
         out = ""
-        std_obj_files = []
-        objs = []
+        std_obj_files: list[str] = []
+        objs: list[str] = []
         for std_c_file in c_file if isinstance(c_file, list) else [c_file]:
             obj_file = pathlib.Path(std_c_file).with_suffix(".o").absolute().as_posix()
             std_obj_files.append(obj_file)
@@ -268,7 +268,7 @@ class CGrader:
         add_warning_result_msg: bool = True,
         ungradable_if_failed: bool = True,
         enable_asan: bool = False,
-    ):
+    ) -> str:
         if flags and not isinstance(flags, list):
             flags = shlex.split(flags)
         elif not flags:
@@ -340,7 +340,7 @@ class CGrader:
         enable_asan: bool = False,
         reject_symbols: list[str] | None = None,
         objcopy_args: list[str] | None = None,
-    ):
+    ) -> dict[str, int | float | str]:
         if not add_c_file:
             add_c_file = []
         elif not isinstance(add_c_file, list):
@@ -376,7 +376,9 @@ class CGrader:
             field=field,
         )
 
-    def change_mode(self, file: str, mode: str = "744", change_parent: bool = True):
+    def change_mode(
+        self, file: str, mode: str = "744", change_parent: bool = True
+    ) -> None:
         file = os.path.abspath(file)
         self.run_command(["chmod", mode, file], sandboxed=False)
         parent = os.path.dirname(file)
@@ -724,7 +726,7 @@ class CGrader:
 
 
 class CPPGrader(CGrader):
-    def __init__(self, compiler="g++") -> None:
+    def __init__(self, compiler: str = "g++") -> None:
         super().__init__(compiler)
 
 
