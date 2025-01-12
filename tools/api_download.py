@@ -37,12 +37,12 @@ def main():
 
     print(f"ensure that {args.output_dir} directory exists...")
     os.makedirs(args.output_dir, exist_ok=True)
-    print(f"successfully ensured directory existence")
+    print("successfully ensured directory existence")
 
     logfilename = os.path.join(args.output_dir, "download_log.txt")
     print(f"opening log file {logfilename} ...")
     with open(logfilename, "w") as logfile:
-        print(f"successfully opened log file")
+        print("successfully opened log file")
         download_course_instance(args, logfile)
 
 
@@ -146,11 +146,11 @@ def get_and_save_json(endpoint, filename, args, logfile):
     with open(full_filename, "w") as out_f:
         out_f.write(r.text)
 
-    log(logfile, f"successfully wrote data")
+    log(logfile, "successfully wrote data")
 
-    log(logfile, f"parsing data as JSON...")
+    log(logfile, "parsing data as JSON...")
     data = r.json()
-    log(logfile, f"successfully parsed JSON")
+    log(logfile, "successfully parsed JSON")
 
     return data
 
