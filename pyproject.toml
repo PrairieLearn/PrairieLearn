@@ -37,7 +37,9 @@ select = [
     # ruff-specific rules
     "RUF",
     # refurb
-    "FURB"
+    "FURB",
+    # pylint
+    "PLR5501"
 ]
 ignore = [
     # Ignore line length errors
