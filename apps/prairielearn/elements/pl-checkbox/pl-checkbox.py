@@ -103,15 +103,13 @@ def prepare(element_html, data):
     max_correct = min(len_correct, min(number_answers, max(min_correct, max_correct)))
     if not (0 <= min_correct <= max_correct <= len_correct):
         raise ValueError(
-            "INTERNAL ERROR: correct number: (%d, %d, %d, %d)"
-            % (min_correct, max_correct, len_correct, len_incorrect)
+            f"INTERNAL ERROR: correct number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
         )
     min_incorrect = number_answers - max_correct
     max_incorrect = number_answers - min_correct
     if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
         raise ValueError(
-            "INTERNAL ERROR: incorrect number: (%d, %d, %d, %d)"
-            % (min_incorrect, max_incorrect, len_incorrect, len_correct)
+            f"INTERNAL ERROR: incorrect number: ({min_incorrect}, {max_incorrect}, {len_incorrect}, {len_correct})"
         )
 
     min_select = pl.get_integer_attrib(element, "min-select", MIN_SELECT_DEFAULT)
@@ -492,9 +490,7 @@ def parse(element_html, data):
     if not submitted_key_set.issubset(all_keys_set):
         one_bad_key = submitted_key_set.difference(all_keys_set).pop()
         # FIXME: escape one_bad_key
-        data["format_errors"][name] = (
-            f"You selected an invalid option: {str(one_bad_key)}"
-        )
+        data["format_errors"][name] = f"You selected an invalid option: {one_bad_key}"
         return
 
     # Get minimum and maximum number of options to be selected

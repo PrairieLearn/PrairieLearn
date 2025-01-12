@@ -2,7 +2,7 @@ import ast
 import copy
 import html
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from tokenize import TokenError
 from typing import Any, Literal, TypedDict, cast
@@ -158,8 +158,6 @@ class _Constants:
 
 class BaseSympyError(Exception):
     """Exception base class for sympy parsing errors"""
-
-    pass
 
 
 class HasConflictingVariableError(BaseSympyError):
@@ -406,7 +404,7 @@ def evaluate_with_source(
     global_dict = {}
     exec("from sympy import *", global_dict)
 
-    transformations = standard_transformations + (implicit_multiplication_application,)
+    transformations = (*standard_transformations, implicit_multiplication_application)
 
     try:
         code = stringify_expr(expr, local_dict, global_dict, transformations)
@@ -445,12 +443,12 @@ def evaluate_with_source(
 
 def convert_string_to_sympy(
     expr: str,
-    variables: None | list[str] = None,
+    variables: None | Iterable[str] = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | list[str] = None,
+    custom_functions: None | Iterable[str] = None,
     assumptions: None | AssumptionsDictT = None,
 ) -> sympy.Expr:
     return convert_string_to_sympy_with_source(
@@ -466,12 +464,12 @@ def convert_string_to_sympy(
 
 def convert_string_to_sympy_with_source(
     expr: str,
-    variables: None | list[str] = None,
+    variables: None | Iterable[str] = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | list[str] = None,
+    custom_functions: None | Iterable[str] = None,
     assumptions: None | AssumptionsDictT = None,
 ) -> tuple[sympy.Expr, str]:
     const = _Constants()
@@ -505,7 +503,7 @@ def convert_string_to_sympy_with_source(
         )
         if unbound_variables:
             raise HasInvalidAssumptionError(
-                f'Assumptions for variables that are not present: {",".join(unbound_variables)}'
+                f"Assumptions for variables that are not present: {','.join(unbound_variables)}"
             )
 
     # If there is a list of variables, add each one to the whitelist with assumptions
@@ -630,7 +628,7 @@ def json_to_sympy(
 
 def validate_string_as_sympy(
     expr: str,
-    variables: None | list[str],
+    variables: None | Iterable[str],
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,

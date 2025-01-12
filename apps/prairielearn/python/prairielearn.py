@@ -297,10 +297,8 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
         s = [str(a) for a in v.free_symbols]
         num_rows, num_cols = v.shape
         matrix = []
-        for i in range(0, num_rows):
-            row = []
-            for j in range(0, num_cols):
-                row.append(str(v[i, j]))
+        for i in range(num_rows):
+            row = [str(v[i, j]) for j in range(num_cols)]
             matrix.append(row)
         return {
             "_type": "sympy_matrix",
@@ -419,8 +417,8 @@ def from_json(v):
                 variables = v["_variables"]
                 shape = v["_shape"]
                 matrix = sympy.Matrix.zeros(shape[0], shape[1])
-                for i in range(0, shape[0]):
-                    for j in range(0, shape[1]):
+                for i in range(shape[0]):
+                    for j in range(shape[1]):
                         matrix[i, j] = phs.convert_string_to_sympy(
                             value[i][j], variables
                         )
@@ -743,7 +741,7 @@ def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
         s = np_object.shape
         m = s[0]
         vector_str = "["
-        for i in range(0, m):
+        for i in range(m):
             vector_str += "{:.{indigits}{iwtype}}".format(
                 np_object[i], indigits=ndigits, iwtype=wtype
             )
@@ -756,8 +754,8 @@ def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
         m = s[0]
         n = s[1]
         matrix_str = "["
-        for i in range(0, m):
-            for j in range(0, n):
+        for i in range(m):
+            for j in range(n):
                 matrix_str += "{:.{indigits}{iwtype}}".format(
                     np_object[i, j], indigits=ndigits, iwtype=wtype
                 )
@@ -990,7 +988,7 @@ def numpy_to_matlab_sf(A, ndigits=2):
         s = A.shape
         m = s[0]
         vector_str = "["
-        for i in range(0, m):
+        for i in range(m):
             if np.iscomplexobj(A[i]):
                 vector_str += _string_from_complex_sigfig(A[i], ndigits)
             else:
@@ -1004,8 +1002,8 @@ def numpy_to_matlab_sf(A, ndigits=2):
         m = s[0]
         n = s[1]
         matrix_str = "["
-        for i in range(0, m):
-            for j in range(0, n):
+        for i in range(m):
+            for j in range(n):
                 if np.iscomplexobj(A[i, j]):
                     matrix_str += _string_from_complex_sigfig(A[i, j], ndigits)
                 else:
@@ -1138,11 +1136,11 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
 
                 if a_parse_l is None or not np.isfinite(a_parse_l):
                     raise ValueError(
-                        f"The numerator could not be interpreted as a decimal{ or_complex }number."
+                        f"The numerator could not be interpreted as a decimal{or_complex}number."
                     )
                 if a_parse_r is None or not np.isfinite(a_parse_r):
                     raise ValueError(
-                        f"The denominator could not be interpreted as a decimal{ or_complex }number."
+                        f"The denominator could not be interpreted as a decimal{or_complex}number."
                     )
 
                 with np.errstate(divide="raise"):
@@ -1157,7 +1155,7 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
                     "Your expression resulted in a division by zero."
                 )
             except Exception as exc:
-                data["format_errors"] = f"Invalid format: {str(exc)}"
+                data["format_errors"] = f"Invalid format: {exc}"
         else:
             data["format_errors"] = "Fractional answers are not allowed in this input."
     else:
@@ -1166,14 +1164,14 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
             a_sub_parsed = string_to_number(a_sub, allow_complex=allow_complex)
             if a_sub_parsed is None:
                 raise ValueError(
-                    f"The submitted answer could not be interpreted as a decimal{ or_complex }number."
+                    f"The submitted answer could not be interpreted as a decimal{or_complex}number."
                 )
             if not np.isfinite(a_sub_parsed):
                 raise ValueError("The submitted answer is not a finite number.")
             value = a_sub_parsed
             data["submitted_answers"] = to_json(value)
         except Exception as exc:
-            data["format_errors"] = f"Invalid format: {str(exc)}"
+            data["format_errors"] = f"Invalid format: {exc}"
 
     return (value, data)
 
@@ -1286,7 +1284,7 @@ def string_to_2darray(s, allow_complex=True):
         matrix = np.zeros((m, n))
 
         # Iterate over rows
-        for i in range(0, m):
+        for i in range(m):
             # Split row
             s_row = re.split(matlab_delimiter_regex, s[i])
 
@@ -1306,8 +1304,9 @@ def string_to_2darray(s, allow_complex=True):
                 )
 
             # Iterate over columns
-            for j in range(0, n):
-                try:
+            j = 0
+            try:
+                for j in range(n):
                     # Convert entry to float or (optionally) complex
                     ans = string_to_number(s_row[j], allow_complex=allow_complex)
                     if ans is None:
@@ -1323,14 +1322,14 @@ def string_to_2darray(s, allow_complex=True):
 
                     # Insert the new entry
                     matrix[i, j] = ans
-                except Exception:
-                    # Return error if entry could not be converted to float or complex
-                    return (
-                        None,
-                        {
-                            "format_error": f"Entry {escape_invalid_string(s_row[j])} at location (row={i + 1}, column={j + 1}) in the matrix has an invalid format."
-                        },
-                    )
+            except Exception:
+                # Return error if entry could not be converted to float or complex
+                return (
+                    None,
+                    {
+                        "format_error": f"Entry {escape_invalid_string(s_row[j])} at location (row={i + 1}, column={j + 1}) in the matrix has an invalid format."
+                    },
+                )
 
         # Return resulting ndarray with no error
         return (matrix, {"format_type": "matlab"})
@@ -1415,7 +1414,7 @@ def string_to_2darray(s, allow_complex=True):
 
         # Split each row on comma
         number_of_columns = None
-        for i in range(0, number_of_rows):
+        for i in range(number_of_rows):
             # Return error if row has no columns
             if not s_row[i]:
                 return (
@@ -1442,9 +1441,10 @@ def string_to_2darray(s, allow_complex=True):
         matrix = np.zeros((number_of_rows, number_of_columns))
 
         # Parse each row and column
-        for i in range(0, number_of_rows):
-            for j in range(0, number_of_columns):
-                try:
+        i, j = 0, 0
+        try:
+            for i in range(number_of_rows):
+                for j in range(number_of_columns):
                     # Check if entry is empty
                     if not s_row[i][j].strip():
                         return (
@@ -1469,14 +1469,14 @@ def string_to_2darray(s, allow_complex=True):
 
                     # Insert the new entry
                     matrix[i, j] = ans
-                except Exception:
-                    # Return error if entry could not be converted to float or complex
-                    return (
-                        None,
-                        {
-                            "format_error": f"Entry {escape_invalid_string(s_row[i][j])} at location (row={i + 1}, column={j + 1}) of the matrix has an invalid format."
-                        },
-                    )
+        except Exception:
+            # Return error if entry could not be converted to float or complex
+            return (
+                None,
+                {
+                    "format_error": f"Entry {escape_invalid_string(s_row[i][j])} at location (row={i + 1}, column={j + 1}) of the matrix has an invalid format."
+                },
+            )
 
         # Return result with no error
         return (matrix, {"format_type": "python"})
@@ -1561,8 +1561,8 @@ def is_correct_ndarray2d_dd(a_sub, a_tru, digits=2):
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
-    for i in range(0, m):
-        for j in range(0, n):
+    for i in range(m):
+        for j in range(n):
             if not is_correct_scalar_dd(a_sub[i, j], a_tru[i, j], digits):
                 return False
 
@@ -1574,8 +1574,8 @@ def is_correct_ndarray2d_sf(a_sub, a_tru, digits=2):
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
-    for i in range(0, m):
-        for j in range(0, n):
+    for i in range(m):
+        for j in range(n):
             if not is_correct_scalar_sf(a_sub[i, j], a_tru[i, j], digits):
                 return False
 
@@ -1777,8 +1777,7 @@ def load_host_script(script_name):
     """
 
     # Chop off the file extension because it's unnecessary here
-    if script_name.endswith(".py"):
-        script_name = script_name[:-3]
+    script_name = script_name.removesuffix(".py")
     return __import__(script_name)
 
 
