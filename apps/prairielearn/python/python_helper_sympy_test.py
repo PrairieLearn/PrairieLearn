@@ -161,7 +161,8 @@ class TestSympy:
         )
 
     @pytest.mark.parametrize(
-        ("a_sub", "sympy_ref"), [("i", sympy.I), ("j", sympy.I), ("i*i", -1), ("j*j", -1)]
+        ("a_sub", "sympy_ref"),
+        [("i", sympy.I), ("j", sympy.I), ("i*i", -1), ("j*j", -1)],
     )
     def test_string_conversion_no_complex(
         self, a_sub: str, sympy_ref: sympy.Expr
