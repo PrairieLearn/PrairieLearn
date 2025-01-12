@@ -26,6 +26,8 @@ select = [
     "I",
     # flake8-bugbear
     "B",
+    # flake8-builtins
+    "A",
     # flake8-simplify
     "SIM",
     # pyupgrade
@@ -39,7 +41,7 @@ select = [
     # refurb
     "FURB",
     # pylint
-    "PLR5501"
+    "PLR5501",
 ]
 ignore = [
     # Ignore line length errors

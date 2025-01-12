@@ -196,9 +196,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             f"feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
         )
 
-    format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
+    format_type = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
     code_language = pl.get_string_attrib(element, "code-language", None)
-    if format is FormatType.DEFAULT and code_language is not None:
+    if format_type is FormatType.DEFAULT and code_language is not None:
         raise Exception('code-language attribute may only be used with format="code"')
 
     correct_answers: list[OrderBlocksAnswerData] = []
@@ -284,7 +284,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 "<pl-answer> should not specify indentation if indentation is disabled."
             )
 
-        if format is FormatType.CODE:
+        if format_type is FormatType.CODE:
             inner_html = (
                 "<pl-code"
                 + (' language="' + code_language + '"' if code_language else "")
@@ -442,7 +442,7 @@ def get_distractors(
 def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     answer_name = pl.get_string_attrib(element, "answers-name")
-    format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
+    format_type = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
     inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)
     dropzone_layout = pl.get_enum_attrib(
         element,
@@ -451,7 +451,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         SolutionPlacementType.RIGHT,
     )
     block_formatting = (
-        "pl-order-blocks-code" if format is FormatType.CODE else "list-group-item"
+        "pl-order-blocks-code" if format_type is FormatType.CODE else "list-group-item"
     )
     grading_method = pl.get_enum_attrib(
         element, "grading-method", GradingMethodType, GRADING_METHOD_DEFAULT

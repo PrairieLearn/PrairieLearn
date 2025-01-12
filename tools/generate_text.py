@@ -104,11 +104,11 @@ def process_file(filename):
             for match in TEXT_RE.finditer(line):
                 match_text = match.group(2)
                 text = unescape(match_text)
-                hash = hashlib.sha1(text.encode()).hexdigest()
-                print(hash + " " + text)
-                tex_filename = hash + ".tex"
-                pdf_filename = hash + ".pdf"
-                img_filename = hash + ".png"
+                text_hash = hashlib.sha1(text.encode()).hexdigest()
+                print(text_hash + " " + text)
+                tex_filename = text_hash + ".tex"
+                pdf_filename = text_hash + ".pdf"
+                img_filename = text_hash + ".png"
                 outdir = output_dir(filename)
                 ensure_dir_exists(outdir)
                 tex_full_filename = os.path.join(outdir, tex_filename)
@@ -138,7 +138,7 @@ def process_file(filename):
                         cwd=outdir,
                     )
                 img_filenames.append(img_filename)
-                img_hi_filename = hash + "_hi.png"
+                img_hi_filename = text_hash + "_hi.png"
                 img_hi_full_filename = os.path.join(outdir, img_hi_filename)
                 if not os.path.exists(img_hi_full_filename):
                     print("Writing tex file " + tex_full_filename)

@@ -61,15 +61,15 @@ def translate_variables(token):
     if token[0] != "$":
         return token
 
-    str = token.replace("$", "").replace("[", "_").replace("]", "_")
+    str_token = token.replace("$", "").replace("[", "_").replace("]", "_")
     punct = ""
 
     # we don't want to include punctuation in the variable
-    if str[-1] in ".?,;!;:=+-":
-        punct = str[-1]
-        str = str[:-1]
+    if str_token[-1] in ".?,;!;:=+-":
+        punct = str_token[-1]
+        str_token = str_token[:-1]
 
-    return "{{ params." + str + " }}" + punct
+    return "{{ params." + str_token + " }}" + punct
 
 
 def translate_variables_line(line):
