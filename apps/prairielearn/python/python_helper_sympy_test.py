@@ -233,7 +233,7 @@ class TestSympy:
                 },
                 "z^2 + y^2 - x**3",
             ),
-            (dict(), "z^2 + y - x"),
+            ({}, "z^2 + y - x"),
         ],
     )
     def test_assumption_conversion(

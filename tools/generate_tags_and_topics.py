@@ -28,14 +28,14 @@ except Exception as error:
 existing_tags = set()
 existing_tag_colors = set()
 if "tags" in course_info:
-    existing_tags = set([t["name"] for t in course_info["tags"]])
-    existing_tag_colors = set([t["color"] for t in course_info["tags"]])
+    existing_tags = {t["name"] for t in course_info["tags"]}
+    existing_tag_colors = {t["color"] for t in course_info["tags"]}
 
 existing_topics = set()
 existing_topic_colors = set()
 if "topics" in course_info:
-    existing_topics = set([t["name"] for t in course_info["topics"]])
-    existing_topic_colors = set([t["color"] for t in course_info["topics"]])
+    existing_topics = {t["name"] for t in course_info["topics"]}
+    existing_topic_colors = {t["color"] for t in course_info["topics"]}
 
 questions_dir = os.path.join(course_dir, "questions")
 if not os.path.isdir(questions_dir):
@@ -69,8 +69,7 @@ new_topics = topics - existing_topics
 ######################################################################
 # assign colors
 
-all_colors = set(
-    [
+all_colors = {
         "red1",
         "red2",
         "red3",
@@ -101,8 +100,7 @@ all_colors = set(
         "gray1",
         "gray2",
         "gray3",
-    ]
-)
+    }
 
 available_tag_colors = all_colors - existing_tag_colors
 available_topic_colors = all_colors - existing_topic_colors
