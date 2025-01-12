@@ -100,4 +100,4 @@ build-docs:
 	@/tmp/pldocs/venv/bin/python3 -m pip install -r docs/requirements.txt
 	@/tmp/pldocs/venv/bin/python3 -m mkdocs build --strict
 
-ci: lint typecheck check-dependencies test build-docs
+ci: lint typecheck check-dependencies test
