@@ -330,7 +330,7 @@ class CGrader:
         main_file: str | None = None,
         add_c_file: str | list[str] | None = None,
         compiler: str | None = None,
-        points: int | float = 1,
+        points: float = 1,
         field: str | None = None,
         flags: str | list[str] | None = None,
         pkg_config_flags: str | list[str] | None = None,
@@ -340,7 +340,7 @@ class CGrader:
         enable_asan: bool = False,
         reject_symbols: list[str] | None = None,
         objcopy_args: list[str] | None = None,
-    ) -> dict[str, int | float | str]:
+    ) -> dict[str, float | str]:
         if not add_c_file:
             add_c_file = []
         elif not isinstance(add_c_file, list):
@@ -386,7 +386,7 @@ class CGrader:
         if change_parent and parent and not os.path.samefile(file, parent):
             self.change_mode(parent, "a+x")
 
-    def test_send_in_check_out(self, *args, **kwargs) -> dict[str, int | float | str]:
+    def test_send_in_check_out(self, *args, **kwargs) -> dict[str, float | str]:
         """Old deprecated function name,
         retained for compatibility reasons."""
         return self.test_run(*args, **kwargs)
@@ -406,9 +406,9 @@ class CGrader:
         args: str | list[str] | None = None,
         name: str | None = None,
         msg: str | None = None,
-        max_points: int | float = 1,
+        max_points: float = 1,
         highlight_matches: bool = False,
-    ) -> dict[str, int | float | str]:
+    ) -> dict[str, float | str]:
         if args is not None:
             if not isinstance(args, list):
                 args = [args]
@@ -543,10 +543,10 @@ class CGrader:
 
     def add_manual_grading(
         self,
-        points: float | int = 1,
+        points: float = 1,
         name: str | None = None,
         description: str | None = None,
-    ) -> dict[str, int | float | str]:
+    ) -> dict[str, float | str]:
         """Old deprecated function, retained for compatibility reasons."""
         if not name:
             name = "Manual Grading - to be reviewed by a human grader"
@@ -558,14 +558,14 @@ class CGrader:
         self,
         name: str,
         description: str = "",
-        points: bool | int | float = True,
+        points: bool | float = True,
         msg: str | None = "",
         output: str = "",
-        max_points: int | float = 1,
+        max_points: float = 1,
         field: str | None = None,
         images: str | list[str] | None = None,
-    ) -> dict[str, int | float | str]:
-        if not isinstance(points, int | float):
+    ) -> dict[str, float | str]:
+        if not isinstance(points, float):
             points = max_points if points else 0.0
         test = {
             "name": name,
