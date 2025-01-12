@@ -2,20 +2,20 @@ import io
 import random
 
 import matplotlib.pyplot as plt
-import numpy
+import numpy as np
 
 
 def file(data):
     if data["filename"] == "figure.png":
         # Create the figure
-        x = numpy.linspace(-5, 5)
+        x = np.linspace(-5, 5)
         f = data["params"]["m"] * x + data["params"]["b"]
         fig = plt.figure()
         plt.plot(x, f)
         plt.xticks([x for x in range(-5, 6, 1)], fontsize=14)
 
-        fmin = int(numpy.floor(min(f)) - 1)
-        fmax = int(numpy.ceil(max(f)) + 1)
+        fmin = int(np.floor(min(f)) - 1)
+        fmax = int(np.ceil(max(f)) + 1)
         if fmax - fmin > 12:
             plt.yticks([y for y in range(fmin, fmax + 4, 4)], fontsize=14)
             plt.gca().set_yticks([y for y in range(fmin, fmax + 1, 1)], minor=True)
