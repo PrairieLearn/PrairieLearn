@@ -169,12 +169,11 @@ def prepare(element_html, data):
             indices = random.sample(range(len(statements)), number_statements)
             statements = [statements[i] for i in sorted(indices)]
         # Otherwise, just use all the statements as-is.
+    # Shuffle or sample the statements.
+    elif number_statements < len(statements):
+        statements = random.sample(statements, number_statements)
     else:
-        # Shuffle or sample the statements.
-        if number_statements < len(statements):
-            statements = random.sample(statements, number_statements)
-        else:
-            random.shuffle(statements)
+        random.shuffle(statements)
 
     # Organize the list of options to use.
     # First, select all the options associated with the chosen statements.
@@ -281,11 +280,10 @@ def parse(element_html, data):
             )
         elif student_answer is None:
             data["format_errors"][expected_html_name] = "No answer was submitted."
-        else:
-            if not legal_answer(student_answer, display_options):
-                data["format_errors"][expected_html_name] = (
-                    "The submitted answer is invalid."
-                )
+        elif not legal_answer(student_answer, display_options):
+            data["format_errors"][expected_html_name] = (
+                "The submitted answer is invalid."
+            )
 
 
 def render(element_html, data):
