@@ -64,7 +64,7 @@ ignore = [
     "ISC003",
     # Avoid using the generic variable name `df` for DataFrames
     "PD901",
-    # Replace legacy `np.random.randint` call with `np.random.Generator`
+    # Replace legacy `np.random.*` call with `np.random.Generator`
     "NPY002",
 ]
 
