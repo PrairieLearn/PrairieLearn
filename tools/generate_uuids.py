@@ -48,11 +48,11 @@ def add_uuid_to_file(filename):
                 contents,
             )
             if n_sub == 0:
-                raise Exception(
+                raise ValueError(
                     f"{filename}: file already contains a UUID, but the regexp failed to find it"
                 )
             if n_sub > 1:
-                raise Exception(
+                raise ValueError(
                     f"{filename}: regexp found multiple UUIDs and we can't determine which one to replace"
                 )
 
@@ -62,11 +62,11 @@ def add_uuid_to_file(filename):
                 r"^(\s*{)(\s*)", rf'\1\2"uuid": "{uuid.uuid4()}",\2', contents
             )
             if n_sub == 0:
-                raise Exception(
+                raise ValueError(
                     f"{filename}: file doesn't start with a {{ character, so we can't insert a UUID property"
                 )
             if n_sub > 1:
-                raise Exception(f"{filename}: impossible internal error occurred")
+                raise RuntimeError(f"{filename}: impossible internal error occurred")
 
         tmp_filename = filename + ".tmp_with_uuid"
         if os.path.exists(tmp_filename):

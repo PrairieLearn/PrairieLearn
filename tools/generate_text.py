@@ -199,4 +199,4 @@ elif MODE == "textdir":
                 img_filenames += process_file(os.path.join(dirpath, filename))
     delete_non_matching(TEXT_DIR, img_filenames)
 else:
-    raise Exception("unknown MODE: " + MODE)
+    raise RuntimeError("unknown MODE: " + MODE)
