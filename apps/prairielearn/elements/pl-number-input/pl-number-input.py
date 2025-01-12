@@ -287,11 +287,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         elif name not in data["submitted_answers"]:
             html_params["missing_input"] = True
             html_params["parse_error"] = None
-        else:
-            if raw_submitted_answer is not None:
-                html_params["raw_submitted_answer"] = pl.escape_unicode_string(
-                    raw_submitted_answer
-                )
+        elif raw_submitted_answer is not None:
+            html_params["raw_submitted_answer"] = pl.escape_unicode_string(
+                raw_submitted_answer
+            )
         # Add true answer to be able to display it in the submitted answer panel
         if show_correct_answer:
             html_params["correct_answer"] = format_true_ans(element, data, name)
