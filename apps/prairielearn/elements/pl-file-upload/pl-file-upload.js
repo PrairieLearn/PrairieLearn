@@ -261,7 +261,7 @@
               '"></div>',
           );
 
-          var $error = $('<div class="alert alert-danger mt-2 d-none" role="alert"></div>');
+          var $error = $('<div class="alert mt-2 d-none" role="alert"></div>');
           $preview.append($error);
 
           var $imgPreview = $('<img class="mw-100 mt-2 d-none"/>');
