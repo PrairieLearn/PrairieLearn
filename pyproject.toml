@@ -42,6 +42,8 @@ select = [
     "ICN",
     # flake8-implicit-str-concat
     "ISC",
+    # flake8-executable
+    "EXE",
     # flake8-pytest-style
     "PT",
     # refurb
