@@ -182,7 +182,7 @@ def test_inner_html(inner_html_string: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "weight_set_function, score_1, score_2, score_3, expected_score",
+    ("weight_set_function", "score_1", "score_2", "score_3", "expected_score"),
     [
         # Check set weighted score data
         (pl.set_weighted_score_data, 0.0, 0.0, 0.0, 0.0),
@@ -251,7 +251,7 @@ def test_numpy_serialization(numpy_object: Any) -> None:
 
 
 @pytest.mark.parametrize(
-    "object_to_encode, expected_result",
+    ("object_to_encode", "expected_result"),
     [(np.float64(5.0), 5.0), (np.complex128("12+3j"), complex("12+3j"))],
 )
 def test_legacy_serialization(object_to_encode: Any, expected_result: Any) -> None:
@@ -271,7 +271,7 @@ class DummyEnum(Enum):
 
 
 @pytest.mark.parametrize(
-    "html_str, expected_result",
+    ("html_str", "expected_result"),
     [
         ("<pl-thing></pl-thing>", DummyEnum.DEFAULT),
         ('<pl-thing test-choice="default"></pl-thing>', DummyEnum.DEFAULT),
@@ -313,7 +313,7 @@ def test_get_enum_attrib_exceptions(html_str: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "question_name, student_answer, weight, expected_grade",
+    ("question_name", "student_answer", "weight", "expected_grade"),
     [
         ("base", "a", 1, True),
         ("base", "a, b", 1, False),
@@ -418,7 +418,7 @@ def test_get_uuid() -> None:
 
 
 @pytest.mark.parametrize(
-    "length, expected_output",
+    ("length", "expected_output"),
     [
         (1, ["a"]),
         (2, ["a", "b"]),
@@ -430,7 +430,7 @@ def test_iter_keys(length: int, expected_output: list[str]) -> None:
 
 
 @pytest.mark.parametrize(
-    "idx, expected_output",
+    ("idx", "expected_output"),
     [(0, "a"), (1, "b"), (3, "d"), (26, "aa"), (27, "ab")],
 )
 def test_index2key(idx: int, expected_output: str) -> None:

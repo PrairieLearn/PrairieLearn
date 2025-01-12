@@ -124,7 +124,7 @@ class TestSympy:
         ("acosh(m)", sympy.acosh(M)),
     )
 
-    @pytest.mark.parametrize("a_sub, sympy_ref", CUSTOM_FUNCTION_PAIRS)
+    @pytest.mark.parametrize(("a_sub", "sympy_ref"), CUSTOM_FUNCTION_PAIRS)
     def test_custom_function_conversion(
         self, a_sub: str, sympy_ref: sympy.Expr
     ) -> None:
@@ -135,7 +135,7 @@ class TestSympy:
             custom_functions=self.FUNCTION_NAMES,
         )
 
-    @pytest.mark.parametrize("a_sub, sympy_ref", INCORRECT_FUNCTION_PAIRS)
+    @pytest.mark.parametrize(("a_sub", "sympy_ref"), INCORRECT_FUNCTION_PAIRS)
     def test_custom_function_incorrect(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
         assert sympy_ref != phs.convert_string_to_sympy(
             a_sub,
@@ -144,7 +144,7 @@ class TestSympy:
             custom_functions=self.FUNCTION_NAMES,
         )
 
-    @pytest.mark.parametrize("a_sub, sympy_ref", EXPR_PAIRS)
+    @pytest.mark.parametrize(("a_sub", "sympy_ref"), EXPR_PAIRS)
     def test_string_conversion(self, a_sub: str, sympy_ref: sympy.Expr) -> None:
         assert sympy_ref == phs.convert_string_to_sympy(
             a_sub,
@@ -161,7 +161,7 @@ class TestSympy:
         )
 
     @pytest.mark.parametrize(
-        "a_sub, sympy_ref", [("i", sympy.I), ("j", sympy.I), ("i*i", -1), ("j*j", -1)]
+        ("a_sub", "sympy_ref"), [("i", sympy.I), ("j", sympy.I), ("i*i", -1), ("j*j", -1)]
     )
     def test_string_conversion_no_complex(
         self, a_sub: str, sympy_ref: sympy.Expr
@@ -187,7 +187,7 @@ class TestSympy:
         assert ref_expr == phs.json_to_sympy(phs.sympy_to_json(ref_expr))
 
     @pytest.mark.parametrize(
-        "a_pair, custom_functions",
+        ("a_pair", "custom_functions"),
         chain(
             zip(EXPR_PAIRS, repeat(None)),
             zip(CUSTOM_FUNCTION_PAIRS, repeat(FUNCTION_NAMES)),
@@ -221,7 +221,7 @@ class TestSympy:
         assert sympy_expr == json_converted_expr
 
     @pytest.mark.parametrize(
-        "assumptions, expression_str",
+        ("assumptions", "expression_str"),
         [
             ({"x": {"positive": True}, "y": {"real": True}}, "(x**2)**(1/2) + y"),
             ({"x": {"positive": False}, "z": {"complex": True}}, "z^2 + y - x"),
@@ -254,7 +254,7 @@ class TestSympy:
         assert sympy_expr.assumptions0 == json_converted_expr.assumptions0
 
     @pytest.mark.parametrize(
-        "expr, bad_assumptions",
+        ("expr", "bad_assumptions"),
         [
             ("f(1)", {"f": {}}),
             ("x+5", {"x": {}}),
@@ -344,7 +344,7 @@ class TestExceptions:
     # Test formatting strings from validation
 
     @pytest.mark.parametrize(
-        "a_sub_list, target_string",
+        ("a_sub_list", "target_string"),
         [
             (NO_FLOATS_CASES, "floating-point number"),
             (INVALID_EXPRESSION_CASES, "invalid expression"),
@@ -365,7 +365,7 @@ class TestExceptions:
 
 
 @pytest.mark.parametrize(
-    "input_str, expected_output",
+    ("input_str", "expected_output"),
     [("abba", "abba"), ("\u03bc0", "mu0")],
 )
 def test_greek_unicode_transform(input_str: str, expected_output: str) -> None:
