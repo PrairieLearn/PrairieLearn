@@ -108,13 +108,13 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
         fullname: str,
         path: Sequence[str] | None,
         target: types.ModuleType | None = None,
-    ):
+    ) -> None:
         if any(
             fullname == module or fullname.startswith(module + ".")
             for module in self.forbidden_modules
         ):
             raise ImportError(f'module "{fullname}" is not allowed.')
-        return None
+        return None  # noqa: PLR1711
 
 
 # We want to initialize the Faker seed, but only if faker is loaded
@@ -127,14 +127,13 @@ class FakerInitializeMetaPathFinder(MetaPathFinder):
         fullname: str,
         path: Sequence[str] | None,
         target: types.ModuleType | None = None,
-    ):
+    ) -> None:
         if fullname == "faker" or fullname.startswith("faker."):
             # Once this initialization is done we no longer need this meta path finder
             sys.meta_path.remove(self)
             from faker import Faker
 
             Faker.seed(self.seed)
-        return None
 
 
 # This function tries to convert a python object to valid JSON. If an exception
@@ -353,7 +352,7 @@ def worker_loop() -> None:
 
                 # Any function that is not 'file' or 'render' will modify 'data' and
                 # should not be returning anything (because 'data' is mutable).
-                if (fcn != "file") and (fcn != "render"):
+                if fcn not in ("file", "render"):
                     if val is None or val is args[-1]:
                         json_outp = try_dumps(
                             {"present": True, "val": args[-1]}, allow_nan=False

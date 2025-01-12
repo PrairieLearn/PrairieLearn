@@ -45,13 +45,17 @@ select = [
     # refurb
     "FURB",
     # pylint
-    "PLR5501"
+    "PLR"
 ]
 ignore = [
     # Ignore line length errors
     "E501",
     # if-else blocks that could be shortened (https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp/)
     "SIM108",
+    # Too many statements, too many branches, too many arguments, too many returns
+    "PLR0912", "PLR0915", "PLR0913", "PLR0911",
+    # Magic value used in comparison (foo == 5)
+    "PLR2004",
     # Explicit string concatenation
     "ISC003"
 ]
