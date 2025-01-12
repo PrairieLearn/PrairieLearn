@@ -504,7 +504,7 @@ def convert_string_to_sympy_with_source(
         )
         if unbound_variables:
             raise HasInvalidAssumptionError(
-                f'Assumptions for variables that are not present: {",".join(unbound_variables)}'
+                f"Assumptions for variables that are not present: {','.join(unbound_variables)}"
             )
 
     # If there is a list of variables, add each one to the whitelist with assumptions
