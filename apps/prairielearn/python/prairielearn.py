@@ -1394,9 +1394,7 @@ def string_to_2darray(s, allow_complex=True):
             elif s_after_right[0] != ",":
                 return (
                     None,
-                    {
-                        "format_error": f"No comma after row {len(s_row)} of the matrix."
-                    },
+                    {"format_error": f"No comma after row {len(s_row)} of the matrix."},
                 )
             else:
                 s = s_after_right[1:]
