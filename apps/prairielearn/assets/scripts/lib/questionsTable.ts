@@ -46,6 +46,7 @@ onDocumentReady(() => {
     urlPrefix,
     plainUrlPrefix,
   } = decodeData('questions-table-data');
+
   window.topicList = function () {
     const data = $('#questionsTable').bootstrapTable('getData');
     return _.keyBy(_.map(data, (row) => row.topic.name));
@@ -237,7 +238,7 @@ onDocumentReady(() => {
       icon: 'fa-plus',
       attributes: { title: 'Create a new question' },
       event: () => {
-        $('form[name=add-question-form]').submit();
+        $('#createQuestionModal').modal('show');
       },
     };
   }
@@ -254,6 +255,28 @@ onDocumentReady(() => {
   }
 
   $('#questionsTable').bootstrapTable(tableSettings);
+
+  // The startFromInput either has value 'Template' or 'Empty question'
+  const startFromInput = document.querySelector<HTMLInputElement>('#start_from');
+
+  // The templateQuestionInput lets the user select the template question to start from, and is only
+  // enabled when the startFromInput is set to 'Template'
+  const templateQuestionInput = document.querySelector<HTMLInputElement>('#template_qid');
+
+  // The templateContainerDiv is hidden when the startFromInput is set to 'Empty question',
+  // otherwise it is shown.
+  const templateContainerDiv = document.querySelector<HTMLDivElement>('#templateContainer');
+
+  if (!startFromInput || !templateQuestionInput || !templateContainerDiv) {
+    return;
+  }
+
+  startFromInput.addEventListener('change', () => {
+    // If the startFromInput is set to 'Template', the templateQuestionInput should be visible and enabled
+    // Otherwise, it should be hidden and disabled.
+    templateQuestionInput.disabled = startFromInput.value !== 'Template';
+    templateContainerDiv.hidden = startFromInput.value !== 'Template';
+  });
 
   $(document).keydown((event) => {
     if (

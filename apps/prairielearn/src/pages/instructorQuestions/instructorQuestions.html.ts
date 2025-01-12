@@ -9,12 +9,14 @@ import { type QuestionsPageData } from '../../models/questions.js';
 
 export const QuestionsPage = ({
   questions,
+  templateQuestions = [],
   course_instances,
   showAddQuestionButton,
   showAiGenerateQuestionButton,
   resLocals,
 }: {
   questions: QuestionsPageData[];
+  templateQuestions?: { qid: string; title: string }[];
   course_instances: CourseInstance[];
   showAddQuestionButton: boolean;
   showAiGenerateQuestionButton: boolean;
@@ -37,6 +39,7 @@ export const QuestionsPage = ({
           })}
           ${QuestionsTable({
             questions,
+            templateQuestions,
             course_instances,
             showAddQuestionButton,
             showAiGenerateQuestionButton,

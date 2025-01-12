@@ -525,7 +525,7 @@ async function experimentalProcess(phase, codeCaller, data, context, html) {
       context.question.directory,
       'question.html',
       phase,
-      [data, pythonContext],
+      [pythonContext, data],
     );
     result = res.result;
     output = res.output;

@@ -60,7 +60,7 @@ In general we prefer simplicity. We standardize on JavaScript/TypeScript (Node.j
 
 ## Debugging SQL and PL/pgSQL
 
-- Use the [`psql`](https://www.postgresql.org/docs/current/app-psql.html) commandline interface to test SQL separately. A default development PrairieLearn install uses the `postgres` database, so you should run:
+- Use the [`psql`](https://www.postgresql.org/docs/current/app-psql.html) command-line interface to test SQL separately. A default development PrairieLearn install uses the `postgres` database, so you should run:
 
   ```sh
   psql postgres

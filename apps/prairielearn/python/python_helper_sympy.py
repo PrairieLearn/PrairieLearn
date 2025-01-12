@@ -2,7 +2,7 @@ import ast
 import copy
 import html
 from collections import deque
-from collections.abc import Callable
+from collections.abc import Callable, Iterable
 from dataclasses import dataclass
 from tokenize import TokenError
 from typing import Any, Literal, TypedDict, cast
@@ -159,18 +159,16 @@ class _Constants:
 class BaseSympyError(Exception):
     """Exception base class for sympy parsing errors"""
 
+
+class HasConflictingVariableError(BaseSympyError):
     pass
 
 
-class HasConflictingVariable(BaseSympyError):
+class HasConflictingFunctionError(BaseSympyError):
     pass
 
 
-class HasConflictingFunction(BaseSympyError):
-    pass
-
-
-class HasInvalidAssumption(BaseSympyError):
+class HasInvalidAssumptionError(BaseSympyError):
     pass
 
 
@@ -246,13 +244,13 @@ class CheckAST(ast.NodeVisitor):
             raise HasInvalidExpressionError(err_node.col_offset)
         return super().visit(node)
 
-    def visit_Call(self, node: ast.Call) -> None:
+    def visit_Call(self, node: ast.Call) -> None:  # noqa: N802
         if isinstance(node.func, ast.Name) and node.func.id not in self.functions:
             err_node = self.get_parent_with_location(node)
             raise HasInvalidFunctionError(err_node.col_offset, err_node.func.id)
         self.generic_visit(node)
 
-    def visit_Name(self, node: ast.Name) -> None:
+    def visit_Name(self, node: ast.Name) -> None:  # noqa: N802
         if (
             isinstance(node.ctx, ast.Load)
             and not self.is_name_of_function(node)
@@ -406,7 +404,7 @@ def evaluate_with_source(
     global_dict = {}
     exec("from sympy import *", global_dict)
 
-    transformations = standard_transformations + (implicit_multiplication_application,)
+    transformations = (*standard_transformations, implicit_multiplication_application)
 
     try:
         code = stringify_expr(expr, local_dict, global_dict, transformations)
@@ -445,12 +443,12 @@ def evaluate_with_source(
 
 def convert_string_to_sympy(
     expr: str,
-    variables: None | list[str] = None,
+    variables: None | Iterable[str] = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | list[str] = None,
+    custom_functions: None | Iterable[str] = None,
     assumptions: None | AssumptionsDictT = None,
 ) -> sympy.Expr:
     return convert_string_to_sympy_with_source(
@@ -466,12 +464,12 @@ def convert_string_to_sympy(
 
 def convert_string_to_sympy_with_source(
     expr: str,
-    variables: None | list[str] = None,
+    variables: None | Iterable[str] = None,
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-    custom_functions: None | list[str] = None,
+    custom_functions: None | Iterable[str] = None,
     assumptions: None | AssumptionsDictT = None,
 ) -> tuple[sympy.Expr, str]:
     const = _Constants()
@@ -504,8 +502,8 @@ def convert_string_to_sympy_with_source(
             variables if variables is not None else []
         )
         if unbound_variables:
-            raise HasInvalidAssumption(
-                f'Assumptions for variables that are not present: {",".join(unbound_variables)}'
+            raise HasInvalidAssumptionError(
+                f"Assumptions for variables that are not present: {','.join(unbound_variables)}"
             )
 
     # If there is a list of variables, add each one to the whitelist with assumptions
@@ -516,7 +514,9 @@ def convert_string_to_sympy_with_source(
             variable = greek_unicode_transform(variable)
             # Check for naming conflicts
             if variable in used_names:
-                raise HasConflictingVariable(f"Conflicting variable name: {variable}")
+                raise HasConflictingVariableError(
+                    f"Conflicting variable name: {variable}"
+                )
             else:
                 used_names.add(variable)
 
@@ -534,7 +534,9 @@ def convert_string_to_sympy_with_source(
         for function in custom_functions:
             function = greek_unicode_transform(function)
             if function in used_names:
-                raise HasConflictingFunction(f"Conflicting variable name: {function}")
+                raise HasConflictingFunctionError(
+                    f"Conflicting variable name: {function}"
+                )
 
             used_names.add(function)
 
@@ -626,7 +628,7 @@ def json_to_sympy(
 
 def validate_string_as_sympy(
     expr: str,
-    variables: None | list[str],
+    variables: None | Iterable[str],
     *,
     allow_hidden: bool = False,
     allow_complex: bool = False,

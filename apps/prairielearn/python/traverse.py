@@ -50,6 +50,9 @@ def format_attrib_value(v: str) -> str:
 
 
 def get_source_definition(element: lxml.html.HtmlElement) -> str:
+    if not isinstance(element.tag, str):
+        raise ValueError(f"Invalid tag type: {type(element.tag)}")
+
     attributes = (
         f'''{k}="{format_attrib_value(v)}"''' for k, v in element.attrib.items()
     )
@@ -126,6 +129,9 @@ def traverse_and_replace(
                 if tail:
                     result.append(tail)
             else:
+                if not isinstance(new_elements.tag, str):
+                    raise ValueError(f"Invalid tag type: {type(new_elements.tag)}")
+
                 # Add opening tag and text
                 result.append(get_source_definition(new_elements))
                 if new_elements.text is not None:

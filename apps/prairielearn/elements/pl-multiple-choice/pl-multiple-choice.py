@@ -132,14 +132,14 @@ def categorize_options(
             obj = json.load(f)
 
         for text in obj.get(correct_attrib, []):
-            correct_answers.append(
+            correct_answers.append(  # noqa: PERF401
                 AnswerTuple(
                     next(index_counter), True, text, None, SCORE_CORRECT_DEFAULT
                 )
             )
 
         for text in obj.get(incorrect_attrib, []):
-            incorrect_answers.append(
+            incorrect_answers.append(  # noqa: PERF401
                 AnswerTuple(
                     next(index_counter), False, text, None, SCORE_INCORRECT_DEFAULT
                 )

@@ -8,9 +8,7 @@ def generate(data):
     b = "hello "
     c = "it is a beautiful day!"
 
-    list1 = []
-    for _ in range(8):
-        list1.append(random.randint(0, 1))
+    list1 = [random.randint(0, 1) for _ in range(8)]
 
     d = "".join(str(e) for e in list1)
     e = "cAsE iNsEnSiTiVe"

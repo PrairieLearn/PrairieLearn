@@ -11,4 +11,3 @@ def is_odd(n):
     bool: Return either True if the number is odd. Otherwise, return False.
 
     """
-    pass

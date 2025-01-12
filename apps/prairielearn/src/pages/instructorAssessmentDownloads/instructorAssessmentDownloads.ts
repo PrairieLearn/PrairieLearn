@@ -15,6 +15,8 @@ import {
   GroupSchema,
   InstanceQuestionSchema,
   QuestionSchema,
+  RubricGradingItemSchema,
+  RubricGradingSchema,
   type Submission,
   SubmissionSchema,
   UserSchema,
@@ -67,6 +69,9 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   graded_at_formatted: z.string().nullable(),
   correct: z.enum(['TRUE', 'FALSE']).nullable(),
   feedback: SubmissionSchema.shape.feedback,
+  rubric_grading: RubricGradingSchema.pick({ computed_points: true, adjust_points: true })
+    .extend({ items: RubricGradingItemSchema.pick({ description: true, points: true }).array() })
+    .nullable(),
   submission_number: z.number(),
   final_submission_per_variant: z.boolean(),
   best_submission_per_variant: z.boolean(),
@@ -483,6 +488,7 @@ router.get(
         ['Score', 'score'],
         ['Correct', 'correct'],
         ['Feedback', 'feedback'],
+        ['Rubric Grading', 'rubric_grading'],
         ['Question points', 'points'],
         ['Max points', 'max_points'],
         ['Question % score', 'score_perc'],

@@ -100,7 +100,7 @@ def render(element_html, data):
             else:
                 m, n = np.shape(a_tru)
 
-        input_array = createTableForHTMLDisplay(m, n, name, label, data, "input")
+        input_array = create_table_for_html_display(m, n, name, label, data, "input")
 
         # Get comparison parameters and info strings
         comparison = pl.get_string_attrib(element, "comparison", COMPARISON_DEFAULT)
@@ -228,7 +228,7 @@ def render(element_html, data):
                 + "$"
             )
             # When allowing feedback, display submitted answers using html table
-            sub_html_table = createTableForHTMLDisplay(
+            sub_html_table = create_table_for_html_display(
                 m, n, name, label, data, "output-feedback"
             )
             if allow_feedback and score is not None:
@@ -243,7 +243,7 @@ def render(element_html, data):
             html_params["parse_error"] = None
         else:
             # create html table to show submitted answer when there is an invalid format
-            html_params["raw_submitted_answer"] = createTableForHTMLDisplay(
+            html_params["raw_submitted_answer"] = create_table_for_html_display(
                 m, n, name, label, data, "output-invalid"
             )
 
@@ -506,7 +506,7 @@ def test(element_html, data):
         }
 
 
-def createTableForHTMLDisplay(m, n, name, label, data, format):
+def create_table_for_html_display(m, n, name, label, data, format):
     editable = data["editable"]
 
     if format == "output-invalid":
