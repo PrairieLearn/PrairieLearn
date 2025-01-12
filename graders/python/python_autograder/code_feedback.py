@@ -40,7 +40,7 @@ class GradingComplete(Exception):  # noqa: N818
 class GradingTestFailedError(Exception):
     """
     A general exception to mark that some failure of the current
-    test case has occurred.  Future test cases will still be executed.
+    test case has occurred. Future test cases will still be executed.
     """
 
 
