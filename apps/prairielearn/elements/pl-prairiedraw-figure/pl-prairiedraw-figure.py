@@ -9,7 +9,7 @@ WIDTH_DEFAULT = "500"
 HEIGHT_DEFAULT = "300"
 
 
-def prepare(element_html, data):
+def prepare(element_html, _data):
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["script-name"]
     optional_attribs = ["param-names", "width", "height"]

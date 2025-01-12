@@ -66,7 +66,7 @@ def using_default_index(df: pd.DataFrame) -> bool:
     )
 
 
-def prepare(element_html: str, data: pl.QuestionData) -> None:
+def prepare(element_html: str, _data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(
         element,
@@ -158,7 +158,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         descriptors = frame.agg([get_dtype_function]).set_axis(
             ["dtype"], axis="index", copy=False
         )
-        other = descriptors.style.map(lambda v: "font-weight: bold;")  # type: ignore
+        other = descriptors.style.map(lambda _: "font-weight: bold;")  # type: ignore
         frame_style.set_table_styles(
             [{"selector": ".foot_row0", "props": "border-top: 1px solid black;"}]
         )

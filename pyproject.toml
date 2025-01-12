@@ -44,6 +44,8 @@ select = [
     "ISC",
     # flake8-pytest-style
     "PT",
+    # flake8-unused-arguments
+    "ARG",
     # refurb
     "FURB",
     # pylint
@@ -70,9 +72,12 @@ ignore = [
 # - F401: module imported but unused
 # - F821: undefined name
 # - F841: local variable name is assigned to but never used
+# - ARG001: Unused function argument
 "exampleCourse/questions/**/tests/setup_code.py" = ["F401", "F821"]
-"exampleCourse/questions/**/tests/leading_code.py" = ["F401", "F821", "F841"]
+"exampleCourse/questions/**/tests/leading_code.py" = ["F401", "F821", "F841", "ARG001"]
 "exampleCourse/questions/**/tests/ans.py" = ["F821"]
+"exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/**/*.py" = ["ARG001"]
+
 # Ignore uppercase variables and function parameters (e.g. G for a graph)
 "exampleCourse/questions/**/*.py" = ["N806", "N803"]
 # The zygote specifically uses imports in strange places to facilitate the

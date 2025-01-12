@@ -9,7 +9,7 @@ import requests
 class ExtendAction(argparse.Action):
     """Add argparse action='extend' for pre-3.8 python"""
 
-    def __call__(self, parser, namespace, values, option_string=None):
+    def __call__(self, _parser, namespace, values, _option_string=None):
         items = getattr(namespace, self.dest) or []
         items.extend(values)
         setattr(namespace, self.dest, items)
@@ -18,7 +18,7 @@ class ExtendAction(argparse.Action):
 class Canvas:
     """Canvas"""
 
-    def __init__(self, token=None, args=None):
+    def __init__(self, args=None):
         self.debug = args.debug if args else False
         with open(os.path.join(os.path.dirname(__file__), "config.json")) as config:
             self.config = json.load(config)

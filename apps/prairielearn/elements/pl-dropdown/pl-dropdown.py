@@ -33,7 +33,7 @@ def get_options(element, data):
     return options
 
 
-def get_solution(element, data):
+def get_solution(element):
     solution = []
     for child in element:
         if child.tag in ["pl-answer"]:
@@ -68,7 +68,7 @@ def prepare(element_html, data):
     pl.check_answers_names(data, answers_name)
 
     # Get answer from pl-answer if implemented
-    data["correct_answers"][answers_name] = get_solution(element, data)
+    data["correct_answers"][answers_name] = get_solution(element)
 
     if data["correct_answers"][answers_name] is None:
         raise Exception(f"Correct answer not defined for answers-name: {answers_name}")
@@ -184,7 +184,7 @@ def test(element_html, data):
     weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     # solution is what the answer should be
-    solution = get_solution(element, data)
+    solution = get_solution(element)
 
     # incorrect and correct answer test cases
     if data["test_type"] == "correct":
