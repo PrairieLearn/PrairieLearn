@@ -12,16 +12,16 @@ def file(data):
         f = data["params"]["m"] * x + data["params"]["b"]
         fig = plt.figure()
         plt.plot(x, f)
-        plt.xticks([x for x in range(-5, 6, 1)], fontsize=14)
+        plt.xticks(list(range(-5, 6, 1)), fontsize=14)
 
         fmin = int(np.floor(min(f)) - 1)
         fmax = int(np.ceil(max(f)) + 1)
         if fmax - fmin > 12:
-            plt.yticks([y for y in range(fmin, fmax + 4, 4)], fontsize=14)
-            plt.gca().set_yticks([y for y in range(fmin, fmax + 1, 1)], minor=True)
+            plt.yticks(list(range(fmin, fmax + 4, 4)), fontsize=14)
+            plt.gca().set_yticks(list(range(fmin, fmax + 1, 1)), minor=True)
             plt.gca().yaxis.grid(True, "minor")
         else:
-            plt.yticks([y for y in range(fmin, fmax + 1, 1)], fontsize=14)
+            plt.yticks(list(range(fmin, fmax + 1, 1)), fontsize=14)
         plt.grid()
         plt.xlabel("$x$", fontsize=18)
         plt.ylabel("$f(x)$", fontsize=18)
