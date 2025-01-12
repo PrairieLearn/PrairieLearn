@@ -125,7 +125,7 @@ async function setupDatabases(): Promise<void> {
 export async function before(this: Context): Promise<void> {
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
-  this.timeout?.(20000);
+  this.timeout?.(30000);
   await setupDatabases();
 }
 
@@ -146,7 +146,7 @@ export async function beforeOnlyCreate(this: Context): Promise<void> {
 export async function after(this: Context): Promise<void> {
   // long timeout because DROP DATABASE might take a long time to error
   // if other processes have an open connection to that database
-  this.timeout?.(20000);
+  this.timeout?.(30000);
   await closeSql();
   await postgresTestUtils.dropDatabase();
 }
