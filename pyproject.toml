@@ -57,13 +57,11 @@ select = [
     # flake8-logging
     "LOG",
     # flake8-pyi
-    # "PYI",
+    "PYI",
     # flake8-slots
     "SLOT",
     # flake8-gettext
     "INT",
-    # pygrep-hooks
-    # "PGH",
     # flynt
     "FLY"
 ]
