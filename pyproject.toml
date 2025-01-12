@@ -22,6 +22,8 @@ target-version = "py310"
 select = [
     "E",
     "N",
+    # pyflakes
+    "F",
     # isort
     "I",
     # flake8-bugbear
