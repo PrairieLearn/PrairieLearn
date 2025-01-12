@@ -7,7 +7,6 @@ from os.path import join, splitext
 
 import pygments
 from code_feedback import Feedback
-from IPython.core.interactiveshell import InteractiveShell
 from nbformat import read
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer
@@ -22,6 +21,8 @@ class GradingSkipped(Exception):  # noqa: N818
 
 
 def extract_ipynb_contents(f, ipynb_key):
+    from IPython.core.interactiveshell import InteractiveShell
+
     """
     Extract all cells from a ipynb notebook that start with a given
     delimiter
