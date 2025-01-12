@@ -46,6 +46,10 @@ select = [
     "PT",
     # refurb
     "FURB",
+    # pandas-vet
+    "PD",
+    # NumPy-specific rules
+    "NPY",
     # pylint
     "PLR"
 ]
@@ -59,7 +63,11 @@ ignore = [
     # Magic value used in comparison (foo == 5)
     "PLR2004",
     # Explicit string concatenation
-    "ISC003"
+    "ISC003",
+    # Avoid using the generic variable name `df` for DataFrames
+    "PD901",
+    # Replace legacy `np.random.*` call with `np.random.Generator`
+    "NPY002",
 ]
 
 [tool.ruff.lint.per-file-ignores]
