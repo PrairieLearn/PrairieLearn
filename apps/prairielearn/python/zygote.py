@@ -109,12 +109,13 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
         fullname: str,
         path: Sequence[str] | None,
         target: types.ModuleType | None = None,
-    ):
+    ) -> None:
         if any(
             fullname == module or fullname.startswith(module + ".")
             for module in self.forbidden_modules
         ):
             raise ImportError(f'module "{fullname}" is not allowed.')
+        return None  # noqa: PLR1711
 
 
 # We want to initialize the Faker seed, but only if faker is loaded
@@ -127,7 +128,7 @@ class FakerInitializeMetaPathFinder(MetaPathFinder):
         fullname: str,
         path: Sequence[str] | None,
         target: types.ModuleType | None = None,
-    ):
+    ) -> None:
         if fullname == "faker" or fullname.startswith("faker."):
             # Once this initialization is done we no longer need this meta path finder
             sys.meta_path.remove(self)
