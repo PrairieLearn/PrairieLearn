@@ -206,12 +206,12 @@ def execute_code(
             ):
                 plot_value = student_code[key]
         if not plot_value:
-            import matplotlib
+            import matplotlib as mpl
 
-            matplotlib.use("Agg")
-            import matplotlib.pyplot
+            mpl.use("Agg")
+            import matplotlib as mpl
 
-            plot_value = matplotlib.pyplot
+            plot_value = mpl.pyplot
 
     # Re-seed before running tests
     set_random_seed()

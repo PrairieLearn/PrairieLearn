@@ -36,6 +36,10 @@ select = [
     "PERF",
     # ruff-specific rules
     "RUF",
+    # flake8-import-conventions
+    "ICN",
+    # flake8-implicit-str-concat
+    "ISC",
     # refurb
     "FURB",
     # pylint
@@ -45,7 +49,9 @@ ignore = [
     # Ignore line length errors
     "E501",
     # if-else blocks that could be shortened (https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp/)
-    "SIM108"
+    "SIM108",
+    # Explicit string concatenation
+    "ISC003"
 ]
 
 [tool.ruff.lint.per-file-ignores]
