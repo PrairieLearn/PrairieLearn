@@ -19,7 +19,7 @@ Attempts to call a student defined function, with any arbitrary arguments specif
 
 If the function call succeeds, the user return value will be returned from this function.
 
-#### _classmethod_ check_dataframe(name, ref, data, subset_columns=[], check_values=True, allow_order_variance=True, display_input=False)
+#### _classmethod_ check_dataframe(name, ref, data, subset_columns=None, check_values=True, allow_order_variance=True, display_input=False)
 
 `check_dataframe`
 Checks and adds feedback regarding the correctness of
@@ -33,7 +33,7 @@ Parameters:
 - `name`, String: The human-readable name of the DataFrame being checked
 - `ref`, DataFrame: The reference (correct) DataFrame
 - `data`, DataFrame: The student DataFrame
-- `subset_columns` = [], Array of Strings:
+- `subset_columns` = None, Array of Strings:
   If `subset_columns` is an empty array, all columns are used in the check.
   Otherwise, only columns named in `subset_columns` are used in the check and other columns are dropped.
 - `check_values` = True, Boolean: Check the values of each cell, in addition to the dimensions of the DataFrame
@@ -148,29 +148,4 @@ Set the score for the test case, should be a floating point value between 0 and 
 
 ---
 
-### _class_ pl_unit_test.PLTestCase(methodName='runTest')
-
-Base class for test suites, using the Python unittest library.
-Handles automatic setup and teardown of testing logic.
-
-Methods here do not need to be overridden by test suites.
-
-#### _classmethod_ get_total_points()
-
-Get the total number of points awarded by this test suite, including
-cases where the test suite is run multiple times.
-
-#### _classmethod_ setUpClass()
-
-On start, run the user code and generate answer tuples.
-
-#### _classmethod_ tearDownClass()
-
-Close all plots and increment the iteration number on test finish
-
 ---
-
-### _class_ pl_unit_test.PLTestCaseWithPlot(methodName='runTest')
-
-Test suite that includes plot grading. Will automatically check plots
-for appropriate labels.
