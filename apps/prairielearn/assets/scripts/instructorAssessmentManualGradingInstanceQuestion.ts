@@ -1,7 +1,6 @@
 import ClipboardJS from 'clipboard';
 
 import { mathjaxTypeset } from './lib/mathjax.js';
-
 declare global {
   interface Window {
     rubricItemRowDragging: HTMLTableRowElement;
@@ -299,7 +298,10 @@ function submitSettings(this: HTMLFormElement, e: SubmitEvent, use_rubric: any) 
     settingsErrorAlertPlaceholder.innerHTML = '';
   }
 
-  const settingsFormData = new URLSearchParams(new FormData(this));
+  const settingsEntries = Object.fromEntries(
+    Array.from(new FormData(this).entries()).map(([key, value]) => [key, value.toString()]),
+  );
+  const settingsFormData = new URLSearchParams(settingsEntries);
   if (use_rubric != null) {
     settingsFormData.set('use_rubric', use_rubric);
   }
@@ -308,9 +310,11 @@ function submitSettings(this: HTMLFormElement, e: SubmitEvent, use_rubric: any) 
     method: 'POST',
     body: settingsFormData,
   })
-    .catch((err) => ({ err }))
     .then(async (response) => {
-      const data = await response.json().catch(() => ({ err: `Error: ${response.statusText}` }));
+      return await response.json().catch(() => ({ err: `Error: ${response.statusText}` }));
+    })
+    .catch((err) => ({ err }))
+    .then(async (data) => {
       if (data.err) {
         console.error(data);
         return addAlert(this.querySelector('.js-settings-error-alert-placeholder'), data.err);
@@ -383,6 +387,7 @@ function resetRubricItemRowsListeners() {
     .forEach((row) => row.addEventListener('dragover', rowDragOver));
   document
     .querySelectorAll('.js-rubric-item-move-button')
+    // @ts-expect-error mismatch between vanilla JS and jQuery
     .forEach((row) => row.addEventListener('dragstart', rowDragStart));
   document
     .querySelectorAll('.js-rubric-item-long-text-field')
@@ -467,7 +472,7 @@ function updatePointsView(sourceInput: HTMLInputElement | null) {
   });
 }
 
-function computePointsFromRubric(sourceInput: HTMLInputElement | null = null) {
+function computePointsFromRubric(sourceInput: HTMLInputElement | null = null, _event?: Event) {
   document.querySelectorAll('form[name=manual-grading-form]').forEach((form) => {
     if (form instanceof HTMLFormElement && form.dataset.rubricActive === 'true') {
       const manualInput = form.querySelector<HTMLInputElement>(
@@ -562,13 +567,15 @@ function deleteRow(event: Event) {
   checkRubricItemTotals();
 }
 
-function rowDragStart(event: Event) {
+function rowDragStart(event: JQuery.TriggeredEvent) {
   if (!(event.target instanceof HTMLElement)) return;
   const closestRow = event.target.closest('tr');
   if (closestRow) {
     window.rubricItemRowDragging = closestRow;
   }
-  if (event.originalEvent?.dataTransfer) {
+
+  if (!(event.originalEvent instanceof DragEvent)) return;
+  if (event.originalEvent.dataTransfer) {
     event.originalEvent.dataTransfer.effectAllowed = 'move';
   }
 }
@@ -577,7 +584,7 @@ function rowDragOver(event: Event) {
   if (!(event.target instanceof HTMLElement)) return;
   const row = event.target.closest('tr');
   // Rows in different tables don't count
-  if (!row || row.parent !== window.rubricItemRowDragging.parent) return;
+  if (!row || row.parentNode !== window.rubricItemRowDragging.parentNode) return;
   const rowList = Array.from(row.parentNode?.childNodes ?? []);
   const draggingRowIdx = rowList.indexOf(window.rubricItemRowDragging);
   const targetRowIdx = rowList.indexOf(row);
