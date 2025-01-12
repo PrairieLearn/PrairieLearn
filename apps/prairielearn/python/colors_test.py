@@ -37,7 +37,7 @@ def test_color_constructor_custom() -> None:
 
 def test_color_constructor_error() -> None:
     """Assert the color constructor raises a ValueError if given invalid input."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="not a valid color"):
         PLColor("none")
 
 

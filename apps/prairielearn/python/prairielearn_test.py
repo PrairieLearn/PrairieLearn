@@ -308,7 +308,7 @@ def test_get_enum_attrib(html_str: str, expected_result: DummyEnum) -> None:
 def test_get_enum_attrib_exceptions(html_str: str) -> None:
     element = lxml.html.fragment_fromstring(html_str)
 
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError):  # noqa: PT011
         pl.get_enum_attrib(element, "test-choice", DummyEnum)
 
 
