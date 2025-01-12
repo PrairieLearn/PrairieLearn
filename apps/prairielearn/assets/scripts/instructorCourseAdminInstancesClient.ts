@@ -3,9 +3,7 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 onDocumentReady(() => {
   const startAccessDateInput = document.querySelector<HTMLInputElement>('#start_access_date');
   const endAccessDateInput = document.querySelector<HTMLInputElement>('#end_access_date');
-  const createButton = document.querySelector<HTMLButtonElement>(
-    '#add_course_instance_create_button',
-  );
+  const createButton = document.querySelector<HTMLButtonElement>('#add_course_instance_button');
 
   if (!startAccessDateInput || !endAccessDateInput || !createButton) return;
 
