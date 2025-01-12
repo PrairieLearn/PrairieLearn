@@ -101,7 +101,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         info_params = {
             "format": True,
             "base": base,
-            "default_base": base == BASE_DEFAULT or base == 0,
+            "default_base": base in (BASE_DEFAULT, 0),
             "zero_base": base == 0,
         }
 
@@ -112,7 +112,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             placeholder = (
                 "integer"
-                if base == BASE_DEFAULT or base == 0
+                if base in (BASE_DEFAULT, 0)
                 else f"integer in base {base}"
             )
 
@@ -145,7 +145,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "submission": True,
             "label": label,
             "base": base,
-            "default_base": base == BASE_DEFAULT or base == 0,
+            "default_base": base in (BASE_DEFAULT, 0),
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
         }
@@ -246,7 +246,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 "format_error": True,
                 "format_error_message": "the submitted answer was blank.",
                 "base": base,
-                "default_base": base == BASE_DEFAULT or base == 0,
+                "default_base": base in (BASE_DEFAULT, 0),
                 "zero_base": base == 0,
             }
 
@@ -260,7 +260,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         opts = {
             "format_error": True,
             "base": base,
-            "default_base": base == BASE_DEFAULT or base == 0,
+            "default_base": base in (BASE_DEFAULT, 0),
             "zero_base": base == 0,
         }
 

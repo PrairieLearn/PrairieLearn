@@ -106,8 +106,7 @@ def prepare(element_html, data):
                             if buttons.tag == "pl-drawing-button":
                                 type_name = buttons.attrib.get("type", None)
                                 if (
-                                    type_name == "pl-arc-vector-CCW"
-                                    or type_name == "pl-arc-vector-CW"
+                                    type_name in ("pl-arc-vector-CCW", "pl-arc-vector-CW")
                                 ):
                                     type_name = "pl-arc-vector"
                                 type_attribs = elements.get_attributes(type_name)

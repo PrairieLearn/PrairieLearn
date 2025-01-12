@@ -1662,7 +1662,7 @@ def escape_unicode_string(string: str) -> str:
 
     def escape_unprintable(x):
         category = unicodedata.category(x)
-        if category == "Cc" or category == "Cf":
+        if category in ("Cc", "Cf"):
             return f"<U+{ord(x):x}>"
         else:
             return x

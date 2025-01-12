@@ -103,7 +103,7 @@ def grade_theta_expression(
 
         if omega_limit < sympy.sympify(0) or bigo_limit < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
-        elif omega_limit == sympy.oo or bigo_limit == sympy.oo:
+        elif sympy.oo in (omega_limit, bigo_limit):
             return (0.0, INCORRECT_FEEDBACK)
         elif omega_limit == sympy.sympify(1) and bigo_limit == sympy.sympify(1):
             return (0.25, THETA_LOWER_ORDER_TERMS_FEEDBACK)
