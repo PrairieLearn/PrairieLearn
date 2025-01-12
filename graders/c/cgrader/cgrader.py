@@ -79,7 +79,7 @@ class CGrader:
             self.data = json.load(file)
         self.compiler = compiler
 
-    def run_command(self, command, input=None, sandboxed=True, timeout=None, env=None):
+    def run_command(self, command, input=None, sandboxed=True, timeout=None, env=None):  # noqa: A002
         if isinstance(command, str):
             command = shlex.split(command)
         if sandboxed:
@@ -105,7 +105,7 @@ class CGrader:
         out = ""
         tostr = ""
         if input is not None and not isinstance(input, bytes | bytearray):
-            input = str(input).encode("utf-8")
+            input = str(input).encode("utf-8")  # noqa: A001
         try:
             proc.communicate(input=input, timeout=timeout)[0]
         except subprocess.TimeoutExpired:
@@ -383,7 +383,7 @@ class CGrader:
     def test_run(
         self,
         command,
-        input=None,
+        input=None,  # noqa: A002
         exp_output=None,
         must_match_all_outputs: OutputMatchingOption | bool = "any",
         reject_output=None,
