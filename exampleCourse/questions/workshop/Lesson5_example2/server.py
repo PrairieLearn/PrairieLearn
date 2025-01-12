@@ -52,8 +52,7 @@ def generate(data):
 # -----------------
 def create_markov_matrix(website_list, npages, max_n_links, min_n_links=0):
     Nsite = len(website_list)
-    if npages > Nsite:
-        npages = Nsite
+    npages = min(npages, Nsite)
     if max_n_links > npages:
         max_n_links = npages - 1
 
