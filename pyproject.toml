@@ -20,68 +20,26 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = [
-    "E",
-    "N",
-    # pyflakes
-    "F",
-    # isort
-    "I",
-    # flake8-bugbear
-    "B",
-    # flake8-simplify
-    "SIM",
-    # pyupgrade
-    "UP",
-    # tryceratops
-    "TRY",
-    # flake8-pie
-    "PIE",
-    # Perflint
-    "PERF",
-    # flake8-comprehensions
-    "C4",
-    # ruff-specific rules
-    "RUF",
-    # flake8-import-conventions
-    "ICN",
-    # flake8-implicit-str-concat
-    "ISC",
-    # flake8-pytest-style
-    "PT",
-    # flake8-unused-arguments
-    "ARG",
-    # refurb
-    "FURB",
-    # pandas-vet
-    "PD",
-    # NumPy-specific rules
-    "NPY",
-    # pylint
-    "PLR",
-    # flake8-2020
-    "YTT",
-    # flake8-async
-    "ASYNC",
-    # flake8-datetimez
-    "DTZ",
-    # flake8-debugger
-    "T10",
-    # flake8-logging
-    "LOG",
-    # flake8-pyi
-    "PYI",
-    # flake8-slots
-    "SLOT",
-    # flake8-gettext
-    "INT",
-    # flynt
-    "FLY",
-    "W", "PLW"
+    "ALL"
 ]
 
 ignore = [
-    # Ignore line length errors
-    "E501",
+    # These rules provide little value to us
+    "ANN", # flake8-annotations
+    "D", # pydocstyle
+    "ERA", # eradicate (code in comments)
+    "T", # flake8-print, flake8-debugger
+    "COM", # flake8-commas
+    "INP001", # implicit-namespace-package
+    "S", # flake8-bandit (security rules)
+    "BLE", # flake8-blind-except
+    "EM", # flake8-errmsg
+    "C901", # mccabe (complexity checks)
+    "FIX", # flake8-fixme
+    "TD", # flake8-todos
+    "PGH003", # blanket-type-ignore
+    "E501", # line-too-long
+
     # if-else blocks that could be shortened (https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp/)
     "SIM108",
     # Allow for returns in try blocks
@@ -100,6 +58,18 @@ ignore = [
     "PD901",
     # Replace legacy `np.random.*` call with `np.random.Generator`
     "NPY002",
+
+    # These rules need to be implemented
+    "PTH", # flake8-use-pathlib
+    "RET", # flake8-return
+    "SLF001", # private-member-access 
+    "RSE102", # unnecessary-paren-on-raise-exception
+    "PLE2513", # invalid-character-esc
+
+    # These rules have active PRs
+    "A", # flake8-builtins
+    "FBT", # flake8-boolean-trap
+    "EXE", # flake8-executable
 ]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
