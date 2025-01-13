@@ -1,8 +1,8 @@
 import json
 import os
 import unittest
+from collections import namedtuple
 from os.path import join
-from typing import NamedTuple
 
 # Needed to ensure matplotlib runs on Docker
 import matplotlib as mpl
@@ -50,9 +50,9 @@ class PLTestCase(unittest.TestCase):
             cls.iter_num,
             cls.ipynb_key,
         )
-        answerTuple = NamedTuple("answerTuple", ref_result.keys())
+        answerTuple = namedtuple("answerTuple", ref_result.keys())  # noqa: PYI024
         cls.ref = answerTuple(**ref_result)
-        studentTuple = NamedTuple("studentTuple", student_result.keys())
+        studentTuple = namedtuple("studentTuple", student_result.keys())  # noqa: PYI024
         cls.st = studentTuple(**student_result)
         cls.plt = plot_value
         if cls.include_plt:

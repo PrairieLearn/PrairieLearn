@@ -12,10 +12,11 @@ import re
 import string
 import unicodedata
 import uuid
+from collections import namedtuple
 from collections.abc import Callable, Generator
 from enum import Enum
 from io import StringIO
-from typing import Any, Literal, NamedTuple, TypedDict, TypeVar, overload
+from typing import Any, Literal, TypedDict, TypeVar, overload
 
 import lxml.html
 import networkx as nx
@@ -1738,7 +1739,7 @@ def load_extension(data, extension_name):
     }
 
     # Return functions and variables as a namedtuple, so we get the nice dot access syntax
-    module_tuple = NamedTuple(clean_identifier_name(extension_name), loaded.keys())
+    module_tuple = namedtuple(clean_identifier_name(extension_name), loaded.keys())  # noqa: PYI024
     return module_tuple(**loaded)
 
 
