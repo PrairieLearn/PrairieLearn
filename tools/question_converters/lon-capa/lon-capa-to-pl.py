@@ -120,7 +120,7 @@ def read_xml_from_file_and_remove_ampersands(xml_filename):
         lines = in_file.readlines()
 
         # remove the ampersands because they break xml parsing
-        lines = map(lambda x: x.replace("&", ""), lines)
+        lines = (x.replace("&", "") for x in lines)
 
         xml_str = "".join(lines)
         return xml_str

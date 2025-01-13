@@ -142,7 +142,7 @@ def write_question(xml_root, f):
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print(f"usage: {sys.argv[0]} [xml filename] [question directory]")
-        exit(1)
+        sys.exit(1)
     tree = ET.parse(sys.argv[1])
     xml_root = tree.getroot()
 
