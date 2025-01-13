@@ -44,7 +44,7 @@ args = parser.parse_args()
 canvas = canvas.Canvas(args=args)
 
 if not os.path.exists(os.path.join(args.pl_repo, "infoCourse.json")):
-    raise Exception("Provided directory is not a PrairieLearn repository")
+    raise ValueError("Provided directory is not a PrairieLearn repository")
 
 print("Reading data from Canvas...")
 course = canvas.course(args.course, prompt_if_needed=True)

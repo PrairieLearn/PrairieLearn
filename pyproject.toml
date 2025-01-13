@@ -32,6 +32,8 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
+    # tryceratops
+    "TRY",
     # flake8-pie
     "PIE",
     # Perflint
@@ -75,11 +77,18 @@ select = [
     # flynt
     "FLY"
 ]
+
 ignore = [
     # Ignore line length errors
     "E501",
     # if-else blocks that could be shortened (https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp/)
     "SIM108",
+    # Allow for returns in try blocks
+    "TRY300",
+    # Abstract raise to an inner function
+    "TRY301",
+     # Avoid specifying long messages outside the exception class
+    "TRY003",
     # Too many statements, too many branches, too many arguments, too many returns
     "PLR0912", "PLR0915", "PLR0913", "PLR0911",
     # Magic value used in comparison (foo == 5)
@@ -91,7 +100,6 @@ ignore = [
     # Replace legacy `np.random.*` call with `np.random.Generator`
     "NPY002",
 ]
-
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
 # broken in isolation. We'll allow specific errors in these files to

@@ -1,2 +1,2 @@
 def generate(_data):
-    raise Exception("deliberately broken generate function")
+    raise RuntimeError("deliberately broken generate function")
