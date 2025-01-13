@@ -509,8 +509,8 @@ def convert_string_to_sympy_with_source(
     if variables is not None:
         variable_dict = locals_for_eval["variables"]
 
-        for variable in variables:
-            variable = greek_unicode_transform(variable)
+        for raw_variable in variables:
+            variable = greek_unicode_transform(raw_variable)
             # Check for naming conflicts
             if variable in used_names:
                 raise HasConflictingVariableError(
@@ -529,8 +529,8 @@ def convert_string_to_sympy_with_source(
     # If there is a list of custom functions, add each one to the whitelist
     if custom_functions is not None:
         function_dict = locals_for_eval["functions"]
-        for function in custom_functions:
-            function = greek_unicode_transform(function)
+        for raw_function in custom_functions:
+            function = greek_unicode_transform(raw_function)
             if function in used_names:
                 raise HasConflictingFunctionError(
                     f"Conflicting variable name: {function}"
