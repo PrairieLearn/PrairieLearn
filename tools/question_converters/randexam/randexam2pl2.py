@@ -48,7 +48,7 @@ log_file = None
 
 
 def init_logging(output_filename):
-    global log_file
+    global log_file  # noqa: PLW0603
     try:
         print(f"Logging information to file: {output_filename}")
         if log_file is not None:
@@ -60,7 +60,6 @@ def init_logging(output_filename):
 
 
 def log(msg):
-    global log_file
     try:
         if log_file is None:
             raise RuntimeError("logging not initialized")

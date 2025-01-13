@@ -170,8 +170,8 @@ def generate_server_py(script, question_dir):
     tab = "    "
     with open(question_dir + "/server.py", "w") as out_file:
         out_file.write("import random\nimport math\n\ndef generate(data):\n")
-        for statement in script.split(";"):
-            statement = statement.replace("\n", " ").strip()
+        for raw_statement in script.split(";"):
+            statement = raw_statement.replace("\n", " ").strip()
             if len(statement) == 0:
                 continue
             out_file.write(tab + "# " + statement + "\n")
