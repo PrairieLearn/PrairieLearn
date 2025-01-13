@@ -26,23 +26,31 @@ select = [
 ignore = [
     # These rules provide little value to us
     "ANN", # flake8-annotations
+    "BLE", # flake8-blind-except
+    "COM", # flake8-commas
+    "C901", # mccabe (complexity checks)
     "D", # pydocstyle
     "ERA", # eradicate (code in comments)
-    "T", # flake8-print, flake8-debugger
-    "COM", # flake8-commas
+    "EM", # flake8-errmsg
+    "E501", # line-too-long
+    "FIX", # flake8-fixme
     "INP001", # implicit-namespace-package
     "S", # flake8-bandit (security rules)
-    "BLE", # flake8-blind-except
-    "EM", # flake8-errmsg
-    "C901", # mccabe (complexity checks)
-    "FIX", # flake8-fixme
+    "T", # flake8-print, flake8-debugger
     "TD", # flake8-todos
     "PGH003", # blanket-type-ignore
-    "E501", # line-too-long
     "PLE2513", # invalid-character-esc
     "PTH", # flake8-use-pathlib
 
     # These rules were discussed and disabled
+    "ISC003", # explicit-string-concatenation
+    "NPY002", # numpy-legacy-random (we use `np.random.*` in many places)
+    "PD901", # pandas-df-variable-name (we use `df` in many places)
+    "PLR0911", # too-many-return-statements
+    "PLR0912", # too-many-branches
+    "PLR0913", # too-many-arguments
+    "PLR0915", # too-many-statements
+    "PLR2004", # magic-value-comparison
     "RET503", # implicit-return
     "RET504", # unnecessary-assign
     "RET505", # superfluous-else-return
@@ -50,19 +58,9 @@ ignore = [
     "TRY300", # try-consider-else (returns in try blocks)
     "TRY301", # raise-within-try
     "TRY003", # raise-vanilla-args (long messages in raise statements)
-    "PLR0911", # too-many-return-statements
-    "PLR0912", # too-many-branches
-    "PLR0913", # too-many-arguments
-    "PLR0915", # too-many-statements
-    "PLR2004", # magic-value-comparison
-    "ISC003", # explicit-string-concatenation
-    "PD901", # pandas-df-variable-name (we use `df` in many places)
-    "NPY002", # numpy-legacy-random (we use `np.random.*` in many places)
 
     # These rules need to be implemented
-    "W", # pycodestyle warnings
     "SLF001", # private-member-access 
-    "PLW", # pylint warnings
     "RSE102", # unnecessary-paren-on-raise-exception
 
     # These rules have active PRs
