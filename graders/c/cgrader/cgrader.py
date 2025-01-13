@@ -647,7 +647,7 @@ class CGrader:
             )
             raise UngradableError() from exc
         except et.ParseError as exc:
-            self.result["message"] += f"Error parsing test suite log.\n\n{e}\n"
+            self.result["message"] += f"Error parsing test suite log.\n\n{exc}\n"
             raise UngradableError() from exc
 
     def save_results(self):

@@ -2058,7 +2058,7 @@ class GraphLine(BaseElement):
                 raise Exception(
                     "pl-graph-line error: the attribute end-points expects a list of size 2 or 3."
                 )
-            if n_grads != 0 and n_grads != 2:
+            if n_grads not in (0, 2):
                 raise Exception(
                     "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
                 )

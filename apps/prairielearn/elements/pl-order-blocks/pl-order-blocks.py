@@ -385,10 +385,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         assert_never(source_blocks_order)
 
     # prep for visual pairing
-    correct_tags = set(block["tag"] for block in all_blocks if block["tag"] is not None)
-    incorrect_tags = set(
+    correct_tags = {block["tag"] for block in all_blocks if block["tag"] is not None}
+    incorrect_tags = {
         block["distractor_for"] for block in all_blocks if block["distractor_for"]
-    )
+    }
 
     if not incorrect_tags.issubset(correct_tags):
         raise ValueError(
@@ -435,7 +435,7 @@ def get_distractors(
     return [
         block
         for block in all_blocks
-        if block["uuid"] not in set(block2["uuid"] for block2 in correct_blocks)
+        if block["uuid"] not in {block2["uuid"] for block2 in correct_blocks}
     ]
 
 
@@ -620,9 +620,9 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             element, "indentation", INDENTION_DEFAULT
         )
 
-        required_indents = set(
+        required_indents = {
             block["indent"] for block in data["correct_answers"][answer_name]
-        )
+        }
         indentation_message = ""
         if check_indentation:
             if -1 not in required_indents:
@@ -811,8 +811,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                     ans["inner_html"] = None
 
     if grading_method is GradingMethodType.UNORDERED:
-        true_answer_uuids = set(ans["uuid"] for ans in true_answer_list)
-        student_answer_uuids = set(ans["uuid"] for ans in student_answer)
+        true_answer_uuids = {ans["uuid"] for ans in true_answer_list}
+        student_answer_uuids = {ans["uuid"] for ans in student_answer}
         correct_selections = len(true_answer_uuids.intersection(student_answer_uuids))
         incorrect_selections = len(student_answer) - correct_selections
 
@@ -897,12 +897,12 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         if final_score < 1:
             first_wrong_is_distractor = first_wrong is not None and student_answer[
                 first_wrong
-            ]["uuid"] in set(
+            ]["uuid"] in {
                 block["uuid"]
                 for block in get_distractors(
                     data["params"][answer_name], data["correct_answers"][answer_name]
                 )
-            )
+            }
             feedback = construct_feedback(
                 feedback_type,
                 first_wrong,
@@ -989,12 +989,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
                 ans["tag"]: ans["group_info"]["tag"]
                 for ans in data["correct_answers"][answer_name]
             }
-            first_wrong_is_distractor = answer[first_wrong]["uuid"] in set(
+            first_wrong_is_distractor = answer[first_wrong]["uuid"] in {
                 block["uuid"]
                 for block in get_distractors(
                     data["params"][answer_name], data["correct_answers"][answer_name]
                 )
-            )
+            }
             feedback = construct_feedback(
                 feedback_type,
                 first_wrong,
