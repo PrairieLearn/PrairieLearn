@@ -169,7 +169,7 @@ def render_controls(template, elem):
                 continue
             markup += render_controls(template, el) + "<br>\n"
         return markup
-    if elem.tag == "pl-drawing-button":
+    elif elem.tag == "pl-drawing-button":
         type_name = elem.attrib.get("type", None)
         if type_name is not None:
             if type_name == "pl-arc-vector-CCW":
@@ -217,7 +217,7 @@ def render_drawing_items(elem, curid=0, defaults=None):
     for el in elem:
         if el.tag is lxml.etree.Comment:
             continue
-        if el.tag == "pl-drawing-group":
+        elif el.tag == "pl-drawing-group":
             if pl.get_boolean_attrib(el, "visible", True):
                 curid += 1
                 raw, _ = render_drawing_items(el, curid, {"groupid": curid})
@@ -253,7 +253,7 @@ def render(element_html, data):
     for el in element:
         if el.tag is lxml.etree.Comment:
             continue
-        if el.tag == "pl-controls" and not preview_mode:
+        elif el.tag == "pl-controls" and not preview_mode:
             btn_markup = render_controls(template, el)
         elif el.tag == "pl-drawing-initial":
             init, _ = render_drawing_items(el)

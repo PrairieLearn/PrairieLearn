@@ -35,22 +35,22 @@ def convert_pandas_dtype_to_r(s: pd.Series) -> str:
 
     if pd.api.types.is_float_dtype(s):
         return "numeric"
-    if pd.api.types.is_integer_dtype(s):
+    elif pd.api.types.is_integer_dtype(s):
         return "integer"
-    if pd.api.types.is_object_dtype(s) or pd.api.types.is_string_dtype(s):
+    elif pd.api.types.is_object_dtype(s) or pd.api.types.is_string_dtype(s):
         return "character"
-    if isinstance(s, pd.CategoricalDtype):
+    elif isinstance(s, pd.CategoricalDtype):
         # Check if ordered
         if s.cat.ordered:
             return "ordered factor"
         return "factor"
-    if pd.api.types.is_bool_dtype(s):
+    elif pd.api.types.is_bool_dtype(s):
         return "logical"
-    if pd.api.types.is_complex_dtype(s):
+    elif pd.api.types.is_complex_dtype(s):
         return "complex"
-    if pd.api.types.is_datetime64_any_dtype(s):
+    elif pd.api.types.is_datetime64_any_dtype(s):
         return "POSIXct"
-    if pd.api.types.is_timedelta64_dtype(s) or isinstance(s, pd.PeriodDtype):
+    elif pd.api.types.is_timedelta64_dtype(s) or isinstance(s, pd.PeriodDtype):
         return "Not supported"
 
     return "Unknown"

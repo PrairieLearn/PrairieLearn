@@ -132,13 +132,14 @@ def solve_problem(
         or grading_method is GradingMethodType.ORDERED
     ):
         return answers_list
-    if grading_method is GradingMethodType.RANKING:
+    elif grading_method is GradingMethodType.RANKING:
         return sorted(answers_list, key=lambda x: int(x["ranking"]))
-    if grading_method is GradingMethodType.DAG:
+    elif grading_method is GradingMethodType.DAG:
         depends_graph, group_belonging = extract_dag(answers_list)
         solution = solve_dag(depends_graph, group_belonging)
         return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
-    assert_never(grading_method)
+    else:
+        assert_never(grading_method)
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -312,7 +313,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
         if html_tags.tag is Comment:
             continue
-        if html_tags.tag == "pl-block-group":
+        elif html_tags.tag == "pl-block-group":
             if grading_method is not GradingMethodType.DAG:
                 raise ValueError(
                     'Block groups only supported in the "dag" grading mode.'
@@ -323,15 +324,17 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 raise ValueError(
                     f'Tag "{group_tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
                 )
-            used_tags.add(group_tag)
+            else:
+                used_tags.add(group_tag)
 
             for grouped_tag in html_tags:
                 if html_tags.tag is Comment:
                     continue
-                prepare_tag(
-                    grouped_tag, index, {"tag": group_tag, "depends": group_depends}
-                )
-                index += 1
+                else:
+                    prepare_tag(
+                        grouped_tag, index, {"tag": group_tag, "depends": group_depends}
+                    )
+                    index += 1
         else:
             prepare_tag(html_tags, index, {"tag": None, "depends": None})
             index += 1
@@ -539,7 +542,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html = chevron.render(f, html_params)
         return html
 
-    if data["panel"] == "submission":
+    elif data["panel"] == "submission":
         if grading_method is GradingMethodType.EXTERNAL:
             return ""  # external grader is responsible for displaying results screen
 
@@ -595,7 +598,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html = chevron.render(f, html_params)
         return html
 
-    if data["panel"] == "answer":
+    elif data["panel"] == "answer":
         if grading_method is GradingMethodType.EXTERNAL:
             try:
                 base_path = data["options"]["question_path"]
@@ -657,7 +660,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             html = chevron.render(f, html_params)
         return html
 
-    assert_never(data["panel"])
+    else:
+        assert_never(data["panel"])
 
 
 def parse(element_html: str, data: pl.QuestionData) -> None:
@@ -753,18 +757,19 @@ def construct_feedback(
 
     if first_wrong is None:
         return FIRST_WRONG_FEEDBACK["incomplete"]
-    if (
+    elif (
         feedback_type is FeedbackType.FIRST_WRONG_VERBOSE and first_wrong_is_distractor
     ):
         return FIRST_WRONG_FEEDBACK["distractor-feedback"].format(str(first_wrong + 1))
-    feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(str(first_wrong + 1))
-    has_block_groups = group_belonging and set(group_belonging.values()) != {None}
-    if check_indentation:
-        feedback += FIRST_WRONG_FEEDBACK["indentation"]
-    if has_block_groups:
-        feedback += FIRST_WRONG_FEEDBACK["block-group"]
-    feedback += "</ul>"
-    return feedback
+    else:
+        feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(str(first_wrong + 1))
+        has_block_groups = group_belonging and set(group_belonging.values()) != {None}
+        if check_indentation:
+            feedback += FIRST_WRONG_FEEDBACK["indentation"]
+        if has_block_groups:
+            feedback += FIRST_WRONG_FEEDBACK["block-group"]
+        feedback += "</ul>"
+        return feedback
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:

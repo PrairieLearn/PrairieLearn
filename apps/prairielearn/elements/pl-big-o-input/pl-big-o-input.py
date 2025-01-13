@@ -177,7 +177,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         return chevron.render(template, html_params).strip()
 
-    if data["panel"] == "submission":
+    elif data["panel"] == "submission":
         # No need to escape the raw_submitted_answer,
         # this gets done automatically by mustache
         html_params = {
@@ -202,7 +202,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(template, html_params).strip()
 
     # Display the correct answer.
-    if data["panel"] == "answer":
+    elif data["panel"] == "answer":
         a_tru = data["correct_answers"].get(name)
 
         if a_tru is None:

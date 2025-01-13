@@ -58,7 +58,8 @@ print("Processing directories: {}".format(", ".join(BASE_DIRS)))
 def output_dir(filename):
     if MODE == "textdir":
         return TEXT_DIR
-    return os.path.join(os.path.dirname(filename), "text")
+    else:
+        return os.path.join(os.path.dirname(filename), "text")
 
 
 def ensure_dir_exists(d):

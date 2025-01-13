@@ -41,8 +41,6 @@ ignore = [
     "E501", # line-too-long
     "PLE2513", # invalid-character-esc
     "PTH", # flake8-use-pathlib
-    "RET504", # unnecessary-assign
-    "RET503", # implicit-return
 
     # if-else blocks that could be shortened (https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp/)
     "SIM108",

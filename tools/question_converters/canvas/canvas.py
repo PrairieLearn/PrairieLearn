@@ -235,7 +235,8 @@ class CourseSubObject(Course):
     def get_course(self):
         if isinstance(self.parent, Course):
             return self.parent
-        return self.parent.get_course()
+        else:
+            return self.parent.get_course()
 
     def compute_id(self):
         return self.data[self.id_field]

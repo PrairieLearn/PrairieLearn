@@ -245,7 +245,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         return chevron.render(template, html_params).strip()
 
-    if data["panel"] == "submission":
+    elif data["panel"] == "submission":
         html_params = {
             "submission": True,
             "label": label,
@@ -291,7 +291,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         return chevron.render(template, html_params).strip()
 
-    if data["panel"] == "answer":
+    elif data["panel"] == "answer":
         a_tru = data["correct_answers"].get(name, None)
 
         if a_tru is None:
@@ -491,7 +491,7 @@ def prepare_display_string(
 ) -> str:
     if grading_mode is GradingMode.ONLY_UNITS:
         return str(quantity.units)
-    if custom_format is None:
+    elif custom_format is None:
         return str(quantity)
 
     # Display reference solution with the given custom format

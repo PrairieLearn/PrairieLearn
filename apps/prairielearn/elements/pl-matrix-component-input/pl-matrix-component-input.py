@@ -325,7 +325,8 @@ def parse(element_html, data):
         a_tru = np.array(a_tru)
         if a_tru.ndim != 2:
             raise ValueError("true answer must be a 2D array")
-        m, n = np.shape(a_tru)
+        else:
+            m, n = np.shape(a_tru)
     matrix = np.empty((m, n))
 
     # Create an array for the submitted answer to be stored in data['submitted_answer'][name]
@@ -391,7 +392,8 @@ def grade(element_html, data):
     # Throw an error if true answer is not a 2D numpy array
     if a_tru.ndim != 2:
         raise ValueError("true answer must be a 2D array")
-    m, n = np.shape(a_tru)
+    else:
+        m, n = np.shape(a_tru)
 
     number_of_correct = 0
     feedback = {}
@@ -453,7 +455,8 @@ def test(element_html, data):
     # Throw an error if true answer is not a 2D numpy array
     if a_tru.ndim != 2:
         raise ValueError("true answer must be a 2D array")
-    m, n = np.shape(a_tru)
+    else:
+        m, n = np.shape(a_tru)
 
     result = data["test_type"]
 
