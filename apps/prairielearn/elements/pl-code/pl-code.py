@@ -1,5 +1,4 @@
 import os
-import typing
 from collections.abc import Generator, Iterable, Iterator
 from functools import cache
 from html import escape, unescape

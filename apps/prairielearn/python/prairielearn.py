@@ -12,6 +12,7 @@ import re
 import string
 import unicodedata
 import uuid
+from collections import namedtuple
 from collections.abc import Callable, Generator
 from enum import Enum
 from io import StringIO
@@ -313,7 +314,7 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
                 "_value": {
                     "index": list(v.index),
                     "columns": list(v.columns),
-                    "data": v.values.tolist(),
+                    "data": v.to_numpy().tolist(),
                 },
             }
 
@@ -1738,9 +1739,7 @@ def load_extension(data, extension_name):
     }
 
     # Return functions and variables as a namedtuple, so we get the nice dot access syntax
-    module_tuple = collections.namedtuple(
-        clean_identifier_name(extension_name), loaded.keys()
-    )
+    module_tuple = namedtuple(clean_identifier_name(extension_name), loaded.keys())  # noqa: PYI024
     return module_tuple(**loaded)
 
 

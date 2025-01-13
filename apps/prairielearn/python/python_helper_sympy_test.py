@@ -1,5 +1,4 @@
 import json
-import typing
 from itertools import chain, repeat
 from typing import Any
 

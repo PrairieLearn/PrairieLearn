@@ -6,22 +6,10 @@
 
 # ruff: noqa: B023 -- script abuses inline functions; don't lint unbound variables
 
-import collections
-import csv
-import difflib
-import email.mime.application
-import email.mime.multipart
-import email.mime.text
-import getpass
-import itertools
 import os
-import random
 import re
-import smtplib
 import string
-import subprocess
 import sys
-import time
 import uuid
 
 import numpy as np
