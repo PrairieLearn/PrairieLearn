@@ -74,15 +74,14 @@ import random
 
 import chevron
 import lxml.html
-import matplotlib
-import matplotlib.font_manager
+import matplotlib as mpl
 import nltk
-import numpy
+import numpy as np
 import pint
 import prairielearn
 import sklearn
 
-matplotlib.use("PDF")
+mpl.use("PDF")
 
 # Construct initial unit registry to create initial cache file.
 prairielearn.get_unit_registry()
@@ -109,13 +108,13 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
         fullname: str,
         path: Sequence[str] | None,
         target: types.ModuleType | None = None,
-    ):
+    ) -> None:
         if any(
             fullname == module or fullname.startswith(module + ".")
             for module in self.forbidden_modules
         ):
             raise ImportError(f'module "{fullname}" is not allowed.')
-        return None
+        return None  # noqa: PLR1711
 
 
 # We want to initialize the Faker seed, but only if faker is loaded
@@ -128,14 +127,13 @@ class FakerInitializeMetaPathFinder(MetaPathFinder):
         fullname: str,
         path: Sequence[str] | None,
         target: types.ModuleType | None = None,
-    ):
+    ) -> None:
         if fullname == "faker" or fullname.startswith("faker."):
             # Once this initialization is done we no longer need this meta path finder
             sys.meta_path.remove(self)
             from faker import Faker
 
             Faker.seed(self.seed)
-        return None
 
 
 # This function tries to convert a python object to valid JSON. If an exception
@@ -259,10 +257,10 @@ def worker_loop() -> None:
             # question happens to contain multiple occurrences of the same element, the
             # randomizations for each occurrence are independent of each other but still
             # dependent on the variant seed.
-            if type(args[-1]) is dict and not seeded:  # noqa: E721
+            if type(args[-1]) is dict and not seeded:
                 variant_seed = args[-1].get("variant_seed", None)
                 random.seed(variant_seed)
-                numpy.random.seed(variant_seed)
+                np.random.seed(variant_seed)
                 sys.meta_path.insert(0, FakerInitializeMetaPathFinder(variant_seed))
                 seeded = True
 
@@ -281,8 +279,8 @@ def worker_loop() -> None:
                 # be much faster than the current implementation that does an IPC
                 # call for each element.
 
-                data = args[0]
-                context = args[1]
+                context = args[0]
+                data = args[1]
 
                 result, processed_elements = question_phases.process(fcn, data, context)
                 val = {
@@ -354,7 +352,7 @@ def worker_loop() -> None:
 
                 # Any function that is not 'file' or 'render' will modify 'data' and
                 # should not be returning anything (because 'data' is mutable).
-                if (fcn != "file") and (fcn != "render"):
+                if fcn not in ("file", "render"):
                     if val is None or val is args[-1]:
                         json_outp = try_dumps(
                             {"present": True, "val": args[-1]}, allow_nan=False
@@ -373,7 +371,7 @@ def worker_loop() -> None:
                         # TODO: Once this has been running in production for a while,
                         # change this to raise an exception.
                         sys.stderr.write(
-                            f"Function {str(fcn)}() in {str(file + '.py')} returned a data object other than the one that was passed in.\n\n"
+                            f"Function {fcn}() in {file + '.py'} returned a data object other than the one that was passed in.\n\n"
                             + "There is no need to return a value, as the data object is mutable and can be modified in place.\n\n"
                             + "For now, the return value will be used instead of the data object that was passed in.\n\n"
                             + "In the future, returning a different object will trigger a fatal error."

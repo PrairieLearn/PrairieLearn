@@ -4,7 +4,6 @@ import argparse
 import json
 import os
 import re
-import sys
 import uuid
 
 parser = argparse.ArgumentParser(
@@ -44,32 +43,29 @@ def add_uuid_to_file(filename):
             # replace the exising UUID
             (new_contents, n_sub) = re.subn(
                 r'"uuid":(\s*)"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}"',
-                r'"uuid":\1"%s"' % uuid.uuid4(),
+                rf'"uuid":\1"{uuid.uuid4()}"',
                 contents,
             )
             if n_sub == 0:
                 raise Exception(
-                    "%s: file already contains a UUID, but the regexp failed to find it"
-                    % filename
+                    f"{filename}: file already contains a UUID, but the regexp failed to find it"
                 )
             if n_sub > 1:
                 raise Exception(
-                    "%s: regexp found multiple UUIDs and we can't determine which one to replace"
-                    % filename
+                    f"{filename}: regexp found multiple UUIDs and we can't determine which one to replace"
                 )
 
         else:
             # file doesn't have a UUID, so insert one at the start of the file
             (new_contents, n_sub) = re.subn(
-                r"^(\s*{)(\s*)", r'\1\2"uuid": "%s",\2' % uuid.uuid4(), contents
+                r"^(\s*{)(\s*)", rf'\1\2"uuid": "{uuid.uuid4()}",\2', contents
             )
             if n_sub == 0:
                 raise Exception(
-                    "%s: file doesn't start with a { character, so we can't insert a UUID property"
-                    % filename
+                    f"{filename}: file doesn't start with a {{ character, so we can't insert a UUID property"
                 )
             if n_sub > 1:
-                raise Exception("%s: impossible internal error occurred" % filename)
+                raise Exception(f"{filename}: impossible internal error occurred")
 
         tmp_filename = filename + ".tmp_with_uuid"
         if os.path.exists(tmp_filename):
@@ -99,13 +95,13 @@ for root, dirs, files in os.walk(args.directory):
             num_files += 1
             num_changed += add_uuid_to_file(filename)
 
-print("Processed %d files" % num_files)
-print("Generated UUID in %d files" % num_changed)
+print("Processed {num_files} files")
+print("Generated UUID in {num_changed} files")
 
 if error_list:
     print()
     print("Errors occurred during processing")
     for error in error_list:
-        print("%s" % error)
+        print(error)
 else:
     print("Processing successsfully complete with no errors")
