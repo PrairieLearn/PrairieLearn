@@ -376,14 +376,14 @@ def from_json(v):
             if ("_value" in v) and ("real" in v["_value"]) and ("imag" in v["_value"]):
                 return complex(v["_value"]["real"], v["_value"]["imag"])
             else:
-                raise Exception(
+                raise ValueError(
                     "variable of type complex should have value with real and imaginary pair"
                 )
         elif v["_type"] == "np_scalar":
             if "_concrete_type" in v and "_value" in v:
                 return getattr(np, v["_concrete_type"])(v["_value"])
             else:
-                raise Exception(
+                raise ValueError(
                     f"variable of type {v['_type']} needs both concrete type and value information"
                 )
         elif v["_type"] == "ndarray":
@@ -393,7 +393,7 @@ def from_json(v):
                 else:
                     return np.array(v["_value"])
             else:
-                raise Exception("variable of type ndarray should have value")
+                raise ValueError("variable of type ndarray should have value")
         elif v["_type"] == "complex_ndarray":
             if ("_value" in v) and ("real" in v["_value"]) and ("imag" in v["_value"]):
                 if "_dtype" in v:
@@ -407,7 +407,7 @@ def from_json(v):
                         + np.array(v["_value"]["imag"]) * 1j
                     )
             else:
-                raise Exception(
+                raise ValueError(
                     "variable of type complex_ndarray should have value with real and imaginary pair"
                 )
         elif v["_type"] == "sympy":
@@ -425,7 +425,7 @@ def from_json(v):
                         )
                 return matrix
             else:
-                raise Exception(
+                raise ValueError(
                     "variable of type sympy_matrix should have value, variables, and shape"
                 )
         elif v["_type"] == "dataframe":
@@ -440,7 +440,7 @@ def from_json(v):
                     index=val["index"], columns=val["columns"], data=val["data"]
                 )
             else:
-                raise Exception(
+                raise ValueError(
                     "variable of type dataframe should have value with index, columns, and data"
                 )
         elif v["_type"] == "dataframe_v2":
@@ -451,7 +451,7 @@ def from_json(v):
         elif v["_type"] == "networkx_graph":
             return nx.adjacency_graph(v["_value"])
         else:
-            raise Exception("variable has unknown type {}".format(v["_type"]))
+            raise ValueError("variable has unknown type {}".format(v["_type"]))
     return v
 
 
@@ -465,7 +465,7 @@ def inner_html(element: lxml.html.HtmlElement) -> str:
     return inner
 
 
-def compat_get(object, attrib, default):
+def compat_get(object, attrib, _default):
     if attrib in object:
         return object[attrib]
     old_attrib = attrib.replace("-", "_")
@@ -487,14 +487,14 @@ def check_attribs(
 ) -> None:
     for name in required_attribs:
         if not has_attrib(element, name):
-            raise Exception(f'Required attribute "{name}" missing')
+            raise ValueError(f'Required attribute "{name}" missing')
     extra_attribs = list(
         set(element.attrib)
         - set(compat_array(required_attribs))
         - set(compat_array(optional_attribs))
     )
     for name in extra_attribs:
-        raise Exception(f'Unknown attribute "{name}"')
+        raise ValueError(f'Unknown attribute "{name}"')
 
 
 def _get_attrib(element, name, *args):
@@ -514,7 +514,7 @@ def _get_attrib(element, name, *args):
     # to distinguish between default=None and no default being passed,
     # which means we need to explicitly handle the optional argument
     if len(args) > 1:
-        raise Exception("Only one additional argument is allowed")
+        raise ValueError("Only one additional argument is allowed")
 
     if name in element.attrib:
         return (element.attrib[name], False)
@@ -654,7 +654,7 @@ def get_integer_attrib(element, name, *args):
     if int_val is None:
         # can't raise this exception directly in the above except
         # handler because it gives an overly complex displayed error
-        raise Exception(f'Attribute "{name}" must be an integer: {val}')
+        raise ValueError(f'Attribute "{name}" must be an integer: {val}')
     return int_val
 
 
@@ -676,7 +676,7 @@ def get_float_attrib(element, name, *args):
     if float_val is None:
         # can't raise this exception directly in the above except
         # handler because it gives an overly complex displayed error
-        raise Exception(f'Attribute "{name}" must be a number: {val}')
+        raise ValueError(f'Attribute "{name}" must be a number: {val}')
     return float_val
 
 
@@ -716,7 +716,7 @@ def get_color_attrib(element, name, *args):
     elif PLColor.match(val) is not None:
         return PLColor(val).to_string(hex=True)
     else:
-        raise Exception(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
+        raise ValueError(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
 
 
 def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
@@ -927,7 +927,7 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
         result = f"Matrix({result})"
         return result
     else:
-        raise Exception(
+        raise ValueError(
             f'language "{language}" must be either "python", "matlab", "mathematica", "r", or "sympy"'
         )
 
@@ -1051,7 +1051,7 @@ def string_to_integer(s: str, base: int = 10) -> int | None:
     try:
         s_int = int(s, base)
         return s_int
-    except Exception:
+    except ValueError:
         # If that didn't work, return None
         return None
 
@@ -1403,7 +1403,7 @@ def string_to_2darray(s, allow_complex=True):
 
         # Check that number of rows is what we expected
         if number_of_rows != number_of_left_brackets - 1:
-            raise Exception(
+            raise ValueError(
                 f"Number of rows {number_of_rows} should have been one less than the number of brackets {number_of_left_brackets}"
             )
 
@@ -1476,8 +1476,7 @@ def string_to_2darray(s, allow_complex=True):
         # Return result with no error
         return (matrix, {"format_type": "python"})
 
-    # Should never get here
-    raise Exception(f"Invalid number of left brackets: {number_of_left_brackets}")
+    assert_never(number_of_left_brackets)
 
 
 def latex_from_2darray(
@@ -1702,9 +1701,9 @@ def load_extension(data, extension_name):
     Returns a dictionary of defined variables and functions.
     """
     if "extensions" not in data:
-        raise Exception("load_extension() must be called from an element!")
+        raise ValueError("load_extension() must be called from an element!")
     if extension_name not in data["extensions"]:
-        raise Exception(f"Could not find extension {extension_name}!")
+        raise ValueError(f"Could not find extension {extension_name}!")
 
     ext_info = data["extensions"][extension_name]
     if "controller" not in ext_info:
@@ -1752,7 +1751,7 @@ def load_all_extensions(data):
     """
 
     if "extensions" not in data:
-        raise Exception("load_all_extensions() must be called from an element!")
+        raise ValueError("load_all_extensions() must be called from an element!")
     if len(data["extensions"]) == 0:
         return {}
 

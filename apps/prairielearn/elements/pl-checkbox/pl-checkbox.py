@@ -4,6 +4,7 @@ import random
 import chevron
 import lxml.html
 import prairielearn as pl
+from typing_extensions import assert_never
 
 WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False
@@ -53,7 +54,7 @@ def prepare(element_html, data):
     )
     partial_credit_method = pl.get_string_attrib(element, "partial-credit-method", None)
     if not partial_credit and partial_credit_method is not None:
-        raise Exception(
+        raise ValueError(
             "Cannot specify partial-credit-method if partial-credit is not enabled"
         )
 
@@ -161,9 +162,9 @@ def prepare(element_html, data):
             correct_answer_list.append(keyed_answer)
 
     if name in data["params"]:
-        raise Exception(f"duplicate params variable name: {name}")
+        raise ValueError(f"duplicate params variable name: {name}")
     if name in data["correct_answers"]:
-        raise Exception(f"duplicate correct_answers variable name: {name}")
+        raise ValueError(f"duplicate correct_answers variable name: {name}")
     data["params"][name] = display_answers
     data["correct_answers"][name] = correct_answer_list
 
@@ -654,7 +655,7 @@ def test(element_html, data):
         data["raw_submitted_answers"][name] = None
         data["format_errors"][name] = "You must select at least one option."
     else:
-        raise Exception(f"invalid result: {result}")
+        assert_never(result)
 
 
 def _get_min_options_to_select(element, default_val):

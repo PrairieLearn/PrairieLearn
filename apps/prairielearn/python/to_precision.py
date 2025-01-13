@@ -40,7 +40,7 @@ def to_precision(value, precision, notation="auto", filler="e"):
     return converter(value, precision, filler)
 
 
-def std_notation(value, precision, extra=None):
+def std_notation(value, precision, _extra=None):
     """
     standard notation (US version)
     ref: http://www.mathsisfun.com/definitions/standard-notation.html

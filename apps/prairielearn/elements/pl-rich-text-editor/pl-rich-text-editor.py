@@ -62,7 +62,9 @@ def prepare(element_html, data):
     if "_required_file_names" not in data["params"]:
         data["params"]["_required_file_names"] = []
     elif file_name in data["params"]["_required_file_names"]:
-        raise Exception("There is more than one file editor with the same file name.")
+        raise RuntimeError(
+            "There is more than one file editor with the same file name."
+        )
     data["params"]["_required_file_names"].append(file_name)
 
     if (
@@ -70,7 +72,7 @@ def prepare(element_html, data):
         and element_text
         and not str(element_text).isspace()
     ):
-        raise Exception(
+        raise ValueError(
             'Existing text cannot be added inside rich-text element when "source-file-name" attribute is used.'
         )
 
@@ -152,7 +154,7 @@ def render(element_html, data):
     elif data["panel"] == "answer":
         html = ""
     else:
-        raise Exception("Invalid panel type: " + data["panel"])
+        raise ValueError("Invalid panel type: " + data["panel"])
 
     return html
 
