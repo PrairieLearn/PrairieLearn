@@ -42,24 +42,22 @@ ignore = [
     "PLE2513", # invalid-character-esc
     "PTH", # flake8-use-pathlib
 
-    # if-else blocks that could be shortened (https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp/)
-    "SIM108",
-    # Allow for returns in try blocks
-    "TRY300",
-    # Abstract raise to an inner function
-    "TRY301",
-     # Avoid specifying long messages outside the exception class
-    "TRY003",
-    # Too many statements, too many branches, too many arguments, too many returns
-    "PLR0912", "PLR0915", "PLR0913", "PLR0911",
-    # Magic value used in comparison (foo == 5)
-    "PLR2004",
-    # Explicit string concatenation
-    "ISC003",
-    # Avoid using the generic variable name `df` for DataFrames
-    "PD901",
-    # Replace legacy `np.random.*` call with `np.random.Generator`
-    "NPY002",
+    # These rules were discussed and disabled
+    "RET503", # implicit-return
+    "RET504", # unnecessary-assign
+    "RET505", # superfluous-else-return
+    "SIM108", # if-else-block-instead-of-if-exp
+    "TRY300", # try-consider-else (returns in try blocks)
+    "TRY301", # raise-within-try
+    "TRY003", # raise-vanilla-args (long messages in raise statements)
+    "PLR0911", # too-many-return-statements
+    "PLR0912", # too-many-branches
+    "PLR0913", # too-many-arguments
+    "PLR0915", # too-many-statements
+    "PLR2004", # magic-value-comparison
+    "ISC003", # explicit-string-concatenation
+    "PD901", # pandas-df-variable-name (we use `df` in many places)
+    "NPY002", # numpy-legacy-random (we use `np.random.*` in many places)
 
     # These rules need to be implemented
     "W", # pycodestyle warnings
