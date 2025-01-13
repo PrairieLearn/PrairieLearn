@@ -109,7 +109,7 @@ def test_traverse_and_replace_recursive() -> None:
     def replace(e) -> ElementReplacement:
         if e.tag == "p":
             return "<strong>Goodbye</strong>"
-        elif e.tag == "strong":
+        if e.tag == "strong":
             return "<em>Goodbye</em>"
         return e
 

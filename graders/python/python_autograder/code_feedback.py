@@ -353,7 +353,7 @@ class Feedback:
 
         if not good:
             return bad(f"'{name}' is inaccurate")
-        elif report_success:
+        if report_success:
             cls.add_feedback(f"'{name}' looks good")
 
         return True
@@ -424,7 +424,7 @@ class Feedback:
 
         if not good:
             return bad(f"'{name}' is inaccurate")
-        elif report_success:
+        if report_success:
             cls.add_feedback(f"'{name}' looks good")
 
         return True
@@ -557,8 +557,7 @@ class Feedback:
             if report_success:
                 cls.add_feedback(f"'{name}' looks good")
             return True
-        else:
-            return bad(f"'{name}' is inaccurate")
+        return bad(f"'{name}' is inaccurate")
 
     @classmethod
     def check_dataframe(

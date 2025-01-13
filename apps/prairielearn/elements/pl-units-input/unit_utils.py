@@ -64,19 +64,19 @@ def get_exact_units_grading_fn(
         """Returns true if submitted_magnitude is close enough to correct_magnitude based on comparison algorithm"""
         if comparison is ComparisonType.EXACT:
             return submitted_magnitude_parsed == correct_magnitude_parsed
-        elif comparison is ComparisonType.SIGFIG:
+        if comparison is ComparisonType.SIGFIG:
             return pl.is_correct_scalar_sf(
                 a_sub=submitted_magnitude_parsed,
                 a_tru=correct_magnitude_parsed,
                 digits=digits,
             )
-        elif comparison is ComparisonType.DECDIG:
+        if comparison is ComparisonType.DECDIG:
             return pl.is_correct_scalar_dd(
                 a_sub=submitted_magnitude_parsed,
                 a_tru=correct_magnitude_parsed,
                 digits=digits,
             )
-        elif comparison is ComparisonType.RELABS:
+        if comparison is ComparisonType.RELABS:
             return pl.is_correct_scalar_ra(
                 a_sub=submitted_magnitude_parsed,
                 a_tru=correct_magnitude_parsed,
@@ -105,9 +105,9 @@ def get_exact_units_grading_fn(
 
         if magnitudes_match and units_match:
             return 1.0, None
-        elif magnitudes_match and not units_match:
+        if magnitudes_match and not units_match:
             return magnitudes_match_credit, INCORRECT_UNITS_CORRECT_MAGNITUDE_FEEDBACK
-        elif units_match and not magnitudes_match:
+        if units_match and not magnitudes_match:
             return units_match_credit, CORRECT_UNITS_INCORRECT_MAGNITUDE_FEEDBACK
 
         return 0.0, INCORRECT_UNITS_AND_MAGNITUDE_FEEDBACK

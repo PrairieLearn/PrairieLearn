@@ -118,13 +118,12 @@ def get_lexer_by_name(name: str) -> pygments.lexer.Lexer | None:
     if lexer_class is not None:
         # Instantiate the class if we found it
         return lexer_class()
-    else:
-        try:
-            # Search by language aliases
-            # This throws an Exception if it's not found, and returns an instance if found.
-            return pygments.lexers.get_lexer_by_name(name)
-        except pygments.util.ClassNotFound:
-            return None
+    try:
+        # Search by language aliases
+        # This throws an Exception if it's not found, and returns an instance if found.
+        return pygments.lexers.get_lexer_by_name(name)
+    except pygments.util.ClassNotFound:
+        return None
 
 
 # Computing this is relatively expensive, so we'll do it once here and reuse it.

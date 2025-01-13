@@ -85,5 +85,4 @@ def draw_matrix(
         return _draw_adj_matrix(
             mat, mat_label, show_weights, round_digits, directed, layout
         )
-    else:
-        return _draw_edge_inc_matrix(mat, mat_label, layout)
+    return _draw_edge_inc_matrix(mat, mat_label, layout)

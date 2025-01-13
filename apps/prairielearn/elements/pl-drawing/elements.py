@@ -2070,8 +2070,7 @@ class GraphLine(BaseElement):
                 curved_line = True
         if not curved_line:
             return "pl-controlled-line"
-        else:
-            return "pl-controlled-curved-line"
+        return "pl-controlled-curved-line"
 
     def get_attributes():
         return [
@@ -2486,15 +2485,13 @@ registered_elements = {}
 def should_validate_attributes(name):
     if name in elements:
         return elements[name].validate_attributes()
-    else:
-        return False
+    return False
 
 
 def get_attributes(name):
     if name in elements:
         return elements[name].get_attributes()
-    else:
-        return []
+    return []
 
 
 def generate(element, name, defaults=None):
@@ -2514,8 +2511,7 @@ def generate(element, name, defaults=None):
         obj["gradingName"] = grading_name
         obj["type"] = grading_name
         return obj
-    else:
-        return {}
+    return {}
 
 
 def is_gradable(name):

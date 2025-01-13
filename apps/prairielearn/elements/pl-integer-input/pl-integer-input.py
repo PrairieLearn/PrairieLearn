@@ -138,7 +138,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         return chevron.render(template, html_params).strip()
 
-    elif data["panel"] == "submission":
+    if data["panel"] == "submission":
         html_params = {
             "submission": True,
             "label": label,
@@ -195,7 +195,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         return chevron.render(template, html_params).strip()
 
-    elif data["panel"] == "answer":
+    if data["panel"] == "answer":
         a_tru = pl.from_json(data["correct_answers"].get(name))
         if a_tru is None:
             return ""

@@ -48,7 +48,7 @@ def grade_o_expression(
         if sym_true.equals(sym_sub):
             return (1.0, CORRECT_COMPLEX_FEEDBACK)
 
-        elif sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(
+        if sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(
             0
         ):
             return (0.0, NEGATIVE_FEEDBACK)
@@ -59,11 +59,11 @@ def grade_o_expression(
 
         if limit < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
-        elif limit == sympy.oo:
+        if limit == sympy.oo:
             return (0.0, INCORRECT_FEEDBACK)
-        elif limit == sympy.sympify(0):
+        if limit == sympy.sympify(0):
             return (0.25, TOO_LOOSE_FEEDBACK)
-        elif limit == sympy.sympify(1):
+        if limit == sympy.sympify(1):
             return (0.5, LOWER_ORDER_TERMS_FEEDBACK)
 
         return (0.5, CONSTANT_FACTORS_FEEDBACK)
@@ -89,7 +89,7 @@ def grade_theta_expression(
         if sym_true.equals(sym_sub):
             return (1.0, CORRECT_COMPLEX_FEEDBACK)
 
-        elif sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(
+        if sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(
             0
         ):
             return (0.0, NEGATIVE_FEEDBACK)
@@ -103,9 +103,9 @@ def grade_theta_expression(
 
         if omega_limit < sympy.sympify(0) or bigo_limit < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
-        elif sympy.oo in (omega_limit, bigo_limit):
+        if sympy.oo in (omega_limit, bigo_limit):
             return (0.0, INCORRECT_FEEDBACK)
-        elif omega_limit == sympy.sympify(1) and bigo_limit == sympy.sympify(1):
+        if omega_limit == sympy.sympify(1) and bigo_limit == sympy.sympify(1):
             return (0.25, THETA_LOWER_ORDER_TERMS_FEEDBACK)
 
         return (0.25, THETA_CONSTANT_FACTORS_FEEDBACK)
@@ -131,7 +131,7 @@ def grade_omega_expression(
         if sym_true.equals(sym_sub):
             return (1, CORRECT_COMPLEX_FEEDBACK)
 
-        elif sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(
+        if sympy.limit(sym_sub, sympy.Symbol(variables[0]), sympy.oo) < sympy.sympify(
             0
         ):
             return (0.0, NEGATIVE_FEEDBACK)
@@ -142,11 +142,11 @@ def grade_omega_expression(
 
         if limit < sympy.sympify(0):
             return (0.0, NEGATIVE_FEEDBACK)
-        elif limit == sympy.oo:
+        if limit == sympy.oo:
             return (0.25, TOO_LOOSE_FEEDBACK)
-        elif limit == sympy.sympify(0):
+        if limit == sympy.sympify(0):
             return (0.0, INCORRECT_FEEDBACK)
-        elif limit == sympy.sympify(1):
+        if limit == sympy.sympify(1):
             return (0.5, LOWER_ORDER_TERMS_FEEDBACK)
 
         return (0.5, CONSTANT_FACTORS_FEEDBACK)

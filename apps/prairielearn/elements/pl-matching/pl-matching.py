@@ -35,16 +35,15 @@ def get_counter(i, counter_type):
     """Converts an integer counter to the specified CSS counter type"""
     if counter_type == "lower-alpha":
         return pl.index2key(i - 1)
-    elif counter_type == "upper-alpha":
+    if counter_type == "upper-alpha":
         return pl.index2key(i - 1).upper()
-    elif counter_type == "decimal":
+    if counter_type == "decimal":
         return str(i)
-    elif counter_type == "full-text":
+    if counter_type == "full-text":
         return ""
-    else:
-        raise ValueError(
-            f'Illegal counter-type in pl-matching element: "{counter_type}" should be "decimal", "lower-alpha", "upper-alpha", or "full-text".'
-        )
+    raise ValueError(
+        f'Illegal counter-type in pl-matching element: "{counter_type}" should be "decimal", "lower-alpha", "upper-alpha", or "full-text".'
+    )
 
 
 def legal_answer(answer, options):

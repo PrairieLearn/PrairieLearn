@@ -156,7 +156,7 @@ def process(
             if phase == "render":
                 # TODO: validate that return value was a string?
                 return element_value
-            elif phase == "file":
+            if phase == "file":
                 if result is not None:
                     raise RuntimeError("Another element already returned a file")
                 result = element_value

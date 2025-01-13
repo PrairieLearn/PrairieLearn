@@ -264,7 +264,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         return chevron.render(template, html_params).strip()
 
-    elif data["panel"] == "submission":
+    if data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
         html_params = {
             "submission": True,
@@ -307,7 +307,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
 
         return chevron.render(template, html_params).strip()
 
-    elif data["panel"] == "answer":
+    if data["panel"] == "answer":
         if show_correct_answer:
             html_params = {
                 "answer": True,

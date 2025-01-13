@@ -114,7 +114,7 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
             for module in self.forbidden_modules
         ):
             raise ImportError(f'module "{fullname}" is not allowed.')
-        return None  # noqa: PLR1711
+        return  # noqa: PLR1711
 
 
 # We want to initialize the Faker seed, but only if faker is loaded
