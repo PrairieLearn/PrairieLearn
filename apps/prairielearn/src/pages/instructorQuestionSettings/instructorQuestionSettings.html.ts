@@ -102,11 +102,7 @@ export function InstructorQuestionSettings({
           }
         </style>
         <link
-          href="${nodeModulesAssetPath(
-            resLocals.use_bootstrap_4
-              ? 'tom-select/dist/css/tom-select.bootstrap4.css'
-              : 'tom-select/dist/css/tom-select.bootstrap5.css',
-          )}"
+          href="${nodeModulesAssetPath('tom-select/dist/css/tom-select.bootstrap5.css')}"
           rel="stylesheet"
         />
       </head>

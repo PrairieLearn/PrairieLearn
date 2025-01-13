@@ -183,7 +183,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if grading_method not in LCS_GRADABLE_TYPES and pl.has_attrib(
         element, "partial-credit"
     ):
-        raise Exception(
+        raise ValueError(
             "You may only specify partial credit options in the DAG, ordered, and ranking grading modes."
         )
 
@@ -192,14 +192,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         and grading_method is not GradingMethodType.RANKING
         and feedback_type is not FeedbackType.NONE
     ):
-        raise Exception(
+        raise ValueError(
             f"feedback type {feedback_type.value} is not available with the {grading_method.value} grading-method."
         )
 
     format = pl.get_enum_attrib(element, "format", FormatType, FormatType.DEFAULT)
     code_language = pl.get_string_attrib(element, "code-language", None)
     if format is FormatType.DEFAULT and code_language is not None:
-        raise Exception('code-language attribute may only be used with format="code"')
+        raise ValueError('code-language attribute may only be used with format="code"')
 
     correct_answers: list[OrderBlocksAnswerData] = []
     incorrect_answers: list[OrderBlocksAnswerData] = []
@@ -211,7 +211,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         group_info: GroupInfo,
     ):
         if html_tags.tag != "pl-answer":
-            raise Exception(
+            raise ValueError(
                 "Any html tags nested inside <pl-order-blocks> must be <pl-answer> or <pl-block-group>. \
                 Any html tags nested inside <pl-block-group> must be <pl-answer>"
             )
@@ -266,21 +266,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
         distractor_for = pl.get_string_attrib(html_tags, "distractor-for", None)
         if distractor_for is not None and is_correct:
-            raise Exception(
+            raise ValueError(
                 "The distractor-for attribute may only be used on blocks with correct=false."
             )
 
         tag, depends = get_graph_info(html_tags)
         if is_correct:
             if tag in used_tags:
-                raise Exception(
+                raise ValueError(
                     f'Tag "{tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
                 )
-            else:
-                used_tags.add(tag)
+            used_tags.add(tag)
 
         if check_indentation is False and answer_indent is not None:
-            raise Exception(
+            raise ValueError(
                 "<pl-answer> should not specify indentation if indentation is disabled."
             )
 
@@ -316,13 +315,13 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             continue
         elif html_tags.tag == "pl-block-group":
             if grading_method is not GradingMethodType.DAG:
-                raise Exception(
+                raise ValueError(
                     'Block groups only supported in the "dag" grading mode.'
                 )
 
             group_tag, group_depends = get_graph_info(html_tags)
             if group_tag in used_tags:
-                raise Exception(
+                raise ValueError(
                     f'Tag "{group_tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
                 )
             else:
@@ -341,7 +340,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             index += 1
 
     if grading_method is not GradingMethodType.EXTERNAL and len(correct_answers) == 0:
-        raise Exception("There are no correct answers specified for this question.")
+        raise ValueError("There are no correct answers specified for this question.")
 
     all_incorrect_answers = len(incorrect_answers)
     max_incorrect = pl.get_integer_attrib(
@@ -352,11 +351,11 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     )
 
     if min_incorrect > len(incorrect_answers) or max_incorrect > len(incorrect_answers):
-        raise Exception(
+        raise ValueError(
             "The min-incorrect or max-incorrect attribute may not exceed the number of incorrect <pl-answers>."
         )
     if min_incorrect > max_incorrect:
-        raise Exception(
+        raise ValueError(
             "The attribute min-incorrect must be smaller than max-incorrect."
         )
 
@@ -500,7 +499,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         )
 
         if inline and check_indentation:
-            raise Exception(
+            raise ValueError(
                 "The indentation attribute may not be used when inline is true."
             )
 
@@ -1013,4 +1012,4 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
 
     else:
-        raise Exception("invalid result: {}".format(data["test_type"]))
+        raise ValueError("invalid result: {}".format(data["test_type"]))
