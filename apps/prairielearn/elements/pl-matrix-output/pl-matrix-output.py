@@ -30,7 +30,7 @@ def render(element_html, data):
             # Get value of variable, raising exception if variable does not exist
             var_data = data["params"].get(var_name, None)
             if var_data is None:
-                raise Exception(
+                raise ValueError(
                     f'No value in data["params"] for variable {var_name} in pl-matrix-output element'
                 )
 
@@ -46,7 +46,7 @@ def render(element_html, data):
                 var_data = np.array(var_data)
                 # Check shape of variable
                 if var_data.ndim != 2:
-                    raise Exception(
+                    raise ValueError(
                         f'Value in data["params"] for variable {var_name} in pl-matrix-output element must be a scalar or a 2D array'
                     )
                 # Create prefix/suffix so python string is np.array( ... )

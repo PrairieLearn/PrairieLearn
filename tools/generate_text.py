@@ -11,7 +11,7 @@ import sys
 
 CONVERT_CMD = "convert"
 if platform.system() == "Windows":
-    globspec = "C:\Program Files\ImageMagick*\convert.exe"
+    globspec = r"C:\Program Files\ImageMagick*\convert.exe"
     magicks = glob.glob(globspec)
     if len(magicks) < 1:
         print(f"ERROR: No files match {globspec}")
@@ -199,4 +199,4 @@ elif MODE == "textdir":
                 img_filenames += process_file(os.path.join(dirpath, filename))
     delete_non_matching(TEXT_DIR, img_filenames)
 else:
-    raise Exception("unknown MODE: " + MODE)
+    raise RuntimeError("unknown MODE: " + MODE)
