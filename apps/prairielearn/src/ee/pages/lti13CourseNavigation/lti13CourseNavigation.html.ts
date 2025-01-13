@@ -43,8 +43,8 @@ export function Lti13CourseNavigationInstructor({
             <button
               type="button"
               class="btn btn-sm btn-info"
-              data-toggle="modal"
-              data-target="#terminology-modal"
+              data-bs-toggle="modal"
+              data-bs-target="#terminology-modal"
             >
               New here? Learn about our terminology
             </button>
@@ -198,7 +198,7 @@ function TerminologyModal() {
         assessments, enrollments, grades, etc. Like a semester or quarter.
       </p>
 
-      <p class="font-italic">
+      <p class="fst-italic">
         Example: A course might be MATH 101 and have a course instance MATH 101 Fall 2023.
       </p>
 
