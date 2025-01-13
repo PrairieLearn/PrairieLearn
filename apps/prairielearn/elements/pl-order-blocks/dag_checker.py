@@ -133,9 +133,9 @@ def add_edges_for_groups(
         )
 
     # if a group G depends on a node N, all blocks in the group G should depend on Node N
-    for group_tag in groups:
+    for group_tag, nodes in groups.items():
         for dependency, _ in graph.in_edges(group_tag):
-            for node in groups[group_tag]:
+            for node in nodes:
                 graph.add_edge(dependency, node)
 
     # if a node N depends on a group G, node N should depend on all blocks in G
