@@ -96,7 +96,9 @@ def prepare(element_html, data):
     max_answers = 26  # will not display more than 26 checkbox answers
 
     number_answers = max(0, min(len_total, max_answers, number_answers))
-    min_correct = min(len_correct, number_answers, max(0, number_answers - len_incorrect, min_correct))
+    min_correct = min(
+        len_correct, number_answers, max(0, number_answers - len_incorrect, min_correct)
+    )
     max_correct = min(len_correct, number_answers, max(min_correct, max_correct))
     if not (0 <= min_correct <= max_correct <= len_correct):
         raise ValueError(
