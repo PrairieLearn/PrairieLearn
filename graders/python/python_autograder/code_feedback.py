@@ -98,7 +98,7 @@ class Feedback:
         raise GradingComplete()
 
     @staticmethod
-    def not_allowed(*args, **kwargs):
+    def not_allowed(*_args, **_kwargs):
         """
         Used to hook into disallowed functions, raises an exception if
         the student tries to call it.
