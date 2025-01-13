@@ -15,6 +15,7 @@ from graders.python.python_autograder.pl_result import PLTestResult
 
 matplotlib.use("Agg")
 
+
 class PLTestCase(unittest.TestCase):
     """
     Base class for test suites, using the Python unittest library.
