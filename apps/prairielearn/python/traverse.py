@@ -158,8 +158,8 @@ def traverse_and_replace(
                 result.append(f"</{tail_tag}>")
             if tail_text is not None:
                 result.append(tail_text)
-        else:
-            count_stack[-1] -= 1
+
+        count_stack[-1] -= 1
 
     # No need to empty tail stack, should be empty from above.
     # If debugging, you can add the following assertions:
