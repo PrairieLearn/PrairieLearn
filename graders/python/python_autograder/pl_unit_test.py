@@ -50,9 +50,9 @@ class PLTestCase(unittest.TestCase):
             cls.iter_num,
             cls.ipynb_key,
         )
-        answerTuple = namedtuple("answerTuple", ref_result.keys())
+        answerTuple = namedtuple("answerTuple", ref_result.keys())  # noqa: PYI024
         cls.ref = answerTuple(**ref_result)
-        studentTuple = namedtuple("studentTuple", student_result.keys())
+        studentTuple = namedtuple("studentTuple", student_result.keys())  # noqa: PYI024
         cls.st = studentTuple(**student_result)
         cls.plt = plot_value
         if cls.include_plt:
