@@ -234,6 +234,7 @@ def worker_loop() -> None:
                     # the call information.
                     input=json.dumps(args[0]),
                     encoding="utf-8",
+                    check=False,
                 )
 
                 # Proxy any output from the subprocess back to the caller.

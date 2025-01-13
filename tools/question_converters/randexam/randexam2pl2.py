@@ -48,7 +48,7 @@ log_file = None
 
 
 def init_logging(output_filename):
-    global log_file
+    global log_file  # noqa: PLW0603
     try:
         print(f"Logging information to file: {output_filename}")
         if log_file is not None:
@@ -60,7 +60,6 @@ def init_logging(output_filename):
 
 
 def log(msg):
-    global log_file
     try:
         if log_file is None:
             raise RuntimeError("logging not initialized")
@@ -570,7 +569,7 @@ def mkdir_or_die(dir):
 
 ######################################################################
 def escape_json_string(s):
-    s = s.replace("\n", "").replace("\[", "$$").replace("\]", "$$")  # Harry modified
+    s = s.replace("\n", "").replace("[", "$$").replace("]", "$$")  # Harry modified
     return s.replace("\\", "\\\\").replace('"', '\\"')  # Harry modified
 
 

@@ -62,9 +62,7 @@ ignore = [
     # These rules need to be implemented
     "PTH", # flake8-use-pathlib
     "RET", # flake8-return
-    "W", # pycodestyle warnings
     "SLF001", # private-member-access 
-    "PLW", # pylint warnings
     "RSE102", # unnecessary-paren-on-raise-exception
     "PLE2513", # invalid-character-esc
 
