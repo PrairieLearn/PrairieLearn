@@ -28,16 +28,9 @@ def union_drawing_items(e1, e2):
     if len(obj2) == 0:
         return e1
 
-    new_ids = []
-    for item in obj2:
-        new_ids.append(item["id"])
+    new_ids = [item["id"] for item in obj2]
 
-    newobj = []
-    for item in obj1:
-        if item["id"] not in new_ids:
-            newobj.append(item)
-    for item in obj2:
-        newobj.append(item)
+    newobj = [item for item in obj1 if item["id"] not in new_ids] + obj2
 
     return newobj
 
@@ -112,9 +105,9 @@ def prepare(element_html, data):
                         for buttons in groups:
                             if buttons.tag == "pl-drawing-button":
                                 type_name = buttons.attrib.get("type", None)
-                                if (
-                                    type_name == "pl-arc-vector-CCW"
-                                    or type_name == "pl-arc-vector-CW"
+                                if type_name in (
+                                    "pl-arc-vector-CCW",
+                                    "pl-arc-vector-CW",
                                 ):
                                     type_name = "pl-arc-vector"
                                 type_attribs = elements.get_attributes(type_name)
@@ -351,15 +344,14 @@ def render(element_html, data):
 
     if preview_mode:
         html_params["input_answer"] = json.dumps(init)
+    elif data["panel"] == "answer" and name in data["correct_answers"]:
+        html_params["input_answer"] = json.dumps(data["correct_answers"][name])
     else:
-        if data["panel"] == "answer" and name in data["correct_answers"]:
-            html_params["input_answer"] = json.dumps(data["correct_answers"][name])
-        else:
-            sub = []
-            if name in data["submitted_answers"]:
-                sub = data["submitted_answers"][name]
-            items = union_drawing_items(init, sub)
-            html_params["input_answer"] = json.dumps(items)
+        sub = []
+        if name in data["submitted_answers"]:
+            sub = data["submitted_answers"][name]
+        items = union_drawing_items(init, sub)
+        html_params["input_answer"] = json.dumps(items)
 
     # Grading feedback
     if data["panel"] == "submission":
@@ -438,7 +430,7 @@ def grade(element_html, data):
     for ref_element in reference:
         if elements.is_gradable(ref_element["gradingName"]) and ref_element["graded"]:
             matches[ref_element["id"]] = False
-            if "optional_grading" in ref_element and ref_element["optional_grading"]:
+            if ref_element.get("optional_grading"):
                 continue
             num_total_ref += 1
 
@@ -471,10 +463,9 @@ def grade(element_html, data):
             if elements.grade(
                 ref_element, element, element["gradingName"], tol, angtol
             ):
-                if (
-                    "optional_grading" in ref_element
-                    and ref_element["optional_grading"]
-                ) or (disregard_extra_elements and matches[ref_element["id"]]):
+                if (ref_element.get("optional_grading")) or (
+                    disregard_extra_elements and matches[ref_element["id"]]
+                ):
                     # It's optional but correct, so the score should not be affected
                     # Or, it's a duplicate and we're okay with that.
                     num_optional += 1

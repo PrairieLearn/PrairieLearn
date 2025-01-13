@@ -22,6 +22,8 @@ target-version = "py310"
 select = [
     "E",
     "N",
+    # pyflakes
+    "F",
     # isort
     "I",
     # flake8-bugbear
@@ -30,14 +32,62 @@ select = [
     "SIM",
     # pyupgrade
     "UP",
+    # flake8-pie
+    "PIE",
+    # Perflint
+    "PERF",
+    # flake8-comprehensions
+    "C4",
+    # ruff-specific rules
+    "RUF",
+    # flake8-import-conventions
+    "ICN",
+    # flake8-implicit-str-concat
+    "ISC",
+    # flake8-pytest-style
+    "PT",
     # refurb
-    "FURB"
+    "FURB",
+    # pandas-vet
+    "PD",
+    # NumPy-specific rules
+    "NPY",
+    # pylint
+    "PLR",
+    # flake8-2020
+    "YTT",
+    # flake8-async
+    "ASYNC",
+    # flake8-datetimez
+    "DTZ",
+    # flake8-debugger
+    "T10",
+    # flake8-logging
+    "LOG",
+    # flake8-pyi
+    "PYI",
+    # flake8-slots
+    "SLOT",
+    # flake8-gettext
+    "INT",
+    # flynt
+    "FLY"
 ]
 ignore = [
     # Ignore line length errors
     "E501",
     # if-else blocks that could be shortened (https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp/)
-    "SIM108"
+    "SIM108",
+    # Too many statements, too many branches, too many arguments, too many returns
+    "PLR0912", "PLR0915", "PLR0913", "PLR0911",
+    # Magic value used in comparison (foo == 5)
+    "PLR2004",
+    # Explicit string concatenation
+    "ISC003",
+    # Avoid using the generic variable name `df` for DataFrames
+    "PD901",
+    # Replace legacy `np.random.*` call with `np.random.Generator`
+    "NPY002",
 ]
 
 [tool.ruff.lint.per-file-ignores]
@@ -62,8 +112,6 @@ ignore = [
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
 "exampleCourse/elementExtensions/pl-drawing/example-logo/example-logo.py" = ["N805"]
-# TODO: These linter errors will be resolved in a future PR
-"tools/**/*.py" = ["SIM115", "E701", "E702", "N802", "N803", "N806", "UP031", "SIM118", "E722", "B023", "E711", "E402", "B007", "SIM102", "UP015"]
 [tool.ruff.format]
 exclude = [
     "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",

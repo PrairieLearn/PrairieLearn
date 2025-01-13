@@ -92,9 +92,7 @@ if __name__ == "__main__":
                     this_result["max_points"] += res["max_points"]
                     this_result["filename"] = res["filename"]
                     this_result["name"] = res["name"]
-            results = []
-            for key in results_dict:
-                results.append(results_dict[key])
+            results = list(results_dict.values())
         else:
             results = all_results[0]
 

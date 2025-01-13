@@ -20,12 +20,11 @@ def validate_grouping(
                 != 0
             ):
                 return False
-        else:
-            if not all(
-                group_belonging.get(dependency) == group_tag
-                for (dependency, _) in graph.in_edges(node)
-            ):
-                return False
+        elif not all(
+            group_belonging.get(dependency) == group_tag
+            for (dependency, _) in graph.in_edges(node)
+        ):
+            return False
     return True
 
 
@@ -227,10 +226,8 @@ def lcs_partial_credit(
             ) != group_belonging.get(node2):
                 continue
             if not all(
-                [
-                    group_belonging[x] == group_belonging[node1]
-                    for x in submission_no_distractors[i : j + 1]
-                ]
+                group_belonging[x] == group_belonging[node1]
+                for x in submission_no_distractors[i : j + 1]
             ):
                 problematic_subgraph.add_nodes_from(
                     submission_no_distractors[i : j + 1]

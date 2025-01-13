@@ -76,11 +76,11 @@ def main():
         url = f"{base_url}/assessment/{args.assessment}"
         with requests.get(url, cookies=cookies) as response:
             root = html.document_fromstring(response.text)
-            for start in root.cssselect(f"#confirm-form"):
+            for _start in root.cssselect("#confirm-form"):
                 # Need to start assessment (confirm form)
                 data = {
                     i.get("name"): i.get("value")
-                    for i in root.cssselect(f"input")
+                    for i in root.cssselect("input")
                     if i.get("name")
                 }
                 with requests.post(url, cookies=cookies, data=data) as response:
@@ -98,7 +98,7 @@ def main():
                     root = html.document_fromstring(response.text)
                     data = {
                         i.get("name"): i.get("value")
-                        for i in root.cssselect(f"input")
+                        for i in root.cssselect("input")
                         if i.get("name")
                     }
                     data["__action"] = "save"

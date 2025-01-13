@@ -6,7 +6,7 @@ from os.path import join
 from types import ModuleType
 
 # Needed to ensure matplotlib runs on Docker
-import matplotlib
+import matplotlib as mpl
 from code_feedback import Feedback
 from pl_execute import execute_code
 from pl_helpers import GradingSkipped, name, save_plot
@@ -14,7 +14,6 @@ from pl_helpers import GradingSkipped, name, save_plot
 from graders.python.python_autograder.pl_result import PLTestResult
 
 matplotlib.use("Agg")
-
 
 class PLTestCase(unittest.TestCase):
     """
@@ -59,9 +58,9 @@ class PLTestCase(unittest.TestCase):
             cls.iter_num,
             cls.ipynb_key,
         )
-        answerTuple = namedtuple("answerTuple", ref_result.keys())
+        answerTuple = namedtuple("answerTuple", ref_result.keys())  # noqa: PYI024
         cls.ref = answerTuple(**ref_result)
-        studentTuple = namedtuple("studentTuple", student_result.keys())
+        studentTuple = namedtuple("studentTuple", student_result.keys())  # noqa: PYI024
         cls.st = studentTuple(**student_result)
         cls.plt = plot_value
         if cls.include_plt:

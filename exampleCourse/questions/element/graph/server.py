@@ -42,7 +42,7 @@ def generate(data):
     data["params"]["multigraph"] = pl.to_json(multigraph)
 
     # Generation code for color graph
-    subset_sizes = [5, 5, 4, 3, 2, 4, 4, 3]
+    subset_sizes = (5, 5, 4, 3, 2, 4, 4, 3)
     subset_color = [
         "gold",
         "violet",
@@ -54,7 +54,7 @@ def generate(data):
         "darkorange",
     ]
 
-    extents = nx.utils.pairwise(itertools.accumulate((0,) + tuple(subset_sizes)))
+    extents = nx.utils.pairwise(itertools.accumulate((0, *subset_sizes)))
     layers = [range(start, end) for start, end in extents]
     layered_graph = nx.Graph()
     for i, (layer, color) in enumerate(zip(layers, subset_color, strict=True)):

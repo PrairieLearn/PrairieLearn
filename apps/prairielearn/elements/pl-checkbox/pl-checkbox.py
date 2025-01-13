@@ -280,15 +280,14 @@ def render(element_html, data):
                     insert_text = f" between <b>{min_options_to_select}</b> and <b>{max_options_to_select}</b> options."
                 else:
                     insert_text = f" exactly <b>{min_options_to_select}</b> options."
+            # If we get here, at least one of min_options_to_select and max_options_to_select should *not* be revealed.
+            elif show_min_select:
+                insert_text = f" at least <b>{min_options_to_select}</b> options."
+            elif show_max_select:
+                insert_text = f" at most <b>{max_options_to_select}</b> options."
             else:
-                # If we get here, at least one of min_options_to_select and max_options_to_select should *not* be revealed.
-                if show_min_select:
-                    insert_text = f" at least <b>{min_options_to_select}</b> options."
-                elif show_max_select:
-                    insert_text = f" at most <b>{max_options_to_select}</b> options."
-                else:
-                    # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
-                    insert_text = " at least 1 option."
+                # This is the case where we reveal nothing about min_options_to_select and max_options_to_select.
+                insert_text = " at least 1 option."
 
             insert_text += number_correct_text
 
@@ -489,9 +488,7 @@ def parse(element_html, data):
     if not submitted_key_set.issubset(all_keys_set):
         one_bad_key = submitted_key_set.difference(all_keys_set).pop()
         # FIXME: escape one_bad_key
-        data["format_errors"][name] = (
-            f"You selected an invalid option: {str(one_bad_key)}"
-        )
+        data["format_errors"][name] = f"You selected an invalid option: {one_bad_key}"
         return
 
     # Get minimum and maximum number of options to be selected
