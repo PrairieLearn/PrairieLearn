@@ -528,8 +528,8 @@ def parse_correct_answer(f, a):
     elif f == "matrix":
         try:
             p = np.reshape(np.array(a[0], dtype=np.float64), (3,))
-            rot_mat = np.array(a[1], dtype=np.float64)
-            return np.reshape(p, (3,)), pyquaternion.Quaternion(matrix=rot_mat)
+            rot_matrix = np.array(a[1], dtype=np.float64)
+            return np.reshape(p, (3,)), pyquaternion.Quaternion(matrix=rot_matrix)
         except Exception as exc:
             raise ValueError(
                 'correct answer must be a list [position, orientation], where position is [x, y, z] and orientation is a 3x3 rotation matrix with format "[[ ... ], [ ... ], [ ... ]]"'

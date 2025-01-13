@@ -28,7 +28,7 @@ def try_read(fname):
     try:
         with open(fname, encoding="utf-8") as f:
             contents = f.read()
-    except FileNotFoundError:
+    except Exception:
         contents = ""
     return contents
 
