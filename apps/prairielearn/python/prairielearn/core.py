@@ -12,6 +12,7 @@ import re
 import string
 import unicodedata
 import uuid
+from collections import namedtuple
 from collections.abc import Callable, Generator
 from enum import Enum
 from io import StringIO
@@ -20,7 +21,7 @@ from typing import Any, Literal, TypedDict, TypeVar, overload
 import lxml.html
 import networkx as nx
 import numpy as np
-import pandas
+import pandas as pd
 import sympy
 from numpy.typing import ArrayLike
 from pint import UnitRegistry
@@ -311,14 +312,14 @@ def to_json(v, *, df_encoding_version=1, np_encoding_version=1):
             "_variables": s,
             "_shape": [num_rows, num_cols],
         }
-    elif isinstance(v, pandas.DataFrame):
+    elif isinstance(v, pd.DataFrame):
         if df_encoding_version == 1:
             return {
                 "_type": "dataframe",
                 "_value": {
                     "index": list(v.index),
                     "columns": list(v.columns),
-                    "data": v.values.tolist(),
+                    "data": v.to_numpy().tolist(),
                 },
             }
 
@@ -438,7 +439,7 @@ def from_json(v):
                 and ("data" in v["_value"])
             ):
                 val = v["_value"]
-                return pandas.DataFrame(
+                return pd.DataFrame(
                     index=val["index"], columns=val["columns"], data=val["data"]
                 )
             else:
@@ -449,7 +450,7 @@ def from_json(v):
             # Convert native JSON back to a string representation so that
             # pandas read_json() can process it.
             value_str = StringIO(json.dumps(v["_value"]))
-            return pandas.read_json(value_str, orient="table")
+            return pd.read_json(value_str, orient="table")
         elif v["_type"] == "networkx_graph":
             return nx.adjacency_graph(v["_value"])
         else:
@@ -715,11 +716,10 @@ def get_color_attrib(element, name, *args):
     match = re.search(r"^#(?:[0-9a-fA-F]{1,2}){3}$", val)
     if match:
         return val
+    elif PLColor.match(val) is not None:
+        return PLColor(val).to_string(hex=True)
     else:
-        if PLColor.match(val) is not None:
-            return PLColor(val).to_string(hex=True)
-        else:
-            raise Exception(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
+        raise Exception(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
 
 
 def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
@@ -1394,17 +1394,14 @@ def string_to_2darray(s, allow_complex=True):
                     )
                 else:
                     s = s_after_right
+            # Return error if it is not the last row and there is no comma after right bracket
+            elif s_after_right[0] != ",":
+                return (
+                    None,
+                    {"format_error": f"No comma after row {len(s_row)} of the matrix."},
+                )
             else:
-                # Return error if it is not the last row and there is no comma after right bracket
-                if s_after_right[0] != ",":
-                    return (
-                        None,
-                        {
-                            "format_error": f"No comma after row {len(s_row)} of the matrix."
-                        },
-                    )
-                else:
-                    s = s_after_right[1:]
+                s = s_after_right[1:]
         number_of_rows = len(s_row)
 
         # Check that number of rows is what we expected
@@ -1669,7 +1666,7 @@ def escape_unicode_string(string: str) -> str:
 
     def escape_unprintable(x):
         category = unicodedata.category(x)
-        if category == "Cc" or category == "Cf":
+        if category in ("Cc", "Cf"):
             return f"<U+{ord(x):x}>"
         else:
             return x
@@ -1745,9 +1742,7 @@ def load_extension(data, extension_name):
     }
 
     # Return functions and variables as a namedtuple, so we get the nice dot access syntax
-    module_tuple = collections.namedtuple(
-        clean_identifier_name(extension_name), loaded.keys()
-    )
+    module_tuple = namedtuple(clean_identifier_name(extension_name), loaded.keys())  # noqa: PYI024
     return module_tuple(**loaded)
 
 

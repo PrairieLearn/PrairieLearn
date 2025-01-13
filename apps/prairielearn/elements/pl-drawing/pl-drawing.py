@@ -105,9 +105,9 @@ def prepare(element_html, data):
                         for buttons in groups:
                             if buttons.tag == "pl-drawing-button":
                                 type_name = buttons.attrib.get("type", None)
-                                if (
-                                    type_name == "pl-arc-vector-CCW"
-                                    or type_name == "pl-arc-vector-CW"
+                                if type_name in (
+                                    "pl-arc-vector-CCW",
+                                    "pl-arc-vector-CW",
                                 ):
                                     type_name = "pl-arc-vector"
                                 type_attribs = elements.get_attributes(type_name)
@@ -344,15 +344,14 @@ def render(element_html, data):
 
     if preview_mode:
         html_params["input_answer"] = json.dumps(init)
+    elif data["panel"] == "answer" and name in data["correct_answers"]:
+        html_params["input_answer"] = json.dumps(data["correct_answers"][name])
     else:
-        if data["panel"] == "answer" and name in data["correct_answers"]:
-            html_params["input_answer"] = json.dumps(data["correct_answers"][name])
-        else:
-            sub = []
-            if name in data["submitted_answers"]:
-                sub = data["submitted_answers"][name]
-            items = union_drawing_items(init, sub)
-            html_params["input_answer"] = json.dumps(items)
+        sub = []
+        if name in data["submitted_answers"]:
+            sub = data["submitted_answers"][name]
+        items = union_drawing_items(init, sub)
+        html_params["input_answer"] = json.dumps(items)
 
     # Grading feedback
     if data["panel"] == "submission":
