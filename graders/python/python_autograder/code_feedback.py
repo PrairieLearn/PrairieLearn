@@ -108,7 +108,7 @@ class Feedback:
         raise GradingComplete()
 
     @staticmethod
-    def not_allowed(*args, **kwargs) -> NoReturn:
+    def not_allowed(*_args, **_kwargs) -> NoReturn:
         """
         Used to hook into disallowed functions, raises an exception if
         the student tries to call it.
@@ -379,8 +379,8 @@ class Feedback:
     def check_scalar(
         cls,
         name: str,
-        ref: complex | float | int | np.number,
-        data: complex | float | int | np.number | None | Any,
+        ref: complex | np.number,
+        data: complex | np.number | None | Any,
         accuracy_critical=False,
         rtol=1e-5,
         atol=1e-8,

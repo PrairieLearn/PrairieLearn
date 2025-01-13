@@ -51,7 +51,7 @@ def format_attrib_value(v: str) -> str:
 
 def get_source_definition(element: lxml.html.HtmlElement) -> str:
     if not isinstance(element.tag, str):
-        raise ValueError(f"Invalid tag type: {type(element.tag)}")
+        raise TypeError(f"Invalid tag type: {type(element.tag)}")
 
     attributes = (
         f'''{k}="{format_attrib_value(v)}"''' for k, v in element.attrib.items()
@@ -130,7 +130,7 @@ def traverse_and_replace(
                     result.append(tail)
             else:
                 if not isinstance(new_elements.tag, str):
-                    raise ValueError(f"Invalid tag type: {type(new_elements.tag)}")
+                    raise TypeError(f"Invalid tag type: {type(new_elements.tag)}")
 
                 # Add opening tag and text
                 result.append(get_source_definition(new_elements))
@@ -158,8 +158,8 @@ def traverse_and_replace(
                 result.append(f"</{tail_tag}>")
             if tail_text is not None:
                 result.append(tail_text)
-        else:
-            count_stack[-1] -= 1
+
+        count_stack[-1] -= 1
 
     # No need to empty tail stack, should be empty from above.
     # If debugging, you can add the following assertions:
