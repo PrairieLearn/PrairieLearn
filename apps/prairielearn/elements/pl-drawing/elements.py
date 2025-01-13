@@ -1980,7 +1980,7 @@ class GraphLine(BaseElement):
                 raise ValueError(
                     "pl-graph-line error: The end-gradients attribute conflicts with an end-points attribute of length 3. You should either provide three points to make a curve or the gradient, but not both."
                 )
-            grads = json.loads(pl.get_string_attrib(self, "end-gradients"))
+            grads = json.loads(pl.get_string_attrib(el, "end-gradients"))
             if len(grads) != 2:
                 raise ValueError(
                     "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
