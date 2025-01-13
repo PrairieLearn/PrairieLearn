@@ -159,8 +159,6 @@ class _Constants:
 class BaseSympyError(Exception):
     """Exception base class for sympy parsing errors"""
 
-    pass
-
 
 class HasConflictingVariableError(BaseSympyError):
     pass
@@ -238,7 +236,7 @@ class CheckAST(ast.NodeVisitor):
         self.whitelist = whitelist
         self.variables = variables
         self.functions = functions
-        self.__parents = dict()
+        self.__parents = {}
 
     def visit(self, node: ast.AST) -> None:
         if not isinstance(node, self.whitelist):
@@ -307,7 +305,7 @@ class CheckAST(ast.NodeVisitor):
 
         # Empty parents dict after execution
         # dict is only populated during execution
-        self.__parents = dict()
+        self.__parents = {}
 
 
 def ast_check_str(expr: str, locals_for_eval: LocalsForEval) -> None:

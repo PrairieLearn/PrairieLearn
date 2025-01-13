@@ -132,7 +132,7 @@ def categorize_options(
             obj = json.load(f)
 
         for text in obj.get(correct_attrib, []):
-            correct_answers.append(
+            correct_answers.append(  # noqa: PERF401
                 AnswerTuple(
                     next(index_counter),
                     correct=True,
@@ -143,7 +143,7 @@ def categorize_options(
             )
 
         for text in obj.get(incorrect_attrib, []):
-            incorrect_answers.append(
+            incorrect_answers.append(  # noqa: PERF401
                 AnswerTuple(
                     next(index_counter),
                     correct=False,
