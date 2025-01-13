@@ -1,0 +1,10 @@
+{
+  "tasks": [
+    {
+      "type": "shell",
+      "label": "Compilation",
+      "command": "g++ -Wall -g -o source source.cpp"
+    }
+  ],
+  "version": "2.0.0"
+}
