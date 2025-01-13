@@ -212,9 +212,9 @@ def execute_code(
             import matplotlib as mpl
 
             mpl.use("Agg")
-            import matplotlib as mpl
+            import matplotlib.pyplot as plt
 
-            plot_value = mpl.pyplot
+            plot_value = plt
 
     # Re-seed before running tests
     set_random_seed()
