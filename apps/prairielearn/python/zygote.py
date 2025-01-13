@@ -455,7 +455,7 @@ with open(4, "w", encoding="utf-8") as exitf:
                         if any(
                             p.username() == "executor" for p in psutil.process_iter()
                         ):
-                            raise Exception(
+                            raise RuntimeError(
                                 "found remaining processes belonging to executor user"
                             )
 
@@ -467,11 +467,11 @@ with open(4, "w", encoding="utf-8") as exitf:
                     exitf.flush()
                 else:
                     # The worker did not exit gracefully
-                    raise Exception(
+                    raise RuntimeError(
                         f"worker process exited unexpectedly with status {status}"
                     )
             else:
                 # Something else happened that is weird
-                raise Exception(
+                raise RuntimeError(
                     f"worker process exited unexpectedly with status {status}"
                 )

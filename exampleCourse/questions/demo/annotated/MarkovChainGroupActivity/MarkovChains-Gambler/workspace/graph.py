@@ -70,7 +70,7 @@ def draw_matrix(
     mat = mat.T
 
     if len(mat.shape) != 2:
-        raise Exception(
+        raise TypeError(
             f"Input matrix has wrong dimensionality (gotten {len(mat.shape)}, expected 2)."
         )
     if directed is None:
