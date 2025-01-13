@@ -125,11 +125,10 @@ def render(element_html, data):
             file_path = os.path.join(directory, source_file_name)
             with open(file_path) as f:
                 text_display = f.read()
+        elif element_text is not None:
+            text_display = str(element_text)
         else:
-            if element_text is not None:
-                text_display = str(element_text)
-            else:
-                text_display = ""
+            text_display = ""
 
         html_params["original_file_contents"] = base64.b64encode(
             text_display.encode("UTF-8").strip()
