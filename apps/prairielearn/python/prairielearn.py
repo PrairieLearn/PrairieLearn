@@ -396,7 +396,8 @@ def from_json(v):
                         + np.array(v["_value"]["imag"]) * 1j
                     ).astype(v["_dtype"])
                 return (
-                    np.array(v["_value"]["real"]) + np.array(v["_value"]["imag"]) * 1j
+                    np.array(v["_value"]["real"])
+                    + np.array(v["_value"]["imag"]) * 1j
                 )
             raise ValueError(
                 "variable of type complex_ndarray should have value with real and imaginary pair"
