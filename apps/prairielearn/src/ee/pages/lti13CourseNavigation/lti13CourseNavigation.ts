@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow, queryAsync } from '@prairielearn/postgres';
@@ -8,7 +9,6 @@ import { IdSchema, Lti13CourseInstanceSchema } from '../../../lib/db-types.js';
 import {
   selectCourseInstanceById,
   selectCourseInstancesWithStaffAccess,
-  type CourseInstanceAuthz,
 } from '../../../models/course-instances.js';
 import { selectCoursesWithEditAccess } from '../../../models/course.js';
 import { Lti13Claim } from '../../lib/lti13.js';
@@ -35,6 +35,25 @@ function prettyCourseName(ltiClaim) {
     return 'your course';
   }
 }
+
+router.get(
+  '/course_instances',
+  asyncHandler(async (req, res) => {
+    const course_instances = await selectCourseInstancesWithStaffAccess({
+      course_id: z.coerce.string().parse(req.query.unsafe_course_id),
+      user_id: res.locals.authn_user.user_id,
+      authn_user_id: res.locals.authn_user.user_id,
+      is_administrator: res.locals.authn_is_administrator,
+      authn_is_administrator: res.locals.authn_is_administrator,
+    });
+
+    const options = course_instances.map((ci) => {
+      return `<option value="${ci.id}">${ci.short_name}: ${ci.long_name}</option>`;
+    });
+
+    res.send(options.join('\n'));
+  }),
+);
 
 router.get(
   '/',
@@ -111,38 +130,12 @@ router.get(
       is_administrator: res.locals.authn_is_administrator,
     });
 
-    const course_instances: CourseInstanceAuthz[] = [];
-
-    // TODO: Refactor to only list courses and pull in course instances in
-    // the page via htmx
-    //
-    // This query is expensive for anyone connected to a large number of courses,
-    // such as admins. Our expectation is that admins don't typically initialize
-    // LTI flows so it will happen infrequently and Postgres will be fast enough
-    // when this N+1 query runs.
-    for (const course of courses) {
-      // Only course owners can link
-      if (!course.permissions_course.has_course_permission_own) {
-        continue;
-      }
-
-      const instances = await selectCourseInstancesWithStaffAccess({
-        course_id: course.id,
-        user_id: res.locals.authn_user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
-        is_administrator: res.locals.authn_is_administrator,
-        authn_is_administrator: res.locals.authn_is_administrator,
-      });
-
-      course_instances.push(...instances);
-    }
-
     res.send(
       Lti13CourseNavigationInstructor({
         resLocals: res.locals,
         courseName,
-        courses,
-        course_instances,
+        courses: courses.filter((c) => c.permissions_course.has_course_permission_own),
+        originalUrl: req.originalUrl,
       }),
     );
   }),
