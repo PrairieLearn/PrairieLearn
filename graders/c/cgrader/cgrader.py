@@ -7,6 +7,7 @@ import re
 import shlex
 import subprocess
 import tempfile
+from collections.abc import Iterable
 from typing import Any, Literal
 
 import lxml.etree as et
@@ -132,18 +133,18 @@ class CGrader:
 
     def compile_file(
         self,
-        c_file: list[str] | str,
+        c_file: Iterable[str] | str,
         exec_file: str | None = None,
-        add_c_file: str | list[str] | None = None,
+        add_c_file: str | Iterable[str] | None = None,
         compiler: str | None = None,
         flags: str | list[str] | None = None,
-        pkg_config_flags: str | list[str] | None = None,
+        pkg_config_flags: str | Iterable[str] | None = None,
         add_warning_result_msg: bool = True,
         ungradable_if_failed: bool = True,
         return_objects: bool = False,
         enable_asan: bool = False,
-        reject_symbols: list[str] | None = None,
-        objcopy_args: list[str] | None = None,
+        reject_symbols: Iterable[str] | None = None,
+        objcopy_args: Iterable[str] | None = None,
     ) -> tuple[str, list[str]] | str:
         cflags = flags
         if cflags and isinstance(cflags, str):
@@ -259,12 +260,12 @@ class CGrader:
 
     def link_object_files(
         self,
-        student_obj_files: str | list[str] | None,
-        add_obj_files: str | list[str] | None,
+        student_obj_files: str | Iterable[str] | None,
+        add_obj_files: str | Iterable[str] | None,
         exec_file: str,
         compiler: str | None = None,
         flags: str | list[str] | None = None,
-        pkg_config_flags: str | list[str] | None = None,
+        pkg_config_flags: str | Iterable[str] | None = None,
         add_warning_result_msg: bool = True,
         ungradable_if_failed: bool = True,
         enable_asan: bool = False,
@@ -325,7 +326,7 @@ class CGrader:
 
     def test_compile_file(
         self,
-        c_file: str | list[str],
+        c_file: str | Iterable[str],
         exec_file: str | None = None,
         main_file: str | None = None,
         add_c_file: str | list[str] | None = None,
@@ -333,14 +334,14 @@ class CGrader:
         points: float = 1,
         field: str | None = None,
         flags: str | list[str] | None = None,
-        pkg_config_flags: str | list[str] | None = None,
+        pkg_config_flags: str | Iterable[str] | None = None,
         name: str = "Compilation",
         add_warning_result_msg: bool = True,
         ungradable_if_failed: bool = True,
         enable_asan: bool = False,
-        reject_symbols: list[str] | None = None,
-        objcopy_args: list[str] | None = None,
-    ) -> dict[str, float | str]:
+        reject_symbols: Iterable[str] | None = None,
+        objcopy_args: Iterable[str] | None = None,
+    ) -> dict[str, float | str | list[str]]:
         if not add_c_file:
             add_c_file = []
         elif isinstance(add_c_file, str):
@@ -386,29 +387,31 @@ class CGrader:
         if change_parent and parent and not os.path.samefile(file, parent):
             self.change_mode(parent, "a+x")
 
-    def test_send_in_check_out(self, *args, **kwargs) -> dict[str, float | str]:
+    def test_send_in_check_out(
+        self, *args, **kwargs
+    ) -> dict[str, float | str | list[str]]:
         """Old deprecated function name,
         retained for compatibility reasons."""
         return self.test_run(*args, **kwargs)
 
     def test_run(
         self,
-        command: str | list[str],
+        command: str | Iterable[str],
         input: str | None = None,
-        exp_output: str | list[str] | None = None,
+        exp_output: str | Iterable[str] | None = None,
         must_match_all_outputs: OutputMatchingOption | bool = "any",
-        reject_output: str | list[str] | None = None,
+        reject_output: str | Iterable[str] | None = None,
         field: str | None = None,
         ignore_case: bool = True,
         timeout: float = 1,
         size_limit: int = 10240,
         ignore_consec_spaces: bool = True,
-        args: str | list[str] | None = None,
+        args: str | Iterable[str] | None = None,
         name: str | None = None,
         msg: str | None = None,
         max_points: float = 1,
         highlight_matches: bool = False,
-    ) -> dict[str, float | str]:
+    ) -> dict[str, float | str | list[str]]:
         if args is not None:
             if isinstance(args, str):
                 args = [args]
@@ -419,7 +422,7 @@ class CGrader:
         elif name is None and args is not None:
             name = 'Test with arguments "{}"'.format(" ".join(args))
         elif name is None and not isinstance(command, str):
-            name = f"Test command: {command[0]}"
+            name = f"Test command: {next(iter(command))}"
         elif name is None:
             name = f"Test command: {command}"
 
@@ -458,7 +461,7 @@ class CGrader:
 
         exp_output_with_regex = [compile_re(t) for t in exp_output]
         reject_output_with_regex = [compile_re(t) for t in reject_output]
-        command = shlex.split(command) if isinstance(command, str) else command
+        command = shlex.split(command) if isinstance(command, str) else list(command)
 
         out = self.run_command(
             command if args is None else command + args,
@@ -546,7 +549,7 @@ class CGrader:
         points: float = 1,
         name: str | None = None,
         description: str | None = None,
-    ) -> dict[str, float | str]:
+    ) -> dict[str, float | str | list[str]]:
         """Old deprecated function, retained for compatibility reasons."""
         if not name:
             name = "Manual Grading - to be reviewed by a human grader"
@@ -563,8 +566,8 @@ class CGrader:
         output: str = "",
         max_points: float = 1,
         field: str | None = None,
-        images: str | list[str] | None = None,
-    ) -> dict[str, float | str]:
+        images: str | Iterable[str] | None = None,
+    ) -> dict[str, float | str | list[str]]:
         if isinstance(points, bool):
             points = max_points if points else 0.0
         test = {
@@ -576,7 +579,7 @@ class CGrader:
             "message": msg if msg else "",
         }
         if images and not isinstance(images, str):
-            test["images"] = images
+            test["images"] = list(images)
         elif images:
             test["images"] = [images]
         self.result["tests"].append(test)
@@ -599,7 +602,7 @@ class CGrader:
     def run_check_suite(
         self,
         exec_file: str,
-        args: str | list[str] | None = None,
+        args: str | Iterable[str] | None = None,
         use_suite_title: bool = False,
         use_case_name: bool = True,
         use_unit_test_id: bool = True,
