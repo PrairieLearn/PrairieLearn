@@ -313,7 +313,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     for html_tags in element:  # iterate through the html tags inside pl-order-blocks
         if html_tags.tag is Comment:
             continue
-        elif html_tags.tag == "pl-block-group":
+        if html_tags.tag == "pl-block-group":
             if grading_method is not GradingMethodType.DAG:
                 raise ValueError(
                     'Block groups only supported in the "dag" grading mode.'
@@ -324,17 +324,15 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
                 raise ValueError(
                     f'Tag "{group_tag}" used in multiple places. The tag attribute for each <pl-answer> and <pl-block-group> must be unique.'
                 )
-            else:
-                used_tags.add(group_tag)
+            used_tags.add(group_tag)
 
             for grouped_tag in html_tags:
                 if html_tags.tag is Comment:
                     continue
-                else:
-                    prepare_tag(
-                        grouped_tag, index, {"tag": group_tag, "depends": group_depends}
-                    )
-                    index += 1
+                prepare_tag(
+                    grouped_tag, index, {"tag": group_tag, "depends": group_depends}
+                )
+                index += 1
         else:
             prepare_tag(html_tags, index, {"tag": None, "depends": None})
             index += 1

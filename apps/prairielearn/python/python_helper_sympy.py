@@ -261,8 +261,7 @@ class CheckAST(ast.NodeVisitor):
                 raise FunctionNameWithoutArgumentsError(
                     err_node.col_offset, err_node.id
                 )
-            else:
-                raise HasInvalidVariableError(err_node.col_offset, err_node.id)
+            raise HasInvalidVariableError(err_node.col_offset, err_node.id)
         self.generic_visit(node)
 
     def is_name_of_function(self, node: ast.AST) -> bool:
@@ -368,9 +367,9 @@ def sympy_check(
 
         if isinstance(item, sympy.Symbol) and str_item not in valid_symbols:
             raise HasInvalidSymbolError(str_item)
-        elif isinstance(item, sympy.Float):
+        if isinstance(item, sympy.Float):
             raise HasFloatError(float(str_item))
-        elif not allow_complex and item == sympy.I:
+        if not allow_complex and item == sympy.I:
             raise HasComplexError("complex values not allowed")
 
         work_stack.extend(item.args)
@@ -517,8 +516,7 @@ def convert_string_to_sympy_with_source(
                 raise HasConflictingVariableError(
                     f"Conflicting variable name: {variable}"
                 )
-            else:
-                used_names.add(variable)
+            used_names.add(variable)
 
             # If no conflict, add to locals dict with assumptions
             if assumptions is None:
