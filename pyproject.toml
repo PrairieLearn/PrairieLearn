@@ -111,8 +111,8 @@ ignore = [
 # The zygote specifically uses imports in strange places to facilitate the
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
-# Ignore uppercase function parameters (e.g. G for a graph)
-"apps/prairielearn/elements/**/*.py" = ["N803"]
+# Ignore uppercase function parameters (e.g. G for a graph), ignore unused parameters in functions
+"apps/prairielearn/elements/**/*.py" = ["N803", "ARG"]
 "apps/prairielearn/python/*.py" = ["N803"]
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]
