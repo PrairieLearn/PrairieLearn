@@ -7,8 +7,6 @@ from functools import wraps
 from os.path import join, splitext
 from typing import Any
 
-import matplotlib
-import matplotlib.pyplot
 import pygments
 from code_feedback import Feedback
 from IPython.core.interactiveshell import InteractiveShell  # type: ignore
@@ -65,7 +63,7 @@ def save_plot(plt: Any, iternum=0):
             f.write(imgsrc)
 
 
-def points(points: float | int):
+def points(points: float):
     """
     Set the number of points that a test case should award.
     """
