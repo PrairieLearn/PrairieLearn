@@ -8,7 +8,7 @@ import shlex
 import subprocess
 import tempfile
 from collections.abc import Iterable
-from typing import Any, Literal
+from typing import Any, Literal, TypedDict
 
 import lxml.etree as et
 
@@ -72,6 +72,11 @@ class UngradableError(Exception):
 # This is a deprecated alias for UngradableError, kept for backwards compatibility in existing question code.
 # It should no longer be used in any new code.
 UngradableException = UngradableError
+
+
+class Image(TypedDict):
+    label: str
+    url: str
 
 
 class CGrader:
@@ -228,7 +233,9 @@ class CGrader:
         if all(os.path.isfile(obj) for obj in std_obj_files):
             # Add new C files that maybe overwrite some existing functions.
             for added_c_file in add_c_file:
-                obj_file = str(pathlib.Path(added_c_file).with_suffix(".o"))
+                obj_file = (
+                    pathlib.Path(added_c_file).with_suffix(".o").absolute().as_posix()
+                )
                 out += self.run_command(
                     [compiler, "-c", added_c_file, "-o", obj_file, *cflags],
                     sandboxed=False,
@@ -566,7 +573,7 @@ class CGrader:
         output: str = "",
         max_points: float = 1,
         field: str | None = None,
-        images: str | Iterable[str] | None = None,
+        images: str | Iterable[str] | Image | Iterable[Image] | None = None,
     ) -> dict[str, float | str | list[str]]:
         if isinstance(points, bool):
             points = max_points if points else 0.0
@@ -578,10 +585,10 @@ class CGrader:
             "output": output,
             "message": msg if msg else "",
         }
-        if images and not isinstance(images, str):
-            test["images"] = list(images)
-        elif images:
+        if images and isinstance(images, str | dict):
             test["images"] = [images]
+        elif images:
+            test["images"] = list(images)
         self.result["tests"].append(test)
         self.result["points"] += points
         self.result["max_points"] += max_points
