@@ -43,7 +43,7 @@ def _draw_adj_matrix(
     return _render_graph(G, layout)
 
 
-def _draw_edge_inc_matrix(mat, mat_label, round_digits, layout="dot"):
+def _draw_edge_inc_matrix(mat, mat_label, layout="dot"):
     G = pygraphviz.AGraph(directed=True)
 
     for node in mat_label:
@@ -86,4 +86,4 @@ def draw_matrix(
             mat, mat_label, show_weights, round_digits, directed, layout
         )
     else:
-        return _draw_edge_inc_matrix(mat, mat_label, round_digits, layout)
+        return _draw_edge_inc_matrix(mat, mat_label, layout)

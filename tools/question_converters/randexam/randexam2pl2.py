@@ -709,7 +709,7 @@ def write_qids(output_directory, topic, qids):
         out_f.write('"\n')
 
 
-def export_library(output_directory, library, topic, tags, library_filename):
+def export_library(output_directory, library, topic, tags):
     log_and_print(f"Exporting to {output_directory}")
     question_base_directory = os.path.join(output_directory, "questions")
     mkdir_or_die(question_base_directory)
