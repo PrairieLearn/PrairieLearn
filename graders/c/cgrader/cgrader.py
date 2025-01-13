@@ -74,9 +74,17 @@ class UngradableError(Exception):
 UngradableException = UngradableError
 
 
-class Image(TypedDict):
-    label: str
-    url: str
+# TODO: in version 3.11 we can use `Required` to mark properties as such.
+
+
+class TestResult(TypedDict, total=False):
+    name: str
+    description: str
+    points: float
+    max_points: float
+    output: str
+    message: str
+    images: list[dict[str, str] | str]
 
 
 class CGrader:
@@ -348,7 +356,7 @@ class CGrader:
         enable_asan: bool = False,
         reject_symbols: Iterable[str] | None = None,
         objcopy_args: Iterable[str] | None = None,
-    ) -> dict[str, float | str | list[str]]:
+    ) -> TestResult:
         if not add_c_file:
             add_c_file = []
         elif isinstance(add_c_file, str):
@@ -394,9 +402,7 @@ class CGrader:
         if change_parent and parent and not os.path.samefile(file, parent):
             self.change_mode(parent, "a+x")
 
-    def test_send_in_check_out(
-        self, *args, **kwargs
-    ) -> dict[str, float | str | list[str]]:
+    def test_send_in_check_out(self, *args, **kwargs) -> TestResult:
         """Old deprecated function name,
         retained for compatibility reasons."""
         return self.test_run(*args, **kwargs)
@@ -418,7 +424,7 @@ class CGrader:
         msg: str | None = None,
         max_points: float = 1,
         highlight_matches: bool = False,
-    ) -> dict[str, float | str | list[str]]:
+    ) -> TestResult:
         if args is not None:
             if isinstance(args, str):
                 args = [args]
@@ -556,7 +562,7 @@ class CGrader:
         points: float = 1,
         name: str | None = None,
         description: str | None = None,
-    ) -> dict[str, float | str | list[str]]:
+    ) -> TestResult:
         """Old deprecated function, retained for compatibility reasons."""
         if not name:
             name = "Manual Grading - to be reviewed by a human grader"
@@ -573,11 +579,12 @@ class CGrader:
         output: str = "",
         max_points: float = 1,
         field: str | None = None,
-        images: str | Iterable[str] | Image | Iterable[Image] | None = None,
-    ) -> dict[str, float | str | list[str]]:
+        images: str | list[str] | dict[str, str] | list[dict[str, str]] | None = None,
+    ) -> TestResult:
         if isinstance(points, bool):
             points = max_points if points else 0.0
-        test = {
+
+        test: TestResult = {
             "name": name,
             "description": description,
             "points": points,
@@ -589,6 +596,7 @@ class CGrader:
             test["images"] = [images]
         elif images:
             test["images"] = list(images)
+
         self.result["tests"].append(test)
         self.result["points"] += points
         self.result["max_points"] += max_points
