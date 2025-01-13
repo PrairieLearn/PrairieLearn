@@ -377,7 +377,7 @@ def grade(element_html, data):
     if comparison == "relabs":
         rtol = pl.get_float_attrib(element, "rtol", RTOL_DEFAULT)
         atol = pl.get_float_attrib(element, "atol", ATOL_DEFAULT)
-    elif comparison == "sigfig" or comparison == "decdig":
+    elif comparison in ("sigfig", "decdig"):
         digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
     else:
         raise ValueError(f'method of comparison "{comparison}" is not valid')

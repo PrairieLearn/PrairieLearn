@@ -743,9 +743,8 @@ class Vector(BaseElement):
         if ref["disregard_sense"]:
             if error_fwd > angtol and error_bwd > angtol:
                 return False
-        else:
-            if error_fwd > angtol:
-                return False
+        elif error_fwd > angtol:
+            return False
 
         # Get position of student answer relative to reference answer
         basis = np.array(
@@ -1186,9 +1185,8 @@ class DistributedLoad(BaseElement):
         if ref["disregard_sense"]:
             if error_fwd > angtol and error_bwd > angtol:
                 return False
-        else:
-            if error_fwd > angtol:
-                return False
+        elif error_fwd > angtol:
+            return False
 
         # Check width
         if abserr(elen, rlen) > tol:
@@ -2058,7 +2056,7 @@ class GraphLine(BaseElement):
                 raise ValueError(
                     "pl-graph-line error: the attribute end-points expects a list of size 2 or 3."
                 )
-            if n_grads != 0 and n_grads != 2:
+            if n_grads not in (0, 2):
                 raise ValueError(
                     "pl-graph-line error: the attribute end-gradients expects an array with 2 values, one for each end point."
                 )

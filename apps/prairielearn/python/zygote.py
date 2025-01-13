@@ -74,15 +74,14 @@ import random
 
 import chevron
 import lxml.html
-import matplotlib
-import matplotlib.font_manager
+import matplotlib as mpl
 import nltk
-import numpy
+import numpy as np
 import pint
 import prairielearn
 import sklearn
 
-matplotlib.use("PDF")
+mpl.use("PDF")
 
 # Construct initial unit registry to create initial cache file.
 prairielearn.get_unit_registry()
@@ -109,13 +108,13 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
         fullname: str,
         path: Sequence[str] | None,
         target: types.ModuleType | None = None,
-    ):
+    ) -> None:
         if any(
             fullname == module or fullname.startswith(module + ".")
             for module in self.forbidden_modules
         ):
             raise ImportError(f'module "{fullname}" is not allowed.')
-        return None
+        return None  # noqa: PLR1711
 
 
 # We want to initialize the Faker seed, but only if faker is loaded
@@ -128,14 +127,13 @@ class FakerInitializeMetaPathFinder(MetaPathFinder):
         fullname: str,
         path: Sequence[str] | None,
         target: types.ModuleType | None = None,
-    ):
+    ) -> None:
         if fullname == "faker" or fullname.startswith("faker."):
             # Once this initialization is done we no longer need this meta path finder
             sys.meta_path.remove(self)
             from faker import Faker
 
             Faker.seed(self.seed)
-        return None
 
 
 # This function tries to convert a python object to valid JSON. If an exception
@@ -262,7 +260,7 @@ def worker_loop() -> None:
             if type(args[-1]) is dict and not seeded:
                 variant_seed = args[-1].get("variant_seed", None)
                 random.seed(variant_seed)
-                numpy.random.seed(variant_seed)
+                np.random.seed(variant_seed)
                 sys.meta_path.insert(0, FakerInitializeMetaPathFinder(variant_seed))
                 seeded = True
 
@@ -354,7 +352,7 @@ def worker_loop() -> None:
 
                 # Any function that is not 'file' or 'render' will modify 'data' and
                 # should not be returning anything (because 'data' is mutable).
-                if (fcn != "file") and (fcn != "render"):
+                if fcn not in ("file", "render"):
                     if val is None or val is args[-1]:
                         json_outp = try_dumps(
                             {"present": True, "val": args[-1]}, allow_nan=False

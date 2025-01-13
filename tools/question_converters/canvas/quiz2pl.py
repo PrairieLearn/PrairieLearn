@@ -4,10 +4,7 @@ import argparse
 import json
 import os
 import re
-import sys
 import uuid
-from collections import OrderedDict
-from os import path
 
 import canvas
 
@@ -231,7 +228,7 @@ for question in questions.values():
                     f"Invalid numerical answer type: {answer['numerical_answer_type']}"
                 )
                 template.write(
-                    f'<pl-number-input answers-name="value"></pl-number-input>\n'
+                    '<pl-number-input answers-name="value"></pl-number-input>\n'
                 )
 
         elif question["question_type"] == "calculated_question":

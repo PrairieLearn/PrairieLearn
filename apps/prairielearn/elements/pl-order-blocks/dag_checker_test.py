@@ -142,11 +142,11 @@ problem_3_groups = {"1": None, "2": "g1", "3": "g1", "4": "g2", "5": "g2", "6": 
 def test_problem_validation():
     dag_to_nx(problem_1_dag, problem_1_groups)
     dag_to_nx(problem_2_dag, problem_2_groups)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="depend on blocks outside their group"):
         dag_to_nx(problem_3_invalid_dag_1, problem_3_groups)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="depend on blocks outside their group"):
         dag_to_nx(problem_3_invalid_dag_2, problem_3_groups)
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="depend on blocks outside their group"):
         dag_to_nx(problem_3_invalid_dag_3, problem_3_groups)
     dag_to_nx(problem_3_dag, problem_3_groups)
 

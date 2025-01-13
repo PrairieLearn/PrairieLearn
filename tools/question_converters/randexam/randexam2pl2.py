@@ -6,22 +6,10 @@
 
 # ruff: noqa: B023 -- script abuses inline functions; don't lint unbound variables
 
-import collections
-import csv
-import difflib
-import email.mime.application
-import email.mime.multipart
-import email.mime.text
-import getpass
-import itertools
 import os
-import random
 import re
-import smtplib
 import string
-import subprocess
 import sys
-import time
 import uuid
 
 import numpy as np
@@ -360,7 +348,7 @@ def read_library(input_filename):
                 state.variant.incorrect_answers.append(state.answer.body)
             if len(state.variant.answers) > 5:
                 print(f"Too many answers at line {state.answer.line_number}")
-                exit(1)
+                sys.exit(1)
 
         def append_to_preamble():
             file_log("appending line to preamble")
@@ -391,7 +379,7 @@ def read_library(input_filename):
                 transition("coverpage")
             elif match_name == "comment":
                 file_log("skipping comment line")
-            elif match_name == "text" or match_name == "blank":
+            elif match_name in ("text", "blank"):
                 append_to_preamble()
             else:
                 bad_transition()
@@ -410,7 +398,7 @@ def read_library(input_filename):
         elif state.name == "zone":
             if match_name == "comment":
                 file_log("skipping comment line")
-            elif match_name == "text" or match_name == "blank":
+            elif match_name in ("text", "blank"):
                 append_to_zone_body()
             elif match_name == "question":
                 transition("question")
@@ -443,7 +431,7 @@ def read_library(input_filename):
             else:
                 bad_transition()
         elif state.name == "variant":
-            if match_name == "comment" or match_name == "text" or match_name == "blank":
+            if match_name in ("comment", "text", "blank"):
                 append_to_variant_body()
             elif match_name == "begin_answers":
                 transition("answers")
@@ -465,7 +453,7 @@ def read_library(input_filename):
             else:
                 bad_transition()
         elif state.name == "answer":
-            if match_name == "comment" or match_name == "text" or match_name == "blank":
+            if match_name in ("comment", "text", "blank"):
                 append_to_answer_body()
             elif match_name == "correct_answer":
                 transition("answer")
@@ -485,7 +473,7 @@ def read_library(input_filename):
             else:
                 bad_transition()
         elif state.name == "solution":
-            if match_name == "text" or match_name == "blank":
+            if match_name in ("text", "blank"):
                 append_to_solution_body()
             elif match_name == "end_solution":
                 transition("question")

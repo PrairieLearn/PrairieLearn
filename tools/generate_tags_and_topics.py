@@ -28,14 +28,14 @@ except Exception as error:
 existing_tags = set()
 existing_tag_colors = set()
 if "tags" in course_info:
-    existing_tags = set([t["name"] for t in course_info["tags"]])
-    existing_tag_colors = set([t["color"] for t in course_info["tags"]])
+    existing_tags = {t["name"] for t in course_info["tags"]}
+    existing_tag_colors = {t["color"] for t in course_info["tags"]}
 
 existing_topics = set()
 existing_topic_colors = set()
 if "topics" in course_info:
-    existing_topics = set([t["name"] for t in course_info["topics"]])
-    existing_topic_colors = set([t["color"] for t in course_info["topics"]])
+    existing_topics = {t["name"] for t in course_info["topics"]}
+    existing_topic_colors = {t["color"] for t in course_info["topics"]}
 
 questions_dir = os.path.join(course_dir, "questions")
 if not os.path.isdir(questions_dir):
@@ -69,40 +69,38 @@ new_topics = topics - existing_topics
 ######################################################################
 # assign colors
 
-all_colors = set(
-    [
-        "red1",
-        "red2",
-        "red3",
-        "pink1",
-        "pink2",
-        "pink3",
-        "purple1",
-        "purple2",
-        "purple3",
-        "blue1",
-        "blue2",
-        "blue3",
-        "turquoise1",
-        "turquoise2",
-        "turquoise3",
-        "green1",
-        "green2",
-        "green3",
-        "yellow1",
-        "yellow2",
-        "yellow3",
-        "orange1",
-        "orange2",
-        "orange3",
-        "brown1",
-        "brown2",
-        "brown3",
-        "gray1",
-        "gray2",
-        "gray3",
-    ]
-)
+all_colors = {
+    "red1",
+    "red2",
+    "red3",
+    "pink1",
+    "pink2",
+    "pink3",
+    "purple1",
+    "purple2",
+    "purple3",
+    "blue1",
+    "blue2",
+    "blue3",
+    "turquoise1",
+    "turquoise2",
+    "turquoise3",
+    "green1",
+    "green2",
+    "green3",
+    "yellow1",
+    "yellow2",
+    "yellow3",
+    "orange1",
+    "orange2",
+    "orange3",
+    "brown1",
+    "brown2",
+    "brown3",
+    "gray1",
+    "gray2",
+    "gray3",
+}
 
 available_tag_colors = all_colors - existing_tag_colors
 available_topic_colors = all_colors - existing_topic_colors

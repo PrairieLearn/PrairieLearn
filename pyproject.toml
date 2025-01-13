@@ -22,6 +22,8 @@ target-version = "py310"
 select = [
     "E",
     "N",
+    # pyflakes
+    "F",
     # isort
     "I",
     # flake8-bugbear
@@ -36,10 +38,42 @@ select = [
     "PIE",
     # Perflint
     "PERF",
+    # flake8-comprehensions
+    "C4",
     # ruff-specific rules
     "RUF",
+    # flake8-import-conventions
+    "ICN",
+    # flake8-implicit-str-concat
+    "ISC",
+    # flake8-pytest-style
+    "PT",
     # refurb
-    "FURB"
+    "FURB",
+    # pandas-vet
+    "PD",
+    # NumPy-specific rules
+    "NPY",
+    # pylint
+    "PLR",
+    # flake8-2020
+    "YTT",
+    # flake8-async
+    "ASYNC",
+    # flake8-datetimez
+    "DTZ",
+    # flake8-debugger
+    "T10",
+    # flake8-logging
+    "LOG",
+    # flake8-pyi
+    "PYI",
+    # flake8-slots
+    "SLOT",
+    # flake8-gettext
+    "INT",
+    # flynt
+    "FLY"
 ]
 
 ignore = [
@@ -53,6 +87,16 @@ ignore = [
     "TRY301",
      # Avoid specifying long messages outside the exception class
     "TRY003",
+    # Too many statements, too many branches, too many arguments, too many returns
+    "PLR0912", "PLR0915", "PLR0913", "PLR0911",
+    # Magic value used in comparison (foo == 5)
+    "PLR2004",
+    # Explicit string concatenation
+    "ISC003",
+    # Avoid using the generic variable name `df` for DataFrames
+    "PD901",
+    # Replace legacy `np.random.*` call with `np.random.Generator`
+    "NPY002",
 ]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
