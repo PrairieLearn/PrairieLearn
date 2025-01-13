@@ -42,8 +42,14 @@ select = [
     "ICN",
     # flake8-implicit-str-concat
     "ISC",
+    # flake8-pytest-style
+    "PT",
     # refurb
     "FURB",
+    # pandas-vet
+    "PD",
+    # NumPy-specific rules
+    "NPY",
     # pylint
     "PLR",
     # flake8-2020
@@ -75,7 +81,11 @@ ignore = [
     # Magic value used in comparison (foo == 5)
     "PLR2004",
     # Explicit string concatenation
-    "ISC003"
+    "ISC003",
+    # Avoid using the generic variable name `df` for DataFrames
+    "PD901",
+    # Replace legacy `np.random.*` call with `np.random.Generator`
+    "NPY002",
 ]
 
 [tool.ruff.lint.per-file-ignores]
