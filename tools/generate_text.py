@@ -11,7 +11,7 @@ import sys
 
 CONVERT_CMD = "convert"
 if platform.system() == "Windows":
-    globspec = "C:\Program Files\ImageMagick*\convert.exe"
+    globspec = r"C:\Program Files\ImageMagick*\convert.exe"
     magicks = glob.glob(globspec)
     if len(magicks) < 1:
         print(f"ERROR: No files match {globspec}")

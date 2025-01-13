@@ -75,7 +75,8 @@ select = [
     # flake8-gettext
     "INT",
     # flynt
-    "FLY"
+    "FLY",
+    "W", "PLW"
 ]
 
 ignore = [

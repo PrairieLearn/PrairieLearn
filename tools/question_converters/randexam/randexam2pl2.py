@@ -569,7 +569,7 @@ def mkdir_or_die(dir):
 
 ######################################################################
 def escape_json_string(s):
-    s = s.replace("\n", "").replace("\[", "$$").replace("\]", "$$")  # Harry modified
+    s = s.replace("\n", "").replace("[", "$$").replace("]", "$$")  # Harry modified
     return s.replace("\\", "\\\\").replace('"', '\\"')  # Harry modified
 
 

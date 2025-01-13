@@ -10,7 +10,7 @@ import canvas
 
 
 def file_name_only(name):
-    return re.sub("[\W_]+", "", name)
+    return re.sub(r"[\W_]+", "", name)
 
 
 parser = argparse.ArgumentParser()
