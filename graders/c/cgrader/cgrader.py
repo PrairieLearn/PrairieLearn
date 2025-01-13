@@ -8,7 +8,7 @@ import shlex
 import subprocess
 import tempfile
 from collections.abc import Iterable
-from typing import Any, Literal, TypedDict
+from typing import Any, Literal, TypedDict, TypeGuard
 
 import lxml.etree as et
 
@@ -74,9 +74,12 @@ class UngradableError(Exception):
 UngradableException = UngradableError
 
 
+def is_str_list(val: list[int | str]) -> TypeGuard[list[str]]:
+    """Determines whether all objects in the list are strings"""
+    return all(isinstance(x, str) for x in val)
+
+
 # TODO: in version 3.11 we can use `Required` to mark properties as such.
-
-
 class TestResult(TypedDict, total=False):
     name: str
     description: str
@@ -419,16 +422,17 @@ class CGrader:
         timeout: float = 1,
         size_limit: int = 10240,
         ignore_consec_spaces: bool = True,
-        args: str | Iterable[str] | None = None,
+        args: str | int | Iterable[str | int] | None = None,
         name: str | None = None,
         msg: str | None = None,
         max_points: float = 1,
         highlight_matches: bool = False,
     ) -> TestResult:
         if args is not None:
-            if isinstance(args, str):
+            if isinstance(args, str | int):
                 args = [args]
             args = list(map(str, args))
+            assert is_str_list(args)
 
         if name is None and input is not None:
             name = 'Test with input "{}"'.format(" ".join(input.splitlines()))
