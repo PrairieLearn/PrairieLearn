@@ -118,7 +118,7 @@ def get_and_save_json(endpoint, filename, args, logfile):
         elif r.status_code == 502:
             retry_502_i += 1
             if retry_502_i >= retry_502_max:
-                raise Exception(
+                raise ValueError(
                     f"Maximum number of retries reached on 502 Bad Gateway Error for {url}"
                 )
             else:
@@ -129,7 +129,7 @@ def get_and_save_json(endpoint, filename, args, logfile):
                 time.sleep(10)
                 continue
         else:
-            raise Exception(f"Invalid status returned for {url}: {r.status_code}")
+            raise ValueError(f"Invalid status returned for {url}: {r.status_code}")
     end_time = time.time()
     log(
         logfile,

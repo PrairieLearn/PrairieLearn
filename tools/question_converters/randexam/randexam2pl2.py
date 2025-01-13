@@ -52,7 +52,7 @@ def init_logging(output_filename):
     try:
         print(f"Logging information to file: {output_filename}")
         if log_file is not None:
-            raise Exception("logging already initialized")
+            raise RuntimeError("logging already initialized")
         log_file = open(output_filename, "w")  # noqa: SIM115
     except Exception as exc:
         print(f"ERROR: failed to initialize logging: {exc}")
@@ -63,7 +63,7 @@ def log(msg):
     global log_file
     try:
         if log_file is None:
-            raise Exception("logging not initialized")
+            raise RuntimeError("logging not initialized")
         log_file.write(msg + "\n")
     except Exception as exc:
         print(f"ERROR: logging failed for message '{msg}': {exc}")
@@ -709,7 +709,7 @@ def write_qids(output_directory, topic, qids):
         out_f.write('"\n')
 
 
-def export_library(output_directory, library, topic, tags, library_filename):
+def export_library(output_directory, library, topic, tags):
     log_and_print(f"Exporting to {output_directory}")
     question_base_directory = os.path.join(output_directory, "questions")
     mkdir_or_die(question_base_directory)
