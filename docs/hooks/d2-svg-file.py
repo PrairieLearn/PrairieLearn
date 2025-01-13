@@ -48,7 +48,7 @@ def on_config(config: MkDocsConfig) -> MkDocsConfig:
     return config
 
 
-def on_page_content(html: str, page: Page, _config, _files):
+def on_page_content(html: str, page: Page, config, files):  # noqa: ARG001
     relative_route = page.url.count("/") * "../" + "assets/svg/"
     # Replace data-svg-file with a href to the svg file.
     # This has to be done after we check for missing file references
