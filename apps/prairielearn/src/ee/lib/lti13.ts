@@ -140,6 +140,8 @@ export const Lti13ClaimSchema = z.object({
 });
 export type Lti13ClaimType = z.infer<typeof Lti13ClaimSchema>;
 
+export const STUDENT_ROLE = 'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner';
+
 export class Lti13Claim {
   private claims: Lti13ClaimType;
   private req: Request;

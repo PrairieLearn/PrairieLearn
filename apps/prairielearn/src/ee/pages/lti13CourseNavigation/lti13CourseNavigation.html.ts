@@ -5,6 +5,7 @@ import { Modal } from '../../../components/Modal.html.js';
 import { Navbar } from '../../../components/Navbar.html.js';
 import { config } from '../../../lib/config.js';
 import { type Course, type CourseInstance } from '../../../lib/db-types.js';
+import { STUDENT_ROLE } from '../../lib/lti13.js';
 
 export function Lti13CourseNavigationInstructor({
   courseName,
@@ -153,7 +154,7 @@ export function Lti13CourseNavigationNotReady({
               PrairieLearn home
             </a>
           </p>
-          ${ltiRoles.includes('http://purl.imsglobal.org/vocab/lis/v2/membership#Learner')
+          ${ltiRoles.includes(STUDENT_ROLE)
             ? ''
             : html`
                 <div class="card">
