@@ -579,7 +579,7 @@ class CGrader:
         output: str = "",
         max_points: float = 1,
         field: str | None = None,
-        images: str | list[str] | dict[str, str] | list[dict[str, str]] | None = None,
+        images: str | dict[str, str] | list[str | dict[str, str]] | None = None,
     ) -> TestResult:
         if isinstance(points, bool):
             points = max_points if points else 0.0
