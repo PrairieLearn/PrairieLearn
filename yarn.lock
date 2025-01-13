@@ -3829,7 +3829,6 @@ __metadata:
     blocked-at: "npm:^1.2.0"
     body-parser: "npm:^1.20.3"
     bootstrap: "npm:5.2.3"
-    bootstrap-4: "npm:bootstrap@^4.6.2"
     bootstrap-icons: "npm:^1.11.3"
     bootstrap-table: "npm:1.21.2"
     bowser: "npm:^2.11.0"
@@ -6939,16 +6938,6 @@ __metadata:
   version: 1.0.0
   resolution: "boolbase@npm:1.0.0"
   checksum: 10c0/e4b53deb4f2b85c52be0e21a273f2045c7b6a6ea002b0e139c744cb6f95e9ec044439a52883b0d74dedd1ff3da55ed140cfdddfed7fb0cccbed373de5dce1bcf
-  languageName: node
-  linkType: hard
-
-"bootstrap-4@npm:bootstrap@^4.6.2":
-  version: 4.6.2
-  resolution: "bootstrap@npm:4.6.2"
-  peerDependencies:
-    jquery: 1.9.1 - 3
-    popper.js: ^1.16.1
-  checksum: 10c0/aae7178a306cd9376d10302bf557e00ba7e3bffffb4c0533687c1e0de90f9d30d8883a9b0ac629a2e64131954eca4e03ee06ee665e52b8c44ca66b3599024e8a
   languageName: node
   linkType: hard
 
