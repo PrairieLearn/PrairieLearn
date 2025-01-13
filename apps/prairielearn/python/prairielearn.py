@@ -465,13 +465,6 @@ def inner_html(element: lxml.html.HtmlElement) -> str:
     return inner
 
 
-def compat_get(obj, attrib, _default):
-    if attrib in obj:
-        return obj[attrib]
-    old_attrib = attrib.replace("-", "_")
-    return old_attrib in obj
-
-
 def compat_array(arr: list[str]) -> list[str]:
     new_arr = []
     for i in arr:
