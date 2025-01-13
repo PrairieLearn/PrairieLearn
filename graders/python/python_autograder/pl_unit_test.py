@@ -10,8 +10,7 @@ import matplotlib as mpl
 from code_feedback import Feedback
 from pl_execute import execute_code
 from pl_helpers import GradingSkipped, name, save_plot
-
-from graders.python.python_autograder.pl_result import PLTestResult
+from pl_result import PLTestResult
 
 mpl.use("Agg")
 

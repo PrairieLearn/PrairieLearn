@@ -5,8 +5,7 @@ from typing import Any
 from code_feedback import Feedback, GradingComplete
 from pl_execute import UserCodeFailedError
 from pl_helpers import DoNotRunError, GradingSkipped, print_student_code
-
-from graders.python.python_autograder.pl_unit_test import PLTestCase
+from pl_unit_test import PLTestCase
 
 
 class PLTestResult(unittest.TestResult):
