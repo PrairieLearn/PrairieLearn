@@ -2409,7 +2409,7 @@ class UnplaceableBaseElement(BaseElement):
     def is_gradable():
         return False
 
-    def grade(element, _st, _tol, _angtol):
+    def grade(element, st, tol, angtol):
         raise NotImplementedError(
             "This element should not be graded!  If you see this message, something has gone terribly wrong!"
         )

@@ -468,10 +468,10 @@ with open(4, "w", encoding="utf-8") as exitf:
                 else:
                     # The worker did not exit gracefully
                     raise RuntimeError(
-                        "worker process exited unexpectedly with status {status}"
+                        f"worker process exited unexpectedly with status {status}"
                     )
             else:
                 # Something else happened that is weird
                 raise RuntimeError(
-                    "worker process exited unexpectedly with status {status}"
+                    f"worker process exited unexpectedly with status {status}"
                 )
