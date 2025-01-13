@@ -8,7 +8,7 @@ DIGITS_DEFAULT = 2
 PRESENTATION_TYPE_DEFAULT = "f"
 
 
-def prepare(element_html: str, _data: pl.QuestionData) -> None:
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = ["params-name"]
     optional_attribs = ["digits", "presentation-type"]

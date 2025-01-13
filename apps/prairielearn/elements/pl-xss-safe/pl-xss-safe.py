@@ -11,7 +11,7 @@ CONTENTS_DEFAULT = None
 LANGUAGE_DEFAULT = "html"
 
 
-def prepare(element_html: str, _data: pl.QuestionData) -> None:
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
     optional_attribs = [

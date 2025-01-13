@@ -6,7 +6,7 @@ import prairielearn as pl
 DIGITS_DEFAULT = 2
 
 
-def prepare(element_html, _data):
+def prepare(element_html, data):
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=[], optional_attribs=["digits"])
 

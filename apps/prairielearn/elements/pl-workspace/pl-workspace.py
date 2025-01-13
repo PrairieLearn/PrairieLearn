@@ -2,7 +2,7 @@ import chevron
 import prairielearn as pl
 
 
-def render(_element_html: str, data: pl.QuestionData) -> str:
+def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] != "question":
         return ""
 
@@ -20,7 +20,7 @@ def render(_element_html: str, data: pl.QuestionData) -> str:
         return chevron.render(f, html_params).strip()
 
 
-def parse(_element_html: str, data: pl.QuestionData) -> None:
+def parse(element_html: str, data: pl.QuestionData) -> None:
     workspace_required_file_names = data["params"].get(
         "_workspace_required_file_names", []
     )

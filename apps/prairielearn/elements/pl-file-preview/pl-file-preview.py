@@ -4,14 +4,14 @@ import prairielearn as pl
 from colors import PLColor
 
 
-def prepare(element_html: str, _data: pl.QuestionData) -> None:
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     required_attribs = []
     optional_attribs = []
     pl.check_attribs(element, required_attribs, optional_attribs)
 
 
-def render(_element_html: str, data: pl.QuestionData) -> str:
+def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] != "submission":
         return ""
 

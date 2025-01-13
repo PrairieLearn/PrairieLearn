@@ -75,7 +75,7 @@ def partition(data, pred):
     return (yes, no)
 
 
-def categorize_matches(element):
+def categorize_matches(element, data):
     """Get provided statements and options from the pl-matching element"""
     options = {}
     statements = []
@@ -147,7 +147,7 @@ def prepare(element_html, data):
     name = pl.get_string_attrib(element, "answers-name")
     pl.check_answers_names(data, name)
 
-    options, statements = categorize_matches(element)
+    options, statements = categorize_matches(element, data)
 
     # Choose and randomize the options and statements. Each can be in a fixed order.
     fixed_statements_order = pl.get_boolean_attrib(

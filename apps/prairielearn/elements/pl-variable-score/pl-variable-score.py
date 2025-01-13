@@ -6,7 +6,7 @@ import prairielearn as pl
 use_pl_variable_score = False
 
 
-def prepare(element_html, _data):
+def prepare(element_html, data):
     if not use_pl_variable_score:
         return
 
