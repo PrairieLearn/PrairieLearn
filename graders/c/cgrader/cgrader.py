@@ -74,7 +74,7 @@ class UngradableError(Exception):
 UngradableException = UngradableError
 
 
-def is_str_list(val: list[int | str]) -> TypeGuard[list[str]]:
+def is_str_list(val: list[float | str | int]) -> TypeGuard[list[str]]:
     """Determines whether all objects in the list are strings"""
     return all(isinstance(x, str) for x in val)
 
@@ -422,14 +422,14 @@ class CGrader:
         timeout: float = 1,
         size_limit: int = 10240,
         ignore_consec_spaces: bool = True,
-        args: str | int | Iterable[str | int] | None = None,
+        args: str | float | Iterable[str | float | int] | None = None,
         name: str | None = None,
         msg: str | None = None,
         max_points: float = 1,
         highlight_matches: bool = False,
     ) -> TestResult:
         if args is not None:
-            if isinstance(args, str | int):
+            if isinstance(args, str | float | int):
                 args = [args]
             args = list(map(str, args))
             assert is_str_list(args)
