@@ -146,7 +146,7 @@ class CGrader:
         objcopy_args: list[str] | None = None,
     ) -> tuple[str, list[str]] | str:
         cflags = flags
-        if cflags and not isinstance(cflags, list):
+        if cflags and isinstance(cflags, str):
             cflags = shlex.split(cflags)
         elif not cflags:
             cflags = []
@@ -155,7 +155,7 @@ class CGrader:
 
         if not add_c_file:
             add_c_file = []
-        elif not isinstance(add_c_file, list):
+        elif isinstance(add_c_file, str):
             add_c_file = [add_c_file]
 
         if not compiler:
@@ -171,7 +171,7 @@ class CGrader:
         out = ""
         std_obj_files: list[str] = []
         objs: list[str] = []
-        for std_c_file in c_file if isinstance(c_file, list) else [c_file]:
+        for std_c_file in [c_file] if isinstance(c_file, str) else c_file:
             obj_file = pathlib.Path(std_c_file).with_suffix(".o").absolute().as_posix()
             std_obj_files.append(obj_file)
             out += self.run_command(
@@ -269,7 +269,7 @@ class CGrader:
         ungradable_if_failed: bool = True,
         enable_asan: bool = False,
     ) -> str:
-        if flags and not isinstance(flags, list):
+        if flags and isinstance(flags, str):
             flags = shlex.split(flags)
         elif not flags:
             flags = []
@@ -278,12 +278,12 @@ class CGrader:
 
         if not student_obj_files:
             student_obj_files = []
-        elif not isinstance(student_obj_files, list):
+        elif isinstance(student_obj_files, str):
             student_obj_files = [student_obj_files]
 
         if not add_obj_files:
             add_obj_files = []
-        elif not isinstance(add_obj_files, list):
+        elif isinstance(add_obj_files, str):
             add_obj_files = [add_obj_files]
         if add_obj_files:
             flags.append("-Wl,--allow-multiple-definition")
@@ -343,7 +343,7 @@ class CGrader:
     ) -> dict[str, float | str]:
         if not add_c_file:
             add_c_file = []
-        elif not isinstance(add_c_file, list):
+        elif isinstance(add_c_file, str):
             add_c_file = [add_c_file]
         # Kept for compatibility reasons, but could be set as an added file
         if main_file:
@@ -410,7 +410,7 @@ class CGrader:
         highlight_matches: bool = False,
     ) -> dict[str, float | str]:
         if args is not None:
-            if not isinstance(args, list):
+            if isinstance(args, str):
                 args = [args]
             args = list(map(str, args))
 
@@ -418,7 +418,7 @@ class CGrader:
             name = 'Test with input "{}"'.format(" ".join(input.splitlines()))
         elif name is None and args is not None:
             name = 'Test with arguments "{}"'.format(" ".join(args))
-        elif name is None and isinstance(command, list):
+        elif name is None and not isinstance(command, str):
             name = f"Test command: {command[0]}"
         elif name is None:
             name = f"Test command: {command}"
@@ -426,12 +426,12 @@ class CGrader:
         if exp_output is None:
             exp_output = []
             must_match_all_outputs = True
-        elif not isinstance(exp_output, list):
+        elif isinstance(exp_output, str):
             exp_output = [exp_output]
 
         if reject_output is None:
             reject_output = []
-        elif not isinstance(reject_output, list):
+        elif isinstance(reject_output, str):
             reject_output = [reject_output]
 
         if must_match_all_outputs is True:
@@ -565,7 +565,7 @@ class CGrader:
         field: str | None = None,
         images: str | list[str] | None = None,
     ) -> dict[str, float | str]:
-        if not isinstance(points, float):
+        if isinstance(points, bool):
             points = max_points if points else 0.0
         test = {
             "name": name,
@@ -575,7 +575,7 @@ class CGrader:
             "output": output,
             "message": msg if msg else "",
         }
-        if images and isinstance(images, list):
+        if images and not isinstance(images, str):
             test["images"] = images
         elif images:
             test["images"] = [images]
@@ -610,7 +610,7 @@ class CGrader:
     ) -> None:
         if not args:
             args = []
-        if not isinstance(args, list):
+        if isinstance(args, str):
             args = [args]
 
         if not env:
