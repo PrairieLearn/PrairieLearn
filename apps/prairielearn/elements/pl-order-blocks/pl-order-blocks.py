@@ -753,9 +753,7 @@ def construct_feedback(
 
     if first_wrong is None:
         return FIRST_WRONG_FEEDBACK["incomplete"]
-    if (
-        feedback_type is FeedbackType.FIRST_WRONG_VERBOSE and first_wrong_is_distractor
-    ):
+    if feedback_type is FeedbackType.FIRST_WRONG_VERBOSE and first_wrong_is_distractor:
         return FIRST_WRONG_FEEDBACK["distractor-feedback"].format(str(first_wrong + 1))
     feedback = FIRST_WRONG_FEEDBACK["wrong-at-block"].format(str(first_wrong + 1))
     has_block_groups = group_belonging and set(group_belonging.values()) != {None}
