@@ -42,7 +42,7 @@ export async function sync(
   courseId: string,
   courseData: CourseData,
 ): Promise<Record<string, string>> {
-  console.log(courseData);
+  console.log(courseData.courseInstances);
   if (config.checkInstitutionsOnSync) {
     // Collect all institutions from course instance access rules.
     const institutions = Object.values(courseData.courseInstances)
@@ -85,6 +85,7 @@ export async function sync(
   const courseInstanceParams = Object.entries(courseData.courseInstances).map(
     ([shortName, courseInstanceData]) => {
       const { courseInstance } = courseInstanceData;
+      console.log({ d2: courseInstance.data });
       return JSON.stringify([
         shortName,
         courseInstance.uuid,
