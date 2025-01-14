@@ -101,16 +101,16 @@ include = [
     "./apps/prairielearn/python",
 ]
 exclude = [
-    "./apps/prairielearn/elements/pl-drawing",
-    "./apps/prairielearn/elements/pl-threejs",
-    "./apps/prairielearn/elements/pl-prairiedraw-figure",
-    "./apps/prairielearn/elements/pl-order-blocks",
+    "./apps/prairielearn/elements/pl-drawing", # requires refactor
+    "./apps/prairielearn/elements/pl-dropdown",
+    "./apps/prairielearn/elements/pl-checkbox", # requires refactor
     "./apps/prairielearn/elements/pl-matrix-input",
     "./apps/prairielearn/elements/pl-matrix-component-input",
     "./apps/prairielearn/elements/pl-matching",
-    "./apps/prairielearn/elements/pl-dropdown",
+    "./apps/prairielearn/elements/pl-order-blocks",
+    "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
     "./apps/prairielearn/elements/pl-rich-text-editor",
-    "./apps/prairielearn/elements/pl-checkbox",
+    "./apps/prairielearn/elements/pl-threejs", # deprecated
     "./apps/prairielearn/elements/pl-variable-score",
 ]
 extraPaths = ["./apps/prairielearn/python"]
