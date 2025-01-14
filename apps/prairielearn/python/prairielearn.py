@@ -17,7 +17,7 @@ from collections.abc import Callable, Generator
 from enum import Enum
 from io import StringIO
 from types import ModuleType
-from typing import Any, Literal, TypedDict, TypeVar, overload
+from typing import TYPE_CHECKING, Any, Literal, TypedDict, TypeVar, overload
 
 import lxml.html
 import networkx as nx
@@ -27,11 +27,13 @@ import python_helper_sympy as phs
 import sympy
 import to_precision
 from colors import PLColor
-from numpy.core.arrayprint import _FormatDict
 from numpy.typing import ArrayLike
 from pint import UnitRegistry
 from text_unidecode import unidecode
 from typing_extensions import NotRequired, assert_never
+
+if TYPE_CHECKING:
+    from numpy.core.arrayprint import _FormatDict
 
 
 class PartialScore(TypedDict):

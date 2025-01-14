@@ -55,7 +55,6 @@ ignore = [
     "RET504", # unnecessary-assign
     "RET505", # superfluous-else-return
     "SIM108", # if-else-block-instead-of-if-exp
-    "TC002", # typing-only-third-party-import
     "TRY300", # try-consider-else (returns in try blocks)
     "TRY301", # raise-within-try
     "TRY003", # raise-vanilla-args (long messages in raise statements)
