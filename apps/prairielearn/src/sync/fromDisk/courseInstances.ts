@@ -42,6 +42,7 @@ export async function sync(
   courseId: string,
   courseData: CourseData,
 ): Promise<Record<string, string>> {
+  console.log(courseData);
   if (config.checkInstitutionsOnSync) {
     // Collect all institutions from course instance access rules.
     const institutions = Object.values(courseData.courseInstances)
@@ -93,6 +94,8 @@ export async function sync(
       ]);
     },
   );
+
+  console.log(courseInstanceParams);
 
   const result = await sqldb.callRow(
     'sync_course_instances',
