@@ -150,7 +150,6 @@ export async function createCourseRepoJob(
     job.info(`Created repository ${options.repo_short_name}`);
 
     job.info('Creating infoCourse.json');
-
     const infoCoursePath = path.join(TEMPLATE_COURSE_PATH, 'infoCourse.json');
 
     // Read the template infoCourse.json file
@@ -162,7 +161,6 @@ export async function createCourseRepoJob(
     infoCourse.timezone = options.display_timezone;
 
     const newContents = await formatJsonWithPrettier(JSON.stringify(infoCourse));
-
     job.verbose('New infoCourse.json file:');
     job.verbose(newContents);
 
@@ -171,20 +169,15 @@ export async function createCourseRepoJob(
 
     // Copy the template .gitignore file
     job.info('Copying .gitignore file');
-
     const gitignorePath = path.join(TEMPLATE_COURSE_PATH, '.gitignore');
     const gitignoreContents = await fs.readFile(gitignorePath, 'utf-8');
     await addFileToRepo(client, options.repo_short_name, '.gitignore', gitignoreContents);
-
     job.info('Uploaded new .gitignore file');
 
-    // Copy the template README.md file
     job.info('Copying README.md file');
-
     const readmePath = path.join(TEMPLATE_COURSE_PATH, 'README.md');
     const readmeContents = await fs.readFile(readmePath, 'utf-8');
     await addFileToRepo(client, options.repo_short_name, 'README.md', readmeContents);
-
     job.info('Uploaded new README.md file');
 
     // Find main branch (which is the only branch in the new repo).
