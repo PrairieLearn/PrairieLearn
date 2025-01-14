@@ -23,7 +23,7 @@ def graphviz_from_inc_matrix(element, data):
 
     # Sanity check
     if label is not None and label.shape[0] != mat.shape[0]:
-        raise Exception(
+        raise TypeError(
             "Dimensionality of the label is not consistent with the dimensionality of the matrix"
         )
 

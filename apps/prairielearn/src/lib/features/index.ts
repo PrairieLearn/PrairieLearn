@@ -9,7 +9,6 @@ const featureNames = [
   'ai-grading',
   'disable-public-workspaces',
   'ai-question-generation',
-  'bootstrap-4',
   // Should only be applied to institutions.
   'lti13',
 ] as const;

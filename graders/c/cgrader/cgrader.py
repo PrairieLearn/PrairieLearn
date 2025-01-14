@@ -64,8 +64,8 @@ could also mean that scanf does not support the input provided
 
 
 class UngradableError(Exception):
-    def __init__(self):
-        pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 # This is a deprecated alias for UngradableError, kept for backwards compatibility in existing question code.
@@ -79,7 +79,7 @@ class CGrader:
             self.data = json.load(file)
         self.compiler = compiler
 
-    def run_command(self, command, input=None, sandboxed=True, timeout=None, env=None):
+    def run_command(self, command, input=None, sandboxed=True, timeout=None, env=None):  # noqa: A002
         if isinstance(command, str):
             command = shlex.split(command)
         if sandboxed:
@@ -105,7 +105,7 @@ class CGrader:
         out = ""
         tostr = ""
         if input is not None and not isinstance(input, bytes | bytearray):
-            input = str(input).encode("utf-8")
+            input = str(input).encode("utf-8")  # noqa: A001
         try:
             proc.communicate(input=input, timeout=timeout)[0]
         except subprocess.TimeoutExpired:
@@ -231,7 +231,7 @@ class CGrader:
             self.result["message"] += (
                 f"Compilation errors, please fix and try again.\n\n{out}\n"
             )
-            raise UngradableError()
+            raise UngradableError("Compilation errors")
         if out and add_warning_result_msg:
             self.result["message"] += f"Compilation warnings:\n\n{out}\n"
         if exec_file:
@@ -309,7 +309,7 @@ class CGrader:
             self.result["message"] += (
                 f"Linker errors, please fix and try again.\n\n{out}\n"
             )
-            raise UngradableError()
+            raise UngradableError("Linker errors")
         if out and add_warning_result_msg:
             self.result["message"] += f"Linker warnings:\n\n{out}\n"
         return out
@@ -383,7 +383,7 @@ class CGrader:
     def test_run(
         self,
         command,
-        input=None,
+        input=None,  # noqa: A002
         exp_output=None,
         must_match_all_outputs: OutputMatchingOption | bool = "any",
         reject_output=None,
@@ -645,10 +645,10 @@ class CGrader:
             self.result["message"] += (
                 "Test suite log file not found. Consult the instructor.\n"
             )
-            raise UngradableError() from exc
+            raise UngradableError("Test suite log file not found.") from exc
         except et.ParseError as exc:
             self.result["message"] += f"Error parsing test suite log.\n\n{exc}\n"
-            raise UngradableError() from exc
+            raise UngradableError("Error parsing test suite log.") from exc
 
     def save_results(self):
         if self.result["max_points"] > 0:

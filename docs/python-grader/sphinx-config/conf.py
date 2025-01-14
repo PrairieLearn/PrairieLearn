@@ -19,7 +19,7 @@ sys.path.insert(0, os.path.abspath("../../../graders/python/python_autograder"))
 # -- Project information -----------------------------------------------------
 
 project = "Python Autograder"
-copyright = "2020, Nate Bowman, Nicolas Nytko, Andreas Kloeckner"
+copyright = "2020, Nate Bowman, Nicolas Nytko, Andreas Kloeckner"  # noqa: A001
 author = "Nate Bowman, Nicolas Nytko, Andreas Kloeckner"
 
 
