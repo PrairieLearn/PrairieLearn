@@ -27,13 +27,13 @@ DIRECTORY_DEFAULT = "."
 MARKDOWN_SHORTCUTS_DEFAULT = True
 
 
-def get_answer_name(file_name):
+def get_answer_name(file_name: str) -> str:
     return "_rich_text_editor_{}".format(
         hashlib.sha1(file_name.encode("utf-8")).hexdigest()
     )
 
 
-def element_inner_html(element):
+def element_inner_html(element: lxml.html.HtmlElement) -> str:
     return (element.text or "") + "".join(
         [str(lxml.html.tostring(c), "utf-8") for c in element.iterchildren()]
     )
