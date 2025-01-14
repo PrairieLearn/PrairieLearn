@@ -64,8 +64,8 @@ could also mean that scanf does not support the input provided
 
 
 class UngradableError(Exception):
-    def __init__(self):
-        pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
 
 
 # This is a deprecated alias for UngradableError, kept for backwards compatibility in existing question code.
@@ -231,7 +231,7 @@ class CGrader:
             self.result["message"] += (
                 f"Compilation errors, please fix and try again.\n\n{out}\n"
             )
-            raise UngradableError()
+            raise UngradableError("Compilation errors")
         if out and add_warning_result_msg:
             self.result["message"] += f"Compilation warnings:\n\n{out}\n"
         if exec_file:
@@ -309,7 +309,7 @@ class CGrader:
             self.result["message"] += (
                 f"Linker errors, please fix and try again.\n\n{out}\n"
             )
-            raise UngradableError()
+            raise UngradableError("Linker errors")
         if out and add_warning_result_msg:
             self.result["message"] += f"Linker warnings:\n\n{out}\n"
         return out
@@ -645,10 +645,10 @@ class CGrader:
             self.result["message"] += (
                 "Test suite log file not found. Consult the instructor.\n"
             )
-            raise UngradableError() from exc
+            raise UngradableError("Test suite log file not found.") from exc
         except et.ParseError as exc:
             self.result["message"] += f"Error parsing test suite log.\n\n{exc}\n"
-            raise UngradableError() from exc
+            raise UngradableError("Error parsing test suite log.") from exc
 
     def save_results(self):
         if self.result["max_points"] > 0:
