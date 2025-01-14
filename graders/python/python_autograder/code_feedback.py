@@ -22,10 +22,15 @@ THE SOFTWARE.
 
 
 from collections.abc import Callable
-from typing import Any, Literal, NoReturn
+from typing import TYPE_CHECKING, Any, Literal, NoReturn
 
 import numpy as np
 from numpy.typing import ArrayLike
+
+if TYPE_CHECKING:
+    from matplotlib.axes import Axes  # noqa: TC004
+    from pandas import DataFrame  # noqa: TC004
+    from pl_unit_test import PLTestCase  # noqa: TC004
 
 
 class GradingComplete(Exception):  # noqa: N818
@@ -55,7 +60,8 @@ class Feedback:
         cls.buffer = ""
 
     @classmethod
-    def set_test(cls, test) -> None:
+    def set_test(cls, test: PLTestCase | Any) -> None:
+        # TODO: In Python 3.11 this can be typed with typing.Self
         cls.test = test
 
     @classmethod
@@ -73,7 +79,7 @@ class Feedback:
         cls.test.points = score
 
     @classmethod
-    def add_iteration_prefix(cls, iter_prefix) -> None:
+    def add_iteration_prefix(cls, iter_prefix: int) -> None:
         cls.buffer = cls.prefix_message % iter_prefix
 
     @classmethod
@@ -168,9 +174,9 @@ class Feedback:
         name: str,
         ref: np.ndarray,
         data: None | ArrayLike | Any,
-        accuracy_critical=False,
-        report_failure=True,
-    ):
+        accuracy_critical: bool = False,
+        report_failure: bool = True,
+    ) -> bool | None:
         """
         Feedback.check_numpy_array_features(name, ref, data)
 
@@ -184,7 +190,7 @@ class Feedback:
         """
         import numpy as np
 
-        def bad(msg) -> Literal[False] | None:
+        def bad(msg) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
 
@@ -225,12 +231,12 @@ class Feedback:
         name: str,
         ref: np.ndarray,
         data: ArrayLike,
-        accuracy_critical=False,
-        rtol=1e-05,
-        atol=1e-08,
-        report_success=True,
-        report_failure=True,
-    ):
+        accuracy_critical: bool = False,
+        rtol: float = 1e-05,
+        atol: float = 1e-08,
+        report_success: bool = True,
+        report_failure: bool = True,
+    ) -> bool:
         """
         Feedback.check_numpy_allclose(name, ref, data)
 
@@ -273,9 +279,9 @@ class Feedback:
         ref: list,
         data: list | None | Any,
         entry_type: Any | None = None,
-        accuracy_critical=False,
-        report_failure=True,
-    ):
+        accuracy_critical: bool = False,
+        report_failure: bool = True,
+    ) -> bool:
         """
         Feedback.check_list(name, ref, data)
 
@@ -292,6 +298,7 @@ class Feedback:
         def bad(msg) -> Literal[False]:
             if report_failure:
                 cls.add_feedback(msg)
+
             if accuracy_critical:
                 cls.finish("")
             else:
@@ -321,10 +328,10 @@ class Feedback:
         name: str,
         ref: tuple,
         data: tuple | None | Any,
-        accuracy_critical=False,
-        report_failure=True,
-        report_success=True,
-    ):
+        accuracy_critical: bool = False,
+        report_failure: bool = True,
+        report_success: bool = True,
+    ) -> bool:
         """
         Feedback.check_tuple(name, ref, data)
 
@@ -381,12 +388,12 @@ class Feedback:
         name: str,
         ref: complex | np.number,
         data: complex | np.number | None | Any,
-        accuracy_critical=False,
-        rtol=1e-5,
-        atol=1e-8,
-        report_success=True,
-        report_failure=True,
-    ):
+        accuracy_critical: bool = False,
+        rtol: float = 1e-5,
+        atol: float = 1e-8,
+        report_success: bool = True,
+        report_failure: bool = True,
+    ) -> bool:
         """
         Feedback.check_scalar(name, ref, data)
 
@@ -447,7 +454,7 @@ class Feedback:
         return True
 
     @classmethod
-    def call_user(cls, f: Callable | Any, *args, **kwargs):
+    def call_user(cls, f: Callable, *args, **kwargs) -> Any:
         """
         Feedback.call_user(f)
 
@@ -485,13 +492,13 @@ class Feedback:
     def check_plot(
         cls,
         name: str,
-        ref,
-        plot,
-        check_axes_scale=None,
-        accuracy_critical=False,
-        report_failure=True,
-        report_success=True,
-    ):
+        ref: Axes,
+        plot: Axes,
+        check_axes_scale: Literal[None, "x", "y", "xy"] = None,
+        accuracy_critical: bool = False,
+        report_failure: bool = True,
+        report_success: bool = True,
+    ) -> bool:
         """
         Feedback.check_plot(name, ref, plot, check_axes_scale)
 
@@ -581,13 +588,13 @@ class Feedback:
     def check_dataframe(
         cls,
         name: str,
-        ref: Any,
-        data: Any,
+        ref: DataFrame,
+        data: DataFrame,
         subset_columns: list[str] | None = None,
-        check_values=True,
-        allow_order_variance=True,
-        display_input=False,
-    ):
+        check_values: bool = True,
+        allow_order_variance: bool = True,
+        display_input: bool = False,
+    ) -> bool:
         """
         ``check_dataframe``
         Checks and adds feedback regarding the correctness of

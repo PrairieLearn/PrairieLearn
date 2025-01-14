@@ -14,12 +14,12 @@ from faker import Faker
 
 
 class UserCodeFailedError(Exception):
-    def __init__(self, err, *args) -> None:
+    def __init__(self, err: Any, *args) -> None:
         self.err = err
         super().__init__(err, *args)
 
 
-def set_random_seed(seed=None) -> None:
+def set_random_seed(seed: int | None = None) -> None:
     np.random.seed(seed)
     random.seed(seed)
     Faker.seed(seed)
@@ -37,10 +37,10 @@ def try_read(fname: str) -> str:
 def execute_code(
     fname_ref: str,
     fname_student: str,
-    include_plt=False,
+    include_plt: bool = False,
     console_output_fname: str | None = None,
-    test_iter_num=0,
-    ipynb_key="#grade",
+    test_iter_num: int = 0,
+    ipynb_key: str = "#grade",
 ) -> tuple[dict[str, Any], dict[str, Any], ModuleType | None]:
     """
     execute_code(fname_ref, fname_student)

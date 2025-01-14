@@ -37,7 +37,7 @@ class PLTestResult(unittest.TestResult):
         # (but not execute them) so that we show the correct number of points on the grading panel
         self.skip_grading = False
 
-    def startTest(self, test) -> None:  # noqa: N802
+    def startTest(self, test: unittest.TestCase) -> None:  # noqa: N802
         unittest.TestResult.startTest(self, test)
 
         options = getattr(test, test._testMethodName).__func__.__dict__
@@ -50,7 +50,7 @@ class PLTestResult(unittest.TestResult):
             name = test._testMethodName
         self.results.append({"name": name, "max_points": points, "filename": filename})
 
-    def addSuccess(self, test) -> None:  # noqa: N802
+    def addSuccess(self, test: PLTestCase | unittest.TestCase) -> None:  # noqa: N802
         if not isinstance(test, PLTestCase):
             return
         unittest.TestResult.addSuccess(self, test)
@@ -59,7 +59,7 @@ class PLTestResult(unittest.TestResult):
         else:
             self.results[-1]["points"] = test.points * self.results[-1]["max_points"]
 
-    def addError(self, test, err) -> None:  # noqa: N802
+    def addError(self, test: unittest.TestCase, err: Any) -> None:  # noqa: N802
         if isinstance(err[1], GradingComplete):
             # If grading stopped early, we will flag that but still loop through
             # the remaining cases so that we have the correct point values
@@ -119,7 +119,7 @@ class PLTestResult(unittest.TestResult):
                 self.results[-1]["points"] = 0
                 Feedback.add_feedback(self.error_message + tr_message)
 
-    def addFailure(self, test, err) -> None:  # noqa: N802
+    def addFailure(self, test: unittest.TestCase, err: Any) -> None:  # noqa: N802
         unittest.TestResult.addFailure(self, test, err)
         if not isinstance(test, PLTestCase):
             return
@@ -128,7 +128,7 @@ class PLTestResult(unittest.TestResult):
         else:
             self.results[-1]["points"] = test.points * self.results[-1]["max_points"]
 
-    def stopTest(self, test) -> None:  # noqa: N802
+    def stopTest(self, test: unittest.TestCase) -> None:  # noqa: N802
         # Never write output back to the console
         self._mirrorOutput = False
         unittest.TestResult.stopTest(self, test)

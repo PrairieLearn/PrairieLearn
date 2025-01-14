@@ -124,7 +124,7 @@ class PLTestCase(unittest.TestCase):
         On test start, initialise the points and set up the code feedback library
         to provide feedback for this test.
         """
-        self.points = 0
+        self.points = 0.0
         Feedback.set_test(self)
 
     def run(self, result: unittest.TestResult | None = None) -> None:
@@ -141,7 +141,7 @@ class PLTestCase(unittest.TestCase):
         elif result.skip_grading:
             result.startTest(self)
             self.setUp()
-            result.addError(self, (None, GradingSkipped()))  # type: ignore
+            result.addError(self, (None, GradingSkipped()))
 
 
 class PLTestCaseWithPlot(PLTestCase):

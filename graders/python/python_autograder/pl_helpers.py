@@ -5,12 +5,11 @@ import urllib
 from collections.abc import Callable
 from functools import wraps
 from os.path import join, splitext
-from typing import Any
+from types import ModuleType
+from typing import IO, Any
 
 import pygments
 from code_feedback import Feedback
-from IPython.core.interactiveshell import InteractiveShell  # type: ignore
-from nbformat import read  # type: ignore
 from pygments.formatters import Terminal256Formatter
 from pygments.lexers import PythonLexer
 
@@ -25,7 +24,10 @@ class GradingSkipped(Exception):  # noqa: N818
     pass
 
 
-def extract_ipynb_contents(f, ipynb_key: str) -> str:
+def extract_ipynb_contents(f: IO[str], ipynb_key: str) -> str:
+    from IPython.core.interactiveshell import InteractiveShell  # type: ignore
+    from nbformat import read  # type: ignore
+
     """
     Extract all cells from a ipynb notebook that start with a given
     delimiter
@@ -42,7 +44,7 @@ def extract_ipynb_contents(f, ipynb_key: str) -> str:
     return content
 
 
-def save_plot(plt: Any, iternum=0):
+def save_plot(plt: ModuleType, iternum: int = 0) -> None:
     """
     Save plot(s) to files as png images.
     """
@@ -63,7 +65,7 @@ def save_plot(plt: Any, iternum=0):
             f.write(imgsrc)
 
 
-def points(points: float):
+def points(points: float) -> Callable:
     """
     Set the number of points that a test case should award.
     """
@@ -75,7 +77,7 @@ def points(points: float):
     return decorator
 
 
-def name(name: str):
+def name(name: str) -> Callable:
     """
     Set the name of a test case, this will appear on the "results" tab.
     """
@@ -96,7 +98,7 @@ def name(name: str):
     return decorator
 
 
-def not_repeated(f: Callable):
+def not_repeated(f: Callable) -> Callable:
     """
     Marks this test as running only once, if the test suite is to be run multiple times.
     """
@@ -114,7 +116,7 @@ def not_repeated(f: Callable):
 
 
 def print_student_code(
-    st_code: str = "user_code.py", ipynb_key: str = "#grade", as_feedback=True
+    st_code: str = "user_code.py", ipynb_key: str = "#grade", as_feedback: bool = True
 ) -> None | str:
     """
     Print the student's code, with syntax highlighting.
