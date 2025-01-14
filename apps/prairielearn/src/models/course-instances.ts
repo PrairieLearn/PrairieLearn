@@ -17,7 +17,6 @@ const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
   formatted_end_date: z.string(),
   has_course_instance_permission_view: z.boolean(),
 });
-
 export type CourseInstanceAuthz = z.infer<typeof CourseInstanceAuthzSchema>;
 
 export async function selectCourseInstanceById(
@@ -106,9 +105,5 @@ export async function selectCourseHasCourseInstances({
 }: {
   course_id: string;
 }): Promise<boolean> {
-  return await queryRow(
-    sql.select_course_has_course_instances,
-    { course_id },
-    z.boolean(),
-  );
+  return await queryRow(sql.select_course_has_course_instances, { course_id }, z.boolean());
 }
