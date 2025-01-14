@@ -1,4 +1,3 @@
-import { setTimeout as sleep } from 'node:timers/promises';
 import * as path from 'path';
 
 import { Octokit } from '@octokit/rest';
