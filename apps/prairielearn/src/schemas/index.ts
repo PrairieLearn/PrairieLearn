@@ -1,3 +1,13 @@
+/**
+ * This file defines a couple variety of schemas:
+ * - JSON (ajv) schemas (info... e.g. infoCourse)
+ * - Zod schemas (...JsonSchema)
+ * - Input types (...JsonInput)
+ * - Output types (...Json)
+ *
+ * If you have already parsed the object, you should use the output types.
+ * If you have an unparsed object, you should use the input types.
+ */
 import { type JSONSchemaType } from 'ajv';
 import { type ZodTypeDef, type ZodType } from 'zod';
 import {
@@ -49,6 +59,7 @@ import {
   CommentJsonSchema,
   ExternalGradingOptionsJsonSchema,
 } from './schemas/index.js';
+
 export * from './schemas/index.js';
 
 /**

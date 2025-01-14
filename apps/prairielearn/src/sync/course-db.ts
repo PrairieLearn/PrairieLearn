@@ -205,6 +205,11 @@ export interface CourseData {
   courseInstances: Record<string, CourseInstanceData>;
 }
 
+/**
+ * Loads and validates an entire course from a directory on disk.
+ * Downstream callers of this function can use
+ * ...Json types instead of ...JsonInput types.
+ */
 export async function loadFullCourse(
   courseId: string | null,
   courseDir: string,
