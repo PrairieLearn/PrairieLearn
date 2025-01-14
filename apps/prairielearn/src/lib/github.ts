@@ -170,7 +170,6 @@ export async function createCourseRepoJob(
 
     // Create an empty repository for the course
     job.info('Creating empty repository');
-
     await createEmptyRepository(client, options.repo_short_name);
     job.info(`Created repository ${options.repo_short_name}`);
 
