@@ -13,9 +13,9 @@ router.get(
     });
 
     if (!courseHasCourseInstances) {
-      // For brand new courses, we believe users want to create questions first
-      // since questions are what make PrairieLearn unique, and many new users likely
-      // aren't thinking of immediately offering anything to students
+      // We believe that for brand new courses, users want to create questions first,
+      // since questions are PrairieLearn's distinctive feature, and since they are likely
+      // not yet ready to offer anything to students yet.
       res.redirect(`/pl/course/${res.locals.course.id}/course_admin/questions`);
     } else {
       // Once users have created course instances, they should have easier access to them
