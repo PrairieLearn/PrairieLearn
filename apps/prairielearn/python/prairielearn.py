@@ -1232,7 +1232,41 @@ def string_to_2darray(
         return (None, {"format_error": "Unbalanced square brackets."})
 
     # If there are no brackets, treat as scalar
+    result_type: Literal["python", "matlab", "scalar"]
     if number_of_left_brackets == 0:
+        result_type = "scalar"
+
+    # If there is only one set of brackets, treat as MATLAB format
+    elif number_of_left_brackets == 1:
+        result_type = "matlab"
+
+    # If there is more than one set of brackets, treat as python format
+    else:
+        result_type = "python"
+
+    # Get string between outer brackets
+    if result_type != "scalar":
+        (s_before_left, s, s_after_right) = string_partition_outer_interval(s)
+
+        # Return error if there is anything but space outside brackets
+        s_before_left = s_before_left.strip()
+        s_after_right = s_after_right.strip()
+        if s_before_left:
+            return (
+                None,
+                {
+                    "format_error": f"Non-empty text {escape_invalid_string(s_before_left)} before outer brackets."
+                },
+            )
+        if s_after_right:
+            return (
+                None,
+                {
+                    "format_error": f"Non-empty space {escape_invalid_string(s_after_right)} after outer brackets."
+                },
+            )
+
+    if result_type == "scalar":
         try:
             # Convert submitted answer (assumed to be a scalar) to float or (optionally) complex
             ans = string_to_number(s, allow_complex=allow_complex)
@@ -1259,30 +1293,7 @@ def string_to_2darray(
                         "format_error": "Invalid format (missing square brackets and could not be interpreted as a double-precision floating-point number)."
                     },
                 )
-
-    # Get string between outer brackets
-    (s_before_left, s, s_after_right) = string_partition_outer_interval(s)
-
-    # Return error if there is anything but space outside brackets
-    s_before_left = s_before_left.strip()
-    s_after_right = s_after_right.strip()
-    if s_before_left:
-        return (
-            None,
-            {
-                "format_error": f"Non-empty text {escape_invalid_string(s_before_left)} before outer brackets."
-            },
-        )
-    if s_after_right:
-        return (
-            None,
-            {
-                "format_error": f"Non-empty space {escape_invalid_string(s_after_right)} after outer brackets."
-            },
-        )
-
-    # If there is only one set of brackets, treat as MATLAB format
-    if number_of_left_brackets == 1:
+    elif result_type == "matlab":
         # Can NOT strip white space on either side of "+" or "-" wherever they occur,
         # because there is an ambiguity between space delimiters and whitespace.
         #
@@ -1369,9 +1380,7 @@ def string_to_2darray(
 
         # Return resulting ndarray with no error
         return (matrix, {"format_type": "matlab"})
-
-    # If there is more than one set of brackets, treat as python format
-    if number_of_left_brackets > 1:
+    elif result_type == "python":
         # Strip white space on either side of "+" or "-" wherever they occur
         s = re.sub(r" *\+ *", "+", s)
         s = re.sub(r" *\- *", "-", s)
@@ -1515,9 +1524,7 @@ def string_to_2darray(
 
         # Return result with no error
         return (matrix, {"format_type": "python"})
-
-    # TODO: is there a way to statically check that we've handled all cases?
-    raise AssertionError("Should never reach this point")
+    assert_never(result_type)
 
 
 def latex_from_2darray(
