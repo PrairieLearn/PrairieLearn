@@ -17,6 +17,7 @@ import { config } from './config.js';
 import { type User } from './db-types.js';
 import { sendCourseRequestMessage } from './opsbot.js';
 import { TEMPLATE_COURSE_PATH } from './paths.js';
+import { formatJsonWithPrettier } from './prettier.js';
 import { createServerJob, type ServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -175,8 +176,8 @@ export async function createCourseRepoJob(
 
     job.info('Creating infoCourse.json');
 
+    // Read the template infoCourse.json file
     const infoCoursePath = path.join(TEMPLATE_COURSE_PATH, 'infoCourse.json');
-
     const infoCourse = JSON.parse(await fs.readFile(infoCoursePath, 'utf-8'));
 
     infoCourse.uuid = uuidv4();
@@ -184,7 +185,8 @@ export async function createCourseRepoJob(
     infoCourse.title = options.title;
     infoCourse.timezone = options.display_timezone;
 
-    const newContents = JSON.stringify(infoCourse, null, 4);
+    const newContents = await formatJsonWithPrettier(JSON.stringify(infoCourse));
+
     job.verbose('New infoCourse.json file:');
     job.verbose(newContents);
 
@@ -213,7 +215,6 @@ export async function createCourseRepoJob(
     // The output of this is array of objects following:
     // https://docs.github.com/en/rest/reference/repos#list-branches
 
-    // Create the infoCourse.json file based on the template version.
     const branches = (
       await client.repos.listBranches({
         owner: config.githubCourseOwner,
