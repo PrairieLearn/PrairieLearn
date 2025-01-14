@@ -14,7 +14,7 @@ import {
   CourseInstanceJsonSchema,
   CourseJsonSchema,
   NewsItemJsonSchema,
-  CalculationQuestionOptionsJsonSchema,
+  QuestionCalculationOptionsJsonSchema,
   QuestionCheckboxOptionsJsonSchema,
   QuestionFileOptionsJsonSchema,
   QuestionMultipleChoiceOptionsJsonSchema,
@@ -29,7 +29,7 @@ import {
   type QuestionMultipleChoiceOptionsJson,
   type QuestionFileOptionsJson,
   type QuestionCheckboxOptionsJson,
-  type CalculationQuestionOptionsJson,
+  type QuestionCalculationOptionsJson,
   type QuestionJson,
   type ElementExtensionJson,
   type ElementCoreJson,
@@ -157,14 +157,14 @@ export const infoQuestion = prairielearnZodToJsonSchema(QuestionJsonSchema, {
 }) as JSONSchemaType<QuestionJson>;
 
 export const questionOptionsCalculation = prairielearnZodToJsonSchema(
-  CalculationQuestionOptionsJsonSchema,
+  QuestionCalculationOptionsJsonSchema,
   {
     name: 'Calculation question options',
     nameStrategy: 'title',
     target: 'jsonSchema7',
     definitions: { CommentJsonSchema },
   },
-) as JSONSchemaType<CalculationQuestionOptionsJson>;
+) as JSONSchemaType<QuestionCalculationOptionsJson>;
 
 export const questionOptionsCheckbox = prairielearnZodToJsonSchema(
   QuestionCheckboxOptionsJsonSchema,

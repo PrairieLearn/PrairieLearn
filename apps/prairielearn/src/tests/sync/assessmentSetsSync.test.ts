@@ -23,13 +23,13 @@ function checkAssessmentSet(syncedAssessmentSet: any, assessmentSet: any) {
 /**
  * Makes a new assessment.
  */
-function makeAssessmentSet(): AssessmentSetJson {
+function makeAssessmentSet() {
   return {
     name: 'new assessment set',
     abbreviation: 'new',
     heading: 'a new assessment set to sync',
     color: 'red1',
-  };
+  } satisfies AssessmentSetJson;
 }
 
 describe('Assessment set syncing', () => {
@@ -83,18 +83,18 @@ describe('Assessment set syncing', () => {
 
   it('records a warning if two assessment sets have the same name', async () => {
     const courseData = util.getCourseData();
-    const newAssessmentSet1: AssessmentSetJson = {
+    const newAssessmentSet1 = {
       name: 'new assessment set',
       abbreviation: 'new1',
       heading: 'a new assessment set 1 to sync',
       color: 'red1',
-    };
-    const newAssessmentSet2: AssessmentSetJson = {
+    } satisfies AssessmentSetJson;
+    const newAssessmentSet2 = {
       name: 'new assessment set',
       abbreviation: 'new2',
       heading: 'a new assessment set 2 to sync',
       color: 'red2',
-    };
+    } satisfies AssessmentSetJson;
     courseData.course.assessmentSets.push(newAssessmentSet1);
     courseData.course.assessmentSets.push(newAssessmentSet2);
     await util.writeAndSyncCourseData(courseData);

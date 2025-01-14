@@ -4,30 +4,30 @@ import { assert } from 'chai';
 import stringify from 'fast-json-stable-stringify';
 import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
-import { z } from 'zod';
+import { type z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import {
-  AssessmentJsonSchema,
-  CourseInstanceJsonSchema,
-  CourseJsonSchema,
-  QuestionJsonSchema,
-  type CourseJson,
-  type QuestionJson,
+import type {
+  AssessmentJsonInput,
+  AssessmentSetJsonInput,
+  CourseInstanceJsonInput,
+  CourseJsonInput,
+  CourseOptionsJson,
+  QuestionJsonInput,
+  TagJsonInput,
+  TopicJsonInput,
 } from '../../schemas/index.js';
 import * as syncFromDisk from '../../sync/syncFromDisk.js';
 
-const CourseInstanceDataSchema = z.object({
-  assessments: z.record(z.string(), AssessmentJsonSchema),
-  courseInstance: CourseInstanceJsonSchema,
-});
-
-export type CourseInstanceData = z.infer<typeof CourseInstanceDataSchema>;
+export interface CourseInstanceData {
+  assessments: Record<string, AssessmentJsonInput>;
+  courseInstance: CourseInstanceJsonInput;
+}
 
 export interface CourseData {
-  course: CourseJson;
-  questions: Record<string, QuestionJson>;
+  course: CourseJsonInput;
+  questions: Record<string, QuestionJsonInput>;
   courseInstances: Record<string, CourseInstanceData>;
 }
 
@@ -104,7 +104,7 @@ export const WORKSPACE_QUESTION_ID = 'workspace';
 export const COURSE_INSTANCE_ID = 'Fa19';
 export const ASSESSMENT_ID = 'test';
 
-const course = CourseJsonSchema.parse({
+const course = {
   uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
   name: 'TEST 101',
   title: 'Test Course',
@@ -145,7 +145,7 @@ const course = CourseJsonSchema.parse({
       color: 'gray2',
       description: 'Another test topic',
     },
-  ],
+  ] as TopicJsonInput[],
   tags: [
     {
       name: 'test',
@@ -157,10 +157,11 @@ const course = CourseJsonSchema.parse({
       color: 'blue2',
       description: 'Another test tag',
     },
-  ],
-});
+  ] as TagJsonInput[],
+  options: undefined as CourseOptionsJson | undefined,
+} satisfies CourseJsonInput;
 
-const questions = z.record(z.string(), QuestionJsonSchema).parse({
+const questions: Record<string, QuestionJsonInput> = {
   private: {
     uuid: 'aff9236d-4f40-41fb-8c34-f97aed016535',
     title: 'Test question',
@@ -203,9 +204,9 @@ const questions = z.record(z.string(), QuestionJsonSchema).parse({
       gradedFiles: ['fibonacci.py'],
     },
   },
-});
+};
 
-const courseInstances = z.record(z.string(), CourseInstanceDataSchema).parse({
+const courseInstances: Record<string, CourseInstanceData> = {
   [COURSE_INSTANCE_ID]: {
     assessments: {
       [ASSESSMENT_ID]: {
@@ -243,7 +244,7 @@ const courseInstances = z.record(z.string(), CourseInstanceDataSchema).parse({
       ],
     },
   },
-});
+};
 
 /**
  * @returns The base course data for syncing testing

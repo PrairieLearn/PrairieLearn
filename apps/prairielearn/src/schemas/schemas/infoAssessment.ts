@@ -31,6 +31,7 @@ const GroupRoleJsonSchema = z
   );
 
 export type GroupRoleJson = z.infer<typeof GroupRoleJsonSchema>;
+export type GroupRoleJsonInput = z.input<typeof GroupRoleJsonSchema>;
 
 export const AssessmentAccessRuleJsonSchema = z
   .object({

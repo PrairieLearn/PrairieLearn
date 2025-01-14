@@ -49,6 +49,7 @@ export const TopicJsonSchema = z
   .describe('A single assessment set description.');
 
 export type TopicJson = z.infer<typeof TopicJsonSchema>;
+export type TopicJsonInput = z.input<typeof TopicJsonSchema>;
 
 export const TagJsonSchema = z
   .object({
@@ -61,6 +62,7 @@ export const TagJsonSchema = z
   .describe('A single tag description.');
 
 export type TagJson = z.infer<typeof TagJsonSchema>;
+export type TagJsonInput = z.input<typeof TagJsonSchema>;
 
 export const AssessmentSetJsonSchema = z
   .object({
@@ -83,6 +85,7 @@ export const AssessmentSetJsonSchema = z
   .describe('A single assessment set description.');
 
 export type AssessmentSetJson = z.infer<typeof AssessmentSetJsonSchema>;
+export type AssessmentSetJsonInput = z.input<typeof AssessmentSetJsonSchema>;
 
 export const CourseOptionsJsonSchema = z
   .object({

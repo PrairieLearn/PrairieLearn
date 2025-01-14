@@ -13,7 +13,7 @@ import { config } from '../lib/config.js';
 import { getGroupRoleReassignmentsAfterLeave } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
-import { type GroupRoleJson } from '../schemas/index.js';
+import { type GroupRoleJsonInput } from '../schemas/index.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -1040,7 +1040,7 @@ describe('Test group based assessments with custom group roles from student side
   });
 });
 
-const changeGroupRolesConfig = async (courseDir: string, groupRoles: GroupRoleJson[]) => {
+const changeGroupRolesConfig = async (courseDir: string, groupRoles: GroupRoleJsonInput[]) => {
   const infoAssessmentPath = path.join(
     courseDir,
     'courseInstances',

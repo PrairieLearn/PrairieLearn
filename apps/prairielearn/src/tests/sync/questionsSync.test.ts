@@ -6,11 +6,11 @@ import { v4 as uuidv4 } from 'uuid';
 
 import { idsEqual } from '../../lib/id.js';
 import {
-  ExternalGradingOptionsJsonSchema,
-  QuestionJsonSchema,
-  TopicJsonSchema,
-  WorkspaceOptionsJsonSchema,
-  type QuestionJson,
+  type QuestionJsonInput,
+  type TagJson,
+  type TagJsonInput,
+  type TopicJson,
+  type TopicJsonInput,
 } from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
 
@@ -19,13 +19,13 @@ import * as util from './util.js';
 /**
  * Makes an empty question.
  */
-function makeQuestion(courseData: util.CourseData): QuestionJson {
-  return QuestionJsonSchema.parse({
+function makeQuestion(courseData: util.CourseData): QuestionJsonInput {
+  return {
     uuid: uuidv4(),
     title: 'Test question',
     type: 'v3',
     topic: courseData.course.topics[0].name,
-  });
+  };
 }
 
 async function findSyncedQuestion(qid) {
@@ -138,12 +138,11 @@ describe('Question syncing', () => {
     // Note that we want the database to contain empty arrays, not NULL
     const courseData = util.getCourseData();
     courseData.questions[util.QUESTION_ID].clientFiles = [];
-    courseData.questions[util.QUESTION_ID].externalGradingOptions =
-      ExternalGradingOptionsJsonSchema.parse({
-        image: 'docker-image',
-        entrypoint: 'entrypoint',
-        serverFilesCourse: [],
-      });
+    courseData.questions[util.QUESTION_ID].externalGradingOptions = {
+      image: 'docker-image',
+      entrypoint: 'entrypoint',
+      serverFilesCourse: [],
+    };
     await util.writeAndSyncCourseData(courseData);
     const syncedQuestions = await util.dumpTable('questions');
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
@@ -161,11 +160,10 @@ describe('Question syncing', () => {
 
   it('syncs entrypoint as an array', async () => {
     const courseData = util.getCourseData();
-    courseData.questions[util.QUESTION_ID].externalGradingOptions =
-      ExternalGradingOptionsJsonSchema.parse({
-        image: 'docker-image',
-        entrypoint: ['entrypoint', 'second argument'],
-      });
+    courseData.questions[util.QUESTION_ID].externalGradingOptions = {
+      image: 'docker-image',
+      entrypoint: ['entrypoint', 'second argument'],
+    };
     await util.writeAndSyncCourseData(courseData);
     const syncedQuestions = await util.dumpTable('questions');
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
@@ -174,12 +172,12 @@ describe('Question syncing', () => {
 
   it('syncs workspace args as an array', async () => {
     const courseData = util.getCourseData();
-    courseData.questions[util.QUESTION_ID].workspaceOptions = WorkspaceOptionsJsonSchema.parse({
+    courseData.questions[util.QUESTION_ID].workspaceOptions = {
       image: 'docker-image',
       port: 8080,
       home: '/home/user',
       args: ['first', 'second argument'],
-    });
+    };
     await util.writeAndSyncCourseData(courseData);
     const syncedQuestions = await util.dumpTable('questions');
     const syncedQuestion = syncedQuestions.find((q) => q.qid === util.QUESTION_ID);
@@ -202,11 +200,11 @@ describe('Question syncing', () => {
 
   it('preserves question topic even if question topic is deleted', async () => {
     const courseData = util.getCourseData();
-    const newTopic = TopicJsonSchema.parse({
+    const newTopic: TopicJsonInput = {
       name: 'test topic',
       color: 'green1',
       description: 'test topic description',
-    });
+    };
     courseData.course.topics.push(newTopic);
     courseData.questions[util.QUESTION_ID].topic = newTopic.name;
     const courseDir = await util.writeCourseToTempDirectory(courseData);
@@ -228,7 +226,7 @@ describe('Question syncing', () => {
 
   it('preserves question tag even if question tag is deleted', async () => {
     const courseData = util.getCourseData();
-    const newTag = {
+    const newTag: TagJsonInput = {
       name: 'test tag',
       color: 'green1',
       description: 'test tag description',
