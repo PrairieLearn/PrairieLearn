@@ -10,7 +10,7 @@ import canvas
 
 
 def file_name_only(name):
-    return re.sub("[\W_]+", "", name)
+    return re.sub(r"[\W_]+", "", name)
 
 
 parser = argparse.ArgumentParser()
@@ -44,7 +44,7 @@ args = parser.parse_args()
 canvas = canvas.Canvas(args=args)
 
 if not os.path.exists(os.path.join(args.pl_repo, "infoCourse.json")):
-    raise Exception("Provided directory is not a PrairieLearn repository")
+    raise ValueError("Provided directory is not a PrairieLearn repository")
 
 print("Reading data from Canvas...")
 course = canvas.course(args.course, prompt_if_needed=True)

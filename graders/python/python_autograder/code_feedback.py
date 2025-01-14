@@ -95,10 +95,10 @@ class Feedback:
         Complete grading immediately, additionally outputting the message in fb_text.
         """
         cls.add_feedback(fb_text)
-        raise GradingComplete()
+        raise GradingComplete("Grading complete")
 
     @staticmethod
-    def not_allowed(*args, **kwargs):
+    def not_allowed(*_args, **_kwargs):
         """
         Used to hook into disallowed functions, raises an exception if
         the student tries to call it.
@@ -245,7 +245,7 @@ class Feedback:
             cls.add_feedback(f"'{name}' looks good")
 
         if accuracy_critical and not good:
-            raise GradingComplete()
+            raise GradingComplete("Inaccurate, grading halted")
 
         return good
 
@@ -462,7 +462,7 @@ class Feedback:
                     "callable."
                 )
 
-            raise GradingComplete() from exc
+            raise GradingComplete from exc
 
     @classmethod
     def check_plot(

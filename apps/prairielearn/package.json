@@ -72,7 +72,6 @@
     "blocked-at": "^1.2.0",
     "body-parser": "^1.20.3",
     "bootstrap": "5.2.3",
-    "bootstrap-4": "npm:bootstrap@^4.6.2",
     "bootstrap-icons": "^1.11.3",
     "bootstrap-table": "1.21.2",
     "bowser": "^2.11.0",
