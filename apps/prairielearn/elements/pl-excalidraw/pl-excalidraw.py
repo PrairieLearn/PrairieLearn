@@ -147,8 +147,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if gradable:
                 if fresh:
                     raise unreachable
-                else:  # submission
-                    initial_content = data["submitted_answers"][drawing_name]
+                # submission
+                initial_content = data["submitted_answers"][drawing_name]
             elif fresh and source_available:
                 initial_content = load_file_content(element, data)
             else:
@@ -191,7 +191,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             # Check the submissions if available
             if drawing_name in data["submitted_answers"]:
                 json.loads(data["submitted_answers"][drawing_name])
-        except Exception as exc:
+        except ValueError as exc:
             if drawing_name not in data["format_errors"]:
                 data["format_errors"][drawing_name] = []
             data["format_errors"][drawing_name].append(

@@ -4,6 +4,7 @@ import random
 import chevron
 import lxml.html
 import prairielearn as pl
+from typing_extensions import assert_never
 
 WEIGHT_DEFAULT = 1
 FIXED_ORDER_DEFAULT = False
@@ -53,7 +54,7 @@ def prepare(element_html, data):
     )
     partial_credit_method = pl.get_string_attrib(element, "partial-credit-method", None)
     if not partial_credit and partial_credit_method is not None:
-        raise Exception(
+        raise ValueError(
             "Cannot specify partial-credit-method if partial-credit is not enabled"
         )
 
@@ -94,12 +95,11 @@ def prepare(element_html, data):
     # FIXME: why enforce a maximum number of options?
     max_answers = 26  # will not display more than 26 checkbox answers
 
-    number_answers = max(0, min(len_total, min(max_answers, number_answers)))
+    number_answers = max(0, min(len_total, max_answers, number_answers))
     min_correct = min(
-        len_correct,
-        min(number_answers, max(0, max(number_answers - len_incorrect, min_correct))),
+        len_correct, number_answers, max(0, number_answers - len_incorrect, min_correct)
     )
-    max_correct = min(len_correct, min(number_answers, max(min_correct, max_correct)))
+    max_correct = min(len_correct, number_answers, max(min_correct, max_correct))
     if not (0 <= min_correct <= max_correct <= len_correct):
         raise ValueError(
             f"INTERNAL ERROR: correct number: ({min_correct}, {max_correct}, {len_correct}, {len_incorrect})"
@@ -161,9 +161,9 @@ def prepare(element_html, data):
             correct_answer_list.append(keyed_answer)
 
     if name in data["params"]:
-        raise Exception(f"duplicate params variable name: {name}")
+        raise ValueError(f"duplicate params variable name: {name}")
     if name in data["correct_answers"]:
-        raise Exception(f"duplicate correct_answers variable name: {name}")
+        raise ValueError(f"duplicate correct_answers variable name: {name}")
     data["params"][name] = display_answers
     data["correct_answers"][name] = correct_answer_list
 
@@ -449,17 +449,16 @@ def render(element_html, data):
             correct_answer_list = data["correct_answers"].get(name, [])
             if len(correct_answer_list) == 0:
                 raise ValueError("At least one option must be true.")
-            else:
-                html_params = {
-                    "answer": True,
-                    "inline": inline,
-                    "answers": correct_answer_list,
-                    "hide_letter_keys": pl.get_boolean_attrib(
-                        element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
-                    ),
-                }
-                with open("pl-checkbox.mustache", encoding="utf-8") as f:
-                    html = chevron.render(f, html_params).strip()
+            html_params = {
+                "answer": True,
+                "inline": inline,
+                "answers": correct_answer_list,
+                "hide_letter_keys": pl.get_boolean_attrib(
+                    element, "hide-letter-keys", HIDE_LETTER_KEYS_DEFAULT
+                ),
+            }
+            with open("pl-checkbox.mustache", encoding="utf-8") as f:
+                html = chevron.render(f, html_params).strip()
         else:
             html = ""
 
@@ -654,7 +653,7 @@ def test(element_html, data):
         data["raw_submitted_answers"][name] = None
         data["format_errors"][name] = "You must select at least one option."
     else:
-        raise Exception(f"invalid result: {result}")
+        assert_never(result)
 
 
 def _get_min_options_to_select(element, default_val):

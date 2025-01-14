@@ -71,7 +71,7 @@ def prepare(element_html, data):
     if not prev:
         name = pl.get_string_attrib(element, "answers-name", None)
         if name is None:
-            raise Exception("answers-name is required if gradable mode is enabled")
+            raise ValueError("answers-name is required if gradable mode is enabled")
 
         n_id = 0
         n_control_elements = 0
@@ -83,7 +83,7 @@ def prepare(element_html, data):
             # Get all the objects in pl-drawing-answer
             if child.tag == "pl-drawing-answer":
                 if answer_child is not None:
-                    raise Exception(
+                    raise ValueError(
                         "You should have only one pl-drawing-answer inside a pl-drawing."
                     )
                 draw_error_box = pl.get_boolean_attrib(
@@ -93,7 +93,7 @@ def prepare(element_html, data):
             # Get all the objects in pl-drawing-initial
             if child.tag == "pl-drawing-initial":
                 if initial_child is not None:
-                    raise Exception(
+                    raise ValueError(
                         "You should have only one pl-drawing-initial inside a pl-drawing."
                     )
                 initial_child = child
@@ -121,7 +121,7 @@ def prepare(element_html, data):
                                     w_button = buttons.attrib.get("width", None)
 
         if answer_child is None:
-            raise Exception(
+            raise ValueError(
                 'You do not have any "pl-drawing-answer" inside pl-drawing where gradable=True. You should either specify the "pl-drawing-answer" if you want to grade objects, or make gradable=False'
             )
 
@@ -147,10 +147,9 @@ def prepare(element_html, data):
                     and obj["width"] == defaults.drawing_defaults["force-width"]
                 ) or obj["width"] == float(w_button):
                     continue
-                else:
-                    raise Exception(
-                        "Width is not consistent! pl-vector in pl-drawing-answers needs to have the same width of pl-vector in pl-drawing-button."
-                    )
+                raise RuntimeError(
+                    "Width is not consistent! pl-vector in pl-drawing-answers needs to have the same width of pl-vector in pl-drawing-button."
+                )
 
         # Combines all the objects in pl-drawing-answers and pl-drawing-initial
         # and saves in correct_answers
@@ -218,7 +217,7 @@ def render_drawing_items(elem, curid=0, defaults=None):
     for el in elem:
         if el.tag is lxml.etree.Comment:
             continue
-        elif el.tag == "pl-drawing-group":
+        if el.tag == "pl-drawing-group":
             if pl.get_boolean_attrib(el, "visible", True):
                 curid += 1
                 raw, _ = render_drawing_items(el, curid, {"groupid": curid})
@@ -254,7 +253,7 @@ def render(element_html, data):
     for el in element:
         if el.tag is lxml.etree.Comment:
             continue
-        elif el.tag == "pl-controls" and not preview_mode:
+        if el.tag == "pl-controls" and not preview_mode:
             btn_markup = render_controls(template, el)
         elif el.tag == "pl-drawing-initial":
             init, _ = render_drawing_items(el)

@@ -1,12 +1,8 @@
 [tool.ruff]
 include = [
-    "./apps/prairielearn/elements/**/*.py",
-    "./apps/prairielearn/python/*.py",
-    "./graders/**/*.py",
-    "./exampleCourse/**/*.py",
-    "./testCourse/**/*.py",
-    "./tools/**/*.py"
+    "**/*.py",
 ]
+
 exclude = [
     # These files are intentionally not parseable as Python.
     "./exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/fib_error_binary_file/fib.py",
@@ -20,76 +16,54 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = [
-    "E",
-    "N",
-    # pyflakes
-    "F",
-    # isort
-    "I",
-    # flake8-bugbear
-    "B",
-    # flake8-simplify
-    "SIM",
-    # pyupgrade
-    "UP",
-    # flake8-pie
-    "PIE",
-    # Perflint
-    "PERF",
-    # flake8-comprehensions
-    "C4",
-    # ruff-specific rules
-    "RUF",
-    # flake8-import-conventions
-    "ICN",
-    # flake8-implicit-str-concat
-    "ISC",
-    # flake8-pytest-style
-    "PT",
-    # refurb
-    "FURB",
-    # pandas-vet
-    "PD",
-    # NumPy-specific rules
-    "NPY",
-    # pylint
-    "PLR",
-    # flake8-2020
-    "YTT",
-    # flake8-async
-    "ASYNC",
-    # flake8-datetimez
-    "DTZ",
-    # flake8-debugger
-    "T10",
-    # flake8-logging
-    "LOG",
-    # flake8-pyi
-    "PYI",
-    # flake8-slots
-    "SLOT",
-    # flake8-gettext
-    "INT",
-    # flynt
-    "FLY"
-]
-ignore = [
-    # Ignore line length errors
-    "E501",
-    # if-else blocks that could be shortened (https://docs.astral.sh/ruff/rules/if-else-block-instead-of-if-exp/)
-    "SIM108",
-    # Too many statements, too many branches, too many arguments, too many returns
-    "PLR0912", "PLR0915", "PLR0913", "PLR0911",
-    # Magic value used in comparison (foo == 5)
-    "PLR2004",
-    # Explicit string concatenation
-    "ISC003",
-    # Avoid using the generic variable name `df` for DataFrames
-    "PD901",
-    # Replace legacy `np.random.*` call with `np.random.Generator`
-    "NPY002",
+    "ALL"
 ]
 
+ignore = [
+    # These rules provide little value to us
+    "ANN", # flake8-annotations
+    "BLE", # flake8-blind-except
+    "COM", # flake8-commas
+    "C901", # mccabe (complexity checks)
+    "D", # pydocstyle
+    "ERA", # eradicate (code in comments)
+    "EM", # flake8-errmsg
+    "E501", # line-too-long
+    "FIX", # flake8-fixme
+    "INP001", # implicit-namespace-package
+    "S", # flake8-bandit (security rules)
+    "T", # flake8-print, flake8-debugger
+    "TD", # flake8-todos
+    "PGH003", # blanket-type-ignore
+    "PLE2513", # invalid-character-esc
+    "PTH", # flake8-use-pathlib
+
+    # These rules were discussed and disabled
+    "ISC003", # explicit-string-concatenation
+    "NPY002", # numpy-legacy-random (we use `np.random.*` in many places)
+    "PD901", # pandas-df-variable-name (we use `df` in many places)
+    "PLR0911", # too-many-return-statements
+    "PLR0912", # too-many-branches
+    "PLR0913", # too-many-arguments
+    "PLR0915", # too-many-statements
+    "PLR2004", # magic-value-comparison
+    "RET503", # implicit-return
+    "RET504", # unnecessary-assign
+    "RET505", # superfluous-else-return
+    "SIM108", # if-else-block-instead-of-if-exp
+    "TRY300", # try-consider-else (returns in try blocks)
+    "TRY301", # raise-within-try
+    "TRY003", # raise-vanilla-args (long messages in raise statements)
+
+    # These rules need to be implemented
+    "SLF001", # private-member-access 
+    "RSE102", # unnecessary-paren-on-raise-exception
+
+    # These rules have active PRs
+    "A", # flake8-builtins
+    "FBT", # flake8-boolean-trap
+    "EXE", # flake8-executable
+]
 [tool.ruff.lint.per-file-ignores]
 # Files related to the Python autograder will often intentionally appear
 # broken in isolation. We'll allow specific errors in these files to
@@ -98,16 +72,19 @@ ignore = [
 # - F401: module imported but unused
 # - F821: undefined name
 # - F841: local variable name is assigned to but never used
+# - ARG001: Unused function argument
 "exampleCourse/questions/**/tests/setup_code.py" = ["F401", "F821"]
-"exampleCourse/questions/**/tests/leading_code.py" = ["F401", "F821", "F841"]
+"exampleCourse/questions/**/tests/leading_code.py" = ["F401", "F821", "F841", "ARG001"]
 "exampleCourse/questions/**/tests/ans.py" = ["F821"]
+"exampleCourse/questions/demo/autograder/codeUpload/submitted_code_samples/**/*.py" = ["ARG001"]
+
 # Ignore uppercase variables and function parameters (e.g. G for a graph)
 "exampleCourse/questions/**/*.py" = ["N806", "N803"]
 # The zygote specifically uses imports in strange places to facilitate the
 # preloading of commonly-used modules.
 "zygote.py" = ["E402", "F401"]
-# Ignore uppercase function parameters (e.g. G for a graph)
-"apps/prairielearn/elements/**/*.py" = ["N803"]
+# Ignore uppercase function parameters (e.g. G for a graph), ignore unused parameters in functions
+"apps/prairielearn/elements/**/*.py" = ["N803", "ARG"]
 "apps/prairielearn/python/*.py" = ["N803"]
 # Do not require self in method params
 "apps/prairielearn/elements/pl-drawing/elements.py" = ["N805"]

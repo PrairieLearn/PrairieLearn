@@ -42,7 +42,7 @@ def get_counter(i, counter_type):
     elif counter_type == "full-text":
         return ""
     else:
-        raise Exception(
+        raise ValueError(
             f'Illegal counter-type in pl-matching element: "{counter_type}" should be "decimal", "lower-alpha", "upper-alpha", or "full-text".'
         )
 
