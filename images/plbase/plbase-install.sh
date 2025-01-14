@@ -92,7 +92,7 @@ fi
 # Installing to a different directory is a preview feature
 uv python install --default --preview "cpython-3.10-${UV_ARCH}"
 # # uv currently doesn't pick up optimized builds https://github.com/astral-sh/uv/issues/10586
-rename linux-x86_64_v2 linux-x86_64 $UV_PYTHON_INSTALL_DIR/*
+rename linux-x86_64_v3 linux-x86_64 $UV_PYTHON_INSTALL_DIR/*
 uv venv
 uv pip install --no-cache-dir --upgrade pip setuptools
 uv pip install --no-cache-dir -r /python-requirements.txt
