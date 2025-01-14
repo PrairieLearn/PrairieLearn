@@ -106,15 +106,15 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
     def find_spec(
         self,
         fullname: str,
-        path: Sequence[str] | None,
-        target: types.ModuleType | None = None,
+        _path: Sequence[str] | None,
+        _target: types.ModuleType | None = None,
     ) -> None:
         if any(
             fullname == module or fullname.startswith(module + ".")
             for module in self.forbidden_modules
         ):
             raise ImportError(f'module "{fullname}" is not allowed.')
-        return None  # noqa: PLR1711
+        return None  # noqa: PLR1711, RET501
 
 
 # We want to initialize the Faker seed, but only if faker is loaded
@@ -125,8 +125,8 @@ class FakerInitializeMetaPathFinder(MetaPathFinder):
     def find_spec(
         self,
         fullname: str,
-        path: Sequence[str] | None,
-        target: types.ModuleType | None = None,
+        _path: Sequence[str] | None,
+        _target: types.ModuleType | None = None,
     ) -> None:
         if fullname == "faker" or fullname.startswith("faker."):
             # Once this initialization is done we no longer need this meta path finder
@@ -234,6 +234,7 @@ def worker_loop() -> None:
                     # the call information.
                     input=json.dumps(args[0]),
                     encoding="utf-8",
+                    check=False,
                 )
 
                 # Proxy any output from the subprocess back to the caller.
@@ -397,7 +398,7 @@ def worker_loop() -> None:
 worker_pid = 0
 
 
-def terminate_worker(signum: int, stack: types.FrameType | None) -> None:
+def terminate_worker(_signum: int, _stack: types.FrameType | None) -> None:
     if worker_pid > 0:
         os.kill(worker_pid, signal.SIGKILL)
     os._exit(0)
@@ -455,7 +456,7 @@ with open(4, "w", encoding="utf-8") as exitf:
                         if any(
                             p.username() == "executor" for p in psutil.process_iter()
                         ):
-                            raise Exception(
+                            raise RuntimeError(
                                 "found remaining processes belonging to executor user"
                             )
 
@@ -467,11 +468,11 @@ with open(4, "w", encoding="utf-8") as exitf:
                     exitf.flush()
                 else:
                     # The worker did not exit gracefully
-                    raise Exception(
+                    raise RuntimeError(
                         f"worker process exited unexpectedly with status {status}"
                     )
             else:
                 # Something else happened that is weird
-                raise Exception(
+                raise RuntimeError(
                     f"worker process exited unexpectedly with status {status}"
                 )
