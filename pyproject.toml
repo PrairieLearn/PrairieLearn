@@ -103,7 +103,6 @@ include = [
 exclude = [
     "./apps/prairielearn/elements/pl-drawing", # requires refactor
     "./apps/prairielearn/elements/pl-checkbox", # requires refactor
-    "./apps/prairielearn/elements/pl-matrix-input",
     "./apps/prairielearn/elements/pl-matrix-component-input",
     "./apps/prairielearn/elements/pl-matching",
     "./apps/prairielearn/elements/pl-order-blocks",
