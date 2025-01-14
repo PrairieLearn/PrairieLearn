@@ -4,6 +4,7 @@ from enum import Enum
 import chevron
 import lxml.html
 import prairielearn as pl
+from typing_extensions import assert_never
 
 WEIGHT_DEFAULT = 1
 BLANK_ANSWER = " "
@@ -19,7 +20,9 @@ class SortTypes(Enum):
     FIXED = "fixed"
 
 
-def get_options(element, data):
+def get_options(
+    element: lxml.html.HtmlElement, data: pl.QuestionData
+) -> list[dict[str, str | bool]]:
     answers_name = pl.get_string_attrib(element, "answers-name")
     submitted_answer = data.get("submitted_answers", {}).get(answers_name, None)
     options = []
@@ -33,7 +36,7 @@ def get_options(element, data):
     return options
 
 
-def get_solution(element, data):
+def get_solution(element: lxml.html.HtmlElement, data: pl.QuestionData) -> str:
     solution = []
     for child in element:
         if child.tag in ["pl-answer"]:
@@ -96,6 +99,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         except Exception as exc:
             raise ValueError("invalid score: " + str(score)) from exc
 
+    html_params = {}
     if data["panel"] == "question":
         if sort_type == SortTypes.FIXED.name:
             pass
@@ -135,6 +139,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "answer": True,
             "correct-answer": data["correct_answers"][answers_name],
         }
+    else:
+        assert_never(data["panel"])
 
     with open("pl-dropdown.mustache", encoding="utf-8") as f:
         html = chevron.render(f, html_params).strip()
