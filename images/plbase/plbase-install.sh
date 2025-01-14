@@ -33,7 +33,8 @@ dnf -y install \
     texlive \
     texlive-dvipng \
     texlive-type1cm \
-    tmux
+    tmux \
+    python3.10
 
 echo "installing node via nvm"
 git clone https://github.com/creationix/nvm.git /nvm
@@ -69,12 +70,7 @@ cd /
 curl -LO https://astral.sh/uv/install.sh
 env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
 
-# /.venv/bin/python3 -> /usr/local/bin/python3 -> /usr/share/uv/python/*/bin/python3.10
-export UV_PYTHON_INSTALL_DIR=/usr/share/uv/python
-export UV_PYTHON_BIN_DIR=/usr/local/bin
-
-# Installing to a different directory is a preview feature
-uv python install --default --preview cpython@3.10
+export UV_PYTHON_PREFERENCE=only-system
 
 uv venv
 uv pip install --no-cache-dir -r /python-requirements.txt
