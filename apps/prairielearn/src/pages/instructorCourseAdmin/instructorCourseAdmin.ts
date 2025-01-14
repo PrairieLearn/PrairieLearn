@@ -18,7 +18,8 @@ router.get(
       // not yet ready to offer anything to students yet.
       res.redirect(`/pl/course/${res.locals.course.id}/course_admin/questions`);
     } else {
-      // Once users have created course instances, they should have easier access to them
+      // Once users have created course instances, they should have immediate access
+      // to them in the course instances page.
       res.redirect(`/pl/course/${res.locals.course.id}/course_admin/instances`);
     }
   }),
