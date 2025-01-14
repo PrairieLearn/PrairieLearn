@@ -83,9 +83,12 @@ WHERE
 
 -- BLOCK select_course_has_course_instances
 SELECT
-  COUNT(*) > 0
-FROM
-  course_instances AS ci
-WHERE
-  ci.course_id = $course_id
-  AND ci.deleted_at IS NULL;
+  EXISTS (
+    SELECT
+      1
+    FROM
+      course_instances as ci
+    WHERE
+      ci.course_id = $course_id
+      AND ci.deleted_at IS NULL
+  );
