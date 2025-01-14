@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Ubuntu 24.10 needs help with ulimit,
+# cf https://github.com/amazonlinux/container-images/issues/123
+ulimit -Sn 4096
+
 # exit if s3rver is already running
 PID=$(lsof -i :5000 -t)
 if [ -n "$PID" ]; then
