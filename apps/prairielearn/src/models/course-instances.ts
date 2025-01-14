@@ -106,12 +106,9 @@ export async function selectCourseHasCourseInstances({
 }: {
   course_id: string;
 }): Promise<boolean> {
-  // Check if the course has any non-deleted course instances.
-  const hasCourseInstances = await queryRow(
+  return await queryRow(
     sql.select_course_has_course_instances,
     { course_id },
     z.boolean(),
   );
-
-  return hasCourseInstances;
 }
