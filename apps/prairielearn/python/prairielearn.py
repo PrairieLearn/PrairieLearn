@@ -500,7 +500,7 @@ def check_attribs(
         raise ValueError(f'Unknown attribute "{name}"')
 
 
-def _get_attrib(element, name, *args) -> tuple[Any, bool]:
+def _get_attrib(element: lxml.html.HtmlElement, name: str, *args) -> tuple[Any, bool]:
     """(value, is_default) = _get_attrib(element, name, default)
 
     Internal function, do not all. Use one of the typed variants
