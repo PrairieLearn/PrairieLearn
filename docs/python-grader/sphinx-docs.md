@@ -19,7 +19,7 @@ Attempts to call a student defined function, with any arbitrary arguments specif
 
 If the function call succeeds, the user return value will be returned from this function.
 
-#### _classmethod_ check_dataframe(name, ref, data, subset_columns=[], check_values=True, allow_order_variance=True, display_input=False)
+#### _classmethod_ check_dataframe(name, ref, data, subset_columns=None, check_values=True, allow_order_variance=True, display_input=False)
 
 `check_dataframe`
 Checks and adds feedback regarding the correctness of
@@ -33,7 +33,7 @@ Parameters:
 - `name`, String: The human-readable name of the DataFrame being checked
 - `ref`, DataFrame: The reference (correct) DataFrame
 - `data`, DataFrame: The student DataFrame
-- `subset_columns` = [], Array of Strings:
+- `subset_columns` = None, Array of Strings:
   If `subset_columns` is an empty array, all columns are used in the check.
   Otherwise, only columns named in `subset_columns` are used in the check and other columns are dropped.
 - `check_values` = True, Boolean: Check the values of each cell, in addition to the dimensions of the DataFrame
