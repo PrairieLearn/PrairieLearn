@@ -36,7 +36,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     except ValueError:
         return (
             '<span class="badge badge-danger">ERROR: invalid score: '
-            + score
+            + str(score)
             + "</span>"
         )
 
