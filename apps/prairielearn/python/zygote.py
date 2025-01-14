@@ -114,7 +114,7 @@ class ForbidModuleMetaPathFinder(MetaPathFinder):
             for module in self.forbidden_modules
         ):
             raise ImportError(f'module "{fullname}" is not allowed.')
-        return None  # noqa: PLR1711
+        return None  # noqa: PLR1711, RET501
 
 
 # We want to initialize the Faker seed, but only if faker is loaded
@@ -141,7 +141,7 @@ class FakerInitializeMetaPathFinder(MetaPathFinder):
 # helpful because the object - which contains something that cannot be converted
 # to JSON - would otherwise never be displayed to the developer, making it hard to
 # debug the problem.
-def try_dumps(obj: Any, sort_keys=False, allow_nan=False):
+def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False):
     try:
         zu.assert_all_integers_within_limits(obj)
         return json.dumps(obj, sort_keys=sort_keys, allow_nan=allow_nan)

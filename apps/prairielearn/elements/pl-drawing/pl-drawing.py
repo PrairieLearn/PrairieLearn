@@ -55,7 +55,7 @@ def check_attributes_rec(element):
         check_attributes_rec(child)
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     check_attributes_rec(element)
 
@@ -217,7 +217,7 @@ def render_drawing_items(elem, curid=0, defaults=None):
     for el in elem:
         if el.tag is lxml.etree.Comment:
             continue
-        elif el.tag == "pl-drawing-group":
+        if el.tag == "pl-drawing-group":
             if pl.get_boolean_attrib(el, "visible", True):
                 curid += 1
                 raw, _ = render_drawing_items(el, curid, {"groupid": curid})
@@ -236,7 +236,7 @@ def render_drawing_items(elem, curid=0, defaults=None):
     return (objects, curid)
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(element, "answers-name", "")
     preview_mode = not pl.get_boolean_attrib(
@@ -253,7 +253,7 @@ def render(element_html, data):
     for el in element:
         if el.tag is lxml.etree.Comment:
             continue
-        elif el.tag == "pl-controls" and not preview_mode:
+        if el.tag == "pl-controls" and not preview_mode:
             btn_markup = render_controls(template, el)
         elif el.tag == "pl-drawing-initial":
             init, _ = render_drawing_items(el)
@@ -360,7 +360,7 @@ def render(element_html, data):
     return chevron.render(template, html_params).strip()
 
 
-def parse(element_html, data):
+def parse(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     name = pl.get_string_attrib(
         element, "answers-name", defaults.element_defaults["answers-name"]
@@ -385,7 +385,7 @@ def parse(element_html, data):
         data["submitted_answers"][name] = None
 
 
-def grade(element_html, data):
+def grade(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     prev = not pl.get_boolean_attrib(
         element, "gradable", defaults.element_defaults["gradable"]

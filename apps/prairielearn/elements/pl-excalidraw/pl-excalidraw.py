@@ -147,8 +147,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             if gradable:
                 if fresh:
                     raise unreachable
-                else:  # submission
-                    initial_content = data["submitted_answers"][drawing_name]
+                # submission
+                initial_content = data["submitted_answers"][drawing_name]
             elif fresh and source_available:
                 initial_content = load_file_content(element, data)
             else:

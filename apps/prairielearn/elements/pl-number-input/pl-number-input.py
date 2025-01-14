@@ -352,7 +352,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     if allow_blank and submitted_answer is not None and submitted_answer.strip() == "":
         submitted_answer = blank_value
     value, newdata = pl.string_fraction_to_number(
-        submitted_answer, allow_fractions, allow_complex
+        submitted_answer, allow_fractions=allow_fractions, allow_complex=allow_complex
     )
 
     if value is not None:
