@@ -46,6 +46,7 @@ import {
   AssessmentSetJsonSchema,
   WorkspaceOptionsJsonSchema,
   DependencyJsonSchema,
+  CommentJsonSchema,
 } from './schemas/index.js';
 export * from './schemas/index.js';
 
@@ -90,6 +91,7 @@ export const infoNewsItem = prairielearnZodToJsonSchema(NewsItemJsonSchema, {
   name: 'News Item Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
+  definitions: { CommentJsonSchema },
 }) as JSONSchemaType<NewsItemJson>;
 
 export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, {
@@ -97,11 +99,12 @@ export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, 
   nameStrategy: 'title',
   target: 'jsonSchema7',
   definitions: {
-    PointsSchema: PointsJsonSchema,
-    PointsSingleSchema: PointsSingleJsonSchema,
-    QuestionIdSchema: QuestionIdJsonSchema,
-    ForceMaxPointsSchema: ForceMaxPointsJsonSchema,
-    AdvanceScorePercSchema: AdvanceScorePercJsonSchema,
+    PointsJsonSchema,
+    PointsSingleJsonSchema,
+    QuestionIdJsonSchema,
+    ForceMaxPointsJsonSchema,
+    AdvanceScorePercJsonSchema,
+    CommentJsonSchema,
   },
 }) as JSONSchemaType<AssessmentJson>;
 
@@ -109,31 +112,35 @@ export const infoCourse = prairielearnZodToJsonSchema(CourseJsonSchema, {
   name: 'Course information',
   nameStrategy: 'title',
   target: 'jsonSchema7',
-  definitions: { ColorSchema: ColorJsonSchema, AssessmentSetSchema: AssessmentSetJsonSchema },
+  definitions: { ColorJsonSchema, AssessmentSetJsonSchema, CommentJsonSchema },
 }) as JSONSchemaType<CourseJson>;
 
 export const infoCourseInstance = prairielearnZodToJsonSchema(CourseInstanceJsonSchema, {
   name: 'Course instance information',
   nameStrategy: 'title',
   target: 'jsonSchema7',
+  definitions: { CommentJsonSchema },
 }) as JSONSchemaType<CourseInstanceJson>;
 
 export const infoElementCore = prairielearnZodToJsonSchema(ElementCoreJsonSchema, {
   name: 'Element Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
+  definitions: { CommentJsonSchema, DependencyJsonSchema },
 }) as JSONSchemaType<ElementCoreJson>;
 
 export const infoElementCourse = prairielearnZodToJsonSchema(ElementCourseJsonSchema, {
   name: 'Element Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
+  definitions: { CommentJsonSchema, DependencyJsonSchema },
 }) as JSONSchemaType<ElementCourseJson>;
 
 export const infoElementExtension = prairielearnZodToJsonSchema(ElementExtensionJsonSchema, {
   name: 'Element Extension Info',
   nameStrategy: 'title',
   target: 'jsonSchema7',
+  definitions: { CommentJsonSchema, DependencyJsonSchema },
 }) as JSONSchemaType<ElementExtensionJson>;
 
 export const infoQuestion = prairielearnZodToJsonSchema(QuestionJsonSchema, {
@@ -141,8 +148,9 @@ export const infoQuestion = prairielearnZodToJsonSchema(QuestionJsonSchema, {
   nameStrategy: 'title',
   target: 'jsonSchema7',
   definitions: {
-    WorkspaceOptionsSchema: WorkspaceOptionsJsonSchema,
-    DependencySchema: DependencyJsonSchema,
+    WorkspaceOptionsJsonSchema,
+    DependencyJsonSchema,
+    CommentJsonSchema,
   },
 }) as JSONSchemaType<QuestionJson>;
 
@@ -152,6 +160,7 @@ export const questionOptionsCalculation = prairielearnZodToJsonSchema(
     name: 'Calculation question options',
     nameStrategy: 'title',
     target: 'jsonSchema7',
+    definitions: { CommentJsonSchema },
   },
 ) as JSONSchemaType<CalculationQuestionOptionsJson>;
 
@@ -161,6 +170,7 @@ export const questionOptionsCheckbox = prairielearnZodToJsonSchema(
     name: 'MultipleChoice question options',
     nameStrategy: 'title',
     target: 'jsonSchema7',
+    definitions: { CommentJsonSchema },
   },
 ) as JSONSchemaType<QuestionCheckboxOptionsJson>;
 
@@ -168,6 +178,7 @@ export const questionOptionsFile = prairielearnZodToJsonSchema(QuestionFileOptio
   name: 'File question options',
   nameStrategy: 'title',
   target: 'jsonSchema7',
+  definitions: { CommentJsonSchema },
 }) as JSONSchemaType<QuestionFileOptionsJson>;
 
 export const questionOptionsMultipleChoice = prairielearnZodToJsonSchema(
@@ -176,6 +187,7 @@ export const questionOptionsMultipleChoice = prairielearnZodToJsonSchema(
     name: 'MultipleChoice question options',
     nameStrategy: 'title',
     target: 'jsonSchema7',
+    definitions: { CommentJsonSchema },
   },
 ) as JSONSchemaType<QuestionMultipleChoiceOptionsJson>;
 
@@ -185,6 +197,7 @@ export const questionOptionsMultipleTrueFalse = prairielearnZodToJsonSchema(
     name: 'MultipleTrueFalse question options',
     nameStrategy: 'title',
     target: 'jsonSchema7',
+    definitions: { CommentJsonSchema },
   },
 ) as JSONSchemaType<QuestionMultipleTrueFalseOptionsJson>;
 
@@ -192,6 +205,7 @@ export const questionOptionsv3 = prairielearnZodToJsonSchema(QuestionOptionsv3Js
   name: 'v3 question options',
   nameStrategy: 'title',
   target: 'jsonSchema7',
+  definitions: { CommentJsonSchema },
 }) as JSONSchemaType<QuestionOptionsv3Json>;
 
 export const ajvSchemas = {
