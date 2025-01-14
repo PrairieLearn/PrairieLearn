@@ -8,7 +8,6 @@ from tokenize import TokenError
 from typing import Any, Literal, TypedDict, cast
 
 import sympy
-from prairielearn.unicode_utils import full_unidecode
 from sympy.parsing.sympy_parser import (
     eval_expr,
     implicit_multiplication_application,
@@ -16,6 +15,8 @@ from sympy.parsing.sympy_parser import (
     stringify_expr,
 )
 from typing_extensions import NotRequired
+
+from prairielearn.unicode_utils import full_unidecode
 
 STANDARD_OPERATORS = ("( )", "+", "-", "*", "/", "^", "**", "!")
 
