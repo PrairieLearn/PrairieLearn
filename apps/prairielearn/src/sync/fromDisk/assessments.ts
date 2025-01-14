@@ -132,12 +132,7 @@ function getParamsForAssessment(
             manualPoints: alternative.manualPoints ?? question.manualPoints ?? null,
             forceMaxPoints: alternative.forceMaxPoints ?? question.forceMaxPoints ?? false,
             triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant ?? 1,
-            advanceScorePerc:
-              alternative.advanceScorePerc ??
-              question.advanceScorePerc ??
-              zone.advanceScorePerc ??
-              assessment.advanceScorePerc ??
-              0,
+            advanceScorePerc: alternative.advanceScorePerc ?? 0,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
             canView: alternative?.canView ?? questionCanView,
             canSubmit: alternative?.canSubmit ?? questionCanSubmit,
