@@ -99,7 +99,7 @@ class CGrader:
     def run_command(
         self,
         command: str | list[str],
-        input: Any | None = None,
+        input: Any | None = None,  # noqa: A002
         sandboxed: bool = True,  # noqa: FBT001
         timeout: float | None = None,
         env: subprocess._ENV | None = None,
@@ -129,9 +129,9 @@ class CGrader:
         out = ""
         tostr = ""
         if isinstance(input, bytearray):
-            input = bytes(input)
+            input = bytes(input)  # noqa: A001
         if input is not None and not isinstance(input, bytes):
-            input = str(input).encode("utf-8")
+            input = str(input).encode("utf-8")  # noqa: A001
         try:
             proc.communicate(input=input, timeout=timeout)[0]
         except subprocess.TimeoutExpired:
@@ -416,7 +416,7 @@ class CGrader:
     def test_run(
         self,
         command: str | Iterable[str],
-        input: str | None = None,
+        input: str | None = None,  # noqa: A002
         exp_output: str | Iterable[str] | None = None,
         must_match_all_outputs: OutputMatchingOption | bool = "any",
         reject_output: str | Iterable[str] | None = None,
