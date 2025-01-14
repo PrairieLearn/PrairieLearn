@@ -1760,9 +1760,11 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/editError/editError.js')).default,
   );
 
-  app.use(/^(\/pl\/course\/[0-9]+\/course_admin)\/?$/, (req, res, _next) => {
-    res.redirect(`${req.params[0]}/instances`);
-  });
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin',
+    (await import('./pages/instructorCourseAdmin/instructorCourseAdmin.js')).default,
+  );
+
   app.use('/pl/course/:course_id(\\d+)/course_admin', function (req, res, next) {
     res.locals.navPage = 'course_admin';
     next();

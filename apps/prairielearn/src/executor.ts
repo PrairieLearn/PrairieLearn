@@ -111,14 +111,15 @@ if (Number.isNaN(pingTimeoutMilliseconds)) {
 }
 
 async function prepareCodeCaller() {
-  const codeCaller = new CodeCallerNative({
+  return await CodeCallerNative.create({
     dropPrivileges: true,
     questionTimeoutMilliseconds,
     pingTimeoutMilliseconds,
     errorLogger: console.error,
+    // Currently, we'll always use the system Python.
+    // TODO: Point this to a venv that will be installed in the Docker image.
+    pythonVenvSearchPaths: [],
   });
-  await codeCaller.ensureChild();
-  return codeCaller;
 }
 
 (async () => {

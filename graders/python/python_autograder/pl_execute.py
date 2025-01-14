@@ -1,10 +1,10 @@
 import contextlib
 import json
 import os
-import os.path as path
 import random
 import sys
 from copy import deepcopy
+from os import path
 from types import ModuleType
 
 import numpy as np
@@ -78,7 +78,7 @@ def execute_code(
             str_student = pl_helpers.extract_ipynb_contents(f, ipynb_key)
         else:
             str_student = f.read()
-    str_student = str_leading + str_student + str_trailing
+    str_student = str_leading + "\n" + str_student + "\n" + str_trailing
 
     with open(path.join(filenames_dir, "test.py"), encoding="utf-8") as f:
         str_test = f.read()
@@ -105,9 +105,7 @@ def execute_code(
     exec(str_setup, setup_code)
     exec(repeated_setup_name, setup_code)
 
-    names_for_user = []
-    for variable in data["params"]["names_for_user"]:
-        names_for_user.append(variable["name"])
+    names_for_user = [variable["name"] for variable in data["params"]["names_for_user"]]
 
     # Make copies of variables that go to the user so we do not clobber them
     ref_code = {}
@@ -115,7 +113,7 @@ def execute_code(
         if (not (i == "__builtins__" or isinstance(j, ModuleType))) and (
             i in names_for_user
         ):
-            ref_code[i] = j
+            ref_code[i] = j  # noqa: PERF403 (too complex)
     ref_code = deepcopy(ref_code)
 
     # Add any other variables to reference namespace and do not copy
@@ -137,9 +135,9 @@ def execute_code(
                 j.close("all")
 
     # make only the variables listed in names_for_user available to student
-    names_from_user = []
-    for variable in data["params"]["names_from_user"]:
-        names_from_user.append(variable["name"])
+    names_from_user = [
+        variable["name"] for variable in data["params"]["names_from_user"]
+    ]
 
     exec(repeated_setup_name, setup_code)
 
@@ -148,7 +146,7 @@ def execute_code(
         if (not (i == "__builtins__" or isinstance(j, ModuleType))) and (
             i in names_for_user
         ):
-            student_code[i] = j
+            student_code[i] = j  # noqa: PERF403 (too complex)
     student_code = deepcopy(student_code)
 
     # Execute student code
@@ -193,7 +191,7 @@ def execute_code(
     ref_result = {}
     for i, j in ref_code.items():
         if not (i.startswith("_") or isinstance(j, ModuleType)):
-            ref_result[i] = j
+            ref_result[i] = j  # noqa: PERF403 (too complex)
 
     student_result = {}
     for name in names_from_user:
@@ -208,12 +206,12 @@ def execute_code(
             ):
                 plot_value = student_code[key]
         if not plot_value:
-            import matplotlib
+            import matplotlib as mpl
 
-            matplotlib.use("Agg")
-            import matplotlib.pyplot
+            mpl.use("Agg")
+            import matplotlib as mpl
 
-            plot_value = matplotlib.pyplot
+            plot_value = mpl.pyplot
 
     # Re-seed before running tests
     set_random_seed()

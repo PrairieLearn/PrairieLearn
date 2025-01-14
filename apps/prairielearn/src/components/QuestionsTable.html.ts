@@ -1,10 +1,12 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, type HtmlSafeString } from '@prairielearn/html';
 
-import { nodeModulesAssetPath, compiledScriptTag, compiledStylesheetTag } from '../lib/assets.js';
+import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { type QuestionsPageData } from '../models/questions.js';
+
+import { Modal } from './Modal.html.js';
 
 export function QuestionsTableHead() {
   // Importing javascript using <script> tags as below is *not* the preferred method, it is better to directly use 'import'
@@ -25,6 +27,7 @@ export function QuestionsTableHead() {
 
 export function QuestionsTable({
   questions,
+  templateQuestions = [],
   showAddQuestionButton = false,
   showAiGenerateQuestionButton = false,
   showSharingSets = false,
@@ -36,6 +39,10 @@ export function QuestionsTable({
   __csrf_token,
 }: {
   questions: QuestionsPageData[];
+  /**
+   * The template questions the user can select as a starting point when creating a new question.
+   */
+  templateQuestions?: { qid: string; title: string }[];
   showAddQuestionButton?: boolean;
   showAiGenerateQuestionButton?: boolean;
   showSharingSets?: boolean;
@@ -60,7 +67,10 @@ export function QuestionsTable({
       },
       'questions-table-data',
     )}
-
+    ${CreateQuestionModal({
+      csrfToken: __csrf_token,
+      templateQuestions,
+    })}
     <div class="card mb-4">
       <div class="card-header bg-primary text-white">
         <h1>Questions</h1>
@@ -229,9 +239,8 @@ export function QuestionsTable({
                   >question documentation</a
                 >.
               </p>
-              <form class="ml-1 btn-group" name="add-question-form" method="POST">
-                <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                <button name="__action" value="add_question" class="btn btn-sm btn-primary">
+              <form class="ml-1 btn-group" method="POST">
+                <button class="btn btn-sm btn-primary">
                   <i class="fa fa-plus" aria-hidden="true"></i>
                   <span>Add question</span>
                 </button>
@@ -240,4 +249,91 @@ export function QuestionsTable({
           `}
     </div>
   `;
+}
+
+function CreateQuestionModal({
+  csrfToken,
+  templateQuestions,
+}: {
+  csrfToken: string;
+  templateQuestions: { qid: string; title: string }[];
+}) {
+  return Modal({
+    id: 'createQuestionModal',
+    title: 'Create question',
+    formMethod: 'POST',
+    body: html`
+      <div class="form-group">
+        <label for="title">Title</label>
+        <input
+          type="text"
+          class="form-control"
+          id="title"
+          name="title"
+          required
+          aria-describedby="title_help"
+        />
+        <small id="title_help" class="form-text text-muted">
+          The full name of the question, visible to users.
+        </small>
+      </div>
+      <div class="form-group">
+        <label for="qid">Question identifier (QID)</label>
+        <input
+          type="text"
+          class="form-control"
+          id="qid"
+          name="qid"
+          required
+          pattern="[\\-A-Za-z0-9_\\/]+"
+          aria-describedby="qid_help"
+        />
+        <small id="qid_help" class="form-text text-muted">
+          A short unique identifier for this question, such as "add-vectors" or "find-derivative".
+          Use only letters, numbers, dashes, and underscores, with no spaces.
+        </small>
+      </div>
+      <div class="form-group">
+        <label for="start_from">Start from</label>
+        <select
+          class="form-select"
+          id="start_from"
+          name="start_from"
+          required
+          aria-describedby="start_from_help"
+        >
+          <option value="Empty question">Empty question</option>
+          <option value="Template">Template</option>
+        </select>
+        <small id="start_from_help" class="form-text text-muted">
+          Begin with an empty question or a pre-made question template.
+        </small>
+      </div>
+
+      <div id="templateContainer" class="form-group" hidden>
+        <label for="template_qid">Template</label>
+        <select
+          class="form-select"
+          id="template_qid"
+          name="template_qid"
+          required
+          aria-describedby="template_help"
+          disabled
+        >
+          ${templateQuestions.map(
+            (question) => html`<option value="${question.qid}">${question.title}</option>`,
+          )}
+        </select>
+        <small id="template_help" class="form-text text-muted">
+          The question will be created from this template.
+        </small>
+      </div>
+    `,
+    footer: html`
+      <input type="hidden" name="__action" value="add_question" />
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancel</button>
+      <button type="submit" class="btn btn-primary">Create</button>
+    `,
+  });
 }
