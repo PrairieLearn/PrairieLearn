@@ -6,12 +6,12 @@ import prairielearn as pl
 DIGITS_DEFAULT = 2
 
 
-def prepare(element_html, data):
+def prepare(element_html: str, data: pl.QuestionData) -> None:
     element = lxml.html.fragment_fromstring(element_html)
     pl.check_attribs(element, required_attribs=[], optional_attribs=["digits"])
 
 
-def render(element_html, data):
+def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     digits = pl.get_integer_attrib(element, "digits", DIGITS_DEFAULT)
 
@@ -30,7 +30,7 @@ def render(element_html, data):
             # Get value of variable, raising exception if variable does not exist
             var_data = data["params"].get(var_name, None)
             if var_data is None:
-                raise Exception(
+                raise ValueError(
                     f'No value in data["params"] for variable {var_name} in pl-matrix-output element'
                 )
 
@@ -46,7 +46,7 @@ def render(element_html, data):
                 var_data = np.array(var_data)
                 # Check shape of variable
                 if var_data.ndim != 2:
-                    raise Exception(
+                    raise ValueError(
                         f'Value in data["params"] for variable {var_name} in pl-matrix-output element must be a scalar or a 2D array'
                     )
                 # Create prefix/suffix so python string is np.array( ... )

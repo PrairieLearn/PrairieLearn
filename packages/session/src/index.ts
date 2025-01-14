@@ -55,7 +55,7 @@ export interface SessionOptions {
   };
 }
 
-export { SessionStore };
+export type { SessionStore };
 
 const DEFAULT_COOKIE_NAME = 'session';
 const DEFAULT_COOKIE_MAX_AGE = 86400000; // 1 day

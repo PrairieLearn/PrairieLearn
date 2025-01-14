@@ -95,10 +95,10 @@ class Feedback:
         Complete grading immediately, additionally outputting the message in fb_text.
         """
         cls.add_feedback(fb_text)
-        raise GradingComplete()
+        raise GradingComplete("Grading complete")
 
     @staticmethod
-    def not_allowed(*args, **kwargs):
+    def not_allowed(*_args, **_kwargs):
         """
         Used to hook into disallowed functions, raises an exception if
         the student tries to call it.
@@ -140,8 +140,8 @@ class Feedback:
 
         if len(data.shape) != num_axes:
             cls.finish(
-                "'%s' does not have the correct number of axes--"
-                "got: %d, expected: %d" % (name, len(data.shape), num_axes)
+                f"'{name}' does not have the correct number of axes--"
+                f"got: {len(data.shape)}, expected: {num_axes}"
             )
 
         if data.dtype.kind not in "fc":
@@ -241,12 +241,11 @@ class Feedback:
         if not good:
             if report_failure:
                 cls.add_feedback(f"'{name}' is inaccurate")
-        else:
-            if report_success:
-                cls.add_feedback(f"'{name}' looks good")
+        elif report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         if accuracy_critical and not good:
-            raise GradingComplete()
+            raise GradingComplete("Inaccurate, grading halted")
 
         return good
 
@@ -289,14 +288,13 @@ class Feedback:
 
         if len(ref) != len(data):
             return bad(
-                "'%s' has the wrong length--expected %d, got %d"
-                % (name, len(ref), len(data))
+                f"'{name}' has the wrong length--expected {len(ref)}, got {len(data)}"
             )
 
         if entry_type is not None:
             for i, entry in enumerate(data):
                 if not isinstance(entry, entry_type):
-                    return bad("'%s[%d]' has the wrong type" % (name, i))
+                    return bad(f"'{name}[{i}]' has the wrong type")
 
         return True
 
@@ -355,9 +353,8 @@ class Feedback:
 
         if not good:
             return bad(f"'{name}' is inaccurate")
-        else:
-            if report_success:
-                cls.add_feedback(f"'{name}' looks good")
+        elif report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         return True
 
@@ -427,9 +424,8 @@ class Feedback:
 
         if not good:
             return bad(f"'{name}' is inaccurate")
-        else:
-            if report_success:
-                cls.add_feedback(f"'{name}' looks good")
+        elif report_success:
+            cls.add_feedback(f"'{name}' looks good")
 
         return True
 
@@ -450,7 +446,7 @@ class Feedback:
                 try:
                     callable_name = f.__name__
                 except Exception as e_name:
-                    callable_name = f"<unable to retrieve name; encountered {type(e_name).__name__}: {str(e_name)}>"
+                    callable_name = f"<unable to retrieve name; encountered {type(e_name).__name__}: {e_name}>"
                 from traceback import format_exc
 
                 cls.add_feedback(
@@ -466,7 +462,7 @@ class Feedback:
                     "callable."
                 )
 
-            raise GradingComplete() from exc
+            raise GradingComplete from exc
 
     @classmethod
     def check_plot(
@@ -538,8 +534,7 @@ class Feedback:
 
         if len(user_lines) != len(ref_lines):
             return bad(
-                "%d lines were plotted in '%s' but %d lines were "
-                "expected" % (len(user_lines), name, len(ref_lines))
+                f"{len(user_lines)} lines were plotted in '{name}' but {ref_lines} lines were expected"
             )
 
         ref_datas = {}
@@ -552,8 +547,8 @@ class Feedback:
         for line in user_lines:
             data = np.array([line.get_data()[0], line.get_data()[1]])
             data = data[np.lexsort(data.T)]
-            for j, ref in ref_datas.items():
-                if data.shape == ref.shape and np.allclose(data, ref):
+            for j, ref_data in ref_datas.items():
+                if data.shape == ref_data.shape and np.allclose(data, ref_data):
                     num_correct += 1
                     del [ref_datas[j]]
                     break
