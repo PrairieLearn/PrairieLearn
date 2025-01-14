@@ -129,7 +129,7 @@ def get_lexer_by_name(name: str) -> pygments.lexer.Lexer | None:
 
 # Computing this is relatively expensive, so we'll do it once here and reuse it.
 @cache
-def get_ansi_color_tokens():
+def get_ansi_color_tokens() -> dict[_TokenType, str]:
     return color_tokens(ANSI_COLORS, ANSI_COLORS)
 
 
