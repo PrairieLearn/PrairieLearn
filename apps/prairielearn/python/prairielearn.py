@@ -722,22 +722,14 @@ def get_color_attrib(element, name, *args):
         raise ValueError(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
 
 
-# This represents most the types that would pass a np.isscalar check
-NumPyScalarType = (
-    np.complexfloating
-    | bool
-    | int
-    | float
-    | complex
-    | str
-    | bytes
-    | np.generic
-    | memoryview
+# This internal represents most the types that would pass a np.isscalar check
+_NumPyScalarType = (
+    np.complexfloating | bool | int | float | complex | str | bytes | np.generic
 )
 
 
 def numpy_to_matlab(
-    np_object: np.ndarray | NumPyScalarType,
+    np_object: np.ndarray | _NumPyScalarType,
     ndigits: int = 2,
     wtype: str = "f",
 ) -> str:
@@ -791,12 +783,12 @@ def numpy_to_matlab(
         return matrix_str
 
 
-Language = Literal["python", "matlab", "mathematica", "r", "sympy"]
+FormatLanguage = Literal["python", "matlab", "mathematica", "r", "sympy"]
 
 
 def string_from_numpy(
-    A: np.ndarray | NumPyScalarType,
-    language: Language = "python",
+    A: np.ndarray | _NumPyScalarType,
+    language: FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
 ):
@@ -859,9 +851,10 @@ def string_from_numpy(
 
     # if A is a scalar
     if np.isscalar(A):
+        assert not isinstance(A, memoryview)
         if presentation_type == "sigfig":
             if not isinstance(A, np.complexfloating) and isinstance(
-                A, np.generic | bytes | str | memoryview
+                A, np.generic | bytes | str
             ):
                 raise TypeError(f"A must be a number, is {type(A)}")
             return string_from_number_sigfig(A, digits=digits)
@@ -931,7 +924,7 @@ def string_from_numpy(
 # Deprecated version, keeping for backwards compatibility
 def string_from_2darray(
     A: np.ndarray,
-    language: Language = "python",
+    language: FormatLanguage = "python",
     presentation_type: str = "f",
     digits: int = 2,
 ):
@@ -970,7 +963,7 @@ def _string_from_complex_sigfig(
         return f"{re}-{im}j"
 
 
-def numpy_to_matlab_sf(A: NumPyScalarType | np.ndarray, ndigits: int = 2) -> str:
+def numpy_to_matlab_sf(A: _NumPyScalarType | np.ndarray, ndigits: int = 2) -> str:
     """numpy_to_matlab(A, ndigits=2)
 
     This function assumes that A is one of these things:
