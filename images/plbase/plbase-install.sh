@@ -72,20 +72,34 @@ env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
 # /.venv/bin/python3 -> /usr/local/bin/python3 -> /usr/share/uv/python/*/bin/python3.10
 export UV_PYTHON_INSTALL_DIR=/usr/share/uv/python
 export UV_PYTHON_BIN_DIR=/usr/local/bin
-export UV_PYTHON_PREFERENCE=only-managed
 export UV_PYTHON_DOWNLOADS=manual
 
+if [[ "$(uname)" = "Linux" ]] && [[ "$(uname -m)" = "x86_64" ]] ; then
+    # v2 seems safe but 4 may be too incompatible with some x86_64 machines still in common use.
+    # Refer to:
+    # https://gregoryszorc.com/docs/python-build-standalone/main/running.html
+    # v2: 64-bit Intel/AMD CPUs approximately newer than Nehalem (released in 2008).
+    # v3: 64-bit Intel/AMD CPUs approximately newer than Haswell (released in 2013) and Excavator (released in 2015)
+    UV_ARCH="linux-x86_64_v2"
+elif [[ "$(uname)" = "Darwin" ]] && [[ "$(uname -m)" = "arm64" ]] ; then
+    UV_ARCH="macos-aarch64-none"
+else
+    echo "Unsupported architecture combination" >&2
+    exit 1
+fi
+# This seems to locate the most recent minor version (e.g. 3.10.16) just by omitting it.
+UV_PY_VER="3.10"
+UV_PY_VER_FULL="cpython-${UV_PY_VER}-${UV_ARCH}"
+
 # Installing to a different directory is a preview feature
-# https://gregoryszorc.com/docs/python-build-standalone/main/running.html
-# 64-bit Intel/AMD CPUs approximately newer than Nehalem (released in 2008).
-uv python install --default --preview cpython-3.10-linux-x86_64_v2-gnu
-# 64-bit Intel/AMD CPUs approximately newer than Haswell (released in 2013) and Excavator (released in 2015)
-# uv python install --default --preview cpython-3.10-linux-x86_64_v3-gnu
+uv python install --default --preview "$UV_PY_VER_FULL"
 
 uv venv
+. .venv/bin/activate
+export UV_PYTHON_PREFERENCE=only-managed # defining after "uv venv" to avoid lookup issue
+uv pip install --no-cache-dir --upgrade pip setuptools # alternative to ensurepip
 uv pip install --no-cache-dir -r /python-requirements.txt
 uv cache clean
-python -m ensurepip
 
 # Clear various caches to minimize the final image size.
 dnf clean all
