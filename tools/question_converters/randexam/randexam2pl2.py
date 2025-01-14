@@ -161,7 +161,7 @@ class LibraryRegexp:
     no_tail indicates whether trailing text after the regexp is permitted
     """
 
-    def __init__(self, name, regexp, no_tail=False):
+    def __init__(self, name, regexp, *, no_tail=False):
         self.name = name
         self.regexp = regexp
         self.no_tail = no_tail

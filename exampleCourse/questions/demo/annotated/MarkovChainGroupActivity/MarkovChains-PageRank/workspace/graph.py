@@ -59,7 +59,13 @@ def _draw_edge_inc_matrix(mat, mat_label, layout="dot"):
 
 
 def draw_matrix(
-    mat, mat_label=None, show_weights=True, round_digits=3, directed=None, layout="dot"
+    mat,
+    *,
+    mat_label=None,
+    show_weights=True,
+    round_digits=3,
+    directed=None,
+    layout="dot",
 ):
     """
     Attempts to automatically determine the type of matrix by the type.

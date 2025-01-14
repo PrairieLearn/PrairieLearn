@@ -1072,7 +1072,7 @@ def string_to_integer(s: str, base: int = 10) -> int | None:
 
 
 def string_to_number(
-    s: str, allow_complex: bool = True
+    s: str, *, allow_complex: bool = True
 ) -> None | np.float64 | np.complex128:
     """string_to_number(s, allow_complex=True)
 
@@ -1114,7 +1114,9 @@ class PartialData(TypedDict, total=False):
 
 
 def string_fraction_to_number(
-    a_sub: str | None, allow_fractions: bool = True, allow_complex: bool = True
+    a_sub: str | None,
+    allow_fractions: bool = True,  # noqa: FBT001, FBT002
+    allow_complex: bool = True,  # noqa: FBT001, FBT002
 ) -> tuple[None | np.float64 | np.complex128, PartialData]:
     """string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True)
 
@@ -1199,7 +1201,7 @@ def string_fraction_to_number(
 
 
 def string_to_2darray(
-    s: str, allow_complex: bool = True
+    s: str, *, allow_complex: bool = True
 ) -> tuple[None | np.ndarray, dict[str, str]]:
     """string_to_2darray(s)
 
