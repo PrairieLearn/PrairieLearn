@@ -1811,6 +1811,13 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorCourseAdminInstances/instructorCourseAdminInstances.js'))
       .default,
   ]);
+  app.use('/pl/course/:course_id(\\d+)/course_admin/onboarding', [
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navSubPage = 'onboarding';
+      next();
+    },
+    (await import('./pages/instructorCourseAdminOnboarding/instructorCourseAdminOnboarding.js')).default,
+  ]);
   app.use('/pl/course/:course_id(\\d+)/course_admin/issues', [
     function (req: Request, res: Response, next: NextFunction) {
       res.locals.navSubPage = 'issues';

@@ -674,6 +674,16 @@ function NavbarInstructor({
       </div>
     </li>
 
+    ${authz_data.has_course_permission_edit
+      ? html`
+          <li
+            class="nav-item"
+          >
+            <a class="nav-link" href="${urlPrefix}/course_admin/onboarding">Onboarding</a>
+          </li>
+        `
+      : ''}
+
     <li class="nav-item ${navPage === 'course_admin' && navSubPage === 'issues' ? 'active' : ''}">
       <a class="nav-link" href="${urlPrefix}/course_admin/issues">
         Issues ${IssueBadge({ count: navbarOpenIssueCount, suppressLink: true })}

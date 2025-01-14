@@ -70,6 +70,12 @@ const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = {
   ],
   course_admin: [
     {
+      activeSubPage: 'onboarding',
+      urlSuffix: '/course_admin/onboarding',
+      iconClasses: 'fa fa-tasks',
+      tabLabel: 'Onboarding Tasks',
+    },
+    {
       activeSubPage: 'sets',
       urlSuffix: '/course_admin/sets',
       iconClasses: 'fa fa-list',
