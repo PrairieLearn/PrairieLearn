@@ -100,8 +100,7 @@ class CGrader:
         self,
         command: str | list[str],
         input: Any | None = None,
-        *,
-        sandboxed: bool = True,
+        sandboxed: bool = True,  # noqa: FBT001
         timeout: float | None = None,
         env: subprocess._ENV | None = None,
     ) -> str:
@@ -152,15 +151,14 @@ class CGrader:
         self,
         c_file: Iterable[str] | str,
         exec_file: str | None = None,
-        *,
         add_c_file: str | Iterable[str] | None = None,
         compiler: str | None = None,
         flags: str | list[str] | None = None,
         pkg_config_flags: str | Iterable[str] | None = None,
-        add_warning_result_msg: bool = True,
-        ungradable_if_failed: bool = True,
-        return_objects: bool = False,
-        enable_asan: bool = False,
+        add_warning_result_msg: bool = True,  # noqa: FBT001
+        ungradable_if_failed: bool = True,  # noqa: FBT001
+        return_objects: bool = False,  # noqa: FBT001
+        enable_asan: bool = False,  # noqa: FBT001
         reject_symbols: Iterable[str] | None = None,
         objcopy_args: Iterable[str] | None = None,
     ) -> tuple[str, list[str]] | str:
@@ -283,13 +281,12 @@ class CGrader:
         student_obj_files: str | Iterable[str] | None,
         add_obj_files: str | Iterable[str] | None,
         exec_file: str,
-        *,
         compiler: str | None = None,
         flags: str | list[str] | None = None,
         pkg_config_flags: str | Iterable[str] | None = None,
-        add_warning_result_msg: bool = True,
-        ungradable_if_failed: bool = True,
-        enable_asan: bool = False,
+        add_warning_result_msg: bool = True,  # noqa: FBT001
+        ungradable_if_failed: bool = True,  # noqa: FBT001
+        enable_asan: bool = False,  # noqa: FBT001
     ) -> str:
         if flags and isinstance(flags, str):
             flags = shlex.split(flags)
@@ -348,7 +345,6 @@ class CGrader:
     def test_compile_file(
         self,
         c_file: str | Iterable[str],
-        *,
         exec_file: str | None = None,
         main_file: str | None = None,
         add_c_file: str | list[str] | None = None,
@@ -358,9 +354,9 @@ class CGrader:
         flags: str | list[str] | None = None,
         pkg_config_flags: str | Iterable[str] | None = None,
         name: str = "Compilation",
-        add_warning_result_msg: bool = True,
-        ungradable_if_failed: bool = True,
-        enable_asan: bool = False,
+        add_warning_result_msg: bool = True,  # noqa: FBT001
+        ungradable_if_failed: bool = True,  # noqa: FBT001
+        enable_asan: bool = False,  # noqa: FBT001
         reject_symbols: Iterable[str] | None = None,
         objcopy_args: Iterable[str] | None = None,
     ) -> TestResult:
@@ -400,7 +396,10 @@ class CGrader:
         )
 
     def change_mode(
-        self, file: str, mode: str = "744", *, change_parent: bool = True
+        self,
+        file: str,
+        mode: str = "744",
+        change_parent: bool = True,  # noqa: FBT001
     ) -> None:
         file = os.path.abspath(file)
         self.run_command(["chmod", mode, file], sandboxed=False)
@@ -417,21 +416,20 @@ class CGrader:
     def test_run(
         self,
         command: str | Iterable[str],
-        *,
         input: str | None = None,
         exp_output: str | Iterable[str] | None = None,
         must_match_all_outputs: OutputMatchingOption | bool = "any",
         reject_output: str | Iterable[str] | None = None,
         field: str | None = None,
-        ignore_case: bool = True,
+        ignore_case: bool = True,  # noqa: FBT001
         timeout: float = 1,
         size_limit: int = 10240,
-        ignore_consec_spaces: bool = True,
+        ignore_consec_spaces: bool = True,  # noqa: FBT001
         args: str | float | Iterable[str | float | int] | None = None,
         name: str | None = None,
         msg: str | None = None,
         max_points: float = 1,
-        highlight_matches: bool = False,
+        highlight_matches: bool = False,  # noqa: FBT001
     ) -> TestResult:
         if args is not None:
             if isinstance(args, str | float | int):
@@ -583,7 +581,6 @@ class CGrader:
         self,
         name: str,
         description: str = "",
-        *,
         points: bool | float = True,
         msg: str | None = "",
         output: str = "",
@@ -627,14 +624,13 @@ class CGrader:
     def run_check_suite(
         self,
         exec_file: str,
-        *,
         args: str | Iterable[str] | None = None,
-        use_suite_title: bool = False,
-        use_case_name: bool = True,
-        use_unit_test_id: bool = True,
-        use_iteration: bool = False,
-        sandboxed: bool = False,
-        use_malloc_debug: bool = False,
+        use_suite_title: bool = False,  # noqa: FBT001
+        use_case_name: bool = True,  # noqa: FBT001
+        use_unit_test_id: bool = True,  # noqa: FBT001
+        use_iteration: bool = False,  # noqa: FBT001
+        sandboxed: bool = False,  # noqa: FBT001
+        use_malloc_debug: bool = False,  # noqa: FBT001
         env: dict[str, str] | None = None,
     ) -> None:
         if not args:
