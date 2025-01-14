@@ -5,6 +5,7 @@ import * as error from '@prairielearn/error';
 
 import { createFileBrowser } from '../../components/FileBrowser.html.js';
 import { UserSchema } from '../../lib/db-types.js';
+import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { selectCourseById } from '../../models/course.js';
@@ -20,7 +21,7 @@ async function setLocals(req, res) {
 
   if (
     !res.locals.question.share_source_publicly ||
-    res.locals.course.id !== res.locals.question.course_id
+    !idsEqual(res.locals.question.course_id, res.locals.course.id)
   ) {
     throw new error.HttpStatusError(404, 'Not Found');
   }

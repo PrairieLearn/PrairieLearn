@@ -400,7 +400,8 @@ function FileBrowserActions({
   return html`
     ${isReadOnly
       ? ''
-      : html`<a
+      : html`
+          <a
             tabindex="0"
             class="btn btn-sm btn-light ${fileInfo.canEdit ? '' : 'disabled'}"
             href="${paths.urlPrefix}/file_edit/${encodedPath}"
@@ -422,7 +423,8 @@ function FileBrowserActions({
           >
             <i class="fa fa-arrow-up"></i>
             <span>Upload</span>
-          </button>`}
+          </button>
+        `}
     <a
       class="btn btn-sm btn-light ${fileInfo.canDownload ? '' : 'disabled'}"
       href="${paths.urlPrefix}/file_download/${encodedPath}?attachment=${encodeURIComponent(
@@ -434,7 +436,8 @@ function FileBrowserActions({
     </a>
     ${isReadOnly
       ? ''
-      : html`<button
+      : html`
+          <button
             type="button"
             class="btn btn-sm btn-light"
             data-toggle="popover"
@@ -465,7 +468,8 @@ function FileBrowserActions({
           >
             <i class="far fa-trash-alt"></i>
             <span>Delete</span>
-          </button>`}
+          </button>
+        `}
   `;
 }
 
@@ -595,7 +599,8 @@ function DirectoryBrowserBody({
               <td>
                 ${isReadOnly
                   ? ''
-                  : html`<a
+                  : html`
+                      <a
                         class="btn btn-xs btn-secondary ${f.canEdit ? '' : 'disabled'}"
                         href="${paths.urlPrefix}/file_edit/${encodePath(f.path)}"
                       >
@@ -618,7 +623,8 @@ function DirectoryBrowserBody({
                       >
                         <i class="fa fa-arrow-up"></i>
                         <span>Upload</span>
-                      </button>`}
+                      </button>
+                    `}
                 <a
                   class="btn btn-xs btn-secondary ${f.canDownload ? '' : 'disabled'}"
                   href="${paths.urlPrefix}/file_download/${encodePath(
@@ -630,7 +636,8 @@ function DirectoryBrowserBody({
                 </a>
                 ${isReadOnly
                   ? ''
-                  : html` <button
+                  : html`
+                      <button
                         type="button"
                         class="btn btn-xs btn-secondary"
                         data-toggle="popover"
@@ -663,7 +670,8 @@ function DirectoryBrowserBody({
                       >
                         <i class="far fa-trash-alt"></i>
                         <span>Delete</span>
-                      </button>`}
+                      </button>
+                    `}
               </td>
             </tr>
           `,
