@@ -339,7 +339,7 @@ def parse(element_html, data):
             if allow_blank and a_sub is not None and a_sub.strip() == "":
                 a_sub = blank_value
             value, newdata = pl.string_fraction_to_number(
-                a_sub, allow_fractions, allow_complex=False
+                a_sub, allow_fractions=allow_fractions, allow_complex=False
             )
             if value is not None:
                 matrix[i, j] = value
