@@ -16,6 +16,7 @@ from collections import namedtuple
 from collections.abc import Callable, Generator
 from enum import Enum
 from io import StringIO
+from types import ModuleType
 from typing import Any, Literal, TypedDict, TypeVar, overload
 
 import lxml.html
@@ -26,6 +27,7 @@ import python_helper_sympy as phs
 import sympy
 import to_precision
 from colors import PLColor
+from numpy.core.arrayprint import _FormatDict
 from numpy.typing import ArrayLike
 from pint import UnitRegistry
 from text_unidecode import unidecode
@@ -47,7 +49,7 @@ class PartialScore(TypedDict):
 # QuestionData be a generic type so that question elements could declare types
 # for their answer data, feedback data, etc., but TypedDicts with Generics are
 # not yet supported: https://bugs.python.org/issue44863
-class QuestionData(TypedDict):
+class QuestionData(TypedDict, total=True):
     "A class with type signatures for the data dictionary"
 
     params: dict[str, Any]
@@ -496,7 +498,7 @@ def check_attribs(
         raise ValueError(f'Unknown attribute "{name}"')
 
 
-def _get_attrib(element, name, *args):
+def _get_attrib(element, name, *args) -> tuple[Any, bool]:
     """(value, is_default) = _get_attrib(element, name, default)
 
     Internal function, do not all. Use one of the typed variants
@@ -718,15 +720,31 @@ def get_color_attrib(element, name, *args):
         raise ValueError(f'Attribute "{name}" must be a CSS-style RGB string: {val}')
 
 
-def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
-    """numpy_to_matlab(A, ndigits=2, wtype='f')
+# This represents most the types that would pass a np.isscalar check
+NumPyScalarType = (
+    np.complexfloating
+    | bool
+    | int
+    | float
+    | complex
+    | str
+    | bytes
+    | np.generic
+    | memoryview
+)
 
-    This function assumes that A is one of these things:
+
+def numpy_to_matlab(
+    np_object: np.ndarray | NumPyScalarType, ndigits: int = 2, wtype: str = "f"
+) -> str:
+    """numpy_to_matlab(np_object, ndigits=2, wtype='f')
+
+    This function assumes that np_object is one of these things:
 
         - a number (float or complex)
         - a 2D ndarray (float or complex)
 
-    It returns A as a MATLAB-formatted string in which each number has "ndigits"
+    It returns np_object as a MATLAB-formatted string in which each number has "ndigits"
     digits after the decimal and is formatted as "wtype" (e.g., 'f', 'g', etc.).
     """
     if np.isscalar(np_object):
@@ -734,7 +752,10 @@ def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
             np_object, indigits=ndigits, iwtype=wtype
         )
         return scalar_str
-    elif np_object.ndim == 1:
+
+    assert isinstance(np_object, np.ndarray)
+
+    if np_object.ndim == 1:
         s = np_object.shape
         m = s[0]
         vector_str = "["
@@ -766,7 +787,12 @@ def numpy_to_matlab(np_object, ndigits=2, wtype="f"):
         return matrix_str
 
 
-def string_from_numpy(A, language="python", presentation_type="f", digits=2):
+def string_from_numpy(
+    A: np.ndarray | NumPyScalarType,
+    language="python",
+    presentation_type="f",
+    digits=2,
+):
     """string_from_numpy(A)
 
     This function assumes that A is one of these things:
@@ -827,28 +853,36 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
     # if A is a scalar
     if np.isscalar(A):
         if presentation_type == "sigfig":
+            if not isinstance(A, np.complexfloating) and isinstance(
+                A, np.generic | bytes | str | memoryview
+            ):
+                raise TypeError(f"A must be a number, is {type(A)}")
             return string_from_number_sigfig(A, digits=digits)
         else:
             return "{:.{digits}{presentation_type}}".format(
                 A, digits=digits, presentation_type=presentation_type
             )
 
+    if not isinstance(A, np.ndarray):
+        raise TypeError("A must be a numpy array or scalar")
+
+    if presentation_type == "sigfig":
+        formatter: _FormatDict = {
+            "float_kind": lambda x: to_precision.to_precision(x, digits),
+            "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
+        }
+    else:
+        formatter: _FormatDict = {
+            "float_kind": lambda x: "{:.{digits}{presentation_type}}".format(
+                x, digits=digits, presentation_type=presentation_type
+            ),
+            "complex_kind": lambda x: "{:.{digits}{presentation_type}}".format(
+                x, digits=digits, presentation_type=presentation_type
+            ),
+        }
+
     # if A is a 1D or 2D ndarray
     if language == "python":
-        if presentation_type == "sigfig":
-            formatter = {
-                "float_kind": lambda x: to_precision.to_precision(x, digits),
-                "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
-            }
-        else:
-            formatter = {
-                "float_kind": lambda x: "{:.{digits}{presentation_type}}".format(
-                    x, digits=digits, presentation_type=presentation_type
-                ),
-                "complex_kind": lambda x: "{:.{digits}{presentation_type}}".format(
-                    x, digits=digits, presentation_type=presentation_type
-                ),
-            }
         return np.array2string(A, formatter=formatter, separator=", ").replace("\n", "")
     elif language == "matlab":
         if presentation_type == "sigfig":
@@ -856,20 +890,6 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
         else:
             return numpy_to_matlab(A, ndigits=digits, wtype=presentation_type)
     elif language == "mathematica":
-        if presentation_type == "sigfig":
-            formatter = {
-                "float_kind": lambda x: to_precision.to_precision(x, digits),
-                "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
-            }
-        else:
-            formatter = {
-                "float_kind": lambda x: "{:.{digits}{presentation_type}}".format(
-                    x, digits=digits, presentation_type=presentation_type
-                ),
-                "complex_kind": lambda x: "{:.{digits}{presentation_type}}".format(
-                    x, digits=digits, presentation_type=presentation_type
-                ),
-            }
         result = np.array2string(A, formatter=formatter, separator=", ").replace(
             "\n", ""
         )
@@ -877,20 +897,6 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
         result = result.replace("]", "}")
         return result
     elif language == "r":
-        if presentation_type == "sigfig":
-            formatter = {
-                "float_kind": lambda x: to_precision.to_precision(x, digits),
-                "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
-            }
-        else:
-            formatter = {
-                "float_kind": lambda x: "{:.{digits}{presentation_type}}".format(
-                    x, digits=digits, presentation_type=presentation_type
-                ),
-                "complex_kind": lambda x: "{:.{digits}{presentation_type}}".format(
-                    x, digits=digits, presentation_type=presentation_type
-                ),
-            }
         result = np.array2string(A, formatter=formatter, separator=", ").replace(
             "\n", ""
         )
@@ -905,20 +911,6 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
             result = f"matrix({result}, nrow = {nrow}, ncol = {ncol}, byrow = TRUE)"
         return result
     elif language == "sympy":
-        if presentation_type == "sigfig":
-            formatter = {
-                "float_kind": lambda x: to_precision.to_precision(x, digits),
-                "complex_kind": lambda x: _string_from_complex_sigfig(x, digits),
-            }
-        else:
-            formatter = {
-                "float_kind": lambda x: "{:.{digits}{presentation_type}}".format(
-                    x, digits=digits, presentation_type=presentation_type
-                ),
-                "complex_kind": lambda x: "{:.{digits}{presentation_type}}".format(
-                    x, digits=digits, presentation_type=presentation_type
-                ),
-            }
         result = np.array2string(A, formatter=formatter, separator=", ").replace(
             "\n", ""
         )
@@ -932,25 +924,34 @@ def string_from_numpy(A, language="python", presentation_type="f", digits=2):
 
 
 # Deprecated version, keeping for backwards compatibility
-def string_from_2darray(A, language="python", presentation_type="f", digits=2):
+def string_from_2darray(
+    A: np.ndarray,
+    language: str = "python",
+    presentation_type: str = "f",
+    digits: int = 2,
+):
     result = string_from_numpy(A, language, presentation_type, digits)
     return result
 
 
-def string_from_number_sigfig(a, digits=2):
-    """_string_from_complex_sigfig(a, digits=2)
+def string_from_number_sigfig(
+    a: complex | np.complexfloating | numbers.Number, digits: int = 2
+) -> str:
+    """string_from_complex_sigfig(a, digits=2)
 
     This function assumes that "a" is of type float or complex. It returns "a"
     as a string in which the number, or both the real and imaginary parts of the
     number, have digits significant digits.
     """
-    if np.iscomplexobj(a):
+    if not isinstance(a, numbers.Number) and np.iscomplexobj(a):
         return _string_from_complex_sigfig(a, digits=digits)
     else:
         return to_precision.to_precision(a, digits)
 
 
-def _string_from_complex_sigfig(a, digits=2):
+def _string_from_complex_sigfig(
+    a: complex | np.complexfloating, digits: int = 2
+) -> str:
     """_string_from_complex_sigfig(a, digits=2)
 
     This function assumes that "a" is a complex number. It returns "a" as a string
@@ -960,11 +961,11 @@ def _string_from_complex_sigfig(a, digits=2):
     im = to_precision.to_precision(np.abs(a.imag), digits)
     if a.imag >= 0:
         return f"{re}+{im}j"
-    elif a.imag < 0:
+    else:
         return f"{re}-{im}j"
 
 
-def numpy_to_matlab_sf(A, ndigits=2):
+def numpy_to_matlab_sf(A: NumPyScalarType | np.ndarray, ndigits: int = 2):
     """numpy_to_matlab(A, ndigits=2)
 
     This function assumes that A is one of these things:
@@ -976,12 +977,18 @@ def numpy_to_matlab_sf(A, ndigits=2):
     ndigits significant digits.
     """
     if np.isscalar(A):
+        assert not isinstance(A, memoryview)
         if np.iscomplexobj(A):
+            if not isinstance(A, np.complexfloating) and isinstance(
+                A, np.generic | bytes | str
+            ):
+                raise TypeError(f"A must be a number, is {type(A)}")
             scalar_str = _string_from_complex_sigfig(A, ndigits)
         else:
             scalar_str = to_precision.to_precision(A, ndigits)
         return scalar_str
-    elif A.ndim == 1:
+    assert isinstance(A, np.ndarray)
+    if A.ndim == 1:
         s = A.shape
         m = s[0]
         vector_str = "["
@@ -1015,7 +1022,9 @@ def numpy_to_matlab_sf(A, ndigits=2):
         return matrix_str
 
 
-def string_partition_first_interval(s, left="[", right="]"):
+def string_partition_first_interval(
+    s: str, left: str = "[", right: str = "]"
+) -> tuple[str, str, str]:
     # Split at first left delimiter
     (s_before_left, s_left, s) = s.partition(left)
     # Split at first right delimiter
@@ -1024,7 +1033,9 @@ def string_partition_first_interval(s, left="[", right="]"):
     return s_before_left, s, s_after_right
 
 
-def string_partition_outer_interval(s, left="[", right="]"):
+def string_partition_outer_interval(
+    s: str, left: str = "[", right: str = "]"
+) -> tuple[str, str, str]:
     # Split at first left delimiter
     (s_before_left, s_left, s) = s.partition(left)
     # Split at last right delimiter
@@ -1055,7 +1066,9 @@ def string_to_integer(s: str, base: int = 10) -> int | None:
         return None
 
 
-def string_to_number(s, allow_complex=True):
+def string_to_number(
+    s: str, allow_complex: bool = True
+) -> None | np.float64 | np.complex128:
     """string_to_number(s, allow_complex=True)
 
     Parses a string that can be interpreted either as float or (optionally) complex.
@@ -1090,7 +1103,14 @@ def string_to_number(s, allow_complex=True):
         return None
 
 
-def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
+class PartialData(TypedDict, total=False):
+    format_errors: str
+    submitted_answers: Any
+
+
+def string_fraction_to_number(
+    a_sub: str | None, allow_fractions: bool = True, allow_complex: bool = True
+) -> tuple[None | np.float64 | np.complex128, PartialData]:
     """string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True)
 
     Parses a string containing a decimal number with support for answers expressing
@@ -1105,7 +1125,7 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
     If parsing failed, the first entry will be 'None' and the "data" entry will
     contain a 'format_errors' key.
     """
-    data = {}
+    data: PartialData = {}
     value = None
 
     if a_sub is None:
@@ -1173,7 +1193,9 @@ def string_fraction_to_number(a_sub, allow_fractions=True, allow_complex=True):
     return (value, data)
 
 
-def string_to_2darray(s, allow_complex=True):
+def string_to_2darray(
+    s: str, allow_complex=True
+) -> tuple[None | np.ndarray, dict[str, str]]:
     """string_to_2darray(s)
 
     Parses a string that is either a scalar or a 2D array in matlab or python
@@ -1189,6 +1211,7 @@ def string_to_2darray(s, allow_complex=True):
     # Count left and right brackets and check that they are balanced
     number_of_left_brackets = s.count("[")
     number_of_right_brackets = s.count("]")
+
     if number_of_left_brackets != number_of_right_brackets:
         return (None, {"format_error": "Unbalanced square brackets."})
 
@@ -1251,10 +1274,10 @@ def string_to_2darray(s, allow_complex=True):
         #       is '[1 - 2j]' the same as '[1 -2j]' or '[1-2j]'
 
         # Split on semicolon
-        s = s.split(";")
+        s_list = s.split(";")
 
         # Get number of rows
-        m = len(s)
+        m = len(s_list)
 
         # Return error if there are no rows (i.e., the matrix is empty)
         if m == 0:
@@ -1264,7 +1287,7 @@ def string_to_2darray(s, allow_complex=True):
         matlab_delimiter_regex = re.compile(r"\s*[\s,]\s*")
 
         # Get number of columns by splitting first row
-        tokens = re.split(matlab_delimiter_regex, s[0])
+        tokens = re.split(matlab_delimiter_regex, s_list[0])
         n = len(tokens)
 
         # Ignore first/last token if empty string (occurs when row leads/trails with valid delimiter)
@@ -1283,7 +1306,7 @@ def string_to_2darray(s, allow_complex=True):
         # Iterate over rows
         for i in range(m):
             # Split row
-            s_row = re.split(matlab_delimiter_regex, s[i])
+            s_row = re.split(matlab_delimiter_regex, s_list[i])
 
             # Ignore first/last token if empty string (occurs when row leads/trails with valid delimiter)
             if s_row and not s_row[0]:
@@ -1431,6 +1454,8 @@ def string_to_2darray(s, allow_complex=True):
                     },
                 )
 
+        if number_of_columns is None:
+            return (None, {"format_error": "The matrix has no columns."})
         # Define matrix in which to put result
         matrix = np.zeros((number_of_rows, number_of_columns))
 
@@ -1475,7 +1500,8 @@ def string_to_2darray(s, allow_complex=True):
         # Return result with no error
         return (matrix, {"format_type": "python"})
 
-    assert_never(number_of_left_brackets)
+    # TODO: is there a way to statically check that we've handled all cases?
+    raise AssertionError("Should never reach this point")
 
 
 def latex_from_2darray(
@@ -1537,21 +1563,23 @@ def latex_from_2darray(
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_dd(*args, **kwargs):  # noqa: N802
+def is_correct_ndarray2D_dd(*args, **kwargs) -> bool:  # noqa: N802
     return is_correct_ndarray2d_dd(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_sf(*args, **kwargs):  # noqa: N802
+def is_correct_ndarray2D_sf(*args, **kwargs) -> bool:  # noqa: N802
     return is_correct_ndarray2d_sf(*args, **kwargs)
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
-def is_correct_ndarray2D_ra(*args, **kwargs):  # noqa: N802
+def is_correct_ndarray2D_ra(*args, **kwargs) -> bool:  # noqa: N802
     return is_correct_ndarray2d_ra(*args, **kwargs)
 
 
-def is_correct_ndarray2d_dd(a_sub, a_tru, digits=2):
+def is_correct_ndarray2d_dd(
+    a_sub: np.ndarray, a_tru: np.ndarray, digits: int = 2
+) -> bool:
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
@@ -1564,7 +1592,9 @@ def is_correct_ndarray2d_dd(a_sub, a_tru, digits=2):
     return True
 
 
-def is_correct_ndarray2d_sf(a_sub, a_tru, digits=2):
+def is_correct_ndarray2d_sf(
+    a_sub: np.ndarray, a_tru: np.ndarray, digits: int = 2
+) -> bool:
     # Check if each element is correct
     m = a_sub.shape[0]
     n = a_sub.shape[1]
@@ -1577,7 +1607,9 @@ def is_correct_ndarray2d_sf(a_sub, a_tru, digits=2):
     return True
 
 
-def is_correct_ndarray2d_ra(a_sub, a_tru, rtol=1e-5, atol=1e-8):
+def is_correct_ndarray2d_ra(
+    a_sub: np.ndarray, a_tru: np.ndarray, rtol: float = 1e-5, atol: float = 1e-8
+) -> bool:
     # Check if each element is correct
     return np.allclose(a_sub, a_tru, rtol, atol)
 
@@ -1659,7 +1691,7 @@ def escape_unicode_string(string: str) -> str:
     https://en.wikipedia.org/wiki/Unicode_character_property#General_Category
     """
 
-    def escape_unprintable(x):
+    def escape_unprintable(x: str) -> str:
         category = unicodedata.category(x)
         if category in ("Cc", "Cf"):
             return f"<U+{ord(x):x}>"
@@ -1669,7 +1701,7 @@ def escape_unicode_string(string: str) -> str:
     return "".join(map(escape_unprintable, string))
 
 
-def escape_invalid_string(string):
+def escape_invalid_string(string: str) -> str:
     """
     escape_invalid_string(string)
 
@@ -1678,7 +1710,7 @@ def escape_invalid_string(string):
     return f'<code class="user-output-invalid">{html.escape(escape_unicode_string(string))}</code>'
 
 
-def clean_identifier_name(name):
+def clean_identifier_name(name: str) -> str:
     """
     clean_identifier_name(string)
 
@@ -1692,7 +1724,7 @@ def clean_identifier_name(name):
     return name
 
 
-def load_extension(data, extension_name):
+def load_extension(data: QuestionData | Any, extension_name: str) -> Any:
     """
     load_extension(data, extension_name)
 
@@ -1710,12 +1742,12 @@ def load_extension(data, extension_name):
         return {}
 
     # wrap extension functions so that they execute in their own directory
-    def wrap(f):
+    def wrap(f: Callable | Any) -> Callable:
         # If not a function, just return
         if not callable(f):
             return f
 
-        def wrapped_function(*args, **kwargs):
+        def wrapped_function(*args, **kwargs) -> Any:
             old_wd = os.getcwd()
             os.chdir(ext_info["directory"])
             ret_val = f(*args, **kwargs)
@@ -1728,6 +1760,8 @@ def load_extension(data, extension_name):
     script = os.path.join(ext_info["directory"], ext_info["controller"])
     loaded = {}
     spec = importlib.util.spec_from_file_location(f"{extension_name}-{script}", script)
+    if not spec or not spec.loader:
+        raise ValueError(f"Could not load extension {extension_name}-{script}!")
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
 
@@ -1741,7 +1775,7 @@ def load_extension(data, extension_name):
     return module_tuple(**loaded)
 
 
-def load_all_extensions(data):
+def load_all_extensions(data: QuestionData | Any) -> dict[str, Any]:
     """
     load_all_extensions(data)
 
@@ -1761,7 +1795,7 @@ def load_all_extensions(data):
     return loaded_extensions
 
 
-def load_host_script(script_name):
+def load_host_script(script_name) -> ModuleType:
     """
     load_host_script(script_name)
 

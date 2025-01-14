@@ -356,10 +356,10 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     )
 
     if value is not None:
-        data["submitted_answers"][name] = newdata["submitted_answers"]
+        data["submitted_answers"][name] = newdata.get("submitted_answers")
     else:
         data["format_errors"][name] = get_format_string(
-            allow_complex, allow_fractions, newdata["format_errors"]
+            allow_complex, allow_fractions, newdata.get("format_errors")
         )
         data["submitted_answers"][name] = None
 
