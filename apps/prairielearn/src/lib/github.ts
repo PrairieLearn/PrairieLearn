@@ -51,30 +51,6 @@ async function createEmptyRepository(client: Octokit, repo: string) {
     name: repo,
     private: true,
   });
-
-  // Poll until the repository is created, or until 30 seconds pass.
-  for (let i = 0; i < 30; i++) {
-    try {
-      const repoExists = await client.repos.get({
-        owner: config.githubCourseOwner,
-        repo,
-      });
-      if (repoExists) {
-        return;
-      }
-    } catch (err) {
-      // We'll get a 404 if the repo is not ready yet. If we get any other
-      // error, then something unexpected happened and we should bail out.
-      if (err.status !== 404) {
-        throw err;
-      }
-
-      await sleep(1000);
-    }
-  }
-
-  // If we get here, the repo didn't become ready in time.
-  throw new Error('Repository contents were not ready after 30 seconds.');
 }
 
 /**
@@ -176,8 +152,9 @@ export async function createCourseRepoJob(
 
     job.info('Creating infoCourse.json');
 
-    // Read the template infoCourse.json file
     const infoCoursePath = path.join(TEMPLATE_COURSE_PATH, 'infoCourse.json');
+
+    // Read the template infoCourse.json file
     const infoCourse = JSON.parse(await fs.readFile(infoCoursePath, 'utf-8'));
 
     infoCourse.uuid = uuidv4();
